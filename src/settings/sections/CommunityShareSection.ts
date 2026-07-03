@@ -192,10 +192,10 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     addHeadingIcon(connectionHeading, 'satellite-dish');
     applyErtHeaderLayout(connectionHeading);
 
-    const renderConnectionCodeSetting = (targetEl: HTMLElement): void => {
+    const renderConnectionCodeSetting = (targetEl: HTMLElement): Setting => {
         let tokenValue = '';
         let connectButton: ButtonComponent | null = null;
-        new Setting(targetEl)
+        return new Setting(targetEl)
             .setName('Connection code')
             .setDesc('Links this vault to your saved community profile so publishing is ready when you are.')
             .addText(text => {
@@ -260,12 +260,14 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
             });
         });
         renderConnectionCodeSetting(replacementContainer);
+        if (settings.lastError) {
+            statusRow.descEl.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: settings.lastError });
+        }
     } else {
-        renderConnectionCodeSetting(activationSection);
-    }
-
-    if (settings.lastError) {
-        activationSection.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: settings.lastError });
+        const codeRow = renderConnectionCodeSetting(activationSection);
+        if (settings.lastError) {
+            codeRow.descEl.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: settings.lastError });
+        }
     }
 
     const sharingSection = section.createDiv({ cls: ERT_CLASSES.STACK });
@@ -286,7 +288,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     setIcon(profileLink, 'external-link');
     applyErtHeaderLayout(sharingHeading);
 
-    new Setting(sharingSection)
+    const sharingRow = new Setting(sharingSection)
         .setDesc('Manage your public profile and book cards on the website.')
         .addDropdown(dropdown => {
             dropdown.selectEl.addClass('ert-input', 'ert-input--fit-selected');
@@ -297,7 +299,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
             dropdown.onChange(value => save(buildCommunityShareModeUpdate(value as CommunityShareMode)));
             fitSelectToSelectedLabel(dropdown.selectEl, { minPx: 112, maxPx: 360, extraPx: 18 });
         });
-    sharingSection.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: MODE_NOTES[mode] });
+    sharingRow.descEl.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: MODE_NOTES[mode] });
 
     const previewCard = section.createDiv({ cls: ERT_CLASSES.STACK });
     const previewHeading = new Setting(previewCard)

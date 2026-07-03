@@ -301,14 +301,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         });
     sharingRow.descEl.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: MODE_NOTES[mode] });
 
-    const previewCard = section.createDiv({ cls: ERT_CLASSES.STACK });
-    const previewHeading = new Setting(previewCard)
-        .setName('Complete preview')
-        .setHeading()
-        .setDesc('The exact category checklist for the website report. Generate the preview below to create its signed hash.');
-    addHeadingIcon(previewHeading, 'file-check');
-    applyErtHeaderLayout(previewHeading);
-    const previewFrame = previewCard.createDiv({ cls: `${ERT_CLASSES.PREVIEW_FRAME} ${ERT_CLASSES.STACK} ert-previewFrame--flush ert-communityPreview` });
+    const previewFrame = sharingSection.createDiv({ cls: `${ERT_CLASSES.PREVIEW_FRAME} ${ERT_CLASSES.STACK} ert-previewFrame--flush ert-communityPreview` });
     const addDivider = () => previewFrame.createDiv({ cls: `${ERT_CLASSES.DIVIDER} ert-divider--previewFrame ert-communityPreview__divider` });
     const addChip = (parent: HTMLElement, label: string, value?: string) => {
         const chip = parent.createSpan({ cls: ERT_CLASSES.CHIP });
@@ -323,87 +316,119 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     previewFrame.createDiv({ cls: 'ert-communityPreview__title', text: activeBook?.publicLabel || activeBook?.title || 'No active project selected' });
     previewFrame.createDiv({ cls: 'ert-kicker', text: `Sharing: ${MODE_LABELS[mode]}` });
 
-    addDivider();
-    const propertyPills = previewFrame.createDiv({ cls: 'ert-communityPreview__pills' });
-    addChip(propertyPills, 'Stage', activeBook?.projectStage || 'Not set');
-    addChip(propertyPills, 'Genre', activeBook?.genre || 'Not set');
-    addChip(propertyPills, 'Description', activeBook?.publicDescription || 'Not set');
-
-    addDivider();
-    previewFrame.createDiv({ cls: 'ert-kicker', text: 'Included fields' });
-    if (selectedFields.length) {
-        const fieldPills = previewFrame.createDiv({ cls: 'ert-communityPreview__pills' });
-        selectedFields.forEach(label => addChip(fieldPills, label));
+    if (mode === 'private') {
+        addDivider();
+        previewFrame.createDiv({ cls: 'ert-communityPreview__note', text: MODE_NOTES.private });
     } else {
-        previewFrame.createDiv({ cls: 'ert-communityPreview__note', text: 'Choose a sharing level above to include fields.' });
+        addDivider();
+        const propertyPills = previewFrame.createDiv({ cls: 'ert-communityPreview__pills' });
+        addChip(propertyPills, 'Stage', activeBook?.projectStage || 'Not set');
+        addChip(propertyPills, 'Genre', activeBook?.genre || 'Not set');
+        addChip(propertyPills, 'Description', activeBook?.publicDescription || 'Not set');
+
+        addDivider();
+        previewFrame.createDiv({ cls: 'ert-kicker', text: 'Included fields' });
+        if (selectedFields.length) {
+            const fieldPills = previewFrame.createDiv({ cls: 'ert-communityPreview__pills' });
+            selectedFields.forEach(label => addChip(fieldPills, label));
+        } else {
+            previewFrame.createDiv({ cls: 'ert-communityPreview__note', text: 'Choose a sharing level above to include fields.' });
+        }
+
+        addDivider();
+        previewFrame.createDiv({ cls: 'ert-kicker', text: 'Stays in this vault' });
+        previewFrame.createDiv({
+            cls: 'ert-communityPreview__note',
+            text: 'Manuscript text, scene/note/vault paths, raw sessions, exact timestamps, secrets.'
+        });
+
+        addDivider();
+        previewFrame.createDiv({
+            cls: 'ert-communityPreview__status',
+            text: hasReadyPreview(settings)
+                ? `Preview ready — ${formatGeneratedAt(settings.preview.generatedAt)}`
+                : settings.preview.status === 'blocked'
+                    ? 'Preview unavailable.'
+                    : 'Updating preview...'
+        });
+        if (settings.preview.summary) {
+            previewFrame.createDiv({ cls: 'ert-communityPreview__note', text: settings.preview.summary });
+        }
+        if (settings.preview.previewHash) {
+            const hashPills = previewFrame.createDiv({ cls: 'ert-communityPreview__pills' });
+            addChip(hashPills, 'Preview hash', `${settings.preview.previewHash.slice(0, 12)}...`);
+        }
     }
 
-    addDivider();
-    previewFrame.createDiv({ cls: 'ert-kicker', text: 'Stays in this vault' });
-    previewFrame.createDiv({
-        cls: 'ert-communityPreview__note',
-        text: 'Manuscript text, scene/note/vault paths, raw sessions, exact timestamps, secrets.'
-    });
-
-    addDivider();
-    previewFrame.createDiv({
-        cls: 'ert-communityPreview__status',
-        text: hasReadyPreview(settings)
-            ? `Preview ready — ${formatGeneratedAt(settings.preview.generatedAt)}`
-            : 'Generate the preview below when you are ready.'
-    });
-    if (settings.preview.summary) {
-        previewFrame.createDiv({ cls: 'ert-communityPreview__note', text: settings.preview.summary });
-    }
-    if (settings.preview.previewHash) {
-        const hashPills = previewFrame.createDiv({ cls: 'ert-communityPreview__pills' });
-        addChip(hashPills, 'Preview hash', `${settings.preview.previewHash.slice(0, 12)}...`);
-    }
-
-    const canGeneratePreview = mode !== 'private'
-        && isConnected
-        && selectedFields.length > 0;
-    new Setting(previewCard)
-        .setName('Generate preview')
-        .setDesc(canGeneratePreview ? 'Builds the hash-checked preview from your selected sharing level.' : 'Next steps: connect this vault and pick a sharing level above.')
-        .addButton(button => button
-            .setButtonText('Generate complete preview')
-            .setDisabled(!canGeneratePreview)
-            .onClick(async () => {
-                button.setDisabled(true);
-                button.setButtonText('Generating...');
-                try {
-                    const preview = await buildCommunitySharePreview(plugin);
-                    await save({
-                        preview: {
-                            status: 'ready',
-                            generatedAt: new Date().toISOString(),
-                            previewHash: preview.previewHash,
-                            payloadHash: preview.payloadHash,
-                            reportPeriod: 'weekly',
-                            summary: preview.summary
-                        },
-                        lastError: undefined
-                    });
-                    new Notice('Complete preview generated. Review it before publishing.');
-                } catch (error) {
-                    const message = error instanceof Error ? error.message : 'Could not generate the Complete Preview.';
-                    await save({
-                        preview: {
-                            ...settings.preview,
-                            status: 'blocked'
-                        },
-                        lastError: message
-                    });
-                    new Notice(message);
+    // The signed preview regenerates whenever the section renders, so the card
+    // and its hash always reflect the current selection. Publish still rebuilds
+    // and compares the hash, so what is shown here is exactly what publishes.
+    const rerender = () => {
+        containerEl.empty();
+        renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
+    };
+    void (async () => {
+        const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
+        if (mode === 'private' || selectedFields.length === 0) {
+            if (current.preview.status === 'not_generated' && !current.preview.previewHash && !current.preview.payloadHash) return;
+            plugin.settings.communityShare = normalizeCommunityShareSettings({
+                ...current,
+                preview: {
+                    status: 'not_generated',
+                    generatedAt: undefined,
+                    previewHash: undefined,
+                    payloadHash: undefined,
+                    reportPeriod: undefined,
+                    summary: undefined
                 }
-            }));
+            });
+            await plugin.saveSettings();
+            rerender();
+            return;
+        }
+        try {
+            const preview = await buildCommunitySharePreview(plugin);
+            const upToDate = current.preview.status === 'ready'
+                && current.preview.previewHash === preview.previewHash
+                && current.preview.payloadHash === preview.payloadHash;
+            if (upToDate) return;
+            plugin.settings.communityShare = normalizeCommunityShareSettings({
+                ...current,
+                preview: {
+                    status: 'ready',
+                    generatedAt: new Date().toISOString(),
+                    previewHash: preview.previewHash,
+                    payloadHash: preview.payloadHash,
+                    reportPeriod: 'weekly',
+                    summary: preview.summary
+                },
+                lastError: current.preview.status === 'blocked' ? undefined : current.lastError
+            });
+            await plugin.saveSettings();
+            rerender();
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Could not build the complete preview.';
+            if (current.preview.status === 'blocked' && current.lastError === message) return;
+            plugin.settings.communityShare = normalizeCommunityShareSettings({
+                ...current,
+                preview: {
+                    ...current.preview,
+                    status: 'blocked',
+                    previewHash: undefined,
+                    payloadHash: undefined
+                },
+                lastError: message
+            });
+            await plugin.saveSettings();
+            rerender();
+        }
+    })();
 
     const actionCard = section.createDiv({ cls: ERT_CLASSES.STACK });
     const actionHeading = new Setting(actionCard)
         .setName('Publish and safety')
         .setHeading()
-        .setDesc('Connect this vault, choose what you share, and generate the complete preview to make publishing available.');
+        .setDesc('Connect this vault and choose what you share to make publishing available.');
     addHeadingIcon(actionHeading, 'shield-check');
     applyErtHeaderLayout(actionHeading);
     const canPublish = mode !== 'private'
@@ -416,7 +441,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
 
     new Setting(actionCard)
         .setName('Publish report')
-        .setDesc(canPublish ? 'Ready to publish.' : 'Next steps: connect, pick a sharing level, and generate the Complete Preview.')
+        .setDesc(canPublish ? 'Ready to publish.' : 'Next steps: connect this vault and pick a sharing level above.')
         .addButton(button => button
             .setButtonText('Publish report')
             .setCta()

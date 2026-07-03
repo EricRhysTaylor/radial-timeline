@@ -249,7 +249,7 @@ export async function publishCommunityShareReport(plugin: RadialTimelinePlugin):
         throw new CommunityShareError('publish_locked', 'Publish requires public audience, launch tier 1-4, and manual publishing enabled.');
     }
     if (current.preview.status !== 'ready' || !current.preview.previewHash || !current.preview.payloadHash) {
-        throw new CommunityShareError('preview_required', 'Generate and review the Complete Preview before publishing.');
+        throw new CommunityShareError('preview_required', 'Review the complete preview in the sharing settings before publishing.');
     }
 
     const currentSecret = await getSecret(plugin.app, current.connection.secretId);
@@ -259,7 +259,7 @@ export async function publishCommunityShareReport(plugin: RadialTimelinePlugin):
 
     const preview = await buildCommunitySharePreview(plugin);
     if (preview.previewHash !== current.preview.previewHash || preview.payloadHash !== current.preview.payloadHash) {
-        throw new CommunityShareError('preview_stale', 'The Complete Preview is stale. Generate it again before publishing.');
+        throw new CommunityShareError('preview_stale', 'The complete preview is out of date. Reopen the sharing settings to refresh it, then publish.');
     }
 
     const response = await requestUrl({

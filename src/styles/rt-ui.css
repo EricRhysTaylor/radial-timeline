@@ -1979,6 +1979,69 @@
   width: 100%;
 }
 
+.ert-ui.ert-scope--settings .ert-communityPreview {
+  align-items: center;
+  text-align: center;
+  gap: var(--ert-gap-sm);
+  padding: var(--ert-pad-lg) var(--ert-pad-md);
+}
+
+.ert-ui.ert-scope--settings .ert-communityPreview__title {
+  font-size: 1.55rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--text-normal);
+  overflow-wrap: anywhere;
+}
+
+.ert-ui.ert-scope--settings .ert-communityPreview__divider {
+  width: min(100%, 22rem);
+  margin: var(--ert-gap-sm) 0;
+}
+
+.ert-ui.ert-scope--settings .ert-communityPreview__pills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--ert-gap-xs);
+  max-width: 40rem;
+}
+
+.ert-ui.ert-scope--settings .ert-communityPreview .ert-chip {
+  border-color: var(--ert-previewFrame-border);
+  max-width: 100%;
+}
+
+.ert-ui.ert-scope--settings .ert-communityPreview .ert-chip > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ert-ui.ert-scope--settings .ert-communityPreview__chipLabel {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.ert-ui.ert-scope--settings .ert-communityPreview__note {
+  color: var(--text-muted);
+  font-size: 12px;
+  max-width: 34rem;
+}
+
+.ert-ui.ert-scope--settings .ert-communityPreview__status {
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.ert-ui.ert-scope--settings .ert-communityShare-modeRow select,
+.ert-ui.ert-scope--settings .ert-communityShare-modeRow .dropdown {
+  width: auto;
+  max-width: none;
+}
+
 .ert-ui .ert-toggle-item {
   display: flex;
   align-items: center;

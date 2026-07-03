@@ -101,6 +101,13 @@ function formatConnectedAt(value?: string): string {
     }
 }
 
+function formatGeneratedAt(value?: string): string {
+    if (!value) return 'time not recorded';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return parsed.toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' });
+}
+
 export function renderCommunityShareSection({ plugin, containerEl }: CommunityShareSectionProps): void {
     const settings = getCommunitySettings(plugin);
     const activeBook = getActiveBook(plugin);
@@ -276,6 +283,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     const modeSetting = new Setting(sharingCard)
         .setName('What you share')
         .setDesc('Manage your public profile and book cards on the website. ')
+        .setClass('ert-communityShare-modeRow')
         .addDropdown(dropdown => {
             dropdown.addOption('private', MODE_LABELS.private);
             dropdown.addOption('profile_books', MODE_LABELS.profile_books);
@@ -301,24 +309,56 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         cls: ERT_CLASSES.SECTION_DESC,
         text: 'The exact category checklist for the website report. Generate the preview below to create its signed hash.'
     });
-    const previewFrame = previewCard.createDiv({ cls: `${ERT_CLASSES.PREVIEW_FRAME} ${ERT_CLASSES.STACK} ert-previewFrame--flush` });
-    previewFrame.createDiv({ cls: 'ert-previewFrame__title', text: activeBook?.publicLabel || activeBook?.title || 'No active project selected' });
-    previewFrame.createDiv({ text: `Sharing: ${MODE_LABELS[mode]}` });
-    previewFrame.createDiv({ text: `Project stage: ${activeBook?.projectStage || 'Not set'}` });
-    previewFrame.createDiv({ text: `Genre: ${activeBook?.genre || 'Not set'}` });
-    previewFrame.createDiv({ text: `Public description: ${activeBook?.publicDescription || 'Not set'}` });
-    previewFrame.createDiv({ text: selectedFields.length ? `Included fields: ${selectedFields.join(', ')}` : 'Included fields: choose a sharing level above to include them' });
-    previewFrame.createDiv({ text: 'Stays in this vault: manuscript text, scene/note/vault paths, raw sessions, exact timestamps, secrets.' });
+    const previewFrame = previewCard.createDiv({ cls: `${ERT_CLASSES.PREVIEW_FRAME} ${ERT_CLASSES.STACK} ert-previewFrame--flush ert-communityPreview` });
+    const addDivider = () => previewFrame.createDiv({ cls: `${ERT_CLASSES.DIVIDER} ert-divider--previewFrame ert-communityPreview__divider` });
+    const addChip = (parent: HTMLElement, label: string, value?: string) => {
+        const chip = parent.createSpan({ cls: ERT_CLASSES.CHIP });
+        if (value !== undefined) {
+            chip.createSpan({ cls: 'ert-communityPreview__chipLabel', text: label });
+            chip.createSpan({ text: value });
+        } else {
+            chip.setText(label);
+        }
+    };
+
+    previewFrame.createDiv({ cls: 'ert-communityPreview__title', text: activeBook?.publicLabel || activeBook?.title || 'No active project selected' });
+    previewFrame.createDiv({ cls: 'ert-kicker', text: `Sharing: ${MODE_LABELS[mode]}` });
+
+    addDivider();
+    const propertyPills = previewFrame.createDiv({ cls: 'ert-communityPreview__pills' });
+    addChip(propertyPills, 'Stage', activeBook?.projectStage || 'Not set');
+    addChip(propertyPills, 'Genre', activeBook?.genre || 'Not set');
+    addChip(propertyPills, 'Description', activeBook?.publicDescription || 'Not set');
+
+    addDivider();
+    previewFrame.createDiv({ cls: 'ert-kicker', text: 'Included fields' });
+    if (selectedFields.length) {
+        const fieldPills = previewFrame.createDiv({ cls: 'ert-communityPreview__pills' });
+        selectedFields.forEach(label => addChip(fieldPills, label));
+    } else {
+        previewFrame.createDiv({ cls: 'ert-communityPreview__note', text: 'Choose a sharing level above to include fields.' });
+    }
+
+    addDivider();
+    previewFrame.createDiv({ cls: 'ert-kicker', text: 'Stays in this vault' });
     previewFrame.createDiv({
+        cls: 'ert-communityPreview__note',
+        text: 'Manuscript text, scene/note/vault paths, raw sessions, exact timestamps, secrets.'
+    });
+
+    addDivider();
+    previewFrame.createDiv({
+        cls: 'ert-communityPreview__status',
         text: hasReadyPreview(settings)
-            ? `Preview ready: ${settings.preview.generatedAt ?? 'time not recorded'}`
+            ? `Preview ready — ${formatGeneratedAt(settings.preview.generatedAt)}`
             : 'Generate the preview below when you are ready.'
     });
     if (settings.preview.summary) {
-        previewFrame.createDiv({ text: settings.preview.summary });
+        previewFrame.createDiv({ cls: 'ert-communityPreview__note', text: settings.preview.summary });
     }
     if (settings.preview.previewHash) {
-        previewFrame.createDiv({ text: `Preview hash: ${settings.preview.previewHash.slice(0, 12)}...` });
+        const hashPills = previewFrame.createDiv({ cls: 'ert-communityPreview__pills' });
+        addChip(hashPills, 'Preview hash', `${settings.preview.previewHash.slice(0, 12)}...`);
     }
 
     const canGeneratePreview = mode !== 'private'

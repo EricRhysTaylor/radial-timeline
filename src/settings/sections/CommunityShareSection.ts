@@ -185,16 +185,12 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     });
 
     const activationSection = section.createDiv({ cls: ERT_CLASSES.STACK });
-    const connectedAt = formatConnectedAt(settings.connection.connectedAt);
     const connectionHeading = new Setting(activationSection)
         .setName('Connect Radial Timeline')
         .setHeading()
-        .setDesc(isConnected
-            ? (connectedAt
-                ? `Linked to your Community profile. Connected ${connectedAt}.`
-                : 'Linked to your Community profile.')
-            : 'Paste the one-time connection code from the website to link this vault to your Community profile.');
+        .setDesc('Paste the one-time connection code from the website to link this vault to your community profile.');
     addHeadingIcon(connectionHeading, 'satellite-dish');
+    applyErtHeaderLayout(connectionHeading);
 
     const renderConnectionCodeSetting = (targetEl: HTMLElement): void => {
         let tokenValue = '';
@@ -241,8 +237,13 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     };
 
     if (isConnected) {
+        const connectedAt = formatConnectedAt(settings.connection.connectedAt);
+        const statusRow = new Setting(activationSection)
+            .setDesc(connectedAt
+                ? `Linked to your Community profile. Connected ${connectedAt}.`
+                : 'Linked to your Community profile.');
         const replacementContainer = activationSection.createDiv({ cls: 'ert-hidden' });
-        connectionHeading.addButton(button => {
+        statusRow.addButton(button => {
             const renderState = (connected: boolean) => {
                 button.buttonEl.empty();
                 const iconEl = button.buttonEl.createSpan();
@@ -258,10 +259,8 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
                 renderState(!willShow);
             });
         });
-        applyErtHeaderLayout(connectionHeading);
         renderConnectionCodeSetting(replacementContainer);
     } else {
-        applyErtHeaderLayout(connectionHeading);
         renderConnectionCodeSetting(activationSection);
     }
 
@@ -273,16 +272,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     const sharingHeading = new Setting(sharingSection)
         .setName('What you share')
         .setHeading()
-        .setDesc('Pick one sharing level to manage your public profile and book cards on the website. The complete preview always shows exactly what a level includes before anything publishes.')
-        .addDropdown(dropdown => {
-            dropdown.selectEl.addClass('ert-input', 'ert-input--fit-selected');
-            dropdown.addOption('private', MODE_LABELS.private);
-            dropdown.addOption('profile_books', MODE_LABELS.profile_books);
-            dropdown.addOption('progress', MODE_LABELS.progress);
-            dropdown.setValue(mode);
-            dropdown.onChange(value => save(buildCommunityShareModeUpdate(value as CommunityShareMode)));
-            fitSelectToSelectedLabel(dropdown.selectEl, { minPx: 112, maxPx: 360, extraPx: 18 });
-        });
+        .setDesc('Pick one sharing level. The complete preview always shows exactly what a level includes before anything publishes.');
     addHeadingIcon(sharingHeading, 'share-2');
     const profileLink = sharingHeading.nameEl.createEl('a', {
         href: 'https://www.radialtimeline.com/community/me',
@@ -295,6 +285,18 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     });
     setIcon(profileLink, 'external-link');
     applyErtHeaderLayout(sharingHeading);
+
+    new Setting(sharingSection)
+        .setDesc('Manage your public profile and book cards on the website.')
+        .addDropdown(dropdown => {
+            dropdown.selectEl.addClass('ert-input', 'ert-input--fit-selected');
+            dropdown.addOption('private', MODE_LABELS.private);
+            dropdown.addOption('profile_books', MODE_LABELS.profile_books);
+            dropdown.addOption('progress', MODE_LABELS.progress);
+            dropdown.setValue(mode);
+            dropdown.onChange(value => save(buildCommunityShareModeUpdate(value as CommunityShareMode)));
+            fitSelectToSelectedLabel(dropdown.selectEl, { minPx: 112, maxPx: 360, extraPx: 18 });
+        });
     sharingSection.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: MODE_NOTES[mode] });
 
     const previewCard = section.createDiv({ cls: ERT_CLASSES.STACK });

@@ -139,7 +139,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     const hero = section.createDiv({ cls: `${ERT_CLASSES.CARD} ${ERT_CLASSES.CARD_HERO} ${ERT_CLASSES.STACK}` });
     const badgeRow = hero.createDiv({ cls: ERT_CLASSES.INLINE });
     const badge = badgeRow.createSpan({ cls: ERT_CLASSES.BADGE_PILL });
-    setIcon(badge.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON }), settings.enabled ? 'shield-check' : 'shield');
+    setIcon(badge.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON }), isConnected ? 'satellite-dish' : settings.enabled ? 'shield-check' : 'shield');
     badge.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: `Community share - ${formatStatus(settings)}` });
     const wikiLink = badge.createEl('a', {
         href: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Settings-Community',
@@ -242,7 +242,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
                 const renderState = (connected: boolean) => {
                     button.buttonEl.empty();
                     const iconEl = button.buttonEl.createSpan();
-                    setIcon(iconEl, connected ? 'plug-zap' : 'x');
+                    setIcon(iconEl, connected ? 'satellite-dish' : 'x');
                     button.buttonEl.createSpan({ text: connected ? 'Active connection' : 'Cancel replace' });
                     button.buttonEl.toggleClass('ert-btn--connected', connected);
                 };

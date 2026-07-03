@@ -18,6 +18,8 @@ import {
 import { buildCommunitySharePreview } from '../../communityShare/communitySharePreview';
 import type { CommunityShareFieldKey, CommunityShareSettings } from '../../types/settings';
 import { ERT_CLASSES } from '../../ui/classes';
+import { addHeadingIcon, applyErtHeaderLayout } from '../wikiLink';
+import { fitSelectToSelectedLabel } from '../selectSizing';
 
 export interface CommunityShareSectionProps {
     app: App;
@@ -94,11 +96,9 @@ function getSelectedFieldLabels(settings: CommunityShareSettings): string[] {
 
 function formatConnectedAt(value?: string): string {
     if (!value) return '';
-    try {
-        return new Date(value).toLocaleString();
-    } catch {
-        return value;
-    }
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return parsed.toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' });
 }
 
 function formatGeneratedAt(value?: string): string {
@@ -184,12 +184,17 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         li.createSpan({ text: item.text });
     });
 
-    const activationCard = section.createDiv({ cls: `${ERT_CLASSES.CARD} ${ERT_CLASSES.STACK}` });
-    activationCard.createDiv({ cls: ERT_CLASSES.SECTION_TITLE, text: 'Connect Radial Timeline' });
-    activationCard.createDiv({
-        cls: ERT_CLASSES.SECTION_DESC,
-        text: 'Paste the one-time connection code from the website to link this vault to your Community profile.'
-    });
+    const activationSection = section.createDiv({ cls: ERT_CLASSES.STACK });
+    const connectedAt = formatConnectedAt(settings.connection.connectedAt);
+    const connectionHeading = new Setting(activationSection)
+        .setName('Connect Radial Timeline')
+        .setHeading()
+        .setDesc(isConnected
+            ? (connectedAt
+                ? `Linked to your Community profile. Connected ${connectedAt}.`
+                : 'Linked to your Community profile.')
+            : 'Paste the one-time connection code from the website to link this vault to your Community profile.');
+    addHeadingIcon(connectionHeading, 'satellite-dish');
 
     const renderConnectionCodeSetting = (targetEl: HTMLElement): void => {
         let tokenValue = '';
@@ -236,64 +241,52 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     };
 
     if (isConnected) {
-        const connectedAt = formatConnectedAt(settings.connection.connectedAt);
-        const desc = connectedAt
-            ? `Linked to your Community profile. Connected ${connectedAt}.`
-            : 'Linked to your Community profile.';
-        const replacementContainer = activationCard.createDiv({ cls: 'ert-hidden' });
-
-        new Setting(activationCard)
-            .setName('Active connection')
-            .setDesc(desc)
-            .addButton(button => {
-                const renderState = (connected: boolean) => {
-                    button.buttonEl.empty();
-                    const iconEl = button.buttonEl.createSpan();
-                    setIcon(iconEl, connected ? 'satellite-dish' : 'x');
-                    button.buttonEl.createSpan({ text: connected ? 'Active connection' : 'Cancel replace' });
-                    button.buttonEl.toggleClass('ert-btn--connected', connected);
-                };
-                button.buttonEl.addClass('ert-btn--icon-left');
-                renderState(true);
-                button.onClick(() => {
-                    const willShow = replacementContainer.classList.contains('ert-hidden');
-                    replacementContainer.classList.toggle('ert-hidden', !willShow);
-                    renderState(!willShow);
-                });
+        const replacementContainer = activationSection.createDiv({ cls: 'ert-hidden' });
+        connectionHeading.addButton(button => {
+            const renderState = (connected: boolean) => {
+                button.buttonEl.empty();
+                const iconEl = button.buttonEl.createSpan();
+                setIcon(iconEl, connected ? 'satellite-dish' : 'x');
+                button.buttonEl.createSpan({ text: connected ? 'Active connection' : 'Cancel replace' });
+                button.buttonEl.toggleClass('ert-btn--connected', connected);
+            };
+            button.buttonEl.addClass('ert-btn--icon-left');
+            renderState(true);
+            button.onClick(() => {
+                const willShow = replacementContainer.classList.contains('ert-hidden');
+                replacementContainer.classList.toggle('ert-hidden', !willShow);
+                renderState(!willShow);
             });
+        });
+        applyErtHeaderLayout(connectionHeading);
         renderConnectionCodeSetting(replacementContainer);
     } else {
-        new Setting(activationCard)
-            .setName('Connection status')
-            .setDesc('Ready to connect. Paste your connection code below to link this vault.');
-        renderConnectionCodeSetting(activationCard);
+        applyErtHeaderLayout(connectionHeading);
+        renderConnectionCodeSetting(activationSection);
     }
 
     if (settings.lastError) {
-        activationCard.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: settings.lastError });
+        activationSection.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: settings.lastError });
     }
 
-    const sharingCard = section.createDiv({ cls: `${ERT_CLASSES.CARD} ${ERT_CLASSES.STACK}` });
-    sharingCard.createDiv({ cls: ERT_CLASSES.SECTION_TITLE, text: 'What You Share' });
-    sharingCard.createDiv({
-        cls: ERT_CLASSES.SECTION_DESC,
-        text: 'Pick one sharing level. The complete preview always shows exactly what a level includes before anything publishes.'
-    });
-
-    const modeSetting = new Setting(sharingCard)
+    const sharingSection = section.createDiv({ cls: ERT_CLASSES.STACK });
+    const sharingHeading = new Setting(sharingSection)
         .setName('What you share')
-        .setDesc('Manage your public profile and book cards on the website. ')
-        .setClass('ert-communityShare-modeRow')
+        .setHeading()
+        .setDesc('Pick one sharing level to manage your public profile and book cards on the website. The complete preview always shows exactly what a level includes before anything publishes.')
         .addDropdown(dropdown => {
+            dropdown.selectEl.addClass('ert-input', 'ert-input--fit-selected');
             dropdown.addOption('private', MODE_LABELS.private);
             dropdown.addOption('profile_books', MODE_LABELS.profile_books);
             dropdown.addOption('progress', MODE_LABELS.progress);
             dropdown.setValue(mode);
             dropdown.onChange(value => save(buildCommunityShareModeUpdate(value as CommunityShareMode)));
+            fitSelectToSelectedLabel(dropdown.selectEl, { minPx: 112, maxPx: 360, extraPx: 18 });
         });
-    const profileLink = modeSetting.descEl.createEl('a', {
+    addHeadingIcon(sharingHeading, 'share-2');
+    const profileLink = sharingHeading.nameEl.createEl('a', {
         href: 'https://www.radialtimeline.com/community/me',
-        cls: ERT_CLASSES.BADGE_PILL_WIKI,
+        cls: 'ert-wiki-link',
         attr: {
             'aria-label': 'Open your community profile',
             'target': '_blank',
@@ -301,14 +294,16 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         }
     });
     setIcon(profileLink, 'external-link');
-    sharingCard.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: MODE_NOTES[mode] });
+    applyErtHeaderLayout(sharingHeading);
+    sharingSection.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: MODE_NOTES[mode] });
 
-    const previewCard = section.createDiv({ cls: `${ERT_CLASSES.CARD} ${ERT_CLASSES.STACK}` });
-    previewCard.createDiv({ cls: ERT_CLASSES.SECTION_TITLE, text: 'Complete Preview' });
-    previewCard.createDiv({
-        cls: ERT_CLASSES.SECTION_DESC,
-        text: 'The exact category checklist for the website report. Generate the preview below to create its signed hash.'
-    });
+    const previewCard = section.createDiv({ cls: ERT_CLASSES.STACK });
+    const previewHeading = new Setting(previewCard)
+        .setName('Complete preview')
+        .setHeading()
+        .setDesc('The exact category checklist for the website report. Generate the preview below to create its signed hash.');
+    addHeadingIcon(previewHeading, 'file-check');
+    applyErtHeaderLayout(previewHeading);
     const previewFrame = previewCard.createDiv({ cls: `${ERT_CLASSES.PREVIEW_FRAME} ${ERT_CLASSES.STACK} ert-previewFrame--flush ert-communityPreview` });
     const addDivider = () => previewFrame.createDiv({ cls: `${ERT_CLASSES.DIVIDER} ert-divider--previewFrame ert-communityPreview__divider` });
     const addChip = (parent: HTMLElement, label: string, value?: string) => {
@@ -400,12 +395,13 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
                 }
             }));
 
-    const actionCard = section.createDiv({ cls: `${ERT_CLASSES.CARD} ${ERT_CLASSES.STACK}` });
-    actionCard.createDiv({ cls: ERT_CLASSES.SECTION_TITLE, text: 'Publish and Safety' });
-    actionCard.createDiv({
-        cls: ERT_CLASSES.SECTION_DESC,
-        text: 'Connect this vault, choose what you share, and generate the Complete Preview to make publishing available.'
-    });
+    const actionCard = section.createDiv({ cls: ERT_CLASSES.STACK });
+    const actionHeading = new Setting(actionCard)
+        .setName('Publish and safety')
+        .setHeading()
+        .setDesc('Connect this vault, choose what you share, and generate the complete preview to make publishing available.');
+    addHeadingIcon(actionHeading, 'shield-check');
+    applyErtHeaderLayout(actionHeading);
     const canPublish = mode !== 'private'
         && isConnected
         && settings.audience === 'public'

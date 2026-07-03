@@ -2036,12 +2036,6 @@
   color: var(--text-normal);
 }
 
-.ert-ui.ert-scope--settings .ert-communityShare-modeRow select,
-.ert-ui.ert-scope--settings .ert-communityShare-modeRow .dropdown {
-  width: auto;
-  max-width: none;
-}
-
 .ert-ui .ert-toggle-item {
   display: flex;
   align-items: center;

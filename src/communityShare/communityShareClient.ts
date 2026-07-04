@@ -328,6 +328,150 @@ export async function publishCommunityShareReport(
     return parsed;
 }
 
+interface AprUploadSuccess {
+    ok: boolean;
+    status: 'private' | 'active';
+    teaser_level: string;
+    public_url: string | null;
+    updated_at: string;
+}
+
+interface ProjectSyncSuccess {
+    ok: boolean;
+    created: number;
+    updated: number;
+    projects: Array<{ id: string; book_key: string; title: string; visibility: string }>;
+}
+
+function isAprUploadSuccess(value: unknown): value is AprUploadSuccess {
+    const v = value as AprUploadSuccess;
+    return !!v && v.ok === true && (v.status === 'private' || v.status === 'active');
+}
+
+function isProjectSyncSuccess(value: unknown): value is ProjectSyncSuccess {
+    const v = value as ProjectSyncSuccess;
+    return !!v && v.ok === true && Array.isArray(v.projects);
+}
+
+async function requireActiveConnection(plugin: RadialTimelinePlugin): Promise<{
+    connectionId: string;
+    projectId: string;
+    currentSecret: string;
+}> {
+    const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
+    if (!current.enabled || current.connection.status !== 'connected' || !current.connection.connectionId || !current.connection.secretId || !current.connection.projectId) {
+        throw new CommunityShareError('connection_required', 'Connect Community Share before syncing with the website.');
+    }
+    const currentSecret = await getSecret(plugin.app, current.connection.secretId);
+    if (!currentSecret) {
+        throw new CommunityShareError('connection_secret_missing', 'The private connection secret is missing. Reconnect Community Share.');
+    }
+    return {
+        connectionId: current.connection.connectionId,
+        projectId: current.connection.projectId,
+        currentSecret
+    };
+}
+
+/**
+ * Send a campaign's rendered APR (portable SVG) to the community website.
+ * The artifact arrives PRIVATE on the author's My Share page; activating
+ * public display is a website-only action per the share-surfaces contract.
+ */
+export async function uploadAprToCommunity(
+    plugin: RadialTimelinePlugin,
+    args: { svg: string; width: number; height: number; teaserLevel: 'ring' | 'scenes' | 'colors' | 'full'; campaignLabel?: string }
+): Promise<AprUploadSuccess> {
+    const { connectionId, projectId, currentSecret } = await requireActiveConnection(plugin);
+
+    const response = await requestUrl({
+        url: `${FUNCTIONS_BASE_URL}/community-apr-upload`,
+        method: 'POST',
+        contentType: 'application/json',
+        body: JSON.stringify({
+            connection_id: connectionId,
+            current_secret: currentSecret,
+            project_id: projectId,
+            teaser_level: args.teaserLevel,
+            svg: args.svg,
+            width: args.width,
+            height: args.height,
+            campaign_label: args.campaignLabel?.slice(0, 60)
+        }),
+        throw: false
+    });
+
+    const parsed = parseResponseJson(response.text);
+    if (response.status < 200 || response.status >= 300) {
+        const body = parsed as ActivationConfirmError;
+        throw new CommunityShareError(
+            body.error?.code || 'apr_upload_failed',
+            body.error?.message || 'Could not send the progress report to the community site.'
+        );
+    }
+    if (!isAprUploadSuccess(parsed)) {
+        throw new CommunityShareError('invalid_response', 'The progress report upload returned an unexpected response.');
+    }
+    return parsed;
+}
+
+/**
+ * Sync every Book Manager book to the community website as a project shell.
+ * New shells arrive PRIVATE; the author chooses what to share on the website.
+ * Sync never changes visibility and never deletes shells.
+ */
+export async function syncCommunityProjects(plugin: RadialTimelinePlugin): Promise<ProjectSyncSuccess> {
+    const { connectionId, currentSecret } = await requireActiveConnection(plugin);
+
+    const books = (plugin.settings.books ?? []).slice(0, 50);
+    if (!books.length) {
+        return { ok: true, created: 0, updated: 0, projects: [] };
+    }
+
+    const response = await requestUrl({
+        url: `${FUNCTIONS_BASE_URL}/community-project-sync`,
+        method: 'POST',
+        contentType: 'application/json',
+        body: JSON.stringify({
+            connection_id: connectionId,
+            current_secret: currentSecret,
+            projects: books.map((book) => ({
+                book_key: book.id,
+                title: (book.publicLabel || book.title || 'Untitled book').slice(0, 140),
+                logline: book.publicDescription ? book.publicDescription.slice(0, 240) : undefined
+            }))
+        }),
+        throw: false
+    });
+
+    const parsed = parseResponseJson(response.text);
+    if (response.status < 200 || response.status >= 300) {
+        const body = parsed as ActivationConfirmError;
+        throw new CommunityShareError(
+            body.error?.code || 'project_sync_failed',
+            body.error?.message || 'Could not sync books to the community site.'
+        );
+    }
+    if (!isProjectSyncSuccess(parsed)) {
+        throw new CommunityShareError('invalid_response', 'The project sync returned an unexpected response.');
+    }
+    return parsed;
+}
+
+/**
+ * Fire-and-forget project sync for plugin load: silently no-ops when
+ * Community Share is not connected, and never throws into the caller.
+ */
+export async function syncCommunityProjectsIfConnected(plugin: RadialTimelinePlugin): Promise<void> {
+    const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
+    if (!current.enabled || current.connection.status !== 'connected' || !current.connection.connectionId) return;
+    try {
+        await syncCommunityProjects(plugin);
+    } catch (error) {
+        console.warn('Community project sync skipped:', error instanceof Error ? error.message : error);
+    }
+}
+
 export async function beginCommunitySharing(plugin: RadialTimelinePlugin): Promise<PublishSuccess> {
     const result = await publishCommunityShareReport(plugin, 'manual');
     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);

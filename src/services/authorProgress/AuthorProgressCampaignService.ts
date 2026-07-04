@@ -2,6 +2,8 @@ import { App, Notice } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import type { AuthorProgressCampaign, AuthorProgressSettings } from '../../types/settings';
 import { hasProFeatureAccess } from '../../settings/featureGate';
+import { getTeaserRevealLevel, getTeaserThresholds } from '../../renderer/apr/AprConstants';
+import { uploadAprToCommunity } from '../../communityShare/communityShareClient';
 import { AuthorProgressRenderService } from './AuthorProgressRenderService';
 import { AuthorProgressPublishService } from './AuthorProgressPublishService';
 
@@ -101,6 +103,39 @@ export class AuthorProgressCampaignService {
 
         if (!options?.silent) {
             new Notice(`Campaign "${campaign.name}" published!\nFormat: ${format.toUpperCase()} | Size: ${result.meta.size} | Stage: ${result.meta.stage} | Progress: ${result.meta.percent.toFixed(1)}%`);
+        }
+
+        // Community share surface 3: send the portable APR to the website.
+        // It arrives private on My Share; activation is website-only.
+        if (campaign.sendToCommunity && hasProFeatureAccess(this.plugin)) {
+            try {
+                const teaser = campaign.teaserReveal;
+                const revealLevel = teaser?.enabled
+                    ? getTeaserRevealLevel(
+                        result.meta.percent,
+                        getTeaserThresholds(teaser.preset ?? 'standard', teaser.customThresholds),
+                        teaser.disabledStages
+                    )
+                    : 'full';
+                const uploaded = await uploadAprToCommunity(this.plugin, {
+                    svg: svgString,
+                    width,
+                    height,
+                    teaserLevel: revealLevel,
+                    campaignLabel: campaign.name
+                });
+                if (!options?.silent) {
+                    new Notice(uploaded.status === 'active'
+                        ? 'Progress report refreshed on your public Community card.'
+                        : 'Progress report sent to Community — activate it on your My Share page.');
+                }
+            } catch (error) {
+                const message = error instanceof Error ? error.message : 'Unknown error';
+                console.error(`Community APR upload failed for campaign ${campaign.name}:`, message);
+                if (!options?.silent) {
+                    new Notice(`Could not send the progress report to Community: ${message}`);
+                }
+            }
         }
         return path;
     }

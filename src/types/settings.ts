@@ -700,6 +700,11 @@ export interface AuthorProgressCampaign {
     refreshThresholdDays: number;    // Days before reminder appears (for manual mode)
     lastPublishedDate?: string;      // ISO string - when last updated
 
+    // Community share surface: also send this campaign's APR to the author's
+    // My Share page on the community website. It arrives private there; the
+    // author activates public display on the website (never from the plugin).
+    sendToCommunity?: boolean;
+
     // Output
     exportPath: string;              // Where to save the exported report for this campaign
     exportFormat?: AprExportFormat;  // Campaign export format (PNG recommended, SVG optional for web embeds)

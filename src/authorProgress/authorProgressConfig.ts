@@ -417,6 +417,7 @@ function migrateCampaign(
             description: asString(record.description),
             isActive: asBoolean(record.isActive, true),
             updateFrequency,
+            sendToCommunity: asBoolean(record.sendToCommunity, false),
             refreshThresholdDays: asNumber(record.refreshThresholdDays, defaults.stalenessThresholdDays),
             lastPublishedDate: asString(record.lastPublishedDate),
             exportPath: asString(record.exportPath ?? record.embedPath) ?? buildCampaignEmbedPath({

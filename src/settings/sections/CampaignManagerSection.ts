@@ -980,6 +980,18 @@ function renderCampaignDetails(
         });
     fitSelectToSelectedLabel(frequencyDropdown.selectEl, { minPx: 72, extraPx: 16 });
 
+    // Community share surface: send this campaign's APR to the website.
+    new Setting(details)
+        .setName('Send to Community')
+        .setDesc('Each publish also sends this progress report to your My Share page on the community website. It stays private there until you activate it on the website.')
+        .addToggle((toggle) => toggle
+            .setValue(campaign.sendToCommunity ?? false)
+            .onChange(async (value) => {
+                if (!plugin.settings.authorProgress?.campaigns) return;
+                plugin.settings.authorProgress.campaigns[index].sendToCommunity = value;
+                await plugin.saveSettings();
+            }));
+
     // Refresh threshold — subordinate to frequency setting (manual only)
     const isManual = !campaign.updateFrequency || campaign.updateFrequency === 'manual';
     const refreshWrap = freqSetting.createDiv({ cls: ['ert-campaign-frequency-setting__row', 'ert-campaign-frequency-setting__row--subordinate'] });

@@ -11,7 +11,9 @@ import {
     confirmCommunityShareActivation,
     disconnectCommunityShare,
     publishCommunityShareReport,
-    revokeCommunityShareReport
+    revokeCommunityShareReport,
+    syncCommunityProjects,
+    uploadAprToCommunity
 } from './communityShareClient';
 
 function createPluginHarness(options: { failConnectionSecretStorage?: boolean } = {}) {
@@ -278,5 +280,91 @@ describe('Community Share activation client', () => {
         expect(plugin.settings.communityShare.connection.secretId).toBeUndefined();
         expect(plugin.settings.communityShare.publishHistory.at(-1)?.action).toBe('disconnect');
         expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
+    });
+
+    it('sends the campaign APR to the community site with the connection secret', async () => {
+        const { plugin, secrets } = createPluginHarness();
+        vi.clearAllMocks();
+        const settings = plugin.settings.communityShare;
+        settings.enabled = true;
+        settings.connection = {
+            status: 'connected',
+            connectionId: 'conn-1',
+            profileId: 'profile-1',
+            projectId: 'project-1',
+            secretId: 'rt.community-share.connection-secret'
+        };
+        secrets.set('rt-community-share-connection-secret', 'rtcs_current-secret');
+
+        const mockedRequestUrl = vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
+            status: 200,
+            text: JSON.stringify({
+                ok: true,
+                status: 'private',
+                teaser_level: 'ring',
+                public_url: null,
+                updated_at: '2026-07-04T12:00:00.000Z'
+            })
+        } as never);
+
+        const result = await uploadAprToCommunity(plugin as never, {
+            svg: '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+            width: 480,
+            height: 480,
+            teaserLevel: 'ring',
+            campaignLabel: 'Newsletter'
+        });
+
+        const request = mockedRequestUrl.mock.calls[0]?.[0] as { body: string; url: string };
+        const body = JSON.parse(request.body) as Record<string, unknown>;
+        expect(request.url).toContain('/community-apr-upload');
+        expect(body.current_secret).toBe('rtcs_current-secret');
+        expect(body.project_id).toBe('project-1');
+        expect(body.teaser_level).toBe('ring');
+        expect(body.campaign_label).toBe('Newsletter');
+        expect(result.status).toBe('private');
+    });
+
+    it('syncs Book Manager books as private community project shells', async () => {
+        const { plugin, secrets } = createPluginHarness();
+        vi.clearAllMocks();
+        const settings = plugin.settings.communityShare;
+        settings.enabled = true;
+        settings.connection = {
+            status: 'connected',
+            connectionId: 'conn-1',
+            profileId: 'profile-1',
+            projectId: 'project-1',
+            secretId: 'rt.community-share.connection-secret'
+        };
+        secrets.set('rt-community-share-connection-secret', 'rtcs_current-secret');
+        (plugin.settings as { books?: unknown }).books = [
+            { id: 'book-1', title: 'Private Draft Title', publicLabel: 'Public Title', publicDescription: 'A public logline.' },
+            { id: 'book-2', title: 'Second Book' }
+        ];
+
+        const mockedRequestUrl = vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
+            status: 200,
+            text: JSON.stringify({
+                ok: true,
+                created: 2,
+                updated: 0,
+                projects: [
+                    { id: 'p-1', book_key: 'book-1', title: 'Public Title', visibility: 'private' },
+                    { id: 'p-2', book_key: 'book-2', title: 'Second Book', visibility: 'private' }
+                ]
+            })
+        } as never);
+
+        const result = await syncCommunityProjects(plugin as never);
+
+        const request = mockedRequestUrl.mock.calls[0]?.[0] as { body: string; url: string };
+        const body = JSON.parse(request.body) as { projects: Array<Record<string, unknown>> };
+        expect(request.url).toContain('/community-project-sync');
+        expect(body.projects[0]).toEqual({ book_key: 'book-1', title: 'Public Title', logline: 'A public logline.' });
+        // The public shell uses publicLabel, never the private working title.
+        expect(JSON.stringify(body)).not.toContain('Private Draft Title');
+        expect(body.projects[1].title).toBe('Second Book');
+        expect(result.created).toBe(2);
     });
 });

@@ -9,11 +9,13 @@ import {
 } from '../../communityShare/communityShareSettings';
 import {
     CommunityShareError,
+    beginCommunitySharing,
     confirmCommunityShareActivation,
     deleteCommunityShareReport,
     disconnectCommunityShare,
-    publishCommunityShareReport,
-    revokeCommunityShareReport
+    pauseCommunitySharing,
+    revokeCommunityShareReport,
+    syncCommunityShareIfDue
 } from '../../communityShare/communityShareClient';
 import { buildCommunitySharePreview } from '../../communityShare/communitySharePreview';
 import type { CommunityShareFieldKey, CommunityShareSettings } from '../../types/settings';
@@ -114,7 +116,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     const isConnected = settings.connection.status === 'connected';
     const mode = deriveCommunityShareMode(settings);
     const selectedFields = getSelectedFieldLabels(settings);
-    const hasPublishedReport = settings.publishHistory.some(entry => entry.action === 'publish' && entry.status === 'success' && Boolean(entry.publishId));
+    const hasPublishedReport = settings.publishHistory.some(entry => (entry.action === 'publish' || entry.action === 'sync') && entry.status === 'success' && Boolean(entry.publishId));
 
     const section = containerEl.createDiv({
         cls: `${ERT_CLASSES.ROOT} ${ERT_CLASSES.STACK}`
@@ -166,7 +168,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     });
     hero.createEl('p', {
         cls: `${ERT_CLASSES.SECTION_DESC} ert-hero-subtitle`,
-        text: 'Show your author profile, show your books, and optionally share progress summaries. Review the complete preview, then publish.'
+        text: 'Show your author profile, show your books, and optionally share progress summaries. Review the complete preview, then begin sharing.'
     });
 
     const heroFeatures = hero.createDiv({
@@ -296,7 +298,17 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
             dropdown.addOption('profile_books', MODE_LABELS.profile_books);
             dropdown.addOption('progress', MODE_LABELS.progress);
             dropdown.setValue(mode);
-            dropdown.onChange(value => save(buildCommunityShareModeUpdate(value as CommunityShareMode)));
+            dropdown.onChange(value => {
+                const nextMode = value as CommunityShareMode;
+                const update = buildCommunityShareModeUpdate(nextMode);
+                // Scope changes re-arm the explicit consent step: sharing pauses
+                // until the author begins sharing again at the new level.
+                if (settings.scheduledPublishEnabled && nextMode !== mode) {
+                    update.scheduledPublishEnabled = false;
+                    new Notice('Sharing level changed. Review the preview, then begin sharing again.');
+                }
+                void save(update);
+            });
             fitSelectToSelectedLabel(dropdown.selectEl, { minPx: 112, maxPx: 360, extraPx: 18 });
         });
     sharingRow.descEl.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: MODE_NOTES[mode] });
@@ -405,6 +417,12 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
                 lastError: current.preview.status === 'blocked' ? undefined : current.lastError
             });
             await plugin.saveSettings();
+            // Standing share: if sharing is on and the content changed, push
+            // the refreshed payload before repainting so the card and the
+            // website stay in step.
+            if (current.scheduledPublishEnabled) {
+                await syncCommunityShareIfDue(plugin);
+            }
             rerender();
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Could not build the complete preview.';
@@ -426,58 +444,74 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
 
     const actionCard = section.createDiv({ cls: ERT_CLASSES.STACK });
     const actionHeading = new Setting(actionCard)
-        .setName('Publish and safety')
+        .setName('Sharing and safety')
         .setHeading()
-        .setDesc('Connect this vault and choose what you share to make publishing available.');
+        .setDesc('Begin sharing to put your selected level on the community site and keep it current automatically. Pause, revoke, or disconnect anytime.');
     addHeadingIcon(actionHeading, 'shield-check');
     applyErtHeaderLayout(actionHeading);
-    const canPublish = mode !== 'private'
+    const sharingOn = settings.scheduledPublishEnabled;
+    const canBegin = mode !== 'private'
         && isConnected
         && settings.audience === 'public'
         && settings.tier >= 1
         && settings.tier <= 4
         && hasReadyPreview(settings)
         && selectedFields.length > 0;
+    const lastSynced = settings.connection.lastSyncedAt
+        ? formatGeneratedAt(settings.connection.lastSyncedAt)
+        : null;
 
     new Setting(actionCard)
-        .setName('Publish report')
-        .setDesc(canPublish ? 'Ready to publish.' : 'Next steps: connect this vault and pick a sharing level above.')
-        .addButton(button => button
-            .setButtonText('Publish report')
-            .setCta()
-            .setDisabled(!canPublish)
-            .onClick(async () => {
-                button.setDisabled(true);
-                button.setButtonText('Publishing...');
-                try {
-                    const result = await publishCommunityShareReport(plugin);
-                    new Notice(`Community report published: ${result.public_slug}`);
-                    containerEl.empty();
-                    renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
-                } catch (error) {
-                    const message = error instanceof CommunityShareError
-                        ? error.message
-                        : 'Community publish failed. Review the Complete Preview and try again.';
-                    const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
-                    plugin.settings.communityShare = normalizeCommunityShareSettings({
-                        ...current,
-                        lastError: message
+        .setDesc(sharingOn
+            ? `Sharing is on and kept current automatically.${lastSynced ? ` Last synced ${lastSynced}.` : ''}`
+            : canBegin
+                ? 'Sharing is off. Nothing leaves this vault until you begin sharing.'
+                : 'Next steps: connect this vault and pick a sharing level above, then begin sharing.')
+        .addButton(button => {
+            if (sharingOn) {
+                button
+                    .setButtonText('Pause sharing')
+                    .onClick(async () => {
+                        button.setDisabled(true);
+                        await pauseCommunitySharing(plugin);
+                        new Notice('Sharing paused. What you already shared stays visible until you revoke it.');
+                        containerEl.empty();
+                        renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
                     });
-                    void plugin.saveSettings();
-                    new Notice(message);
-                    button.setButtonText('Publish report');
-                    button.setDisabled(!canPublish);
-                }
-            }));
+            } else {
+                button
+                    .setButtonText('Begin sharing')
+                    .setCta()
+                    .setDisabled(!canBegin)
+                    .onClick(async () => {
+                        button.setDisabled(true);
+                        button.setButtonText('Starting...');
+                        try {
+                            await beginCommunitySharing(plugin);
+                            new Notice('Community sharing is on. Your page stays current automatically.');
+                            containerEl.empty();
+                            renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
+                        } catch (error) {
+                            const message = error instanceof CommunityShareError
+                                ? error.message
+                                : 'Community sharing failed. Review the complete preview and try again.';
+                            const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
+                            plugin.settings.communityShare = normalizeCommunityShareSettings({
+                                ...current,
+                                lastError: message
+                            });
+                            void plugin.saveSettings();
+                            new Notice(message);
+                            button.setButtonText('Begin sharing');
+                            button.setDisabled(!canBegin);
+                        }
+                    });
+            }
+        });
 
     new Setting(actionCard)
-        .setName('Pause public report')
-        .setDesc('Temporarily hides the public report. Your settings stay in place so you can resume anytime.')
-        .addButton(button => button.setButtonText('Pause').setDisabled(true));
-
-    new Setting(actionCard)
-        .setName('Revoke public report')
-        .setDesc('Takes down the current public report. Your connection stays active so you can publish again later.')
+        .setName('Revoke sharing')
+        .setDesc('Takes down what you have shared from the website. Your connection stays in place, so you can begin sharing again later.')
         .addButton(button => button
             .setButtonText('Revoke')
             .setDisabled(!isConnected || !hasPublishedReport)
@@ -486,11 +520,11 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
                 button.setButtonText('Revoking...');
                 try {
                     await revokeCommunityShareReport(plugin);
-                    new Notice('Community report revoked.');
+                    new Notice('Sharing revoked. Nothing is shared on the website now.');
                     containerEl.empty();
                     renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
                 } catch (error) {
-                    const message = error instanceof CommunityShareError ? error.message : 'Could not revoke the Community report.';
+                    const message = error instanceof CommunityShareError ? error.message : 'Could not revoke sharing.';
                     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
                     plugin.settings.communityShare = normalizeCommunityShareSettings({ ...current, lastError: message });
                     void plugin.saveSettings();
@@ -501,8 +535,8 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
             }));
 
     new Setting(actionCard)
-        .setName('Delete shared report data')
-        .setDesc('Deletes the report payload from the website. Audit metadata remains for your records.')
+        .setName('Delete shared data')
+        .setDesc('Deletes your shared data from the website. Audit metadata remains for your records.')
         .addButton(button => button
             .setButtonText('Delete shared data')
             .setDisabled(!isConnected || !hasPublishedReport)

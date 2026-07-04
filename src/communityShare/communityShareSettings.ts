@@ -168,7 +168,9 @@ export function normalizeCommunityShareSettings(input?: Partial<CommunityShareSe
         tier: coerceTier(input?.tier),
         audience: coerceAudience(input?.audience),
         manualPublishEnabled: input?.manualPublishEnabled !== false,
-        scheduledPublishEnabled: false,
+        // Standing share state: true while the author has sharing turned on
+        // (set by Begin sharing, cleared by Pause/Revoke/Delete/Disconnect).
+        scheduledPublishEnabled: input?.scheduledPublishEnabled === true,
         workingNowEnabled: false,
         fieldPolicy,
         redactionPolicy: input?.redactionPolicy && typeof input.redactionPolicy === 'object' ? input.redactionPolicy : {},
@@ -181,6 +183,7 @@ export function normalizeCommunityShareSettings(input?: Partial<CommunityShareSe
             publicSlug: connection.publicSlug,
             connectedAt: connection.connectedAt,
             lastSyncedAt: connection.lastSyncedAt,
+            lastSyncedPayloadHash: connection.lastSyncedPayloadHash,
             disconnectedAt: connection.disconnectedAt,
             secretId: connection.secretId
         },

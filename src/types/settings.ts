@@ -903,6 +903,8 @@ export interface CommunityShareConnectionSettings {
     publicSlug?: string;
     connectedAt?: string;
     lastSyncedAt?: string;
+    /** Payload hash of the last successful publish/sync; automatic syncs skip when unchanged. */
+    lastSyncedPayloadHash?: string;
     disconnectedAt?: string;
     secretId?: string;
 }
@@ -918,7 +920,7 @@ export interface CommunitySharePreviewState {
 
 export interface CommunitySharePublishHistoryEntry {
     id: string;
-    action: 'preview_generated' | 'publish' | 'revoke' | 'delete' | 'disconnect' | 'pause' | 'resume';
+    action: 'preview_generated' | 'publish' | 'sync' | 'revoke' | 'delete' | 'disconnect' | 'pause' | 'resume';
     status: 'success' | 'failed' | 'blocked';
     at: string;
     message?: string;

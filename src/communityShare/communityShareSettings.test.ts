@@ -22,7 +22,7 @@ describe('Community Share settings', () => {
         expect(Object.values(settings.fieldPolicy).every(value => value === false)).toBe(true);
     });
 
-    it('normalizes future launch fields back off', () => {
+    it('normalizes future launch fields back off and keeps the standing share state', () => {
         const settings = normalizeCommunityShareSettings({
             enabled: true,
             tier: 5,
@@ -39,10 +39,17 @@ describe('Community Share settings', () => {
         expect(settings.enabled).toBe(true);
         expect(settings.tier).toBe(5);
         expect(settings.audience).toBe('followers');
-        expect(settings.scheduledPublishEnabled).toBe(false);
+        // Standing share (contract amendment 2026-07-03): scheduledPublishEnabled
+        // is the persisted sharing-on state and must round-trip.
+        expect(settings.scheduledPublishEnabled).toBe(true);
         expect(settings.workingNowEnabled).toBe(false);
         expect(settings.fieldPolicy['project.title']).toBe(true);
         expect(settings.fieldPolicy['activity.exact_session_timestamps']).toBe(true);
+    });
+
+    it('defaults the standing share state off when absent', () => {
+        const settings = normalizeCommunityShareSettings({ enabled: true, tier: 2 });
+        expect(settings.scheduledPublishEnabled).toBe(false);
     });
 
     it('clips publish history to a small local audit tail', () => {

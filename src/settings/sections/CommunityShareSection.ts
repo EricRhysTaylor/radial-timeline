@@ -61,8 +61,8 @@ const MODE_LABELS: Record<CommunityShareMode, string> = {
 
 const MODE_NOTES: Record<CommunityShareMode, string> = {
     private: 'Nothing is shared. Your connection stays in place for when you are ready.',
-    profile_books: 'Shows your public author profile and book cards so fellow authors can see what you are working on.',
-    progress: 'Also shares progress summaries: writing days, words, minutes, streak, and mode mix as rounded weekly aggregates. Raw sessions stay in this vault.'
+    profile_books: 'Shows your public author profile and book projects so fellow authors can see what you are working on.',
+    progress: 'Manage your public profile and book projects on the website. Plus shares progress summaries: writing days, words, minutes, streak.'
 };
 
 function getCommunitySettings(plugin: RadialTimelinePlugin): CommunityShareSettings {
@@ -290,8 +290,8 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     setIcon(profileLink, 'external-link');
     applyErtHeaderLayout(sharingHeading);
 
-    const sharingRow = new Setting(sharingSection)
-        .setDesc('Manage your public profile and book cards on the website.')
+    new Setting(sharingSection)
+        .setDesc(MODE_NOTES[mode])
         .addDropdown(dropdown => {
             dropdown.selectEl.addClass('ert-input', 'ert-input--fit-selected');
             dropdown.addOption('private', MODE_LABELS.private);
@@ -311,7 +311,6 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
             });
             fitSelectToSelectedLabel(dropdown.selectEl, { minPx: 112, maxPx: 360, extraPx: 18 });
         });
-    sharingRow.descEl.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: MODE_NOTES[mode] });
 
     const previewFrame = sharingSection.createDiv({ cls: `${ERT_CLASSES.PREVIEW_FRAME} ${ERT_CLASSES.STACK} ert-previewFrame--flush ert-communityPreview` });
     const addDivider = () => previewFrame.createDiv({ cls: `${ERT_CLASSES.DIVIDER} ert-divider--previewFrame ert-communityPreview__divider` });

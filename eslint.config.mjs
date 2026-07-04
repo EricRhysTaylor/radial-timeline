@@ -40,6 +40,7 @@ const RT_BRANDS = [
   'Export folder',
   'Brief + Log',
   'Clear chapter',
+  'My Share',
 ];
 
 const RT_ACRONYMS = [...DEFAULT_ACRONYMS, 'RT', 'APR', 'POV', 'BETA'];
@@ -52,6 +53,7 @@ const RT_IGNORE_WORDS = [
   'Pro', 'Core', 'Books', 'Publish', 'Settings',
   'Zero', 'Status', 'Complete', 'Due', 'When', 'Matter', 'Working',
   'StoryLine', 'PDFs', 'IDs',
+  'Community',
 ];
 
 // Whole strings the rule should skip: URL/model-id/date/color placeholders,

@@ -230,6 +230,6 @@ export async function buildCommunitySharePreview(plugin: RadialTimelinePlugin): 
         reportPeriod,
         payloadHash,
         previewHash,
-        summary: `${included} public field${included === 1 ? '' : 's'} ready for manual review.`
+        summary: `${included} public field${included === 1 ? '' : 's'} ready for review.`
     };
 }

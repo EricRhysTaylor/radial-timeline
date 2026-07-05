@@ -242,7 +242,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         const connectedAt = formatConnectedAt(settings.connection.connectedAt);
         const statusRow = new Setting(activationSection)
             .setDesc(connectedAt
-                ? `Linked to your Community profile. Connected ${connectedAt}.`
+                ? `Linked to your Community profile since ${connectedAt}. Data syncs are shown under Sharing and safety below.`
                 : 'Linked to your Community profile.');
         const replacementContainer = activationSection.createDiv({ cls: 'ert-hidden' });
         statusRow.addButton(button => {

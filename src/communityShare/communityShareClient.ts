@@ -2,7 +2,7 @@ import { requestUrl } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { deleteSecret, getSecret, isSecretStorageAvailable, setSecret } from '../ai/credentials/secretStorage';
 import { normalizeCommunityShareSettings } from './communityShareSettings';
-import { COMMUNITY_SHARE_REPORT_SCHEMA_VERSION, buildCommunitySharePreview } from './communitySharePreview';
+import { COMMUNITY_SHARE_REPORT_SCHEMA_VERSION, buildCommunityDailyEntries, buildCommunitySharePreview } from './communitySharePreview';
 import type { CommunitySharePublishHistoryEntry, CommunityShareSettings } from '../types/settings';
 
 const FUNCTIONS_BASE_URL = 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/functions/v1';
@@ -502,10 +502,12 @@ export async function syncCommunityProjects(plugin: RadialTimelinePlugin): Promi
         body: JSON.stringify({
             connection_id: connectionId,
             current_secret: currentSecret,
-            projects: books.map((book) => ({
+            projects: books.map((book, index) => ({
                 book_key: book.id,
                 title: (book.publicLabel || book.title || 'Untitled book').slice(0, 140),
-                logline: book.publicDescription ? book.publicDescription.slice(0, 240) : undefined
+                logline: book.publicDescription ? book.publicDescription.slice(0, 240) : undefined,
+                // Book Manager array order — the website renders books in this order.
+                order_index: index
             }))
         }),
         throw: false
@@ -547,6 +549,9 @@ export async function beginCommunitySharing(plugin: RadialTimelinePlugin): Promi
         scheduledPublishEnabled: true
     });
     await plugin.saveSettings();
+    // Companion daily-aggregate sync rides along with the successful publish;
+    // it never blocks or fails the publish itself.
+    await syncCommunityDailyIfEligible(plugin);
     return result;
 }
 
@@ -583,6 +588,83 @@ const SYNC_STOP_CODES = new Set([
     'sensitive_field_not_public'
 ]);
 
+interface DailySyncSuccess {
+    ok: true;
+}
+
+function isDailySyncSuccess(value: unknown): value is DailySyncSuccess {
+    return (value as Partial<DailySyncSuccess>)?.ok === true;
+}
+
+/**
+ * Fire-and-forget daily-activity sync: sends the last two weeks of per-day
+ * aggregates (community_daily) so the author page can show weekly stats.
+ * Consent-consistent — runs only while the standing share is active at the
+ * progress level (public, tier 4); private, paused, or revoked shares never
+ * send. Silent by design: a standing-authorization failure stops scheduled
+ * sharing (same auto-stop rule as the report sync); transient failures only
+ * log to the console, never Notices, never repeated history entries.
+ */
+export async function syncCommunityDailyIfEligible(plugin: RadialTimelinePlugin): Promise<void> {
+    const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
+    if (!current.enabled || current.connection.status !== 'connected' || !current.connection.connectionId || !current.connection.secretId) return;
+    if (current.audience !== 'public' || current.tier !== 4) return;
+
+    try {
+        const currentSecret = await getSecret(plugin.app, current.connection.secretId);
+        if (!currentSecret) return;
+
+        const days = await buildCommunityDailyEntries(plugin);
+        if (!days.length) return;
+
+        const response = await requestUrl({
+            url: `${FUNCTIONS_BASE_URL}/community-daily-sync`,
+            method: 'POST',
+            contentType: 'application/json',
+            body: JSON.stringify({
+                connection_id: current.connection.connectionId,
+                current_secret: currentSecret,
+                days
+            }),
+            throw: false
+        });
+
+        const parsed = parseResponseJson(response.text);
+        if (response.status < 200 || response.status >= 300) {
+            const body = parsed as ActivationConfirmError;
+            throw new CommunityShareError(
+                body.error?.code || 'daily_sync_failed',
+                body.error?.message || 'Daily activity sync failed.'
+            );
+        }
+        if (!isDailySyncSuccess(parsed)) {
+            throw new CommunityShareError('invalid_response', 'Daily activity sync returned an unexpected response.');
+        }
+    } catch (error) {
+        const code = error instanceof CommunityShareError ? error.code : 'daily_sync_failed';
+        const message = error instanceof Error ? error.message : 'Daily activity sync failed.';
+        if (SYNC_STOP_CODES.has(code)) {
+            const after = normalizeCommunityShareSettings(plugin.settings.communityShare);
+            const at = new Date().toISOString();
+            plugin.settings.communityShare = normalizeCommunityShareSettings({
+                ...after,
+                scheduledPublishEnabled: false,
+                publishHistory: appendHistory(after, {
+                    id: `daily-sync-${at}`,
+                    action: 'sync',
+                    status: 'failed',
+                    at,
+                    message: `${message} Sharing stopped.`
+                }),
+                lastError: message
+            });
+            await plugin.saveSettings();
+        } else {
+            console.warn('Community daily activity sync failed:', message);
+        }
+    }
+}
+
 /**
  * Standing-share sync: while sharing is on, keep the live report current.
  * Silent by design (no Notices) — outcomes land in settings/history and the
@@ -611,6 +693,9 @@ export async function syncCommunityShareIfDue(plugin: RadialTimelinePlugin): Pro
         });
         await plugin.saveSettings();
         await publishCommunityShareReport(plugin, 'scheduled');
+        // Companion daily-aggregate sync rides along with the successful
+        // report sync; it handles its own failures and never throws.
+        await syncCommunityDailyIfEligible(plugin);
         return 'synced';
     } catch (error) {
         const code = error instanceof CommunityShareError ? error.code : 'sync_failed';

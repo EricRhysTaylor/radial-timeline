@@ -451,6 +451,12 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         if (activityFieldLabels.length) {
             const fieldPills = previewFrame.createDiv({ cls: 'ert-communityPreview__pills' });
             activityFieldLabels.forEach(label => addChip(fieldPills, label));
+            if (mode === 'progress' && settings.tier === 4) {
+                previewFrame.createDiv({
+                    cls: 'ert-communityPreview__note',
+                    text: 'Also shares per-day totals for the last 14 days (minutes, words, sessions, completed scenes by stage, mode mix) so your author page can show weekly stats. Daily aggregates only — never session logs, timestamps, or scene names.'
+                });
+            }
         } else {
             previewFrame.createDiv({
                 cls: 'ert-communityPreview__note',

@@ -13,6 +13,7 @@ import {
     fetchCommunityShareContext,
     publishCommunityShareReport,
     revokeCommunityShareReport,
+    syncCommunityDailyIfEligible,
     syncCommunityProjects,
     uploadAprToCommunity
 } from './communityShareClient';
@@ -363,11 +364,130 @@ describe('Community Share activation client', () => {
         const request = mockedRequestUrl.mock.calls[0]?.[0] as { body: string; url: string };
         const body = JSON.parse(request.body) as { projects: Array<Record<string, unknown>> };
         expect(request.url).toContain('/community-project-sync');
-        expect(body.projects[0]).toEqual({ book_key: 'book-1', title: 'Public Title', logline: 'A public logline.' });
+        expect(body.projects[0]).toEqual({ book_key: 'book-1', title: 'Public Title', logline: 'A public logline.', order_index: 0 });
         // The public shell uses publicLabel, never the private working title.
         expect(JSON.stringify(body)).not.toContain('Private Draft Title');
         expect(body.projects[1].title).toBe('Second Book');
+        // Book Manager array order rides along so the website can mirror it.
+        expect(body.projects[1].order_index).toBe(1);
         expect(result.created).toBe(2);
+    });
+
+    it('sends two weeks of daily aggregates when the standing share is active at the progress level', async () => {
+        const { plugin, secrets } = createPluginHarness();
+        vi.clearAllMocks();
+        const settings = plugin.settings.communityShare;
+        settings.enabled = true;
+        settings.tier = 4;
+        settings.audience = 'public';
+        settings.scheduledPublishEnabled = true;
+        settings.connection = {
+            status: 'connected',
+            connectionId: 'conn-1',
+            profileId: 'profile-1',
+            projectId: 'project-1',
+            secretId: 'rt.community-share.connection-secret'
+        };
+        secrets.set('rt-community-share-connection-secret', 'rtcs_current-secret');
+        const now = new Date();
+        const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        (plugin as { getWritingSessionService: unknown }).getWritingSessionService = () => ({
+            getSettings: () => ({
+                records: [{
+                    id: 'session-1',
+                    mode: 'drafting',
+                    startedAt: `${todayKey}T09:00:00.000Z`,
+                    endedAt: `${todayKey}T10:03:00.000Z`,
+                    sessionDate: todayKey,
+                    elapsedMs: 63 * 60000,
+                    wordsAdded: 1234
+                }]
+            })
+        });
+
+        const mockedRequestUrl = vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
+            status: 200,
+            text: JSON.stringify({ ok: true, upserted: 14 })
+        } as never);
+
+        await syncCommunityDailyIfEligible(plugin as never);
+
+        const request = mockedRequestUrl.mock.calls[0]?.[0] as { body: string; url: string };
+        expect(request.url).toContain('/community-daily-sync');
+        const body = JSON.parse(request.body) as {
+            connection_id: string;
+            current_secret: string;
+            days: Array<Record<string, unknown>>;
+        };
+        expect(body.connection_id).toBe('conn-1');
+        expect(body.current_secret).toBe('rtcs_current-secret');
+        expect(body.days).toHaveLength(14);
+        const todayEntry = body.days.at(-1);
+        expect(todayEntry?.date).toBe(todayKey);
+        expect(todayEntry?.minutes_total).toBe(65);
+        expect(todayEntry?.words_added).toBe(1250);
+        expect(todayEntry?.session_count).toBe(1);
+        expect(todayEntry?.mode_mix).toEqual({ drafting: 100 });
+        expect(todayEntry?.scenes_completed_by_stage).toEqual({ Zero: 0, Author: 0, House: 0, Press: 0 });
+        // Aggregates only — no session ids, paths, or timestamps on the wire.
+        expect(request.body).not.toContain('session-1');
+        expect(request.body).not.toContain('T09:00');
+    });
+
+    it('never sends daily aggregates below the progress sharing level', async () => {
+        const { plugin, secrets } = createPluginHarness();
+        vi.clearAllMocks();
+        const settings = plugin.settings.communityShare;
+        settings.enabled = true;
+        settings.tier = 2;
+        settings.audience = 'public';
+        settings.connection = {
+            status: 'connected',
+            connectionId: 'conn-1',
+            profileId: 'profile-1',
+            projectId: 'project-1',
+            secretId: 'rt.community-share.connection-secret'
+        };
+        secrets.set('rt-community-share-connection-secret', 'rtcs_current-secret');
+        const mockedRequestUrl = vi.spyOn(obsidian, 'requestUrl');
+
+        await syncCommunityDailyIfEligible(plugin as never);
+
+        expect(mockedRequestUrl).not.toHaveBeenCalled();
+    });
+
+    it('stops scheduled sharing when the daily sync hits a standing-authorization failure', async () => {
+        const { plugin, secrets } = createPluginHarness();
+        vi.clearAllMocks();
+        const settings = plugin.settings.communityShare;
+        settings.enabled = true;
+        settings.tier = 4;
+        settings.audience = 'public';
+        settings.scheduledPublishEnabled = true;
+        settings.connection = {
+            status: 'connected',
+            connectionId: 'conn-1',
+            profileId: 'profile-1',
+            projectId: 'project-1',
+            secretId: 'rt.community-share.connection-secret'
+        };
+        secrets.set('rt-community-share-connection-secret', 'rtcs_current-secret');
+        (plugin as { getWritingSessionService: unknown }).getWritingSessionService = () => ({
+            getSettings: () => ({ records: [] })
+        });
+        vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
+            status: 403,
+            text: JSON.stringify({ error: { code: 'connection_not_active', message: 'Share is not active.' } })
+        } as never);
+
+        await expect(syncCommunityDailyIfEligible(plugin as never)).resolves.toBeUndefined();
+
+        expect(plugin.settings.communityShare.scheduledPublishEnabled).toBe(false);
+        expect(plugin.settings.communityShare.publishHistory.at(-1)).toMatchObject({
+            action: 'sync',
+            status: 'failed'
+        });
+        expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
     });
 
     it('reads the canonical website share context with the connection secret', async () => {

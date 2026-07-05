@@ -5,7 +5,7 @@ import type {
     CommunityShareSettings,
     WritingSessionMode
 } from '../types/settings';
-import type { WritingRangeStats } from '../services/WritingSessionService';
+import { buildDailyWritingStats, type WritingRangeStats } from '../services/WritingSessionService';
 import type { TimelineItem } from '../types';
 import { buildProgressSnapshot } from '../progress/progressSnapshot';
 import { STAGE_ORDER, type Stage } from '../utils/constants';
@@ -169,6 +169,54 @@ function shouldIncludeField(key: CommunityShareFieldKey, settings: CommunityShar
         && settings.tier >= meta.tier
         && meta.tier <= 4
         && meta.sensitive !== true;
+}
+
+/** One day of shared community activity — aggregates only, mirroring community_daily. */
+export interface CommunityDailyEntry {
+    date: string;
+    minutes_total: number;
+    session_count: number;
+    words_added: number;
+    scenes_completed_by_stage: Record<Stage, number>;
+    mode_mix: Record<string, number>;
+}
+
+/** Days of daily aggregates sent per sync (server caps at 30). */
+export const COMMUNITY_DAILY_WINDOW_DAYS = 14;
+
+/**
+ * Per-day activity aggregates for the community website's daily table.
+ * Reuses buildDailyWritingStats — the canonical per-day computation the
+ * plugin's own stats views render from — over the same vault-wide session
+ * records and scene-completion events the weekly report payload uses, so
+ * the shared numbers can never drift from what the plugin shows locally.
+ *
+ * Redaction matches the tier-4 report field policy exactly: minutes rounded
+ * to 5, words rounded to 50, mode mix as coarse percentages, completed
+ * scenes as per-stage counts. Aggregates only — no session rows, no
+ * timestamps, no scene names or paths ever leave the vault.
+ */
+export async function buildCommunityDailyEntries(
+    plugin: RadialTimelinePlugin,
+    days: number = COMMUNITY_DAILY_WINDOW_DAYS
+): Promise<CommunityDailyEntry[]> {
+    const sessions = plugin.getWritingSessionService().getSettings().records;
+    const scenes = await plugin.getSceneData();
+    const modeKeys: WritingSessionMode[] = ['drafting', 'revising', 'editing', 'planning'];
+    const entries: CommunityDailyEntry[] = [];
+    for (let offset = days - 1; offset >= 0; offset--) {
+        const date = localDateString(shiftDate(new Date(), -offset));
+        const stats = buildDailyWritingStats({ date, sessions, scenes });
+        entries.push({
+            date,
+            minutes_total: roundTo(stats.minutesLogged, 5),
+            session_count: stats.sessionsCompleted,
+            words_added: roundTo(stats.wordsDrafted, 50),
+            scenes_completed_by_stage: stats.scenesCompletedByStage,
+            mode_mix: percentMix(Object.fromEntries(modeKeys.map(mode => [mode, stats.minutesByMode[mode] ?? 0])))
+        });
+    }
+    return entries;
 }
 
 export async function buildCommunitySharePreview(plugin: RadialTimelinePlugin): Promise<CommunitySharePreviewBuild> {

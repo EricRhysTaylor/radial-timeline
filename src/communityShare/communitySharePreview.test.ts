@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildDefaultCommunityShareSettings } from './communityShareSettings';
-import { buildCommunitySharePreview } from './communitySharePreview';
+import { COMMUNITY_DAILY_WINDOW_DAYS, buildCommunityDailyEntries, buildCommunitySharePreview } from './communitySharePreview';
 
 describe('Community Share preview builder', () => {
     it('builds a public aggregate payload without private titles or sensitive fields', async () => {
@@ -133,5 +133,83 @@ describe('Community Share preview builder', () => {
 
         expect(preview.payload['activity.stage_mix']).toEqual({ Zero: 2, Author: 1, House: 0, Press: 0 });
         expect(preview.payload['activity.scenes_completed_by_stage']).toEqual({ Zero: 0, Author: 0, House: 0, Press: 0 });
+    });
+});
+
+describe('Community daily activity aggregates', () => {
+    const localKey = (date: Date) => {
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${date.getFullYear()}-${month}-${day}`;
+    };
+
+    it('builds per-day aggregates with the report redaction policy and no private detail', async () => {
+        const now = new Date();
+        const todayKey = localKey(now);
+        const yesterdayKey = localKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
+
+        const plugin = {
+            getWritingSessionService: () => ({
+                getSettings: () => ({
+                    records: [
+                        {
+                            id: 's1',
+                            mode: 'drafting',
+                            startedAt: `${todayKey}T09:00:00.000Z`,
+                            endedAt: `${todayKey}T10:03:00.000Z`,
+                            sessionDate: todayKey,
+                            elapsedMs: 63 * 60000,
+                            wordsAdded: 1234,
+                            scenePaths: ['Books/Private Path/S1.md']
+                        },
+                        {
+                            id: 's2',
+                            mode: 'revising',
+                            startedAt: `${yesterdayKey}T20:00:00.000Z`,
+                            endedAt: `${yesterdayKey}T20:30:00.000Z`,
+                            sessionDate: yesterdayKey,
+                            elapsedMs: 30 * 60000
+                        }
+                    ]
+                })
+            }),
+            getSceneData: async () => [
+                {
+                    date: '',
+                    path: 'Books/Private Path/S3.md',
+                    title: 'Secret Scene Title',
+                    itemType: 'Scene',
+                    'Publish Stage': 'Author',
+                    status: 'Completed',
+                    due: todayKey
+                }
+            ]
+        };
+
+        const entries = await buildCommunityDailyEntries(plugin as never);
+
+        expect(entries).toHaveLength(COMMUNITY_DAILY_WINDOW_DAYS);
+        const todayEntry = entries.at(-1);
+        expect(todayEntry?.date).toBe(todayKey);
+        // Same rounding as the weekly report fields: minutes to 5, words to 50.
+        expect(todayEntry?.minutes_total).toBe(65);
+        expect(todayEntry?.words_added).toBe(1250);
+        expect(todayEntry?.session_count).toBe(1);
+        expect(todayEntry?.mode_mix).toEqual({ drafting: 100 });
+        expect(todayEntry?.scenes_completed_by_stage).toEqual({ Zero: 0, Author: 1, House: 0, Press: 0 });
+
+        const yesterdayEntry = entries.at(-2);
+        expect(yesterdayEntry?.date).toBe(yesterdayKey);
+        expect(yesterdayEntry?.minutes_total).toBe(30);
+        // Revising minutes never count as drafted words.
+        expect(yesterdayEntry?.words_added).toBe(0);
+        expect(yesterdayEntry?.mode_mix).toEqual({ revising: 100 });
+
+        // Aggregates only: no scene names, paths, or timestamps leave the vault.
+        const serialized = JSON.stringify(entries);
+        expect(serialized).not.toContain('Secret Scene Title');
+        expect(serialized).not.toContain('Private Path');
+        expect(serialized).not.toContain('T09:00');
+        expect(serialized).not.toContain('s1');
     });
 });

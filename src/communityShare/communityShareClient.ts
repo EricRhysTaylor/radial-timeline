@@ -343,6 +343,33 @@ interface ProjectSyncSuccess {
     projects: Array<{ id: string; book_key: string; title: string; visibility: string }>;
 }
 
+export interface CommunityShareContextProfile {
+    handle: string | null;
+    display_name: string | null;
+    avatar_url: string | null;
+    member_role: string | null;
+}
+
+export interface CommunityShareContextProject {
+    id: string;
+    plugin_book_key: string | null;
+    title: string;
+    logline: string | null;
+    status: string | null;
+    genre_l1: string | null;
+    genre_l2: string | null;
+    genre_l3: string | null;
+    custom_genre_label: string | null;
+    visibility: string;
+}
+
+export interface CommunityShareContext {
+    ok: true;
+    connected_project_id: string | null;
+    profile: CommunityShareContextProfile | null;
+    projects: CommunityShareContextProject[];
+}
+
 function isAprUploadSuccess(value: unknown): value is AprUploadSuccess {
     const v = value as AprUploadSuccess;
     return !!v && v.ok === true && (v.status === 'private' || v.status === 'active');
@@ -350,6 +377,11 @@ function isAprUploadSuccess(value: unknown): value is AprUploadSuccess {
 
 function isProjectSyncSuccess(value: unknown): value is ProjectSyncSuccess {
     const v = value as ProjectSyncSuccess;
+    return !!v && v.ok === true && Array.isArray(v.projects);
+}
+
+function isCommunityShareContext(value: unknown): value is CommunityShareContext {
+    const v = value as CommunityShareContext;
     return !!v && v.ok === true && Array.isArray(v.projects);
 }
 
@@ -411,6 +443,41 @@ export async function uploadAprToCommunity(
     }
     if (!isAprUploadSuccess(parsed)) {
         throw new CommunityShareError('invalid_response', 'The progress report upload returned an unexpected response.');
+    }
+    return parsed;
+}
+
+/**
+ * Read the canonical website-managed share identity a publish attaches to:
+ * profile identity plus each project shell's public fields (title, logline,
+ * status, genre path, custom genre label, visibility). READ-only — the
+ * Complete Preview renders these as "From your website profile" instead of
+ * plugin-local stand-ins.
+ */
+export async function fetchCommunityShareContext(plugin: RadialTimelinePlugin): Promise<CommunityShareContext> {
+    const { connectionId, currentSecret } = await requireActiveConnection(plugin);
+
+    const response = await requestUrl({
+        url: `${FUNCTIONS_BASE_URL}/community-share-context`,
+        method: 'POST',
+        contentType: 'application/json',
+        body: JSON.stringify({
+            connection_id: connectionId,
+            current_secret: currentSecret
+        }),
+        throw: false
+    });
+
+    const parsed = parseResponseJson(response.text);
+    if (response.status < 200 || response.status >= 300) {
+        const body = parsed as ActivationConfirmError;
+        throw new CommunityShareError(
+            body.error?.code || 'share_context_failed',
+            body.error?.message || 'Could not load your public profile from the website.'
+        );
+    }
+    if (!isCommunityShareContext(parsed)) {
+        throw new CommunityShareError('invalid_response', 'The website profile lookup returned an unexpected response.');
     }
     return parsed;
 }

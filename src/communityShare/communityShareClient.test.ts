@@ -10,6 +10,7 @@ import { buildCommunitySharePreview } from './communitySharePreview';
 import {
     confirmCommunityShareActivation,
     disconnectCommunityShare,
+    fetchCommunityShareContext,
     publishCommunityShareReport,
     revokeCommunityShareReport,
     syncCommunityProjects,
@@ -366,5 +367,74 @@ describe('Community Share activation client', () => {
         expect(JSON.stringify(body)).not.toContain('Private Draft Title');
         expect(body.projects[1].title).toBe('Second Book');
         expect(result.created).toBe(2);
+    });
+
+    it('reads the canonical website share context with the connection secret', async () => {
+        const { plugin, secrets } = createPluginHarness();
+        vi.clearAllMocks();
+        const settings = plugin.settings.communityShare;
+        settings.enabled = true;
+        settings.connection = {
+            status: 'connected',
+            connectionId: 'conn-1',
+            profileId: 'profile-1',
+            projectId: 'project-1',
+            secretId: 'rt.community-share.connection-secret'
+        };
+        secrets.set('rt-community-share-connection-secret', 'rtcs_current-secret');
+
+        const mockedRequestUrl = vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
+            status: 200,
+            text: JSON.stringify({
+                ok: true,
+                connected_project_id: 'project-1',
+                profile: { handle: 'eric', display_name: 'Eric', avatar_url: null, member_role: 'author' },
+                projects: [{
+                    id: 'project-1',
+                    plugin_book_key: 'book-1',
+                    title: 'Website Canonical Title',
+                    logline: 'Website logline.',
+                    status: 'querying',
+                    genre_l1: 'Fiction',
+                    genre_l2: 'Science Fiction',
+                    genre_l3: null,
+                    custom_genre_label: 'Solarpunk noir',
+                    visibility: 'public'
+                }]
+            })
+        } as never);
+
+        const result = await fetchCommunityShareContext(plugin as never);
+
+        const request = mockedRequestUrl.mock.calls[0]?.[0] as { body: string; url: string };
+        const body = JSON.parse(request.body) as Record<string, unknown>;
+        expect(request.url).toContain('/community-share-context');
+        expect(body).toEqual({ connection_id: 'conn-1', current_secret: 'rtcs_current-secret' });
+        expect(result.profile?.display_name).toBe('Eric');
+        expect(result.projects[0]?.title).toBe('Website Canonical Title');
+        expect(result.projects[0]?.status).toBe('querying');
+    });
+
+    it('surfaces a clear error when the website context cannot be loaded', async () => {
+        const { plugin, secrets } = createPluginHarness();
+        vi.clearAllMocks();
+        const settings = plugin.settings.communityShare;
+        settings.enabled = true;
+        settings.connection = {
+            status: 'connected',
+            connectionId: 'conn-1',
+            profileId: 'profile-1',
+            projectId: 'project-1',
+            secretId: 'rt.community-share.connection-secret'
+        };
+        secrets.set('rt-community-share-connection-secret', 'rtcs_current-secret');
+        vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
+            status: 401,
+            text: JSON.stringify({ error: { code: 'connection_secret_invalid', message: 'The current connection secret is not valid.' } })
+        } as never);
+
+        await expect(fetchCommunityShareContext(plugin as never))
+            .rejects
+            .toMatchObject({ code: 'connection_secret_invalid' });
     });
 });

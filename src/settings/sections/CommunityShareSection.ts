@@ -13,9 +13,12 @@ import {
     confirmCommunityShareActivation,
     deleteCommunityShareReport,
     disconnectCommunityShare,
+    fetchCommunityShareContext,
     pauseCommunitySharing,
     revokeCommunityShareReport,
-    syncCommunityShareIfDue
+    syncCommunityShareIfDue,
+    type CommunityShareContext,
+    type CommunityShareContextProject
 } from '../../communityShare/communityShareClient';
 import { buildCommunitySharePreview } from '../../communityShare/communitySharePreview';
 import type { CommunityShareFieldKey, CommunityShareSettings } from '../../types/settings';
@@ -64,6 +67,49 @@ const MODE_NOTES: Record<CommunityShareMode, string> = {
     profile_books: 'Shows your public author profile and book projects so fellow authors can see what you are working on.',
     progress: 'Manage your public profile and book projects on the website. Plus shares progress summaries: writing days, words, minutes, streak.'
 };
+
+const MY_SHARE_URL = 'https://www.radialtimeline.com/community/me';
+
+// Canonical website context for the Complete Preview. Profile and project
+// shell fields (title, status, genre, description) are managed on the
+// website; the preview must show those server-side values, never
+// plugin-local stand-ins. The section rerenders on every save, so the
+// fetch result lives module-side and refreshes at most once per TTL.
+interface WebsiteContextCache {
+    connectionId: string;
+    fetchedAt: number;
+    context?: CommunityShareContext;
+    error?: string;
+}
+let websiteContextCache: WebsiteContextCache | null = null;
+let websiteContextInflight = false;
+const WEBSITE_CONTEXT_TTL_MS = 5 * 60 * 1000;
+
+function getCachedWebsiteContext(settings: CommunityShareSettings): WebsiteContextCache | null {
+    const connectionId = settings.connection.connectionId;
+    if (!connectionId || !websiteContextCache || websiteContextCache.connectionId !== connectionId) return null;
+    return websiteContextCache;
+}
+
+function getConnectedWebsiteProject(settings: CommunityShareSettings, context?: CommunityShareContext): CommunityShareContextProject | null {
+    if (!context) return null;
+    const projectId = context.connected_project_id ?? settings.connection.projectId;
+    return context.projects.find(project => project.id === projectId) ?? null;
+}
+
+const PROJECT_STATUS_LABELS: Record<string, string> = {
+    drafting: 'Drafting',
+    revising: 'Revising',
+    querying: 'Querying',
+    published: 'Published',
+    hiatus: 'On hiatus'
+};
+
+function formatWebsiteGenre(project: CommunityShareContextProject | null): string | undefined {
+    if (!project) return undefined;
+    const path = [project.genre_l1, project.genre_l2, project.genre_l3].filter(Boolean).join(' › ');
+    return path || undefined;
+}
 
 function getCommunitySettings(plugin: RadialTimelinePlugin): CommunityShareSettings {
     const normalized = normalizeCommunityShareSettings(plugin.settings.communityShare);
@@ -324,26 +370,79 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         }
     };
 
-    previewFrame.createDiv({ cls: 'ert-communityPreview__title', text: activeBook?.publicLabel || activeBook?.title || 'No active project selected' });
+    const cachedWebsiteContext = getCachedWebsiteContext(settings);
+    const websiteContext = cachedWebsiteContext?.context;
+    const websiteProject = getConnectedWebsiteProject(settings, websiteContext);
+
+    previewFrame.createDiv({ cls: 'ert-communityPreview__title', text: websiteProject?.title || activeBook?.publicLabel || activeBook?.title || 'No active project selected' });
     previewFrame.createDiv({ cls: 'ert-kicker', text: `Sharing: ${MODE_LABELS[mode]}` });
 
     if (mode === 'private') {
         addDivider();
         previewFrame.createDiv({ cls: 'ert-communityPreview__note', text: MODE_NOTES.private });
     } else {
+        // One publish, two origins. Profile and project shell fields are
+        // managed on the website and shown here with their canonical
+        // server-side values; only activity summaries come from this vault.
         addDivider();
-        const propertyPills = previewFrame.createDiv({ cls: 'ert-communityPreview__pills' });
-        addChip(propertyPills, 'Stage', activeBook?.projectStage || 'Not set');
-        addChip(propertyPills, 'Genre', activeBook?.genre || 'Not set');
-        addChip(propertyPills, 'Description', activeBook?.publicDescription || 'Not set');
+        previewFrame.createDiv({ cls: 'ert-kicker', text: 'From your website profile' });
+        if (!isConnected) {
+            previewFrame.createDiv({
+                cls: 'ert-communityPreview__note',
+                text: 'Connect this vault to load the public profile and project details your reports attach to.'
+            });
+        } else if (cachedWebsiteContext?.error) {
+            previewFrame.createDiv({
+                cls: 'ert-communityPreview__note',
+                text: `Could not load these from the website: ${cachedWebsiteContext.error}`
+            });
+        } else if (!websiteContext) {
+            previewFrame.createDiv({ cls: 'ert-communityPreview__note', text: 'Loading your public profile from the website...' });
+        } else {
+            const profile = websiteContext.profile;
+            const websitePills = previewFrame.createDiv({ cls: 'ert-communityPreview__pills' });
+            const authorLabel = profile?.display_name && profile.handle
+                ? `${profile.display_name} @${profile.handle}`
+                : profile?.display_name || (profile?.handle ? `@${profile.handle}` : undefined);
+            addChip(websitePills, 'Author', authorLabel || 'Not set');
+            if (websiteProject) {
+                addChip(websitePills, 'Title', websiteProject.title || 'Not set');
+                addChip(websitePills, 'Status', websiteProject.status
+                    ? PROJECT_STATUS_LABELS[websiteProject.status] ?? websiteProject.status
+                    : 'Not set');
+                addChip(websitePills, 'Genre', formatWebsiteGenre(websiteProject) || 'Not set');
+                if (websiteProject.custom_genre_label) {
+                    addChip(websitePills, 'Custom genre', websiteProject.custom_genre_label);
+                }
+                addChip(websitePills, 'Description', websiteProject.logline || 'Not set');
+            } else {
+                previewFrame.createDiv({
+                    cls: 'ert-communityPreview__note',
+                    text: 'Your connected project was not found on the website. Open My Share to check it.'
+                });
+            }
+        }
+        const editOnWebsiteNote = previewFrame.createDiv({ cls: 'ert-communityPreview__note' });
+        editOnWebsiteNote.appendText('Edit these on the website — ');
+        editOnWebsiteNote.createEl('a', {
+            text: 'My Share',
+            href: MY_SHARE_URL,
+            attr: { target: '_blank', rel: 'noopener' }
+        });
 
         addDivider();
-        previewFrame.createDiv({ cls: 'ert-kicker', text: 'Included fields' });
-        if (selectedFields.length) {
+        previewFrame.createDiv({ cls: 'ert-kicker', text: 'From this vault' });
+        const activityFieldLabels = COMMUNITY_SHARE_FIELD_KEYS
+            .filter(key => settings.fieldPolicy[key] && key.startsWith('activity.'))
+            .map(key => FIELD_LABELS[key]);
+        if (activityFieldLabels.length) {
             const fieldPills = previewFrame.createDiv({ cls: 'ert-communityPreview__pills' });
-            selectedFields.forEach(label => addChip(fieldPills, label));
+            activityFieldLabels.forEach(label => addChip(fieldPills, label));
         } else {
-            previewFrame.createDiv({ cls: 'ert-communityPreview__note', text: 'Choose a sharing level above to include fields.' });
+            previewFrame.createDiv({
+                cls: 'ert-communityPreview__note',
+                text: 'No writing activity is shared at this level — only the website profile and book details above.'
+            });
         }
 
         addDivider();
@@ -378,6 +477,33 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         containerEl.empty();
         renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
     };
+
+    // Refresh the canonical website context when it is missing or past its
+    // TTL. Failures render as an explicit "could not load" note — the
+    // preview never substitutes plugin-local values for website fields.
+    const contextConnectionId = settings.connection.connectionId;
+    const contextFresh = websiteContextCache
+        && websiteContextCache.connectionId === contextConnectionId
+        && Date.now() - websiteContextCache.fetchedAt < WEBSITE_CONTEXT_TTL_MS;
+    if (mode !== 'private' && isConnected && contextConnectionId && !contextFresh && !websiteContextInflight) {
+        websiteContextInflight = true;
+        void fetchCommunityShareContext(plugin)
+            .then(context => {
+                websiteContextCache = { connectionId: contextConnectionId, fetchedAt: Date.now(), context };
+            })
+            .catch(error => {
+                websiteContextCache = {
+                    connectionId: contextConnectionId,
+                    fetchedAt: Date.now(),
+                    error: error instanceof Error ? error.message : 'Could not load your public profile from the website.'
+                };
+            })
+            .finally(() => {
+                websiteContextInflight = false;
+                rerender();
+            });
+    }
+
     void (async () => {
         const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
         if (mode === 'private' || selectedFields.length === 0) {

@@ -2,6 +2,7 @@
  * Book profile helpers
  */
 import type { BeatDefinition, BeatSystemConfig, BeatWorkspaceState, BookProfile, LoadedBeatTab, ManuscriptSceneHeadingMode, RadialTimelineSettings } from '../types/settings';
+import type { TimelineItem } from '../types/timeline';
 import { normalizeRecentStructuralMoves } from './recentStructuralMoves';
 
 export const DEFAULT_BOOK_TITLE = 'Untitled Manuscript';
@@ -116,6 +117,20 @@ export function getActiveBook(settings: RadialTimelineSettings): BookProfile | n
     ? books.find(b => b.id === settings.activeBookId)
     : undefined;
   return active || books[0] || null;
+}
+
+/**
+ * Whether a scene belongs to the given book. Canonical book-membership
+ * predicate: explicit bookId wins, then bookTitle, then source-folder
+ * containment. No book profile means a single-book vault — every scene
+ * belongs.
+ */
+export function isSceneInBook(scene: TimelineItem, book: BookProfile | null | undefined): boolean {
+  if (!book) return true;
+  if (scene.bookId) return scene.bookId === book.id;
+  if (scene.bookTitle) return scene.bookTitle === book.title;
+  const sourceFolder = book.sourceFolder;
+  return sourceFolder ? Boolean(scene.path?.startsWith(`${sourceFolder}/`) || scene.path === sourceFolder) : true;
 }
 
 export function getActiveBookTitle(settings: RadialTimelineSettings, fallback = DEFAULT_BOOK_TITLE): string {

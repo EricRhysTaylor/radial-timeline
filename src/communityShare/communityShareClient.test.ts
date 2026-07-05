@@ -68,6 +68,7 @@ function createPluginHarness(options: { failConnectionSecretStorage?: boolean } 
                 sceneCompletionEvents: []
             })
         }),
+        getSceneData: async () => [],
         saveSettings: vi.fn(async () => undefined)
     };
     return { plugin, secrets };

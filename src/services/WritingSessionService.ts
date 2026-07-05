@@ -12,7 +12,7 @@ import type {
     WritingSessionsSettings
 } from '../types/settings';
 import { STAGE_ORDER } from '../utils/constants';
-import { getActiveBook } from '../utils/books';
+import { getActiveBook, isSceneInBook } from '../utils/books';
 import { isCompleteStatus, normalizePublishStage } from '../progress/progressSnapshot';
 import { getRuntimeSettings } from '../utils/runtimeEstimator';
 import { normalizeStatus } from '../utils/text';
@@ -981,12 +981,7 @@ export class WritingSessionService {
     }
 
     private isSceneInActiveBook(scene: TimelineItem): boolean {
-        const book = getActiveBook(this.plugin.settings);
-        if (!book) return true;
-        if (scene.bookId) return scene.bookId === book.id;
-        if (scene.bookTitle) return scene.bookTitle === book.title;
-        const sourceFolder = book.sourceFolder;
-        return sourceFolder ? Boolean(scene.path?.startsWith(`${sourceFolder}/`) || scene.path === sourceFolder) : true;
+        return isSceneInBook(scene, getActiveBook(this.plugin.settings));
     }
 
     private resolveAutoStage(scenes: TimelineItem[]): WritingSessionStage {

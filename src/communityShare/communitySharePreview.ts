@@ -6,6 +6,10 @@ import type {
     WritingSessionMode
 } from '../types/settings';
 import type { WritingRangeStats } from '../services/WritingSessionService';
+import type { TimelineItem } from '../types';
+import { buildProgressSnapshot } from '../progress/progressSnapshot';
+import { STAGE_ORDER, type Stage } from '../utils/constants';
+import { isSceneInBook } from '../utils/books';
 import { COMMUNITY_SHARE_FIELD_KEYS, normalizeCommunityShareSettings } from './communityShareSettings';
 
 export const COMMUNITY_SHARE_REPORT_SCHEMA_VERSION = 'community-share-report-v1';
@@ -103,7 +107,21 @@ function publicProjectTitle(book: BookProfile | undefined): string | undefined {
     return cleanPublicString(book?.publicLabel, 120);
 }
 
-function buildFieldValue(key: CommunityShareFieldKey, book: BookProfile | undefined, stats: WritingRangeStats): unknown {
+/**
+ * Current stage mix: every scene in the connected book counted by its
+ * normalized publish stage — a point-in-time distribution, NOT filtered by
+ * report period or completion. Reuses buildProgressSnapshot (the canonical
+ * stage-distribution computation the timeline progress views render from),
+ * so the published mix can never drift from what the plugin shows locally.
+ */
+function buildCurrentStageMix(scenes: TimelineItem[], book: BookProfile | undefined): Record<Stage, number> {
+    const snapshot = buildProgressSnapshot(scenes.filter(scene => isSceneInBook(scene, book)));
+    const mix = {} as Record<Stage, number>;
+    STAGE_ORDER.forEach(stage => { mix[stage] = snapshot.stageStates[stage].sceneCount; });
+    return mix;
+}
+
+function buildFieldValue(key: CommunityShareFieldKey, book: BookProfile | undefined, stats: WritingRangeStats, stageMix: Record<Stage, number>): unknown {
     const title = publicProjectTitle(book);
     const modeKeys: WritingSessionMode[] = ['drafting', 'revising', 'editing', 'planning'];
     switch (key) {
@@ -130,8 +148,9 @@ function buildFieldValue(key: CommunityShareFieldKey, book: BookProfile | undefi
         case 'activity.mode_mix':
             return percentMix(Object.fromEntries(modeKeys.map(mode => [mode, stats.minutesByMode[mode] ?? 0])));
         case 'activity.scenes_completed_by_stage':
-        case 'activity.stage_mix':
             return stats.scenesCompletedByStage;
+        case 'activity.stage_mix':
+            return stageMix;
         case 'activity.completed_scene_count':
             return stats.freshScenesCompleted + stats.revisionScenesCompleted;
         case 'activity.revised_scene_count':
@@ -158,6 +177,8 @@ export async function buildCommunitySharePreview(plugin: RadialTimelinePlugin): 
     const end = localDateString();
     const start = localDateString(shiftDate(new Date(), -6));
     const stats = await plugin.getWritingSessionService().getRangeStats(7, end);
+    const scenes = await plugin.getSceneData();
+    const stageMix = buildCurrentStageMix(scenes, book);
 
     const fieldManifest: CommunitySharePreviewBuild['fieldManifest'] = {};
     const payload: Record<string, unknown> = {};
@@ -172,7 +193,7 @@ export async function buildCommunitySharePreview(plugin: RadialTimelinePlugin): 
             sensitive: meta.sensitive === true
         };
         if (!enabled) continue;
-        const value = buildFieldValue(key, book, stats);
+        const value = buildFieldValue(key, book, stats, stageMix);
         if (value !== undefined && value !== null && value !== '') {
             payload[key] = value;
         }

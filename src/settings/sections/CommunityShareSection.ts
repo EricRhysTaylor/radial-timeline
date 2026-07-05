@@ -97,6 +97,15 @@ function getConnectedWebsiteProject(settings: CommunityShareSettings, context?: 
     return context.projects.find(project => project.id === projectId) ?? null;
 }
 
+// Preview card title: the active project's title, plus a "& others (N)"
+// suffix when the website connection carries more than one shared project.
+// Only `public` projects count — project sync creates an initially-private
+// shell for every local book, and those must not inflate the tally.
+function formatPreviewTitle(baseTitle: string, context?: CommunityShareContext): string {
+    const sharedCount = context?.projects.filter(project => project.visibility === 'public').length ?? 0;
+    return sharedCount > 1 ? `${baseTitle} & others (${sharedCount})` : baseTitle;
+}
+
 const PROJECT_STATUS_LABELS: Record<string, string> = {
     drafting: 'Drafting',
     revising: 'Revising',
@@ -374,7 +383,11 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     const websiteContext = cachedWebsiteContext?.context;
     const websiteProject = getConnectedWebsiteProject(settings, websiteContext);
 
-    previewFrame.createDiv({ cls: 'ert-communityPreview__title', text: websiteProject?.title || activeBook?.publicLabel || activeBook?.title || 'No active project selected' });
+    const previewTitleBase = websiteProject?.title || activeBook?.publicLabel || activeBook?.title;
+    previewFrame.createDiv({
+        cls: 'ert-communityPreview__title',
+        text: previewTitleBase ? formatPreviewTitle(previewTitleBase, websiteContext) : 'No active project selected'
+    });
     previewFrame.createDiv({ cls: 'ert-kicker', text: `Sharing: ${MODE_LABELS[mode]}` });
 
     if (mode === 'private') {

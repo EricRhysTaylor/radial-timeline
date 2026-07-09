@@ -445,6 +445,12 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
 
         addDivider();
         previewFrame.createDiv({ cls: 'ert-kicker', text: 'From this vault' });
+        // Publishing targets ride along with project sync (active book), but
+        // stay hidden on the website until revealed in My Share.
+        previewFrame.createDiv({
+            cls: 'ert-communityPreview__note',
+            text: 'Your target dates (Zero / Author / House / Press) and Zero-draft mode sync to your active book, but stay hidden until you reveal them in My Share.'
+        });
         const activityFieldLabels = COMMUNITY_SHARE_FIELD_KEYS
             .filter(key => settings.fieldPolicy[key] && key.startsWith('activity.'))
             .map(key => FIELD_LABELS[key]);

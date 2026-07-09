@@ -345,6 +345,13 @@ describe('Community Share activation client', () => {
             { id: 'book-1', title: 'Private Draft Title', publicLabel: 'Public Title', publicDescription: 'A public logline.' },
             { id: 'book-2', title: 'Second Book' }
         ];
+        // Vault-global publishing targets ride along on the ACTIVE book only.
+        (plugin.settings as { stageTargetDates?: unknown }).stageTargetDates = {
+            Zero: '2026-07-01',
+            Author: '2026-07-31',
+            House: 'not-a-date' // malformed -> sent as null (clears), never breaks the sync
+        };
+        (plugin.settings as { enableZeroDraftMode?: unknown }).enableZeroDraftMode = true;
 
         const mockedRequestUrl = vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
             status: 200,
@@ -364,12 +371,27 @@ describe('Community Share activation client', () => {
         const request = mockedRequestUrl.mock.calls[0]?.[0] as { body: string; url: string };
         const body = JSON.parse(request.body) as { projects: Array<Record<string, unknown>> };
         expect(request.url).toContain('/community-project-sync');
-        expect(body.projects[0]).toEqual({ book_key: 'book-1', title: 'Public Title', logline: 'A public logline.', order_index: 0 });
+        expect(body.projects[0]).toEqual({
+            book_key: 'book-1',
+            title: 'Public Title',
+            logline: 'A public logline.',
+            order_index: 0,
+            // Active book carries the vault-global targets; malformed/missing
+            // dates go as null (clears server value), never as garbage.
+            zero_target_date: '2026-07-01',
+            author_target_date: '2026-07-31',
+            house_target_date: null,
+            press_target_date: null,
+            zero_draft_mode: true
+        });
         // The public shell uses publicLabel, never the private working title.
         expect(JSON.stringify(body)).not.toContain('Private Draft Title');
         expect(body.projects[1].title).toBe('Second Book');
         // Book Manager array order rides along so the website can mirror it.
         expect(body.projects[1].order_index).toBe(1);
+        // Non-active books omit the target fields entirely (server no-op).
+        expect(body.projects[1]).not.toHaveProperty('zero_target_date');
+        expect(body.projects[1]).not.toHaveProperty('zero_draft_mode');
         expect(result.created).toBe(2);
     });
 

@@ -495,6 +495,16 @@ export async function syncCommunityProjects(plugin: RadialTimelinePlugin): Promi
         return { ok: true, created: 0, updated: 0, projects: [] };
     }
 
+    // Publishing targets (Progress & status panel) are vault-global settings
+    // today — not per-book — so they describe the ACTIVE book. The active book
+    // always carries the current values (null clears a stale server date);
+    // other books omit the fields entirely (server leaves them untouched).
+    // They stay private server-side until the author reveals them in My Share.
+    const stageTargets = plugin.settings.stageTargetDates ?? {};
+    const targetDate = (value?: string): string | null =>
+        value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
+    const activeBookId = plugin.settings.activeBookId;
+
     const response = await requestUrl({
         url: `${FUNCTIONS_BASE_URL}/community-project-sync`,
         method: 'POST',
@@ -507,7 +517,14 @@ export async function syncCommunityProjects(plugin: RadialTimelinePlugin): Promi
                 title: (book.publicLabel || book.title || 'Untitled book').slice(0, 140),
                 logline: book.publicDescription ? book.publicDescription.slice(0, 240) : undefined,
                 // Book Manager array order — the website renders books in this order.
-                order_index: index
+                order_index: index,
+                ...(book.id === activeBookId ? {
+                    zero_target_date: targetDate(stageTargets.Zero),
+                    author_target_date: targetDate(stageTargets.Author),
+                    house_target_date: targetDate(stageTargets.House),
+                    press_target_date: targetDate(stageTargets.Press),
+                    zero_draft_mode: plugin.settings.enableZeroDraftMode === true
+                } : {})
             }))
         }),
         throw: false

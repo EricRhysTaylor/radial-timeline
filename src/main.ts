@@ -1169,7 +1169,26 @@ export default class RadialTimelinePlugin extends Plugin {
             globalLastUsed.novel = legacyLayoutIdMap[globalLastUsed.novel];
             pandocLayoutReferenceMigrated = true;
         }
-        if (freshInstallSeeded || proEntitlementSeeded || gossamerRunFilterMigrated || aiSettingsMigrated || exportFolderMigrated || beatSettingsMigration.changed || backdropTemplateMigrated || pandocLayoutsMigrated || bundledPandocLayoutsRegistered || publishingModelMigrated || pandocLayoutReferenceMigrated || manuscriptExportCleanupMigrated || booksMigrated || timelineScopeMigrated || planetarySelectionMigrated || modeMigrated) {
+
+        // ─── Migrate vault-global stage target dates → per-book (active book) ───
+        // Target dates described "the book being worked on"; they now live on
+        // BookProfile.stageTargetDates. The legacy field is copied onto the
+        // active book (unless it already has its own) and cleared for good.
+        let stageTargetsMigrated = false;
+        const legacyStageTargets = this.settings.stageTargetDates;
+        if (legacyStageTargets !== undefined) {
+            const hasLegacyValues = Object.values(legacyStageTargets ?? {}).some(v => typeof v === 'string' && v);
+            if (hasLegacyValues) {
+                const activeBook = getActiveBook(this.settings);
+                if (activeBook && !activeBook.stageTargetDates) {
+                    activeBook.stageTargetDates = { ...legacyStageTargets };
+                }
+            }
+            this.settings.stageTargetDates = undefined;
+            stageTargetsMigrated = true;
+        }
+
+        if (freshInstallSeeded || proEntitlementSeeded || gossamerRunFilterMigrated || aiSettingsMigrated || exportFolderMigrated || beatSettingsMigration.changed || backdropTemplateMigrated || pandocLayoutsMigrated || bundledPandocLayoutsRegistered || publishingModelMigrated || pandocLayoutReferenceMigrated || manuscriptExportCleanupMigrated || booksMigrated || timelineScopeMigrated || planetarySelectionMigrated || modeMigrated || stageTargetsMigrated) {
             await this.saveSettings();
         }
     }

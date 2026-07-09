@@ -89,12 +89,9 @@ export const DEFAULT_SETTINGS: RadialTimelineSettings = {
     currentMode: 'narrative', // Default to Narrative mode
     logApiInteractions: true, // Default for new setting
     targetCompletionDate: undefined, // Legacy - kept for backwards compatibility
-    stageTargetDates: {
-        Zero: undefined,
-        Author: undefined,
-        House: undefined,
-        Press: undefined
-    },
+    // stageTargetDates intentionally absent: target dates are per-book
+    // (BookProfile.stageTargetDates); the legacy vault-global field is migrated
+    // on load and must not be re-seeded by defaults.
     showCompletionEstimate: true, // Default: show the estimate tick
     completionEstimateWindowDays: 30, // Rolling window (days) for completion estimate pace
     coreCompletionPreviewExpanded: true,

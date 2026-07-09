@@ -1,6 +1,7 @@
 import type { PluginRendererFacade } from '../../utils/sceneHelpers';
 import { formatNumber, escapeXml } from '../../utils/svg';
 import { getFormattingLocale } from '../../i18n';
+import { getActiveStageTargetDates } from '../../utils/books';
 
 const STAGE_ORDER = ['Zero', 'Author', 'House', 'Press'] as const;
 type Stage = typeof STAGE_ORDER[number];
@@ -82,8 +83,9 @@ export function renderTargetDateTick(params: {
     
     let svg = '';
     
-    const stageTargetDates = plugin.settings.stageTargetDates;
-    
+    // Target dates are per book: render the ACTIVE book's ticks.
+    const stageTargetDates = getActiveStageTargetDates(plugin.settings);
+
     // MANUAL MODE: Render stage-specific target ticks (only show ticks with dates set)
     if (stageTargetDates) {
         for (const stage of STAGE_ORDER) {

@@ -133,6 +133,20 @@ export function isSceneInBook(scene: TimelineItem, book: BookProfile | null | un
   return sourceFolder ? Boolean(scene.path?.startsWith(`${sourceFolder}/`) || scene.path === sourceFolder) : true;
 }
 
+/**
+ * Publishing target dates for the active book. Canonical accessor — target
+ * dates are per-book (BookProfile.stageTargetDates); the legacy vault-global
+ * settings field is migrated on load and never read at runtime. Structural
+ * param type so narrower renderer facades can call it too.
+ */
+export function getActiveStageTargetDates(
+  settings: { books?: BookProfile[]; activeBookId?: string }
+): NonNullable<BookProfile['stageTargetDates']> {
+  const books = settings.books || [];
+  const active = (settings.activeBookId ? books.find(b => b.id === settings.activeBookId) : undefined) || books[0];
+  return active?.stageTargetDates ?? {};
+}
+
 export function getActiveBookTitle(settings: RadialTimelineSettings, fallback = DEFAULT_BOOK_TITLE): string {
   const active = getActiveBook(settings);
   const title = active?.title?.trim();

@@ -6,6 +6,7 @@ import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
 import { getAllScenes } from '../../utils/manuscript';
 import type { CompletionEstimate } from '../../services/TimelineMetricsService';
 import { STAGE_ORDER } from '../../utils/constants';
+import { getActiveBook, getActiveBookTitle, getActiveStageTargetDates } from '../../utils/books';
 import { ERT_CLASSES } from '../../ui/classes';
 import { IMPACT_FULL, IMPACT_PROGRESS_TICKS } from '../SettingImpact';
 import { splitIntoBalancedLinesOptimal } from '../../utils/text';
@@ -128,7 +129,7 @@ function isOverdue(dateStr: string | undefined): boolean {
  * Returns error message if validation fails, null if valid.
  */
 function validateStageOrder(plugin: RadialTimelinePlugin, stage: Stage, newDate: string): string | null {
-    const dates = plugin.settings.stageTargetDates ?? {};
+    const dates = getActiveStageTargetDates(plugin.settings);
     const stageIndex = STAGE_ORDER.indexOf(stage);
     const newDateObj = new Date(newDate + 'T00:00:00');
 
@@ -625,8 +626,8 @@ export function renderCompletionEstimatePreview(params: {
         const targetDate = estimate.date;
         const scenesPerDay = estimate.rate / 7;
 
-        // Get stage target dates for markers
-        const stageTargetDates = plugin.settings.stageTargetDates ?? {};
+        // Get the active book's stage target dates for markers
+        const stageTargetDates = getActiveStageTargetDates(plugin.settings);
 
         let remaining = estimate.remaining;
         let cumulative = estimate.total - estimate.remaining;
@@ -780,7 +781,7 @@ export function renderProgressSection(params: {
 
     const stackEl = containerEl.createDiv({ cls: ERT_CLASSES.STACK });
 
-    // --- Stage Target Dates ---
+    // --- Stage Target Dates (per book: read/write the ACTIVE book's profile) ---
     // Create target date settings for each progress stage (Zero, Author, House, Press)
     const stageDescriptions: Record<Stage, string> = {
         Zero: 'All scenes written, continuity intact, no prose polishing beyond clarity. Consider using Zero draft mode to discourage never-ending revision loops.',
@@ -789,9 +790,14 @@ export function renderProgressSection(params: {
         Press: 'Line edited, copy edited, proofread. No open queries. No tracked changes. Release-ready manuscript.'
     };
 
+    stackEl.createDiv({
+        cls: 'setting-item-description',
+        text: `Target dates are per book — editing “${getActiveBookTitle(plugin.settings)}”. Switch the active book in Book Manager to set another book's targets.`
+    });
+
     for (const stage of STAGE_ORDER) {
         const stageColor = getStageColor(plugin, stage);
-        const currentDateStr = plugin.settings.stageTargetDates?.[stage];
+        const currentDateStr = getActiveStageTargetDates(plugin.settings)[stage];
         const overdue = isOverdue(currentDateStr);
         const displayColor = overdue ? '#d05e5e' : stageColor;
 
@@ -822,13 +828,15 @@ export function renderProgressSection(params: {
                 const handleBlur = async () => {
                     const value = text.getValue();
 
-                    // Initialize stageTargetDates if needed
-                    if (!plugin.settings.stageTargetDates) {
-                        plugin.settings.stageTargetDates = {};
+                    // Target dates live on the ACTIVE book's profile.
+                    const activeBook = getActiveBook(plugin.settings);
+                    if (!activeBook) return;
+                    if (!activeBook.stageTargetDates) {
+                        activeBook.stageTargetDates = {};
                     }
 
                     if (!value) {
-                        plugin.settings.stageTargetDates[stage] = undefined;
+                        activeBook.stageTargetDates[stage] = undefined;
                         text.inputEl.removeClass('ert-setting-input-error');
                         text.inputEl.removeClass('ert-setting-input-overdue');
                         await plugin.saveSettings();
@@ -848,11 +856,11 @@ export function renderProgressSection(params: {
                     if (validationError) {
                         new Notice(validationError);
                         text.inputEl.addClass('ert-setting-input-error');
-                        text.setValue(plugin.settings.stageTargetDates[stage] || '');
+                        text.setValue(activeBook.stageTargetDates[stage] || '');
                         return;
                     }
 
-                    plugin.settings.stageTargetDates[stage] = value;
+                    activeBook.stageTargetDates[stage] = value;
                     text.inputEl.removeClass('ert-setting-input-error');
 
                     // Check if now overdue and update styling

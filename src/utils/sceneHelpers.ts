@@ -122,12 +122,6 @@ export interface PluginRendererFacade {
             shapes: Array<{ tag: 'path' | 'circle'; attrs: Record<string, string> }>;
         }>;
         targetCompletionDate?: string;
-        stageTargetDates?: {
-            Zero?: string;
-            Author?: string;
-            House?: string;
-            Press?: string;
-        };
         enableAiSceneAnalysis: boolean;
         chronologueDurationCapSelection?: string;
         showBackdropRing?: boolean;
@@ -141,6 +135,8 @@ export interface PluginRendererFacade {
         showChapterMarkers?: boolean;
         timelineScope?: 'book' | 'saga';
         books: BookProfile[];
+        /** Active book id — target ticks read per-book stageTargetDates. */
+        activeBookId?: string;
         readabilityScale?: ReadabilityScale;
         actCount?: number;
         timelapseYearSimulation?: {

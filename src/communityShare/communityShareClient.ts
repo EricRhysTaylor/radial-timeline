@@ -495,12 +495,11 @@ export async function syncCommunityProjects(plugin: RadialTimelinePlugin): Promi
         return { ok: true, created: 0, updated: 0, projects: [] };
     }
 
-    // Publishing targets (Progress & status panel) are vault-global settings
-    // today — not per-book — so they describe the ACTIVE book. The active book
-    // always carries the current values (null clears a stale server date);
-    // other books omit the fields entirely (server leaves them untouched).
-    // They stay private server-side until the author reveals them in My Share.
-    const stageTargets = plugin.settings.stageTargetDates ?? {};
+    // Publishing targets are per book (BookProfile.stageTargetDates): every
+    // book sends its own four dates — value or null, so a cleared date clears
+    // the server copy too. Zero-draft mode is still a vault-global working
+    // mode, so it rides along on the active book only. All of it stays private
+    // server-side until the author reveals it in My Share.
     const targetDate = (value?: string): string | null =>
         value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
     const activeBookId = plugin.settings.activeBookId;
@@ -518,11 +517,11 @@ export async function syncCommunityProjects(plugin: RadialTimelinePlugin): Promi
                 logline: book.publicDescription ? book.publicDescription.slice(0, 240) : undefined,
                 // Book Manager array order — the website renders books in this order.
                 order_index: index,
+                zero_target_date: targetDate(book.stageTargetDates?.Zero),
+                author_target_date: targetDate(book.stageTargetDates?.Author),
+                house_target_date: targetDate(book.stageTargetDates?.House),
+                press_target_date: targetDate(book.stageTargetDates?.Press),
                 ...(book.id === activeBookId ? {
-                    zero_target_date: targetDate(stageTargets.Zero),
-                    author_target_date: targetDate(stageTargets.Author),
-                    house_target_date: targetDate(stageTargets.House),
-                    press_target_date: targetDate(stageTargets.Press),
                     zero_draft_mode: plugin.settings.enableZeroDraftMode === true
                 } : {})
             }))

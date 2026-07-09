@@ -487,6 +487,14 @@ export interface StructuralMoveHistoryEntry {
     rippleRename?: boolean;
 }
 
+/** Per-stage publishing target dates (YYYY-MM-DD strings). Scoped per book. */
+export interface StageTargetDates {
+    Zero?: string;
+    Author?: string;
+    House?: string;
+    Press?: string;
+}
+
 export interface BookProfile {
     id: string;
     title: string;
@@ -496,6 +504,8 @@ export interface BookProfile {
     projectStage?: string;
     publicLabel?: string;
     publicDescription?: string;
+    /** Publishing target dates for THIS book (Progress & status panel). */
+    stageTargetDates?: StageTargetDates;
     lastUsedPandocLayoutByPreset?: Partial<Record<'novel' | 'screenplay' | 'podcast', string>>;
     layoutOptions?: Record<string, BookLayoutOptions>;
     beatWorkspace?: BeatWorkspaceState;
@@ -1013,12 +1023,12 @@ export interface RadialTimelineSettings {
     currentMode?: string;
     logApiInteractions: boolean;
     targetCompletionDate?: string;  // Legacy - kept for backwards compatibility
-    stageTargetDates?: {
-        Zero?: string;    // Target date for Zero stage completion (YYYY-MM-DD)
-        Author?: string;  // Target date for Author stage completion
-        House?: string;   // Target date for House stage completion
-        Press?: string;   // Target date for Press stage completion
-    };
+    /**
+     * @deprecated Legacy vault-global target dates. Migrated into per-book
+     * `BookProfile.stageTargetDates` on load (see loadSettings) and cleared;
+     * never read at runtime.
+     */
+    stageTargetDates?: StageTargetDates;
     showCompletionEstimate?: boolean;
     timelapseYearSimulation?: {
         enabled?: boolean;

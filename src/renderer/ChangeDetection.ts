@@ -184,9 +184,12 @@ export function createSnapshot(
     const microBackdropHash = settings.chronologueBackdropMicroRings
         ? JSON.stringify(settings.chronologueBackdropMicroRings)
         : '';
-    const stageTargetDatesHash = settings.stageTargetDates
-        ? ['Zero', 'Author', 'House', 'Press']
-            .map(stage => `${stage}:${settings.stageTargetDates?.[stage as keyof NonNullable<RadialTimelineSettings['stageTargetDates']>] ?? ''}`)
+    // Target dates are per book — hash the ACTIVE book's dates so switching
+    // books (or editing its targets) swaps the ticks in place.
+    const activeStageTargets = getActiveBook(settings)?.stageTargetDates;
+    const stageTargetDatesHash = activeStageTargets
+        ? (['Zero', 'Author', 'House', 'Press'] as const)
+            .map(stage => `${stage}:${activeStageTargets[stage] ?? ''}`)
             .join('|')
         : '';
     

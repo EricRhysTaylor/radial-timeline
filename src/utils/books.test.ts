@@ -114,6 +114,21 @@ describe('book sequencing', () => {
     expect(blank.publicDescription).toBeUndefined();
   });
 
+  // Regression: normalizeBookProfile once rebuilt the profile without
+  // stageTargetDates, wiping every publishing target date on settings load.
+  it('carries stageTargetDates through normalization, dropping invalid entries', () => {
+    const book = normalizeBookProfile({
+      id: 'b1',
+      title: 'Dated',
+      sourceFolder: 'Books/Dated',
+      stageTargetDates: { Zero: '2026-08-15', Author: '2026-09-30', House: 'garbage', Press: undefined }
+    });
+    expect(book.stageTargetDates).toEqual({ Zero: '2026-08-15', Author: '2026-09-30' });
+
+    const none = normalizeBookProfile({ id: 'b2', title: 'Undated', sourceFolder: 'Books/Undated' });
+    expect(none.stageTargetDates).toBeUndefined();
+  });
+
   it('derives sequence identity from row order, not title text', () => {
     const books = [
       { id: 'b1', title: 'Book 1 Shail + Trisan', sourceFolder: 'Books/Shail-Trisan' },

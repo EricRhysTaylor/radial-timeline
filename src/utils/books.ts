@@ -75,6 +75,16 @@ export function normalizeBookProfile(profile: BookProfile): BookProfile {
         .filter(entry => entry.length > 0)
     : undefined;
 
+  // Publishing target dates: keep every valid YYYY-MM-DD entry. Dropping this
+  // field here once wiped all target dates on every settings load.
+  const normalizedStageTargetDates: NonNullable<BookProfile['stageTargetDates']> = {};
+  for (const stage of ['Zero', 'Author', 'House', 'Press'] as const) {
+    const date = profile.stageTargetDates?.[stage];
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      normalizedStageTargetDates[stage] = date;
+    }
+  }
+
   return {
     id: profile.id || createBookId(),
     title,
@@ -84,6 +94,7 @@ export function normalizeBookProfile(profile: BookProfile): BookProfile {
     ...(projectStage && projectStage.length > 0 ? { projectStage } : {}),
     ...(publicLabel && publicLabel.length > 0 ? { publicLabel } : {}),
     ...(publicDescription && publicDescription.length > 0 ? { publicDescription } : {}),
+    ...(Object.keys(normalizedStageTargetDates).length > 0 ? { stageTargetDates: normalizedStageTargetDates } : {}),
     ...(profile.lastUsedPandocLayoutByPreset ? { lastUsedPandocLayoutByPreset: { ...profile.lastUsedPandocLayoutByPreset } } : {}),
     ...(Object.keys(normalizedLayoutOptions).length > 0 ? { layoutOptions: normalizedLayoutOptions } : {}),
     ...(normalizeBeatWorkspace(profile.beatWorkspace) ? { beatWorkspace: normalizeBeatWorkspace(profile.beatWorkspace) } : {}),

@@ -371,7 +371,10 @@ function resolvePandocBinary(options: PandocOptions): string {
         && (path.isAbsolute(configured) || /^[A-Za-z]:[\\/]/.test(configured) || configured.includes('/') || configured.includes('\\'))
         && !fs.existsSync(configured)
     ) {
-        console.warn(`[Radial Timeline] Configured Pandoc path not found: ${configured}`);
+        // Fail clearly instead of spawning a dead path (which surfaces as an
+        // opaque "spawn … ENOENT"). A stale configured path is a settings
+        // problem the user can fix in one click — say so.
+        throw new Error(`Pandoc not found at the configured path: ${configured}. Open Settings → Publish and click Auto locate, or clear the Pandoc path to use the system default.`);
     }
 
     return configured;

@@ -2739,7 +2739,9 @@ Sarah stood at the window, watching the world wake up.`;
             ? 'Generate Outline'
             : mode.isPdfManuscript
                 ? 'Generate PDF'
-                : 'Generate Markdown';
+                : mode.isDocxManuscript
+                    ? 'Generate Word'
+                    : 'Generate Markdown';
         const files = mode.showSplit ? this.getPlannedOutputCount() : 1;
         return files > 1 ? `${base} (${files} files)` : base;
     }

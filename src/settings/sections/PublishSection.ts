@@ -8,7 +8,7 @@
  */
 
 import { App, Setting, setIcon, normalizePath, Notice, TFile, TFolder, Modal, ButtonComponent, TextComponent, Platform } from 'obsidian';
-import { accessSync, constants as fsConstants } from 'fs';
+import { accessSync, existsSync, constants as fsConstants } from 'fs';
 import type RadialTimelinePlugin from '../../main';
 import { ERT_CLASSES, ERT_DATA } from '../../ui/classes';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
@@ -1679,8 +1679,19 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
 
                     if (scan.pandocPath) {
                         msgs.push(`✓ Pandoc found at ${scan.pandocPath}`);
-                        // Auto-fill path if currently empty
-                        if (!plugin.settings.pandocPath) {
+                        // Fill when empty — and also repair a configured path
+                        // that no longer exists on disk (e.g. a Homebrew
+                        // install that was removed). Auto locate is the
+                        // explicit fix-it button, so replacing a dead value
+                        // here is its job, not a silent fallback.
+                        const configured = (plugin.settings.pandocPath || '').trim();
+                        const configuredIsStale = configured.length > 0
+                            && configured.includes('/')
+                            && !existsSync(configured);
+                        if (!configured || configuredIsStale) {
+                            if (configuredIsStale) {
+                                msgs.push(`Replaced missing path ${configured}`);
+                            }
                             plugin.settings.pandocPath = scan.pandocPath;
                             await plugin.saveSettings();
                             refreshPublishingStatusCard();

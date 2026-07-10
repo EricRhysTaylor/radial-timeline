@@ -24,6 +24,21 @@ One release, five workstreams. Origin: Command Center Decision 2026-07-09
   *Custom LaTeX preamble* (raw LaTeX via `--include-in-header`, injected
   after the layout's preamble so user definitions win).
 
+## Fixed
+
+- **Running headers restored on Standard and Contemporary Literary.** The
+  wizard's per-corner override comparator treated bundled specs' absent
+  corner fields as explicit clears, emitting `\fancyhead[POS]{}` after the
+  named-mode baseline — wiping running headers on both free layouts in every
+  export since the per-corner feature landed (June 11). Absent now means
+  "use the preset"; a deliberate wizard clear is the distinct `'empty'`
+  value. Caught by the revived `RT_PUBLISH_PDF_ASSEMBLY` suite (below).
+- **Revived the gated PDF assembly test.** It silently drifted (`bundledFontPath`
+  option renamed to `vaultFontDir`), so it depended on machine-installed
+  fonts; it now resolves Source Serif 4 from the repo's bundled files and
+  asserts the running-header contract by scanning pages instead of pinning
+  page numbers, so legitimate typography changes can't false-fail it.
+
 ## Improved
 
 - **Widow/orphan control in all bundled fiction layouts.**

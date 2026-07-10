@@ -38,8 +38,15 @@ function computeCornerOverrides(spec: DesignedStyleSpec): Array<[string, Designe
     const overrides: Array<[string, DesignedHeaderField | undefined]> = [];
     for (const [pos, key] of HEADER_CORNER_POSITIONS) {
         const liveField   = spec.runningHeader[key];
+        // An absent corner is "no user opinion — use the preset", never an
+        // override. Bundled specs omit corner keys entirely, and treating
+        // absence as an explicit clear emitted `\fancyhead[POS]{}` after the
+        // named-mode baseline, wiping running headers on every layout whose
+        // preset populates that corner (Standard, Contemporary Literary).
+        // A deliberate wizard clear is the distinct value 'empty'.
+        if (liveField === undefined) continue;
         const presetField = clone.runningHeader[key];
-        const liveJson    = JSON.stringify(liveField   ?? null);
+        const liveJson    = JSON.stringify(liveField);
         const presetJson  = JSON.stringify(presetField ?? null);
         if (liveJson !== presetJson) {
             overrides.push([pos, liveField]);

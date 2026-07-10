@@ -102,7 +102,10 @@ describe.skipIf(!runAssemblyPdf)('assembled Contemporary Literary PDF contract',
       writeFileSync(mdPath, markdown);
       writeFileSync(texPath, generateDesignedStyleTex(BUNDLED_FICTION_SPECS['bundled-fiction-contemporary-literary'], {
         bundledLayoutId: 'bundled-fiction-contemporary-literary',
-        bundledFontPath: join(process.cwd(), 'src', 'assets', 'fonts'),
+        // Resolve Source Serif 4 from the repo's bundled font files (same
+        // mechanism as the vault install at runtime) so the test does not
+        // depend on fonts being installed in the machine's font cache.
+        vaultFontDir: join(process.cwd(), 'src', 'assets', 'fonts'),
       }));
 
       run('pandoc', [mdPath, '--from=markdown', '--to=latex', '--standalone', `--template=${texPath}`, '-V', 'title=Audit Book', '-V', 'author=Audit Author', '-o', expandedPath], workDir);
@@ -112,11 +115,27 @@ describe.skipIf(!runAssemblyPdf)('assembled Contemporary Literary PDF contract',
       expect(expanded).not.toContain('\\providecommand{\\rtSetSceneRunningTitle}');
 
       run('pandoc', [mdPath, '--from=markdown', '--pdf-engine=xelatex', `--template=${texPath}`, '-V', 'title=Audit Book', '-V', 'author=Audit Author', '-o', pdfPath], workDir);
-      const page3 = run('pdftotext', ['-layout', '-f', '3', '-l', '3', pdfPath, '-'], workDir);
-      const page4 = run('pdftotext', ['-layout', '-f', '4', '-l', '4', pdfPath, '-'], workDir);
-      expect(page3).toContain('Arrival');
-      expect(page3).not.toContain('Audit Book');
-      expect(page4).toContain('Audit Book');
+      // Contemporary Literary header contract ('left-title-right-context'):
+      // even/left pages carry the book title, odd/right continuation pages
+      // carry the running scene title. Assert the contract by scanning pages
+      // rather than pinning page numbers — typography changes (widow/orphan
+      // penalties, \raggedbottom) legitimately reflow pagination.
+      const pageCountMatch = run('pdfinfo', [pdfPath], workDir).match(/^Pages:\s+(\d+)/m);
+      const pageCount = pageCountMatch ? Number(pageCountMatch[1]) : 0;
+      expect(pageCount).toBeGreaterThanOrEqual(4);
+      let sawSceneHeaderOnOddPage = false;
+      let sawBookTitleOnEvenPage = false;
+      for (let page = 2; page <= pageCount; page++) {
+        const text = run('pdftotext', ['-layout', '-f', String(page), '-l', String(page), pdfPath, '-'], workDir);
+        if (page % 2 === 1 && text.includes('Arrival') && !text.includes('Audit Book')) {
+          sawSceneHeaderOnOddPage = true;
+        }
+        if (page % 2 === 0 && text.includes('Audit Book')) {
+          sawBookTitleOnEvenPage = true;
+        }
+      }
+      expect(sawSceneHeaderOnOddPage, 'an odd/right continuation page should show the running scene title without the book title').toBe(true);
+      expect(sawBookTitleOnEvenPage, 'an even/left page should show the book title header').toBe(true);
     } finally {
       rmSync(workDir, { recursive: true, force: true });
     }

@@ -147,6 +147,59 @@ theme_raw = zipfile.ZipFile(SRC).read(theme_name).decode("utf-8")
 theme_raw = re.sub(r'(<a:latin typeface=")[^"]*(")', r'\g<1>' + BODY_FONT + r'\g<2>', theme_raw)
 theme_xml_out = theme_raw.encode("utf-8")
 
+# ── running-header with page number ──────────────────────────────────────────
+# Standard manuscript format wants a page number in a top running header.
+# Pandoc carries a reference doc's header part + sectPr headerReference through
+# to output, so wire the whole part chain here: the header XML, its content
+# type, its relationship, and the sectPr reference. Right-aligned PAGE field in
+# Times New Roman; PAGE fields render in both Word and Pages.
+HEADER_REL_ID = "rId777"
+HEADER_PART = "word/header-rt.xml"
+HEADER_XML = (
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+    '<w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" '
+    'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+    '<w:p><w:pPr><w:jc w:val="right"/>'
+    '<w:rPr><w:rFonts w:ascii="' + BODY_FONT + '" w:hAnsi="' + BODY_FONT + '" w:cs="' + BODY_FONT + '"/>'
+    '<w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr></w:pPr>'
+    # Full field form: begin -> instrText -> separate -> cached result -> end,
+    # so renderers that don't recompute fields still show a page number.
+    '<w:r><w:rPr><w:rFonts w:ascii="' + BODY_FONT + '" w:hAnsi="' + BODY_FONT + '" w:cs="' + BODY_FONT + '"/>'
+    '<w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr><w:fldChar w:fldCharType="begin"/></w:r>'
+    '<w:r><w:rPr><w:rFonts w:ascii="' + BODY_FONT + '" w:hAnsi="' + BODY_FONT + '" w:cs="' + BODY_FONT + '"/>'
+    '<w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r>'
+    '<w:r><w:rPr><w:rFonts w:ascii="' + BODY_FONT + '" w:hAnsi="' + BODY_FONT + '" w:cs="' + BODY_FONT + '"/>'
+    '<w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr><w:fldChar w:fldCharType="separate"/></w:r>'
+    '<w:r><w:rPr><w:rFonts w:ascii="' + BODY_FONT + '" w:hAnsi="' + BODY_FONT + '" w:cs="' + BODY_FONT + '"/>'
+    '<w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr><w:t>1</w:t></w:r>'
+    '<w:r><w:rPr><w:rFonts w:ascii="' + BODY_FONT + '" w:hAnsi="' + BODY_FONT + '" w:cs="' + BODY_FONT + '"/>'
+    '<w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr><w:fldChar w:fldCharType="end"/></w:r>'
+    '</w:p></w:hdr>'
+).encode("utf-8")
+
+# [Content_Types].xml — declare the header part.
+ct_raw = zipfile.ZipFile(SRC).read("[Content_Types].xml").decode("utf-8")
+if "header-rt.xml" not in ct_raw:
+    override = ('<Override PartName="/word/header-rt.xml" '
+                'ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>')
+    ct_raw = ct_raw.replace("</Types>", override + "</Types>")
+content_types_out = ct_raw.encode("utf-8")
+
+# document.xml.rels — relate the header part.
+rels_raw = zipfile.ZipFile(SRC).read("word/_rels/document.xml.rels").decode("utf-8")
+if HEADER_PART.split("/")[-1] not in rels_raw:
+    rel = ('<Relationship Id="' + HEADER_REL_ID + '" '
+           'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" '
+           'Target="header-rt.xml"/>')
+    rels_raw = rels_raw.replace("</Relationships>", rel + "</Relationships>")
+doc_rels_out = rels_raw.encode("utf-8")
+
+# document.xml — reference the header from the section (first child of sectPr).
+doc_raw = zipfile.ZipFile(SRC).read("word/document.xml").decode("utf-8")
+hdr_ref = '<w:headerReference w:type="default" r:id="' + HEADER_REL_ID + '"/>'
+doc_raw = re.sub(r'(<w:sectPr[^>]*>)', r'\1' + hdr_ref, doc_raw, count=1)
+document_out = doc_raw.encode("utf-8")
+
 # ── repackage ───────────────────────────────────────────────────────────────
 with zipfile.ZipFile(SRC) as zin, zipfile.ZipFile(DST, "w", zipfile.ZIP_DEFLATED) as zout:
     for item in zin.infolist():
@@ -156,7 +209,14 @@ with zipfile.ZipFile(SRC) as zin, zipfile.ZipFile(DST, "w", zipfile.ZIP_DEFLATED
             data = theme_xml_out
         elif item.filename == ft_name:
             data = fonttable_xml_out
+        elif item.filename == "[Content_Types].xml":
+            data = content_types_out
+        elif item.filename == "word/_rels/document.xml.rels":
+            data = doc_rels_out
+        elif item.filename == "word/document.xml":
+            data = document_out
         else:
             data = zin.read(item.filename)
         zout.writestr(item, data)
+    zout.writestr(HEADER_PART, HEADER_XML)
 print(f"wrote {DST}")

@@ -451,17 +451,26 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
             cls: 'ert-communityPreview__note',
             text: 'Your target dates (Zero / Author / House / Press) and Zero-draft mode sync to your active book, but stay hidden until you reveal them in My Share.'
         });
+        // The preview card speaks in general terms — the author wants the gist
+        // of what leaves the vault, not the telemetry schema. The field-policy
+        // controls elsewhere keep the precise FIELD_LABELS names.
+        const PREVIEW_FIELD_LABELS: Partial<Record<CommunityShareFieldKey, string>> = {
+            'activity.minutes_total': 'Session length',
+            'activity.words_added': 'Words written',
+            'activity.session_count': 'Sessions',
+            'activity.scenes_completed_by_stage': 'Scenes by stage',
+            'activity.stage_mix': 'Stage mix',
+            'activity.completed_scene_count': 'Scenes completed',
+            'activity.revised_scene_count': 'Scenes revised'
+        };
         const activityFieldLabels = COMMUNITY_SHARE_FIELD_KEYS
             .filter(key => settings.fieldPolicy[key] && key.startsWith('activity.'))
-            .map(key => FIELD_LABELS[key]);
+            .map(key => PREVIEW_FIELD_LABELS[key] ?? FIELD_LABELS[key]);
         if (activityFieldLabels.length) {
             const fieldPills = previewFrame.createDiv({ cls: 'ert-communityPreview__pills' });
             activityFieldLabels.forEach(label => addChip(fieldPills, label));
             if (mode === 'progress' && settings.tier === 4) {
-                previewFrame.createDiv({
-                    cls: 'ert-communityPreview__note',
-                    text: 'Also shares per-day totals for the last 14 days (minutes, words, sessions, completed scenes by stage, mode mix) so your author page can show weekly stats. Daily aggregates only — never session logs, timestamps, or scene names.'
-                });
+                addChip(fieldPills, 'Per-day totals');
             }
         } else {
             previewFrame.createDiv({

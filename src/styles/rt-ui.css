@@ -5776,9 +5776,16 @@
   gap: var(--ert-gap-tight);
 }
 
+/* The icon's wrapper span must be flex too — as an inline box its line-height
+   floats the svg above the text's visual middle. */
+.ert-ui button.ert-btn--icon-left > span:first-child {
+  display: inline-flex;
+  align-items: center;
+}
+
 .ert-ui button.ert-btn--icon-left .svg-icon {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   flex-shrink: 0;
 }
 

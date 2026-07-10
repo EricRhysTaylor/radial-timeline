@@ -10,6 +10,7 @@ import { getActiveBook, getActiveBookTitle, getActiveStageTargetDates } from '..
 import { ERT_CLASSES } from '../../ui/classes';
 import { IMPACT_FULL, IMPACT_PROGRESS_TICKS } from '../SettingImpact';
 import { splitIntoBalancedLinesOptimal } from '../../utils/text';
+import { syncCommunityProjectsIfConnected } from '../../communityShare/communityShareClient';
 
 type Stage = typeof STAGE_ORDER[number];
 type Quote = { text: string; author: string };
@@ -841,6 +842,9 @@ export function renderProgressSection(params: {
                         text.inputEl.removeClass('ert-setting-input-overdue');
                         await plugin.saveSettings();
                         plugin.onSettingChanged(IMPACT_PROGRESS_TICKS); // Tier 2: target date tick marks on timeline
+                        // Target dates ride to the website with project sync — push the
+                        // change now instead of waiting for the next plugin load.
+                        void syncCommunityProjectsIfConnected(plugin);
                         // Update icon color
                         const icon = setting.nameEl.querySelector('.ert-target-tick-icon');
                         if (icon) {
@@ -882,6 +886,7 @@ export function renderProgressSection(params: {
 
                     await plugin.saveSettings();
                     plugin.onSettingChanged(IMPACT_PROGRESS_TICKS); // Tier 2: target date tick marks on timeline
+                    void syncCommunityProjectsIfConnected(plugin);
                 };
 
                 plugin.registerDomEvent(text.inputEl, 'blur', () => { void handleBlur(); });
@@ -931,6 +936,8 @@ export function renderProgressSection(params: {
                 zeroDraftSetting.settingEl.setCssStyles({
                     backgroundColor: value ? `${zeroStageColor}20` : 'transparent'
                 });
+                // Zero-draft mode syncs to the active book's website shell.
+                void syncCommunityProjectsIfConnected(plugin);
             }));
 
     // Apply initial styles including background tint if enabled

@@ -797,38 +797,52 @@ export class ManuscriptOptionsModal extends Modal {
             text: 'Controls how draft-only elements are removed before final output, including wikilinks, web links, comments, callouts, and block anchors.'
         });
 
+        // Each cleanup toggle: plain-language label on the toggle row, then a
+        // muted one-line example in monofont chips beneath it.
+        const addCleanupExample = (text: string): void => {
+            const note = this.exportCleanupCard?.createDiv({ cls: 'ert-sub-card-note ert-manuscript-cleanup-example' });
+            if (note) this.appendInlineCodeText(note, text);
+        };
+
         const linksRow = this.exportCleanupCard.createDiv({ cls: 'ert-manuscript-toggle-row' });
-        linksRow.createSpan({ cls: 'ert-manuscript-toggle-label', text: 'Strip links ([[Scene|alias]], [web link](url); keep label text)' });
+        linksRow.createSpan({ cls: 'ert-manuscript-toggle-label', text: 'Strip links — keeps the display text, removes the link' });
         this.cleanupLinksToggle = new ToggleComponent(linksRow).onChange((value) => {
             this.setActiveCleanupOption('stripLinks', value);
         });
+        addCleanupExample('`[[Scene name|alias]]` → alias · `[label](https://…)` → label');
 
         const aiCommentsRow = this.exportCleanupCard.createDiv({ cls: 'ert-manuscript-toggle-row' });
-        aiCommentsRow.createSpan({ cls: 'ert-manuscript-toggle-label', text: 'Strip author queries (%%ai:...%%) — off keeps them for Editorialist review' });
+        aiCommentsRow.createSpan({ cls: 'ert-manuscript-toggle-label', text: 'Strip author queries — off keeps them for Editorialist review' });
         this.cleanupAiCommentsToggle = new ToggleComponent(aiCommentsRow).onChange((value) => {
             this.setActiveCleanupOption('stripAiComments', value);
         });
+        addCleanupExample('`%%ai: Is this scene too slow?%%`');
 
         const commentsRow = this.exportCleanupCard.createDiv({ cls: 'ert-manuscript-toggle-row' });
-        commentsRow.createSpan({ cls: 'ert-manuscript-toggle-label', text: 'Strip comments (%%...%%, <!--...-->; excludes author queries)' });
+        commentsRow.createSpan({ cls: 'ert-manuscript-toggle-label', text: 'Strip comments — author queries follow the toggle above' });
         this.cleanupCommentsToggle = new ToggleComponent(commentsRow).onChange((value) => {
             this.setActiveCleanupOption('stripComments', value);
         });
+        addCleanupExample('`%%draft note%%` · `<!-- hidden note -->`');
 
         const calloutsRow = this.exportCleanupCard.createDiv({ cls: 'ert-manuscript-toggle-row' });
-        calloutsRow.createSpan({ cls: 'ert-manuscript-toggle-label', text: 'Strip callouts (> [!note])' });
+        calloutsRow.createSpan({ cls: 'ert-manuscript-toggle-label', text: 'Strip callouts — removes the whole callout block' });
         this.cleanupCalloutsToggle = new ToggleComponent(calloutsRow).onChange((value) => {
             this.setActiveCleanupOption('stripCallouts', value);
         });
+        addCleanupExample('`> [!note] Research`');
 
         const blockIdsRow = this.exportCleanupCard.createDiv({ cls: 'ert-manuscript-toggle-row' });
-        blockIdsRow.createSpan({ cls: 'ert-manuscript-toggle-label', text: 'Strip block IDs / anchors (^scene-end)' });
+        blockIdsRow.createSpan({ cls: 'ert-manuscript-toggle-label', text: 'Strip block IDs / anchors — removes trailing reference markers' });
         this.cleanupBlockIdsToggle = new ToggleComponent(blockIdsRow).onChange((value) => {
             this.setActiveCleanupOption('stripBlockIds', value);
         });
+        addCleanupExample('`^scene-end`');
 
         const yamlFrontmatterNote = this.exportCleanupCard.createDiv({ cls: 'ert-sub-card-note' });
-        this.appendInlineCodeText(yamlFrontmatterNote, '`YAML` frontmatter is always removed from manuscript exports.');
+        this.appendInlineCodeText(yamlFrontmatterNote, '`YAML` blocks are always removed. To pass document metadata to Pandoc instead, use Settings → Publish → Advanced Pandoc (Pro).');
+        const protectedNote = this.exportCleanupCard.createDiv({ cls: 'ert-sub-card-note' });
+        this.appendInlineCodeText(protectedNote, 'Fenced code blocks, raw `LaTeX` environments, and display math are never modified by cleanup.');
 
         // H) EXPORT TEMPLATES
         this.templateCard = container.createDiv({ cls: 'ert-glass-card ert-sub-card ert-layout-templates-card' });

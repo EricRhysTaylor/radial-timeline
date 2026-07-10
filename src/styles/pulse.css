@@ -482,6 +482,14 @@
   color: var(--text-normal);
 }
 
+/* Example line under each export-cleanup toggle: indented and tucked against
+   its toggle row so the sample reads as belonging to the control above. */
+.ert-manuscript-cleanup-example {
+  margin-top: -4px;
+  margin-bottom: 10px;
+  padding-left: 14px;
+}
+
 .ert-manuscript-toggle-label code,
 .ert-sub-card-note code {
   font-family: var(--font-monospace);

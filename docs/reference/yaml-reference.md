@@ -9,7 +9,7 @@ Complete guide to frontmatter fields used in Radial Timeline. This YAML must be 
 | Field | Type | Description |
 |-------|------|-------------|
 | `Class` | String | File type: `Scene` or `Beat` |
-| `Act` | Number | Story act (1-3) |
+| `Act` | Number | Story act (1-3 by default; act count configurable in settings) |
 | `Status` | String | Workflow: `Todo`, `Working`, or `Complete` |
 | `Subplot` | Array | One or more plot threads (default: `Main Plot`) |
 
@@ -170,9 +170,9 @@ Identifies the file type for the plugin.
 ---
 
 ### Act
-**Required** | Type: Number (1-3)
+**Required** | Type: Number (1-3 by default)
 
-The story act this scene or beat belongs to.
+The story act this scene or beat belongs to. Acts 1-3 are the default; the **Act count** setting can raise the number of acts (minimum 3, though very large counts become impractical on the timeline).
 
 ---
 

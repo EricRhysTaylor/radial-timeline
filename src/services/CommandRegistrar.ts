@@ -37,7 +37,7 @@ import { resolveBookPages, type MatterNoteSummary } from '../utils/bookPagesReso
 import { ensureBundledLayoutInstalledForExport } from '../utils/pandocBundledLayouts';
 import { getLayoutAbbreviation, resolveTemplateAccess, TEMPLATE_ACCESS_FALLBACK_MESSAGE } from '../publishing/templateTiering';
 import { hasProFeatureAccess } from '../settings/featureGate';
-import { getDefaultManuscriptCleanupOptions, normalizeManuscriptCleanupOptions, sanitizeCompiledManuscript, sanitizeCompiledManuscriptForPdf } from '../utils/manuscriptSanitize';
+import { cleanupFormatForOutputFormat, getDefaultManuscriptCleanupOptions, normalizeManuscriptCleanupOptions, sanitizeCompiledManuscript, sanitizeCompiledManuscriptForPdf } from '../utils/manuscriptSanitize';
 import { getManuscriptLayoutExportBehavior } from '../utils/manuscriptLayoutExport';
 import { ExportFailure, categorizeExportError } from '../utils/exportErrors';
 import { getRuntimeSettings } from '../utils/runtimeEstimator';
@@ -214,7 +214,7 @@ export class CommandRegistrar {
     }
 
     private resolveCleanupOptions(result: ManuscriptModalResult): ManuscriptExportCleanupOptions {
-        const format = result.outputFormat === 'pdf' ? 'pdf' : 'markdown';
+        const format = cleanupFormatForOutputFormat(result.outputFormat);
         const defaults = getDefaultManuscriptCleanupOptions(format);
         return normalizeManuscriptCleanupOptions(result.exportCleanup ?? defaults, format);
     }
@@ -1166,7 +1166,7 @@ export class CommandRegistrar {
     }
 
     private isUnsupportedExportConfig(options: ManuscriptModalResult): boolean {
-        if (options.outputFormat !== 'markdown' && options.outputFormat !== 'pdf') return true;
+        if (options.outputFormat !== 'markdown' && options.outputFormat !== 'pdf' && options.outputFormat !== 'docx') return true;
         return false;
     }
 

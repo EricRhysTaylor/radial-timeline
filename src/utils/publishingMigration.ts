@@ -1,4 +1,4 @@
-import { normalizeManuscriptCleanupOptions } from './manuscriptSanitize';
+import { cleanupFormatForOutputFormat, normalizeManuscriptCleanupOptions } from './manuscriptSanitize';
 import type {
     BookProfile,
     BookPublishingPreferences,
@@ -61,7 +61,7 @@ export function normalizeExportProfile(profile: Partial<ExportProfile>): ExportP
     const usageContext = profile.usageContext || inferUsageContextFromPreset(profile.manuscriptPreset || 'novel');
     const exportType = profile.exportType || (profile.outlinePreset ? 'outline' : 'manuscript');
     const outputFormat = profile.outputFormat || (exportType === 'outline' ? 'markdown' : 'pdf');
-    const cleanupFormat = outputFormat === 'pdf' ? 'pdf' : 'markdown';
+    const cleanupFormat = cleanupFormatForOutputFormat(outputFormat);
     const name = isNonEmptyString(profile.name) ? profile.name.trim() : DEFAULT_EXPORT_PROFILE_NAME;
     const templateProfileId = isNonEmptyString(profile.templateProfileId) ? profile.templateProfileId.trim() : (isNonEmptyString(profile.id) ? profile.id.trim() : name);
     const order = profile.order || 'narrative';

@@ -62,7 +62,7 @@ import { PublishingValidationService } from './services/PublishingValidationServ
 import { TimelineAuditAiService } from './services/TimelineAuditAiService';
 import { WritingSessionService } from './services/WritingSessionService';
 import { ensureBundledPandocLayoutsRegistered, ensureSpecDrivenBundledFictionTemplatesCurrent, setBundledFontSourcePath, setBundledPandocAssetSourcePath, setPandocFontPathsForVault } from './utils/pandocBundledLayouts';
-import { normalizeManuscriptCleanupOptions } from './utils/manuscriptSanitize';
+import { cleanupFormatForOutputFormat, normalizeManuscriptCleanupOptions } from './utils/manuscriptSanitize';
 import { DARIAN_MARS_MONTH_NAMES, MARS_TEMPLATE_ID, matchesLegacyMarsMonthNames } from './utils/planetaryMars';
 import type { GossamerHistoricalRunOverlay, GossamerMinMaxBand, GossamerRun, GossamerRunRecord } from './utils/gossamer';
 import { coerceGossamerSignal, DEFAULT_GOSSAMER_SIGNAL, type GossamerSignalType } from './types/gossamerSignals';
@@ -1138,7 +1138,7 @@ export default class RadialTimelinePlugin extends Plugin {
                     template.selectedLayoutId = legacyLayoutIdMap[selected];
                     pandocLayoutReferenceMigrated = true;
                 }
-                const cleanupFormat = template.outputFormat === 'pdf' ? 'pdf' : 'markdown';
+                const cleanupFormat = cleanupFormatForOutputFormat(template.outputFormat);
                 const existingCleanup = (template as { exportCleanup?: Partial<ManuscriptExportCleanupOptions> }).exportCleanup;
                 const normalizedCleanup = normalizeManuscriptCleanupOptions(existingCleanup, cleanupFormat);
                 if (

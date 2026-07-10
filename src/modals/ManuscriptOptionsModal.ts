@@ -10,7 +10,7 @@ import { ExportFormat, ExportType, ManuscriptPreset, OutlinePreset, getAutoPdfEn
 import { ensureBundledLayoutInstalledForExport } from '../utils/pandocBundledLayouts';
 import { getActiveBook, getActiveBookTitle, getActiveBookSourceFolder, DEFAULT_BOOK_TITLE } from '../utils/books';
 import { chunkScenesIntoParts } from '../utils/splitOutput';
-import { getDefaultManuscriptCleanupOptions, normalizeManuscriptCleanupOptions } from '../utils/manuscriptSanitize';
+import { cleanupFormatForOutputFormat, getDefaultManuscriptCleanupOptions, normalizeManuscriptCleanupOptions } from '../utils/manuscriptSanitize';
 import { categorizeExportError } from '../utils/exportErrors';
 import {
     adaptPandocLayoutsToPublishingModel,
@@ -1200,10 +1200,7 @@ export class ManuscriptOptionsModal extends Modal {
     }
 
     private getCleanupFormatForState(outputFormat: ExportFormat): 'markdown' | 'pdf' {
-        // DOCX is reader-facing submission output, so it shares PDF's cleanup
-        // posture (strip comments/links/callouts + task markers) rather than the
-        // markdown review-handoff posture which keeps them.
-        return (outputFormat === 'pdf' || outputFormat === 'docx') ? 'pdf' : 'markdown';
+        return cleanupFormatForOutputFormat(outputFormat);
     }
 
     private getActiveCleanupOptions(): ManuscriptExportCleanupOptions {
@@ -2153,11 +2150,12 @@ export class ManuscriptOptionsModal extends Modal {
         this.templateWarningEl.removeClass('ert-pdf-output-summary--compact');
         this.templateWarningEl.removeClass('ert-pdf-output-summary--ready');
 
-        // Only check templates for PDF format
-        if (this.outputFormat === 'markdown') {
+        // Only check templates for PDF format — markdown and Word need no
+        // LaTeX layout, so template/font validation must not block them.
+        if (this.outputFormat !== 'pdf') {
             this.templateWarningEl.addClass('ert-manuscript-preset-status--hidden');
             if (previousBlocked) this.updateActionButtonDisabledState();
-            return; // No template needed for markdown
+            return;
         }
         this.templateWarningEl.removeClass('ert-manuscript-preset-status--hidden');
         this.refreshValidationSnapshot();

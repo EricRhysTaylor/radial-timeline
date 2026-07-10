@@ -1800,10 +1800,11 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
 
     addProRow(new Setting(advancedPanel))
         .setName('Custom Pandoc metadata')
-        .setDesc('One "key: value" per line, passed as --metadata (e.g. lang: en-GB). Read by custom/imported templates; title and author always come from Book details. Lines starting with # are ignored.')
+        .setDesc('One "key: value" per line, passed to Pandoc as metadata for custom/imported templates. Title and author always come from Book Details. Lines starting with # are ignored.')
         .addTextArea(text => {
             text.inputEl.rows = 4;
             text.inputEl.addClass('ert-input--lg');
+            // eslint-disable-next-line obsidianmd/ui/sentence-case -- literal Pandoc metadata syntax; keys are case-sensitive and must stay lowercase
             text.setPlaceholder('lang: en-US\nsubtitle: A Novel');
             text.setValue(plugin.settings.customPandocMetadata || '');
             text.setDisabled(!isActive);

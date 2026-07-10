@@ -544,7 +544,7 @@ export class CommandRegistrar {
                 // (standard manuscript format: TNR 12pt, double-spaced).
                 const absoluteOutputFolder = getVaultAbsolutePath(this.plugin, outputFolder);
                 if (!absoluteOutputFolder) {
-                    new Notice('DOCX export is not supported in this environment.');
+                    new Notice('Word export is not supported in this environment.');
                     return {};
                 }
                 const referenceDoc = ensureManuscriptReferenceDocxInstalled(this.plugin);

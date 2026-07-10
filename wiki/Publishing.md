@@ -18,7 +18,27 @@ This page covers:
 - Export checks and template readiness
 - Exporting
 
-> **Prerequisites**: Pandoc installed, and LaTeX installed for PDF output. See [Exporting a Manuscript](#exporting-a-manuscript) for the export workflow and checks.
+> **Prerequisites**: Pandoc installed (all Pandoc-based exports, including Word), plus LaTeX for PDF output. See below for the two-installer setup, and [Exporting a Manuscript](#exporting-a-manuscript) for the export workflow and checks.
+
+---
+
+## Installing Pandoc and LaTeX
+
+Two official installers, no terminal required:
+
+**macOS**
+1. **Pandoc** — download the macOS `.pkg` installer from [pandoc.org/installing](https://pandoc.org/installing.html) and run it.
+2. **LaTeX** — download **MacTeX** from [mactex.org](https://www.tug.org/mactex/) and run it. (Full MacTeX is large, ~5 GB; the ~100 MB **BasicTeX** package from the same page also works for exporting.)
+3. In Obsidian: **Settings → Publish → Auto locate**. It finds both installs and fills the path for you. It also repairs a saved path that no longer exists — if you ever see "Pandoc not found at the configured path", one click here fixes it.
+
+**Windows**
+1. **Pandoc** — the Windows installer from [pandoc.org/installing](https://pandoc.org/installing.html).
+2. **LaTeX** — [MiKTeX](https://miktex.org/download) (lets LaTeX fetch what it needs on first export).
+3. **Settings → Publish → Auto locate**.
+
+Word (DOCX) export needs only step 1 — Pandoc, no LaTeX.
+
+*Alternative for terminal users:* Homebrew on macOS also works — `brew install pandoc` and `brew install --cask mactex-no-gui` — as does the standalone Pandoc binary in `~/.local/bin`. Auto locate probes all of these locations.
 
 ---
 

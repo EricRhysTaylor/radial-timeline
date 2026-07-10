@@ -110,10 +110,11 @@ function getKnownPandocPaths(): string[] {
     }
     // macOS + Linux
     return [
-        '/opt/homebrew/bin/pandoc',        // Homebrew Apple Silicon
-        '/usr/local/bin/pandoc',           // Homebrew Intel / manual install
-        '/usr/bin/pandoc',                 // System / package-manager install
-        '/snap/bin/pandoc',                // Snap (Linux)
+        '/opt/homebrew/bin/pandoc',                       // Homebrew Apple Silicon
+        '/usr/local/bin/pandoc',                          // Homebrew Intel / manual install
+        path.join(os.homedir(), '.local', 'bin', 'pandoc'), // Standalone binary / pipx (user-space)
+        '/usr/bin/pandoc',                                // System / package-manager install
+        '/snap/bin/pandoc',                               // Snap (Linux)
     ];
 }
 

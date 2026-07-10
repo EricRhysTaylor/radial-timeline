@@ -1023,7 +1023,7 @@ export async function runPandocOnContent(
         const pathSeparator = getCurrentPlatform() === 'win' ? ';' : ':';
         const extraPaths = getCurrentPlatform() === 'win'
             ? ['C:\\Program Files\\MiKTeX\\miktex\\bin\\x64', 'C:\\Program Files\\texlive\\2024\\bin\\win32']
-            : ['/Library/TeX/texbin', '/opt/homebrew/bin', '/usr/local/bin', '/usr/bin'];
+            : ['/Library/TeX/texbin', '/opt/homebrew/bin', '/usr/local/bin', path.join(os.homedir(), '.local', 'bin'), '/usr/bin'];
         env.PATH = [env.PATH, ...extraPaths].filter(Boolean).join(pathSeparator);
 
         execFile(binary, args, { cwd: options.workingDir, env }, (error, _stdout, stderr) => {

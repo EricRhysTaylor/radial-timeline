@@ -65,7 +65,7 @@ export interface ManuscriptExportTemplate {
     exportType: 'manuscript' | 'outline';
     manuscriptPreset: 'novel' | 'screenplay' | 'podcast';
     outlinePreset: 'beat-sheet' | 'episode-rundown' | 'shooting-schedule' | 'index-cards-csv' | 'index-cards-json';
-    outputFormat: 'markdown' | 'pdf' | 'csv' | 'json';
+    outputFormat: 'markdown' | 'pdf' | 'docx' | 'csv' | 'json';
     tocMode: 'markdown' | 'plain' | 'none';
     /** Append each scene's SceneId to its TOC entry. Useful when sending exports to AI reviewers. */
     includeSceneIdInToc?: boolean;
@@ -154,7 +154,7 @@ export interface ExportProfile {
     name: string;
     templateProfileId: string;
     usageContext: UsageContext;
-    outputFormat: 'pdf' | 'markdown' | 'csv' | 'json';
+    outputFormat: 'pdf' | 'markdown' | 'docx' | 'csv' | 'json';
     exportType: 'manuscript' | 'outline';
     manuscriptPreset?: 'novel' | 'screenplay' | 'podcast';
     outlinePreset?: 'beat-sheet' | 'episode-rundown' | 'shooting-schedule' | 'index-cards-csv' | 'index-cards-json';
@@ -1157,6 +1157,25 @@ export interface RadialTimelineSettings {
     pandocPath?: string;
     pandocFolder: string;  // Vault path for Pandoc templates and compile scripts (always populated via DEFAULT_SETTINGS merge)
     pandocLayouts?: PandocLayoutTemplate[];
+    /**
+     * Opt-in print binding gutter for PDF export. When true, exports inject
+     * `\geometry{bindingoffset=0.25in}` via --include-in-header so the inner
+     * margin compensates for paperback spine loss. Off by default because it
+     * changes page geometry — screen PDFs and print PDFs are different outputs.
+     */
+    pdfBindingGutter?: boolean;
+    /**
+     * Pro: extra Pandoc `--metadata key=value` pairs, one `key: value` per line.
+     * Serves authors migrating an existing Pandoc setup whose custom templates
+     * read variables beyond title/author (fontsize, geometry, documentclass…).
+     */
+    customPandocMetadata?: string;
+    /**
+     * Pro: raw LaTeX injected into the PDF preamble via --include-in-header.
+     * The escape hatch for migrated setups (custom macros, packages). Injected
+     * after the generated preamble so user definitions win.
+     */
+    customLatexPreamble?: string;
     /** @deprecated Migrated to BookProfile.lastUsedPandocLayoutByPreset. Kept for one migration cycle. */
     lastUsedPandocLayoutByPreset?: Record<string, string>;
 

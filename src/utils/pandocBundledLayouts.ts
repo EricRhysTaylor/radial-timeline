@@ -39,6 +39,17 @@ export function setBundledFontSourcePath(path: string | undefined): void {
 }
 
 /**
+ * Absolute filesystem path to the plugin's non-font Pandoc assets, e.g.
+ * `…/plugins/radial-timeline/assets/pandoc`. Currently carries the bundled
+ * Word reference document for DOCX submission export.
+ */
+let MODULE_BUNDLED_PANDOC_ASSET_SOURCE_PATH: string | undefined;
+
+export function setBundledPandocAssetSourcePath(path: string | undefined): void {
+    MODULE_BUNDLED_PANDOC_ASSET_SOURCE_PATH = path;
+}
+
+/**
  * Read-only accessor for the vault font root resolved at plugin load.
  * Consumers (font diagnostics) need this to verify that bundled font
  * files were actually deployed to disk.
@@ -133,6 +144,11 @@ const BUNDLED_PANDOC_LAYOUT_TEMPLATES: BundledPandocLayoutTemplate[] = [
             '\\hyphenpenalty=10000',
             '\\exhyphenpenalty=10000',
             '',
+            '% Pandoc --include-in-header injection point (custom preamble, gutter)',
+            '$for(header-includes)$',
+            '$header-includes$',
+            '$endfor$',
+            '',
             '\\begin{document}',
             '',
             '$body$',
@@ -167,6 +183,11 @@ const BUNDLED_PANDOC_LAYOUT_TEMPLATES: BundledPandocLayoutTemplate[] = [
             '\\pagestyle{plain}',
             '\\setlength{\\parindent}{0pt}',
             '\\setlength{\\parskip}{8pt}',
+            '',
+            '% Pandoc --include-in-header injection point (custom preamble, gutter)',
+            '$for(header-includes)$',
+            '$header-includes$',
+            '$endfor$',
             '',
             '\\begin{document}',
             '',
@@ -431,6 +452,50 @@ export async function installBundledPandocFonts(
     }
 
     return { installed, alreadyPresent, failed };
+}
+
+/**
+ * Bundled Word reference document (standard manuscript format: Times New
+ * Roman 12pt, double-spaced, 0.5" first-line indent, centered headings).
+ * Pandoc styles DOCX exports from it via `--reference-doc`.
+ */
+export const MANUSCRIPT_REFERENCE_DOCX = 'reference-manuscript.docx';
+
+export function getManuscriptReferenceDocxAbsolutePath(plugin: RadialTimelinePlugin): string | undefined {
+    const basePath = getVaultBasePath(plugin);
+    if (!basePath) return undefined;
+    return path.join(basePath, normalizePath(`${getPandocFolder(plugin)}/${MANUSCRIPT_REFERENCE_DOCX}`));
+}
+
+/**
+ * Copy the bundled reference.docx into the vault Pandoc folder. Same contract
+ * as installBundledPandocFonts: size-diff guard, overwrite on drift so shipped
+ * style fixes propagate. Returns the absolute path Pandoc should use, or an
+ * error string — DOCX export blocks (no silent fallback to Pandoc defaults).
+ */
+export function ensureManuscriptReferenceDocxInstalled(
+    plugin: RadialTimelinePlugin
+): { path?: string; error?: string } {
+    const sourceRoot = MODULE_BUNDLED_PANDOC_ASSET_SOURCE_PATH;
+    const target = getManuscriptReferenceDocxAbsolutePath(plugin);
+    if (!sourceRoot || !target) {
+        return { error: 'Pandoc asset paths are not available in this environment.' };
+    }
+    const source = path.join(sourceRoot, MANUSCRIPT_REFERENCE_DOCX);
+    try {
+        if (!fs.existsSync(source)) {
+            return { error: `Missing bundled asset: ${source}. Reinstall the plugin.` };
+        }
+        fs.mkdirSync(path.dirname(target), { recursive: true });
+        const needsCopy = !fs.existsSync(target)
+            || fs.statSync(source).size !== fs.statSync(target).size;
+        if (needsCopy) {
+            fs.copyFileSync(source, target);
+        }
+        return { path: target };
+    } catch (e) {
+        return { error: (e as Error).message || String(e) };
+    }
 }
 
 async function ensureFolderPath(plugin: RadialTimelinePlugin, folderPath: string): Promise<void> {

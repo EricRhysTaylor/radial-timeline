@@ -271,6 +271,8 @@ export class ManuscriptOptionsModal extends Modal {
     private pdfSettingsCard?: HTMLElement;
     private artifactRowEl?: HTMLElement;
     private artifactHelperEl?: HTMLElement;
+    private gutterRowEl?: HTMLElement;
+    private gutterHelperEl?: HTMLElement;
     private includeMatterCard?: HTMLElement;
     private includeMatterToggle?: ToggleComponent;
     private exportCleanupCard?: HTMLElement;
@@ -337,6 +339,7 @@ export class ManuscriptOptionsModal extends Modal {
         isManuscript: boolean;
         isOutline: boolean;
         isPdfManuscript: boolean;
+        isDocxManuscript: boolean;
         isMarkdownManuscript: boolean;
         showFormatPills: boolean;
         showFormatStatic: boolean;
@@ -359,6 +362,7 @@ export class ManuscriptOptionsModal extends Modal {
         const isOutline = this.exportType === 'outline';
         const isManuscript = !isOutline;
         const isPdfManuscript = isManuscript && this.outputFormat === 'pdf';
+        const isDocxManuscript = isManuscript && this.outputFormat === 'docx';
         const isMarkdownManuscript = isManuscript && this.outputFormat === 'markdown';
         const lockSceneSelectionToFullBook = isPdfManuscript;
         const showScope = !lockSceneSelectionToFullBook;
@@ -367,6 +371,7 @@ export class ManuscriptOptionsModal extends Modal {
             isManuscript,
             isOutline,
             isPdfManuscript,
+            isDocxManuscript,
             isMarkdownManuscript,
             showFormatPills: isManuscript,
             showFormatStatic: isOutline,
@@ -375,7 +380,7 @@ export class ManuscriptOptionsModal extends Modal {
             showToc: isMarkdownManuscript,
             showPublishing: isManuscript,
             showWordCount: isManuscript,
-            showIncludeMatter: isPdfManuscript,
+            showIncludeMatter: isPdfManuscript || isDocxManuscript,
             showExportCleanup: isManuscript,
             showSavePrecompile: isPdfManuscript,
             showSplit: isManuscript,
@@ -397,10 +402,11 @@ export class ManuscriptOptionsModal extends Modal {
             this.includeSynopsis = this.includeSynopsisUserChoice;
         } else {
             this.includeSynopsis = false;
-            if (mode.isPdfManuscript && !this.hasTouchedMatterToggle) {
+            const matterCapable = mode.isPdfManuscript || mode.isDocxManuscript;
+            if (matterCapable && !this.hasTouchedMatterToggle) {
                 this.includeMatterUserChoice = false;
             }
-            this.includeMatter = mode.isPdfManuscript ? this.includeMatterUserChoice : false;
+            this.includeMatter = matterCapable ? this.includeMatterUserChoice : false;
             if (!mode.isPdfManuscript) {
                 this.selectedLayoutId = undefined;
             }
@@ -515,6 +521,7 @@ export class ManuscriptOptionsModal extends Modal {
         this.formatPillRowEl = formatCol.createDiv({ cls: 'ert-manuscript-pill-row ert-manuscript-pill-row--single' });
         this.createOutputFormatPill(this.formatPillRowEl, t('manuscriptModal.formatMarkdown'), 'markdown', false, 'both');
         this.createOutputFormatPill(this.formatPillRowEl, t('manuscriptModal.formatPdf'), 'pdf', false, 'manuscript');
+        this.createOutputFormatPill(this.formatPillRowEl, t('manuscriptModal.formatDocx'), 'docx', false, 'manuscript');
         this.formatStaticEl = formatCol.createDiv({ cls: 'ert-sub-card-note ert-hidden', text: 'Format: Markdown' });
         this.documentTypeDescEl = outputGrid.createDiv({ cls: 'ert-sub-card-note ert-manuscript-output-desc' });
 
@@ -735,6 +742,22 @@ export class ManuscriptOptionsModal extends Modal {
         this.artifactHelperEl = this.pdfSettingsCard.createDiv({
             cls: 'ert-sub-card-note',
             text: 'Saves the assembled source and the cleaned Markdown sent to Pandoc. Cleanup settings below decide what gets removed.'
+        });
+
+        // Print binding gutter — persisted directly on settings (not per-profile):
+        // it describes the physical output target (screen vs paperback), which is
+        // stable across export profiles. PDF-only; hidden for DOCX in syncExportUi.
+        this.gutterRowEl = this.pdfSettingsCard.createDiv({ cls: 'ert-manuscript-toggle-row' });
+        this.gutterRowEl.createSpan({ cls: 'ert-manuscript-toggle-label', text: 'Print binding gutter (paperback inner margin)' });
+        new ToggleComponent(this.gutterRowEl)
+            .setValue(this.plugin.settings.pdfBindingGutter === true)
+            .onChange(async (value) => {
+                this.plugin.settings.pdfBindingGutter = value;
+                await this.plugin.saveSettings();
+            });
+        this.gutterHelperEl = this.pdfSettingsCard.createDiv({
+            cls: 'ert-sub-card-note',
+            text: 'Adds 0.25" to the inner margin so text clears the spine when printed and bound (KDP/IngramSpark). Leave off for screen-reading PDFs.'
         });
 
         this.wordCountCard = publishingBody.createDiv({ cls: 'ert-manuscript-rule-block ert-manuscript-rule-block--separated' });
@@ -1163,7 +1186,10 @@ export class ManuscriptOptionsModal extends Modal {
     }
 
     private getCleanupFormatForState(outputFormat: ExportFormat): 'markdown' | 'pdf' {
-        return outputFormat === 'pdf' ? 'pdf' : 'markdown';
+        // DOCX is reader-facing submission output, so it shares PDF's cleanup
+        // posture (strip comments/links/callouts + task markers) rather than the
+        // markdown review-handoff posture which keeps them.
+        return (outputFormat === 'pdf' || outputFormat === 'docx') ? 'pdf' : 'markdown';
     }
 
     private getActiveCleanupOptions(): ManuscriptExportCleanupOptions {
@@ -1640,6 +1666,7 @@ export class ManuscriptOptionsModal extends Modal {
         const iconMap: Record<ExportFormat, string> = {
             'markdown': 'file-text',
             'pdf': 'file-text',
+            'docx': 'file-type',
             'csv': 'table',
             'json': 'code'
         };
@@ -1679,7 +1706,7 @@ export class ManuscriptOptionsModal extends Modal {
 
     private normalizeOutputFormatForOutline(): void {
         if (this.exportType !== 'outline') return;
-        if (this.outputFormat === 'pdf' || this.outputFormat === 'csv' || this.outputFormat === 'json') {
+        if (this.outputFormat !== 'markdown') {
             this.outputFormat = 'markdown';
         }
     }
@@ -1772,6 +1799,9 @@ export class ManuscriptOptionsModal extends Modal {
         this.markdownArtifactToggle?.setDisabled(!mode.showSavePrecompile);
         this.artifactRowEl?.toggleClass('ert-hidden', !mode.showSavePrecompile);
         this.artifactHelperEl?.toggleClass('ert-hidden', !mode.showSavePrecompile);
+        // Binding gutter is LaTeX page geometry — PDF only, never DOCX.
+        this.gutterRowEl?.toggleClass('ert-hidden', !mode.isPdfManuscript);
+        this.gutterHelperEl?.toggleClass('ert-hidden', !mode.isPdfManuscript);
 
         this.syncOutputFormatPills();
         this.updateLayoutPicker();

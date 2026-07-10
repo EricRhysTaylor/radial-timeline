@@ -22,7 +22,7 @@ import { assertNever } from './assertNever';
 export type ExportType = 'manuscript' | 'outline';
 export type ManuscriptPreset = 'screenplay' | 'podcast' | 'novel';
 export type OutlinePreset = 'beat-sheet' | 'episode-rundown' | 'shooting-schedule' | 'index-cards-csv' | 'index-cards-json';
-export type ExportFormat = 'markdown' | 'pdf' | 'csv' | 'json';
+export type ExportFormat = 'markdown' | 'pdf' | 'docx' | 'csv' | 'json';
 
 // ════════════════════════════════════════════════════════════════════════════
 // Pandoc Layout Helpers
@@ -249,9 +249,11 @@ export function buildExportFilename(options: ExportFilenameOptions): string {
     const orderAcronym = getOrderAcronym(options.order);
     const hasSubplotFilter = options.subplotFilter && options.subplotFilter !== 'All Subplots';
     const orderPart = hasSubplotFilter ? `Sub-${orderAcronym}` : orderAcronym;
-    const isPandocExport = options.exportType === 'manuscript' && options.extension === 'pdf';
+    const isPandocExport = options.exportType === 'manuscript'
+        && (options.extension === 'pdf' || options.extension === 'docx');
 
-    // Manuscript PDF exports use formal, title-first naming.
+    // Manuscript Pandoc exports (PDF, Word) use formal, title-first naming —
+    // these are the files writers attach to submissions.
     if (isPandocExport) {
         const isDefault = options.fileStem === 'Manuscript' || options.fileStem === 'Untitled-Manuscript';
         const prefix = options.fileStem
@@ -260,7 +262,8 @@ export function buildExportFilename(options: ExportFilenameOptions): string {
         const abbrev = options.layoutAbbreviation && /^[A-Z]{2}$/.test(options.layoutAbbreviation)
             ? ` [${options.layoutAbbreviation}]`
             : '';
-        return `${prefix} PDF ${timestamp}${abbrev}.${options.extension}`;
+        const formatLabel = options.extension === 'docx' ? 'Word' : 'PDF';
+        return `${prefix} ${formatLabel} ${timestamp}${abbrev}.${options.extension}`;
     }
     
     if (options.exportType === 'outline') {
@@ -274,9 +277,19 @@ export function buildExportFilename(options: ExportFilenameOptions): string {
 }
 
 export interface PandocOptions {
-    targetFormat: 'pdf';
+    targetFormat: 'pdf' | 'docx';
     pandocPath?: string;
+    /** LaTeX template — PDF only. Ignored for docx. */
     templatePath?: string;
+    /** Word reference document (styles) — docx only. Ignored for pdf. */
+    referenceDocPath?: string;
+    /**
+     * Raw LaTeX injected into the preamble via `--include-in-header` (PDF only).
+     * Carries the opt-in binding gutter (`\geometry{bindingoffset=…}`) and any
+     * Pro custom preamble the author supplies. Ignored for docx because it is
+     * LaTeX, not Word styling.
+     */
+    headerIncludes?: string;
     workingDir?: string;
     metadata?: Record<string, string | undefined>;
 }
@@ -286,6 +299,42 @@ export interface OutlineExportResult {
     extension: 'md' | 'csv' | 'json';
     label: string;
 }
+
+/**
+ * Parse the Pro "custom Pandoc metadata" setting: one `key: value` per line.
+ * Blank lines and `#` comment lines are skipped. Keys are restricted to
+ * Pandoc-legal metadata identifiers; anything else is ignored rather than
+ * passed through to the CLI (fail-quiet at export time is deliberate — the
+ * Publish tab reports skipped lines when the field is edited, and a malformed
+ * line must never abort an export or leak arbitrary strings into subprocess
+ * args). `title`/`author` keys are accepted here but overridden by BookMeta
+ * at the call sites.
+ */
+export function parseCustomPandocMetadata(raw: string | undefined): Record<string, string> {
+    const out: Record<string, string> = {};
+    if (!raw) return out;
+    for (const line of raw.split(/\r?\n/)) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const idx = trimmed.indexOf(':');
+        if (idx <= 0) continue;
+        const key = trimmed.slice(0, idx).trim();
+        const value = trimmed.slice(idx + 1).trim();
+        if (!/^[A-Za-z][A-Za-z0-9_.-]*$/.test(key) || !value) continue;
+        out[key] = value;
+    }
+    return out;
+}
+
+/**
+ * LaTeX snippet for the opt-in paperback binding gutter (see
+ * settings.pdfBindingGutter). `twoside` is included at the geometry level so
+ * the offset alternates inner/outer even for layouts whose documentclass is
+ * oneside (Standard Manuscript) — paperbacks print duplex, so a fixed left
+ * offset would land on the wrong edge of every verso page. For layouts that
+ * are already twoside it is a no-op.
+ */
+export const BINDING_GUTTER_LATEX = '\\geometry{twoside,bindingoffset=0.25in}';
 
 function resolveVaultAbsolutePath(plugin: RadialTimelinePlugin, vaultPath: string): string | null {
     const adapter = plugin.app.vault.adapter; // SAFE: adapter needed to resolve absolute path for Pandoc output
@@ -928,17 +977,37 @@ export async function runPandocOnContent(
     options: PandocOptions
 ): Promise<void> {
     const binary = resolvePandocBinary(options);
-    const pdfEngineSelection = getAutoPdfEngineSelection(options.templatePath);
-    const pdfEngine = pdfEngineSelection.path || pdfEngineSelection.engine;
+    const isPdf = options.targetFormat === 'pdf';
     const tmpDir = os.tmpdir();
     const tmpInput = path.join(tmpDir, `rt-pandoc-${Date.now()}.md`);
     const preparedContent = preparePandocContent(content, options);
     await fs.promises.writeFile(tmpInput, preparedContent, 'utf8');
 
+    // Optional preamble injection (PDF only): binding gutter + Pro custom LaTeX.
+    // Written to its own temp file so `--include-in-header` can reference it, and
+    // cleaned up alongside the markdown temp file in the finally block.
+    let tmpHeader: string | null = null;
+    if (isPdf && options.headerIncludes && options.headerIncludes.trim()) {
+        tmpHeader = path.join(tmpDir, `rt-pandoc-header-${Date.now()}.tex`);
+        await fs.promises.writeFile(tmpHeader, options.headerIncludes, 'utf8');
+    }
+
     const args = ['-f', 'markdown', '-t', options.targetFormat, '-o', outputAbsolutePath, tmpInput];
-    args.push('--pdf-engine', pdfEngine);
-    if (options.templatePath && options.templatePath.trim()) {
-        args.push('--template', options.templatePath.trim());
+    if (isPdf) {
+        const pdfEngineSelection = getAutoPdfEngineSelection(options.templatePath);
+        const pdfEngine = pdfEngineSelection.path || pdfEngineSelection.engine;
+        args.push('--pdf-engine', pdfEngine);
+        if (options.templatePath && options.templatePath.trim()) {
+            args.push('--template', options.templatePath.trim());
+        }
+        if (tmpHeader) {
+            args.push('--include-in-header', tmpHeader);
+        }
+    } else {
+        // docx — reader-style Word document from a reference doc (submission format).
+        if (options.referenceDocPath && options.referenceDocPath.trim()) {
+            args.push('--reference-doc', options.referenceDocPath.trim());
+        }
     }
     if (options.metadata) {
         for (const [key, rawValue] of Object.entries(options.metadata)) {
@@ -965,10 +1034,13 @@ export async function runPandocOnContent(
             resolve();
         });
     }).finally(async () => {
-        try {
-            await fs.promises.unlink(tmpInput);
-        } catch (e) {
-            console.warn('Failed to clean tmp pandoc file', e);
+        for (const tmp of [tmpInput, tmpHeader]) {
+            if (!tmp) continue;
+            try {
+                await fs.promises.unlink(tmp);
+            } catch (e) {
+                console.warn('Failed to clean tmp pandoc file', e);
+            }
         }
     });
 }
@@ -1244,6 +1316,8 @@ export function getExportFormatExtension(format: ExportFormat): string {
     switch (format) {
         case 'pdf':
             return 'pdf';
+        case 'docx':
+            return 'docx';
         case 'csv':
             return 'csv';
         case 'json':

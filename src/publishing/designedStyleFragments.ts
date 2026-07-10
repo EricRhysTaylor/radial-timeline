@@ -645,6 +645,17 @@ export function renderBodySetup(spec: DesignedStyleSpec): string {
     lines.push('\\setlength{\\emergencystretch}{3em}');
     lines.push('\\tolerance=1000');
     lines.push('\\hyphenpenalty=200');
+    // Widow/orphan suppression — emitted unconditionally for every spec. A widow
+    // is a paragraph's last line stranded at the top of a page; an orphan is its
+    // first line stranded at the bottom. Professional book interiors forbid both.
+    // 10000 is LaTeX's "infinitely bad" penalty, so the breaker will reflow rather
+    // than leave a widow/orphan. Paired with \raggedbottom so the page can run one
+    // line short instead of stretching interline glue to fill the height (fiction
+    // convention — a slightly short page reads better than a gappy one).
+    lines.push('\\widowpenalty=10000');
+    lines.push('\\clubpenalty=10000');
+    lines.push('\\displaywidowpenalty=10000');
+    lines.push('\\raggedbottom');
     if (spec.body.paragraphIndentEm != null) {
         lines.push(`\\setlength{\\parindent}{${spec.body.paragraphIndentEm}em}`);
     }

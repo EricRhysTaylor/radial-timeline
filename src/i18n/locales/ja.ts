@@ -530,6 +530,7 @@ export const ja: DeepPartial<TranslationKeys> = {
         outlineIndexCardsDesc: '外部ツールや自動化のための構造化シーンデータ。',
         formatMarkdown: 'Markdown',
         formatPdf: 'PDF',
+        formatDocx: 'Word',
         formatCsv: 'CSV',
         formatJson: 'JSON',
         outlinePresetHeading: 'アウトラインプリセット',

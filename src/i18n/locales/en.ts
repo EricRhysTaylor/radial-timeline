@@ -586,6 +586,7 @@ export interface TranslationKeys {
         outlineIndexCardsDesc: string;
         formatMarkdown: string;
         formatPdf: string;
+        formatDocx: string;
         formatCsv: string;
         formatJson: string;
         outlinePresetHeading: string;
@@ -2783,6 +2784,7 @@ export const en: TranslationKeys = {
         outlineIndexCardsDesc: 'Structured scene data for external tools and automation.',
         formatMarkdown: 'Markdown',
         formatPdf: 'PDF',
+        formatDocx: 'Word',
         formatCsv: 'CSV',
         formatJson: 'JSON',
         outlinePresetHeading: 'Outline preset',

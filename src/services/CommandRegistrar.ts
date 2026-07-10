@@ -24,7 +24,9 @@ import { generateSceneContent } from '../utils/sceneGenerator';
 import { sanitizeSourcePath, buildInitialSceneFilename, buildInitialBackdropFilename } from '../utils/sceneCreation';
 import { getTemplateParts } from '../utils/yamlTemplateNormalize';
 import { ensureManuscriptOutputFolder, ensureOutlineOutputFolder } from '../utils/aiOutput';
-import { buildExportFilename, buildPrecursorFilename, buildOutlineExport, getExportFormatExtension, getLayoutById, getStructuredFontDiagnostic, getTemplateFontDiagnostics, getVaultAbsolutePath, resolveTemplatePath, runPandocOnContent, stemToReadable, validatePandocLayout } from '../utils/exportFormats';
+import { BINDING_GUTTER_LATEX, buildExportFilename, buildPrecursorFilename, buildOutlineExport, getExportFormatExtension, getLayoutById, getStructuredFontDiagnostic, getTemplateFontDiagnostics, getVaultAbsolutePath, parseCustomPandocMetadata, resolveTemplatePath, runPandocOnContent, stemToReadable, validatePandocLayout } from '../utils/exportFormats';
+import { isProActive } from '../settings/proEntitlement';
+import { ensureManuscriptReferenceDocxInstalled } from '../utils/pandocBundledLayouts';
 import { getActiveBookExportContext } from '../utils/exportContext';
 import { getActiveBook } from '../utils/books';
 import { getActiveFrontmatterMappings, normalizeFrontmatterKeys } from '../utils/frontmatter';
@@ -535,6 +537,93 @@ export class CommandRegistrar {
                 };
             }
 
+            if (result.outputFormat === 'docx') {
+                // Submission-format Word export (Core). No LaTeX layout, font
+                // policy, or template validation — those gates are PDF-only.
+                // Pandoc styles the document from the bundled reference.docx
+                // (standard manuscript format: TNR 12pt, double-spaced).
+                const absoluteOutputFolder = getVaultAbsolutePath(this.plugin, outputFolder);
+                if (!absoluteOutputFolder) {
+                    new Notice('DOCX export is not supported in this environment.');
+                    return {};
+                }
+                const referenceDoc = ensureManuscriptReferenceDocxInstalled(this.plugin);
+                if (!referenceDoc.path) {
+                    const message = `Cannot export DOCX: Word reference document unavailable. ${referenceDoc.error ?? ''}`.trim();
+                    new Notice(message, 8000);
+                    throw new Error(message);
+                }
+                const docxMetadata: Record<string, string | undefined> = {
+                    ...(isProActive(this.plugin)
+                        ? parseCustomPandocMetadata(this.plugin.settings.customPandocMetadata)
+                        : {}),
+                    title: bookMetaResolution.bookMeta?.title,
+                    author: bookMetaResolution.bookMeta?.author,
+                };
+
+                new Notice('Running Pandoc...');
+                for (const range of partRanges) {
+                    const partSelection = this.sliceSelection(slicedSelection, range.start, range.end);
+                    const assembled = await assembleManuscript(
+                        partSelection.files,
+                        this.app.vault,
+                        undefined,
+                        result.tocMode === 'markdown',
+                        filteredSelection.sortOrder,
+                        result.tocMode !== 'none',
+                        bookMetaResolution.bookMeta,
+                        filteredSelection.matterMetaByPath,
+                        {
+                            chapterMarkersByScenePath: filteredSelection.chapterMarkersByScenePath,
+                            sceneHeadingRenderMode: 'markdown-h2',
+                            includeSceneIdInToc: result.includeSceneIdInToc === true,
+                            includeSceneIdInHeading: result.includeSceneIdInHeading === true,
+                            bookPageOrder,
+                            includeMatterPages: includeMatter,
+                        }
+                    );
+
+                    if (result.updateWordCounts) {
+                        await updateSceneWordCounts(this.app, partSelection.files, assembled.scenes);
+                    }
+
+                    // Reader-facing cleanup posture (same as PDF): comments,
+                    // links, callouts, task markers stripped per modal toggles.
+                    const sanitizedText = sanitizeCompiledManuscriptForPdf(assembled.text, cleanupOptions);
+
+                    const renderedFilename = isSplitRun
+                        ? `${baseTitle} - Part ${range.part}.docx`
+                        : buildExportFilename({
+                            exportType: 'manuscript',
+                            order: effectiveOrder,
+                            subplotFilter: effectiveSubplot,
+                            manuscriptPreset: result.manuscriptPreset,
+                            extension,
+                            fileStem: ctx.fileStem
+                        });
+                    await runPandocOnContent(sanitizedText, `${absoluteOutputFolder}/${renderedFilename}`, {
+                        targetFormat: 'docx',
+                        referenceDocPath: referenceDoc.path,
+                        workingDir: absoluteOutputFolder,
+                        pandocPath: this.plugin.settings.pandocPath,
+                        metadata: docxMetadata
+                    });
+                    renderedPaths.push(`${outputFolder}/${renderedFilename}`);
+                }
+
+                if (isSplitRun) {
+                    new Notice(`Export successful: ${renderedPaths.length} DOCX files`);
+                } else {
+                    new Notice(`Export successful: ${renderedPaths[0].split('/').pop()}`);
+                }
+                return {
+                    renderedPath: renderedPaths[0],
+                    renderedPaths,
+                    outputFolder,
+                    messages: statusMessages
+                };
+            }
+
             if (result.outputFormat !== 'pdf') {
                 throw new Error(`Unsupported manuscript output format: ${result.outputFormat}`);
             }
@@ -588,10 +677,30 @@ export class CommandRegistrar {
             const chapterMarkersByScenePath = layoutExportBehavior.suppressChapterMarkers
                 ? {}
                 : filteredSelection.chapterMarkersByScenePath;
+            // Base metadata from BookMeta; Pro custom metadata layers on top but
+            // never overrides title/author (BookMeta is the single source of
+            // truth for those — running heads and the title page depend on it).
+            const proActive = isProActive(this.plugin);
+            const customMetadata = proActive
+                ? parseCustomPandocMetadata(this.plugin.settings.customPandocMetadata)
+                : {};
             const pandocMetadata: Record<string, string | undefined> = {
+                ...customMetadata,
                 title: bookMetaResolution.bookMeta?.title,
                 author: bookMetaResolution.bookMeta?.author,
             };
+            // Preamble injection: opt-in binding gutter (Core) + Pro custom
+            // LaTeX. User preamble comes last so its definitions win.
+            const headerIncludeParts: string[] = [];
+            if (this.plugin.settings.pdfBindingGutter === true) {
+                headerIncludeParts.push(BINDING_GUTTER_LATEX);
+            }
+            if (proActive && this.plugin.settings.customLatexPreamble?.trim()) {
+                headerIncludeParts.push(this.plugin.settings.customLatexPreamble.trim());
+            }
+            const headerIncludes = headerIncludeParts.length > 0
+                ? headerIncludeParts.join('\n')
+                : undefined;
             const fontDiagnostics = getTemplateFontDiagnostics(templatePath);
             if (fontDiagnostics.fontsEmbeddedInPdf) {
                 statusMessages.push('Font embedding: XeLaTeX/LuaLaTeX embed resolved OpenType/TrueType fonts in the exported PDF.');
@@ -698,6 +807,7 @@ export class CommandRegistrar {
                 await runPandocOnContent(sanitizedMarkdown, renderedAbsolutePath, {
                     targetFormat: 'pdf',
                     templatePath,
+                    headerIncludes,
                     workingDir: absoluteOutputFolder,
                     pandocPath: this.plugin.settings.pandocPath,
                     metadata: pandocMetadata
@@ -767,7 +877,7 @@ export class CommandRegistrar {
         snapshot: PublishingValidationSnapshot,
         context: {
             exportType: 'manuscript' | 'outline';
-            outputFormat: 'pdf' | 'markdown' | 'csv' | 'json';
+            outputFormat: 'pdf' | 'markdown' | 'docx' | 'csv' | 'json';
         }
     ): ExportFailure | null {
         const shouldBlockOnBookMeta = context.exportType === 'manuscript' && context.outputFormat === 'pdf';

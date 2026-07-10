@@ -10,13 +10,24 @@
 The export workflow can produce:
 
 *   compiled Markdown manuscripts
-*   PDF manuscripts
+*   PDF manuscripts (typeset via Pandoc + LaTeX)
+*   Word (DOCX) manuscripts in standard submission format
 *   outline-style exports
 *   filtered or ranged exports by order and subplot
 
-Core includes compiled Markdown and Pandoc PDF export with bundled Core layouts. Pro adds additional bundled layouts and deeper publishing customization.
+Core includes compiled Markdown, Pandoc PDF export with bundled Core layouts, and Word submission export. Pro adds additional bundled layouts and deeper publishing customization (custom Pandoc metadata, custom LaTeX preamble, the PDF style designer).
 
 The panel supports ordering, selection range, output presets, and publishing-oriented layout decisions in one place.
+
+## Word (DOCX) Submission Export
+
+The **Word** format produces a `.docx` in standard manuscript format — the layout agents and editors expect for queries and submissions: Times New Roman 12 pt, double-spaced, 0.5" first-line indents, centered chapter headings that start on a new page. Styling comes from a bundled Word reference document installed into your Pandoc folder (`reference-manuscript.docx`); Pandoc is required, but no LaTeX engine and no PDF layout/font setup.
+
+Front & back matter Book Pages can be included, and the export cleanup toggles (comments, links, callouts) apply the same way they do for PDF.
+
+## Print Binding Gutter (PDF)
+
+PDF options include a **Print binding gutter** toggle. When on, exports add 0.25" to the inner margin so text clears the spine of a printed, bound paperback (KDP/IngramSpark). Leave it off for PDFs meant to be read on screen — it changes the page geometry. The setting persists across exports.
 
 ## PDF Layouts
 

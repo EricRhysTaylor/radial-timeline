@@ -90,6 +90,7 @@ const filesToCopy = [
 // name would be brittle as files are added/removed.
 const directoriesToCopy = [
 	"assets/fonts",
+	"assets/pandoc",
 ];
 
 function copyDirRecursiveSync(srcDir, destDir) {

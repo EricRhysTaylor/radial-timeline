@@ -272,13 +272,35 @@ The export panel lets you:
 - Select the output format (Novel, Screenplay, Podcast Script)
 - Choose the template for that format
 - Select which scenes to include (all, or filtered by act/subplot)
-- Toggle Markdown-only vs. PDF
+- Choose Markdown, PDF, or Word (DOCX) output
 - Review export checks for missing templates, missing fonts, template compatibility, and layout-specific warnings
 - Preview the selected layout's page structure before generating a PDF
 
 Files land in `Radial Timeline/Export/` by default, or in whatever vault folder you set under **Settings → Advanced → Configuration → Export folder**.
 
 For the end-to-end export workflow and troubleshooting, start here and use the checks in the export panel to catch missing Pandoc, LaTeX, templates, or fonts before rendering.
+
+---
+
+## What Survives Export — the Content Contract
+
+If you're migrating a manuscript that already carries Pandoc/LaTeX markup, this is the exact contract the exporter honors:
+
+**Preserved verbatim (PDF export):**
+- Inline LaTeX commands in scene text — `\newpage`, `\vspace{…}`, custom macros. Scene bodies are never LaTeX-escaped; they reach Pandoc exactly as written and render as real LaTeX.
+- Raw LaTeX environments (`\begin{…}…\end{…}`), fenced code blocks, and display math (`$$…$$`) — protected even from the export-cleanup toggles, so a `%%`, `[..](..)`, or task-marker pattern *inside* them is never collaterally stripped.
+
+**Always removed:**
+- YAML blocks (`---…---` with `key: value` lines) anywhere in the compiled text — including note frontmatter. Don't put content you need inside YAML fences.
+- Editorialist review blocks.
+
+**Removed only when the matching cleanup toggle is on:** `%%comments%%`, `%%ai: queries%%`, HTML comments, links (label kept), callouts, block IDs, and (PDF/Word) task-list markers.
+
+**Document metadata:** `title` and `author` always come from your BookMeta note. A YAML metadata block at the top of your old manuscript is *not* forwarded — use **Settings → Publish → Advanced Pandoc** (Pro) instead:
+- **Custom Pandoc metadata** — extra `--metadata key: value` pairs for custom/imported templates (`lang`, `subtitle`, or any variable your template reads).
+- **Custom LaTeX preamble** — raw LaTeX injected into the PDF preamble after the layout's own setup, so your `\usepackage`/`\newcommand` definitions win. This is the escape hatch for reproducing an existing Pandoc setup exactly.
+
+**Word (DOCX) export** converts the same compiled Markdown via Pandoc using a bundled reference document (standard manuscript format). LaTeX commands are not rendered in DOCX output — they pass through Pandoc's raw-LaTeX handling and are dropped from the Word file, so keep LaTeX-dependent formatting on the PDF path.
 
 ---
 

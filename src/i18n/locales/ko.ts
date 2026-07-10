@@ -529,6 +529,7 @@ export const ko: DeepPartial<TranslationKeys> = {
         outlineIndexCardsDesc: '외부 도구 및 자동화를 위한 구조화된 장면 데이터.',
         formatMarkdown: 'Markdown',
         formatPdf: 'PDF',
+        formatDocx: 'Word',
         formatCsv: 'CSV',
         formatJson: 'JSON',
         outlinePresetHeading: '아웃라인 프리셋',

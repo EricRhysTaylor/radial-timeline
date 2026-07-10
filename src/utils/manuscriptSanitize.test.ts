@@ -215,3 +215,85 @@ Ends here ^scene-end`;
         expect(kept).toContain('%% AI : keep? %%');
     });
 });
+
+describe('protected-segment masking (raw LaTeX / code / math survive opt-in strippers)', () => {
+    const ALL_STRIPPERS = {
+        stripComments: true,
+        stripAiComments: true,
+        stripLinks: true,
+        stripCallouts: true,
+        stripBlockIds: true
+    };
+
+    it('preserves %% and [..](..) patterns inside a raw LaTeX environment', () => {
+        const input = `Prose with a [link](https://example.com) and a %%comment%%.
+
+\\begin{verbatim}
+Keep this literal: %%not a comment%% and [not](a-link)
+\\end{verbatim}
+
+More prose %%gone%%.`;
+
+        const out = sanitizeCompiledManuscript(input, ALL_STRIPPERS);
+        expect(out).toContain('Prose with a link and a .');
+        expect(out).toContain('%%not a comment%%');
+        expect(out).toContain('[not](a-link)');
+        expect(out).not.toContain('%%gone%%');
+    });
+
+    it('handles nested same-name LaTeX environments', () => {
+        const input = `\\begin{quote}
+outer %%keep%%
+\\begin{quote}
+inner [keep](me)
+\\end{quote}
+tail %%keep too%%
+\\end{quote}
+
+outside %%strip me%%`;
+
+        const out = sanitizeCompiledManuscript(input, ALL_STRIPPERS);
+        expect(out).toContain('outer %%keep%%');
+        expect(out).toContain('inner [keep](me)');
+        expect(out).toContain('tail %%keep too%%');
+        expect(out).not.toContain('strip me');
+    });
+
+    it('preserves fenced code and display math from strippers and task-marker removal', () => {
+        const input = `- [ ] real task marker outside
+
+\`\`\`text
+- [ ] keep this literal task syntax
+a %%literal%% and ^blockid
+\`\`\`
+
+$$
+f[x](y) = %%math%%
+$$`;
+
+        const out = sanitizeCompiledManuscriptForPdf(input, ALL_STRIPPERS);
+        expect(out).toContain('- real task marker outside');
+        expect(out).toContain('- [ ] keep this literal task syntax');
+        expect(out).toContain('a %%literal%% and ^blockid');
+        expect(out).toContain('f[x](y) = %%math%%');
+    });
+
+    it('leaves unclosed environments untouched rather than swallowing the document', () => {
+        const input = `\\begin{quote}
+never closed %%stays because unclosed envs pass through line by line%%
+
+after %%stripped%%`;
+
+        const out = sanitizeCompiledManuscript(input, ALL_STRIPPERS);
+        expect(out).toContain('\\begin{quote}');
+        expect(out).not.toContain('%%stripped%%');
+    });
+
+    it('inline LaTeX commands in prose are untouched by all strippers', () => {
+        const input = 'He left.\\newpage And \\vspace{2em} continued %%note%%.';
+        const out = sanitizeCompiledManuscript(input, ALL_STRIPPERS);
+        expect(out).toContain('\\newpage');
+        expect(out).toContain('\\vspace{2em}');
+        expect(out).not.toContain('%%note%%');
+    });
+});

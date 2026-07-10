@@ -529,6 +529,7 @@ export const de: DeepPartial<TranslationKeys> = {
         outlineIndexCardsDesc: 'Strukturierte Szenendaten für externe Tools und Automatisierung.',
         formatMarkdown: 'Markdown',
         formatPdf: 'PDF',
+        formatDocx: 'Word',
         formatCsv: 'CSV',
         formatJson: 'JSON',
         outlinePresetHeading: 'Gliederungs-Voreinstellung',

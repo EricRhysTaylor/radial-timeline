@@ -27,7 +27,7 @@ type ValidationScope = ValidationIssue['scope'];
 
 interface PublishingValidationContext {
     exportType?: 'manuscript' | 'outline';
-    outputFormat?: 'pdf' | 'markdown' | 'csv' | 'json';
+    outputFormat?: 'pdf' | 'markdown' | 'docx' | 'csv' | 'json';
     manuscriptPreset?: UsageContext;
     selectedLayoutId?: string;
 }

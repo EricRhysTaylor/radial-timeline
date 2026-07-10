@@ -17,7 +17,7 @@ import { createHash } from 'crypto'; // SAFE: exact retired starter sample finge
 import * as os from 'os'; // SAFE: Node os for home-directory resolution (no env identity reads)
 import * as path from 'path'; // SAFE: Node path for absolute-path detection in layout input normalization
 import { DEFAULT_SETTINGS } from '../defaults';
-import { buildMinimalSubprocessEnv, getStructuredFontDiagnostic, validatePandocLayout, slugifyToFileStem, getPandocFolder } from '../../utils/exportFormats';
+import { buildMinimalSubprocessEnv, getStructuredFontDiagnostic, parseCustomPandocMetadata, validatePandocLayout, slugifyToFileStem, getPandocFolder } from '../../utils/exportFormats';
 import type { BookLayoutOptions, BookMeta, BookProfile, ManuscriptSceneHeadingMode, PandocLayoutTemplate, PublishingValidationSnapshot, TemplateProfile, ValidationIssue, ValidationSummary } from '../../types';
 import { getActiveFrontmatterMappings, normalizeFrontmatterKeys } from '../../utils/frontmatter';
 import { ImportTemplateModal, type ImportedTemplateCommit } from '../../modals/ImportTemplateModal';
@@ -1781,6 +1781,63 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             }
         });
     });
+
+    // ── Advanced Pandoc (Pro) ────────────────────────────────────────────────
+    // Migration escape hatches for authors arriving with an existing Pandoc
+    // setup: extra --metadata pairs (custom templates read variables beyond
+    // title/author) and raw LaTeX preamble injected via --include-in-header.
+    const advancedPanel = section.createDiv({
+        cls: ERT_CLASSES.STACK,
+        attr: { [ERT_DATA.SECTION]: 'pandoc-advanced' }
+    });
+    const advancedHeading = addProRow(new Setting(advancedPanel))
+        .setName('Advanced Pandoc')
+        .setDesc('Pro. Carry an existing Pandoc/LaTeX setup into exports. Applies to PDF export only.')
+        .setHeading();
+    addHeadingIcon(advancedHeading, 'wrench');
+    applyErtHeaderLayout(advancedHeading);
+
+    addProRow(new Setting(advancedPanel))
+        .setName('Custom Pandoc metadata')
+        .setDesc('One "key: value" per line, passed as --metadata (e.g. lang: en-GB). Read by custom/imported templates; title and author always come from Book details. Lines starting with # are ignored.')
+        .addTextArea(text => {
+            text.inputEl.rows = 4;
+            text.inputEl.addClass('ert-input--lg');
+            text.setPlaceholder('lang: en-US\nsubtitle: A Novel');
+            text.setValue(plugin.settings.customPandocMetadata || '');
+            text.setDisabled(!isActive);
+            plugin.registerDomEvent(text.inputEl, 'blur', async () => {
+                const raw = text.getValue();
+                plugin.settings.customPandocMetadata = raw;
+                await plugin.saveSettings();
+                // Surface lines the export-time parser will skip, so authors
+                // learn about a typo here rather than by missing metadata in
+                // a rendered PDF.
+                const accepted = parseCustomPandocMetadata(raw);
+                const meaningful = raw.split(/\r?\n/)
+                    .map(line => line.trim())
+                    .filter(line => line && !line.startsWith('#'));
+                const skipped = meaningful.length - Object.keys(accepted).length;
+                if (skipped > 0) {
+                    new Notice(`Custom Pandoc metadata: ${skipped} line${skipped === 1 ? '' : 's'} will be ignored (need "key: value" with a plain identifier key).`);
+                }
+            });
+        });
+
+    addProRow(new Setting(advancedPanel))
+        .setName('Custom LaTeX preamble')
+        .setDesc('Raw LaTeX injected into the PDF preamble after the layout\'s own setup (your definitions win). For migrated macros and packages, e.g. \\usepackage or \\newcommand lines. Invalid LaTeX will fail the export with Pandoc\'s error.')
+        .addTextArea(text => {
+            text.inputEl.rows = 6;
+            text.inputEl.addClass('ert-input--lg');
+            text.setPlaceholder('% e.g.\n% \\usepackage{lettrine}\n% \\newcommand{\\mymacro}{...}');
+            text.setValue(plugin.settings.customLatexPreamble || '');
+            text.setDisabled(!isActive);
+            plugin.registerDomEvent(text.inputEl, 'blur', async () => {
+                plugin.settings.customLatexPreamble = text.getValue();
+                await plugin.saveSettings();
+            });
+        });
 
     // ── Layout Registry Subsection ──────────────────────────────────────────
     const layoutPanel = section.createDiv({

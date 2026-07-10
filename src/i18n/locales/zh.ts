@@ -531,6 +531,7 @@ export const zh: DeepPartial<TranslationKeys> = {
         outlineIndexCardsDesc: '为外部工具和自动化提供的结构化场景数据。',
         formatMarkdown: 'Markdown',
         formatPdf: 'PDF',
+        formatDocx: 'Word',
         formatCsv: 'CSV',
         formatJson: 'JSON',
         outlinePresetHeading: '大纲预设',

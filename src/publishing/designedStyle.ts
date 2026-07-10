@@ -264,6 +264,15 @@ export function generateDesignedStyleTex(
         sections.push(bodySetup);
     }
 
+    // Pandoc `--include-in-header` injection point. Without this variable in the
+    // template, header content (binding gutter geometry, Pro custom preamble) is
+    // silently dropped by Pandoc. Emitted last so injected LaTeX can override any
+    // generated preamble setting — that is the contract: user preamble wins.
+    sections.push('');
+    sections.push('$for(header-includes)$');
+    sections.push('$header-includes$');
+    sections.push('$endfor$');
+
     sections.push('');
     sections.push('\\begin{document}');
     sections.push('');

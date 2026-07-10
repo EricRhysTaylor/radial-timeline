@@ -61,7 +61,7 @@ import { AuthorProgressService } from './services/AuthorProgressService';
 import { PublishingValidationService } from './services/PublishingValidationService';
 import { TimelineAuditAiService } from './services/TimelineAuditAiService';
 import { WritingSessionService } from './services/WritingSessionService';
-import { ensureBundledPandocLayoutsRegistered, ensureSpecDrivenBundledFictionTemplatesCurrent, setBundledFontSourcePath, setPandocFontPathsForVault } from './utils/pandocBundledLayouts';
+import { ensureBundledPandocLayoutsRegistered, ensureSpecDrivenBundledFictionTemplatesCurrent, setBundledFontSourcePath, setBundledPandocAssetSourcePath, setPandocFontPathsForVault } from './utils/pandocBundledLayouts';
 import { normalizeManuscriptCleanupOptions } from './utils/manuscriptSanitize';
 import { DARIAN_MARS_MONTH_NAMES, MARS_TEMPLATE_ID, matchesLegacyMarsMonthNames } from './utils/planetaryMars';
 import type { GossamerHistoricalRunOverlay, GossamerMinMaxBand, GossamerRun, GossamerRunRecord } from './utils/gossamer';
@@ -535,6 +535,7 @@ export default class RadialTimelinePlugin extends Plugin {
             if (basePath) {
                 const configDir = this.app.vault.configDir;
                 setBundledFontSourcePath(`${basePath}/${configDir}/plugins/${this.manifest.id}/assets/fonts`);
+                setBundledPandocAssetSourcePath(`${basePath}/${configDir}/plugins/${this.manifest.id}/assets/pandoc`);
                 setPandocFontPathsForVault(this);
             }
         } catch {

@@ -557,6 +557,31 @@ export async function syncCommunityProjectsIfConnected(plugin: RadialTimelinePlu
     }
 }
 
+// ── Throttled project sync ──────────────────────────────────────────────────
+// Settings edits (target dates, Zero-draft mode) call this instead of syncing
+// directly: the first call in a quiet stretch fires immediately, and any
+// further calls inside the window coalesce into ONE trailing sync when the
+// window closes. The website is never hit more than twice per window no
+// matter how many fields the author touches, and the last edit always lands.
+const PROJECT_SYNC_WINDOW_MS = 5 * 60 * 1000;
+let lastProjectSyncAt = 0;
+let pendingProjectSync: number | null = null;
+
+export function scheduleCommunityProjectSync(plugin: RadialTimelinePlugin): void {
+    const elapsed = Date.now() - lastProjectSyncAt;
+    if (elapsed >= PROJECT_SYNC_WINDOW_MS) {
+        lastProjectSyncAt = Date.now();
+        void syncCommunityProjectsIfConnected(plugin);
+        return;
+    }
+    if (pendingProjectSync !== null) return; // trailing sync already queued
+    pendingProjectSync = window.setTimeout(() => {
+        pendingProjectSync = null;
+        lastProjectSyncAt = Date.now();
+        void syncCommunityProjectsIfConnected(plugin);
+    }, PROJECT_SYNC_WINDOW_MS - elapsed);
+}
+
 export async function beginCommunitySharing(plugin: RadialTimelinePlugin): Promise<PublishSuccess> {
     const result = await publishCommunityShareReport(plugin, 'manual');
     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);

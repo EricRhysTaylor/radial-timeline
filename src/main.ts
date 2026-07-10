@@ -51,7 +51,7 @@ import { migrateLegacyKeysToSecretStorage, needsLegacyKeyMigration } from './ai/
 import { hasSecret } from './ai/credentials/secretStorage';
 import type { AIProviderId } from './ai/types';
 import { migrateAuthorProgressSettings } from './authorProgress/authorProgressConfig';
-import { syncCommunityProjectsIfConnected } from './communityShare/communityShareClient';
+import { scheduleCommunityProjectSync } from './communityShare/communityShareClient';
 import { migrateBeatSettings, stripLegacyBeatSettings } from './migrations/beatSettings';
 import { DEFAULT_BOOK_TITLE, createBookId, deriveBookTitleFromSourcePath, getActiveBook, getSagaBooks, getTimelineScope, isSagaScopeAvailable, normalizeBookProfile, shouldSeedBookProfileFromLegacySettings } from './utils/books';
 import { adaptPandocLayoutsToPublishingModel } from './utils/publishingModel';
@@ -694,7 +694,9 @@ export default class RadialTimelinePlugin extends Plugin {
 
         // Community share surface 2: keep the website's private project shells
         // in sync with Book Manager (no-op unless Community Share is connected).
-        void syncCommunityProjectsIfConnected(this);
+        // Routed through the throttle so it opens the sync window — settings
+        // edits right after startup coalesce instead of double-firing.
+        scheduleCommunityProjectSync(this);
 
         // Initial status bar update (placeholder for future stats)
         // this.statusBarService.update(...);

@@ -127,7 +127,7 @@ const ONBOARDING_SURVEY_SCHEMA = {
 } as const;
 
 export function getOnboardingSurveyJsonSchema(): Record<string, unknown> {
-  return ONBOARDING_SURVEY_SCHEMA as unknown as Record<string, unknown>;
+  return ONBOARDING_SURVEY_SCHEMA;
 }
 
 /** Task instructions for the survey call (derived from the canonical rules). */
@@ -200,7 +200,7 @@ const ONBOARDING_SCENE_SCHEMA = {
 } as const;
 
 export function getOnboardingSceneJsonSchema(): Record<string, unknown> {
-  return ONBOARDING_SCENE_SCHEMA as unknown as Record<string, unknown>;
+  return ONBOARDING_SCENE_SCHEMA;
 }
 
 /** Task instructions for the per-scene extraction call (derived from Stages 2-4). */

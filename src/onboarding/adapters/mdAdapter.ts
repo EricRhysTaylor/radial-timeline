@@ -159,7 +159,7 @@ export function createObsidianMarkdownSource(app: App): MarkdownSource {
       fileName: file.name,
       path: file.path,
       content,
-      frontmatter: (cache?.frontmatter as Record<string, unknown> | undefined) ?? null,
+      frontmatter: (cache?.frontmatter) ?? null,
     };
   };
 

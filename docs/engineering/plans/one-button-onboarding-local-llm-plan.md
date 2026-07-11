@@ -118,7 +118,7 @@ the LLM re-derive a boundary the format already encodes.**
 
 | Source | Structure parsed deterministically | LLM has to infer | Parser approach / risk |
 | --- | --- | --- | --- |
-| Scrivener (export **or** `.scriv`) | Reading order + per-scene **Title + Synopsis**; custom metadata; Label/Status | Act boundaries; Subplot/Character if absent from metadata; normalization | **V1 intake = Scrivener *export*** (compiled `.md`/`.txt` scene files + a metadata sidecar held for Stage 4), which is what the canonical prompt assumes and which **sidesteps RTF parsing entirely**. Raw `.scrivx` XML + RTF-body parsing is a stretch goal (JS RTF→text is imperfect). |
+| Scrivener **export** | Reading order + per-scene **Title + Synopsis**; custom metadata; Label/Status | Act boundaries; Subplot/Character if absent from metadata; normalization | **V1 intake = Scrivener *export* only** (compiled `.md`/`.txt` scene files + a metadata sidecar held for Stage 4) — what the canonical prompt assumes, and it **sidesteps RTF parsing entirely**. Raw `.scriv`/`.scrivx`+RTF parsing is **out of V1** (JS RTF→text is imperfect); revisit later only if authors ask. |
 | Word `.docx` + TOC | Heading 1/2/3 styles + TOC field = chapters; comments (`comments.xml`) = chapter notes | Scene segmentation within a chapter; synopses; classification | `mammoth`-style docx→HTML preserving headings. **Risk:** bundle size + Node deps under esbuild/Obsidian — verify it bundles first. |
 | PDF (V2) | Bookmarks/outline if present | Everything, plus header/footer/hyphenation cleanup; OCR if scanned | Deferred. |
 
@@ -176,10 +176,16 @@ original `.scriv`/`.docx` with the generated Obsidian notes.
 ### Flow inside the modal
 
 ```
-Preflight ─▶ Ingest ─▶ Survey (1 call) ─▶ Per-scene extract (N calls) ─▶ Review + Mapping ─▶ Materialize ─▶ Report
-   │                                                                          │
-   └── hard-stops: no local server, weak model, unsupported source            └── nothing written before this point
+Preflight ─▶ Ingest ─▶ [CHECKPOINT 1: Split] ─▶ Survey ─▶ Per-scene extract ─▶ [CHECKPOINT 2: Review+Mapping] ─▶ Materialize ─▶ Report
+   │                                                                                       │
+   └── hard-stops: no local server, weak model, unsupported source                        └── nothing written before this point
 ```
+
+The canonical prompt is stage-major with approval gates; the plugin implements
+that as **two checkpoints**, not four: **Checkpoint 1 (Split)** confirms scene
+boundaries + reading order before any AI runs; **Checkpoint 2 (Review)** shows
+all proposed frontmatter with flagged Act/When guesses before anything is
+written. Everything between is automatic.
 
 1. **Preflight (no AI).** Detect source kind; run
    `getLocalLlmClient(plugin).runDiagnostics()`
@@ -318,8 +324,8 @@ fully offline-capable.
 
 **Supabase storage (proposed):** a versioned row — `onboarding_prompt`
 (`community_config` or a dedicated table): `{ prompt_text, schema_version,
-updated_at }`, read via the public anon path the website already uses. **Open:**
-provision now vs. at Slice 1 (lean: design now, provision at Slice 1 so the row
+updated_at }`, read via the public anon path the website already uses.
+**Decided:** provision the row **at Slice 1** (design now, create then, so the
 shape is deliberate).
 
 **User-editable override:** `aiSettings.onboarding.promptOverride: string |
@@ -383,7 +389,7 @@ src/onboarding/
   adapters/
     manuscriptModel.ts        // the shared normalized type + helpers
     mdAdapter.ts              // existing-vault prose notes
-    scrivenerAdapter.ts       // .scrivx XML + RTF bodies + custom metadata
+    scrivenerAdapter.ts       // Scrivener EXPORT: compiled scene files + metadata sidecar
     docxAdapter.ts            // headings/TOC + comments
 src/ai/prompts/onboarding.ts  // canonical prompts (website-shared text)
 ```
@@ -402,8 +408,9 @@ Reuse, don't rebuild:
 | Field-map targets | `getSupportedFrontmatterRemapTargets` (`src/utils/frontmatter.ts:16-27`) |
 
 New third-party parsing (adapter-local, verify bundling first): a docx→HTML
-parser (`mammoth`-class) and a Scrivener RTF strip. Both are **implementation
-risks to de-risk in the adapter slice**, not assumed solved.
+parser (`mammoth`-class). This is the one **implementation risk to de-risk in
+the adapter slice**, not assumed solved. (No RTF parser needed — Scrivener
+intake is export-only in V1.)
 
 Doctrine fit: no new abstraction layer beyond the adapters, no fallback chains
 — one spine, hard preflight gates, single-attempt calls with surfaced failures
@@ -456,20 +463,19 @@ Doctrine fit: no new abstraction layer beyond the adapters, no fallback chains
   Scrivener where present, LLM best-effort otherwise, flag guesses. ✅
 - **Canonical prompt provided** (Appendix A) and **canonical source = Supabase**
   with a bundled plugin fallback + schema pinned in the plugin. ✅
+- **Two review checkpoints** (after Split; final Review with flagged Act/When
+  guesses) — not four approval gates. ✅
+- **Supabase prompt row provisioned at Slice 1** (design now, create then, so the
+  row shape is deliberate). ✅
+- **Scrivener intake = export only in V1** (compiled `.md`/`.txt` scene files +
+  metadata sidecar); raw `.scriv`/RTF parsing is out of V1. ✅
 
-**Still open:**
-1. **Review checkpoints** — the canonical prompt is stage-major with approval
-   gates. Lean **two checkpoints** (after Split; final Review with flagged
-   Act/When guesses), not four gates. Confirm.
-2. **Supabase prompt row** — provision now, or at Slice 1? Lean design-now,
-   provision-at-Slice-1.
-3. **Scrivener intake** — confirm **export-first** (compiled files + metadata
-   sidecar) for V1, raw `.scriv` parsing as a stretch.
-4. **Filename renumbering** — optional rename checkbox in V1 Review, or rely on
+**Still open (Slice-1 implementation details, not blockers):**
+1. **Filename renumbering** — optional rename checkbox in V1 Review, or rely on
    order-driven numbering at Materialize?
-5. **New-folder naming + source de-list mechanism** — exact working name
+2. **New-folder naming + source de-list mechanism** — exact working name
    (`<Book> RT`?) and repoint-profile vs. stamp `onboardedAt`. Decide in Slice 1.
-6. **docx parser choice + bundle impact** — confirm a parser that bundles
+3. **docx parser choice + bundle impact** — confirm a parser that bundles
    cleanly under esbuild for the Obsidian runtime before committing.
 
 ## Decision Log
@@ -493,6 +499,10 @@ Doctrine fit: no new abstraction layer beyond the adapters, no fallback chains
   alongside `Act`, and the Stage-4 advanced set — plus reading-order/`TOC.md`
   detection and **Scrivener-*export* intake** (sidesteps RTF parsing) as the V1
   path. Prose is never rewritten; guesses are flagged, never invented.
+- **2026-07-11 (confirmed)** — Eric locked the three remaining forks: **two
+  review checkpoints** (Split, Review), **Supabase prompt row provisioned at
+  Slice 1**, and **Scrivener intake is export-only in V1** (no raw `.scriv`/RTF).
+  Slice 1 is unblocked.
 
 ## Appendix A — Canonical onboarding prompt (instruction block)
 

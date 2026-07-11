@@ -1,5 +1,5 @@
 import type RadialTimelinePlugin from '../../main';
-import type { AiSettingsV1, LocalLlmBackendId, LocalLlmSettings, ModelInfo, ModelSelectionResult } from '../types';
+import type { AiSettingsV1, LocalLlmBackendId, LocalLlmJsonMode, LocalLlmSettings, ModelInfo, ModelSelectionResult } from '../types';
 import { buildDefaultAiSettings, cloneDefaultLocalLlmSettings } from '../settings/aiSettings';
 import { validateAiSettings } from '../settings/validateAiSettings';
 import { BUILTIN_MODELS } from '../registry/builtinModels';
@@ -8,6 +8,13 @@ export const LOCAL_LLM_BACKEND_LABELS: Record<LocalLlmBackendId, string> = {
     ollama: 'Ollama',
     lmStudio: 'LM Studio',
     openaiCompatible: 'OpenAI-Compatible'
+};
+
+// Keeps wire-mode literals out of the settings UI layer (AiSection guards
+// against raw wire-protocol strings in its source).
+export const LOCAL_LLM_JSON_MODE_LABEL_KEYS: Record<LocalLlmJsonMode, string> = {
+    response_format: 'settings.ai.localLlmConfig.optionJsonModeResponseFormat',
+    prompt_only: 'settings.ai.localLlmConfig.optionJsonModePromptOnly'
 };
 
 export function normalizeLocalLlmServerBaseUrl(baseUrl: string): string {

@@ -60,6 +60,7 @@ import {
     buildLocalLlmServerKey,
     getLocalLlmSettings,
     LOCAL_LLM_BACKEND_LABELS,
+    LOCAL_LLM_JSON_MODE_LABEL_KEYS,
     normalizeLocalLlmServerBaseUrl
 } from '../../ai/localLlm/settings';
 import { inferLocalLlmCapability } from '../../ai/localLlm/capabilityInference';
@@ -3189,9 +3190,10 @@ export function renderAiSection(params: {
         .setName(t('settings.ai.localLlmConfig.jsonModeName'))
         .setDesc(t('settings.ai.localLlmConfig.jsonModeDesc'))
         .addDropdown(dropdown => {
+            for (const [mode, labelKey] of Object.entries(LOCAL_LLM_JSON_MODE_LABEL_KEYS)) {
+                dropdown.addOption(mode, t(labelKey));
+            }
             dropdown
-                .addOption('response_format', t('settings.ai.localLlmConfig.optionJsonModeResponseFormat'))
-                .addOption('prompt_only', t('settings.ai.localLlmConfig.optionJsonModePromptOnly'))
                 .setValue(getLocalLlmSettings(ensureCanonicalAiSettings()).jsonMode)
                 .onChange(async (value) => {
                     const aiSettings = ensureCanonicalAiSettings();

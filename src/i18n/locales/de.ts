@@ -97,6 +97,12 @@ export const de: DeepPartial<TranslationKeys> = {
                 name: 'KI-LLM-Funktionen aktivieren',
                 desc: 'Befehlspaletten-Optionen sowie Farben und Hover-Synopsen für die UI-Szenenanalyse anzeigen.',
             },
+            localLlmConfig: {
+                jsonModeName: 'Strukturierter JSON-Modus',
+                jsonModeDesc: 'Wie strukturierte JSON-Ausgabe vom lokalen Server angefordert wird. „Response Format" funktioniert mit Ollama, LM Studio und den meisten OpenAI-kompatiblen Servern. Wechseln Sie nur zu „Nur Prompt", wenn Ihr Server response_format-Anfragen ablehnt.',
+                optionJsonModeResponseFormat: 'Response Format (empfohlen)',
+                optionJsonModePromptOnly: 'Nur Prompt (Kompatibilitäts-Fallback)',
+            },
         },
     },
     timeline: {

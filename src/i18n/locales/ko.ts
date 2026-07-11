@@ -97,6 +97,12 @@ export const ko: DeepPartial<TranslationKeys> = {
                 name: 'AI LLM 기능 활성화',
                 desc: '명령 팔레트 옵션과 UI 장면 분석 색상 및 호버 시놉시스를 표시합니다.',
             },
+            localLlmConfig: {
+                jsonModeName: '구조화된 JSON 모드',
+                jsonModeDesc: '로컬 서버에 구조화된 JSON 출력을 요청하는 방식입니다. "응답 형식"은 Ollama, LM Studio 및 대부분의 OpenAI 호환 서버에서 작동합니다. 서버가 response_format 요청을 거부하는 경우에만 "프롬프트만"으로 전환하세요.',
+                optionJsonModeResponseFormat: '응답 형식 (권장)',
+                optionJsonModePromptOnly: '프롬프트만 (호환성 폴백)',
+            },
         },
     },
     timeline: {

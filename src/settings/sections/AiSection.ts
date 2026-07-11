@@ -65,7 +65,7 @@ import {
 import { inferLocalLlmCapability } from '../../ai/localLlm/capabilityInference';
 import type { LocalLlmCapabilityAssessment, LocalLlmFeatureSupport } from '../../ai/localLlm/capabilityInference';
 import type { LocalLlmModelEntry } from '../../ai/localLlm/transport';
-import type { LocalLlmBackendId } from '../../ai/types';
+import type { LocalLlmBackendId, LocalLlmJsonMode } from '../../ai/types';
 import {
     CACHE_ARMED_PILL_TEXT,
     estimateTokensFromChars,
@@ -3184,6 +3184,28 @@ export function renderAiSection(params: {
             params.setOllamaConnectionInputs({ modelInput: text.inputEl });
         });
     localLlmModelSetting.settingEl.addClass(ERT_CLASSES.ROW);
+
+    const localLlmJsonModeSetting = new Settings(localLlmConfigSection)
+        .setName(t('settings.ai.localLlmConfig.jsonModeName'))
+        .setDesc(t('settings.ai.localLlmConfig.jsonModeDesc'))
+        .addDropdown(dropdown => {
+            dropdown
+                .addOption('response_format', t('settings.ai.localLlmConfig.optionJsonModeResponseFormat'))
+                .addOption('prompt_only', t('settings.ai.localLlmConfig.optionJsonModePromptOnly'))
+                .setValue(getLocalLlmSettings(ensureCanonicalAiSettings()).jsonMode)
+                .onChange(async (value) => {
+                    const aiSettings = ensureCanonicalAiSettings();
+                    aiSettings.localLlm = {
+                        ...getLocalLlmSettings(aiSettings),
+                        jsonMode: value as LocalLlmJsonMode
+                    };
+                    markLocalLlmConfigurationDirty();
+                    await persistCanonical();
+                    params.scheduleKeyValidation('ollama');
+                    queueLocalLlmAutoValidation();
+                });
+        });
+    localLlmJsonModeSetting.settingEl.addClass(ERT_CLASSES.ROW);
 
     const formatLocalTimestamp = (iso: string | null): string | null => {
         if (!iso) return null;

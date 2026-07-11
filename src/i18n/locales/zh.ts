@@ -99,6 +99,12 @@ export const zh: DeepPartial<TranslationKeys> = {
                 name: '启用 AI LLM 功能',
                 desc: '显示命令面板选项以及 UI 场景分析的颜色与悬停提要。',
             },
+            localLlmConfig: {
+                jsonModeName: '结构化 JSON 模式',
+                jsonModeDesc: '向本地服务器请求结构化 JSON 输出的方式。"响应格式"适用于 Ollama、LM Studio 及大多数 OpenAI 兼容服务器。仅当您的服务器拒绝 response_format 请求时才切换到"仅提示词"。',
+                optionJsonModeResponseFormat: '响应格式（推荐）',
+                optionJsonModePromptOnly: '仅提示词（兼容性回退）',
+            },
         },
     },
     timeline: {

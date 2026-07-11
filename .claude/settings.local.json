@@ -48,7 +48,8 @@
       "Bash(npx eslint *)",
       "Bash(node scripts/lint-obsidian-report.mjs)",
       "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{try{const j=JSON.parse\\(s\\);console.log\\(JSON.stringify\\(j.byRule||j,null,2\\)\\)}catch\\(e\\){console.log\\(s.slice\\(0,500\\)\\)}}\\)\")",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "mcp__bf7c680d-5fdc-5ef4-b4a0-abadb619bf0a__send_later"
     ]
   }
 }

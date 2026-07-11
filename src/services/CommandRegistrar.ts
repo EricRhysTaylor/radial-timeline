@@ -146,7 +146,7 @@ export class CommandRegistrar {
         if (!__RT_RELEASE__) {
             this.plugin.addCommand({
                 id: 'onboard-manuscript',
-                name: 'Onboard existing manuscript (beta)',
+                name: 'Onboard existing manuscript (BETA)',
                 callback: () => {
                     new OnboardingModal(this.app, this.plugin).open();
                 }

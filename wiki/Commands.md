@@ -4,7 +4,7 @@ To open the Command Palette:
 *   **Mac**: `Cmd + P`
 *   **Windows/Linux**: `Ctrl + P`
 
-Type `Radial Timeline` to filter the list.
+Type `Radial timeline` to filter the list.
 
 <div style="text-align: center; margin: 20px 0;">
   <img src="images/ui-commands.png" alt="Radial Timeline Commands" style="max-width: 100%;" />
@@ -18,7 +18,7 @@ These are the main command-palette entries.
 1. **Open** — opens the [Radial Timeline View](Radial-Timeline-View).
 2. **[Create note…](#create-note)**
 3. **Open inquiry** — opens the [Inquiry View](Inquiry).
-4. **[Book Designer](Book-Designer)** ← standalone guide
+4. **[Book designer](Book-Designer)** ← standalone guide
 5. **[Timeline order](#timeline-order)** *(beta)*
 6. **[Timeline audit](#timeline-audit)** *(beta)*
 7. **[Manage subplots](#manage-subplots)**
@@ -27,7 +27,7 @@ These are the main command-palette entries.
 10. **[Gossamer analysis](#gossamer-analysis)**
 11. **[Runtime estimator](#runtime-estimator)** *(Pro)*
 12. **[Manuscript export](Manuscript-Export)** ← standalone guide
-13. **[Inquiry omnibus pass](#inquiry-omnibus-pass)** *(beta)*
+13. **[Inquiry omnibus](#inquiry-omnibus-pass)** *(beta)*
 14. **[Gossamer score manager](#gossamer-score-manager)**
 15. **[Planetary time calculator](#planetary-time-calculator)**
 16. **[Author progress report (APR)](Author-Progress-Report)** ← standalone guide
@@ -43,7 +43,7 @@ Some commands are hidden until their required feature is enabled. Others remain 
 *   **Runtime estimator** requires **Pro** access. Runtime configuration lives in [Settings → Core](Settings-Core#runtime-estimation).
 *   **Planetary time calculator** is visible, but it needs at least one configured planetary profile before it can produce a conversion.
 *   **Timeline order** and **Timeline audit** show a release-pending notice in public release builds and are usable in development/testing builds.
-*   **Inquiry omnibus pass** appears only in development/testing builds.
+*   **Inquiry omnibus** appears only in development/testing builds.
 
 ---
 
@@ -201,7 +201,7 @@ Related: [Settings → Core → Runtime estimation](Settings-Core#runtime-estima
 ---
 
 <a name="inquiry-omnibus-pass"></a>
-## Inquiry omnibus pass *(beta)*
+## Inquiry omnibus *(beta)*
 
 Runs all enabled Inquiry questions in one batch.
 

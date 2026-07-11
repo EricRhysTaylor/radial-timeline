@@ -52,9 +52,8 @@ These settings control AI feature defaults rather than provider identity.
 *   **Treat summary as weak if under**: Default threshold for selecting scenes as weak/stale in the Inquiry View Corpus model.
 *   **Also update Synopsis**: When enabled, Summary Refresh also rewrites `Synopsis` using the configured cap.
 
-## Logging
-
-*   **Log AI interactions to file**: Saves AI request and response diagnostics to the AI output folder.
+> [!NOTE]
+> AI diagnostics logging lives on the Advanced tab as **Enable AI content logs** — see [Settings → Advanced](Settings-Advanced).
 
 ---
 

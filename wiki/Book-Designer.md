@@ -13,7 +13,7 @@ Book Designer is the guided setup panel behind the **`Book designer`** command. 
 ## Open Book Designer
 
 You can open Book Designer in two ways:
-1.  **Command Palette**: Open the Command Palette (`Cmd + P` on Mac, `Ctrl + P` on Windows/Linux) and search for **`Radial Timeline: Book designer`**.
+1.  **Command Palette**: Open the Command Palette (`Cmd + P` on Mac, `Ctrl + P` on Windows/Linux) and search for **`Radial timeline: Book designer`**.
 2.  **Welcome Screen**: If your timeline is empty, click the **Book Designer** button on the welcome screen.
 
 <div style="text-align: center; margin: 20px 0;">
@@ -28,7 +28,7 @@ The panel is organized into three main sections:
 ### 1. Location & Structure
 *   **Target location**: The folder path where your new book files will be created (e.g., `Book 1`). The folder will be created if it doesn't exist. Otherwise root of the vault will be used.
 *   **Scenes to generate**: The total number of scene files to create.
-*   **Target book length**: Used for numbering distribution. For example, if you generate 10 scenes with a target length of 60, scenes will be numbered 1, 7, 13, etc., leaving gaps for future scenes.
+*   **Target book length**: Used for numbering distribution. For example, if you generate 10 scenes with a target length of 60, scenes will be numbered 1, 8, 14 … 60, leaving gaps for future scenes.
 *   **Acts to distribute scenes across**: Choose which acts (1..N) to populate, where **N** comes from your **Settings → Core → Acts → Act count**. Scenes are distributed evenly across the selected acts.
 
 ### 2. Content Configuration

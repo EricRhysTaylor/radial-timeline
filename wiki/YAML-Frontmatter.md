@@ -88,7 +88,6 @@ Shift:                                # Optional value shift or polarity change
 Questions:                            # Analysis Block
 Reader Emotion:
 Internal: How do the characters change?
-Total Time:
 ```
 
 <a name="advanced-yaml-editor"></a>
@@ -107,11 +106,13 @@ The Scene properties editor lets you tailor the advanced scene properties while 
 ## Beat Notes (YAML)
 
 ```yaml
+ID:                           # Auto-inserted unique id
 Class: Beat                   # Formerly Plot, Deprecated
+Beat Model: Save The Cat
 Act: 1
 Purpose: Why this beat exists in the structure (1-2 sentences, avoid retelling scene events).
-Beat Model: Save The Cat
 Range: 0-20
+Chapter:
 Gossamer1: 12                 # First trace (oldest) - Up to 30 saved traces
 Gossamer1 Justification:
 Gossamer2: 21                 # Second trace (most recent in this example)

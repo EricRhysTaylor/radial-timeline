@@ -15,7 +15,7 @@ The export workflow can produce:
 *   outline-style exports
 *   filtered or ranged exports by order and subplot
 
-Core includes compiled Markdown, Pandoc PDF export with bundled Core layouts, and Word submission export. Pro adds additional bundled layouts and deeper publishing customization (custom Pandoc metadata, custom LaTeX preamble, the PDF style designer).
+Core includes compiled Markdown, Pandoc PDF export with the Basic and Standard layouts, and Word submission export. Pro adds the Professional, Signature, Screenplay, and Podcast Script layouts plus deeper publishing customization (custom Pandoc metadata, custom LaTeX preamble, the PDF style designer).
 
 The panel supports ordering, selection range, output presets, and publishing-oriented layout decisions in one place.
 

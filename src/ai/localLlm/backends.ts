@@ -4,7 +4,8 @@ import {
     fetchOpenAiCompatibleLocalModels,
     type LocalLlmCompletionResponse,
     type LocalLlmModelEntry,
-    type LocalLlmTransportRequest
+    type LocalLlmTransportRequest,
+    type LocalLlmWireResponseFormat
 } from './transport';
 import type { LocalLlmBackendId } from '../types';
 
@@ -21,6 +22,23 @@ export interface LocalLlmBackend {
         topP?: number;
         responseFormat?: { type: 'json_object' };
     }): Promise<LocalLlmCompletionResponse>;
+}
+
+export function toWireResponseFormat(
+    id: LocalLlmBackendId,
+    requested?: { type: 'json_object' }
+): LocalLlmWireResponseFormat | undefined {
+    if (!requested) return undefined;
+    if (id === 'lmStudio') {
+        // LM Studio's /v1/chat/completions rejects response_format type 'json_object':
+        // it only accepts 'json_schema' or 'text'. A permissive object schema keeps
+        // server-side JSON enforcement equivalent to json_object.
+        return {
+            type: 'json_schema',
+            json_schema: { name: 'response', schema: { type: 'object' } }
+        };
+    }
+    return requested;
 }
 
 function createOpenAiCompatibleBackend(id: LocalLlmBackendId): LocalLlmBackend {
@@ -40,7 +58,7 @@ function createOpenAiCompatibleBackend(id: LocalLlmBackendId): LocalLlmBackend {
             maxOutputTokens: request.maxOutputTokens,
             temperature: request.temperature,
             topP: request.topP,
-            responseFormat: request.responseFormat
+            responseFormat: toWireResponseFormat(id, request.responseFormat)
         })
     };
 }

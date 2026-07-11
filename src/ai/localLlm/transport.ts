@@ -41,6 +41,10 @@ type OpenAiCompatibleChoice = {
 
 type JsonRecord = Record<string, unknown>;
 
+export type LocalLlmWireResponseFormat =
+    | { type: 'json_object' }
+    | { type: 'json_schema'; json_schema: { name: string; schema: Record<string, unknown> } };
+
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
     return new Promise((resolve, reject) => {
         const timer = window.setTimeout(() => reject(new Error(message)), timeoutMs);
@@ -282,7 +286,7 @@ export async function callOpenAiCompatibleLocalCompletion(input: {
     maxOutputTokens?: number;
     temperature?: number;
     topP?: number;
-    responseFormat?: { type: 'json_object' };
+    responseFormat?: LocalLlmWireResponseFormat;
 }): Promise<LocalLlmCompletionResponse> {
     const requestPayload: Record<string, unknown> = {
         model: input.modelId,

@@ -6,10 +6,12 @@ Planning. No implementation started. This document maps the feature end to
 end against the current codebase (v6.2.6) so implementation can proceed in
 small verified slices.
 
-**Revised 2026-07-11** after a design pass with Eric. The scope grew from
+**Revised 2026-07-11** after two design passes with Eric. The scope grew from
 "existing vault of notes" to a single feature that also **imports external
-manuscripts** (Scrivener, Word) directly. See the Decision Log at the end
-for what changed and why.
+manuscripts** (Scrivener, Word) directly, and the canonical onboarding prompt
+now lives in **Supabase** (with a bundled plugin fallback). The full canonical
+prompt is captured in Appendix A. See the Decision Log at the end for what
+changed and why.
 
 ## Goal
 
@@ -116,7 +118,7 @@ the LLM re-derive a boundary the format already encodes.**
 
 | Source | Structure parsed deterministically | LLM has to infer | Parser approach / risk |
 | --- | --- | --- | --- |
-| Scrivener `.scriv` | Binder XML (`.scrivx`) = chapter/scene tree; per-doc **Title + Synopsis**; custom metadata; Label/Status | Act boundaries; Subplot/Character if absent from metadata; normalization | Parse `.scrivx` XML + per-doc RTF bodies. **Risk:** JS RTF→text is imperfect; may ship a pragmatic strip-to-text. |
+| Scrivener (export **or** `.scriv`) | Reading order + per-scene **Title + Synopsis**; custom metadata; Label/Status | Act boundaries; Subplot/Character if absent from metadata; normalization | **V1 intake = Scrivener *export*** (compiled `.md`/`.txt` scene files + a metadata sidecar held for Stage 4), which is what the canonical prompt assumes and which **sidesteps RTF parsing entirely**. Raw `.scrivx` XML + RTF-body parsing is a stretch goal (JS RTF→text is imperfect). |
 | Word `.docx` + TOC | Heading 1/2/3 styles + TOC field = chapters; comments (`comments.xml`) = chapter notes | Scene segmentation within a chapter; synopses; classification | `mammoth`-style docx→HTML preserving headings. **Risk:** bundle size + Node deps under esbuild/Obsidian — verify it bundles first. |
 | PDF (V2) | Bookmarks/outline if present | Everything, plus header/footer/hyphenation cleanup; OCR if scanned | Deferred. |
 
@@ -186,7 +188,11 @@ Preflight ─▶ Ingest ─▶ Survey (1 call) ─▶ Per-scene extract (N calls
    `structuredJson` diagnostic and capability tier ≥ 2, else show the
    model-recommendation panel instead of a doomed run. Show scope summary
    (chapters/scenes, estimated wall time).
-2. **Ingest (no AI).** Run the matching adapter → Manuscript Model.
+2. **Ingest (no AI).** Run the matching adapter → Manuscript Model. Resolve
+   **reading order**: zero-padded numbered filenames (`01`, `02`, …) win; else
+   a `TOC.md` in the folder maps names → order; else **stop and ask** (never
+   guess order). Load any Scrivener metadata export and hold it for the
+   advanced-field pass.
 3. **Corpus survey — one structured call.** Send the scene list + openings (not
    full text) and ask for book-level structure: probable act boundaries, a
    candidate subplot list, per-scene `isScene` classification. Gives every
@@ -203,9 +209,14 @@ Preflight ─▶ Ingest ─▶ Survey (1 call) ─▶ Per-scene extract (N calls
    `src/ai/localLlm/structuredJson.ts:102-151`). **For Scrivener, this step
    also hosts the metadata mapping table (below).**
 6. **Materialize — safe writes into the new folder.** Create the RT book folder
-   via the Draft-clone plumbing; write each accepted scene as a note through
+   via the Draft-clone plumbing; write each accepted scene as
+   `NN Scene Title.md` (zero-padded, narrative order) with prose below the
+   frontmatter unchanged — **never rewrite the prose**. Frontmatter via
    `app.fileManager.processFrontMatter` exactly as Scene Analysis does
-   (`src/sceneAnalysis/FileUpdater.ts:50,111,167`) — never string-built YAML.
+   (`src/sceneAnalysis/FileUpdater.ts:50,111,167`) — never string-built YAML;
+   YAML is always first in the file; no commas inside `Subplot`/`Character`/
+   `Place` values. **Create a stub note for every `[[Character]]` and
+   `[[Place]]` linked** (skip ones that already exist).
 7. **Report.** Final status: notes created, needs-review count, per-scene
    errors, and **manual follow-ups** ("3 scenes couldn't be classified — check
    Act boundaries"; "Scrivener field 'POV' left unmapped"; etc.). Then repoint
@@ -228,41 +239,93 @@ the author overrides per row before Materialize. Default for unmatched fields:
 
 ### Extraction output schema (per scene)
 
-Targets the canonical Scene template keys (`src/settings/defaults.ts:142-159`).
-V1 fills what a model can infer; workflow fields stay at safe defaults.
+Targets the canonical Scene template keys (`src/settings/defaults.ts:142-159`
+— align exact field names against that file during Slice 1). Organized by the
+canonical prompt's stages (Appendix A). Field names below follow the prompt;
+reconcile any naming drift with `defaults.ts` before coding.
+
+**Required (Stage 2):**
 
 | Field | Source | Notes |
 | --- | --- | --- |
 | `Class` | fixed | `Scene` (only when survey says `isScene`) |
-| `Act` | survey + scene | clamped to Settings → Core act count |
-| `Synopsis` | Scrivener synopsis, else scene prose | respects `Synopsis max words` |
-| `Subplot` | survey vocabulary | must be one of the survey's subplot list |
-| `Character` | scene + Scrivener metadata | proper-noun extraction, deduped against survey list |
-| `When` | scene (best effort) | **V1 lean: deferred** to keep follow-up minimal; omit rather than fabricate |
-| `Duration` | scene (best effort) | same — deferred lean |
+| `Act` | survey + scene | clamped to Settings → Core act count; **flag guesses** for Review |
 | `Status` | fixed default | `Complete` (text exists) — confirmed in Review |
-| `Publish Stage` | fixed default | `Zero` |
+| `Subplot` | survey vocabulary | one of the survey list; default `Main Plot`; no commas |
 
-Scene *order* stays filename-driven (leading number + `Act`), per
-`wiki/Getting-Started.md:12`. Filename numbering is assigned on Materialize from
-chapter/scene order; a Review-step rename checkbox is optional (see Open
-Questions).
+**Core (Stage 3):**
 
-## The Onboarding Prompt (shared with the website)
+| Field | Source | Notes |
+| --- | --- | --- |
+| `When` | Scrivener metadata → else LLM | **In V1** — in-world date `YYYY-MM-DD` (bare year OK); carry from Scrivener if present, else best-effort; **flag guesses**, never fabricate |
+| `Synopsis` | Scrivener synopsis → else LLM | 1–2 sentences; respects `Synopsis max words` |
+| `Character` | scene + Scrivener metadata | `[[wiki links]]`, deduped, no commas; **stub notes created** |
+| `Place` | scene + Scrivener metadata | `[[wiki links]]`, no commas; **stub notes created** |
 
-- **Single source of truth in the repo:** new `src/ai/prompts/onboarding.ts`
-  exporting `ONBOARDING_SURVEY_PROMPT` and `ONBOARDING_SCENE_PROMPT`, composed
-  through the existing envelope (`src/ai/prompts/composeEnvelope.ts:29-62`) with
-  the output-schema slot carrying the JSON schema.
-- **Website parity:** the website onboarding page should render the same
-  canonical text. The page is bot-protected from the build environment, so the
-  sync direction needs Eric's call — recommended: plugin repo is canonical,
-  website copies at publish time. **Still open — paste the current page prompt
-  to seed the file at parity.**
-- **User-editable override:** `aiSettings.onboarding.promptOverride: string |
-  null` (`null` = track the built-in default). Keep it small: one textarea +
-  *Reset to default*. The override replaces only the instruction block of the
-  envelope, never the schema/output-rules block.
+**Structural:**
+
+| Field | Source | Notes |
+| --- | --- | --- |
+| `Book` | source division | preserves the source's own division (e.g. Odyssey Book 9) *alongside* `Act`, so big structures survive the 3-act default |
+
+**Advanced (Stage 4) — primarily carried from Scrivener, not fabricated:**
+
+| Field | Source | Notes |
+| --- | --- | --- |
+| `Publish Stage` | default | `Zero` (else `Author`/`House`/`Press`) |
+| `Duration` | Scrivener → else LLM | **In V1** — best-effort; carry from Scrivener where present |
+| `Words` | computed | word count of the scene prose |
+| `Due`, `Pending Edits`, `Type`, `Shift`, `Questions`, `Reader Emotion`, `Internal` | Scrivener metadata | authorial fields — carried from Scrivener where present via the mapping table; **the LLM does not invent these** |
+
+Unrecognized Scrivener custom fields flow through the mapping table
+(map / keep-as-custom / ignore). Scene *order* is filename-driven per
+`wiki/Getting-Started.md:12`; numbering is assigned on Materialize; an optional
+Review rename checkbox is a stretch (see Open Questions).
+
+## The Onboarding Prompt — canonical source & sync
+
+**Maintainability problem (Eric, critical):** the prompt would otherwise live
+in three drifting copies — website onboarding page, plugin, GitHub wiki.
+
+**Decision (2026-07-11): Supabase is the single canonical source**, because the
+website is already Supabase-wired and the community platform lives there. The
+key is a hard seam between two halves of the prompt:
+
+| Half | What it is | Home |
+| --- | --- | --- |
+| **Instruction block** | ROLE / SOURCE / STRUCTURE / STAGES / RULES (Appendix A) — editorial text that changes over time | **Supabase** (canonical) |
+| **Output schema + parse rules** | the JSON contract the plugin's parser depends on | **Pinned in the plugin**, versioned with the release |
+
+The envelope already splits these (`composeEnvelope.ts:29-62`: instruction slot
+vs. schema/output-rules slot), so this seam is free.
+
+**Sync topology (one canonical, everything else derives):**
+
+- **Website** renders the instruction block live from Supabase.
+- **Plugin** ships a **bundled snapshot** at release
+  (`src/ai/prompts/onboarding.ts`) as the offline default, and *optionally*
+  refreshes from Supabase when online — adopting a remote prompt **only if its
+  `schemaVersion` is one the plugin's parser supports**, else keeping the
+  bundle. A server-side prompt edit can therefore never break a shipped
+  plugin's JSON parsing.
+- **Wiki** links to the canonical (website); **no independent editable copy.**
+  Docs stay slim; migrate to the website over time (Eric's direction — avoid
+  sprawl, keep operation intuitive).
+
+**Privacy holds:** the manuscript never leaves the machine — only a few KB of
+prompt text is optionally fetched, and the bundled fallback makes onboarding
+fully offline-capable.
+
+**Supabase storage (proposed):** a versioned row — `onboarding_prompt`
+(`community_config` or a dedicated table): `{ prompt_text, schema_version,
+updated_at }`, read via the public anon path the website already uses. **Open:**
+provision now vs. at Slice 1 (lean: design now, provision at Slice 1 so the row
+shape is deliberate).
+
+**User-editable override:** `aiSettings.onboarding.promptOverride: string |
+null` (`null` = track the effective canonical — remote-or-bundle). One textarea
++ *Reset to default*. The override replaces only the instruction block, never
+the schema/output-rules block.
 
 ## Settings Surface (small, in the AI tab)
 
@@ -389,21 +452,25 @@ Doctrine fit: no new abstraction layer beyond the adapters, no fallback chains
   ignore per field; custom fields shown on hover with an icon. ✅
 - PDF → V2, for sure. ✅
 - Record every successfully tested model + hardware in the plan/wiki. ✅
+- **`When`/`Duration` are IN V1** — important to many authors; carry from
+  Scrivener where present, LLM best-effort otherwise, flag guesses. ✅
+- **Canonical prompt provided** (Appendix A) and **canonical source = Supabase**
+  with a bundled plugin fallback + schema pinned in the plugin. ✅
 
 **Still open:**
-1. **Website prompt text** — paste the current onboarding-page prompt so
-   `onboarding.ts` starts from parity (page is bot-protected from the build
-   environment).
-2. **`When`/`Duration` in V1?** Lean **defer** (matches "minimal follow-up");
-   ship Progress/Narrative-ready fields first, Chronologue fields as a second
-   pass.
-3. **Filename renumbering** — include the optional rename checkbox in V1
-   Review, or rely purely on order-driven numbering at Materialize?
-4. **New-folder naming + source de-list mechanism** — exact working name
-   (`<Book> RT`?) and whether to repoint the book profile vs. stamp an
-   `onboardedAt` marker. Decide in Slice 1.
-5. **RTF / docx parser choice + bundle impact** — confirm a parser that
-   bundles cleanly under esbuild for the Obsidian runtime before committing.
+1. **Review checkpoints** — the canonical prompt is stage-major with approval
+   gates. Lean **two checkpoints** (after Split; final Review with flagged
+   Act/When guesses), not four gates. Confirm.
+2. **Supabase prompt row** — provision now, or at Slice 1? Lean design-now,
+   provision-at-Slice-1.
+3. **Scrivener intake** — confirm **export-first** (compiled files + metadata
+   sidecar) for V1, raw `.scriv` parsing as a stretch.
+4. **Filename renumbering** — optional rename checkbox in V1 Review, or rely on
+   order-driven numbering at Materialize?
+5. **New-folder naming + source de-list mechanism** — exact working name
+   (`<Book> RT`?) and repoint-profile vs. stamp `onboardedAt`. Decide in Slice 1.
+6. **docx parser choice + bundle impact** — confirm a parser that bundles
+   cleanly under esbuild for the Obsidian runtime before committing.
 
 ## Decision Log
 
@@ -417,3 +484,83 @@ Doctrine fit: no new abstraction layer beyond the adapters, no fallback chains
   Clarified that **MLX needs no new plugin code** — it's an OpenAI-compatible
   server (LM Studio recommended) behind the existing router. Reference test rig:
   Mac Studio 64 GB; a living tested-models table records real runs.
+- **2026-07-11 (2nd pass)** — Eric supplied the canonical onboarding prompt
+  (Appendix A) and decided the **canonical source is Supabase** (instruction
+  block) with a bundled plugin fallback and the JSON schema pinned in the plugin;
+  wiki links to canonical, no drift. **`When`/`Duration` moved into V1**
+  (carried from Scrivener, flagged when guessed). The prompt added fields the
+  plan lacked — `Place` + stub-note creation, a `Book` structural field
+  alongside `Act`, and the Stage-4 advanced set — plus reading-order/`TOC.md`
+  detection and **Scrivener-*export* intake** (sidesteps RTF parsing) as the V1
+  path. Prose is never rewritten; guesses are flagged, never invented.
+
+## Appendix A — Canonical onboarding prompt (instruction block)
+
+Source of truth for this text is **Supabase** (see "The Onboarding Prompt —
+canonical source & sync"); this appendix is the version-controlled snapshot the
+plugin bundles and the website renders. The plugin appends its pinned JSON
+output-schema/parse-rules block to this at runtime — that block is **not**
+editable here.
+
+```text
+ROLE
+You are migrating a finished manuscript into an Obsidian vault for the
+Radial Timeline plugin. Work in stages. Report after each stage and wait
+for my approval before continuing. Never rewrite or "improve" the prose.
+
+SOURCE
+- The vault folder contains one book folder with the manuscript:
+  a single PDF, or exported scene/chapter files (.md, .txt, .docx).
+- Numbered file names (01, 02, …) define the reading order.
+- If names aren't numbered, TOC.md maps the reading order to exact
+  file names. If neither exists, stop and ask me for the order.
+- If a Scrivener metadata export exists (synopses, notes, custom
+  fields), load it now and hold it for Stage 4.
+
+STRUCTURE
+- Chapters, not scenes? Treat each chapter as one scene note now;
+  split at scene breaks (***, blank space) in a later pass.
+- Radial Timeline defaults to 3 acts; Settings can raise the
+  act count to match big structures (the Odyssey's 24 books).
+  Pick a practical number, and keep the original division in
+  its own field: the Cyclops scene gets Act: 2 plus Book: 9.
+- From PDF: strip running headers, footers, and page numbers;
+  keep italics as *emphasis*; never let a page break split a
+  paragraph.
+
+STAGE 1 — SPLIT INTO SCENES
+- Create one Markdown note per scene inside the book folder.
+- Name notes "NN Scene Title.md" — zero-padded, narrative order.
+- Scene prose goes below the frontmatter, unchanged.
+
+STAGE 2 — REQUIRED YAML
+Add this frontmatter block to every scene note:
+---
+Class: Scene
+Act: 1
+Status: Complete
+Subplot:
+  - Main Plot
+---
+Set Act by structural read; if the book runs past 3 acts, raise the act count in Settings to match. Flag uncertain calls.
+
+STAGE 3 — CORE METADATA
+- When: the in-world date, YYYY-MM-DD (a bare year is enough)
+- Synopsis: 1–2 sentences of what happens in the scene
+- Character: wiki links — e.g. "[[Odysseus]]"
+- Place: wiki links — e.g. "[[Ithaca]]"
+- Create a stub note for every character and place you link.
+
+STAGE 4 — ADVANCED FIELDS
+- Publish Stage: Zero | Author | House | Press
+- Duration, Words, Due, Pending Edits
+- Type, Shift, Questions, Reader Emotion, Internal
+- Map Scrivener custom metadata to same-named YAML fields —
+  Radial Timeline safely ignores fields it doesn't recognize.
+
+RULES
+- YAML frontmatter is always the first thing in the file.
+- No commas inside Subplot, Character, or Place names.
+- Flag guesses (Act, When) for review — never invent silently.
+- Finish each stage across the whole book before starting the next.
+```

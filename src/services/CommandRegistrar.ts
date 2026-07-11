@@ -15,6 +15,7 @@ import { ManageSubplotsModal } from '../modals/ManageSubplotsModal';
 import { ManuscriptOptionsModal, ManuscriptModalResult, type ManuscriptExportOutcome } from '../modals/ManuscriptOptionsModal';
 import { PlanetaryTimeModal } from '../modals/PlanetaryTimeModal';
 import { BookDesignerModal } from '../modals/BookDesignerModal';
+import { OnboardingModal } from '../modals/OnboardingModal';
 import { TimelineRepairModal } from '../modals/TimelineRepairModal';
 import { TimelineAuditModal } from '../modals/TimelineAuditModal';
 import { AuthorProgressModal } from '../modals/AuthorProgressModal';
@@ -140,6 +141,17 @@ export class CommandRegistrar {
                 new BookDesignerModal(this.app, this.plugin).open();
             }
         });
+
+        // Beta (dev builds only): one-button manuscript onboarding via local LLM.
+        if (!__RT_RELEASE__) {
+            this.plugin.addCommand({
+                id: 'onboard-manuscript',
+                name: 'Onboard existing manuscript (beta)',
+                callback: () => {
+                    new OnboardingModal(this.app, this.plugin).open();
+                }
+            });
+        }
 
         const timelineOrderName = __RT_RELEASE__
             ? `BETA release pending — ${t('commands.timelineOrder')}`

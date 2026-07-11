@@ -237,7 +237,7 @@ export class OnboardingService {
       const path = normalizePath(`${destFolder}/${noteName}.md`);
       try {
         const file = await vault.create(path, proposal.body ? `\n${proposal.body}\n` : '\n');
-        await this.plugin.app.fileManager.processFrontMatter(file as TFile, (frontmatter) => {
+        await this.plugin.app.fileManager.processFrontMatter(file, (frontmatter) => {
           const target = frontmatter as Record<string, unknown>;
           for (const [key, value] of Object.entries(proposal.frontmatter as Record<string, unknown>)) {
             target[key] = value;

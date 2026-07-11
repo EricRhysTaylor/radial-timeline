@@ -207,7 +207,9 @@ Inquiry can write findings directly into your scene frontmatter:
 <a name="prompts"></a>
 ## Prompts
 
-Inquiry comes with built-in prompt questions for each zone. You can also add custom questions:
+Each zone ships with built-in questions: **4 core questions** per zone for everyone, and Pro unlocks **5 more** per zone — **9 built-in questions** per zone in total.
+
+You can also add your own custom questions on top of the built-ins:
 
 *   **Free**: Up to 3 custom questions per zone.
 *   **Pro**: Up to 8 custom questions per zone.

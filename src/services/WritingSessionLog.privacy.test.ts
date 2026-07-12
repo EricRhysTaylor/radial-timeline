@@ -18,7 +18,9 @@ import {
     projectCommunityDaily,
     projectFriends,
     projectPrivate,
+    projectSessionFeedPost,
     redactTime,
+    SESSION_FEED_POST_BODY_MAX,
 } from './WritingSessionLog';
 
 const TRACERS = {
@@ -95,6 +97,38 @@ describe('WritingSessionLog privacy boundary', () => {
             expect(out).not.toHaveProperty('bookId');
             expect(out).not.toHaveProperty('startedAt');
             expect(out).not.toHaveProperty('endedAt');
+        });
+    });
+
+    describe('session feed post projection (explicit per-save opt-in)', () => {
+        it('carries the note (the sanctioned opt-in exit) but never paths or book identity', () => {
+            const out = projectSessionFeedPost(tracedRecord());
+            // The note IS the point of the post — the author armed the toggle.
+            expect(out.body).toContain(TRACERS.note);
+            // Everything else stays private even on this exit.
+            assertNoTracers(out, [TRACERS.note]);
+        });
+
+        it('never emits exact timestamps, ids, or per-scene detail', () => {
+            const out = projectSessionFeedPost(tracedRecord()) as unknown as Record<string, unknown>;
+            expect(out).not.toHaveProperty('id');
+            expect(out).not.toHaveProperty('startedAt');
+            expect(out).not.toHaveProperty('endedAt');
+            expect(out).not.toHaveProperty('scenePaths');
+            expect(out).not.toHaveProperty('scenesActivity');
+            expect(out).not.toHaveProperty('bookId');
+            expect(out).not.toHaveProperty('bookTitle');
+        });
+
+        it('composes a stats headline and caps the body at the server limit', () => {
+            const out = projectSessionFeedPost(tracedRecord({ note: 'x'.repeat(2000) }));
+            expect(out.body.startsWith('Drafting · 47 min · 312 words')).toBe(true);
+            expect(out.body.length).toBeLessThanOrEqual(SESSION_FEED_POST_BODY_MAX);
+        });
+
+        it('posts the stats headline alone when the author left no note', () => {
+            const out = projectSessionFeedPost(tracedRecord({ note: undefined }));
+            expect(out.body).toBe('Drafting · 47 min · 312 words');
         });
     });
 

@@ -1,9 +1,10 @@
 import { requestUrl } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { deleteSecret, getSecret, isSecretStorageAvailable, setSecret } from '../ai/credentials/secretStorage';
-import { normalizeCommunityShareSettings } from './communityShareSettings';
+import { deriveCommunityShareMode, normalizeCommunityShareSettings } from './communityShareSettings';
 import { COMMUNITY_SHARE_REPORT_SCHEMA_VERSION, buildCommunityDailyEntries, buildCommunitySharePreview } from './communitySharePreview';
 import type { CommunitySharePublishHistoryEntry, CommunityShareSettings } from '../types/settings';
+import type { SessionFeedPost } from '../services/WritingSessionLog';
 
 const FUNCTIONS_BASE_URL = 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/functions/v1';
 const INSTALLATION_SECRET_ID = 'rt.community-share.installation-id';
@@ -894,4 +895,56 @@ export async function disconnectCommunityShare(plugin: RadialTimelinePlugin): Pr
     });
     await plugin.saveSettings();
     return result;
+}
+
+// -- Session feed posts (author-composed, per-save opt-in) --------------------
+
+/**
+ * True when the author's standing sharing state allows posting a session
+ * summary to the community feed: connected, sharing on, public audience, and
+ * the top sharing level (progress summaries). UI gates the toggle on this;
+ * the edge function re-verifies every gate server-side.
+ */
+export function canPostSessionsToFeed(plugin: RadialTimelinePlugin): boolean {
+    const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
+    return current.connection.status === 'connected'
+        && Boolean(current.connection.connectionId)
+        && Boolean(current.connection.secretId)
+        && current.audience === 'public'
+        && deriveCommunityShareMode(current) === 'progress';
+}
+
+/**
+ * Post one author-composed session summary to the public community feed.
+ * Best-effort from the caller's perspective: saving the session must never
+ * depend on this call — surface failures as a Notice and move on.
+ */
+export async function postSessionToCommunityFeed(
+    plugin: RadialTimelinePlugin,
+    post: SessionFeedPost
+): Promise<void> {
+    const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
+    if (!canPostSessionsToFeed(plugin)) {
+        throw new CommunityShareError('sharing_level_required', 'Posting to the community feed requires the top sharing level.');
+    }
+    const secret = await getConnectedSecret(plugin, current);
+    const response = await requestUrl({
+        url: `${FUNCTIONS_BASE_URL}/community-session-post`,
+        method: 'POST',
+        contentType: 'application/json',
+        body: JSON.stringify({
+            connection_id: current.connection.connectionId,
+            current_secret: secret,
+            body: post.body,
+            session: post.stats
+        }),
+        throw: false
+    });
+    const parsed = parseResponseJson(response.text) as ActivationConfirmError & { ok?: boolean };
+    if (response.status < 200 || response.status >= 300 || parsed.ok !== true) {
+        throw new CommunityShareError(
+            parsed.error?.code || 'post_failed',
+            parsed.error?.message || 'Could not post this session to the community feed.'
+        );
+    }
 }

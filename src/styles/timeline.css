@@ -1358,6 +1358,31 @@
   font-weight: var(--font-semibold);
 }
 
+/* Community-shared state: sessions saved while armed post a progress summary
+   to the author's public feed. Social accent per brand. */
+.ert-timeline-session-panel.is-community-shared {
+  border-color: rgba(var(--ert-social-accent-rgb-base), 0.55);
+}
+
+.ert-timeline-session-panel.is-community-shared .ert-timeline-session-panel__title {
+  color: var(--ert-social-accent-color-base);
+}
+
+.ert-timeline-session-panel__shared-badge {
+  margin-left: auto;
+  padding: 0 var(--size-2-2);
+  border: 1px solid rgba(var(--ert-social-accent-rgb-base), 0.4);
+  border-radius: var(--radius-s);
+  background: rgba(var(--ert-social-accent-rgb-base), 0.12);
+  color: var(--ert-social-accent-color-base);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.6;
+}
+
+.ert-timeline-session.clickable-icon.is-community-shared {
+  box-shadow: inset 0 0 0 1px rgba(var(--ert-social-accent-rgb-base), 0.5);
+}
+
 .ert-timeline-session-panel__icon.clickable-icon {
   flex: 0 0 auto;
   color: var(--text-muted);

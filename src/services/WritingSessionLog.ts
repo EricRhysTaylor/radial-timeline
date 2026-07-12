@@ -7,15 +7,20 @@
  * by `WritingSessionLog.privacy.test.ts` (tracer test).
  *
  * Contract:
- *   - projectPrivate(record):        full row, this device only
- *   - projectFriends(record, opts):  per-session row, sensitive fields stripped
- *   - projectCommunityDaily(rows[]): daily aggregate, NEVER per-session
+ *   - projectPrivate(record):          full row, this device only
+ *   - projectFriends(record, opts):    per-session row, sensitive fields stripped
+ *   - projectCommunityDaily(rows[]):   daily aggregate, NEVER per-session
+ *   - projectSessionFeedPost(record):  author-composed public feed post — the
+ *     ONLY exit that may carry `note`, and only because the author explicitly
+ *     armed the per-save "post to community feed" toggle at the top sharing
+ *     level. It is an authored post (equivalent to typing on the website
+ *     feed), not data exhaust.
  *
  * NEVER emitted to friends or community at any tier:
  *   - scenePaths
  *   - scenesCompletedPaths
  *   - scenesActivity (per-scene time/words — contains scene paths)
- *   - note
+ *   - note (EXCEPT via projectSessionFeedPost under the explicit per-save toggle)
  *   - raw scene titles
  *
  * Adding a field to WritingSessionRecord requires:
@@ -241,6 +246,59 @@ export function projectCommunityDaily(
         wordsAdded: roundToNearest(totalWords, 50),
         scenesCompletedByStage: stageCounts,
         modeMix,
+    };
+}
+
+// -- Session feed post (author-composed, explicit per-save opt-in) -----------
+
+/** Server-enforced community_posts body length limits. */
+export const SESSION_FEED_POST_BODY_MAX = 1000;
+export const SESSION_FEED_POST_BODY_MIN = 3;
+
+export interface SessionFeedPost {
+    audience: 'community';
+    /** Post text: stats headline plus the author's note. Never paths or raw titles. */
+    body: string;
+    /** Structured stats mirrored into post metadata for feed rendering. */
+    stats: {
+        minutes: number;
+        words?: number;
+        mode: WritingSessionMode;
+    };
+}
+
+const FEED_MODE_LABELS: Record<WritingSessionMode, string> = {
+    drafting: 'Drafting',
+    revising: 'Revision',
+    editing: 'Line edit',
+    planning: 'Planning',
+};
+
+/**
+ * Author-composed public feed post for one saved session. This is a sanctioned
+ * `note` exit — callable ONLY when the author armed the per-save "post to
+ * community feed" toggle; callers must gate on that toggle plus the top
+ * sharing level. Deliberately excludes bookId/bookTitle (the server snapshots
+ * the PUBLIC project title), scene paths, scene titles, and exact timestamps.
+ */
+export function projectSessionFeedPost(record: WritingSessionRecord): SessionFeedPost {
+    const minutes = Math.max(1, Math.round((record.elapsedMs ?? 0) / 60000));
+    const words = record.mode === 'drafting' || (record.wordsAdded ?? 0) > 0
+        ? Math.max(0, record.wordsAdded ?? 0) || undefined
+        : undefined;
+    const headline = [
+        FEED_MODE_LABELS[record.mode],
+        `${minutes} min`,
+        words ? `${words} words` : undefined,
+    ].filter(Boolean).join(' · ');
+    const note = record.note?.trim();
+    const body = note
+        ? `${headline}\n\n${note}`.slice(0, SESSION_FEED_POST_BODY_MAX)
+        : headline.slice(0, SESSION_FEED_POST_BODY_MAX);
+    return {
+        audience: 'community',
+        body,
+        stats: { minutes, words, mode: record.mode },
     };
 }
 

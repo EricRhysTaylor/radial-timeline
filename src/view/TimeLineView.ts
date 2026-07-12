@@ -35,6 +35,8 @@ import {
     ChangeType
 } from '../renderer/ChangeDetection';
 import { WritingSessionCompletionModal } from '../modals/WritingSessionCompletionModal';
+import { canPostSessionsToFeed, postSessionToCommunityFeed } from '../communityShare/communityShareClient';
+import { projectSessionFeedPost } from '../services/WritingSessionLog';
 import { isMatterNote } from '../utils/sceneHelpers';
 import { DEFAULT_BOOK_TITLE, getTimelineScope, getTimelineScopeTitle, isSagaScopeAvailable } from '../utils/books';
 import { getActiveRecentStructuralMoves } from '../utils/recentStructuralMoves';
@@ -546,6 +548,17 @@ export class RadialTimelineView extends ItemView {
         return stage;
     }
 
+    /**
+     * True when saved sessions will post to the community feed: the author is
+     * at the top sharing level with an active connection AND the remembered
+     * per-save toggle is on. Drives the social (yellow) accent on the session
+     * button and popover.
+     */
+    private isSessionFeedShareArmed(): boolean {
+        return canPostSessionsToFeed(this.plugin)
+            && this.plugin.getWritingSessionService().isPostSessionsToFeedEnabled();
+    }
+
     private sessionHasWordGoal(active: ActiveWritingSession): boolean {
         return (active.targetMode === 'words' || active.targetMode === 'both') && Boolean(active.goalWords);
     }
@@ -782,6 +795,9 @@ export class RadialTimelineView extends ItemView {
         this.writingSessionButton.classList.toggle('is-active', snapshot.state === 'active');
         this.writingSessionButton.classList.toggle('is-paused', snapshot.state === 'paused');
         this.writingSessionButton.classList.toggle('is-goal-met', Boolean(snapshot.goalMet));
+        // Social accent: sessions saved while this is armed post to the
+        // author's public community feed.
+        this.writingSessionButton.classList.toggle('is-community-shared', this.isSessionFeedShareArmed());
         this.applySessionProgressClass(this.writingSessionButton, snapshot.progressStep);
         this.writingSessionButton.setAttribute('aria-label', snapshot.detail);
         if (shouldPulseCount && snapshot.pulseKey && pulseColor) {
@@ -1052,8 +1068,15 @@ export class RadialTimelineView extends ItemView {
         const active = service.getActiveSession();
         panel.dataset.sessionState = active ? 'active' : 'idle';
         delete panel.dataset.sessionRenderKey;
+        // Social accent: saved sessions will post to the public community feed.
+        const feedArmed = this.isSessionFeedShareArmed();
+        panel.classList.toggle('is-community-shared', feedArmed);
         const header = panel.createDiv({ cls: 'ert-timeline-session-panel__header' });
         header.createDiv({ cls: 'ert-timeline-session-panel__title', text: 'Writing Session' });
+        if (feedArmed) {
+            const sharedBadge = header.createSpan({ cls: 'ert-timeline-session-panel__shared-badge', text: 'Shared' });
+            applyTooltip(sharedBadge, 'Saved sessions post a progress summary to your community feed', 'bottom');
+        }
 
         const settingsBtn = header.createEl('button', { cls: 'ert-timeline-session-panel__icon clickable-icon' });
         settingsBtn.type = 'button';
@@ -1425,13 +1448,30 @@ export class RadialTimelineView extends ItemView {
                 activeMs: entry.activeMs,
                 typedWords: entry.typedWords,
             }));
+            const feedShare = {
+                eligible: canPostSessionsToFeed(this.plugin),
+                defaultOn: service.isPostSessionsToFeedEnabled(),
+            };
             new WritingSessionCompletionModal(this.app, active, service.getActiveElapsedMs(), sceneSuggestions, {
                 typedWords: active.typedWords,
                 netWordDelta,
-            }, sceneActivity, async (completion) => {
+            }, sceneActivity, feedShare, async (completion) => {
                 try {
                     const record = await service.stop(completion);
                     new Notice(`Saved ${this.formatWritingSessionMode(record.mode)} session (${this.formatSessionClock(record.elapsedMs)}).`);
+                    if (feedShare.eligible && completion.postToFeed !== undefined) {
+                        // Remember the toggle for the next save, then post.
+                        // Posting is best-effort: the session is already saved.
+                        await service.setPostSessionsToFeed(completion.postToFeed);
+                        if (completion.postToFeed) {
+                            try {
+                                await postSessionToCommunityFeed(this.plugin, projectSessionFeedPost(record));
+                                new Notice('Posted to your community feed.');
+                            } catch (postError) {
+                                new Notice(postError instanceof Error ? postError.message : 'Could not post to the community feed.');
+                            }
+                        }
+                    }
                     this.refreshWritingSessionControl();
                 } catch (error) {
                     new Notice(error instanceof Error ? error.message : 'Could not stop writing session.');

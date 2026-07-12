@@ -5,6 +5,19 @@ import type { WritingSessionCompletionInput, WritingSessionSceneSuggestion } fro
 
 export interface WritingSessionCompletionResult extends WritingSessionCompletionInput {
     elapsedMinutes: number;
+    /**
+     * Author armed the "post to community feed" toggle for this save. Only
+     * present when the modal was opened with an eligible feedShare option.
+     */
+    postToFeed?: boolean;
+}
+
+/** Feed-posting context for the save modal. Absent = feature not eligible. */
+export interface WritingSessionFeedShareOption {
+    /** Author is at the top sharing level with an active connection. */
+    eligible: boolean;
+    /** Remembered toggle state from the last save. */
+    defaultOn: boolean;
 }
 
 export interface WritingSessionCompletionWordStats {
@@ -65,6 +78,7 @@ export class WritingSessionCompletionModal extends Modal {
         private sceneSuggestions: WritingSessionSceneSuggestion[],
         private wordStats: WritingSessionCompletionWordStats,
         private sceneActivity: WritingSessionSceneActivityEntry[],
+        private feedShare: WritingSessionFeedShareOption,
         private onSubmit: (result: WritingSessionCompletionResult) => Promise<void>
     ) {
         super(app);
@@ -254,15 +268,37 @@ export class WritingSessionCompletionModal extends Modal {
             'ert-writing-session-compact-setting'
         );
 
+        let postToFeed = this.feedShare.eligible && this.feedShare.defaultOn;
+        const syncFeedAccent = () => {
+            modalEl?.classList.toggle('is-feed-shared', postToFeed);
+        };
+
         const noteSetting = new Setting(form)
             .setName('Note')
-            .setDesc('Optional private note about what you worked on.')
+            .setDesc(this.feedShare.eligible
+                ? 'Note about what you worked on. Posted with your progress when the feed toggle is on; otherwise private.'
+                : 'Optional private note about what you worked on.')
             .addTextArea((text: TextAreaComponent) => {
                 text.inputEl.addClass('ert-input--full');
                 text.inputEl.rows = 3;
                 text.onChange(value => { note = value; });
             });
         noteSetting.settingEl.addClass('ert-writing-session-note');
+
+        if (this.feedShare.eligible) {
+            const feedSetting = new Setting(form)
+                .setName('Post to community feed')
+                .setDesc('Share this progress summary and note on your public feed. Turn off to keep the note private.')
+                .addToggle(toggle => {
+                    toggle.setValue(postToFeed);
+                    toggle.onChange(value => {
+                        postToFeed = value;
+                        syncFeedAccent();
+                    });
+                });
+            feedSetting.settingEl.addClass('ert-writing-session-feed-share');
+            syncFeedAccent();
+        }
 
         const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
         const save = async () => {
@@ -277,6 +313,7 @@ export class WritingSessionCompletionModal extends Modal {
                 scenesCompleted,
                 scenePaths: [...selectedScenePaths],
                 note,
+                postToFeed: this.feedShare.eligible ? postToFeed : undefined,
             };
             await this.onSubmit(result);
             this.close();

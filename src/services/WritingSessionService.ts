@@ -407,10 +407,13 @@ export function normalizeWritingSessionsSettings(settings: WritingSessionsSettin
     // explicit false (the author unchecked it) keeps it off.
     const autoTrack = settings?.defaults?.autoTrack !== false;
     const idleTimeoutMs = coerceIdleTimeoutMs(settings?.defaults?.idleTimeoutMs);
+    // Default OFF: posting session summaries to the community feed is opt-in
+    // at every layer, matching the Community Share doctrine.
+    const postSessionsToFeed = settings?.defaults?.postSessionsToFeed === true;
     const active = settings?.active;
     return {
         schemaVersion: WRITING_SESSIONS_SCHEMA_VERSION,
-        defaults: { defaultMode, defaultStage, targetMode, weeklyGoalDays, writingStatsOpen, autoTrack, idleTimeoutMs },
+        defaults: { defaultMode, defaultStage, targetMode, weeklyGoalDays, writingStatsOpen, autoTrack, idleTimeoutMs, postSessionsToFeed },
         ...(active ? {
             active: {
                 ...active,
@@ -895,6 +898,18 @@ export class WritingSessionService {
     async setAutoTrack(enabled: boolean): Promise<void> {
         const settings = this.getSettings();
         settings.defaults.autoTrack = enabled === true;
+        await this.plugin.saveSettings();
+    }
+
+    /** Remembered default for the per-save "post to community feed" toggle. */
+    isPostSessionsToFeedEnabled(): boolean {
+        return this.getSettings().defaults.postSessionsToFeed === true;
+    }
+
+    async setPostSessionsToFeed(enabled: boolean): Promise<void> {
+        const settings = this.getSettings();
+        if (settings.defaults.postSessionsToFeed === (enabled === true)) return;
+        settings.defaults.postSessionsToFeed = enabled === true;
         await this.plugin.saveSettings();
     }
 

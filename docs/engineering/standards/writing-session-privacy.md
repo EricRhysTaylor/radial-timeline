@@ -46,11 +46,16 @@ ever, under any opt-in. Adding a new field to this list is a one-way door.
   for unpublished work
 - `note` — free-form prose written by the author about their own session;
   the writing journal must be safe to write honestly in. Sharing it by
-  default would chill that.
+  default would chill that. **One sanctioned exception:** the session feed
+  post (below) may carry the note when the author arms the per-save
+  "post to community feed" toggle in the save modal.
 
-> If a future "share this reflection" feature is needed, it is an explicit,
-> per-row publish action with its own UI affirmation — never a passive flag
-> on the record.
+> The "share this reflection" clause is now implemented as
+> `projectSessionFeedPost`: an explicit per-row publish action affirmed in
+> the save modal UI (the toggle + social-accent styling are visible at every
+> save; the remembered default only pre-arms the toggle, the author always
+> sees its state before saving). It is never a passive flag applied after
+> the fact.
 
 ### Author-controlled — opt-in per audience
 
@@ -103,10 +108,17 @@ type Audience = 'private' | 'friends' | 'community';
 projectPrivate(record): PrivateSessionLogRow         // full row
 projectFriends(record): FriendsSessionLogRow         // per-session, redacted
 projectCommunityDaily(records[]): CommunityDailyRow  // daily aggregate ONLY
+projectSessionFeedPost(record): SessionFeedPost      // authored public post,
+                                                     // explicit per-save opt-in
 ```
 
-There is intentionally no `projectCommunity(record)` — community emits
-daily aggregates, never per-session rows.
+There is intentionally no `projectCommunity(record)` — community *data
+exhaust* emits daily aggregates, never per-session rows.
+`projectSessionFeedPost` is not exhaust: it is an author-composed public
+post (equivalent to typing on the website feed), produced only when the
+author arms the per-save toggle at the top sharing level. It carries the
+stats headline and the note; it never carries paths, scene titles, book
+identity, ids, or exact timestamps.
 
 **No fallbacks.** If a field cannot be safely projected, omit it. Never
 substitute "Untitled scene" or "Anonymous" — surface absence honestly. The
@@ -127,7 +139,9 @@ can leak.
 - Community sharing is **per-book**, not global, and requires friends
   sharing to also be enabled (forcing the author through the lower-stakes
   tier first).
-- The `note` field is permanently private regardless of toggles.
+- The `note` field never leaves the device passively. Its only exit is the
+  session feed post, armed per save in the modal (remembered default, but
+  the toggle state is always visible before saving).
 - Time precision is not user-configurable — it is fixed per audience.
 
 ---

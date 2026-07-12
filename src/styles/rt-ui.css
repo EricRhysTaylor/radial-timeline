@@ -4616,6 +4616,24 @@
   --ert-control-width: 100%;
 }
 
+/* Feed-share toggle: social accent while armed — the note and progress
+   summary post to the author's public community feed on save. */
+.ert-ui .ert-writing-session-feed-share.setting-item {
+  border-top: none;
+}
+
+.ert-ui.ert-modal--writing-session.is-feed-shared .ert-writing-session-feed-share .setting-item-name {
+  color: var(--ert-social-accent-color-base);
+}
+
+.ert-ui.ert-modal--writing-session.is-feed-shared .ert-writing-session-feed-share .checkbox-container.is-enabled {
+  background-color: var(--ert-social-accent-color-base);
+}
+
+.ert-ui.ert-modal--writing-session.is-feed-shared .ert-writing-session-note textarea.ert-input--full {
+  border-color: rgba(var(--ert-social-accent-rgb-base), 0.5);
+}
+
 .ert-ui .ert-writing-session-date-input {
   width: 13.5ch;
   min-width: 13.5ch;

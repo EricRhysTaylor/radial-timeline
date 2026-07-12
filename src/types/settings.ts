@@ -334,6 +334,13 @@ export interface WritingSessionDefaults {
      * the next activity. Default 2 minutes.
      */
     idleTimeoutMs?: number;
+    /**
+     * Remembered default for the per-save "post to community feed" toggle in
+     * the completion modal. Only meaningful at the top sharing level with an
+     * active Community Share connection; the author still sees and can flip
+     * the toggle at every save. Default OFF (sharing is opt-in at every layer).
+     */
+    postSessionsToFeed?: boolean;
 }
 
 export interface ActiveWritingSession {

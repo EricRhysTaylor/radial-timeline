@@ -735,13 +735,6 @@ export const de: DeepPartial<TranslationKeys> = {
             toolAudit: 'Audit',
         },
         reset: {
-            button: 'Timeline-Metadaten zurücksetzen',
-            tooltip: 'Entfernt die Buchhaltungsfelder des Plugins (WhenSource, WhenConfidence, DurationSource, NeedsReview) aus jeder Szene. Daten bleiben unberührt. Verwenden Sie dies für eine Überprüfung mit sauberem Stand.',
-            title: 'Timeline-Metadaten zurücksetzen',
-            body: 'Entfernt die Buchhaltungsfelder des Plugins — `WhenSource`, `WhenConfidence`, `DurationSource` und `NeedsReview` — aus allen {{count}} Szenen. Ihre `When`-Daten werden nicht geändert. Danach gilt jedes Datum als vom Autor verfasst: Ripple hält alle davon, sofern nicht „Auch Anker verschieben" aktiviert ist.',
-            note: 'Zuerst wird ein Snapshot der Daten und Metadaten gespeichert — jederzeit über „Letzten Snapshot wiederherstellen" rückgängig zu machen.',
-            confirmButton: 'Metadaten zurücksetzen',
-            successNotice: 'Timeline-Metadaten aus {{count}} Szenen entfernt. Snapshot gespeichert.',
         },
         confirm: {
             title: 'Änderungen bestätigen',

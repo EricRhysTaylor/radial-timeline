@@ -12,8 +12,7 @@ import type {
     SessionDiffModel,
     FrontmatterUpdate,
     FrontmatterWriteResult,
-    WhenSource,
-    WhenConfidence
+    WhenSource
 } from './types';
 import { getEffectiveWhen } from './types';
 import { appendWhenChanges, type WhenChangeRecord } from './whenChangeLog';
@@ -63,34 +62,27 @@ function formatDurationForYaml(durationMs: number): string {
  */
 export function prepareUpdates(session: SessionDiffModel): FrontmatterUpdate[] {
     const updates: FrontmatterUpdate[] = [];
-    
+
     for (const entry of session.entries) {
         if (!entry.isChanged) continue;
-        
+
         const effectiveWhen = getEffectiveWhen(entry);
-        
+
         const update: FrontmatterUpdate = {
             file: entry.file,
             when: effectiveWhen,
-            whenSource: entry.source,
-            whenConfidence: entry.confidence
+            whenSource: entry.source
         };
-        
+
         // Add duration if present
         if (entry.proposedDuration !== undefined) {
             update.duration = entry.proposedDuration;
-            update.durationSource = entry.durationSource;
             update.durationOngoing = entry.durationOngoing;
         }
-        
-        // Add review flag if needed
-        if (entry.needsReview) {
-            update.needsReview = true;
-        }
-        
+
         updates.push(update);
     }
-    
+
     return updates;
 }
 
@@ -102,42 +94,27 @@ export interface WriteOptions {
     /** Tool attribution recorded in the When change log (default 'scaffold') */
     logTool?: 'scaffold' | 'audit';
 
-    /** Include WhenSource provenance field */
-    includeSource?: boolean;
-    
-    /** Include WhenConfidence field */
-    includeConfidence?: boolean;
-    
-    /** Include Duration updates */
-    includeDuration?: boolean;
-    
-    /** Include NeedsReview flag */
-    includeNeedsReview?: boolean;
-    
     /** Progress callback */
     onProgress?: (current: number, total: number, fileName: string) => void;
-    
+
     /** Abort signal */
     abortSignal?: AbortSignal;
 }
 
-const DEFAULT_WRITE_OPTIONS: WriteOptions = {
-    includeSource: true,
-    includeConfidence: true,
-    includeDuration: true,
-    includeNeedsReview: true
-};
-
 /**
  * Write frontmatter updates to files.
  * Uses Obsidian's processFrontMatter for atomic updates.
+ *
+ * Only author-facing fields are ever written: `When`, and `Duration` when a
+ * duration is proposed. Provenance lives in the When change log sidecar, not
+ * in the author's YAML.
  */
 export async function writeFrontmatterUpdates(
     app: App,
     updates: FrontmatterUpdate[],
     options: WriteOptions = {}
 ): Promise<FrontmatterWriteResult> {
-    const opts = { ...DEFAULT_WRITE_OPTIONS, ...options };
+    const opts = options;
 
     const result: FrontmatterWriteResult = {
         success: 0,
@@ -165,39 +142,18 @@ export async function writeFrontmatterUpdates(
 
                 // Capture the outgoing value for the change log before overwriting.
                 const prior = fmObj['When'];
-                previousWhen = prior === undefined || prior === null ? null : String(prior);
+                previousWhen = typeof prior === 'string'
+                    ? prior
+                    : (typeof prior === 'number' || typeof prior === 'boolean' ? String(prior) : null);
 
                 // Update When field
                 fmObj['When'] = formatWhenForYaml(update.when);
-                
-                // Provenance metadata
-                if (opts.includeSource) {
-                    fmObj['WhenSource'] = update.whenSource;
-                }
-                
-                if (opts.includeConfidence) {
-                    fmObj['WhenConfidence'] = update.whenConfidence;
-                }
-                
-                // Duration
-                if (opts.includeDuration && update.duration !== undefined) {
-                    if (update.durationOngoing) {
-                        fmObj['Duration'] = 'ongoing';
-                    } else {
-                        fmObj['Duration'] = formatDurationForYaml(update.duration);
-                    }
-                    
-                    if (update.durationSource) {
-                        fmObj['DurationSource'] = update.durationSource;
-                    }
-                }
-                
-                // Review flag
-                if (opts.includeNeedsReview && update.needsReview) {
-                    fmObj['NeedsReview'] = true;
-                } else if ('NeedsReview' in fmObj) {
-                    // Clear the flag if no longer needed
-                    delete fmObj['NeedsReview'];
+
+                // Duration (author-facing field)
+                if (update.duration !== undefined) {
+                    fmObj['Duration'] = update.durationOngoing
+                        ? 'ongoing'
+                        : formatDurationForYaml(update.duration);
                 }
             });
             
@@ -257,21 +213,19 @@ export function previewUpdates(session: SessionDiffModel): Array<{
     originalWhen: string | null;
     newWhen: string;
     source: WhenSource;
-    confidence: WhenConfidence;
 }> {
     const updates = prepareUpdates(session);
-    
+
     return updates.map(update => {
         const entry = session.entries.find(e => e.file.path === update.file.path);
-        
+
         return {
             fileName: update.file.basename,
             path: update.file.path,
-            originalWhen: entry?.originalWhenRaw ?? 
+            originalWhen: entry?.originalWhenRaw ??
                 (entry?.originalWhen ? formatWhenForYaml(entry.originalWhen) : null),
             newWhen: formatWhenForYaml(update.when),
-            source: update.whenSource,
-            confidence: update.whenConfidence
+            source: update.whenSource
         };
     });
 }
@@ -279,53 +233,8 @@ export function previewUpdates(session: SessionDiffModel): Array<{
 /**
  * Get a summary of changes for display.
  */
-export function getChangeSummary(session: SessionDiffModel): {
-    totalChanges: number;
-    bySource: Record<WhenSource, number>;
-    byConfidence: Record<WhenConfidence, number>;
-    withDuration: number;
-    needingReview: number;
-} {
-    const updates = prepareUpdates(session);
-    
-    const bySource: Record<WhenSource, number> = {
-        pattern: 0,
-        keyword: 0,
-        ai: 0,
-        manual: 0,
-        original: 0,
-        authored: 0
-    };
-    
-    const byConfidence: Record<WhenConfidence, number> = {
-        high: 0,
-        med: 0,
-        low: 0
-    };
-    
-    let withDuration = 0;
-    let needingReview = 0;
-    
-    for (const update of updates) {
-        bySource[update.whenSource]++;
-        byConfidence[update.whenConfidence]++;
-        
-        if (update.duration !== undefined) {
-            withDuration++;
-        }
-        
-        if (update.needsReview) {
-            needingReview++;
-        }
-    }
-    
-    return {
-        totalChanges: updates.length,
-        bySource,
-        byConfidence,
-        withDuration,
-        needingReview
-    };
+export function getChangeSummary(session: SessionDiffModel): { totalChanges: number } {
+    return { totalChanges: prepareUpdates(session).length };
 }
 
 // ============================================================================

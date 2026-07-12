@@ -57,7 +57,6 @@ export interface TimelineAuditSceneInput {
     parsedWhen: Date | null;
     whenValid: boolean;
     whenParseIssue: 'missing_when' | 'invalid_when' | null;
-    whenSource?: WhenSource;
     whenConfidence?: WhenConfidence;
     summary: string;
     synopsis: string;
@@ -104,7 +103,6 @@ export interface TimelineAuditFinding {
     currentWhen: Date | null;
     whenValid: boolean;
     whenParseIssue: 'missing_when' | 'invalid_when' | null;
-    currentWhenSource?: WhenSource;
     currentWhenConfidence?: WhenConfidence;
     expectedChronologyPosition: number | null;
     inferredWrittenTimelinePosition: TimelineAuditWrittenPosition | null;

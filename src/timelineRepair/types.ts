@@ -376,14 +376,12 @@ export interface ModalState {
 export interface FrontmatterUpdate {
     file: TFile;
     when: Date;
+    /** Provenance for the When change log — never written to frontmatter. */
     whenSource: WhenSource;
-    whenConfidence: WhenConfidence;
-    
+
     // Optional fields
     duration?: number;
-    durationSource?: DurationSource;
     durationOngoing?: boolean;
-    needsReview?: boolean;
 }
 
 /**

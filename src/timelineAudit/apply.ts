@@ -6,42 +6,33 @@
  * Timeline Auditor - Apply Adapter
  */
 
-import type { App, TFile } from 'obsidian';
+import type { App } from 'obsidian';
 import { writeFrontmatterUpdates, type WriteOptions } from '../timelineRepair/frontmatterWriter';
 import type { FrontmatterUpdate, FrontmatterWriteResult } from '../timelineRepair/types';
 import type { TimelineAuditFinding } from './types';
 
 export interface TimelineAuditApplyPlan {
     whenUpdates: FrontmatterUpdate[];
-    reviewOnly: Array<{ file: TFile; needsReview: boolean }>;
 }
 
+/**
+ * Only accepted When replacements touch files. Keep/mark-review decisions
+ * are session state — the author's YAML carries no plugin bookkeeping.
+ */
 export function buildAuditApplyPlan(findings: TimelineAuditFinding[]): TimelineAuditApplyPlan {
     const whenUpdates: FrontmatterUpdate[] = [];
-    const reviewOnly: Array<{ file: TFile; needsReview: boolean }> = [];
 
     for (const finding of findings) {
-        if (finding.reviewAction === 'apply' && finding.suggestedWhen && finding.suggestedConfidence && finding.suggestedProvenance) {
+        if (finding.reviewAction === 'apply' && finding.suggestedWhen && finding.suggestedProvenance) {
             whenUpdates.push({
                 file: finding.file,
                 when: finding.suggestedWhen,
-                whenSource: finding.suggestedProvenance,
-                whenConfidence: finding.suggestedConfidence,
-                needsReview: false
+                whenSource: finding.suggestedProvenance
             });
-            continue;
         }
-
-        const needsReview = finding.reviewAction === 'mark_review'
-            || (finding.reviewAction === 'keep' && finding.unresolved);
-
-        reviewOnly.push({
-            file: finding.file,
-            needsReview
-        });
     }
 
-    return { whenUpdates, reviewOnly };
+    return { whenUpdates };
 }
 
 export async function applyAuditFindings(
@@ -50,26 +41,5 @@ export async function applyAuditFindings(
     options: WriteOptions = {}
 ): Promise<FrontmatterWriteResult> {
     const plan = buildAuditApplyPlan(findings);
-    const result = await writeFrontmatterUpdates(app, plan.whenUpdates, options);
-
-    for (const update of plan.reviewOnly) {
-        try {
-            await app.fileManager.processFrontMatter(update.file, (fm) => {
-                const fmObj = fm as Record<string, unknown>;
-                if (update.needsReview) {
-                    fmObj['NeedsReview'] = true;
-                } else if ('NeedsReview' in fmObj) {
-                    delete fmObj['NeedsReview'];
-                }
-            });
-        } catch (error) {
-            result.failed += 1;
-            result.errors.push({
-                file: update.file,
-                error: error instanceof Error ? error.message : String(error)
-            });
-        }
-    }
-
-    return result;
+    return writeFrontmatterUpdates(app, plan.whenUpdates, options);
 }

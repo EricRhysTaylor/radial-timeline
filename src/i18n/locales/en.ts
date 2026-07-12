@@ -2608,13 +2608,13 @@ export const en: TranslationKeys = {
             toolAudit: 'Audit'
         },
         reset: {
-            button: 'Reset Timeline Metadata',
-            tooltip: 'Remove the plugin’s bookkeeping fields (WhenSource, WhenConfidence, DurationSource, NeedsReview) from every scene. Dates are untouched. Use this for a clean-slate review.',
-            title: 'Reset timeline metadata',
-            body: 'Removes the plugin’s bookkeeping fields — `WhenSource`, `WhenConfidence`, `DurationSource`, and `NeedsReview` — from all {{count}} scenes. Your `When` dates are not changed. Afterwards every date reads as author-owned: Ripple will hold all of them unless “Shift anchored too” is on.',
-            note: 'A snapshot of dates and metadata is saved first — undo anytime from Restore Last Snapshot.',
-            confirmButton: 'Reset Metadata',
-            successNotice: 'Cleared timeline metadata from {{count}} scenes. Snapshot saved.'
+            button: 'Clean Up Scene Metadata',
+            tooltip: 'Remove leftover plugin metadata from your scene files. Your dates are untouched.',
+            title: 'Clean up scene metadata',
+            body: 'Earlier versions of the timeline tools wrote bookkeeping into your scenes’ frontmatter. This cleans it out of all {{count}} scene files. Your `When` dates are not changed.',
+            note: 'A snapshot is saved first — undo anytime from Restore Last Snapshot.',
+            confirmButton: 'Clean Up',
+            successNotice: 'Cleaned plugin metadata from {{count}} scenes. Snapshot saved.'
         },
         confirm: {
             title: 'Confirm Changes',

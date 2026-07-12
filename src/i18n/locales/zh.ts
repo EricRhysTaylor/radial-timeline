@@ -737,13 +737,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             toolAudit: '审计',
         },
         reset: {
-            button: '重置时间轴元数据',
-            tooltip: '从每个场景中移除插件的记账字段（WhenSource、WhenConfidence、DurationSource、NeedsReview）。日期不受影响。用于进行一次全新的审阅。',
-            title: '重置时间轴元数据',
-            body: '从全部 {{count}} 个场景中移除插件的记账字段 — `WhenSource`、`WhenConfidence`、`DurationSource` 和 `NeedsReview`。您的 `When` 日期不会更改。此后，每个日期都将被视为作者所有：除非开启"锚点也移动"，否则 Ripple 会保留全部日期。',
-            note: '会先保存日期和元数据的快照 — 可随时从"恢复上一个快照"撤销。',
-            confirmButton: '重置元数据',
-            successNotice: '已清除 {{count}} 个场景的时间轴元数据。快照已保存。',
         },
         confirm: {
             title: '确认更改',

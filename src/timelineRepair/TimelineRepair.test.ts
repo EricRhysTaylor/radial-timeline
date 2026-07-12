@@ -9,7 +9,7 @@ import { runKeywordSweep } from './keywordSweep';
 import { runRepairPipeline } from './RepairPipeline';
 import { createSession, shiftSceneDays, editSceneWhen, setSceneTimeBucket } from './sessionDiff';
 import { writeSessionChanges, clearProvenanceFields } from './frontmatterWriter';
-import { readWhenHistory } from './whenChangeLog';
+import { readWhenHistory, appendWhenChanges, buildScaffoldStampMap } from './whenChangeLog';
 import {
     buildTimelineSnapshot,
     buildSnapshotFromFiles,
@@ -50,7 +50,9 @@ function makePluginWithBodies(bodyByPath: Record<string, string>): RadialTimelin
     return {
         app: {
             vault: {
-                cachedRead: async (file: TFile) => bodyByPath[file.path] ?? ''
+                cachedRead: async (file: TFile) => bodyByPath[file.path] ?? '',
+                // No change log in this stub vault — stamp map reads as empty.
+                getAbstractFileByPath: () => null
             }
         }
     } as unknown as RadialTimelinePlugin;
@@ -345,29 +347,35 @@ describe('timeline repair normalizer', () => {
         expect(shifted.entries[4].editedWhen?.getTime()).toBe(before[4] + 5 * 86400_000);
     });
 
-    it('Scaffold-stamped dates (WhenSource: pattern) ripple in preserve mode without the override', () => {
-        // Simulates the reopen-after-apply round trip: the date exists in
-        // frontmatter, but WhenSource marks it as machine-scaffolded.
+    it('Scaffold-stamped dates (from the change log) ripple in preserve mode without the override', async () => {
+        // Simulates the reopen-after-apply round trip: the dates exist in
+        // frontmatter (no plugin metadata there), and the change log records
+        // that scene 03's current When was machine-written. Scene 04 was also
+        // logged, but its current When no longer matches the logged write —
+        // a hand-edit returns ownership to the author.
+        const app = createInMemoryApp({});
+        await appendWhenChanges(app as never, [
+            { v: 1, ts: '2085-04-01T00:00:00Z', path: 'Book/03.md', title: '03', prev: null, next: '2085-04-03 08:00', source: 'pattern', tool: 'scaffold' },
+            { v: 1, ts: '2085-04-01T00:00:01Z', path: 'Book/04.md', title: '04', prev: null, next: '2085-04-09 08:00', source: 'pattern', tool: 'scaffold' }
+        ]);
+        const scaffoldStamps = await buildScaffoldStampMap(app as never);
+
         const entries = runPatternSync([
             { scene: makeScene('Book/01.md', { when: new Date(2085, 3, 1, 8, 0, 0, 0) }), file: makeFile('Book/01.md'), manuscriptIndex: 0 },
             { scene: makeScene('Book/02.md', { when: new Date(2085, 3, 2, 8, 0, 0, 0) }), file: makeFile('Book/02.md'), manuscriptIndex: 1 },
-            {
-                scene: makeScene('Book/03.md', {
-                    when: new Date(2085, 3, 3, 8, 0, 0, 0),
-                    rawFrontmatter: { WhenSource: 'pattern' }
-                }),
-                file: makeFile('Book/03.md'),
-                manuscriptIndex: 2
-            },
+            { scene: makeScene('Book/03.md', { when: new Date(2085, 3, 3, 8, 0, 0, 0) }), file: makeFile('Book/03.md'), manuscriptIndex: 2 },
             { scene: makeScene('Book/04.md', { when: new Date(2085, 3, 4, 8, 0, 0, 0) }), file: makeFile('Book/04.md'), manuscriptIndex: 3 }
         ], {
             anchorWhen: new Date(2085, 3, 1, 8, 0, 0, 0),
             patternPreset: 'daily',
-            preserveAuthoredDates: true
+            preserveAuthoredDates: true,
+            scaffoldStamps
         });
 
         expect(entries[2].source).toBe('authored');
         expect(entries[2].stampedWhenSource).toBe('pattern');
+        // Logged value differs from the current date — stamp does not hold.
+        expect(entries[3].stampedWhenSource).toBeUndefined();
 
         const session = createSession({
             entries,
@@ -647,15 +655,16 @@ describe('timeline repair normalizer', () => {
         const scene2 = await readFile(app, 'Book/02 Scene.md');
         const scene3 = await readFile(app, 'Book/03 Scene.md');
 
+        // Only the author-facing When is written — no plugin bookkeeping.
         expect(scene1).toContain('When: 2026-01-01 08:00');
-        expect(scene1).toContain('WhenSource: pattern');
-        expect(scene1).toContain('WhenConfidence: high');
+        expect(scene1).not.toContain('WhenSource');
+        expect(scene1).not.toContain('WhenConfidence');
 
         expect(scene2).toBe('---\nClass: Scene\nWhen: 2026-01-02 08:00\n---\nScene two');
 
         expect(scene3).toContain('When: 2026-01-03 08:00');
-        expect(scene3).toContain('WhenSource: pattern');
-        expect(scene3).toContain('WhenConfidence: high');
+        expect(scene3).not.toContain('WhenSource');
+        expect(scene3).not.toContain('WhenConfidence');
 
         const parsedWhens = [scene1, scene2, scene3]
             .map(content => content.match(/^---\n([\s\S]*?)\n---/m)?.[1] ?? '')
@@ -744,8 +753,7 @@ describe('timeline repair normalizer', () => {
 
         const afterRestore = await readFile(app, 'Book/01 Scene.md');
         expect(afterRestore).toContain('When: 2085-04-01 08:00');
-        // Schema-3 restore also reverts provenance: the WhenSource that apply
-        // wrote is deleted because the scene had none before.
+        // Apply writes no provenance, and restore leaves none behind.
         expect(afterRestore).not.toContain('WhenSource');
 
         // The change log recorded the apply (not the snapshot restore, which

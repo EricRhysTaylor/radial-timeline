@@ -735,13 +735,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             toolAudit: '감사',
         },
         reset: {
-            button: '타임라인 메타데이터 재설정',
-            tooltip: '플러그인의 관리용 필드(WhenSource, WhenConfidence, DurationSource, NeedsReview)를 모든 장면에서 제거합니다. 날짜는 변경되지 않습니다. 새로 시작하는 검토에 사용하세요.',
-            title: '타임라인 메타데이터 재설정',
-            body: '플러그인의 관리용 필드 — `WhenSource`, `WhenConfidence`, `DurationSource`, `NeedsReview` — 를 {{count}}개 장면 전체에서 제거합니다. `When` 날짜는 변경되지 않습니다. 이후 모든 날짜는 작성자 소유로 간주됩니다: "앵커도 이동"이 켜져 있지 않는 한 리플은 모두 유지됩니다.',
-            note: '먼저 날짜와 메타데이터의 스냅샷이 저장됩니다 — "마지막 스냅샷 복원"에서 언제든 되돌릴 수 있습니다.',
-            confirmButton: '메타데이터 재설정',
-            successNotice: '{{count}}개 장면에서 타임라인 메타데이터를 지웠습니다. 스냅샷이 저장되었습니다.',
         },
         confirm: {
             title: '변경 확인',

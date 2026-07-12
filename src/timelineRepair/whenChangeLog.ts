@@ -63,6 +63,44 @@ export async function appendWhenChanges(app: App, records: WhenChangeRecord[]): 
     }
 }
 
+export interface ScaffoldStamp {
+    source: 'pattern' | 'keyword' | 'ai';
+    /** The When value the machine wrote (formatted YYYY-MM-DD HH:MM). */
+    next: string;
+}
+
+/**
+ * Provenance for ripple anchoring, derived from the log instead of YAML —
+ * scene frontmatter carries no plugin bookkeeping. A scene is
+ * scaffold-stamped when the LAST write the plugin made to it was
+ * machine-sourced; a later manual/authored write supersedes the stamp.
+ * Callers must still verify the scene's current When matches `next` —
+ * a hand-edit in the file (which the log never sees) returns ownership
+ * to the author.
+ */
+export async function buildScaffoldStampMap(app: App): Promise<Map<string, ScaffoldStamp>> {
+    const file = app.vault.getAbstractFileByPath(WHEN_CHANGE_LOG_PATH);
+    const stamps = new Map<string, ScaffoldStamp>();
+    if (!(file instanceof TFile)) return stamps;
+
+    const text = await app.vault.cachedRead(file);
+    for (const line of text.split('\n')) {
+        if (!line.trim()) continue;
+        try {
+            const record = JSON.parse(line) as WhenChangeRecord;
+            if (record?.v !== 1) continue;
+            if (record.source === 'pattern' || record.source === 'keyword' || record.source === 'ai') {
+                stamps.set(record.path, { source: record.source, next: record.next });
+            } else {
+                stamps.delete(record.path);
+            }
+        } catch {
+            // Skip malformed lines.
+        }
+    }
+    return stamps;
+}
+
 /**
  * Read the change history for one scene, newest first.
  * Unparsable lines are skipped; a missing log reads as empty history.

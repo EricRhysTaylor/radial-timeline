@@ -18,6 +18,7 @@ import type {
 } from './types';
 import { runPatternSync, type PatternSyncInput } from './patternSync';
 import { runKeywordSweep } from './keywordSweep';
+import { buildScaffoldStampMap } from './whenChangeLog';
 
 // ============================================================================
 // Pipeline Execution
@@ -79,11 +80,16 @@ export async function runRepairPipeline(
     // ========================================================================
     callbacks.onPhaseChange?.('pattern');
     
+    // Machine-write provenance comes from the change log sidecar — scene
+    // frontmatter carries no plugin bookkeeping.
+    const scaffoldStamps = await buildScaffoldStampMap(plugin.app);
+
     let entries = runPatternSync(inputs, {
         anchorWhen: config.anchorWhen,
         anchorSceneIndex: config.anchorSceneIndex,
         patternPreset: config.patternPreset,
-        preserveAuthoredDates: config.preserveAuthoredDates
+        preserveAuthoredDates: config.preserveAuthoredDates,
+        scaffoldStamps
     });
     
     const patternCount = entries.length;

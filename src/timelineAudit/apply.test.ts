@@ -38,20 +38,29 @@ function makeFinding(path: string, action: TimelineAuditFinding['reviewAction'],
 }
 
 describe('timeline audit apply adapter', () => {
-    it('writes only accepted When changes and persists review flags conservatively', async () => {
+    it('writes only accepted When changes and never touches plugin bookkeeping in YAML', async () => {
         const docs = new Map<string, Record<string, unknown>>([
+            // Legacy field from an earlier plugin version — apply must not manage it.
             ['Story/1 Apply.md', { When: '2026-01-01 08:00', NeedsReview: true }],
             ['Story/2 Keep.md', { When: '2026-01-01 08:00' }],
             ['Story/3 Review.md', { When: '2026-01-01 08:00' }]
         ]);
+        const touched: string[] = [];
 
         const app = {
             fileManager: {
                 processFrontMatter: async (file: TFile, updater: (fm: Record<string, unknown>) => void) => {
                     const current = docs.get(file.path);
                     if (!current) throw new Error(`Missing doc: ${file.path}`);
+                    touched.push(file.path);
                     updater(current);
                 }
+            },
+            vault: {
+                // No change log in this stub vault.
+                getAbstractFileByPath: () => null,
+                createFolder: async () => undefined,
+                create: async () => { throw new Error('log write not under test'); }
             }
         } as unknown as App;
 
@@ -61,10 +70,14 @@ describe('timeline audit apply adapter', () => {
             makeFinding('Story/3 Review.md', 'mark_review')
         ]);
 
+        // Accepted suggestion writes the new When and nothing else.
         expect(docs.get('Story/1 Apply.md')?.When).toBe('2026-01-02 19:00');
-        expect(docs.get('Story/1 Apply.md')?.WhenSource).toBe('keyword');
-        expect(docs.get('Story/1 Apply.md')?.NeedsReview).toBeUndefined();
-        expect(docs.get('Story/2 Keep.md')?.NeedsReview).toBe(true);
-        expect(docs.get('Story/3 Review.md')?.NeedsReview).toBe(true);
+        expect(docs.get('Story/1 Apply.md')?.WhenSource).toBeUndefined();
+        expect(docs.get('Story/1 Apply.md')?.NeedsReview).toBe(true); // legacy field left alone
+
+        // Keep / mark-review are session decisions — those files are never opened.
+        expect(touched).toEqual(['Story/1 Apply.md']);
+        expect(docs.get('Story/2 Keep.md')?.NeedsReview).toBeUndefined();
+        expect(docs.get('Story/3 Review.md')?.NeedsReview).toBeUndefined();
     });
 });

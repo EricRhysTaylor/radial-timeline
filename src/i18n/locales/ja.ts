@@ -736,13 +736,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             toolAudit: '監査',
         },
         reset: {
-            button: 'タイムラインメタデータをリセット',
-            tooltip: 'プラグインの管理用フィールド（WhenSource、WhenConfidence、DurationSource、NeedsReview）をすべてのシーンから削除します。日付は変更されません。まっさらな状態で見直したいときに使用してください。',
-            title: 'タイムラインメタデータをリセット',
-            body: 'プラグインの管理用フィールド — `WhenSource`、`WhenConfidence`、`DurationSource`、`NeedsReview` — を {{count}} 件全てのシーンから削除します。`When` 日付は変更されません。以降、すべての日付は著者が作成したものとして扱われます。「アンカーも移動」がオンでない限り、リップルはそれらすべてを保持します。',
-            note: '最初にデータとメタデータのスナップショットが保存されます — 「最後のスナップショットを復元」からいつでも元に戻せます。',
-            confirmButton: 'メタデータをリセット',
-            successNotice: '{{count}} 件のシーンからタイムラインメタデータを削除しました。スナップショットを保存しました。',
         },
         confirm: {
             title: '変更を確認',

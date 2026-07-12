@@ -10,6 +10,7 @@
 import type { TFile } from 'obsidian';
 import type { TimelineItem } from '../types';
 import { parseWhenField } from '../utils/date';
+import type { ScaffoldStamp } from './whenChangeLog';
 import {
     type PatternPresetId,
     type RepairSceneEntry,
@@ -20,14 +21,22 @@ import {
 } from './types';
 
 /**
- * Read a machine WhenSource stamp left in frontmatter by a previous scaffold
- * apply. Only scaffold stamps count — they mark dates ripple may shift even
- * though they parse as existing. Anything else (absent, 'manual', 'authored')
- * means the author owns the date.
+ * Resolve a machine stamp for a scene from the change-log-derived map —
+ * frontmatter carries no plugin bookkeeping. The stamp only holds if the
+ * scene's current When still equals the value the machine wrote; a hand-edit
+ * in the file returns ownership to the author.
  */
-function readScaffoldStamp(scene: TimelineItem): 'pattern' | 'keyword' | 'ai' | undefined {
-    const raw = scene.rawFrontmatter?.WhenSource;
-    return raw === 'pattern' || raw === 'keyword' || raw === 'ai' ? raw : undefined;
+function resolveScaffoldStamp(
+    path: string,
+    originalWhen: Date | null,
+    stamps: Map<string, ScaffoldStamp> | undefined
+): 'pattern' | 'keyword' | 'ai' | undefined {
+    if (!stamps || !originalWhen) return undefined;
+    const stamp = stamps.get(path);
+    if (!stamp) return undefined;
+    const logged = parseWhenField(stamp.next);
+    if (!logged || logged.getTime() !== originalWhen.getTime()) return undefined;
+    return stamp.source;
 }
 
 // ============================================================================
@@ -108,6 +117,13 @@ export interface PatternSyncOptions {
      * the pattern walk fills only the gaps between them.
      */
     preserveAuthoredDates?: boolean;
+
+    /**
+     * Machine-write stamps derived from the When change log (see
+     * buildScaffoldStampMap). Marks preserved dates that a previous scaffold
+     * apply wrote, so Ripple may still shift them.
+     */
+    scaffoldStamps?: Map<string, ScaffoldStamp>;
 }
 
 export interface PatternSyncInput {
@@ -137,7 +153,7 @@ export function runPatternSync(
     scenes: PatternSyncInput[],
     options: PatternSyncOptions
 ): RepairSceneEntry[] {
-    const { anchorWhen, patternPreset, anchorSceneIndex = 0, preserveAuthoredDates = false } = options;
+    const { anchorWhen, patternPreset, anchorSceneIndex = 0, preserveAuthoredDates = false, scaffoldStamps } = options;
 
     if (scenes.length === 0) {
         return [];
@@ -245,7 +261,7 @@ export function runPatternSync(
             editedWhen: null,
 
             source: slot.source,
-            stampedWhenSource: readScaffoldStamp(p.scene),
+            stampedWhenSource: resolveScaffoldStamp(p.file.path, p.originalWhen, scaffoldStamps),
             confidence: 'high',
 
             needsReview: false,

@@ -14,6 +14,12 @@ const ALLOWED_PROCESS_PLATFORM_FILES = new Set([
   'src/utils/exportFormats.ts'
 ]);
 
+// Reviewed exception: localhost-only model-list probe needs AbortController +
+// bounded body reads, which requestUrl cannot do (the "Load Servers" crash fix).
+const ALLOWED_RUNTIME_FETCH_FILES = new Set([
+  'src/ai/localLlm/transport.ts'
+]);
+
 const TELEMETRY_PATTERNS = [
   /\bmixpanel\b/,
   /\bposthog\b/,
@@ -112,7 +118,7 @@ ensure(includesAll(privacyDoc, [
 ensure(eyeballDoc.includes('## Always check'), 'Pre-release eyeball checklist must include always-check guidance.', failures);
 
 const srcFiles = getAllFiles('src').filter(file => /\.(ts|tsx|js|mjs)$/.test(file));
-const runtimeFetchHits = collectMatches(srcFiles, /\bfetch\s*\(/);
+const runtimeFetchHits = collectMatches(srcFiles, /\bfetch\s*\(/).filter(hit => !ALLOWED_RUNTIME_FETCH_FILES.has(hit.file));
 ensure(runtimeFetchHits.length === 0,
   `App runtime must not use raw fetch(). Found: ${runtimeFetchHits.map(hit => `${hit.file}:${hit.line}`).join(', ') || 'none'}`,
   failures);

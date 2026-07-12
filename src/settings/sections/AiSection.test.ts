@@ -131,7 +131,7 @@ describe('AI settings models table', () => {
     it('keeps Local LLM configuration conditional while Local status stays visible for the Local provider', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
         expect(source.includes('const showLocalLlmStatusDetails = isOllama;')).toBe(true);
-        expect(source.includes('const showLocalLlmConfigDetails = isOllama && (')).toBe(true);
+        expect(source.includes("const showLocalLlmConfigDetails = isOllama && getLocalLlmConfigurationMode() === 'custom';")).toBe(true);
         expect(source.includes("localLlmConfigSectionEl.toggleClass('ert-settings-hidden', !showLocalLlmConfigDetails);")).toBe(true);
         expect(source.includes("localLlmStatusSectionEl.toggleClass('ert-settings-hidden', !showLocalLlmStatusDetails);")).toBe(true);
         expect(source.includes("largeHandlingSection.toggleClass('ert-settings-hidden', isOllama);")).toBe(true);

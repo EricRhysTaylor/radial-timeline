@@ -125,7 +125,7 @@ export function tabTimerWedgePath(
     ].join(' ');
 }
 
-export const TAB_TIMER_DISC_RADIUS = 9;
+export const TAB_TIMER_DISC_RADIUS = 11;
 
 export function buildTabTimerDiscSvg(params: {
     progress: number;
@@ -159,12 +159,12 @@ export function buildTabTimerDiscSvg(params: {
         const dot = svg.ownerDocument.createElementNS(ns, 'circle');
         dot.setAttribute('cx', '0');
         dot.setAttribute('cy', '0');
-        dot.setAttribute('r', '3.5');
+        dot.setAttribute('r', '4');
         dot.setAttribute('class', 'ert-tab-timer-disc__symbol ert-tab-timer-disc__symbol--dot');
         svg.appendChild(dot);
     } else if (params.symbol === 'plus') {
         const plus = svg.ownerDocument.createElementNS(ns, 'path');
-        plus.setAttribute('d', 'M -4.5 0 H 4.5 M 0 -4.5 V 4.5');
+        plus.setAttribute('d', 'M -3.5 0 H 3.5 M 0 -3.5 V 3.5');
         plus.setAttribute('class', 'ert-tab-timer-disc__symbol ert-tab-timer-disc__symbol--plus');
         svg.appendChild(plus);
     }

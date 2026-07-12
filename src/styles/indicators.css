@@ -375,7 +375,7 @@
 .ert-tab-timer-disc__symbol--plus {
   fill: none;
   stroke: var(--text-normal);
-  stroke-width: 2.5;
+  stroke-width: 2;
   stroke-linecap: round;
   opacity: 0.9;
 }

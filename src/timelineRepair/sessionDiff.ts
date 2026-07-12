@@ -30,6 +30,7 @@ export function createSession(result: RepairPipelineResult): SessionDiffModel {
         undoStack: [],
         redoStack: [],
         rippleEnabled: false,
+        rippleIncludeAnchored: false,
         hasUnsavedChanges: result.scenesChanged > 0
     };
 }
@@ -279,8 +280,48 @@ export function toggleRippleMode(session: SessionDiffModel): SessionDiffModel {
 }
 
 /**
- * Apply ripple: propagate time shift to all following scenes.
- * Maintains relative spacing between scenes.
+ * Toggle the ripple override that also shifts authored anchor dates.
+ * Flashbacks stay pinned regardless.
+ */
+export function toggleRippleIncludeAnchored(session: SessionDiffModel): SessionDiffModel {
+    return {
+        ...session,
+        rippleIncludeAnchored: !session.rippleIncludeAnchored
+    };
+}
+
+/**
+ * Whole-calendar-day difference between two dates, ignoring time of day.
+ * Ripple shifts downstream scenes by days only, so an edit that moves a
+ * scene from tomorrow-noon to today-evening backs everything up exactly
+ * one day instead of smearing every scene's clock time by -16 hours.
+ */
+function calendarDayDelta(from: Date, to: Date): number {
+    const a = Date.UTC(from.getFullYear(), from.getMonth(), from.getDate());
+    const b = Date.UTC(to.getFullYear(), to.getMonth(), to.getDate());
+    return Math.round((b - a) / 86400000);
+}
+
+/**
+ * True when ripple must NOT move this entry.
+ * Flashbacks that still carry their authored far-era date are always pinned —
+ * they belong to a different era's continuity, so a cascade never applies.
+ * Other authored dates hold unless the include-anchored override is on.
+ * Scaffold-stamped dates (WhenSource: pattern/keyword/ai from a previous
+ * apply) are machine-made and always shiftable.
+ */
+function isRipplePinned(entry: RepairSceneEntry, session: SessionDiffModel): boolean {
+    if (entry.source !== 'authored') return false;
+    if (entry.isFlashback) return true;
+    if (entry.stampedWhenSource) return false;
+    return !session.rippleIncludeAnchored;
+}
+
+/**
+ * Apply ripple: propagate the edit's calendar-day shift to all following
+ * scenes, preserving each scene's own time of day. A same-day time change
+ * (day delta 0) ripples nothing — rearranging one day's schedule shouldn't
+ * move the rest of the book. Pinning rules live in isRipplePinned().
  */
 function applyRipple(
     session: SessionDiffModel,
@@ -288,23 +329,23 @@ function applyRipple(
     previousWhen: Date,
     newWhen: Date
 ): SessionDiffModel {
-    const deltaMs = newWhen.getTime() - previousWhen.getTime();
-    if (deltaMs === 0) return session;
-    
-    const rippleChanges: EditOperation['changes'] = [];
+    const dayDelta = calendarDayDelta(previousWhen, newWhen);
     const newEntries = [...session.entries];
-    
-    // Apply delta to all following scenes, but never to authored anchors.
-    // In Preserve mode, authored anchors AND flashbacks both carry
-    // source === 'authored' (flashbacks are by definition authored), so this
-    // single rule protects both. In Overwrite mode the pipeline marks every
-    // row source === 'pattern', so nothing is skipped — Ripple shifts all.
+
+    if (dayDelta === 0) {
+        updateAllTemporalFlags(newEntries);
+        return { ...session, entries: newEntries };
+    }
+
+    const rippleChanges: EditOperation['changes'] = [];
+
     for (let i = fromIndex + 1; i < newEntries.length; i++) {
         const entry = newEntries[i];
-        if (entry.source === 'authored') continue;
+        if (isRipplePinned(entry, session)) continue;
 
         const currentWhen = getEffectiveWhen(entry);
-        const shiftedWhen = new Date(currentWhen.getTime() + deltaMs);
+        const shiftedWhen = new Date(currentWhen);
+        shiftedWhen.setDate(shiftedWhen.getDate() + dayDelta);
 
         rippleChanges.push({
             sceneIndex: i,
@@ -312,15 +353,20 @@ function applyRipple(
             newWhen: shiftedWhen
         });
 
+        // Provenance is preserved: a cascaded shift is machine bookkeeping,
+        // not the author hand-picking this scene's date. Writing 'manual'
+        // here would stamp WhenSource: manual on apply and freeze the whole
+        // tail as ripple anchors in the next session.
         newEntries[i] = {
             ...entry,
             editedWhen: shiftedWhen,
-            source: 'manual',
             isChanged: entry.originalWhen === null ||
                 shiftedWhen.getTime() !== entry.originalWhen.getTime()
         };
     }
-    
+
+    updateAllTemporalFlags(newEntries);
+
     // Merge ripple changes into the most recent undo operation
     const lastOp = session.undoStack[session.undoStack.length - 1];
     if (lastOp && rippleChanges.length > 0) {
@@ -332,19 +378,14 @@ function applyRipple(
             newWhen: lastOp.newWhen,
             changes: rippleChanges
         };
-        
-        const newUndoStack = [...session.undoStack.slice(0, -1), mergedOp];
-        
-        // Update temporal flags
-        updateAllTemporalFlags(newEntries);
-        
+
         return {
             ...session,
             entries: newEntries,
-            undoStack: newUndoStack
+            undoStack: [...session.undoStack.slice(0, -1), mergedOp]
         };
     }
-    
+
     return {
         ...session,
         entries: newEntries
@@ -352,13 +393,27 @@ function applyRipple(
 }
 
 /**
- * Preview how many scenes would be affected by ripple from a given index.
+ * Preview ripple impact from a given index: how many scenes would shift,
+ * how many authored anchors hold, and how many flashbacks stay pinned.
  */
-export function getRippleAffectedCount(
+export function getRippleImpact(
     session: SessionDiffModel,
     fromIndex: number
-): number {
-    return session.entries.length - fromIndex - 1;
+): { shiftable: number; anchoredHeld: number; flashbacksPinned: number } {
+    let shiftable = 0;
+    let anchoredHeld = 0;
+    let flashbacksPinned = 0;
+    for (let i = fromIndex + 1; i < session.entries.length; i++) {
+        const entry = session.entries[i];
+        if (!isRipplePinned(entry, session)) {
+            shiftable++;
+        } else if (entry.isFlashback) {
+            flashbacksPinned++;
+        } else {
+            anchoredHeld++;
+        }
+    }
+    return { shiftable, anchoredHeld, flashbacksPinned };
 }
 
 // ============================================================================
@@ -466,17 +521,19 @@ export function redo(session: SessionDiffModel): SessionDiffModel {
                 newEntries[change.sceneIndex] = {
                     ...entry,
                     editedWhen: change.newWhen,
-                    source: 'manual',
+                    // Ripple cascades keep provenance (see applyRipple);
+                    // batch edits are direct author actions.
+                    ...(operation.type === 'ripple' ? {} : { source: 'manual' as const }),
                     isChanged: entry.originalWhen === null ||
                         change.newWhen.getTime() !== entry.originalWhen.getTime()
                 };
             }
         }
     }
-    
+
     // Update temporal flags
     updateAllTemporalFlags(newEntries);
-    
+
     return {
         ...session,
         entries: newEntries,

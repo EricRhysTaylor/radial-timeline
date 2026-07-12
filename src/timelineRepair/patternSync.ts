@@ -19,6 +19,17 @@ import {
     formatFlashbackDelta
 } from './types';
 
+/**
+ * Read a machine WhenSource stamp left in frontmatter by a previous scaffold
+ * apply. Only scaffold stamps count — they mark dates ripple may shift even
+ * though they parse as existing. Anything else (absent, 'manual', 'authored')
+ * means the author owns the date.
+ */
+function readScaffoldStamp(scene: TimelineItem): 'pattern' | 'keyword' | 'ai' | undefined {
+    const raw = scene.rawFrontmatter?.WhenSource;
+    return raw === 'pattern' || raw === 'keyword' || raw === 'ai' ? raw : undefined;
+}
+
 // ============================================================================
 // Pattern Generators
 // ============================================================================
@@ -234,6 +245,7 @@ export function runPatternSync(
             editedWhen: null,
 
             source: slot.source,
+            stampedWhenSource: readScaffoldStamp(p.scene),
             confidence: 'high',
 
             needsReview: false,

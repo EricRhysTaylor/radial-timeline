@@ -37,6 +37,7 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--ert-gap-md);
+    padding: var(--ert-pad-sm) var(--ert-pad-md);
     border-left: 2px solid var(--interactive-accent);
     box-shadow: none;
     backdrop-filter: none;

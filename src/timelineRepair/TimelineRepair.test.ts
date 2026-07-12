@@ -7,7 +7,7 @@ import { createInMemoryApp, type InMemoryApp } from '../../tests/helpers/inMemor
 import { runPatternSync } from './patternSync';
 import { runKeywordSweep } from './keywordSweep';
 import { runRepairPipeline } from './RepairPipeline';
-import { createSession, shiftSceneDays } from './sessionDiff';
+import { createSession, shiftSceneDays, editSceneWhen, setSceneTimeBucket } from './sessionDiff';
 import { writeSessionChanges } from './frontmatterWriter';
 import {
     buildTimelineSnapshot,
@@ -234,6 +234,158 @@ describe('timeline repair normalizer', () => {
         expect(shifted.entries[0].editedWhen?.getTime()).toBe(before[0] + 3 * 86400_000);
         expect(shifted.entries[1].editedWhen?.getTime()).toBe(before[1] + 3 * 86400_000); // shifted
         expect(shifted.entries[2].editedWhen?.getTime()).toBe(before[2] + 3 * 86400_000); // shifted
+    });
+
+    it('Ripple shifts downstream scenes by whole calendar days, preserving their own time of day', () => {
+        // Daily scaffold: scenes at day 1..4, all 08:00.
+        const entries = runPatternSync([
+            { scene: makeScene('Book/01.md'), file: makeFile('Book/01.md'), manuscriptIndex: 0 },
+            { scene: makeScene('Book/02.md'), file: makeFile('Book/02.md'), manuscriptIndex: 1 },
+            { scene: makeScene('Book/03.md'), file: makeFile('Book/03.md'), manuscriptIndex: 2 },
+            { scene: makeScene('Book/04.md'), file: makeFile('Book/04.md'), manuscriptIndex: 3 }
+        ], {
+            anchorWhen: new Date(2085, 3, 1, 8, 0, 0, 0),
+            patternPreset: 'daily',
+            preserveAuthoredDates: true
+        });
+
+        const session = createSession({
+            entries,
+            totalScenes: entries.length,
+            scenesChanged: entries.length,
+            scenesNeedingReview: 0,
+            scenesWithBackwardTime: 0,
+            scenesWithLargeGaps: 0,
+            scenesAuthored: 0,
+            patternApplied: entries.length,
+            cueRefined: 0
+        });
+        session.rippleEnabled = true;
+
+        // Move scene 2 from Apr 2 08:00 back to Apr 1 20:00 (evening of the
+        // previous day). The raw delta is -12h, but the calendar-day delta is
+        // -1 — downstream scenes must back up exactly one day and KEEP their
+        // own 08:00, not smear to 20:00 of the previous day.
+        const shifted = editSceneWhen(session, 1, new Date(2085, 3, 1, 20, 0, 0, 0));
+
+        expect(shifted.entries[2].editedWhen?.getTime()).toBe(new Date(2085, 3, 2, 8, 0, 0, 0).getTime());
+        expect(shifted.entries[3].editedWhen?.getTime()).toBe(new Date(2085, 3, 3, 8, 0, 0, 0).getTime());
+    });
+
+    it('Ripple ignores same-day time changes — rearranging one day never moves the rest of the book', () => {
+        const entries = runPatternSync([
+            { scene: makeScene('Book/01.md'), file: makeFile('Book/01.md'), manuscriptIndex: 0 },
+            { scene: makeScene('Book/02.md'), file: makeFile('Book/02.md'), manuscriptIndex: 1 },
+            { scene: makeScene('Book/03.md'), file: makeFile('Book/03.md'), manuscriptIndex: 2 }
+        ], {
+            anchorWhen: new Date(2085, 3, 1, 8, 0, 0, 0),
+            patternPreset: 'daily',
+            preserveAuthoredDates: true
+        });
+
+        const session = createSession({
+            entries,
+            totalScenes: entries.length,
+            scenesChanged: entries.length,
+            scenesNeedingReview: 0,
+            scenesWithBackwardTime: 0,
+            scenesWithLargeGaps: 0,
+            scenesAuthored: 0,
+            patternApplied: entries.length,
+            cueRefined: 0
+        });
+        session.rippleEnabled = true;
+
+        // Scene 2 moves from morning to night of the SAME day.
+        const shifted = setSceneTimeBucket(session, 1, 21);
+
+        expect(shifted.entries[1].editedWhen?.getHours()).toBe(21);
+        expect(shifted.entries[2].editedWhen).toBeNull(); // untouched
+    });
+
+    it('Ripple override shifts authored anchors but flashbacks stay pinned', () => {
+        const entries = runPatternSync([
+            { scene: makeScene('Book/01.md', { when: new Date(2085, 3, 1, 8, 0, 0, 0) }), file: makeFile('Book/01.md'), manuscriptIndex: 0 },
+            { scene: makeScene('Book/02.md'), file: makeFile('Book/02.md'), manuscriptIndex: 1 },
+            { scene: makeScene('Book/03.md', { when: new Date(2085, 3, 10, 8, 0, 0, 0) }), file: makeFile('Book/03.md'), manuscriptIndex: 2 },
+            { scene: makeScene('Book/04.md', { when: new Date(1933, 9, 4, 12, 0, 0, 0) }), file: makeFile('Book/04.md'), manuscriptIndex: 3 },
+            { scene: makeScene('Book/05.md'), file: makeFile('Book/05.md'), manuscriptIndex: 4 }
+        ], {
+            anchorWhen: new Date(2085, 3, 1, 8, 0, 0, 0),
+            patternPreset: 'daily',
+            preserveAuthoredDates: true
+        });
+        expect(entries[3].isFlashback).toBe(true);
+
+        const session = createSession({
+            entries,
+            totalScenes: entries.length,
+            scenesChanged: 0,
+            scenesNeedingReview: 0,
+            scenesWithBackwardTime: 0,
+            scenesWithLargeGaps: 0,
+            scenesAuthored: 3,
+            patternApplied: entries.length,
+            cueRefined: 0
+        });
+        session.rippleEnabled = true;
+        session.rippleIncludeAnchored = true;
+
+        const before = entries.map(e => e.proposedWhen.getTime());
+        const shifted = shiftSceneDays(session, 1, 5);
+
+        // Authored anchor (scene 03) shifts under the override.
+        expect(shifted.entries[2].editedWhen?.getTime()).toBe(before[2] + 5 * 86400_000);
+        // Flashback stays pinned even under the override.
+        expect(shifted.entries[3].editedWhen).toBeNull();
+        expect(shifted.entries[3].proposedWhen.getTime()).toBe(before[3]);
+        // Pattern scene after the flashback still shifts.
+        expect(shifted.entries[4].editedWhen?.getTime()).toBe(before[4] + 5 * 86400_000);
+    });
+
+    it('Scaffold-stamped dates (WhenSource: pattern) ripple in preserve mode without the override', () => {
+        // Simulates the reopen-after-apply round trip: the date exists in
+        // frontmatter, but WhenSource marks it as machine-scaffolded.
+        const entries = runPatternSync([
+            { scene: makeScene('Book/01.md', { when: new Date(2085, 3, 1, 8, 0, 0, 0) }), file: makeFile('Book/01.md'), manuscriptIndex: 0 },
+            { scene: makeScene('Book/02.md', { when: new Date(2085, 3, 2, 8, 0, 0, 0) }), file: makeFile('Book/02.md'), manuscriptIndex: 1 },
+            {
+                scene: makeScene('Book/03.md', {
+                    when: new Date(2085, 3, 3, 8, 0, 0, 0),
+                    rawFrontmatter: { WhenSource: 'pattern' }
+                }),
+                file: makeFile('Book/03.md'),
+                manuscriptIndex: 2
+            },
+            { scene: makeScene('Book/04.md', { when: new Date(2085, 3, 4, 8, 0, 0, 0) }), file: makeFile('Book/04.md'), manuscriptIndex: 3 }
+        ], {
+            anchorWhen: new Date(2085, 3, 1, 8, 0, 0, 0),
+            patternPreset: 'daily',
+            preserveAuthoredDates: true
+        });
+
+        expect(entries[2].source).toBe('authored');
+        expect(entries[2].stampedWhenSource).toBe('pattern');
+
+        const session = createSession({
+            entries,
+            totalScenes: entries.length,
+            scenesChanged: 0,
+            scenesNeedingReview: 0,
+            scenesWithBackwardTime: 0,
+            scenesWithLargeGaps: 0,
+            scenesAuthored: 4,
+            patternApplied: 0,
+            cueRefined: 0
+        });
+        session.rippleEnabled = true;
+
+        const before = entries.map(e => e.proposedWhen.getTime());
+        const shifted = shiftSceneDays(session, 1, 2);
+
+        // Stamped scene ripples; the untouched author-typed date holds.
+        expect(shifted.entries[2].editedWhen?.getTime()).toBe(before[2] + 2 * 86400_000);
+        expect(shifted.entries[3].editedWhen).toBeNull();
     });
 
     it('flashback rows carry a human-readable elapsed-time label', () => {

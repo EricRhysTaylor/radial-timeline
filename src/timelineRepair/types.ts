@@ -211,6 +211,14 @@ export interface RepairSceneEntry {
     source: WhenSource;
     confidence: WhenConfidence;
     cues?: TemporalCue[];        // L2 keyword matches
+    /**
+     * WhenSource stamped in frontmatter by a previous scaffold apply. Only
+     * machine stamps ('pattern' | 'keyword' | 'ai') are kept — they mark
+     * dates that Ripple may shift even though they parse as existing.
+     * Author-typed dates (no stamp, or 'manual'/'authored') act as ripple
+     * anchors.
+     */
+    stampedWhenSource?: 'pattern' | 'keyword' | 'ai';
     
     // Flags
     needsReview: boolean;
@@ -270,7 +278,9 @@ export interface SessionDiffModel {
     
     // Ripple mode state
     rippleEnabled: boolean;
-    
+    /** Override: ripple also shifts authored anchor dates (flashbacks stay pinned). */
+    rippleIncludeAnchored: boolean;
+
     // Dirty tracking
     hasUnsavedChanges: boolean;
 }

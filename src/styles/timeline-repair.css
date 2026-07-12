@@ -967,7 +967,9 @@
 
 /* Buttons pinned to the far left of the modal actions row. Same pattern as
  * .ert-modal-settings-btn (modal.css). */
-.ert-ui.ert-scope--modal .ert-modal-actions .ert-timeline-repair-restore-btn,
+/* Config footer groups left (restore + cleanup) vs right (preview + cancel):
+   the auto margin sits on the LAST left-group button. */
+.ert-ui.ert-scope--modal .ert-modal-actions .ert-timeline-repair-reset-btn,
 .ert-ui.ert-scope--modal .ert-modal-actions .ert-timeline-repair-audit-open-btn {
     margin-right: auto;
 }

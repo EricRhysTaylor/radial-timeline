@@ -496,6 +496,7 @@ export class TimelineRepairModal extends Modal {
         const resetBtn = new ButtonComponent(buttonRow)
             .setButtonText(t('timelineRepairModal.reset.button'))
             .onClick(() => { void this.handleResetMetadata(); });
+        resetBtn.buttonEl.addClass('ert-timeline-repair-reset-btn');
         setTooltip(resetBtn.buttonEl, t('timelineRepairModal.reset.tooltip'));
 
         new ButtonComponent(buttonRow)

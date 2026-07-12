@@ -413,8 +413,9 @@ describe('AI settings models table', () => {
 
     it('shows Local LLM model loading and persistent validation messaging in the primary flow', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
-        expect(source.includes("t('settings.ai.localLlm.loadServersButton')")).toBe(true);
-        expect(source.includes("t('settings.ai.localLlm.loadModelsButton')")).toBe(true);
+        expect(source.includes("t('settings.ai.localLlm.loadServersButton')")).toBe(false);
+        expect(source.includes("t('settings.ai.localLlm.loadModelsButton')")).toBe(false);
+        expect(source.includes("t('settings.ai.localLlm.loadModelsTooltip')")).toBe(true);
         expect(source.includes("t('settings.ai.localLlm.validateButton')")).toBe(true);
         expect(source.includes('Troubleshooting')).toBe(false);
         expect(source.includes("t('settings.ai.localLlm.actionsName')")).toBe(true);

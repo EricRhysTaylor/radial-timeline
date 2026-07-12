@@ -430,6 +430,15 @@ export function renderAiSection(params: {
     const getLocalLlmUiOverrides = (): Partial<LocalLlmSettings> => ({
         timeoutMs: getLocalLlmUiTimeoutMs()
     });
+    // LM Studio / MLX serve the model id as a full filesystem path
+    // (…/Qwen3-30B-A3B-Instruct-2507-MLX-4bit). Show just the leaf name in the UI;
+    // the full id is still the stored value used for API calls.
+    const abbreviateLocalModelId = (id: string): string => {
+        const trimmed = (id || '').trim();
+        if (!trimmed) return trimmed;
+        return trimmed.split(/[\\/]/).pop() || trimmed;
+    };
+
     const getLocalStrategyModelOptions = (): Array<{ value: string; label: string }> => {
         const selectedModelId = getOllamaModelId().trim();
         const values = new Set<string>();
@@ -439,20 +448,22 @@ export function renderAiSection(params: {
             const normalizedId = model.id.trim();
             if (!normalizedId || values.has(normalizedId)) return;
             values.add(normalizedId);
-            options.push({ value: normalizedId, label: normalizedId });
+            options.push({ value: normalizedId, label: abbreviateLocalModelId(normalizedId) });
         });
 
         if (selectedModelId && !values.has(selectedModelId)) {
             options.unshift({
                 value: selectedModelId,
-                label: localLlmLoadedModels.length ? `${selectedModelId} (configured)` : selectedModelId
+                label: localLlmLoadedModels.length
+                    ? `${abbreviateLocalModelId(selectedModelId)} (configured)`
+                    : abbreviateLocalModelId(selectedModelId)
             });
         }
 
         if (!options.length) {
             options.push({
                 value: selectedModelId ? selectedModelId : 'local-model',
-                label: selectedModelId ? selectedModelId : 'Local model'
+                label: selectedModelId ? abbreviateLocalModelId(selectedModelId) : 'Local model'
             });
         }
 
@@ -2422,6 +2433,18 @@ export function renderAiSection(params: {
             renderPanelViewModelSections(capacityGossamerSections, gossamerViewModel);
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
+            if (isOllama) {
+                // The cost/capacity forecast is cloud-oriented and can't resolve a
+                // local model's path id, but the model is validated in the Local LLM
+                // Status panel above. Show a benign local state instead of a false
+                // "No eligible model" contradiction.
+                renderLocalPreviewUnavailable(
+                    'Local model ready',
+                    'Capacity preview is not computed for local models. See Local LLM Status above.'
+                );
+                setActiveCostComparisonRow(null, null);
+                return;
+            }
             renderResolvedPreview({
                 provider,
                 modelId: '',
@@ -3306,7 +3329,7 @@ export function renderAiSection(params: {
             if (isActiveModel) {
                 pill.addClass(ERT_CLASSES.IS_ACTIVE);
             }
-            pill.createSpan({ cls: 'ert-ai-local-model-pill-label', text: model.id });
+            pill.createSpan({ cls: 'ert-ai-local-model-pill-label', text: abbreviateLocalModelId(model.id) });
             if (isActiveModel) {
                 pill.createSpan({ cls: 'ert-ai-local-model-pill-active', text: t('settings.ai.localLlm.modelActive') });
             }
@@ -3446,7 +3469,7 @@ export function renderAiSection(params: {
             ['Selected model', localLlmModelLoadPending
                 ? 'Checking availability'
                 : selectedModelId
-                    ? (selectedExists ? `${selectedModelId} ready` : `${selectedModelId} unavailable`)
+                    ? (selectedExists ? `${abbreviateLocalModelId(selectedModelId)} ready` : `${abbreviateLocalModelId(selectedModelId)} unavailable`)
                     : 'Not set'],
             ['Capability', `${selectedCapability.tierSummary} (${selectedCapability.tierName})${selectedCapability.confidence === 'heuristic' ? ' (heuristic)' : ''}`],
             ['Supports', buildLocalFeatureSummary(selectedCapability)],

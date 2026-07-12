@@ -153,32 +153,18 @@ export class CommandRegistrar {
             });
         }
 
-        const timelineOrderName = __RT_RELEASE__
-            ? `BETA release pending — ${t('commands.timelineOrder')}`
-            : t('commands.timelineOrder');
         this.plugin.addCommand({
             id: 'timeline-order',
-            name: timelineOrderName,
+            name: t('commands.timelineOrder'),
             callback: () => {
-                if (__RT_RELEASE__) {
-                    new Notice('BETA release pending. This feature will be enabled in a future release.');
-                    return;
-                }
                 new TimelineRepairModal(this.app, this.plugin).open();
             }
         });
 
-        const timelineAuditName = __RT_RELEASE__
-            ? `BETA release pending — ${t('commands.timelineAudit')}`
-            : t('commands.timelineAudit');
         this.plugin.addCommand({
             id: 'timeline-audit',
-            name: timelineAuditName,
+            name: t('commands.timelineAudit'),
             callback: () => {
-                if (__RT_RELEASE__) {
-                    new Notice('BETA release pending. This feature will be enabled in a future release.');
-                    return;
-                }
                 new TimelineAuditModal(this.app, this.plugin).open();
             }
         });

@@ -4,7 +4,9 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 // --- Imports and constants added for standalone module ---
-import { ItemView, WorkspaceLeaf, MarkdownView, TFile, Notice, setIcon } from 'obsidian';
+import { ItemView, WorkspaceLeaf, MarkdownView, TFile, Notice, setIcon, Menu } from 'obsidian';
+import { TimelineRepairModal } from '../modals/TimelineRepairModal';
+import { TimelineAuditModal } from '../modals/TimelineAuditModal';
 import RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import type { TimelineItem } from '../types';
@@ -236,6 +238,24 @@ export class RadialTimelineView extends ItemView {
     
     getIcon(): string {
         return "rt-logo";
+    }
+
+    /**
+     * Timeline tools in the view's three-dot menu — the in-view entry point
+     * for authors who never open the command palette.
+     */
+    onPaneMenu(menu: Menu, source: string): void {
+        super.onPaneMenu(menu, source);
+        menu.addItem(item => item
+            .setTitle(t('commands.timelineOrder'))
+            .setIcon('calendar-plus')
+            .setSection('pane')
+            .onClick(() => new TimelineRepairModal(this.app, this.plugin).open()));
+        menu.addItem(item => item
+            .setTitle(t('commands.timelineAudit'))
+            .setIcon('calendar-search')
+            .setSection('pane')
+            .onClick(() => new TimelineAuditModal(this.app, this.plugin).open()));
     }
 
     private ensureBookSwitcher(): void {

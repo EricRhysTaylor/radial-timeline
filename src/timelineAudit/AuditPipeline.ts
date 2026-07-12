@@ -156,13 +156,23 @@ function formatWhen(date: Date | null): string {
     return `${year}-${month}-${day} ${hour}:${minute}`;
 }
 
-function formatGap(ms: number): string {
-    const minutes = Math.round(ms / 60000);
-    if (minutes < 60) return `${minutes}m`;
+/**
+ * Human-readable duration for a gap between two scenes, always positive —
+ * direction (before/after) is expressed by the surrounding sentence.
+ */
+function formatGapDuration(ms: number): string {
+    const minutes = Math.round(Math.abs(ms) / 60000);
+    if (minutes < 2) return 'about a minute';
+    if (minutes < 60) return `about ${minutes} minutes`;
     const hours = Math.round(minutes / 60);
-    if (hours < 48) return `${hours}h`;
+    if (hours < 2) return 'about an hour';
+    if (hours < 48) return `about ${hours} hours`;
     const days = Math.round(hours / 24);
-    return `${days}d`;
+    if (days < 60) return `about ${days} days`;
+    const months = Math.round(days / 30.44);
+    if (months < 24) return `about ${months} months`;
+    const years = Math.round(days / 365.25);
+    return `about ${years} years`;
 }
 
 function roundDays(ms: number): number {
@@ -510,7 +520,10 @@ function findingHasLargeJumpCue(finding: WorkingFinding): boolean {
 }
 
 function continuityIssueSummary(currentTitle: string, previousTitle: string, deltaMs: number): string {
-    return `${currentTitle} lands ${formatGap(deltaMs)} after ${previousTitle} in chronology.`;
+    if (deltaMs < 0) {
+        return `${currentTitle} lands ${formatGapDuration(deltaMs)} before ${previousTitle}, earlier than its chronological neighbor.`;
+    }
+    return `${currentTitle} lands ${formatGapDuration(deltaMs)} after ${previousTitle} in chronology.`;
 }
 
 function applyRelativeCueAgainstAnchor(

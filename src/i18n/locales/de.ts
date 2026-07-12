@@ -498,7 +498,6 @@ export const de: DeepPartial<TranslationKeys> = {
         createNote: 'Notiz erstellen…',
         manageSubplots: 'Nebenhandlungen verwalten',
         bookDesigner: 'Book Designer',
-        timelineOrder: 'Timeline-Reihenfolge',
         timelineAudit: 'Timeline-Audit',
         manuscriptExport: 'Manuskript exportieren',
         planetaryTimeCalculator: 'Planetarischer Zeitrechner',
@@ -627,9 +626,6 @@ export const de: DeepPartial<TranslationKeys> = {
     },
     timelineRepairModal: {
         config: {
-            badge: 'Quick Scaffold',
-            title: 'Timeline-Reihenfolge-Normalisierer',
-            subtitle: 'Verwenden Sie dies, wenn Ihre Szenen in Erzählreihenfolge geschrieben sind, Ihre Timeline jedoch unvollständig ist. Quick Scaffold füllt fehlende Daten rund um die bereits verfassten Daten anhand einfacher Abstandsmuster und Texthinweise, damit Chronologue eine nutzbare Timeline aufbauen kann. Vorhandene `When`-Daten werden standardmäßig beibehalten. Für eine tiefere Analyse vorhandener Daten verwenden Sie Timeline Audit.',
             statTotalScenes: 'Szenen gesamt',
             statWithWhen: 'Mit Datum',
             statMissingWhen: 'Datum fehlt',
@@ -725,9 +721,6 @@ export const de: DeepPartial<TranslationKeys> = {
     },
     timelineAuditModal: {
         header: {
-            badge: 'Beta · Timeline Audit',
-            title: 'Evidenzbasierte Timeline-Diagnose',
-            subtitle: 'Verwenden Sie dies, wenn Sie bereits `When`-Daten haben und Probleme oder Inkonsistenzen finden möchten. Timeline Audit prüft den `When`-Wert, die Zusammenfassung, die Synopsis und den Fließtext jeder Szene und vergleicht die Szenen dann in chronologischer Reihenfolge, um fehlende oder ungültige `When`-Werte, Tageszeit-Abweichungen, verdächtige Sprünge und Stellen zu kennzeichnen, an denen die geschriebene Reihenfolge der Chronologie widerspricht. Direkte Textnachweise zählen mehr als Schlussfolgerungen, und KI bleibt optional.',
             aiEnhancedBadge: 'KI-gestützt',
             focusedScope: 'Fokus: {{count}} Szenen vom Normalisierer',
             focusedClear: 'Fokus aufheben',
@@ -774,7 +767,6 @@ export const de: DeepPartial<TranslationKeys> = {
         aiCard: {
             title: 'KI-Audit',
             aiEnhancedBadge: 'KI-gestützt',
-            description: 'Verwendet KI, um Szenenbelege tiefer zu lesen und subtilere Timeline-Inkonsistenzen aufzudecken. Läuft im Hintergrund und kann später erneut aufgerufen werden.',
             actionRunning: 'KI-Audit läuft…',
             actionReRun: 'KI-Audit erneut ausführen',
             actionStart: 'KI-Audit starten',
@@ -795,14 +787,12 @@ export const de: DeepPartial<TranslationKeys> = {
         overview: { title: 'Timeline-Übersicht' },
         detail: {
             whatYamlSays: 'Was YAML aktuell sagt',
-            chronologyNotPlaced: 'Nicht platziert, weil YAML sie nicht sicher platziert.',
             whatManuscriptImplies: 'Was das Manuskript impliziert',
             noAlternatePosition: 'Keine zuverlässige alternative Timeline-Position abgeleitet.',
             noSuggestedWhen: 'Kein sicherer Ersatz für When vorgeschlagen.',
             whyFlagged: 'Warum dies markiert wurde',
             whatAuthorCanDo: 'Was der Autor tun kann',
             actionEligible: 'Wenden Sie das vorgeschlagene When an, behalten Sie YAML wie es ist, oder markieren Sie zur Prüfung.',
-            actionIneligible: 'Behalten Sie YAML wie es ist oder markieren Sie zur Prüfung. Anwenden ist deaktiviert, bis die Belege sicherer sind.',
             noEvidence: 'Keine Beleg-Ausschnitte erfasst.',
             applyButton: 'Anwenden',
             keepButton: 'Behalten',
@@ -810,7 +800,6 @@ export const de: DeepPartial<TranslationKeys> = {
             noRationale: 'Keine Begründung erfasst.',
             whenMissing: 'YAML When: fehlt in der Frontmatter.',
             formatWhenMissing: 'Fehlt',
-            chronologyPosition: 'Chronologie-Position: {{position}}',
             suggestedWhen: 'Vorgeschlagenes When: {{when}}',
             evidenceLabel: '{{source}} · {{tier}}',
             whenInvalid: 'YAML When: ungültig in der Frontmatter ({{raw}}).',

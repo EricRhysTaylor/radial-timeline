@@ -265,7 +265,7 @@ export class TimelineRepairModal extends Modal {
 
     private buildConfigBadgeText(): string {
         const scenesWithWhen = this.scenes.filter(s => s.when instanceof Date).length;
-        return `Beta · ${t('timelineRepairModal.config.badge')}: ${this.scenes.length} scenes • ${scenesWithWhen} dated`;
+        return `Beta · ${this.scenes.length} scenes • ${scenesWithWhen} dated`;
     }
 
     // ========================================================================
@@ -289,7 +289,9 @@ export class TimelineRepairModal extends Modal {
 
         // Header
         const header = this.contentEl.createDiv({ cls: 'ert-modal-header' });
-        header.createSpan({ cls: 'ert-modal-badge', text: this.buildConfigBadgeText() });
+        const badgeRow = header.createDiv({ cls: 'ert-modal-badge-row' });
+        badgeRow.createSpan({ cls: 'ert-modal-badge', text: this.buildConfigBadgeText() });
+        badgeRow.createSpan({ cls: 'ert-timeline-tool-pill', text: t('timelineRepairModal.config.noAiPill') });
         header.createDiv({ cls: 'ert-modal-title', text: t('timelineRepairModal.config.title') });
         const subtitleEl = header.createDiv({ cls: 'ert-modal-subtitle' });
         renderWithYamlTokens(subtitleEl, t('timelineRepairModal.config.subtitle'));

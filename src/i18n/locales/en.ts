@@ -456,7 +456,7 @@ export interface TranslationKeys {
         };
     };
     timelineRepairModal: {
-        config: { badge: string; title: string; subtitle: string; statTotalScenes: string; statWithWhen: string; statMissingWhen: string; previewButton: string; cancelButton: string; restoreButton: string; restoreTooltip: string; restoreEmptyTooltip: string; };
+        config: { noAiPill: string; title: string; subtitle: string; statTotalScenes: string; statWithWhen: string; statMissingWhen: string; previewButton: string; cancelButton: string; restoreButton: string; restoreTooltip: string; restoreEmptyTooltip: string; };
         anchor: { name: string; desc: string; dateLabel: string; timeLabel: string; pillAuthored: string; pillFallback: string; };
         preview: { name: string; };
         pattern: { name: string; desc: string; };
@@ -468,7 +468,7 @@ export interface TranslationKeys {
         confirm: { title: string; warning: string; applyButton: string; cancelButton: string; description: string; };
     };
     timelineAuditModal: {
-        header: { badge: string; title: string; subtitle: string; aiEnhancedBadge: string; focusedScope: string; focusedClear: string; };
+        header: { badge: string; aiPill: string; title: string; subtitle: string; aiEnhancedBadge: string; focusedScope: string; focusedClear: string; };
         loading: { title: string; description: string; };
         actions: { abort: string; reRunAudit: string; applyAccepted: string; close: string; };
         empty: { noResults: string; noFindings: string; };
@@ -2497,9 +2497,9 @@ export const en: TranslationKeys = {
     },
     timelineRepairModal: {
         config: {
-            badge: 'Quick Scaffold',
-            title: 'Timeline order normalizer',
-            subtitle: 'Use this when your scenes are written in story order but your timeline is incomplete. Quick Scaffold fills missing dates around the ones you have already authored, using simple spacing patterns and text cues so Chronologue can build a usable timeline. Existing `When` dates are preserved by default. For deeper analysis of existing dates, use Timeline Audit.',
+            noAiPill: 'No AI · Deterministic',
+            title: 'Quick Scaffold',
+            subtitle: 'Fills missing `When` dates in story order so Chronologue can mirror your draft — one date per scene, following the pattern you pick. Dates you have already authored are preserved as anchors. Need to find problems in existing dates instead? Use Timeline Audit.',
             statTotalScenes: 'Total Scenes',
             statWithWhen: 'With Date',
             statMissingWhen: 'Missing Date',
@@ -2595,9 +2595,10 @@ export const en: TranslationKeys = {
     },
     timelineAuditModal: {
         header: {
-            badge: 'Beta · Timeline Audit',
-            title: 'Evidence-based timeline diagnosis',
-            subtitle: 'Use this when you already have `When` dates and want to find problems or inconsistencies. Timeline Audit checks each scene’s `When` value, summary, synopsis, and body text, then compares scenes in chronological order to flag missing or invalid `When` values, time-of-day mismatches, suspicious jumps, and places where the written sequence disagrees with chronology. Direct text evidence counts more than inference, and AI remains optional.',
+            badge: 'Beta',
+            aiPill: 'AI optional',
+            title: 'Timeline Audit',
+            subtitle: 'Finds problems in scenes that already have `When` dates. Each scene’s date is checked against its summary, synopsis, and body text to flag contradictions, time-of-day mismatches, and order conflicts — direct text evidence outranks inference. Missing dates entirely? Use Quick Scaffold to fill them first.',
             aiEnhancedBadge: 'AI-enhanced',
             focusedScope: 'Focused: {{count}} scenes from Normalizer',
             focusedClear: 'Clear focus',
@@ -2644,7 +2645,7 @@ export const en: TranslationKeys = {
         aiCard: {
             title: 'AI audit',
             aiEnhancedBadge: 'AI-enhanced',
-            description: 'Uses AI to read scene evidence more deeply and surface subtler timeline inconsistencies. Runs in the background and can be revisited later.',
+            description: 'Uses AI to read scene evidence more deeply and surface subtler timeline inconsistencies. Runs in the background and never changes your files — you review every suggestion and apply only what you accept.',
             actionRunning: 'Running AI audit\u2026',
             actionReRun: 'Re-run AI Audit',
             actionStart: 'Start AI Audit',
@@ -2665,14 +2666,14 @@ export const en: TranslationKeys = {
         overview: { title: 'Timeline overview' },
         detail: {
             whatYamlSays: 'What YAML currently says',
-            chronologyNotPlaced: 'Not placed because YAML does not place it safely.',
+            chronologyNotPlaced: 'Not placed in chronological order — the `When` date is missing or invalid.',
             whatManuscriptImplies: 'What the manuscript implies',
             noAlternatePosition: 'No reliable alternate timeline position inferred.',
             noSuggestedWhen: 'No safe replacement When suggested.',
             whyFlagged: 'Why this was flagged',
             whatAuthorCanDo: 'What the author can do',
             actionEligible: 'Apply the suggested When, keep YAML as-is, or mark for review.',
-            actionIneligible: 'Keep YAML as-is or mark for review. Apply is disabled until evidence is safer.',
+            actionIneligible: 'No replacement date can be safely inferred — the text evidence is ambiguous. Keep the current date, mark the scene for review, or set the date manually in the scene’s frontmatter.',
             noEvidence: 'No evidence snippets captured.',
             applyButton: 'Apply',
             keepButton: 'Keep',
@@ -2680,7 +2681,7 @@ export const en: TranslationKeys = {
             noRationale: 'No rationale recorded.',
             whenMissing: 'YAML When: missing from frontmatter.',
             formatWhenMissing: 'Missing',
-            chronologyPosition: 'Chronology position: {{position}}',
+            chronologyPosition: 'Chronological order: {{position}} of {{total}}',
             suggestedWhen: 'Suggested When: {{when}}',
             evidenceLabel: '{{source}} \u00b7 {{tier}}',
             whenInvalid: 'YAML When: invalid in frontmatter ({{raw}}).',
@@ -2739,7 +2740,7 @@ export const en: TranslationKeys = {
         createNote: 'Create note\u2026',
         manageSubplots: 'Manage subplots',
         bookDesigner: 'Book designer',
-        timelineOrder: 'Timeline order',
+        timelineOrder: 'Quick scaffold',
         timelineAudit: 'Timeline audit',
         manuscriptExport: 'Manuscript export',
         planetaryTimeCalculator: 'Planetary time calculator',

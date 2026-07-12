@@ -191,7 +191,9 @@ export class TimelineAuditModal extends Modal {
         contentEl.empty();
 
         const header = contentEl.createDiv({ cls: 'ert-modal-header' });
-        header.createSpan({ cls: 'ert-modal-badge', text: t('timelineAuditModal.header.badge') });
+        const badgeRow = header.createDiv({ cls: 'ert-modal-badge-row' });
+        badgeRow.createSpan({ cls: 'ert-modal-badge', text: t('timelineAuditModal.header.badge') });
+        badgeRow.createSpan({ cls: 'ert-timeline-tool-pill', text: t('timelineAuditModal.header.aiPill') });
         header.createDiv({ cls: 'ert-modal-title', text: t('timelineAuditModal.header.title') });
         const subtitleEl = header.createDiv({ cls: 'ert-modal-subtitle' });
         renderWithYamlTokens(subtitleEl, t('timelineAuditModal.header.subtitle'));
@@ -606,9 +608,12 @@ export class TimelineAuditModal extends Modal {
         });
 
         const qaGrid = card.createDiv({ cls: 'ert-timeline-audit-qa-grid' });
+        const totalScenes = this.getDisplayedResult()?.stats.totalScenes ?? 0;
         this.createQuestionBlock(qaGrid, t('timelineAuditModal.detail.whatYamlSays'), [
             this.describeCurrentWhen(finding),
-            t('timelineAuditModal.detail.chronologyPosition', { position: finding.expectedChronologyPosition ?? t('timelineAuditModal.detail.chronologyNotPlaced') })
+            finding.expectedChronologyPosition !== null
+                ? t('timelineAuditModal.detail.chronologyPosition', { position: finding.expectedChronologyPosition, total: totalScenes })
+                : t('timelineAuditModal.detail.chronologyNotPlaced')
         ]);
         this.createQuestionBlock(qaGrid, t('timelineAuditModal.detail.whatManuscriptImplies'), [
             finding.inferredWrittenTimelinePosition?.label ?? t('timelineAuditModal.detail.noAlternatePosition'),

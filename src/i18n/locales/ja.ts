@@ -499,7 +499,6 @@ export const ja: DeepPartial<TranslationKeys> = {
         createNote: 'ノートを作成…',
         manageSubplots: 'サブプロットを管理',
         bookDesigner: 'ブックデザイナー',
-        timelineOrder: 'タイムライン順序',
         timelineAudit: 'タイムライン監査',
         manuscriptExport: '原稿エクスポート',
         planetaryTimeCalculator: '惑星時間計算機',
@@ -628,9 +627,6 @@ export const ja: DeepPartial<TranslationKeys> = {
     },
     timelineRepairModal: {
         config: {
-            badge: 'クイックスキャフォールド',
-            title: 'タイムライン順序ノーマライザー',
-            subtitle: 'シーンが物語順で書かれているがタイムラインが不完全な場合にこれを使用します。クイックスキャフォールドは、すでに作成された日付の周囲に欠落している日付を、シンプルな間隔パターンとテキストの手がかりを使って埋め、Chronologue が使えるタイムラインを構築できるようにします。既存の `When` 日付はデフォルトで保持されます。既存日付のより深い分析には Timeline Audit を使用してください。',
             statTotalScenes: '総シーン数',
             statWithWhen: '日付あり',
             statMissingWhen: '日付なし',
@@ -726,9 +722,6 @@ export const ja: DeepPartial<TranslationKeys> = {
     },
     timelineAuditModal: {
         header: {
-            badge: 'ベータ · Timeline Audit',
-            title: '証拠ベースのタイムライン診断',
-            subtitle: 'すでに `When` 日付があり、問題や不整合を見つけたい場合にこれを使用します。Timeline Audit は各シーンの `When` 値、サマリー、シノプシス、本文を確認し、シーンを時系列順に比較して、欠落または無効な `When` 値、時間帯の不一致、不審なジャンプ、書かれた順序が時系列と一致しない箇所をフラグ立てします。直接的なテキスト証拠は推論よりも重視され、AI は任意のままです。',
             aiEnhancedBadge: 'AI 強化',
             focusedScope: '焦点：ノーマライザーから {{count}} シーン',
             focusedClear: '焦点をクリア',
@@ -775,7 +768,6 @@ export const ja: DeepPartial<TranslationKeys> = {
         aiCard: {
             title: 'AI 監査',
             aiEnhancedBadge: 'AI 強化',
-            description: 'AI を使用してシーンの証拠をより深く読み取り、より微妙なタイムラインの不整合を浮かび上がらせます。バックグラウンドで実行され、後で再確認できます。',
             actionRunning: 'AI 監査を実行中…',
             actionReRun: 'AI 監査を再実行',
             actionStart: 'AI 監査を開始',
@@ -796,14 +788,12 @@ export const ja: DeepPartial<TranslationKeys> = {
         overview: { title: 'タイムライン概要' },
         detail: {
             whatYamlSays: 'YAML の現在の内容',
-            chronologyNotPlaced: 'YAML が安全に配置していないため配置されません。',
             whatManuscriptImplies: '原稿が示唆する内容',
             noAlternatePosition: '信頼できる代替タイムライン位置は推論されませんでした。',
             noSuggestedWhen: '安全な代替 When は提案されませんでした。',
             whyFlagged: 'これがフラグ付けされた理由',
             whatAuthorCanDo: '著者ができること',
             actionEligible: '提案された When を適用するか、YAML をそのまま保持するか、確認用にマークします。',
-            actionIneligible: 'YAML をそのまま保持するか、確認用にマークします。証拠が安全になるまで適用は無効化されます。',
             noEvidence: '証拠スニペットはキャプチャされていません。',
             applyButton: '適用',
             keepButton: '保持',
@@ -811,7 +801,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             noRationale: '根拠は記録されていません。',
             whenMissing: 'YAML When：フロントマターから欠落しています。',
             formatWhenMissing: '欠落',
-            chronologyPosition: '時系列位置：{{position}}',
             suggestedWhen: '提案された When：{{when}}',
             evidenceLabel: '{{source}} · {{tier}}',
             whenInvalid: 'YAML When：フロントマターで無効です ({{raw}})。',

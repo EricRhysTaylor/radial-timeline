@@ -498,7 +498,6 @@ export const ko: DeepPartial<TranslationKeys> = {
         createNote: '노트 만들기…',
         manageSubplots: '서브플롯 관리',
         bookDesigner: '북 디자이너',
-        timelineOrder: '타임라인 순서',
         timelineAudit: '타임라인 감사',
         manuscriptExport: '원고 내보내기',
         planetaryTimeCalculator: '행성 시간 계산기',
@@ -627,9 +626,6 @@ export const ko: DeepPartial<TranslationKeys> = {
     },
     timelineRepairModal: {
         config: {
-            badge: '빠른 스캐폴드',
-            title: '타임라인 순서 정규화기',
-            subtitle: '장면이 이야기 순서로 작성되었지만 타임라인이 불완전할 때 사용하세요. Quick Scaffold는 이미 작성한 날짜 주위의 누락된 날짜를 간단한 간격 패턴과 텍스트 단서를 사용하여 채워, Chronologue가 사용 가능한 타임라인을 구축할 수 있게 합니다. 기본적으로 기존 `When` 날짜는 보존됩니다. 기존 날짜에 대한 더 깊은 분석은 Timeline Audit을 사용하세요.',
             statTotalScenes: '총 장면 수',
             statWithWhen: '날짜 있음',
             statMissingWhen: '날짜 없음',
@@ -725,9 +721,6 @@ export const ko: DeepPartial<TranslationKeys> = {
     },
     timelineAuditModal: {
         header: {
-            badge: '베타 · Timeline Audit',
-            title: '증거 기반 타임라인 진단',
-            subtitle: '이미 `When` 날짜가 있고 문제나 불일치를 찾고자 할 때 사용하세요. Timeline Audit은 각 장면의 `When` 값, 요약, 시놉시스, 본문을 확인한 다음 장면을 시간순으로 비교하여 누락 또는 잘못된 `When` 값, 시간대 불일치, 의심스러운 도약, 작성된 순서가 시간 순서와 어긋나는 곳을 표시합니다. 직접적인 텍스트 증거가 추론보다 우선되며, AI는 선택 사항입니다.',
             aiEnhancedBadge: 'AI 강화',
             focusedScope: '집중: 정규화기에서 {{count}}개 장면',
             focusedClear: '집중 해제',
@@ -774,7 +767,6 @@ export const ko: DeepPartial<TranslationKeys> = {
         aiCard: {
             title: 'AI 감사',
             aiEnhancedBadge: 'AI 강화',
-            description: 'AI를 사용하여 장면 증거를 더 깊이 읽고 더 미묘한 타임라인 불일치를 표면화합니다. 백그라운드에서 실행되며 나중에 다시 확인할 수 있습니다.',
             actionRunning: 'AI 감사 실행 중…',
             actionReRun: 'AI 감사 다시 실행',
             actionStart: 'AI 감사 시작',
@@ -795,14 +787,12 @@ export const ko: DeepPartial<TranslationKeys> = {
         overview: { title: '타임라인 개요' },
         detail: {
             whatYamlSays: 'YAML이 현재 말하는 내용',
-            chronologyNotPlaced: 'YAML이 안전하게 배치하지 않아 배치되지 않습니다.',
             whatManuscriptImplies: '원고가 암시하는 내용',
             noAlternatePosition: '신뢰할 수 있는 대체 타임라인 위치가 추론되지 않았습니다.',
             noSuggestedWhen: '안전한 대체 When이 제안되지 않았습니다.',
             whyFlagged: '왜 표시되었는지',
             whatAuthorCanDo: '저자가 할 수 있는 일',
             actionEligible: '제안된 When을 적용하거나, YAML을 그대로 유지하거나, 검토용으로 표시하세요.',
-            actionIneligible: 'YAML을 그대로 유지하거나 검토용으로 표시하세요. 증거가 더 안전해질 때까지 적용은 비활성화됩니다.',
             noEvidence: '캡처된 증거 발췌가 없습니다.',
             applyButton: '적용',
             keepButton: '유지',
@@ -810,7 +800,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             noRationale: '근거가 기록되지 않았습니다.',
             whenMissing: 'YAML When: 프런트매터에서 누락됨.',
             formatWhenMissing: '누락',
-            chronologyPosition: '시간 순 위치: {{position}}',
             suggestedWhen: '제안된 When: {{when}}',
             evidenceLabel: '{{source}} · {{tier}}',
             whenInvalid: 'YAML When: 프런트매터에서 잘못됨 ({{raw}}).',

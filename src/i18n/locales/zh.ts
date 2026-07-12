@@ -500,7 +500,6 @@ export const zh: DeepPartial<TranslationKeys> = {
         createNote: '创建笔记…',
         manageSubplots: '管理副情节',
         bookDesigner: '书籍设计器',
-        timelineOrder: '时间轴顺序',
         timelineAudit: '时间轴审计',
         manuscriptExport: '原稿导出',
         planetaryTimeCalculator: '行星时间计算器',
@@ -629,9 +628,6 @@ export const zh: DeepPartial<TranslationKeys> = {
     },
     timelineRepairModal: {
         config: {
-            badge: '快速脚手架',
-            title: '时间轴顺序规范化器',
-            subtitle: '当您的场景按故事顺序撰写但时间轴不完整时使用此功能。Quick Scaffold 会使用简单的间隔模式和文字提示，在已写入日期周围填补缺失的日期，让 Chronologue 能构建可用的时间轴。默认情况下保留现有的 `When` 日期。如需对已有日期进行更深入的分析，请使用 Timeline Audit。',
             statTotalScenes: '场景总数',
             statWithWhen: '有日期',
             statMissingWhen: '缺失日期',
@@ -727,9 +723,6 @@ export const zh: DeepPartial<TranslationKeys> = {
     },
     timelineAuditModal: {
         header: {
-            badge: '测试版 · Timeline Audit',
-            title: '基于证据的时间轴诊断',
-            subtitle: '当您已经有 `When` 日期并想查找问题或不一致时使用此功能。Timeline Audit 会检查每个场景的 `When` 值、摘要、概要和正文，然后按时间顺序比较场景，标记缺失或无效的 `When` 值、时段不匹配、可疑跳跃以及书写顺序与时间顺序不一致的位置。直接的文本证据比推断更受重视，AI 仍然是可选的。',
             aiEnhancedBadge: 'AI 增强',
             focusedScope: '聚焦：来自规范化器的 {{count}} 个场景',
             focusedClear: '清除聚焦',
@@ -776,7 +769,6 @@ export const zh: DeepPartial<TranslationKeys> = {
         aiCard: {
             title: 'AI 审计',
             aiEnhancedBadge: 'AI 增强',
-            description: '使用 AI 更深入地阅读场景证据，并发现更细微的时间轴不一致。在后台运行，可稍后再查看。',
             actionRunning: '正在运行 AI 审计…',
             actionReRun: '重新运行 AI 审计',
             actionStart: '启动 AI 审计',
@@ -797,14 +789,12 @@ export const zh: DeepPartial<TranslationKeys> = {
         overview: { title: '时间轴概览' },
         detail: {
             whatYamlSays: 'YAML 当前所述',
-            chronologyNotPlaced: '因 YAML 未安全放置而未放置。',
             whatManuscriptImplies: '原稿所暗示的',
             noAlternatePosition: '未推断出可靠的备用时间轴位置。',
             noSuggestedWhen: '未建议安全的替代 When。',
             whyFlagged: '为何被标记',
             whatAuthorCanDo: '作者可以做什么',
             actionEligible: '应用建议的 When，保留 YAML 不变，或标记为待审阅。',
-            actionIneligible: '保留 YAML 不变或标记为待审阅。在证据更安全之前应用被禁用。',
             noEvidence: '未捕获证据片段。',
             applyButton: '应用',
             keepButton: '保留',
@@ -812,7 +802,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             noRationale: '未记录原因。',
             whenMissing: 'YAML When：前置内容中缺失。',
             formatWhenMissing: '缺失',
-            chronologyPosition: '时间位置：{{position}}',
             suggestedWhen: '建议的 When：{{when}}',
             evidenceLabel: '{{source}} · {{tier}}',
             whenInvalid: 'YAML When：前置内容中无效 ({{raw}})。',

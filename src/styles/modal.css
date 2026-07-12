@@ -82,6 +82,21 @@
   flex-wrap: wrap;
 }
 
+/* Tool capability pill — "No AI · Deterministic" / "AI optional" in timeline tool headers */
+.ert-timeline-tool-pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: calc(var(--ert-gap-2xs) + var(--ert-gap-3xs)) var(--ert-pad-xs);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--interactive-accent) 14%, var(--background-secondary));
+  border: 1px solid color-mix(in srgb, var(--interactive-accent) 35%, var(--background-modifier-border));
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 /* Pro badge styling - used in manuscript modal and runtime modal */
 .ert-runtime-modal-shell .ert-modal-badge {
   display: inline-flex;

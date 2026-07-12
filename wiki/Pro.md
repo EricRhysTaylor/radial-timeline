@@ -15,8 +15,10 @@ Pro Mode extends Radial Timeline with deeper analysis, polished exports, campaig
 
 *   **Inquiry+** — more custom question slots. See [Settings → Inquiry](Settings-Inquiry) and [Inquiry](Inquiry).
 *   **Runtime Estimation** — screen time, audiobook duration, and manuscript-length analysis. See [Runtime estimator](Commands#runtime-estimator), [Chronologue Runtime](Chronologue-Mode#runtime-mode-pro), and [Settings → Core](Settings-Core#runtime-estimation).
-*   **Advanced publishing layouts** — extra templates and deeper export customization. See [Publishing](Publishing) and [Manuscript Export](Manuscript-Export).
+*   **Advanced publishing layouts** — the Professional, Signature, Screenplay, and Podcast Script templates plus deeper export customization. See [Publishing](Publishing) and [Manuscript Export](Manuscript-Export).
 *   **Campaign Manager / Teaser Reveal** — multiple APR campaigns and staged public reveals. See [Author Progress Report](Author-Progress-Report).
+*   **Saga timeline scope** — view an entire multi-book saga on one timeline.
+*   **Custom scene colors** — customize the scene color palette. See [Settings → Core](Settings-Core).
 *   **Website exclusives** — additional template vaults, guided materials, and related extras.
 
 ---
@@ -31,4 +33,4 @@ Pro workflows appear throughout Radial Timeline in magenta.
 
 ---
 
-*Questions or feedback? Visit [radial-timeline.com/feedback](https://radial-timeline.com/feedback)*
+*Questions or feedback? Visit [radialtimeline.com](https://radialtimeline.com) or email feedback@radialtimeline.com*

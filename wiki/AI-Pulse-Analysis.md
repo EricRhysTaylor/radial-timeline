@@ -7,7 +7,7 @@ The Pulse Triplet Analysis is the key first line of defense in stress testing th
 
 **Modes**: Progress mode (key `1`), Narrative mode (key `2`), Chronologue mode (key `3`)
 **Command**: `Scene pulse analysis (manuscript order)`, `Scene pulse analysis (subplot order)`
-**Settings**: `AI LLM for scene analysis`
+**Settings**: [Settings → AI](Settings-AI) — enable **Enable AI LLM features** and choose a provider
 
 <div style="text-align: center; margin: 20px 0;">
   <img src="images/panel-scene-pulse.png" alt="AI Pulse Triplet Analysis" style="width: 600px; max-width: 100%;" />
@@ -21,13 +21,14 @@ The Pulse Triplet Analysis is the key first line of defense in stress testing th
 
 ## Supported Providers
 
-Pulse currently works best with the hosted AI providers:
+Pulse works with all supported AI providers:
 
 *   **Anthropic Claude**
 *   **OpenAI GPT**
 *   **Google Gemini**
+*   **Local LLM** (Ollama, LM Studio, and OpenAI-compatible servers)
 
-Local/OpenAI-compatible setups are documented under [Settings → AI → Local LLM](Settings-AI#local-llm). For Pulse itself, use the hosted providers above for now.
+Local LLM setup is documented under [Settings → AI → Local LLM](Settings-AI#local-llm). Local runs are validated before analysis starts and results are written with the same safeguards as hosted providers.
 
 For the command-specific batch workflows, see:
 

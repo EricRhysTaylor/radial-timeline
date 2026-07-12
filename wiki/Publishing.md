@@ -50,12 +50,12 @@ Core includes the standard publishing layouts needed for Pandoc PDF export. Pro 
 
 ### Novel templates
 
-| Template | Structure | Best for |
-|---|---|---|
-| **Basic** | Standard double-spaced submission format | Sending to agents / editors |
-| **Standard** | Book-style with contemporary serif body, running headers, chapter openers | A finished book look with simple chapters |
-| **Professional** | Literary book style with refined typography | Polished prose fiction |
-| **Signature** | Full book structure — **Parts**, Chapters, act epigraphs, ornament scene breaks | Novels with act structure and multiple chapters per act |
+| Template | Tier | Structure | Best for |
+|---|---|---|---|
+| **Basic** | Core | Standard double-spaced submission format | Sending to agents / editors |
+| **Standard** | Core | Book-style with contemporary serif body, running headers, chapter openers | A finished book look with simple chapters |
+| **Professional** | ✦ Pro | Literary book style with refined typography | Polished prose fiction |
+| **Signature** | ✦ Pro | Full book structure — **Parts**, Chapters, act epigraphs, ornament scene breaks | Novels with act structure and multiple chapters per act |
 
 The selected novel PDF layout also informs Narrative Mode publishing markers. Layouts that print chapters can show **C** placards on the timeline. Layouts that print Parts can show **P** placards at act boundaries.
 
@@ -64,21 +64,21 @@ The selected novel PDF layout also informs Narrative Mode publishing markers. La
   <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Narrative Mode perimeter markers — chapter starts, part boundaries, and combined Part/Chapter breaks</div>
 </div>
 
-PDF layouts require their intended fonts rather than substituting fallbacks. Bundled fonts are installed into `Radial Timeline/Pandoc/fonts/` when you install the PDF styles.
+PDF layouts require their intended fonts rather than substituting fallbacks. Bundled fonts are installed into `Radial Timeline/Pandoc/fonts/` when you install the PDF styles. Basic uses Arial from your operating system — it is not bundled.
 
 | Template | Font |
 |---|---|
-| **Basic** | Arial |
+| **Basic** | Arial (system font) |
 | **Standard** | Source Serif 4 |
 | **Professional** | Sorts Mill Goudy |
 | **Signature** | Latin Modern Roman |
 
 ### Other formats
 
-| Template | Format |
-|---|---|
-| **Screenplay** | Industry-standard screenplay |
-| **Podcast Script** | Audio script with structured cues |
+| Template | Tier | Format |
+|---|---|---|
+| **Screenplay** | ✦ Pro | Industry-standard screenplay |
+| **Podcast Script** | ✦ Pro | Audio script with structured cues |
 
 ---
 
@@ -94,10 +94,10 @@ Only installed templates can be used for export.
 
 Settings → Publish is split around Core and Pro publishing work:
 
-*   **Core** includes Pandoc setup, output folders, Book Details, Book Pages, bundled Core PDF layouts, and Auto configure publishing.
-*   **Pro** adds advanced bundled layouts and deeper designed publishing controls.
+*   **Core** includes Pandoc setup, output folders, Book Details, Book Pages, the **Basic** and **Standard** layouts, and Auto configure publishing.
+*   **Pro** adds the **Professional**, **Signature**, **Screenplay**, and **Podcast Script** layouts and deeper designed publishing controls.
 
-The export panel and **Settings → Publish** use the same template access rules. If a Core user selects a Pro-only layout, Radial Timeline falls back to a supported Core layout instead of leaving the export blocked.
+The export panel and **Settings → Publish** use the same template access rules. If a Core user selects a Pro-only layout, Radial Timeline exports with **Basic** instead of leaving the export blocked.
 
 ## Book Details and Matter Pages
 
@@ -189,6 +189,9 @@ Narrative Mode can show these same publishing structures as outer-ring placards.
 ---
 
 ## Setting Up Signature
+
+> [!NOTE]
+> Signature is a **✦ Pro** layout. Core users who select it will export with Basic instead.
 
 Signature is the most structured bundled template. It produces a book-style manuscript with:
 

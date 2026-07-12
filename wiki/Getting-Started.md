@@ -21,10 +21,10 @@ Choose a vault layout and stick with it: a single-book vault, a single vault wit
 
 **2. Bring in scenes.**
 
-*   *Fresh vault:* run **Radial Timeline: Book designer** to generate a scaffold (acts, subplots, optional beats), or run **Radial Timeline: Create note… → Scene → Basic scene** to start with a single scene.
+*   *Fresh vault:* run **Radial timeline: Book designer** to generate a scaffold (acts, subplots, optional beats), or run **Radial timeline: Create note… → Scene → Basic scene** to start with a single scene.
 *   *Existing vault:* your scene notes should use `Class: Scene`. The main scene properties are `Act`, `Synopsis`, and `Subplot`. Chronologue uses `When` and `Duration`; Progress uses `Status` and `Publish Stage`. If your vault uses different property names, enable **Remap frontmatter field keys** under **Settings → Advanced → Configuration**.
 
-**3. Choose a beat system (optional).** Select **Save the Cat**, **Hero's Journey**, or **Custom** in [Settings → Core → Story beats system](Settings-Core#story-beats-system). Use **Create** to generate beat notes; **Merge** to realign existing files after changes.
+**3. Choose a beat system (optional).** Pick from the built-in systems (**Save the Cat**, **Hero's Journey**, **Classic Dramatic Structure**, plus podcast, video, documentary, romance, and thriller arcs) or build a **Custom** system in [Settings → Core → Story beats system](Settings-Core#story-beats-system). Use **Create** to generate beat notes; **Merge** to realign existing files after changes.
 
 ---
 
@@ -39,7 +39,7 @@ The four modes in the Radial Timeline View — switch with `1`/`2`/`3`/`4` or th
 
 **Day to day:** write scenes, keep `Synopsis` current, update `Status` from Todo → Working → Complete. Use **Search timeline** to find scenes across metadata. See [How to](How-to) for task recipes (reordering, subplots, rotation, search).
 
-**When you're ready to share:** run **Radial Timeline: Manuscript export** to compile to Markdown, outline, or PDF. PDF requires [Pandoc](https://pandoc.org/installing.html) and a LaTeX distribution; configure under **Settings → Publish**. See [Publishing](Publishing) for templates and Signature setup.
+**When you're ready to share:** run **Radial timeline: Manuscript export** to compile to Markdown, outline, or PDF. PDF requires [Pandoc](https://pandoc.org/installing.html) and a LaTeX distribution; configure under **Settings → Publish**. See [Publishing](Publishing) for templates and Signature setup.
 
 **Optional next steps:** [AI Pulse Triplet Analysis](AI-Pulse-Analysis) for scene-level editorial feedback, [Inquiry](Inquiry) for corpus-level analysis, [Author Progress Report](Author-Progress-Report) for shareable spoiler-safe progress graphics.
 

@@ -56,6 +56,5 @@ This project stands on the shoulders of many generous teachers, tools, and story
 *   **Latin Modern Roman** — used for the Signature template.
 *   **Sorts Mill Goudy** by Barry Schwartz — used for the Professional template.
 *   **Source Serif 4** by Frank Grießhammer — used for the Standard template.
-*   **Arial** — used for the Basic template.
 
-All bundled fonts ship with their original license files in `assets/fonts/`.
+All bundled fonts ship with their original license files in `assets/fonts/`. The Basic template uses Arial from your operating system; no Arial files are bundled.

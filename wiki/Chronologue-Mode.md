@@ -99,7 +99,7 @@ Chronologue mode offers two ways to layer contextual information behind your sce
 ### Backdrop Notes
 Backdrop notes visualize major contextual events — historical wars, planetary alignments, or seasonal changes — that drive your plot but aren't specific scenes.
 
-*   **Create**: Use **Radial Timeline: Create note…** and choose **Story world** → **Backdrop** to generate a file with start/end times.
+*   **Create**: Use **Radial timeline: Create note…** and choose **Story world** → **Backdrop** to generate a file with start/end times.
 *   **Visualize**: These appear as a dedicated ring in Chronologue mode, grounding your scenes in their temporal context.
 *   **Overlaps**: Two backdrops may overlap partially, shown with a visual plaid pattern.
 
@@ -129,7 +129,7 @@ For sci-fi and fantasy authors, Chronologue mode includes a **Planetary Time** s
     *   **Epoch Offset**: Shift the start date of your calendar relative to Earth's Unix Epoch (1970-01-01).
     *   **Custom Labels**: Define custom names for months and days of the week.
 *   **Synopsis Hover**: In Chronologue mode, hover over a scene to see its date converted to your active planetary profile.
-*   **Calculator**: Use the command palette (`Cmd + P` on Mac, `Ctrl + P` on Windows/Linux) and search for **"Radial Timeline: Planetary time calculator"** to open a calculator. Enter any Earth date/time to see the corresponding planetary date/time.
+*   **Calculator**: Use the command palette (`Cmd + P` on Mac, `Ctrl + P` on Windows/Linux) and search for **"Radial timeline: Planetary time calculator"** to open a calculator. Enter any Earth date/time to see the corresponding planetary date/time.
 *   **Alt overlay**: Press `Alt` to enter the planetary wireframe for your active local time profile.
 *   **Alt + Shift**: This mirrors the standard Shift sub-mode in red, so you can compare elapsed time and discontinuities in local planetary time.
 *   **Active profile**: The selected profile in Settings controls which calendar is used for hover and conversion outputs.

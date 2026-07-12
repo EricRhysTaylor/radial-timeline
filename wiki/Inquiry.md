@@ -8,11 +8,10 @@ Inquiry is the main operating guide for the Inquiry View. While the [Radial Time
 <a name="overview"></a>
 ## Overview
 
-Inquiry sends your manuscript corpus to an AI provider and asks structured questions organized into three narrative zones. The AI returns findings with severity ratings, confidence levels, and scene citations that are visualized in the Inquiry glyph.
+Inquiry sends your manuscript corpus to an AI provider and asks structured questions organized into three narrative zones. The AI returns findings with headlines, recommended actions, evidence quotes, and scene citations that are visualized in the Inquiry glyph.
 
 **Commands**:
-*   `Open Inquiry` — Opens the Inquiry view
-*   `Inquiry Omnibus Pass` — Runs all enabled questions in a single batch
+*   `Open inquiry` — Opens the Inquiry view
 
 **Settings**: [Inquiry settings](Settings-Inquiry)
 
@@ -111,11 +110,11 @@ Inquiry works with all supported AI providers, including Anthropic, OpenAI, Gemi
 2.  Select your **scope** (Book or Saga).
 3.  Hover a **question** inside the desired zone (Setup, Pressure, or Payoff) to preview the prompt and payload details, including the token estimate.
 4.  Click the question's **number badge** to run that single question against your selected AI provider.
-5.  Review findings in the results panel — each finding includes a headline, impact rating, confidence level, and scene citations.
+5.  Review findings in the results panel — each finding includes a headline, supporting bullets, a recommended action, and scene citations.
 
-### Omnibus Pass
+### Omnibus Pass *(beta)*
 
-The Omnibus Pass runs all enabled questions across all three zones in sequence. Use the `Inquiry Omnibus Pass` command or the Omnibus button in the Inquiry view.
+The Omnibus Pass runs all enabled questions across all three zones in sequence via the `Inquiry omnibus` command. It is currently available in development builds only.
 
 **Corpus overrides**: Any Corpus Manager overrides set in the Inquiry view are applied to the Omnibus run. If no overrides are active, the run falls back to the Inquiry Settings corpus configuration.
 
@@ -144,7 +143,7 @@ The Corpus system classifies notes by word count to help you spot thin content:
 | Medium | 300–999 words |
 | Substantive | ≥ 1,000 words |
 
-When **Highlight completed docs with low substance** is enabled, completed notes that remain Empty or Sketchy are flagged. Adjust thresholds in [Corpus (CC)](Settings-Inquiry#corpus).
+Notes that remain Empty or Sketchy are marked automatically in the Corpus view. Adjust thresholds in [Corpus (CC)](Settings-Inquiry#corpus).
 
 ---
 
@@ -159,11 +158,13 @@ Each Inquiry result contains **findings** — specific observations the AI ident
 | **Escalation** | A tension or stakes progression issue |
 | **Conflict** | A structural or thematic conflict |
 | **Unclear** | An ambiguous element needing clarification |
+| **Strength** | Something that is working well |
+| **Thread / Arc / Payoff / Structure** | Thread tracking, character arcs, payoff delivery, and structural observations |
 
 Each finding includes:
-*   **Impact** rating (low / medium / high)
-*   **Confidence** level (low / medium / high)
-*   **Status** (introduced / escalated / resolved / dropped / unclear)
+*   **Headline** and supporting bullets
+*   **Recommended action**
+*   **Evidence quote** from the source material
 *   **Scene citations** linking back to specific notes
 
 ---
@@ -180,16 +181,10 @@ Use Briefing Manager to:
 *   purge Inquiry-generated action notes when needed
 *   review saved briefing history tied to the current view context
 
-**Inquire session history** does not affect the content of saved briefings. It controls Inquiry View rehydration via the Session Manager Popover, bounded by your **Remember up to** setting.
-
 <a name="briefings"></a>
 ## Briefings
 
-Inquiry can save results as markdown briefings for later review.
-
-*   **Auto-save**: When enabled, Inquiry saves a markdown briefing after each successful run.
-*   **Folder**: Briefings are stored in your configured Inquiry briefing folder (default `Radial Timeline/Inquiry/Briefing`).
-*   **Embed JSON payload**: Optionally includes the validated Inquiry JSON payload in the saved briefing.
+Inquiry can save results as markdown briefings for later review. Briefings are stored in `Radial Timeline/Inquiry/Briefing`.
 
 <a name="briefing-articles"></a>
 ## Briefing Articles
@@ -203,8 +198,8 @@ Inquiry can also produce **Briefing Articles** — HTML-formatted presentation o
 
 Inquiry can write findings directly into your scene frontmatter:
 
-*   **Enable**: Toggle **Write Inquiry action notes to scenes** in [Inquiry settings](Settings-Inquiry).
-*   **Target field**: Findings are appended to the configured YAML field (default `Pending Edits`).
+*   **Enable**: Toggle **Auto-populate Pending Edits** in [Inquiry settings](Settings-Inquiry).
+*   **Target field**: Findings are appended to the `Pending Edits` YAML field.
 *   **Purge**: Use the purge function in the Inquiry view to remove all Inquiry-generated action notes from scenes.
 
 ---
@@ -212,10 +207,12 @@ Inquiry can write findings directly into your scene frontmatter:
 <a name="prompts"></a>
 ## Prompts
 
-Inquiry comes with built-in prompt questions for each zone. You can also add custom questions:
+Each zone ships with built-in questions: **4 core questions** per zone for everyone, and Pro unlocks **5 more** per zone — **9 built-in questions** per zone in total.
 
-*   **Free**: Up to 2 custom questions per zone.
-*   **Pro**: Up to 7 custom questions per zone.
+You can also add your own custom questions on top of the built-ins:
+
+*   **Free**: Up to 3 custom questions per zone.
+*   **Pro**: Up to 8 custom questions per zone.
 *   Drag to reorder questions within a zone.
 *   Toggle individual questions on/off.
 *   Reset to built-in defaults using the restore button.
@@ -225,12 +222,13 @@ Configure prompts in [Inquiry prompts](Settings-Inquiry#prompts).
 ---
 
 <a name="scan-folders-and-class-scope"></a>
-## Scan Folders & Class Scope
+## Sources & Material Rules
 
 Control which vault content Inquiry can access:
 
-*   **Scan folders**: Limit scans to specific paths. Supports wildcards (e.g., `/Book 1-7 */`) and `/` for vault root.
-*   **Class scope**: Filter which YAML `Class` values are scanned. Use `/` to allow all classes.
+*   **Books for Inquiry**: Choose which book profiles Inquiry scans.
+*   **Material rules**: Toggle which YAML classes are scanned per scope (Book, Saga, Reference).
+*   **Supporting material folders**: Add support-material paths beyond the book folders. Supports wildcards (e.g., `/Book 1-7 */`) and `/` for vault root.
 *   **Presets**: Choose Default (recommended), Light (fast, lower token usage), or Deep (comprehensive, higher token usage).
 
 Configure sources in [Inquiry sources](Settings-Inquiry#sources).

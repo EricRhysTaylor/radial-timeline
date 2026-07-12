@@ -98,6 +98,12 @@ export const ja: DeepPartial<TranslationKeys> = {
                 name: 'AI LLM機能を有効にする',
                 desc: 'コマンドパレットオプションとUIシーン分析の色とホバーシノプシスを表示します。',
             },
+            localLlmConfig: {
+                jsonModeName: '構造化JSONモード',
+                jsonModeDesc: 'ローカルサーバーへの構造化JSON出力の要求方法。「レスポンスフォーマット」はOllama、LM Studio、およびほとんどのOpenAI互換サーバーで動作します。サーバーがresponse_formatリクエストを拒否する場合のみ「プロンプトのみ」に切り替えてください。',
+                optionJsonModeResponseFormat: 'レスポンスフォーマット（推奨）',
+                optionJsonModePromptOnly: 'プロンプトのみ（互換性フォールバック）',
+            },
         },
     },
     timeline: {

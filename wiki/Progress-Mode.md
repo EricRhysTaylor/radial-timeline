@@ -1,6 +1,6 @@
 **Keyboard Shortcut**: `1`
 
-Progress Mode isolates each subplot into its own radial pass, removing the combined outer ring. This mode focuses on **Author time** (your writing status) and **Progress stages** (revision stages), making it ideal for tracking workflow at a glance.
+Progress Mode gives every subplot its own radial ring, removing the combined outer ring. This mode focuses on **Author time** (your writing status) and **Progress stages** (revision stages), making it ideal for tracking workflow at a glance.
 
 <div style="text-align: center; margin: 20px 0;">
   <img src="images/mode-progress.png" alt="Progress Mode" style="width: 300px; max-width: 100%; border-radius: 8px;" />
@@ -8,7 +8,7 @@ Progress Mode isolates each subplot into its own radial pass, removing the combi
 
 ## Key Features
 
-*   **Single Thread Focus**: View one subplot at a time to analyze its specific arc and continuity.
+*   **Thread Separation**: Every subplot renders in its own ring, with the main plot emphasized and other threads muted, so each arc is easy to follow.
 *   **Act Structure**: Like Narrative Mode, scenes are distributed across your configured act count (default 3). Each act spans an equal segment of the 360° circle.
 *   **Cleaner View**: Removes story beats to reduce visual noise while you focus on workflow.
 

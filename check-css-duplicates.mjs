@@ -5,7 +5,7 @@
  * Scans src/styles/*.css for !important declarations
  */
 
-import { readFileSync, readdirSync } from 'fs';
+import { existsSync, readFileSync, readdirSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -49,9 +49,35 @@ function checkImportantDeclarations() {
 
 const importantViolations = checkImportantDeclarations();
 
+function reportImportantViolations() {
+  console.log(`\x1b[31m❌ Found ${importantViolations.length} !important declaration(s) in source CSS:\x1b[0m\n`);
+  importantViolations.forEach(({ file, line, content }) => {
+    console.log(`  \x1b[33m${file}:${line}\x1b[0m`);
+    console.log(`    ${content}`);
+    console.log('');
+  });
+  console.log('\x1b[33m💡 Fix: Use proper CSS specificity instead of !important:\x1b[0m');
+  console.log('   - Increase selector specificity: .rt-settings-root .setting-item { }');
+  console.log('   - Use data attributes for mode states: [data-mode="active"] .element { }');
+  console.log('   - Order rules correctly: base → state → hover (later wins)');
+  console.log('   - See docs/engineering/standards/modal-styling.md for patterns\n');
+}
+
 // ========================================
 // Check 2: Duplicate selectors and empty rulesets
 // ========================================
+// styles.css is a build artifact: absent on a fresh checkout until the first
+// esbuild run. Pre-build invocations skip the artifact check explicitly; the
+// post-build invocation in the build chain enforces it on fresh output.
+if (!existsSync(cssPath)) {
+  if (importantViolations.length > 0) {
+    reportImportantViolations();
+    process.exit(1);
+  }
+  console.log('⚠️  styles.css not built yet — skipping duplicate/empty-ruleset check (source !important check passed; the post-build check enforces the artifact).');
+  process.exit(0);
+}
+
 try {
   const css = readFileSync(cssPath, 'utf-8');
   
@@ -133,17 +159,7 @@ try {
   
   // Check for !important violations first
   if (importantViolations.length > 0) {
-    console.log(`\x1b[31m❌ Found ${importantViolations.length} !important declaration(s) in source CSS:\x1b[0m\n`);
-    importantViolations.forEach(({ file, line, content }) => {
-      console.log(`  \x1b[33m${file}:${line}\x1b[0m`);
-      console.log(`    ${content}`);
-      console.log('');
-    });
-    console.log('\x1b[33m💡 Fix: Use proper CSS specificity instead of !important:\x1b[0m');
-    console.log('   - Increase selector specificity: .rt-settings-root .setting-item { }');
-    console.log('   - Use data attributes for mode states: [data-mode="active"] .element { }');
-    console.log('   - Order rules correctly: base → state → hover (later wins)');
-    console.log('   - See docs/engineering/standards/modal-styling.md for patterns\n');
+    reportImportantViolations();
     hasIssues = true;
   }
   

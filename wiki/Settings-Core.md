@@ -29,7 +29,7 @@ Manage your project milestones and status tracking.
 
 Target dates are validated to ensure proper stage ordering. Overdue dates are highlighted in red. Each stage has its own color-coded marker on the timeline.
 
-*   **Show completion estimate**: Toggles the predicted completion tick mark on the timeline.
+*   **Show estimated completion date**: Toggles the predicted completion tick mark on the timeline.
 *   **Zero draft mode**: A focused mode for first-draft writing. Intercepts clicks on scenes with `Publish Stage = Zero` and `Status = Complete` to open a `Pending Edits` panel instead of the full note.
 
 **How the completion estimate works**
@@ -51,9 +51,10 @@ Target dates are validated to ensure proper stage ordering. Overdue dates are hi
 Sessions is a Core workflow for writing accountability and basic planning.
 
 *   **Average drafting pace**: Optional words-per-minute estimate for new drafting. Used for writing-time estimates and completion planning.
-*   **Daily session target**: Optional minutes you realistically want to write each day. Used to estimate session counts and calendar time.
+*   **Daily time target**: Optional minutes you realistically want to write each day. Used to estimate session counts and calendar time.
 *   **Daily word target**: Optional typed-word target for writing sessions.
-*   **Session goal mode**: Choose whether the session control and writing stats track time, typed words, or both.
+*   **Daily target type**: Choose whether the session control and writing stats track time, typed words, or both.
+*   **Weekly writing goal**: How many days per week you want to meet the daily session target.
 *   **Writing stats**: A collapsible local stats panel summarizes today, the last 7 days, and the last 30 days from timer records and scene completion dates.
 *   **Timeline count/session button**: The compact title-bar button opens the writing-session popover. Start an open-ended session or a countdown sprint, then pause, resume, stop, or discard it there.
 *   **Session ring**: While a session is active, a thin timer ring appears just outside the rainbow progress ring. It fills toward the active time or word target.
@@ -141,7 +142,7 @@ Configure the time-based visualization of your story.
 
 *   **Chronologue duration arc cap**: Determines the maximum duration used for scaling the duration arcs. Can be `Auto` or a specific timeframe.
 *   **Discontinuity gap threshold**: Controls the sensitivity of the Shift sub-mode. When the gap between scenes exceeds this threshold, an infinity symbol appears.
-*   **Default Chronologue display**: Choose whether Chronologue opens in the standard Earth timeline or jumps straight to the Planet Calendar view when planetary time is enabled and a valid profile is active.
+*   **Default calendar view**: Choose whether Chronologue opens in the standard Earth timeline or jumps straight to the Planet Calendar view when planetary time is enabled and a valid profile is active.
 
 > [!NOTE]
 > Read more in [Chronologue Mode](Chronologue-Mode).
@@ -161,7 +162,7 @@ Control how narrative perspective is visualized.
 
 Configure custom calendars for sci-fi and fantasy worlds.
 
-*   **Enable planetary time**: Activates planetary time conversion features.
+*   **Enable planetary conversions**: Activates planetary time conversion features.
 *   **Active profile**: Selects which custom calendar profile is currently active.
 *   **Profiles**: Create and edit profiles with day length, year length, epoch offsets, and custom month/day names.
 

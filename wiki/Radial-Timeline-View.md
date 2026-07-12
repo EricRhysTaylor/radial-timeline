@@ -5,7 +5,7 @@
 
 The Radial Timeline View is the main authoring and analysis workspace in Radial Timeline. It is where you work directly with scenes, subplots, chronology, beats, and scene-level AI feedback.
 
-**Open**: Command palette → **`Radial Timeline: Open`**, or click the shell icon in the ribbon.
+**Open**: Command palette → **`Radial timeline: Open`**, or click the RT logo icon in the ribbon.
 
 ## Overview
 
@@ -37,7 +37,7 @@ A radial manuscript workspace with four modes:
 ## Modes At A Glance
 
 ### Progress Mode (`1`)
-Isolates each subplot into its own unitary radial pass — no combined outer ring — so you can focus on one thread at a time. Scenes inherit the author workflow palette (Todo plaid, Working pink, Overdue red, Complete = progress-stage color) along with progress-stage indicators. Removes story beats for a cleaner view. Structured around your configured **act count** (default 3) with acts spanning equal segments of the 360° circle. Emphasizes **Author time** (writing status) and **Progress stages** (revision stages). Press `1` to cycle between subplots.
+Gives every subplot its own radial ring — no combined outer ring — with the main plot emphasized and other subplots muted. Scenes inherit the author workflow palette (Todo solid pink, Working pink plaid, Overdue red, Complete = progress-stage color) along with progress-stage indicators. Removes story beats for a cleaner view. Structured around your configured **act count** (default 3) with acts spanning equal segments of the 360° circle. Emphasizes **Author time** (writing status) and **Progress stages** (revision stages).
 
 ### Narrative Mode (`2`)
 Shows all scenes from all subplots on the outer ring with story beats and subplot color-coding. Structured around your configured **act count** (default 3) with scenes organized by act divisions (360° divided evenly across acts). Your primary manuscript-order workspace showing **Narrative time** (reading order). Status/progress overlays are hidden so subplot colors remain dominant.

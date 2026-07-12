@@ -85,7 +85,7 @@ This method automatically updates ordering for you.
 
 ### Manage Subplots in Bulk
 
-Need to rename or delete a subplot across dozens of scenes? Use the **[Manage subplots](Commands#manage-subplots)** command (command palette → "Radial Timeline: Manage subplots"). The panel lets you:
+Need to rename or delete a subplot across dozens of scenes? Use the **[Manage subplots](Commands#manage-subplots)** command (command palette → "Radial timeline: Manage subplots"). The panel lets you:
 
 * Rename a subplot and automatically update the frontmatter of every scene using it.
 * Delete a subplot and strip the tag from all scenes in one action.
@@ -99,9 +99,9 @@ This is especially helpful after reorganizing your B/C plots — you no longer h
   <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Search — matching scenes highlighted in yellow across all subplot rings</div>
 </div>
 
-You can filter scenes by searching for text content across multiple fields. Search requires a minimum of **3 characters**.
+You can filter scenes by searching for text content across multiple fields.
 
-*   **Trigger**: Use the command palette (`Cmd + P` on Mac, `Ctrl + P` on Windows/Linux) → **Radial Timeline: Search timeline**.
+*   **Trigger**: Use the command palette (`Cmd + P` on Mac, `Ctrl + P` on Windows/Linux) → **Radial timeline: Search timeline**.
 *   **Matches**: Searches case-insensitive text in:
 
 | Field | Examples |
@@ -110,11 +110,9 @@ You can filter scenes by searching for text content across multiple fields. Sear
 | Synopsis | Scene summary text |
 | Characters | All characters listed in the scene |
 | Subplot | Subplot name |
-| Location | Place field value |
-| POV | Point of view (first, third, omni, etc.) |
 | Duration | "2 hours", "45 minutes", "3 days" |
 | Date/Time | "Dec 28", "2025", "9am", "April", "Midnight" |
-| AI Pulse Triplet Analysis | Current, previous, and next scene analysis text |
+| AI Pulse Analysis | Current scene analysis text |
 | Planetary Time | Planet name and formatted local time (if enabled) |
 
 *   **Visuals**:
@@ -122,7 +120,7 @@ You can filter scenes by searching for text content across multiple fields. Sear
     *   **Text**: Matching text within the synopsis hover metadata is highlighted in yellow.
 *   **Clear**: Click the clear button in the panel.
 
-> **Note**: Status, Publish Stage, Due date, Pending Edits, and Gossamer scores are not included in search.
+> **Note**: Status, Publish Stage, Due date, Pending Edits, Place, POV, and Gossamer scores are not included in search.
 
 ### Rotate the timeline
 In Narrative and Progress modes you can use the **rotation toggle** (arrow icon near the outer ring) to rotate the timeline for easier reading. The rotation offset is **act-aware** (based on your configured **Act count**) and keeps scene number squares oriented correctly.

@@ -70,11 +70,10 @@ You can click the middle stages in the preview (Scenes, Colors) to skip them and
 
 ## Preview Size
 
-The **Size** selector (Thumbnail, Small, Medium, Large) controls the **design intent** of the graphic — which elements are shown and how dense the layout is — not the final export resolution. The dimensions below refer to the in-modal preview only.
+The **Size** selector (Small, Medium, Large) controls the **design intent** of the graphic — which elements are shown and how dense the layout is — not the final export resolution. The dimensions below refer to the in-modal preview only. For a bare progress ring with no text or labels, switch the view mode to **Ring**.
 
 | Size | Preview | Design Intent |
 |------|---------|---------------|
-| Thumbnail | 100×100 px | Bare progress ring; no text or labels |
 | Small | 150×150 px | Compact graphic for inline embeds |
 | Medium | 300×300 px | Default — balanced density and labels |
 | Large | 450×450 px | Full layout with all reveal elements |

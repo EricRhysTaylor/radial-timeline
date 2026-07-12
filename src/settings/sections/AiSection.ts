@@ -2269,11 +2269,9 @@ export function renderAiSection(params: {
         apiKeysFold.toggleClass('ert-settings-visible', !isOllama);
 
         const showLocalLlmStatusDetails = isOllama;
-        const showLocalLlmConfigDetails = isOllama && (
-            getLocalLlmConfigurationMode() === 'custom'
-            || shouldRevealLocalLlmTransportSettings()
-            || hasLocalLlmSelectedModelMismatch()
-        );
+        // Config card (raw transport controls) is Custom-only now; auto mode stays
+        // a clean status line. A model mismatch self-heals via auto model selection.
+        const showLocalLlmConfigDetails = isOllama && getLocalLlmConfigurationMode() === 'custom';
 
         if (localLlmConfigSectionEl) {
             localLlmConfigSectionEl.toggleClass('ert-settings-hidden', !showLocalLlmConfigDetails);
@@ -2894,12 +2892,13 @@ export function renderAiSection(params: {
         return !localLlmLoadedModels.some(model => buildLocalLlmModelIdentity(getLocalLlmBackendId(), getOllamaBaseUrl(), model.id) === selectedModelKey);
     };
 
+    // The raw transport controls (backend / base URL / manual model / JSON mode)
+    // are shown ONLY when the user explicitly opts into Custom ("Advanced") mode.
+    // Previously they auto-revealed on any detection failure or unreachable server,
+    // which dumped the whole config card exactly when the user least wanted it. Auto
+    // mode now stays a simple status line + Re-check; switch to Custom to edit these.
     const shouldRevealLocalLlmTransportSettings = (): boolean => {
-        if (getLocalLlmConfigurationMode() === 'custom') return true;
-        if (!localLlmServerDetectionPending && !localLlmDetectedServers.length) return true;
-        if (localLlmModelLoadError || localLlmValidationError) return true;
-        if (!localLlmValidationReport) return false;
-        return !localLlmValidationReport.reachable.ok;
+        return getLocalLlmConfigurationMode() === 'custom';
     };
     const shouldRevealLocalLlmActionRow = (): boolean => {
         if (getLocalLlmConfigurationMode() === 'custom') return true;
@@ -2930,6 +2929,17 @@ export function renderAiSection(params: {
             maxOutput: liveEntry?.maxOutput ?? canonical?.maxOutput ?? null,
             diagnostics
         });
+    };
+
+    // Auto-pick: the most capable loaded model (highest tier), tie-broken by the
+    // larger context window. Drives hands-off model selection in auto mode.
+    const pickBestLocalModel = (models: LocalLlmModelEntry[]): LocalLlmModelEntry | null => {
+        if (!models.length) return null;
+        return models.slice().sort((a, b) => {
+            const tierDelta = getLocalCapabilityAssessment(b.id, b).tier - getLocalCapabilityAssessment(a.id, a).tier;
+            if (tierDelta !== 0) return tierDelta;
+            return (b.contextWindow ?? 0) - (a.contextWindow ?? 0);
+        })[0];
     };
 
     const localLlmConfigSection = quickSetupPreviewSection.createDiv({
@@ -3059,8 +3069,23 @@ export function renderAiSection(params: {
                     localLlmLoadedModels = [...selectedServer.models];
                     localLlmModelLoadError = null;
                     localLlmLastLoadedAt = selectedServer.detectedAt;
+                    // Auto-select a model when the saved one isn't among the loaded
+                    // models (or none is set) — the hands-off half of the 1-click flow.
+                    let modelChanged = false;
+                    const currentModelId = getOllamaModelId().trim();
+                    const hasCurrentModel = currentModelId.length > 0
+                        && selectedServer.models.some(model => model.id === currentModelId);
+                    if (!hasCurrentModel) {
+                        const best = pickBestLocalModel(selectedServer.models);
+                        if (best && best.id !== currentModelId) {
+                            setOllamaModelId(best.id);
+                            modelChanged = true;
+                        }
+                    }
                     if (serverChanged) {
                         setLocalServerSelection(selectedServer.backend, selectedServer.baseUrl);
+                    }
+                    if (serverChanged || modelChanged) {
                         await persistCanonical();
                     }
                 }

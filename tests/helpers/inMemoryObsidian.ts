@@ -19,6 +19,12 @@ export interface InMemoryApp {
         process: (file: TFile, fn: (data: string) => string) => Promise<string>;
         create: (path: string, content: string) => Promise<TFile>;
         createFolder: (path: string) => Promise<void>;
+        adapter: {
+            exists: (path: string) => Promise<boolean>;
+            read: (path: string) => Promise<string>;
+            write: (path: string, data: string) => Promise<void>;
+            append: (path: string, data: string) => Promise<void>;
+        };
     };
     fileManager: {
         processFrontMatter: (file: TFile, cb: (fm: Record<string, unknown>) => void) => Promise<void>;
@@ -167,6 +173,34 @@ export function createInMemoryApp(initialFiles: Record<string, string>): InMemor
             async createFolder(path: string): Promise<void> {
                 const normalized = normalizeVaultPath(path);
                 if (normalized) folders.add(normalized);
+            },
+            adapter: {
+                async exists(path: string): Promise<boolean> {
+                    return records.has(normalizeVaultPath(path));
+                },
+                async read(path: string): Promise<string> {
+                    const record = records.get(normalizeVaultPath(path));
+                    if (!record) throw new Error(`File not found: ${path}`);
+                    return record.content;
+                },
+                async write(path: string, data: string): Promise<void> {
+                    const key = normalizeVaultPath(path);
+                    const record = records.get(key);
+                    if (record) {
+                        record.content = data;
+                    } else {
+                        addFile(key, data);
+                    }
+                },
+                async append(path: string, data: string): Promise<void> {
+                    const key = normalizeVaultPath(path);
+                    const record = records.get(key);
+                    if (record) {
+                        record.content += data;
+                    } else {
+                        addFile(key, data);
+                    }
+                }
             }
         },
         fileManager: {

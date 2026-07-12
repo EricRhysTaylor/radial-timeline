@@ -28,10 +28,14 @@ export interface TimelineSnapshotEntry {
 }
 
 export interface TimelineSnapshot {
-    schema: 1;
+    /** 1: scaffold-only (no tool field). 2: adds tool attribution. */
+    schema: 1 | 2;
     createdAt: string;
     displayLabel: string;
-    config: {
+    /** Which tool captured this restore point. Absent on schema-1 files (scaffold). */
+    tool?: 'scaffold' | 'audit';
+    /** Scaffold pipeline settings at capture time. Absent for audit snapshots. */
+    config?: {
         patternPreset: string;
         preserveAuthoredDates: boolean;
         useTextCues: boolean;
@@ -95,10 +99,39 @@ export function buildTimelineSnapshot(
         });
     }
     return {
-        schema: 1,
+        schema: 2,
         createdAt: now.toISOString(),
         displayLabel: buildDisplayLabel(now),
+        tool: 'scaffold',
         config: { ...config },
+        entries
+    };
+}
+
+/**
+ * Capture a restore point from the CURRENT frontmatter of the given files —
+ * used by Timeline Audit, which has no session diff model to draw from.
+ */
+export async function buildSnapshotFromFiles(
+    app: App,
+    files: TFile[],
+    tool: 'scaffold' | 'audit'
+): Promise<TimelineSnapshot> {
+    const now = new Date();
+    const entries: TimelineSnapshotEntry[] = [];
+    for (const file of files) {
+        const content = await app.vault.cachedRead(file);
+        entries.push({
+            path: file.path,
+            title: file.basename,
+            previousWhenRaw: extractWhenRaw(content)
+        });
+    }
+    return {
+        schema: 2,
+        createdAt: now.toISOString(),
+        displayLabel: buildDisplayLabel(now),
+        tool,
         entries
     };
 }
@@ -134,7 +167,7 @@ export async function listTimelineSnapshots(app: App): Promise<SnapshotMeta[]> {
         try {
             const text = await app.vault.read(file);
             const parsed = JSON.parse(text) as TimelineSnapshot;
-            if (parsed && parsed.schema === 1 && Array.isArray(parsed.entries)) {
+            if (parsed && (parsed.schema === 1 || parsed.schema === 2) && Array.isArray(parsed.entries)) {
                 result.push({ file, snapshot: parsed });
             }
         } catch {
@@ -200,6 +233,16 @@ export async function restoreTimelineSnapshot(
 
 const FRONTMATTER_RE = /^(---\n)([\s\S]*?)(\n---\n?)/;
 const WHEN_LINE_RE = /^When:.*$/m;
+
+/** Raw `When` value from a file's frontmatter, or null when absent/empty. */
+function extractWhenRaw(content: string): string | null {
+    const match = content.match(FRONTMATTER_RE);
+    if (!match) return null;
+    const line = match[2].match(WHEN_LINE_RE);
+    if (!line) return null;
+    const value = line[0].slice('When:'.length).trim();
+    return value.length > 0 ? value : null;
+}
 
 function applyWhenToFrontmatter(content: string, previousWhenRaw: string | null): string {
     const match = content.match(FRONTMATTER_RE);

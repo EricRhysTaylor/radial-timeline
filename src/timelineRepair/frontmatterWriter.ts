@@ -16,6 +16,7 @@ import type {
     WhenConfidence
 } from './types';
 import { getEffectiveWhen } from './types';
+import { appendWhenChanges, type WhenChangeRecord } from './whenChangeLog';
 
 // ============================================================================
 // Date Formatting
@@ -98,6 +99,9 @@ export function prepareUpdates(session: SessionDiffModel): FrontmatterUpdate[] {
 // ============================================================================
 
 export interface WriteOptions {
+    /** Tool attribution recorded in the When change log (default 'scaffold') */
+    logTool?: 'scaffold' | 'audit';
+
     /** Include WhenSource provenance field */
     includeSource?: boolean;
     
@@ -134,12 +138,14 @@ export async function writeFrontmatterUpdates(
     options: WriteOptions = {}
 ): Promise<FrontmatterWriteResult> {
     const opts = { ...DEFAULT_WRITE_OPTIONS, ...options };
-    
+
     const result: FrontmatterWriteResult = {
         success: 0,
         failed: 0,
         errors: []
     };
+
+    const changeRecords: WhenChangeRecord[] = [];
     
     for (let i = 0; i < updates.length; i++) {
         const update = updates[i];
@@ -153,9 +159,14 @@ export async function writeFrontmatterUpdates(
         opts.onProgress?.(i + 1, updates.length, update.file.basename);
         
         try {
+            let previousWhen: string | null = null;
             await app.fileManager.processFrontMatter(update.file, (fm) => {
                 const fmObj = fm as Record<string, unknown>;
-                
+
+                // Capture the outgoing value for the change log before overwriting.
+                const prior = fmObj['When'];
+                previousWhen = prior === undefined || prior === null ? null : String(prior);
+
                 // Update When field
                 fmObj['When'] = formatWhenForYaml(update.when);
                 
@@ -191,6 +202,16 @@ export async function writeFrontmatterUpdates(
             });
             
             result.success++;
+            changeRecords.push({
+                v: 1,
+                ts: new Date().toISOString(),
+                path: update.file.path,
+                title: update.file.basename,
+                prev: previousWhen,
+                next: formatWhenForYaml(update.when),
+                source: update.whenSource,
+                tool: opts.logTool ?? 'scaffold'
+            });
         } catch (error) {
             result.failed++;
             result.errors.push({
@@ -199,7 +220,15 @@ export async function writeFrontmatterUpdates(
             });
         }
     }
-    
+
+    // Best-effort paper trail — a log failure never blocks or reverts the
+    // writes it describes; snapshots are the safety net.
+    try {
+        await appendWhenChanges(app, changeRecords);
+    } catch {
+        // Swallowed by design (see above).
+    }
+
     return result;
 }
 

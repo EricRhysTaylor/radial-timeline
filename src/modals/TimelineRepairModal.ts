@@ -7,7 +7,7 @@
  * Two-phase modal: configuration wizard + review/edit UI for rapid human correction.
  */
 
-import { App, Modal, ButtonComponent, Notice, setIcon, setTooltip, ToggleComponent } from 'obsidian';
+import { App, Modal, Menu, ButtonComponent, Notice, setIcon, setTooltip, ToggleComponent } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { EventRef, TFile, WorkspaceLeaf } from 'obsidian';
 import type { TimelineItem } from '../types';
@@ -30,6 +30,7 @@ import { runRepairPipeline } from '../timelineRepair/RepairPipeline';
 import { buildSharedSceneNoteFileMap, loadScopedSceneNotes, mapSharedSceneNotesToTimelineItems } from '../timeline/sharedSceneNotes';
 import {
     createSession,
+    editSceneWhen,
     shiftSceneDays,
     shiftSceneHours,
     setSceneTimeBucket,
@@ -42,13 +43,16 @@ import {
     getChangedCount,
     getNeedsReviewCount
 } from '../timelineRepair/sessionDiff';
+import { readWhenHistory } from '../timelineRepair/whenChangeLog';
 import { formatWhenForDisplay, detectTimeBucket } from '../timelineRepair/patternSync';
 import { writeSessionChanges, getChangeSummary } from '../timelineRepair/frontmatterWriter';
 import {
     buildTimelineSnapshot,
     saveTimelineSnapshot,
     getLatestTimelineSnapshot,
-    restoreTimelineSnapshot
+    listTimelineSnapshots,
+    restoreTimelineSnapshot,
+    type SnapshotMeta
 } from '../timelineRepair/timelineSnapshot';
 import { buildScaffoldPreview } from '../timelineRepair/scaffoldPreview';
 import { parseWhenField } from '../utils/date';
@@ -453,7 +457,7 @@ export class TimelineRepairModal extends Modal {
         const restoreBtn = new ButtonComponent(buttonRow)
             .setButtonText(t('timelineRepairModal.config.restoreButton'))
             .setDisabled(true)
-            .onClick(() => { void this.handleRestoreLatestSnapshot(); });
+            .onClick((evt) => { void this.openRestoreMenu(evt); });
         restoreBtn.buttonEl.addClass('ert-timeline-repair-restore-btn');
 
         void getLatestTimelineSnapshot(this.app).then(meta => {
@@ -832,6 +836,11 @@ export class TimelineRepairModal extends Modal {
         this.openNotePaths = this.collectOpenNotePaths();
         this.renderSceneList();
         this.registerOpenNoteListeners();
+
+        this.contentEl.createDiv({
+            cls: 'ert-timeline-tool-snapshot-note',
+            text: t('timelineRepairModal.review.snapshotAssurance')
+        });
 
         // Action buttons. DOM order: audit-open first (pinned left via CSS),
         // then Back / Apply pinned right.
@@ -1286,6 +1295,68 @@ export class TimelineRepairModal extends Modal {
             }
             this.updateAuditFooter();
         });
+
+        // Per-scene date history — every applied When change, restorable.
+        const historyBtn = controlsArea.createEl('button', { cls: 'ert-iconBtn ert-timeline-repair-row-history' });
+        setIcon(historyBtn, 'history');
+        setTooltip(historyBtn, t('timelineRepairModal.review.historyTooltip'));
+        historyBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            void this.openSceneHistoryMenu(e, entry);
+        });
+    }
+
+    /**
+     * Menu of this scene's applied When changes (newest first). Clicking an
+     * entry restores the value the scene had BEFORE that change — into the
+     * session, not the file, so it lands with the next Apply.
+     */
+    private async openSceneHistoryMenu(evt: MouseEvent, entry: RepairSceneEntry): Promise<void> {
+        const records = await readWhenHistory(this.app, entry.file.path, 10);
+        const menu = new Menu();
+
+        if (records.length === 0) {
+            menu.addItem(item => item
+                .setTitle(t('timelineRepairModal.review.historyEmpty'))
+                .setDisabled(true));
+        }
+
+        for (const record of records) {
+            const stamp = new Date(record.ts).toLocaleString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            });
+            const restorable = record.prev ? parseWhenField(record.prev) : null;
+            menu.addItem(item => {
+                item.setTitle(t('timelineRepairModal.review.historyItem', {
+                    stamp,
+                    prev: record.prev ?? '—',
+                    next: record.next,
+                    tool: record.tool
+                }));
+                if (restorable) {
+                    item.setIcon('undo-2');
+                    item.onClick(() => this.restoreSceneWhen(entry.manuscriptIndex, restorable));
+                } else {
+                    item.setDisabled(true);
+                }
+            });
+        }
+        menu.showAtMouseEvent(evt);
+    }
+
+    /** Session-level restore of a historical value; obeys the ripple toggle like any edit. */
+    private restoreSceneWhen(sceneIndex: number, when: Date): void {
+        if (!this.session) return;
+        this.session = editSceneWhen(this.session, sceneIndex, when);
+        this.lastEditedSceneIndex = sceneIndex;
+        this.captureRippledIndices(sceneIndex);
+        this.scheduleResort(sceneIndex);
+        this.renderSceneList();
+        this.updateSummaryBar();
+        this.updateHistoryButtons();
     }
 
     private getComplianceState(entry: RepairSceneEntry): { label: string; className: string } {
@@ -1541,13 +1612,35 @@ export class TimelineRepairModal extends Modal {
         }
     }
 
-    private async handleRestoreLatestSnapshot(): Promise<void> {
+    /**
+     * List every restore point (newest first), not just the latest — an
+     * author several applies deep can roll back to any of them.
+     */
+    private async openRestoreMenu(evt: MouseEvent): Promise<void> {
+        const metas = await listTimelineSnapshots(this.app);
+        if (metas.length === 0) {
+            new Notice(t('timelineRepairModal.restore.noSnapshotNotice'));
+            return;
+        }
+        const menu = new Menu();
+        for (const meta of metas.slice(0, 10)) {
+            const tool = meta.snapshot.tool === 'audit'
+                ? t('timelineRepairModal.restore.toolAudit')
+                : t('timelineRepairModal.restore.toolScaffold');
+            menu.addItem(item => item
+                .setTitle(t('timelineRepairModal.restore.menuItem', {
+                    label: meta.snapshot.displayLabel,
+                    count: meta.snapshot.entries.length,
+                    tool
+                }))
+                .setIcon('history')
+                .onClick(() => { void this.handleRestoreSnapshot(meta); }));
+        }
+        menu.showAtMouseEvent(evt);
+    }
+
+    private async handleRestoreSnapshot(meta: SnapshotMeta): Promise<void> {
         try {
-            const meta = await getLatestTimelineSnapshot(this.app);
-            if (!meta) {
-                new Notice(t('timelineRepairModal.restore.noSnapshotNotice'));
-                return;
-            }
             const result = await restoreTimelineSnapshot(this.app, meta);
             if (result.failed > 0) {
                 new Notice(t('timelineRepairModal.restore.partialNotice', {

@@ -633,7 +633,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             previewButton: 'スキャフォールドをプレビュー',
             cancelButton: 'キャンセル',
             restoreButton: '最後のスナップショットを復元',
-            restoreTooltip: '{{label}} に保存された復元ポイントにタイムライン日付をロールバックします。スナップショットは日付ロールバックのための復元ポイントです — Apply Scaffolded Dates のたびに自動的にキャプチャされます。',
             restoreEmptyTooltip: 'スナップショットがまだ見つかりません。スナップショットはタイムライン日付をロールバックできる復元ポイントです。Apply Scaffolded Dates のたびに自動的に作成されます。',
         },
         anchor: {

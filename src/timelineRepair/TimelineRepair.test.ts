@@ -9,6 +9,7 @@ import { runKeywordSweep } from './keywordSweep';
 import { runRepairPipeline } from './RepairPipeline';
 import { createSession, shiftSceneDays, editSceneWhen, setSceneTimeBucket } from './sessionDiff';
 import { writeSessionChanges } from './frontmatterWriter';
+import { readWhenHistory } from './whenChangeLog';
 import {
     buildTimelineSnapshot,
     saveTimelineSnapshot,
@@ -742,5 +743,13 @@ describe('timeline repair normalizer', () => {
 
         const afterRestore = await readFile(app, 'Book/01 Scene.md');
         expect(afterRestore).toContain('When: 2085-04-01 08:00');
+
+        // The change log recorded the apply (not the snapshot restore, which
+        // bypasses the writer chokepoint by design) and reads back per-scene.
+        const history = await readWhenHistory(app as never, 'Book/01 Scene.md');
+        expect(history.length).toBe(1);
+        expect(history[0].prev).toBe('2085-04-01 08:00');
+        expect(history[0].next).toBe('2026-01-01 08:00');
+        expect(history[0].tool).toBe('scaffold');
     });
 });

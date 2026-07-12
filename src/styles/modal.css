@@ -82,6 +82,13 @@
   flex-wrap: wrap;
 }
 
+/* Snapshot assurance footnote above Apply actions in the timeline tools */
+.ert-timeline-tool-snapshot-note {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  text-align: right;
+}
+
 /* Tool capability pill — "No AI · Deterministic" / "AI optional" in timeline tool headers */
 .ert-timeline-tool-pill {
   display: inline-flex;

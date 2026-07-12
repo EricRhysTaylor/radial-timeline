@@ -634,7 +634,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             previewButton: '预览脚手架',
             cancelButton: '取消',
             restoreButton: '恢复上一个快照',
-            restoreTooltip: '将时间轴日期回滚到 {{label}} 保存的恢复点。快照是日期回滚的恢复点 — 每次执行 Apply Scaffolded Dates 时会自动创建。',
             restoreEmptyTooltip: '尚未找到快照。快照是允许您回滚时间轴日期的恢复点。每次执行 Apply Scaffolded Dates 时会自动创建。',
         },
         anchor: {

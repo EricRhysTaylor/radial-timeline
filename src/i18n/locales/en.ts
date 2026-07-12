@@ -463,15 +463,15 @@ export interface TranslationKeys {
         pattern: { name: string; desc: string; };
         refinements: { name: string; desc: string; baseScaffoldTitle: string; baseScaffoldDesc: string; alwaysOn: string; textCuesTitle: string; textCuesDesc: string; };
         analyzing: { badge: string; title: string; statusApplying: string; preparing: string; abortButton: string; abortedNotice: string; phasePattern: string; phaseCues: string; phaseComplete: string; };
-        review: { badge: string; title: string; subtitle: string; filterNeedsReview: string; filterTextCues: string; rippleMode: string; rippleModeHelp: string; rippleAnchoredToggle: string; rippleAnchoredHelp: string; undoTooltip: string; redoTooltip: string; overwriteAuthorDates: string; overwriteAuthorDatesHelp: string; backButton: string; applyButton: string; openAuditButton: string; openAuditButtonAll: string; auditToggleOn: string; auditToggleOff: string; narrativePlacement: string; chronoPosition: string; emptyFilter: string; untitled: string; warningBackwardTime: string; warningLargeGap: string; warningMissingWhen: string; warningDuplicateWhen: string; openInWorkspace: string; shiftDayBack: string; shiftDayForward: string; shiftHourBack: string; shiftHourForward: string; summaryChanged: string; summaryNeedReview: string; summarySelected: string; summaryAuthored: string; };
+        review: { badge: string; title: string; subtitle: string; filterNeedsReview: string; filterTextCues: string; rippleMode: string; rippleModeHelp: string; rippleAnchoredToggle: string; rippleAnchoredHelp: string; undoTooltip: string; redoTooltip: string; historyTooltip: string; historyEmpty: string; historyItem: string; snapshotAssurance: string; overwriteAuthorDates: string; overwriteAuthorDatesHelp: string; backButton: string; applyButton: string; openAuditButton: string; openAuditButtonAll: string; auditToggleOn: string; auditToggleOff: string; narrativePlacement: string; chronoPosition: string; emptyFilter: string; untitled: string; warningBackwardTime: string; warningLargeGap: string; warningMissingWhen: string; warningDuplicateWhen: string; openInWorkspace: string; shiftDayBack: string; shiftDayForward: string; shiftHourBack: string; shiftHourForward: string; summaryChanged: string; summaryNeedReview: string; summarySelected: string; summaryAuthored: string; };
         apply: { noChangesNotice: string; partialNotice: string; successWithSnapshotNotice: string; snapshotFailedNotice: string; };
-        restore: { successNotice: string; partialNotice: string; noSnapshotNotice: string; };
+        restore: { successNotice: string; partialNotice: string; noSnapshotNotice: string; menuItem: string; toolScaffold: string; toolAudit: string; };
         confirm: { title: string; warning: string; applyButton: string; cancelButton: string; description: string; };
     };
     timelineAuditModal: {
         header: { badge: string; aiPill: string; title: string; subtitle: string; aiEnhancedBadge: string; focusedScope: string; focusedClear: string; };
         loading: { title: string; description: string; };
-        actions: { abort: string; reRunAudit: string; applyAccepted: string; close: string; };
+        actions: { abort: string; reRunAudit: string; applyAccepted: string; close: string; snapshotAssurance: string; };
         empty: { noResults: string; noFindings: string; };
         scope: { entireVault: string; activeScope: string; };
         stats: { totalScenes: string; aligned: string; warnings: string; contradictions: string; missingWhen: string; };
@@ -486,7 +486,7 @@ export interface TranslationKeys {
         evidenceSource: { summary: string; synopsis: string; body: string; neighbor: string; ai: string; };
         evidenceTier: { direct: string; strongInference: string; ambiguous: string; };
         detectionSource: { deterministic: string; continuity: string; ai: string; };
-        notices: { applySuccess: string; applyPartial: string; };
+        notices: { applySuccess: string; applyPartial: string; snapshotFailed: string; };
     };
     timeline: {
         acts: {
@@ -2507,7 +2507,7 @@ export const en: TranslationKeys = {
             previewButton: 'Preview Scaffold',
             cancelButton: 'Cancel',
             restoreButton: 'Restore Last Snapshot',
-            restoreTooltip: 'Roll back your timeline dates to the restore point saved {{label}}. A snapshot is a restore point for date rollback — it is captured automatically each time you Apply Scaffolded Dates.',
+            restoreTooltip: 'Choose a restore point to roll back your timeline dates — the latest was saved {{label}}. A snapshot is captured automatically each time dates are applied, by Scaffold or Audit.',
             restoreEmptyTooltip: 'No snapshot found yet. A snapshot is a restore point that lets you roll back your timeline dates. One is created automatically each time you Apply Scaffolded Dates.',
         },
         express: {
@@ -2561,6 +2561,10 @@ export const en: TranslationKeys = {
             rippleAnchoredHelp: 'ON: a ripple cascade also moves the {{count}} authored dates it passes. Flashbacks stay pinned regardless — they belong to another era. OFF: authored dates hold their ground and only scaffolded dates shift.',
             undoTooltip: 'Undo last date edit (Cmd/Ctrl+Z)',
             redoTooltip: 'Redo (Cmd/Ctrl+Shift+Z)',
+            historyTooltip: 'Date change history — click an entry to restore the value this scene had before that change.',
+            historyEmpty: 'No applied date changes recorded for this scene yet.',
+            historyItem: '{{stamp}} · {{prev}} → {{next}} · {{tool}}',
+            snapshotAssurance: 'A snapshot of every affected `When` date is saved automatically before applying — restore anytime from the first page.',
             overwriteAuthorDates: 'Overwrite author dates',
             overwriteAuthorDatesHelp: 'OFF preserves existing scene dates and scaffolds around them. ON allows the scaffold to replace existing dates.',
             backButton: 'Back',
@@ -2596,7 +2600,10 @@ export const en: TranslationKeys = {
         restore: {
             successNotice: 'Restored {{restored}} scenes from snapshot ({{label}}).',
             partialNotice: 'Restored {{restored}} scenes from snapshot ({{label}}). {{failed}} failed.',
-            noSnapshotNotice: 'No timeline snapshot found.'
+            noSnapshotNotice: 'No timeline snapshot found.',
+            menuItem: '{{label}} · {{count}} scenes · {{tool}}',
+            toolScaffold: 'Scaffold',
+            toolAudit: 'Audit'
         },
         confirm: {
             title: 'Confirm Changes',
@@ -2625,6 +2632,7 @@ export const en: TranslationKeys = {
             reRunAudit: 'Re-run audit',
             applyAccepted: 'Apply accepted changes',
             close: 'Close',
+            snapshotAssurance: 'A snapshot of every affected `When` date is saved automatically before applying — restore from Timeline Scaffold.',
         },
         empty: {
             noResults: 'No audit results available.',
@@ -2703,7 +2711,7 @@ export const en: TranslationKeys = {
         evidenceSource: { summary: 'Summary', synopsis: 'Synopsis', body: 'Body', neighbor: 'Neighbor', ai: 'AI' },
         evidenceTier: { direct: 'Direct text', strongInference: 'Strong inference', ambiguous: 'Ambiguous cue' },
         detectionSource: { deterministic: 'Deterministic', continuity: 'Continuity', ai: 'AI' },
-        notices: { applySuccess: 'Applied timeline audit decisions.', applyPartial: 'Applied timeline audit decisions — {{failed}} failed.' },
+        notices: { applySuccess: 'Applied timeline audit decisions.', applyPartial: 'Applied timeline audit decisions — {{failed}} failed.', snapshotFailed: 'Snapshot could not be saved — Apply aborted to protect your data. ({{message}})' },
     },
     timeline: {
         acts: {

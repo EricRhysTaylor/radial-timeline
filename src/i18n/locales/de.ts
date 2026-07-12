@@ -632,7 +632,6 @@ export const de: DeepPartial<TranslationKeys> = {
             previewButton: 'Vorschau erstellen',
             cancelButton: 'Abbrechen',
             restoreButton: 'Letzten Snapshot wiederherstellen',
-            restoreTooltip: 'Setzt Ihre Timeline-Daten auf den am {{label}} gespeicherten Wiederherstellungspunkt zurück. Ein Snapshot ist ein Wiederherstellungspunkt für das Zurücksetzen von Daten — er wird automatisch bei jedem Apply Scaffolded Dates erstellt.',
             restoreEmptyTooltip: 'Noch kein Snapshot gefunden. Ein Snapshot ist ein Wiederherstellungspunkt, mit dem Sie Ihre Timeline-Daten zurücksetzen können. Er wird automatisch bei jedem Apply Scaffolded Dates erstellt.',
         },
         anchor: {

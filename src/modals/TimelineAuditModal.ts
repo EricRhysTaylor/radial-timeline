@@ -10,7 +10,8 @@ import { App, ButtonComponent, Modal, Notice, setIcon } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import { renderWithYamlTokens } from '../utils/yamlTokenRender';
-import { applyAuditFindings } from '../timelineAudit/apply';
+import { applyAuditFindings, buildAuditApplyPlan } from '../timelineAudit/apply';
+import { buildSnapshotFromFiles, saveTimelineSnapshot } from '../timelineRepair/timelineSnapshot';
 import { runAuditPipeline } from '../timelineAudit/AuditPipeline';
 import { buildTimelineOverviewEntries, scrollFindingCardIntoView } from '../timelineAudit/TimelineOverviewStrip';
 import {
@@ -290,6 +291,11 @@ export class TimelineAuditModal extends Modal {
                 this.renderFindingListItem(findingsList, finding);
             }
         }
+
+        contentEl.createDiv({
+            cls: 'ert-timeline-tool-snapshot-note',
+            text: t('timelineAuditModal.actions.snapshotAssurance')
+        });
 
         const actionRow = contentEl.createDiv({ cls: 'ert-modal-actions' });
         new ButtonComponent(actionRow)
@@ -749,8 +755,28 @@ export class TimelineAuditModal extends Modal {
         const result = this.getDisplayedResult();
         if (!result) return;
 
+        // Capture a restore point for the scenes whose When is about to
+        // change. If the snapshot cannot be saved, abort — same safety
+        // stance as Timeline Scaffold's apply.
+        const plan = buildAuditApplyPlan(result.findings);
+        if (plan.whenUpdates.length > 0) {
+            try {
+                const snapshot = await buildSnapshotFromFiles(
+                    this.app,
+                    plan.whenUpdates.map(u => u.file),
+                    'audit'
+                );
+                await saveTimelineSnapshot(this.app, snapshot);
+            } catch (error) {
+                new Notice(t('timelineAuditModal.notices.snapshotFailed', {
+                    message: error instanceof Error ? error.message : String(error)
+                }));
+                return;
+            }
+        }
+
         try {
-            const applyResult = await applyAuditFindings(this.app, result.findings);
+            const applyResult = await applyAuditFindings(this.app, result.findings, { logTool: 'audit' });
             if (applyResult.failed > 0) {
                 new Notice(t('timelineAuditModal.notices.applyPartial', { failed: applyResult.failed }));
             } else {

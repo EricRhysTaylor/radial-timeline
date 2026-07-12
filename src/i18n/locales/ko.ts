@@ -632,7 +632,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             previewButton: '스캐폴드 미리보기',
             cancelButton: '취소',
             restoreButton: '마지막 스냅샷 복원',
-            restoreTooltip: '{{label}}에 저장된 복원 지점으로 타임라인 날짜를 롤백합니다. 스냅샷은 날짜 롤백을 위한 복원 지점이며, Apply Scaffolded Dates를 실행할 때마다 자동으로 캡처됩니다.',
             restoreEmptyTooltip: '아직 스냅샷이 없습니다. 스냅샷은 타임라인 날짜를 롤백할 수 있는 복원 지점입니다. Apply Scaffolded Dates를 실행할 때마다 자동으로 생성됩니다.',
         },
         anchor: {

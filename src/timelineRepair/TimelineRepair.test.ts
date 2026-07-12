@@ -8,10 +8,11 @@ import { runPatternSync } from './patternSync';
 import { runKeywordSweep } from './keywordSweep';
 import { runRepairPipeline } from './RepairPipeline';
 import { createSession, shiftSceneDays, editSceneWhen, setSceneTimeBucket } from './sessionDiff';
-import { writeSessionChanges } from './frontmatterWriter';
+import { writeSessionChanges, clearProvenanceFields } from './frontmatterWriter';
 import { readWhenHistory } from './whenChangeLog';
 import {
     buildTimelineSnapshot,
+    buildSnapshotFromFiles,
     saveTimelineSnapshot,
     getLatestTimelineSnapshot,
     restoreTimelineSnapshot,
@@ -743,6 +744,9 @@ describe('timeline repair normalizer', () => {
 
         const afterRestore = await readFile(app, 'Book/01 Scene.md');
         expect(afterRestore).toContain('When: 2085-04-01 08:00');
+        // Schema-3 restore also reverts provenance: the WhenSource that apply
+        // wrote is deleted because the scene had none before.
+        expect(afterRestore).not.toContain('WhenSource');
 
         // The change log recorded the apply (not the snapshot restore, which
         // bypasses the writer chokepoint by design) and reads back per-scene.
@@ -751,5 +755,41 @@ describe('timeline repair normalizer', () => {
         expect(history[0].prev).toBe('2085-04-01 08:00');
         expect(history[0].next).toBe('2026-01-01 08:00');
         expect(history[0].tool).toBe('scaffold');
+    });
+
+    it('Reset metadata round trip: snapshot captures provenance, clear wipes it, restore brings it back', async () => {
+        const app = createInMemoryApp({
+            'Book/01 Scene.md': '---\nWhen: 2085-04-01 08:00\nWhenSource: pattern\nWhenConfidence: high\nNeedsReview: true\nClass: Scene\n---\nBody text.'
+        });
+        const file = app.vault.getAbstractFileByPath('Book/01 Scene.md');
+        if (!(file instanceof TFile)) throw new Error('Expected TFile');
+
+        // Snapshot BEFORE the reset captures dates AND metadata.
+        const snapshot = await buildSnapshotFromFiles(app as never, [file], 'scaffold');
+        expect(snapshot.entries[0].previousWhenRaw).toBe('2085-04-01 08:00');
+        expect(snapshot.entries[0].previousWhenSource).toBe('pattern');
+        expect(snapshot.entries[0].previousNeedsReview).toBe('true');
+        await saveTimelineSnapshot(app as never, snapshot);
+
+        // Reset: provenance gone, date untouched.
+        expect(await clearProvenanceFields(app as never, file)).toBe(true);
+        const afterClear = await readFile(app, 'Book/01 Scene.md');
+        expect(afterClear).not.toContain('WhenSource');
+        expect(afterClear).not.toContain('NeedsReview');
+        expect(afterClear).toContain('When: 2085-04-01 08:00');
+        expect(afterClear).toContain('Class: Scene');
+
+        // Even the reset is undoable.
+        const meta = await getLatestTimelineSnapshot(app as never);
+        expect(meta).not.toBeNull();
+        const result = await restoreTimelineSnapshot(app as never, meta!);
+        expect(result.failed).toBe(0);
+
+        const afterRestore = await readFile(app, 'Book/01 Scene.md');
+        expect(afterRestore).toContain('When: 2085-04-01 08:00');
+        expect(afterRestore).toContain('WhenSource: pattern');
+        expect(afterRestore).toContain('WhenConfidence: high');
+        expect(afterRestore).toContain('NeedsReview: true');
+        expect(afterRestore).toContain('Body text.');
     });
 });

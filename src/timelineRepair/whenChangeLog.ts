@@ -13,7 +13,7 @@
  * is the safety net, this is the paper trail.
  */
 
-import type { App } from 'obsidian';
+import { TFile, type App } from 'obsidian';
 import { TIMELINE_SNAPSHOT_FOLDER } from './timelineSnapshot';
 
 export const WHEN_CHANGE_LOG_PATH = `${TIMELINE_SNAPSHOT_FOLDER}/when-change-log.jsonl`;
@@ -55,11 +55,11 @@ export async function appendWhenChanges(app: App, records: WhenChangeRecord[]): 
     if (records.length === 0) return;
     await ensureLogFolder(app);
     const lines = records.map(r => JSON.stringify(r)).join('\n') + '\n';
-    const adapter = app.vault.adapter;
-    if (await adapter.exists(WHEN_CHANGE_LOG_PATH)) {
-        await adapter.append(WHEN_CHANGE_LOG_PATH, lines);
+    const existing = app.vault.getAbstractFileByPath(WHEN_CHANGE_LOG_PATH);
+    if (existing instanceof TFile) {
+        await app.vault.append(existing, lines);
     } else {
-        await adapter.write(WHEN_CHANGE_LOG_PATH, lines);
+        await app.vault.create(WHEN_CHANGE_LOG_PATH, lines);
     }
 }
 
@@ -68,9 +68,9 @@ export async function appendWhenChanges(app: App, records: WhenChangeRecord[]): 
  * Unparsable lines are skipped; a missing log reads as empty history.
  */
 export async function readWhenHistory(app: App, scenePath: string, limit = 20): Promise<WhenChangeRecord[]> {
-    const adapter = app.vault.adapter;
-    if (!(await adapter.exists(WHEN_CHANGE_LOG_PATH))) return [];
-    const text = await adapter.read(WHEN_CHANGE_LOG_PATH);
+    const file = app.vault.getAbstractFileByPath(WHEN_CHANGE_LOG_PATH);
+    if (!(file instanceof TFile)) return [];
+    const text = await app.vault.cachedRead(file);
 
     const matches: WhenChangeRecord[] = [];
     for (const line of text.split('\n')) {

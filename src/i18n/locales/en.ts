@@ -466,6 +466,7 @@ export interface TranslationKeys {
         review: { badge: string; title: string; subtitle: string; filterNeedsReview: string; filterTextCues: string; rippleMode: string; rippleModeHelp: string; rippleAnchoredToggle: string; rippleAnchoredHelp: string; undoTooltip: string; redoTooltip: string; historyTooltip: string; historyEmpty: string; historyItem: string; snapshotAssurance: string; overwriteAuthorDates: string; overwriteAuthorDatesHelp: string; backButton: string; applyButton: string; openAuditButton: string; openAuditButtonAll: string; auditToggleOn: string; auditToggleOff: string; narrativePlacement: string; chronoPosition: string; emptyFilter: string; untitled: string; warningBackwardTime: string; warningLargeGap: string; warningMissingWhen: string; warningDuplicateWhen: string; openInWorkspace: string; shiftDayBack: string; shiftDayForward: string; shiftHourBack: string; shiftHourForward: string; summaryChanged: string; summaryNeedReview: string; summarySelected: string; summaryAuthored: string; };
         apply: { noChangesNotice: string; partialNotice: string; successWithSnapshotNotice: string; snapshotFailedNotice: string; };
         restore: { successNotice: string; partialNotice: string; noSnapshotNotice: string; menuItem: string; toolScaffold: string; toolAudit: string; };
+        reset: { button: string; tooltip: string; title: string; body: string; note: string; confirmButton: string; successNotice: string; };
         confirm: { title: string; warning: string; applyButton: string; cancelButton: string; description: string; };
     };
     timelineAuditModal: {
@@ -2605,6 +2606,15 @@ export const en: TranslationKeys = {
             menuItem: '{{label}} · {{count}} scenes · {{tool}}',
             toolScaffold: 'Scaffold',
             toolAudit: 'Audit'
+        },
+        reset: {
+            button: 'Reset Timeline Metadata',
+            tooltip: 'Remove the plugin’s bookkeeping fields (WhenSource, WhenConfidence, DurationSource, NeedsReview) from every scene. Dates are untouched. Use this for a clean-slate review.',
+            title: 'Reset timeline metadata',
+            body: 'Removes the plugin’s bookkeeping fields — `WhenSource`, `WhenConfidence`, `DurationSource`, and `NeedsReview` — from all {{count}} scenes. Your `When` dates are not changed. Afterwards every date reads as author-owned: Ripple will hold all of them unless “Shift anchored too” is on.',
+            note: 'A snapshot of dates and metadata is saved first — undo anytime from Restore Last Snapshot.',
+            confirmButton: 'Reset Metadata',
+            successNotice: 'Cleared timeline metadata from {{count}} scenes. Snapshot saved.'
         },
         confirm: {
             title: 'Confirm Changes',

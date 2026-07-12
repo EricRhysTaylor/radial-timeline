@@ -723,6 +723,12 @@
     color: var(--text-success);
 }
 
+/* Machine-stamped date from a previous apply — preserved, but not an anchor */
+.ert-timeline-repair-compliance-chip.ert-compliance-scaffolded {
+    background: color-mix(in srgb, var(--interactive-accent) 15%, transparent);
+    color: var(--text-muted);
+}
+
 .ert-timeline-repair-compliance-chip.ert-compliance-flashback {
     background: color-mix(in srgb, var(--color-purple) 22%, transparent);
     color: var(--color-purple);

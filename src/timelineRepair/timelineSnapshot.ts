@@ -25,11 +25,20 @@ export interface TimelineSnapshotEntry {
     title: string;
     /** Raw YAML string the scene had before apply, if it existed. */
     previousWhenRaw: string | null;
+    /**
+     * Provenance fields at capture time (schema 3+). null = the field was
+     * absent (restore deletes it); undefined (older snapshots) = restore
+     * leaves that field untouched.
+     */
+    previousWhenSource?: string | null;
+    previousWhenConfidence?: string | null;
+    previousDurationSource?: string | null;
+    previousNeedsReview?: string | null;
 }
 
 export interface TimelineSnapshot {
-    /** 1: scaffold-only (no tool field). 2: adds tool attribution. */
-    schema: 1 | 2;
+    /** 1: scaffold-only. 2: adds tool attribution. 3: entries capture provenance fields. */
+    schema: 1 | 2 | 3;
     createdAt: string;
     displayLabel: string;
     /** Which tool captured this restore point. Absent on schema-1 files (scaffold). */
@@ -84,6 +93,11 @@ async function ensureSnapshotFolder(app: App): Promise<void> {
     }
 }
 
+function rawFrontmatterValue(fm: Record<string, unknown> | undefined, key: string): string | null {
+    const value = fm?.[key];
+    return value === undefined || value === null ? null : String(value);
+}
+
 export function buildTimelineSnapshot(
     session: SessionDiffModel,
     config: { patternPreset: string; preserveAuthoredDates: boolean; useTextCues: boolean }
@@ -92,14 +106,19 @@ export function buildTimelineSnapshot(
     const entries: TimelineSnapshotEntry[] = [];
     for (const entry of session.entries) {
         if (!entry.isChanged) continue;
+        const fm = entry.scene.rawFrontmatter;
         entries.push({
             path: entry.file.path,
             title: entry.scene.title ?? entry.file.basename,
-            previousWhenRaw: entry.originalWhenRaw ?? null
+            previousWhenRaw: entry.originalWhenRaw ?? null,
+            previousWhenSource: rawFrontmatterValue(fm, 'WhenSource'),
+            previousWhenConfidence: rawFrontmatterValue(fm, 'WhenConfidence'),
+            previousDurationSource: rawFrontmatterValue(fm, 'DurationSource'),
+            previousNeedsReview: rawFrontmatterValue(fm, 'NeedsReview')
         });
     }
     return {
-        schema: 2,
+        schema: 3,
         createdAt: now.toISOString(),
         displayLabel: buildDisplayLabel(now),
         tool: 'scaffold',
@@ -124,11 +143,15 @@ export async function buildSnapshotFromFiles(
         entries.push({
             path: file.path,
             title: file.basename,
-            previousWhenRaw: extractWhenRaw(content)
+            previousWhenRaw: extractFieldRaw(content, 'When'),
+            previousWhenSource: extractFieldRaw(content, 'WhenSource'),
+            previousWhenConfidence: extractFieldRaw(content, 'WhenConfidence'),
+            previousDurationSource: extractFieldRaw(content, 'DurationSource'),
+            previousNeedsReview: extractFieldRaw(content, 'NeedsReview')
         });
     }
     return {
-        schema: 2,
+        schema: 3,
         createdAt: now.toISOString(),
         displayLabel: buildDisplayLabel(now),
         tool,
@@ -167,7 +190,7 @@ export async function listTimelineSnapshots(app: App): Promise<SnapshotMeta[]> {
         try {
             const text = await app.vault.read(file);
             const parsed = JSON.parse(text) as TimelineSnapshot;
-            if (parsed && (parsed.schema === 1 || parsed.schema === 2) && Array.isArray(parsed.entries)) {
+            if (parsed && (parsed.schema === 1 || parsed.schema === 2 || parsed.schema === 3) && Array.isArray(parsed.entries)) {
                 result.push({ file, snapshot: parsed });
             }
         } catch {
@@ -211,12 +234,25 @@ export async function restoreTimelineSnapshot(
         }
         try {
             // Atomic read-modify-write: process() guarantees the file is not
-            // changed by another process between reading the current `When`
-            // line and writing the restored value. applyWhenToFrontmatter is
-            // a no-op when there is nothing to change.
-            await app.vault.process(file, (content) =>
-                applyWhenToFrontmatter(content, entry.previousWhenRaw)
-            );
+            // changed by another process between reading the current lines
+            // and writing the restored values. Provenance fields are only
+            // touched when the snapshot captured them (schema 3+); undefined
+            // means "leave as-is" so older snapshots restore exactly as they
+            // always did.
+            const metaFields: Array<[string, string | null | undefined]> = [
+                ['WhenSource', entry.previousWhenSource],
+                ['WhenConfidence', entry.previousWhenConfidence],
+                ['DurationSource', entry.previousDurationSource],
+                ['NeedsReview', entry.previousNeedsReview]
+            ];
+            await app.vault.process(file, (content) => {
+                let next = applyFieldToFrontmatter(content, 'When', entry.previousWhenRaw);
+                for (const [field, value] of metaFields) {
+                    if (value === undefined) continue;
+                    next = applyFieldToFrontmatter(next, field, value);
+                }
+                return next;
+            });
             restored++;
         } catch {
             failed++;
@@ -232,32 +268,41 @@ export async function restoreTimelineSnapshot(
 }
 
 const FRONTMATTER_RE = /^(---\n)([\s\S]*?)(\n---\n?)/;
-const WHEN_LINE_RE = /^When:.*$/m;
 
-/** Raw `When` value from a file's frontmatter, or null when absent/empty. */
-function extractWhenRaw(content: string): string | null {
+/** Raw value of a frontmatter field, or null when the field is absent/empty. */
+function extractFieldRaw(content: string, field: string): string | null {
     const match = content.match(FRONTMATTER_RE);
     if (!match) return null;
-    const line = match[2].match(WHEN_LINE_RE);
+    const line = match[2].split('\n').find(l => l.startsWith(`${field}:`));
     if (!line) return null;
-    const value = line[0].slice('When:'.length).trim();
+    const value = line.slice(field.length + 1).trim();
     return value.length > 0 ? value : null;
 }
 
-function applyWhenToFrontmatter(content: string, previousWhenRaw: string | null): string {
+/**
+ * Set, replace, or (raw === null) remove one top-level frontmatter field,
+ * leaving everything else in the file byte-identical.
+ */
+function applyFieldToFrontmatter(content: string, field: string, raw: string | null): string {
     const match = content.match(FRONTMATTER_RE);
     if (!match) return content;
 
     const [, openFence, body, closeFence] = match;
-    const newWhenLine = previousWhenRaw === null ? 'When:' : `When: ${previousWhenRaw}`;
+    const lines = body.length > 0 ? body.split('\n') : [];
+    const prefix = `${field}:`;
+    const idx = lines.findIndex(l => l.startsWith(prefix));
 
-    let newBody: string;
-    if (WHEN_LINE_RE.test(body)) {
-        newBody = body.replace(WHEN_LINE_RE, newWhenLine);
+    if (raw === null) {
+        if (idx === -1) return content;
+        lines.splice(idx, 1);
     } else {
-        // Insert as the first line of frontmatter.
-        newBody = `${newWhenLine}\n${body}`;
+        const newLine = `${prefix} ${raw}`;
+        if (idx >= 0) {
+            lines[idx] = newLine;
+        } else {
+            lines.unshift(newLine);
+        }
     }
 
-    return `${openFence}${newBody}${closeFence}${content.slice(match[0].length)}`;
+    return `${openFence}${lines.join('\n')}${closeFence}${content.slice(match[0].length)}`;
 }

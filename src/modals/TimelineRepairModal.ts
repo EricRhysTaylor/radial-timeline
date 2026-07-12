@@ -45,9 +45,10 @@ import {
 } from '../timelineRepair/sessionDiff';
 import { readWhenHistory } from '../timelineRepair/whenChangeLog';
 import { formatWhenForDisplay, detectTimeBucket } from '../timelineRepair/patternSync';
-import { writeSessionChanges, getChangeSummary } from '../timelineRepair/frontmatterWriter';
+import { writeSessionChanges, getChangeSummary, clearProvenanceFields } from '../timelineRepair/frontmatterWriter';
 import {
     buildTimelineSnapshot,
+    buildSnapshotFromFiles,
     saveTimelineSnapshot,
     getLatestTimelineSnapshot,
     listTimelineSnapshots,
@@ -492,6 +493,11 @@ export class TimelineRepairModal extends Modal {
             }
         });
 
+        const resetBtn = new ButtonComponent(buttonRow)
+            .setButtonText(t('timelineRepairModal.reset.button'))
+            .onClick(() => { void this.handleResetMetadata(); });
+        setTooltip(resetBtn.buttonEl, t('timelineRepairModal.reset.tooltip'));
+
         new ButtonComponent(buttonRow)
             .setButtonText(t('timelineRepairModal.config.previewButton'))
             .setCta()
@@ -909,7 +915,9 @@ export class TimelineRepairModal extends Modal {
 
         const changedCount = getChangedCount(this.session);
         const reviewCount = getNeedsReviewCount(this.session);
-        const authoredCount = this.session.entries.filter(e => e.source === 'authored').length;
+        // Scaffold-stamped dates are preserved but machine-made — the AUTHORED
+        // count only claims dates the author actually owns.
+        const authoredCount = this.session.entries.filter(e => e.source === 'authored' && !e.stampedWhenSource).length;
         const parts: string[] = [
             t('timelineRepairModal.review.badge').toUpperCase(),
             t('timelineRepairModal.review.summaryChanged', { count: changedCount }).toUpperCase()
@@ -1401,7 +1409,13 @@ export class TimelineRepairModal extends Modal {
             return { label: entry.flashbackLabel ?? 'flashback', className: 'flashback' };
         }
         if (entry.needsReview) return { label: 'needs review', className: 'needs-review' };
-        if (entry.source === 'authored') return { label: 'authored', className: 'authored' };
+        if (entry.source === 'authored') {
+            // A date stamped by a previous scaffold apply is machine-made and
+            // still ripple-shiftable — labeling it "authored" would tell the
+            // author they've anchored everything when they haven't.
+            if (entry.stampedWhenSource) return { label: 'scaffolded', className: 'scaffolded' };
+            return { label: 'authored', className: 'authored' };
+        }
         if (entry.source === 'keyword' || entry.source === 'ai') return { label: 'cue-adjusted', className: 'cue-adjusted' };
         return { label: 'pattern-based', className: 'pattern-based' };
     }
@@ -1647,6 +1661,68 @@ export class TimelineRepairModal extends Modal {
             new Notice(`Failed to apply changes: ${error instanceof Error ? error.message : String(error)}`);
             return null;
         }
+    }
+
+    /**
+     * The general reset: wipe the plugin's bookkeeping fields (WhenSource,
+     * WhenConfidence, DurationSource, NeedsReview) from every scene in scope.
+     * Dates are untouched. A schema-3 snapshot (dates + metadata) is captured
+     * first, so even the reset is undoable from the Restore menu.
+     */
+    private async handleResetMetadata(): Promise<void> {
+        const confirmed = await this.showResetConfirmDialog();
+        if (!confirmed) return;
+
+        try {
+            const snapshot = await buildSnapshotFromFiles(this.app, [...this.files.values()], 'scaffold');
+            await saveTimelineSnapshot(this.app, snapshot);
+        } catch (error) {
+            new Notice(t('timelineRepairModal.apply.snapshotFailedNotice', {
+                message: error instanceof Error ? error.message : String(error)
+            }));
+            return;
+        }
+
+        let cleared = 0;
+        for (const file of this.files.values()) {
+            if (await clearProvenanceFields(this.app, file)) cleared++;
+        }
+        new Notice(t('timelineRepairModal.reset.successNotice', { count: cleared }));
+
+        // Reload so the config stats and any later review reflect the clean slate.
+        await this.loadSceneData();
+        this.showConfigPhase();
+    }
+
+    private showResetConfirmDialog(): Promise<boolean> {
+        return new Promise((resolve) => {
+            const modal = new Modal(this.app);
+            modal.titleEl.setText(t('timelineRepairModal.reset.title'));
+
+            const bodyEl = modal.contentEl.createDiv();
+            renderWithYamlTokens(bodyEl, t('timelineRepairModal.reset.body', { count: this.scenes.length }));
+            modal.contentEl.createDiv({
+                text: t('timelineRepairModal.reset.note'),
+                cls: 'ert-timeline-repair-confirm-warning'
+            });
+
+            const buttonRow = modal.contentEl.createDiv({ cls: 'ert-modal-actions' });
+            new ButtonComponent(buttonRow)
+                .setButtonText(t('timelineRepairModal.reset.confirmButton'))
+                .setCta()
+                .onClick(() => {
+                    modal.close();
+                    resolve(true);
+                });
+            new ButtonComponent(buttonRow)
+                .setButtonText(t('timelineRepairModal.confirm.cancelButton'))
+                .onClick(() => {
+                    modal.close();
+                    resolve(false);
+                });
+
+            modal.open();
+        });
     }
 
     /**

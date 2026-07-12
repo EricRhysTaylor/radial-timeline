@@ -648,7 +648,6 @@ export const ja: DeepPartial<TranslationKeys> = {
         pattern: { name: 'パターン', desc: 'シーンを時間にどう間隔配置するか選択します。' },
         refinements: {
             name: '微調整',
-            desc: 'クイックスキャフォールドは常に選択されたパターンを最初に適用します。テキストの手がかりは、原稿が明らかに別の時間を示唆している場合にシーンを穏やかに調整できます。',
             baseScaffoldTitle: '基本スキャフォールド',
             baseScaffoldDesc: '選択されたパターンを使用して欠落しているシーン日付を埋めます。既存の `When` 日付はアンカーとして保持されます。',
             alwaysOn: '常時オン',
@@ -656,7 +655,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             textCuesDesc: '「翌朝」や「3日後」のような明確なフレーズを探してスキャフォールドされた `When` 日付を調整します。既存の日付は影響を受けません。',
         },
         analyzing: {
-            badge: 'ベータ · クイックスキャフォールド',
             title: 'タイムライン日付をスキャフォールド中...',
             statusApplying: 'パターン間隔を適用中...',
             preparing: '準備中...',
@@ -667,7 +665,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             phaseComplete: 'スキャフォールドの準備完了',
         },
         review: {
-            badge: 'ベータ · クイックスキャフォールド',
             title: 'スキャフォールドされた日付を確認',
             subtitle: 'シーンに日付を適用する前に提案されたタイムラインを確認します。フィルターを使用して手がかり調整済みまたは確認が必要なシーンに焦点を当てます。スキャフォールドが意図を取り違えた箇所では日数や時間帯を調整します。',
             filterNeedsReview: '確認が必要',
@@ -703,7 +700,6 @@ export const ja: DeepPartial<TranslationKeys> = {
         apply: {
             noChangesNotice: '適用する変更はありません',
             partialNotice: '{{success}} 件の変更を適用しました。{{failed}} 件失敗しました。',
-            successNotice: '{{count}} 件のタイムライン変更を正常に適用しました',
             successWithSnapshotNotice: '{{count}} 件のタイムライン日付を適用しました。スナップショットを保存しました。',
             snapshotFailedNotice: 'スナップショットを保存できませんでした — データを保護するため Apply は中止されました。({{message}})',
         },
@@ -723,7 +719,6 @@ export const ja: DeepPartial<TranslationKeys> = {
     timelineAuditModal: {
         header: {
             aiEnhancedBadge: 'AI 強化',
-            focusedScope: '焦点：ノーマライザーから {{count}} シーン',
             focusedClear: '焦点をクリア',
         },
         loading: {

@@ -457,13 +457,14 @@ export interface TranslationKeys {
     };
     timelineRepairModal: {
         config: { noAiPill: string; title: string; subtitle: string; statTotalScenes: string; statWithWhen: string; statMissingWhen: string; previewButton: string; cancelButton: string; restoreButton: string; restoreTooltip: string; restoreEmptyTooltip: string; };
+        express: { title: string; desc: string; button: string; successNotice: string; fullyDated: string; fullyDatedHint: string; openAuditButton: string; };
         anchor: { name: string; desc: string; dateLabel: string; timeLabel: string; pillAuthored: string; pillFallback: string; };
         preview: { name: string; };
         pattern: { name: string; desc: string; };
         refinements: { name: string; desc: string; baseScaffoldTitle: string; baseScaffoldDesc: string; alwaysOn: string; textCuesTitle: string; textCuesDesc: string; };
         analyzing: { badge: string; title: string; statusApplying: string; preparing: string; abortButton: string; abortedNotice: string; phasePattern: string; phaseCues: string; phaseComplete: string; };
         review: { badge: string; title: string; subtitle: string; filterNeedsReview: string; filterTextCues: string; rippleMode: string; rippleModeHelp: string; overwriteAuthorDates: string; overwriteAuthorDatesHelp: string; backButton: string; applyButton: string; openAuditButton: string; openAuditButtonAll: string; auditToggleOn: string; auditToggleOff: string; narrativePlacement: string; chronoPosition: string; emptyFilter: string; untitled: string; warningBackwardTime: string; warningLargeGap: string; warningMissingWhen: string; warningDuplicateWhen: string; openInWorkspace: string; shiftDayBack: string; shiftDayForward: string; shiftHourBack: string; shiftHourForward: string; summaryChanged: string; summaryNeedReview: string; summarySelected: string; summaryAuthored: string; };
-        apply: { noChangesNotice: string; partialNotice: string; successNotice: string; successWithSnapshotNotice: string; snapshotFailedNotice: string; };
+        apply: { noChangesNotice: string; partialNotice: string; successWithSnapshotNotice: string; snapshotFailedNotice: string; };
         restore: { successNotice: string; partialNotice: string; noSnapshotNotice: string; };
         confirm: { title: string; warning: string; applyButton: string; cancelButton: string; description: string; };
     };
@@ -2498,7 +2499,7 @@ export const en: TranslationKeys = {
     timelineRepairModal: {
         config: {
             noAiPill: 'No AI · Deterministic',
-            title: 'Quick Scaffold',
+            title: 'Timeline Scaffold',
             subtitle: 'Fills missing `When` dates in story order so Chronologue can mirror your draft — one date per scene, following the pattern you pick. Dates you have already authored are preserved as anchors. Need to find problems in existing dates instead? Use Timeline Audit.',
             statTotalScenes: 'Total Scenes',
             statWithWhen: 'With Date',
@@ -2508,6 +2509,15 @@ export const en: TranslationKeys = {
             restoreButton: 'Restore Last Snapshot',
             restoreTooltip: 'Roll back your timeline dates to the restore point saved {{label}}. A snapshot is a restore point for date rollback — it is captured automatically each time you Apply Scaffolded Dates.',
             restoreEmptyTooltip: 'No snapshot found yet. A snapshot is a restore point that lets you roll back your timeline dates. One is created automatically each time you Apply Scaffolded Dates.',
+        },
+        express: {
+            title: 'Express scaffold',
+            desc: 'Fills every missing `When` date in one click, using the anchor and pattern below — scenes keep manuscript order so Chronologue mirrors your draft. Existing dates are untouched, and a snapshot is saved first.',
+            button: 'Scaffold & Apply',
+            successNotice: 'Dated {{count}} scenes in manuscript order — Chronologue is ready. Snapshot saved.',
+            fullyDated: 'All {{count}} scenes already have dates — there is nothing to fill.',
+            fullyDatedHint: 'Use Timeline Audit to find problems in existing dates.',
+            openAuditButton: 'Open Timeline Audit',
         },
         anchor: {
             name: 'Anchor',
@@ -2521,7 +2531,7 @@ export const en: TranslationKeys = {
         pattern: { name: 'Pattern', desc: 'Choose how scenes should be spaced across time.' },
         refinements: {
             name: 'Refinements',
-            desc: 'Quick Scaffold always applies the selected pattern first. Text cues can gently adjust scenes when the manuscript clearly implies a different time.',
+            desc: 'Timeline Scaffold always applies the selected pattern first. Text cues can gently adjust scenes when the manuscript clearly implies a different time.',
             baseScaffoldTitle: 'Base scaffold',
             baseScaffoldDesc: 'Fills missing scene dates using the selected pattern. Existing `When` dates are preserved as anchors.',
             alwaysOn: 'Always on',
@@ -2529,7 +2539,7 @@ export const en: TranslationKeys = {
             textCuesDesc: 'Looks for clear phrases like "next morning" or "three days later" to refine scaffolded `When` dates. Existing dates are not affected.',
         },
         analyzing: {
-            badge: 'Beta · Quick Scaffold',
+            badge: 'Beta · Timeline Scaffold',
             title: 'Scaffolding timeline dates...',
             statusApplying: 'Applying pattern spacing...',
             preparing: 'Preparing...',
@@ -2540,7 +2550,7 @@ export const en: TranslationKeys = {
             phaseComplete: 'Scaffold ready',
         },
         review: {
-            badge: 'Beta · Quick Scaffold',
+            badge: 'Beta · Timeline Scaffold',
             title: 'Review scaffolded dates',
             subtitle: 'Review the proposed timeline before applying dates to your scenes. Use the filters to focus on cue-adjusted or review-needed scenes. Adjust days or time buckets where the scaffold misses intent.',
             filterNeedsReview: 'Needs Review',
@@ -2576,7 +2586,6 @@ export const en: TranslationKeys = {
         apply: {
             noChangesNotice: 'No changes to apply',
             partialNotice: 'Applied {{success}} changes. {{failed}} failed.',
-            successNotice: 'Successfully applied {{count}} timeline changes',
             successWithSnapshotNotice: 'Applied {{count}} timeline dates. Snapshot saved.',
             snapshotFailedNotice: 'Snapshot could not be saved — Apply aborted to protect your data. ({{message}})'
         },
@@ -2598,9 +2607,9 @@ export const en: TranslationKeys = {
             badge: 'Beta',
             aiPill: 'AI optional',
             title: 'Timeline Audit',
-            subtitle: 'Finds problems in scenes that already have `When` dates. Each scene’s date is checked against its summary, synopsis, and body text to flag contradictions, time-of-day mismatches, and order conflicts — direct text evidence outranks inference. Missing dates entirely? Use Quick Scaffold to fill them first.',
+            subtitle: 'Finds problems in scenes that already have `When` dates. Each scene’s date is checked against its summary, synopsis, and body text to flag contradictions, time-of-day mismatches, and order conflicts — direct text evidence outranks inference. Missing dates entirely? Use Timeline Scaffold to fill them first.',
             aiEnhancedBadge: 'AI-enhanced',
-            focusedScope: 'Focused: {{count}} scenes from Normalizer',
+            focusedScope: 'Focused: {{count}} scenes from Timeline Scaffold',
             focusedClear: 'Clear focus',
         },
         loading: {

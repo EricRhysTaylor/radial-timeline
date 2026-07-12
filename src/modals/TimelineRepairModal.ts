@@ -296,6 +296,10 @@ export class TimelineRepairModal extends Modal {
         const subtitleEl = header.createDiv({ cls: 'ert-modal-subtitle' });
         renderWithYamlTokens(subtitleEl, t('timelineRepairModal.config.subtitle'));
 
+        // Express card — populated at the end of this method, once the anchor
+        // and pattern inputs it reads from exist.
+        const expressCard = this.contentEl.createDiv({ cls: 'ert-glass-card ert-timeline-repair-express-card' });
+
         // Setup configuration
         const setupCard = this.contentEl.createDiv({ cls: 'ert-glass-card ert-timeline-repair-setup-card' });
         const setupGrid = setupCard.createDiv({ cls: 'ert-timeline-repair-setup-grid' });
@@ -474,6 +478,82 @@ export class TimelineRepairModal extends Modal {
         new ButtonComponent(buttonRow)
             .setButtonText(t('timelineRepairModal.config.cancelButton'))
             .onClick(() => this.close());
+
+        this.renderExpressCard(expressCard, () => ({
+            anchorWhen: this.parseAnchorWhenFromInputs(dateInput.value, timeInput.value, defaultAnchorWhen),
+            anchorSceneIndex: 0,
+            patternPreset: selectedPattern,
+            useTextCues: true,
+            preserveAuthoredDates: true
+        }));
+    }
+
+    /**
+     * Express path: one click fills every missing When (existing dates are
+     * never touched) and applies immediately — no review phase. When the
+     * timeline is already fully dated there is nothing to fill, so the card
+     * steers to Timeline Audit instead.
+     */
+    private renderExpressCard(card: HTMLElement, buildConfig: () => RepairPipelineConfig): void {
+        const missingCount = this.scenes.filter(s => !(s.when instanceof Date)).length;
+
+        const text = card.createDiv({ cls: 'ert-timeline-repair-level-text' });
+        text.createDiv({ cls: 'ert-timeline-repair-level-title', text: t('timelineRepairModal.express.title') });
+
+        if (missingCount === 0) {
+            text.createDiv({
+                cls: 'ert-timeline-repair-level-desc',
+                text: `${t('timelineRepairModal.express.fullyDated', { count: this.scenes.length })} ${t('timelineRepairModal.express.fullyDatedHint')}`
+            });
+            new ButtonComponent(card)
+                .setButtonText(t('timelineRepairModal.express.openAuditButton'))
+                .onClick(() => {
+                    this.close();
+                    new TimelineAuditModal(this.app, this.plugin, {}).open();
+                });
+            return;
+        }
+
+        renderWithYamlTokens(
+            text.createDiv({ cls: 'ert-timeline-repair-level-desc' }),
+            t('timelineRepairModal.express.desc')
+        );
+
+        const expressBtn = new ButtonComponent(card)
+            .setButtonText(t('timelineRepairModal.express.button'))
+            .setCta()
+            .onClick(async () => {
+                expressBtn.setDisabled(true);
+                try {
+                    await this.expressScaffoldAndApply(buildConfig());
+                } finally {
+                    expressBtn.setDisabled(false);
+                }
+            });
+    }
+
+    private async expressScaffoldAndApply(config: RepairPipelineConfig): Promise<void> {
+        this.config = config;
+        try {
+            this.result = await runRepairPipeline(this.scenes, this.files, this.plugin, config);
+            this.session = createSession(this.result);
+        } catch (error) {
+            new Notice(`Scaffold failed: ${error instanceof Error ? error.message : String(error)}`);
+            return;
+        }
+
+        const summary = getChangeSummary(this.session);
+        if (summary.totalChanges === 0) {
+            new Notice(t('timelineRepairModal.apply.noChangesNotice'));
+            return;
+        }
+
+        const written = await this.persistSessionChanges();
+        if (written === null) return;
+        if (written.failed === 0) {
+            new Notice(t('timelineRepairModal.express.successNotice', { count: written.success }));
+        }
+        this.close();
     }
 
     private createLevelToggle(
@@ -1311,10 +1391,27 @@ export class TimelineRepairModal extends Modal {
         const confirmed = await this.showConfirmDialog(summary.totalChanges);
         if (!confirmed) return;
 
+        const written = await this.persistSessionChanges();
+        if (written === null) return;
+        if (written.failed === 0) {
+            new Notice(t('timelineRepairModal.apply.successWithSnapshotNotice', { count: written.success }));
+        }
+        this.close();
+    }
+
+    /**
+     * Snapshot then write the session's changes. Shared by the review-phase
+     * Apply and the express path. Returns the write result, or null when the
+     * write was aborted (snapshot failure) or threw. Partial-failure notices
+     * are raised here; full-success notices are the caller's, since the two
+     * paths phrase success differently.
+     */
+    private async persistSessionChanges(): Promise<{ success: number; failed: number } | null> {
+        if (!this.session || !this.config) return null;
+
         // Capture restore-point BEFORE writing. If snapshot fails, abort —
         // the author is about to do a mass overwrite and the restore point
         // is the cheap insurance that makes that decision safe.
-        let snapshotSaved = false;
         try {
             const snapshot = buildTimelineSnapshot(this.session, {
                 patternPreset: this.config.patternPreset,
@@ -1322,34 +1419,26 @@ export class TimelineRepairModal extends Modal {
                 useTextCues: this.config.useTextCues
             });
             await saveTimelineSnapshot(this.app, snapshot);
-            snapshotSaved = true;
         } catch (error) {
             new Notice(t('timelineRepairModal.apply.snapshotFailedNotice', {
                 message: error instanceof Error ? error.message : String(error)
             }));
-            return;
+            return null;
         }
 
-        // Write changes
         try {
             const result = await writeSessionChanges(this.app, this.session, {
                 onProgress: () => {
                     // Could show progress here
                 }
             });
-
             if (result.failed > 0) {
                 new Notice(t('timelineRepairModal.apply.partialNotice', { success: result.success, failed: result.failed }));
-            } else if (snapshotSaved) {
-                new Notice(t('timelineRepairModal.apply.successWithSnapshotNotice', { count: result.success }));
-            } else {
-                new Notice(t('timelineRepairModal.apply.successNotice', { count: result.success }));
             }
-
-            this.close();
-
+            return result;
         } catch (error) {
             new Notice(`Failed to apply changes: ${error instanceof Error ? error.message : String(error)}`);
+            return null;
         }
     }
 

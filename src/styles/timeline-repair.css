@@ -31,6 +31,26 @@
     margin-bottom: 0;
 }
 
+/* Express scaffold card — one-click fill-and-apply path above the full config */
+.ert-timeline-repair-express-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ert-gap-md);
+    border-left: 2px solid var(--interactive-accent);
+    box-shadow: none;
+    backdrop-filter: none;
+}
+
+.ert-timeline-repair-express-card .ert-timeline-repair-level-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.ert-timeline-repair-express-card button {
+    flex-shrink: 0;
+}
+
 .ert-timeline-repair-setup-card {
     display: flex;
     flex-direction: column;

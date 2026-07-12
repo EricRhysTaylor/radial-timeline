@@ -647,7 +647,6 @@ export const ko: DeepPartial<TranslationKeys> = {
         pattern: { name: '패턴', desc: '장면이 시간에 걸쳐 어떻게 배치될지 선택하세요.' },
         refinements: {
             name: '미세 조정',
-            desc: 'Quick Scaffold는 항상 선택된 패턴을 먼저 적용합니다. 텍스트 단서는 원고가 명확히 다른 시간을 암시할 때 장면을 부드럽게 조정할 수 있습니다.',
             baseScaffoldTitle: '기본 스캐폴드',
             baseScaffoldDesc: '선택한 패턴을 사용하여 누락된 장면 날짜를 채웁니다. 기존 `When` 날짜는 앵커로 보존됩니다.',
             alwaysOn: '항상 켜짐',
@@ -655,7 +654,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             textCuesDesc: '"next morning"이나 "three days later"와 같은 명확한 표현을 찾아 스캐폴드된 `When` 날짜를 미세 조정합니다. 기존 날짜는 영향을 받지 않습니다.',
         },
         analyzing: {
-            badge: '베타 · 빠른 스캐폴드',
             title: '타임라인 날짜를 스캐폴드하는 중...',
             statusApplying: '패턴 간격 적용 중...',
             preparing: '준비 중...',
@@ -666,7 +664,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             phaseComplete: '스캐폴드 준비 완료',
         },
         review: {
-            badge: '베타 · 빠른 스캐폴드',
             title: '스캐폴드된 날짜 검토',
             subtitle: '장면에 날짜를 적용하기 전에 제안된 타임라인을 검토하세요. 필터를 사용하여 단서로 조정되거나 검토가 필요한 장면에 집중하세요. 스캐폴드가 의도를 놓친 부분에서 일수나 시간대를 조정하세요.',
             filterNeedsReview: '검토 필요',
@@ -702,7 +699,6 @@ export const ko: DeepPartial<TranslationKeys> = {
         apply: {
             noChangesNotice: '적용할 변경 사항이 없습니다',
             partialNotice: '{{success}}개 변경 사항이 적용되었습니다. {{failed}}개 실패.',
-            successNotice: '{{count}}개의 타임라인 변경이 성공적으로 적용되었습니다',
             successWithSnapshotNotice: '{{count}}개의 타임라인 날짜가 적용되었습니다. 스냅샷이 저장되었습니다.',
             snapshotFailedNotice: '스냅샷을 저장할 수 없습니다 — 데이터 보호를 위해 적용이 중단되었습니다. ({{message}})',
         },
@@ -722,7 +718,6 @@ export const ko: DeepPartial<TranslationKeys> = {
     timelineAuditModal: {
         header: {
             aiEnhancedBadge: 'AI 강화',
-            focusedScope: '집중: 정규화기에서 {{count}}개 장면',
             focusedClear: '집중 해제',
         },
         loading: {

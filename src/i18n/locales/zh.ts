@@ -649,7 +649,6 @@ export const zh: DeepPartial<TranslationKeys> = {
         pattern: { name: '模式', desc: '选择场景在时间上的分布方式。' },
         refinements: {
             name: '微调',
-            desc: 'Quick Scaffold 始终先应用所选模式。当原稿明确暗示不同的时间时，文字提示可以适度调整场景。',
             baseScaffoldTitle: '基础脚手架',
             baseScaffoldDesc: '使用所选模式填充缺失的场景日期。现有的 `When` 日期被保留为锚点。',
             alwaysOn: '始终启用',
@@ -657,7 +656,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             textCuesDesc: '查找诸如 "next morning" 或 "three days later" 等明确短语，以微调脚手架生成的 `When` 日期。已有日期不受影响。',
         },
         analyzing: {
-            badge: '测试版 · 快速脚手架',
             title: '正在搭建时间轴日期...',
             statusApplying: '正在应用模式间距...',
             preparing: '正在准备...',
@@ -668,7 +666,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             phaseComplete: '脚手架就绪',
         },
         review: {
-            badge: '测试版 · 快速脚手架',
             title: '审阅生成的日期',
             subtitle: '在将日期应用于场景之前审阅建议的时间轴。使用筛选器聚焦于经提示调整或需要审阅的场景。在脚手架未理解意图的位置调整天数或时段。',
             filterNeedsReview: '需要审阅',
@@ -704,7 +701,6 @@ export const zh: DeepPartial<TranslationKeys> = {
         apply: {
             noChangesNotice: '没有要应用的更改',
             partialNotice: '已应用 {{success}} 项更改。{{failed}} 项失败。',
-            successNotice: '已成功应用 {{count}} 项时间轴更改',
             successWithSnapshotNotice: '已应用 {{count}} 个时间轴日期。已保存快照。',
             snapshotFailedNotice: '无法保存快照 — 已中止应用以保护您的数据。({{message}})',
         },
@@ -724,7 +720,6 @@ export const zh: DeepPartial<TranslationKeys> = {
     timelineAuditModal: {
         header: {
             aiEnhancedBadge: 'AI 增强',
-            focusedScope: '聚焦：来自规范化器的 {{count}} 个场景',
             focusedClear: '清除聚焦',
         },
         loading: {

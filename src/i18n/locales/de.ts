@@ -647,7 +647,6 @@ export const de: DeepPartial<TranslationKeys> = {
         pattern: { name: 'Muster', desc: 'Wählen Sie, wie Szenen über die Zeit verteilt werden sollen.' },
         refinements: {
             name: 'Verfeinerungen',
-            desc: 'Quick Scaffold wendet immer zuerst das gewählte Muster an. Texthinweise können Szenen sanft anpassen, wenn das Manuskript klar eine andere Zeit andeutet.',
             baseScaffoldTitle: 'Basis-Scaffold',
             baseScaffoldDesc: 'Füllt fehlende Szenen-Daten anhand des gewählten Musters. Vorhandene `When`-Daten werden als Anker beibehalten.',
             alwaysOn: 'Immer aktiv',
@@ -655,7 +654,6 @@ export const de: DeepPartial<TranslationKeys> = {
             textCuesDesc: 'Sucht nach klaren Phrasen wie "next morning" oder "three days later", um die per Scaffold erzeugten `When`-Daten anzupassen. Vorhandene Daten bleiben unberührt.',
         },
         analyzing: {
-            badge: 'Beta · Quick Scaffold',
             title: 'Timeline-Daten werden gescaffoldet...',
             statusApplying: 'Musterabstände werden angewendet...',
             preparing: 'Wird vorbereitet...',
@@ -666,7 +664,6 @@ export const de: DeepPartial<TranslationKeys> = {
             phaseComplete: 'Scaffold bereit',
         },
         review: {
-            badge: 'Beta · Quick Scaffold',
             title: 'Gescaffoldete Daten überprüfen',
             subtitle: 'Überprüfen Sie die vorgeschlagene Timeline, bevor Sie Daten auf Ihre Szenen anwenden. Verwenden Sie die Filter, um sich auf hinweisangepasste oder zu prüfende Szenen zu konzentrieren. Passen Sie Tage oder Zeitfenster an, wenn das Scaffold die Absicht verfehlt.',
             filterNeedsReview: 'Prüfung erforderlich',
@@ -702,7 +699,6 @@ export const de: DeepPartial<TranslationKeys> = {
         apply: {
             noChangesNotice: 'Keine Änderungen anzuwenden',
             partialNotice: '{{success}} Änderungen angewendet. {{failed}} fehlgeschlagen.',
-            successNotice: '{{count}} Timeline-Änderungen erfolgreich angewendet',
             successWithSnapshotNotice: '{{count}} Timeline-Daten angewendet. Snapshot gespeichert.',
             snapshotFailedNotice: 'Snapshot konnte nicht gespeichert werden — Anwendung abgebrochen, um Ihre Daten zu schützen. ({{message}})',
         },

@@ -34,6 +34,11 @@ import {
     shiftSceneHours,
     setSceneTimeBucket,
     toggleRippleMode,
+    toggleRippleIncludeAnchored,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
     getChangedCount,
     getNeedsReviewCount
 } from '../timelineRepair/sessionDiff';
@@ -110,10 +115,14 @@ export class TimelineRepairModal extends Modal {
 
     // Audit handoff: paths the author has marked for "send to Audit".
     // Auto-included on session build (Needs Review or Cue-adjusted), then
-    // user-toggleable per row. Lives in the Normalizer modal only — never
+    // user-toggleable per row. Lives in the Scaffold modal only — never
     // written to YAML, never persisted between sessions.
     private auditIncluded: Set<string> = new Set();
     private auditFooterEl?: HTMLElement;
+
+    // Undo/redo buttons in the review filter row.
+    private undoBtnEl?: HTMLButtonElement;
+    private redoBtnEl?: HTMLButtonElement;
 
     constructor(app: App, plugin: RadialTimelinePlugin) {
         super(app);
@@ -773,14 +782,50 @@ export class TimelineRepairModal extends Modal {
         setIcon(rippleHelp, 'help-circle');
         setTooltip(rippleHelp, t('timelineRepairModal.review.rippleModeHelp'));
 
+        // Anchored-dates override — only meaningful while ripple is on.
+        // Count = authored dates a cascade would otherwise hold in place
+        // (flashbacks are excluded: they stay pinned under every mode).
+        const anchoredCount = this.session.entries.filter(e =>
+            e.source === 'authored' && !e.stampedWhenSource && !e.isFlashback
+        ).length;
+        const anchoredContainer = filterRow.createDiv({ cls: 'ert-timeline-repair-ripple-anchored' });
+        anchoredContainer.toggleClass('ert-is-hidden', !this.session.rippleEnabled);
+        anchoredContainer.createSpan({ text: t('timelineRepairModal.review.rippleAnchoredToggle', { count: anchoredCount }) });
+
+        const anchoredHelp = anchoredContainer.createSpan({ cls: 'ert-timeline-repair-ripple-help' });
+        setIcon(anchoredHelp, 'help-circle');
+        setTooltip(anchoredHelp, t('timelineRepairModal.review.rippleAnchoredHelp', { count: anchoredCount }));
+
+        const anchoredToggle = new ToggleComponent(anchoredContainer);
+        anchoredToggle.setValue(this.session.rippleIncludeAnchored);
+        anchoredToggle.onChange(() => {
+            if (this.session) {
+                this.session = toggleRippleIncludeAnchored(this.session);
+            }
+        });
+
         const rippleToggle = new ToggleComponent(rippleContainer);
         rippleToggle.setValue(this.session.rippleEnabled);
         rippleToggle.onChange(() => {
             if (this.session) {
                 this.session = toggleRippleMode(this.session);
+                anchoredContainer.toggleClass('ert-is-hidden', !this.session.rippleEnabled);
                 this.updateSummaryBar();
             }
         });
+
+        // Undo/redo — the session model has carried a full undo stack all
+        // along; these are its first UI surface. Mod+Z / Mod+Shift+Z too.
+        const historyGroup = filterRow.createDiv({ cls: 'ert-timeline-repair-history-group' });
+        this.undoBtnEl = historyGroup.createEl('button', { cls: 'ert-iconBtn ert-timeline-repair-history-btn' });
+        setIcon(this.undoBtnEl, 'undo-2');
+        setTooltip(this.undoBtnEl, t('timelineRepairModal.review.undoTooltip'));
+        this.undoBtnEl.addEventListener('click', () => this.handleUndo());
+        this.redoBtnEl = historyGroup.createEl('button', { cls: 'ert-iconBtn ert-timeline-repair-history-btn' });
+        setIcon(this.redoBtnEl, 'redo-2');
+        setTooltip(this.redoBtnEl, t('timelineRepairModal.review.redoTooltip'));
+        this.redoBtnEl.addEventListener('click', () => this.handleRedo());
+        this.updateHistoryButtons();
 
         // Scene list container
         this.sceneListEl = this.contentEl.createDiv({ cls: 'ert-timeline-repair-scene-list' });
@@ -1022,6 +1067,7 @@ export class TimelineRepairModal extends Modal {
 
         const card = this.sceneListEl.createDiv({ cls: 'ert-timeline-repair-scene-card' });
         card.setAttribute('data-ert-path', entry.file.path);
+        card.setAttribute('tabindex', '0'); // j/k navigation focuses cards; hover-hidden controls reappear on focus
         if (entry.needsReview) card.addClass('ert-needs-review');
         if (entry.hasBackwardTime) card.addClass('ert-has-backward-time');
         if (this.duplicateWhenIndices.has(idx)) card.addClass('ert-has-duplicate-when');
@@ -1164,8 +1210,8 @@ export class TimelineRepairModal extends Modal {
         // Right: controls
         const controlsArea = line2.createDiv({ cls: 'ert-timeline-repair-controls' });
 
-        const buildShiftBtn = (icon: string, tooltipKey: string, onClick: () => void): HTMLElement => {
-            const btn = controlsArea.createEl('button', { cls: 'ert-iconBtn ert-timeline-repair-shift-btn' });
+        const buildShiftBtn = (parent: HTMLElement, icon: string, tooltipKey: string, onClick: () => void): HTMLElement => {
+            const btn = parent.createEl('button', { cls: 'ert-iconBtn ert-timeline-repair-shift-btn' });
             setIcon(btn, icon);
             setTooltip(btn, t(tooltipKey));
             btn.addEventListener('click', (e) => {
@@ -1175,8 +1221,11 @@ export class TimelineRepairModal extends Modal {
             return btn;
         };
 
-        buildShiftBtn('chevrons-left', 'timelineRepairModal.review.shiftDayBack', () => this.handleDayShift(idx, -1));
-        buildShiftBtn('chevron-left', 'timelineRepairModal.review.shiftHourBack', () => this.handleHourShift(idx, -1));
+        // Controls read as three clusters — [step back] [time-of-day] [step
+        // forward] — plus the audit toggle, instead of nine loose icons.
+        const stepBackGroup = controlsArea.createDiv({ cls: 'ert-timeline-repair-step-group' });
+        buildShiftBtn(stepBackGroup, 'chevrons-left', 'timelineRepairModal.review.shiftDayBack', () => this.handleDayShift(idx, -1));
+        buildShiftBtn(stepBackGroup, 'chevron-left', 'timelineRepairModal.review.shiftHourBack', () => this.handleHourShift(idx, -1));
 
         // Time bucket pills — icon-only, Lucide sunrise/sun/sunset/moon.
         // ert-iconBtn opts out of the generic .ert-ui.ert-scope--modal button
@@ -1206,8 +1255,9 @@ export class TimelineRepairModal extends Modal {
             });
         }
 
-        buildShiftBtn('chevron-right', 'timelineRepairModal.review.shiftHourForward', () => this.handleHourShift(idx, 1));
-        buildShiftBtn('chevrons-right', 'timelineRepairModal.review.shiftDayForward', () => this.handleDayShift(idx, 1));
+        const stepFwdGroup = controlsArea.createDiv({ cls: 'ert-timeline-repair-step-group' });
+        buildShiftBtn(stepFwdGroup, 'chevron-right', 'timelineRepairModal.review.shiftHourForward', () => this.handleHourShift(idx, 1));
+        buildShiftBtn(stepFwdGroup, 'chevrons-right', 'timelineRepairModal.review.shiftDayForward', () => this.handleDayShift(idx, 1));
 
         // Audit handoff toggle (subtle, single icon).
         // ert-iconBtn opts out of the generic .ert-ui.ert-scope--modal button
@@ -1291,6 +1341,7 @@ export class TimelineRepairModal extends Modal {
         this.scheduleResort(sceneIndex);
         this.renderSceneList();
         this.updateSummaryBar();
+        this.updateHistoryButtons();
     }
 
     private handleHourShift(sceneIndex: number, hours: number): void {
@@ -1301,6 +1352,7 @@ export class TimelineRepairModal extends Modal {
         this.scheduleResort(sceneIndex);
         this.renderSceneList();
         this.updateSummaryBar();
+        this.updateHistoryButtons();
     }
 
     private handleTimeBucketChange(sceneIndex: number, hour: number): void {
@@ -1311,6 +1363,7 @@ export class TimelineRepairModal extends Modal {
         this.scheduleResort(sceneIndex);
         this.renderSceneList();
         this.updateSummaryBar();
+        this.updateHistoryButtons();
     }
 
     // ========================================================================
@@ -1322,6 +1375,52 @@ export class TimelineRepairModal extends Modal {
         this.scope.register([], 'k', () => this.navigateScene(-1));
         this.scope.register([], '[', () => this.shiftFocusedScene(-1));
         this.scope.register([], ']', () => this.shiftFocusedScene(1));
+        this.scope.register([], 'n', () => this.navigateNextNeedsReview());
+        this.scope.register(['Mod'], 'z', () => this.handleUndo());
+        this.scope.register(['Mod', 'Shift'], 'z', () => this.handleRedo());
+    }
+
+    private handleUndo(): boolean {
+        if (this.phase !== 'review' || !this.session || !canUndo(this.session)) return false;
+        this.session = undo(this.session);
+        this.chronoOrderSnapshot = undefined;
+        this.renderSceneList();
+        this.updateSummaryBar();
+        this.updateHistoryButtons();
+        return true;
+    }
+
+    private handleRedo(): boolean {
+        if (this.phase !== 'review' || !this.session || !canRedo(this.session)) return false;
+        this.session = redo(this.session);
+        this.chronoOrderSnapshot = undefined;
+        this.renderSceneList();
+        this.updateSummaryBar();
+        this.updateHistoryButtons();
+        return true;
+    }
+
+    private updateHistoryButtons(): void {
+        if (!this.session) return;
+        if (this.undoBtnEl) this.undoBtnEl.disabled = !canUndo(this.session);
+        if (this.redoBtnEl) this.redoBtnEl.disabled = !canRedo(this.session);
+    }
+
+    /** Focus the next needs-review card after the currently focused one, wrapping. */
+    private navigateNextNeedsReview(): boolean {
+        if (this.phase !== 'review' || !this.sceneListEl) return false;
+
+        const flagged = Array.from(this.sceneListEl.querySelectorAll<HTMLElement>('.ert-timeline-repair-scene-card.ert-needs-review'));
+        if (flagged.length === 0) return false;
+
+        const all = Array.from(this.sceneListEl.querySelectorAll<HTMLElement>('.ert-timeline-repair-scene-card'));
+        const focused = this.sceneListEl.querySelector<HTMLElement>('.ert-timeline-repair-scene-card:focus');
+        const focusedPos = focused ? all.indexOf(focused) : -1;
+
+        const target = flagged.find(c => all.indexOf(c) > focusedPos) ?? flagged[0];
+        target.focus();
+        target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        return true;
     }
 
     private navigateScene(delta: number): boolean {

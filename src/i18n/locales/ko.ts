@@ -669,7 +669,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             filterNeedsReview: '검토 필요',
             filterTextCues: '단서 조정됨',
             rippleMode: '리플 모드',
-            rippleModeHelp: '한 장면을 조정하면 이후 장면도 함께 이동하여 타임라인 간격을 유지합니다.\n장면을 독립적으로 편집하려면 이를 끄세요.',
             overwriteAuthorDates: '작성자 날짜 덮어쓰기',
             overwriteAuthorDatesHelp: 'OFF는 기존 장면 날짜를 보존하고 그 주변에 스캐폴드합니다. ON은 스캐폴드가 기존 날짜를 대체하도록 허용합니다.',
             backButton: '뒤로',

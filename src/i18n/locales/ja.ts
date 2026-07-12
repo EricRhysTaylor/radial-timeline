@@ -670,7 +670,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             filterNeedsReview: '確認が必要',
             filterTextCues: '手がかり調整済み',
             rippleMode: 'リップルモード',
-            rippleModeHelp: 'シーンを調整すると後のシーンも一緒に移動してタイムラインの間隔を維持します。\nシーンを個別に編集するにはこれをオフにします。',
             overwriteAuthorDates: '著者の日付を上書き',
             overwriteAuthorDatesHelp: 'OFF は既存のシーン日付を保持してその周囲をスキャフォールドします。ON はスキャフォールドが既存の日付を置き換えることを許可します。',
             backButton: '戻る',

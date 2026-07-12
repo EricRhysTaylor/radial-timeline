@@ -671,7 +671,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             filterNeedsReview: '需要审阅',
             filterTextCues: '提示已调整',
             rippleMode: '波纹模式',
-            rippleModeHelp: '调整某个场景时也会移动后续场景，以保持时间轴间距。\n关闭此项可独立编辑场景。',
             overwriteAuthorDates: '覆盖作者日期',
             overwriteAuthorDatesHelp: '关闭则保留现有场景日期并围绕它们搭建脚手架。开启则允许脚手架替换现有日期。',
             backButton: '返回',

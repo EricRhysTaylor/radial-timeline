@@ -669,7 +669,6 @@ export const de: DeepPartial<TranslationKeys> = {
             filterNeedsReview: 'Prüfung erforderlich',
             filterTextCues: 'Hinweisangepasst',
             rippleMode: 'Ripple-Modus',
-            rippleModeHelp: 'Beim Anpassen einer Szene werden auch spätere Szenen verschoben, um den Timeline-Abstand zu erhalten.\nSchalten Sie dies aus, um Szenen unabhängig zu bearbeiten.',
             overwriteAuthorDates: 'Autorendaten überschreiben',
             overwriteAuthorDatesHelp: 'AUS bewahrt vorhandene Szenendaten und scaffoldet um sie herum. EIN erlaubt, dass das Scaffold vorhandene Daten ersetzt.',
             backButton: 'Zurück',

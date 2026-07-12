@@ -399,13 +399,35 @@
 }
 
 .ert-timeline-repair-ripple-toggle,
-.ert-timeline-repair-overwrite-toggle {
+.ert-timeline-repair-overwrite-toggle,
+.ert-timeline-repair-ripple-anchored {
     display: flex;
     align-items: center;
     gap: var(--ert-gap-tight);
     margin-left: auto;
     font-size: var(--font-ui-smaller);
     color: var(--text-muted);
+}
+
+.ert-timeline-repair-ripple-toggle + .ert-timeline-repair-ripple-anchored {
+    margin-left: 0;
+}
+
+.ert-timeline-repair-ripple-anchored.ert-is-hidden {
+    display: none;
+}
+
+/* Undo/redo — first UI surface for the session's undo stack. */
+.ert-timeline-repair-history-group {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ert-gap-3xs);
+    margin-left: 0;
+}
+
+.ert-timeline-repair-history-btn[disabled] {
+    opacity: 0.35;
+    pointer-events: none;
 }
 
 .ert-timeline-repair-ripple-toggle + .ert-timeline-repair-overwrite-toggle,
@@ -503,7 +525,7 @@
     display: flex;
     align-items: flex-start;
     gap: var(--ert-gap-sm);
-    padding: var(--ert-pad-tight) var(--ert-pad-cozy);
+    padding: var(--ert-pad-xs) var(--ert-pad-cozy);
     background: var(--background-secondary);
     border: 1px solid var(--background-modifier-border);
     border-radius: var(--radius-m);
@@ -767,6 +789,44 @@
     flex-shrink: 0;
 }
 
+/* Resting rows show identity + date only; the edit strip appears on the
+   row under the pointer or holding keyboard focus. Opacity (not display)
+   keeps row height stable so nothing jumps on hover. */
+.ert-timeline-repair-scene-card .ert-timeline-repair-controls > * {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.12s ease;
+}
+
+.ert-timeline-repair-scene-card:hover .ert-timeline-repair-controls > *,
+.ert-timeline-repair-scene-card:focus .ert-timeline-repair-controls > *,
+.ert-timeline-repair-scene-card:focus-within .ert-timeline-repair-controls > * {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* A scene marked for audit keeps its marker visible at rest. */
+.ert-timeline-repair-scene-card .ert-timeline-repair-controls > .ert-timeline-repair-audit-toggle.ert-is-active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Step groups: day+hour steppers cluster into one visual unit per side. */
+.ert-timeline-repair-step-group {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ert-gap-3xs);
+    padding: var(--ert-gap-3xs);
+    border-radius: var(--radius-s);
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+}
+
+.ert-timeline-repair-step-group .ert-timeline-repair-shift-btn {
+    border: none;
+    background: transparent;
+}
+
 .ert-timeline-repair-shift-btn {
     display: inline-flex;
     align-items: center;
@@ -844,9 +904,22 @@
 }
 
 
+/* Time-of-day pills join into one segmented control. */
 .ert-timeline-repair-bucket-controls {
-    display: flex;
-    gap: var(--ert-gap-xs);
+    display: inline-flex;
+    gap: 0;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    overflow: hidden;
+}
+
+.ert-timeline-repair-bucket-controls .ert-timeline-repair-bucket-pill {
+    border: none;
+    border-radius: 0;
+}
+
+.ert-timeline-repair-bucket-controls .ert-timeline-repair-bucket-pill + .ert-timeline-repair-bucket-pill {
+    border-left: 1px solid var(--background-modifier-border);
 }
 
 .ert-timeline-repair-bucket-pill {

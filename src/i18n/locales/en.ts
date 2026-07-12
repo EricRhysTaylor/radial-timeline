@@ -463,7 +463,7 @@ export interface TranslationKeys {
         pattern: { name: string; desc: string; };
         refinements: { name: string; desc: string; baseScaffoldTitle: string; baseScaffoldDesc: string; alwaysOn: string; textCuesTitle: string; textCuesDesc: string; };
         analyzing: { badge: string; title: string; statusApplying: string; preparing: string; abortButton: string; abortedNotice: string; phasePattern: string; phaseCues: string; phaseComplete: string; };
-        review: { badge: string; title: string; subtitle: string; filterNeedsReview: string; filterTextCues: string; rippleMode: string; rippleModeHelp: string; overwriteAuthorDates: string; overwriteAuthorDatesHelp: string; backButton: string; applyButton: string; openAuditButton: string; openAuditButtonAll: string; auditToggleOn: string; auditToggleOff: string; narrativePlacement: string; chronoPosition: string; emptyFilter: string; untitled: string; warningBackwardTime: string; warningLargeGap: string; warningMissingWhen: string; warningDuplicateWhen: string; openInWorkspace: string; shiftDayBack: string; shiftDayForward: string; shiftHourBack: string; shiftHourForward: string; summaryChanged: string; summaryNeedReview: string; summarySelected: string; summaryAuthored: string; };
+        review: { badge: string; title: string; subtitle: string; filterNeedsReview: string; filterTextCues: string; rippleMode: string; rippleModeHelp: string; rippleAnchoredToggle: string; rippleAnchoredHelp: string; undoTooltip: string; redoTooltip: string; overwriteAuthorDates: string; overwriteAuthorDatesHelp: string; backButton: string; applyButton: string; openAuditButton: string; openAuditButtonAll: string; auditToggleOn: string; auditToggleOff: string; narrativePlacement: string; chronoPosition: string; emptyFilter: string; untitled: string; warningBackwardTime: string; warningLargeGap: string; warningMissingWhen: string; warningDuplicateWhen: string; openInWorkspace: string; shiftDayBack: string; shiftDayForward: string; shiftHourBack: string; shiftHourForward: string; summaryChanged: string; summaryNeedReview: string; summarySelected: string; summaryAuthored: string; };
         apply: { noChangesNotice: string; partialNotice: string; successWithSnapshotNotice: string; snapshotFailedNotice: string; };
         restore: { successNotice: string; partialNotice: string; noSnapshotNotice: string; };
         confirm: { title: string; warning: string; applyButton: string; cancelButton: string; description: string; };
@@ -2556,7 +2556,11 @@ export const en: TranslationKeys = {
             filterNeedsReview: 'Needs Review',
             filterTextCues: 'Cue-adjusted',
             rippleMode: 'Ripple Mode',
-            rippleModeHelp: 'Adjusting a scene also shifts later scenes to preserve timeline spacing.\nTurn this off to edit scenes independently.',
+            rippleModeHelp: 'Moving a scene to a different day shifts every later scaffolded scene by the same number of days — each keeps its own time of day. Same-day time changes never cascade. Authored dates hold unless "Shift anchored too" is on; flashbacks never move.\nTurn this off to edit scenes independently.',
+            rippleAnchoredToggle: 'Shift anchored too ({{count}})',
+            rippleAnchoredHelp: 'ON: a ripple cascade also moves the {{count}} authored dates it passes. Flashbacks stay pinned regardless — they belong to another era. OFF: authored dates hold their ground and only scaffolded dates shift.',
+            undoTooltip: 'Undo last date edit (Cmd/Ctrl+Z)',
+            redoTooltip: 'Redo (Cmd/Ctrl+Shift+Z)',
             overwriteAuthorDates: 'Overwrite author dates',
             overwriteAuthorDatesHelp: 'OFF preserves existing scene dates and scaffolds around them. ON allows the scaffold to replace existing dates.',
             backButton: 'Back',

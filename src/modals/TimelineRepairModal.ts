@@ -128,9 +128,17 @@ export class TimelineRepairModal extends Modal {
     private undoBtnEl?: HTMLButtonElement;
     private redoBtnEl?: HTMLButtonElement;
 
-    constructor(app: App, plugin: RadialTimelinePlugin) {
+    /**
+     * Handoff from Timeline Audit: open straight into the review phase with
+     * Ripple on, focused on this scene, so a "+4 days" nudge cascades. Unset
+     * for normal command-palette opens.
+     */
+    private focusScenePath?: string;
+
+    constructor(app: App, plugin: RadialTimelinePlugin, options: { focusScenePath?: string } = {}) {
         super(app);
         this.plugin = plugin;
+        this.focusScenePath = options.focusScenePath;
     }
 
     private getDefaultAnchorWhen(): { date: Date; source: 'authored' | 'fallback' } {
@@ -181,8 +189,21 @@ export class TimelineRepairModal extends Modal {
         // Load scene data
         await this.loadSceneData();
 
-        // Show configuration phase
-        this.showConfigPhase();
+        if (this.focusScenePath) {
+            // Audit handoff: skip config, go straight to review on defaults.
+            // Preserve mode means nothing is rewritten by the pipeline itself.
+            const anchor = this.getDefaultAnchorWhen();
+            this.config = {
+                anchorWhen: anchor.date,
+                anchorSceneIndex: 0,
+                patternPreset: 'beats2',
+                useTextCues: true,
+                preserveAuthoredDates: true
+            };
+            await this.runAnalysis();
+        } else {
+            this.showConfigPhase();
+        }
 
         // Set up keyboard navigation
         this.setupKeyboardNavigation();
@@ -707,6 +728,9 @@ export class TimelineRepairModal extends Modal {
 
             // Create session from results
             this.session = createSession(this.result);
+            if (this.focusScenePath) {
+                this.session.rippleEnabled = true;
+            }
             this.seedAuditIncluded();
 
             // Show review phase
@@ -865,6 +889,19 @@ export class TimelineRepairModal extends Modal {
             .onClick(() => this.applyChanges());
 
         this.updateAuditFooter();
+
+        // Audit handoff: land focused on the scene the finding flagged.
+        if (this.focusScenePath) {
+            const path = this.focusScenePath;
+            this.focusScenePath = undefined; // one-shot — Back to config behaves normally after this
+            window.requestAnimationFrame(() => {
+                const card = this.sceneListEl?.querySelector<HTMLElement>(`[data-ert-path="${CSS.escape(path)}"]`);
+                if (card) {
+                    card.focus();
+                    card.scrollIntoView({ block: 'center' });
+                }
+            });
+        }
     }
 
     private updateSummaryBar(): void {

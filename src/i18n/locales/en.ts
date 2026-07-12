@@ -477,12 +477,13 @@ export interface TranslationKeys {
         stats: { totalScenes: string; aligned: string; warnings: string; contradictions: string; missingWhen: string; };
         filters: { all: string; contradictions: string; missingWhen: string; summaryBodyDisagreement: string; continuityProblems: string; aiSuggested: string; unresolved: string; };
         controls: { title: string; };
+        bulk: { acceptSafe: string; keepAll: string; markAll: string; scopeNote: string; };
         instantCard: { title: string; description: string; status: string; continuityPassToggle: string; continuityPassDesc: string; };
         aiCard: { title: string; aiEnhancedBadge: string; description: string; actionRunning: string; actionReRun: string; actionStart: string; };
         aiStatus: { inProgress: string; complete: string; failed: string; notStarted: string; runningBackground: string; failedRetry: string; notStartedHint: string; progressCount: string; progressCountWithScene: string; completedAgo: string; };
         relativeTime: { justNow: string; minutesAgo: string; hoursAgo: string; daysAgo: string; };
-        overview: { title: string; };
-        detail: { whatYamlSays: string; chronologyNotPlaced: string; whatManuscriptImplies: string; noAlternatePosition: string; noSuggestedWhen: string; whyFlagged: string; whatAuthorCanDo: string; actionEligible: string; actionIneligible: string; noEvidence: string; applyButton: string; keepButton: string; markReviewButton: string; noRationale: string; whenMissing: string; formatWhenMissing: string; chronologyPosition: string; suggestedWhen: string; evidenceLabel: string; whenInvalid: string; whenCurrent: string; };
+        overview: { title: string; legendClean: string; legendMissingWhen: string; legendWarning: string; legendContradiction: string; legendImpossible: string; };
+        detail: { whatYamlSays: string; chronologyNotPlaced: string; whatManuscriptImplies: string; noAlternatePosition: string; noSuggestedWhen: string; whyFlagged: string; whatAuthorCanDo: string; actionEligible: string; actionIneligible: string; noEvidence: string; applyButton: string; keepButton: string; markReviewButton: string; noRationale: string; whenMissing: string; formatWhenMissing: string; chronologyPosition: string; suggestedWhen: string; evidenceLabel: string; whenInvalid: string; whenCurrent: string; adjustRippleButton: string; adjustRippleHelp: string; };
         evidenceSource: { summary: string; synopsis: string; body: string; neighbor: string; ai: string; };
         evidenceTier: { direct: string; strongInference: string; ambiguous: string; };
         detectionSource: { deterministic: string; continuity: string; ai: string; };
@@ -2656,6 +2657,12 @@ export const en: TranslationKeys = {
             unresolved: 'Unresolved',
         },
         controls: { title: 'Audit actions' },
+        bulk: {
+            acceptSafe: 'Accept safe suggestions ({{count}})',
+            keepAll: 'Keep all as-is',
+            markAll: 'Mark all for review',
+            scopeNote: 'Bulk actions apply to the {{count}} findings currently listed — combine with the filters above.',
+        },
         instantCard: {
             title: 'Instant audit',
             description: 'Runs automatically when this window opens. Checks chronology, summary/body disagreement, and nearby scene continuity.',
@@ -2684,7 +2691,14 @@ export const en: TranslationKeys = {
             completedAgo: 'AI audit run {{time}}',
         },
         relativeTime: { justNow: 'just now', minutesAgo: '{{minutes}} min ago', hoursAgo: '{{hours}}h ago', daysAgo: '{{days}}d ago' },
-        overview: { title: 'Timeline overview' },
+        overview: {
+            title: 'Timeline overview',
+            legendClean: 'Aligned',
+            legendMissingWhen: 'Missing When',
+            legendWarning: 'Warning',
+            legendContradiction: 'Contradiction',
+            legendImpossible: 'Impossible order',
+        },
         detail: {
             whatYamlSays: 'What YAML currently says',
             chronologyNotPlaced: 'Not placed in chronological order — the `When` date is missing or invalid.',
@@ -2707,6 +2721,8 @@ export const en: TranslationKeys = {
             evidenceLabel: '{{source}} \u00b7 {{tier}}',
             whenInvalid: 'YAML When: invalid in frontmatter ({{raw}}).',
             whenCurrent: 'YAML When: {{when}}.',
+            adjustRippleButton: 'Adjust with ripple',
+            adjustRippleHelp: 'Opens Timeline Scaffold focused on this scene with Ripple on — nudge its date and every later scene shifts in step. Use Apply instead when only this one scene’s date is wrong.',
         },
         evidenceSource: { summary: 'Summary', synopsis: 'Synopsis', body: 'Body', neighbor: 'Neighbor', ai: 'AI' },
         evidenceTier: { direct: 'Direct text', strongInference: 'Strong inference', ambiguous: 'Ambiguous cue' },

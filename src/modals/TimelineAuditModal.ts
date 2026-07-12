@@ -6,12 +6,13 @@
  * Timeline Auditor Modal
  */
 
-import { App, ButtonComponent, Modal, Notice, setIcon } from 'obsidian';
+import { App, ButtonComponent, Modal, Notice, setIcon, setTooltip } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import { renderWithYamlTokens } from '../utils/yamlTokenRender';
 import { applyAuditFindings, buildAuditApplyPlan } from '../timelineAudit/apply';
 import { buildSnapshotFromFiles, saveTimelineSnapshot } from '../timelineRepair/timelineSnapshot';
+import { TimelineRepairModal } from './TimelineRepairModal';
 import { runAuditPipeline } from '../timelineAudit/AuditPipeline';
 import { buildTimelineOverviewEntries, scrollFindingCardIntoView } from '../timelineAudit/TimelineOverviewStrip';
 import {
@@ -280,6 +281,27 @@ export class TimelineAuditModal extends Modal {
         this.createFilterPill(filterRow, t('timelineAuditModal.filters.aiSuggested'), 'ai_suggested');
         this.createFilterPill(filterRow, t('timelineAuditModal.filters.unresolved'), 'unresolved');
 
+        // Bulk decisions — with dozens of findings, per-card clicking is the
+        // bookkeeping these tools exist to remove. Acts on the findings the
+        // current filter shows, so filter + bulk composes (e.g. filter to
+        // Contradictions, then Mark all).
+        if (findings.length > 0) {
+            const bulkRow = contentEl.createDiv({ cls: 'ert-timeline-audit-bulk-row' });
+            setTooltip(bulkRow, t('timelineAuditModal.bulk.scopeNote', { count: findings.length }));
+
+            const safeCount = findings.filter(f => f.safeApplyEligible).length;
+            new ButtonComponent(bulkRow)
+                .setButtonText(t('timelineAuditModal.bulk.acceptSafe', { count: safeCount }))
+                .setDisabled(safeCount === 0)
+                .onClick(() => this.setBulkAction(findings, 'apply'));
+            new ButtonComponent(bulkRow)
+                .setButtonText(t('timelineAuditModal.bulk.keepAll'))
+                .onClick(() => this.setBulkAction(findings, 'keep'));
+            new ButtonComponent(bulkRow)
+                .setButtonText(t('timelineAuditModal.bulk.markAll'))
+                .onClick(() => this.setBulkAction(findings, 'mark_review'));
+        }
+
         const findingsList = contentEl.createDiv({ cls: 'ert-timeline-audit-findings' });
         this.findingCardEls.clear();
 
@@ -476,6 +498,20 @@ export class TimelineAuditModal extends Modal {
                 this.expandFinding(entry.finding.path, true);
             });
         }
+
+        const legendItems: Array<{ severity: string; label: string }> = [
+            { severity: 'clean', label: t('timelineAuditModal.overview.legendClean') },
+            { severity: 'missing_when', label: t('timelineAuditModal.overview.legendMissingWhen') },
+            { severity: 'warning', label: t('timelineAuditModal.overview.legendWarning') },
+            { severity: 'contradiction', label: t('timelineAuditModal.overview.legendContradiction') },
+            { severity: 'impossible', label: t('timelineAuditModal.overview.legendImpossible') }
+        ];
+        const legend = overviewCard.createDiv({ cls: 'ert-timeline-audit-overview-legend' });
+        for (const item of legendItems) {
+            const entryEl = legend.createSpan({ cls: 'ert-timeline-audit-legend-item' });
+            entryEl.createSpan({ cls: `ert-timeline-audit-legend-swatch ert-timeline-audit-overview-block--${item.severity}` });
+            entryEl.createSpan({ text: item.label });
+        }
     }
 
     private getFilteredFindings(): TimelineAuditFinding[] {
@@ -507,6 +543,28 @@ export class TimelineAuditModal extends Modal {
                     return true;
             }
         });
+    }
+
+    /**
+     * Set a review decision across many findings at once. 'apply' only
+     * touches findings whose suggestion is safe to apply — the same guard
+     * as the per-card Apply button.
+     */
+    private setBulkAction(findings: TimelineAuditFinding[], action: 'apply' | 'keep' | 'mark_review'): void {
+        for (const finding of findings) {
+            if (action === 'apply') {
+                if (!finding.safeApplyEligible) continue;
+                finding.reviewAction = 'apply';
+                finding.unresolved = false;
+            } else if (action === 'keep') {
+                finding.reviewAction = 'keep';
+                finding.unresolved = finding.status !== 'aligned';
+            } else {
+                finding.reviewAction = 'mark_review';
+                finding.unresolved = true;
+            }
+        }
+        this.render();
     }
 
     private renderFindingListItem(container: HTMLElement, finding: TimelineAuditFinding): void {
@@ -560,6 +618,17 @@ export class TimelineAuditModal extends Modal {
             middle.createSpan({
                 cls: 'ert-timeline-audit-row-issue',
                 text: label
+            });
+        }
+
+        // Provenance survives scrolling: AI-derived findings carry the tag on
+        // the row itself, not just in the filter or the expanded detail.
+        const hasAiSignal = finding.issues.some(i => i.detectionSource === 'ai')
+            || finding.evidence.some(e => e.detectionSource === 'ai');
+        if (hasAiSignal) {
+            middle.createSpan({
+                cls: 'ert-timeline-audit-row-ai-badge',
+                text: t('timelineAuditModal.detectionSource.ai')
             });
         }
 
@@ -683,6 +752,17 @@ export class TimelineAuditModal extends Modal {
         if (finding.reviewAction === 'mark_review') {
             markReviewButton.setCta();
         }
+
+        // The other kind of timeline fix: Apply corrects THIS scene's date;
+        // "Adjust with ripple" hands off to Timeline Scaffold when the story
+        // shifted from this point onward and everything after must follow.
+        const rippleButton = new ButtonComponent(actionRow)
+            .setButtonText(t('timelineAuditModal.detail.adjustRippleButton'))
+            .onClick(() => {
+                this.close();
+                new TimelineRepairModal(this.app, this.plugin, { focusScenePath: finding.path }).open();
+            });
+        setTooltip(rippleButton.buttonEl, t('timelineAuditModal.detail.adjustRippleHelp'));
     }
 
     private createQuestionBlock(container: HTMLElement, title: string, lines: string[]): void {

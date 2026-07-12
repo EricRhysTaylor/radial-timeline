@@ -63,6 +63,19 @@ export async function appendWhenChanges(app: App, records: WhenChangeRecord[]): 
     }
 }
 
+/**
+ * Reset the plugin's date tracking — the catch-22 escape hatch. Clears the
+ * log so every date reads as author-owned (no scaffold stamps, empty
+ * per-scene history). Scene files are never touched; the log goes to
+ * Obsidian's trash, not permanent deletion.
+ */
+export async function clearWhenChangeLog(app: App): Promise<boolean> {
+    const file = app.vault.getAbstractFileByPath(WHEN_CHANGE_LOG_PATH);
+    if (!(file instanceof TFile)) return false;
+    await app.fileManager.trashFile(file);
+    return true;
+}
+
 export interface ScaffoldStamp {
     source: 'pattern' | 'keyword' | 'ai';
     /** The When value the machine wrote (formatted YYYY-MM-DD HH:MM). */

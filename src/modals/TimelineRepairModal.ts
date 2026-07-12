@@ -43,12 +43,11 @@ import {
     getChangedCount,
     getNeedsReviewCount
 } from '../timelineRepair/sessionDiff';
-import { readWhenHistory } from '../timelineRepair/whenChangeLog';
+import { readWhenHistory, clearWhenChangeLog } from '../timelineRepair/whenChangeLog';
 import { formatWhenForDisplay, detectTimeBucket } from '../timelineRepair/patternSync';
-import { writeSessionChanges, getChangeSummary, clearProvenanceFields } from '../timelineRepair/frontmatterWriter';
+import { writeSessionChanges, getChangeSummary } from '../timelineRepair/frontmatterWriter';
 import {
     buildTimelineSnapshot,
-    buildSnapshotFromFiles,
     saveTimelineSnapshot,
     getLatestTimelineSnapshot,
     listTimelineSnapshots,
@@ -1665,34 +1664,22 @@ export class TimelineRepairModal extends Modal {
     }
 
     /**
-     * The general reset: wipe the plugin's bookkeeping fields (WhenSource,
-     * WhenConfidence, DurationSource, NeedsReview) from every scene in scope.
-     * Dates are untouched. A schema-3 snapshot (dates + metadata) is captured
-     * first, so even the reset is undoable from the Restore menu.
+     * The general reset — the catch-22 escape hatch. Clears the plugin's
+     * private date-tracking record (the When change log), so every date
+     * reads as author-owned: no scaffold stamps for Ripple, empty per-scene
+     * history. Scene files are never touched.
      */
     private async handleResetMetadata(): Promise<void> {
         const confirmed = await this.showResetConfirmDialog();
         if (!confirmed) return;
 
         try {
-            const snapshot = await buildSnapshotFromFiles(this.app, [...this.files.values()], 'scaffold');
-            await saveTimelineSnapshot(this.app, snapshot);
+            await clearWhenChangeLog(this.app);
         } catch (error) {
-            new Notice(t('timelineRepairModal.apply.snapshotFailedNotice', {
-                message: error instanceof Error ? error.message : String(error)
-            }));
+            new Notice(`Reset failed: ${error instanceof Error ? error.message : String(error)}`);
             return;
         }
-
-        let cleared = 0;
-        for (const file of this.files.values()) {
-            if (await clearProvenanceFields(this.app, file)) cleared++;
-        }
-        new Notice(t('timelineRepairModal.reset.successNotice', { count: cleared }));
-
-        // Reload so the config stats and any later review reflect the clean slate.
-        await this.loadSceneData();
-        this.showConfigPhase();
+        new Notice(t('timelineRepairModal.reset.successNotice'));
     }
 
     private showResetConfirmDialog(): Promise<boolean> {

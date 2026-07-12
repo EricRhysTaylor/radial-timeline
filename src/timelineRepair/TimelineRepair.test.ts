@@ -8,11 +8,10 @@ import { runPatternSync } from './patternSync';
 import { runKeywordSweep } from './keywordSweep';
 import { runRepairPipeline } from './RepairPipeline';
 import { createSession, shiftSceneDays, editSceneWhen, setSceneTimeBucket } from './sessionDiff';
-import { writeSessionChanges, clearProvenanceFields } from './frontmatterWriter';
-import { readWhenHistory, appendWhenChanges, buildScaffoldStampMap } from './whenChangeLog';
+import { writeSessionChanges } from './frontmatterWriter';
+import { readWhenHistory, appendWhenChanges, buildScaffoldStampMap, clearWhenChangeLog } from './whenChangeLog';
 import {
     buildTimelineSnapshot,
-    buildSnapshotFromFiles,
     saveTimelineSnapshot,
     getLatestTimelineSnapshot,
     restoreTimelineSnapshot,
@@ -765,39 +764,27 @@ describe('timeline repair normalizer', () => {
         expect(history[0].tool).toBe('scaffold');
     });
 
-    it('Reset metadata round trip: snapshot captures provenance, clear wipes it, restore brings it back', async () => {
+    it('Reset date tracking clears scaffold stamps and history without touching scene files', async () => {
         const app = createInMemoryApp({
-            'Book/01 Scene.md': '---\nWhen: 2085-04-01 08:00\nWhenSource: pattern\nWhenConfidence: high\nNeedsReview: true\nClass: Scene\n---\nBody text.'
+            'Book/01 Scene.md': '---\nWhen: 2085-04-03 08:00\nClass: Scene\n---\nBody text.'
         });
-        const file = app.vault.getAbstractFileByPath('Book/01 Scene.md');
-        if (!(file instanceof TFile)) throw new Error('Expected TFile');
+        await appendWhenChanges(app as never, [
+            { v: 1, ts: '2085-04-01T00:00:00Z', path: 'Book/01 Scene.md', title: '01', prev: null, next: '2085-04-03 08:00', source: 'pattern', tool: 'scaffold' }
+        ]);
 
-        // Snapshot BEFORE the reset captures dates AND metadata.
-        const snapshot = await buildSnapshotFromFiles(app as never, [file], 'scaffold');
-        expect(snapshot.entries[0].previousWhenRaw).toBe('2085-04-01 08:00');
-        expect(snapshot.entries[0].previousWhenSource).toBe('pattern');
-        expect(snapshot.entries[0].previousNeedsReview).toBe('true');
-        await saveTimelineSnapshot(app as never, snapshot);
+        // Tracking active: the scene reads as scaffold-stamped, history exists.
+        expect((await buildScaffoldStampMap(app as never)).size).toBe(1);
+        expect((await readWhenHistory(app as never, 'Book/01 Scene.md')).length).toBe(1);
 
-        // Reset: provenance gone, date untouched.
-        expect(await clearProvenanceFields(app as never, file)).toBe(true);
-        const afterClear = await readFile(app, 'Book/01 Scene.md');
-        expect(afterClear).not.toContain('WhenSource');
-        expect(afterClear).not.toContain('NeedsReview');
-        expect(afterClear).toContain('When: 2085-04-01 08:00');
-        expect(afterClear).toContain('Class: Scene');
+        const before = await readFile(app, 'Book/01 Scene.md');
+        expect(await clearWhenChangeLog(app as never)).toBe(true);
 
-        // Even the reset is undoable.
-        const meta = await getLatestTimelineSnapshot(app as never);
-        expect(meta).not.toBeNull();
-        const result = await restoreTimelineSnapshot(app as never, meta!);
-        expect(result.failed).toBe(0);
+        // Clean slate: no stamps, no history — and the scene file is byte-identical.
+        expect((await buildScaffoldStampMap(app as never)).size).toBe(0);
+        expect((await readWhenHistory(app as never, 'Book/01 Scene.md')).length).toBe(0);
+        expect(await readFile(app, 'Book/01 Scene.md')).toBe(before);
 
-        const afterRestore = await readFile(app, 'Book/01 Scene.md');
-        expect(afterRestore).toContain('When: 2085-04-01 08:00');
-        expect(afterRestore).toContain('WhenSource: pattern');
-        expect(afterRestore).toContain('WhenConfidence: high');
-        expect(afterRestore).toContain('NeedsReview: true');
-        expect(afterRestore).toContain('Body text.');
+        // Resetting again is a no-op, not an error.
+        expect(await clearWhenChangeLog(app as never)).toBe(false);
     });
 });

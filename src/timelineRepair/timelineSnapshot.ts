@@ -25,20 +25,11 @@ export interface TimelineSnapshotEntry {
     title: string;
     /** Raw YAML string the scene had before apply, if it existed. */
     previousWhenRaw: string | null;
-    /**
-     * Provenance fields at capture time (schema 3+). null = the field was
-     * absent (restore deletes it); undefined (older snapshots) = restore
-     * leaves that field untouched.
-     */
-    previousWhenSource?: string | null;
-    previousWhenConfidence?: string | null;
-    previousDurationSource?: string | null;
-    previousNeedsReview?: string | null;
 }
 
 export interface TimelineSnapshot {
-    /** 1: scaffold-only. 2: adds tool attribution. 3: entries capture provenance fields. */
-    schema: 1 | 2 | 3;
+    /** 1: scaffold-only (no tool field). 2: adds tool attribution. */
+    schema: 1 | 2;
     createdAt: string;
     displayLabel: string;
     /** Which tool captured this restore point. Absent on schema-1 files (scaffold). */
@@ -93,11 +84,6 @@ async function ensureSnapshotFolder(app: App): Promise<void> {
     }
 }
 
-function rawFrontmatterValue(fm: Record<string, unknown> | undefined, key: string): string | null {
-    const value = fm?.[key];
-    return value === undefined || value === null ? null : String(value);
-}
-
 export function buildTimelineSnapshot(
     session: SessionDiffModel,
     config: { patternPreset: string; preserveAuthoredDates: boolean; useTextCues: boolean }
@@ -106,19 +92,14 @@ export function buildTimelineSnapshot(
     const entries: TimelineSnapshotEntry[] = [];
     for (const entry of session.entries) {
         if (!entry.isChanged) continue;
-        const fm = entry.scene.rawFrontmatter;
         entries.push({
             path: entry.file.path,
             title: entry.scene.title ?? entry.file.basename,
-            previousWhenRaw: entry.originalWhenRaw ?? null,
-            previousWhenSource: rawFrontmatterValue(fm, 'WhenSource'),
-            previousWhenConfidence: rawFrontmatterValue(fm, 'WhenConfidence'),
-            previousDurationSource: rawFrontmatterValue(fm, 'DurationSource'),
-            previousNeedsReview: rawFrontmatterValue(fm, 'NeedsReview')
+            previousWhenRaw: entry.originalWhenRaw ?? null
         });
     }
     return {
-        schema: 3,
+        schema: 2,
         createdAt: now.toISOString(),
         displayLabel: buildDisplayLabel(now),
         tool: 'scaffold',
@@ -143,15 +124,11 @@ export async function buildSnapshotFromFiles(
         entries.push({
             path: file.path,
             title: file.basename,
-            previousWhenRaw: extractFieldRaw(content, 'When'),
-            previousWhenSource: extractFieldRaw(content, 'WhenSource'),
-            previousWhenConfidence: extractFieldRaw(content, 'WhenConfidence'),
-            previousDurationSource: extractFieldRaw(content, 'DurationSource'),
-            previousNeedsReview: extractFieldRaw(content, 'NeedsReview')
+            previousWhenRaw: extractFieldRaw(content, 'When')
         });
     }
     return {
-        schema: 3,
+        schema: 2,
         createdAt: now.toISOString(),
         displayLabel: buildDisplayLabel(now),
         tool,
@@ -190,7 +167,7 @@ export async function listTimelineSnapshots(app: App): Promise<SnapshotMeta[]> {
         try {
             const text = await app.vault.read(file);
             const parsed = JSON.parse(text) as TimelineSnapshot;
-            if (parsed && (parsed.schema === 1 || parsed.schema === 2 || parsed.schema === 3) && Array.isArray(parsed.entries)) {
+            if (parsed && (parsed.schema === 1 || parsed.schema === 2) && Array.isArray(parsed.entries)) {
                 result.push({ file, snapshot: parsed });
             }
         } catch {
@@ -234,25 +211,11 @@ export async function restoreTimelineSnapshot(
         }
         try {
             // Atomic read-modify-write: process() guarantees the file is not
-            // changed by another process between reading the current lines
-            // and writing the restored values. Provenance fields are only
-            // touched when the snapshot captured them (schema 3+); undefined
-            // means "leave as-is" so older snapshots restore exactly as they
-            // always did.
-            const metaFields: Array<[string, string | null | undefined]> = [
-                ['WhenSource', entry.previousWhenSource],
-                ['WhenConfidence', entry.previousWhenConfidence],
-                ['DurationSource', entry.previousDurationSource],
-                ['NeedsReview', entry.previousNeedsReview]
-            ];
-            await app.vault.process(file, (content) => {
-                let next = applyFieldToFrontmatter(content, 'When', entry.previousWhenRaw);
-                for (const [field, value] of metaFields) {
-                    if (value === undefined) continue;
-                    next = applyFieldToFrontmatter(next, field, value);
-                }
-                return next;
-            });
+            // changed by another process between reading the current `When`
+            // line and writing the restored value.
+            await app.vault.process(file, (content) =>
+                applyFieldToFrontmatter(content, 'When', entry.previousWhenRaw)
+            );
             restored++;
         } catch {
             failed++;

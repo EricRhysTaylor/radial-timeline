@@ -24,6 +24,7 @@ export interface InMemoryApp {
     fileManager: {
         processFrontMatter: (file: TFile, cb: (fm: Record<string, unknown>) => void) => Promise<void>;
         renameFile: (file: TFile, newPath: string) => Promise<void>;
+        trashFile: (file: TFile) => Promise<void>;
     };
 }
 
@@ -195,6 +196,10 @@ export function createInMemoryApp(initialFiles: Record<string, string>): InMemor
                 records.delete(oldKey);
                 records.set(nextKey, { file: nextFile, content: record.content });
                 collectParentFolders(nextKey).forEach(folder => folders.add(folder));
+            },
+            async trashFile(file: TFile): Promise<void> {
+                const key = normalizeVaultPath(file.path);
+                if (!records.delete(key)) throw new Error(`File not found: ${file.path}`);
             }
         }
     };

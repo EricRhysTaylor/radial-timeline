@@ -2608,13 +2608,13 @@ export const en: TranslationKeys = {
             toolAudit: 'Audit'
         },
         reset: {
-            button: 'Clean Up Scene Metadata',
-            tooltip: 'Remove leftover plugin metadata from your scene files. Your dates are untouched.',
-            title: 'Clean up scene metadata',
-            body: 'Earlier versions of the timeline tools wrote bookkeeping into your scenes’ frontmatter. This cleans it out of all {{count}} scene files. Your `When` dates are not changed.',
-            note: 'A snapshot is saved first — undo anytime from Restore Last Snapshot.',
-            confirmButton: 'Clean Up',
-            successNotice: 'Cleaned plugin metadata from {{count}} scenes. Snapshot saved.'
+            button: 'Reset Date Tracking',
+            tooltip: 'Start fresh: forget which dates were scaffolded and treat every date as yours. Scene files are not touched.',
+            title: 'Reset date tracking',
+            body: 'The plugin keeps a private record — outside your scenes — of the `When` dates it has written. Ripple uses it to tell scaffolded dates from yours, and the per-scene history menu reads from it. Resetting clears that record: every date is treated as author-owned, and Ripple will hold all dates unless “Shift anchored too” is on. Your scene files are not changed.',
+            note: 'Snapshots are kept — Restore Last Snapshot still works. The cleared record goes to Obsidian’s trash.',
+            confirmButton: 'Reset Tracking',
+            successNotice: 'Date tracking reset — every date is now treated as yours.'
         },
         confirm: {
             title: 'Confirm Changes',

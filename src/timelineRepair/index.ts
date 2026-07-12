@@ -66,7 +66,5 @@ export {
     writeSessionChanges,
     previewUpdates,
     getChangeSummary,
-    clearProvenanceFields,
-    clearAllProvenanceFields,
     type WriteOptions
 } from './frontmatterWriter';

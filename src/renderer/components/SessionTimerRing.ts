@@ -126,12 +126,15 @@ export function tabTimerWedgePath(
 }
 
 export const TAB_TIMER_DISC_RADIUS = 11;
+export const TAB_TIMER_HOLE_RADIUS = 4.5;
+
+let tabTimerMaskCounter = 0;
 
 export function buildTabTimerDiscSvg(params: {
     progress: number;
     direction: 'clockwise' | 'counterclockwise';
     paused: boolean;
-    /** Auto-track marker: 'dot' = idle-suspended, 'plus' = actively tracking. */
+    /** Auto-track marker: 'dot' = idle-suspended (donut hole), 'plus' = actively tracking. */
     symbol?: 'dot' | 'plus';
 }): SVGSVGElement {
     const ns = 'http://www.w3.org/2000/svg';
@@ -141,27 +144,44 @@ export function buildTabTimerDiscSvg(params: {
     svg.setAttribute('viewBox', '-12 -12 24 24');
     svg.setAttribute('aria-hidden', 'true');
 
+    const disc = svg.ownerDocument.createElementNS(ns, 'g');
+    svg.appendChild(disc);
+
     const track = svg.ownerDocument.createElementNS(ns, 'circle');
     track.setAttribute('cx', '0');
     track.setAttribute('cy', '0');
     track.setAttribute('r', formatNumber(radius));
     track.setAttribute('class', 'ert-tab-timer-disc__track');
-    svg.appendChild(track);
+    disc.appendChild(track);
 
     const wedge = tabTimerWedgePath(radius, params.progress, params.direction);
     if (wedge) {
         const fill = svg.ownerDocument.createElementNS(ns, 'path');
         fill.setAttribute('d', wedge);
         fill.setAttribute('class', 'ert-tab-timer-disc__fill');
-        svg.appendChild(fill);
+        disc.appendChild(fill);
     }
     if (params.symbol === 'dot') {
-        const dot = svg.ownerDocument.createElementNS(ns, 'circle');
-        dot.setAttribute('cx', '0');
-        dot.setAttribute('cy', '0');
-        dot.setAttribute('r', '4');
-        dot.setAttribute('class', 'ert-tab-timer-disc__symbol ert-tab-timer-disc__symbol--dot');
-        svg.appendChild(dot);
+        // Idle-suspended: punch a hole through the disc so it reads as a donut —
+        // the tab background shows through, which stays legible in any theme.
+        const maskId = `ert-tab-timer-hole-${++tabTimerMaskCounter}`;
+        const mask = svg.ownerDocument.createElementNS(ns, 'mask');
+        mask.setAttribute('id', maskId);
+        const keep = svg.ownerDocument.createElementNS(ns, 'rect');
+        keep.setAttribute('x', '-12');
+        keep.setAttribute('y', '-12');
+        keep.setAttribute('width', '24');
+        keep.setAttribute('height', '24');
+        keep.setAttribute('fill', 'white');
+        mask.appendChild(keep);
+        const hole = svg.ownerDocument.createElementNS(ns, 'circle');
+        hole.setAttribute('cx', '0');
+        hole.setAttribute('cy', '0');
+        hole.setAttribute('r', formatNumber(TAB_TIMER_HOLE_RADIUS));
+        hole.setAttribute('fill', 'black');
+        mask.appendChild(hole);
+        svg.insertBefore(mask, disc);
+        disc.setAttribute('mask', `url(#${maskId})`);
     } else if (params.symbol === 'plus') {
         const plus = svg.ownerDocument.createElementNS(ns, 'path');
         plus.setAttribute('d', 'M -3.5 0 H 3.5 M 0 -3.5 V 3.5');

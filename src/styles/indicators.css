@@ -365,13 +365,8 @@
   opacity: 0.3;
 }
 
-/* Auto-track state marker inside the tab disc:
-   dot = idle-suspended, plus = actively tracking. */
-.ert-tab-timer-disc__symbol--dot {
-  fill: var(--text-warning);
-  opacity: 1;
-}
-
+/* Auto-track state marker inside the tab disc: idle-suspended punches a
+   donut hole through the disc (SVG mask, no CSS); plus = actively tracking. */
 .ert-tab-timer-disc__symbol--plus {
   fill: none;
   stroke: var(--text-normal);

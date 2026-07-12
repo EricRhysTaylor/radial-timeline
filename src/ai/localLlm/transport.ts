@@ -234,26 +234,112 @@ function buildMessages(systemPrompt: string | null | undefined, userPrompt: stri
     return [{ role: 'user', content: userPrompt }];
 }
 
-export async function fetchOpenAiCompatibleLocalModels(
-    request: LocalLlmTransportRequest
-): Promise<LocalLlmModelEntry[]> {
-    const url = normalizeBaseUrl(request.baseUrl, '/models');
-    const response = await withTimeout(requestUrl({
-        url,
-        method: 'GET',
-        headers: buildHeaders(request.apiKey),
-        throw: false
-    }), request.timeoutMs, 'Local LLM model list request timed out.');
-    const responseData = response.json as { data?: unknown[]; error?: { message?: string } };
-    if (response.status >= 400) {
-        throw new Error(responseData?.error?.message || `HTTP ${response.status}`);
-    }
+type ModelListResponse = { data?: unknown[]; error?: { message?: string } };
+
+/** A model list is a few KB; anything larger is not an LLM `/models` endpoint. */
+const MODEL_LIST_MAX_BYTES = 2_000_000;
+
+function normalizeModelList(responseData: ModelListResponse): LocalLlmModelEntry[] {
     if (!Array.isArray(responseData?.data)) {
         throw new Error('Local LLM backend returned an unexpected model list response.');
     }
     return responseData.data
         .map(entry => normalizeLocalLlmModelEntry(entry))
         .filter((entry): entry is LocalLlmModelEntry => !!entry);
+}
+
+/** Read a fetch body up to a byte cap, cancelling the stream if it is exceeded. */
+async function readBoundedText(response: Response, maxBytes: number): Promise<string> {
+    if (!response.body) return response.text();
+    const reader = response.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (!value) continue;
+        total += value.length;
+        if (total > maxBytes) {
+            await reader.cancel();
+            throw new Error('Local LLM model list response was too large.');
+        }
+        chunks.push(value);
+    }
+    const merged = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+        merged.set(chunk, offset);
+        offset += chunk.length;
+    }
+    return new TextDecoder().decode(merged);
+}
+
+/**
+ * Probe `/models` with an abortable, size-bounded fetch. Unlike Obsidian's
+ * requestUrl, this genuinely cancels on timeout and caps the buffered body, so a
+ * hung or huge response on a wrong port cannot exhaust the renderer heap (the
+ * "Load Servers" crash vector).
+ */
+async function fetchModelListAbortable(request: LocalLlmTransportRequest): Promise<LocalLlmModelEntry[]> {
+    const url = normalizeBaseUrl(request.baseUrl, '/models');
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), request.timeoutMs);
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: buildHeaders(request.apiKey),
+            signal: controller.signal
+        });
+        const text = await readBoundedText(response, MODEL_LIST_MAX_BYTES);
+        let responseData: ModelListResponse;
+        try {
+            responseData = JSON.parse(text) as ModelListResponse;
+        } catch {
+            throw new Error('Local LLM backend returned an unexpected model list response.');
+        }
+        if (response.status >= 400) {
+            throw new Error(responseData?.error?.message || `HTTP ${response.status}`);
+        }
+        return normalizeModelList(responseData);
+    } finally {
+        window.clearTimeout(timer);
+    }
+}
+
+/** CORS-safe fallback via requestUrl — only reached on a fast fetch failure, never after a timeout-abort. */
+async function fetchModelListViaRequestUrl(request: LocalLlmTransportRequest): Promise<LocalLlmModelEntry[]> {
+    const response = await withTimeout(requestUrl({
+        url: normalizeBaseUrl(request.baseUrl, '/models'),
+        method: 'GET',
+        headers: buildHeaders(request.apiKey),
+        throw: false
+    }), request.timeoutMs, 'Local LLM model list request timed out.');
+    const responseData = response.json as ModelListResponse;
+    if (response.status >= 400) {
+        throw new Error(responseData?.error?.message || `HTTP ${response.status}`);
+    }
+    return normalizeModelList(responseData);
+}
+
+export async function fetchOpenAiCompatibleLocalModels(
+    request: LocalLlmTransportRequest
+): Promise<LocalLlmModelEntry[]> {
+    try {
+        return await fetchModelListAbortable(request);
+    } catch (error) {
+        // A TypeError means fetch could not connect (CORS block or connection
+        // refused) — retry via the CORS-safe requestUrl path. Every other error
+        // (timeout-abort, oversize body, HTTP status, bad JSON) means the endpoint
+        // DID respond or is hung, so we must NOT hand it to the un-cancellable
+        // requestUrl buffer — that is precisely the crash we are fixing.
+        if (error instanceof TypeError) {
+            return await fetchModelListViaRequestUrl(request);
+        }
+        if (error instanceof DOMException && error.name === 'AbortError') {
+            throw new Error('Local LLM model list request timed out.');
+        }
+        throw error;
+    }
 }
 
 export async function fetchOllamaModelDetails(

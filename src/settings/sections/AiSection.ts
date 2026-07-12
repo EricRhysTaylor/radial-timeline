@@ -2865,7 +2865,9 @@ export function renderAiSection(params: {
         const configured = getLocalLlmSettings(ensureCanonicalAiSettings());
         const candidates: Array<{ backend: LocalLlmBackendId; baseUrl: string; label: string }> = [
             { backend: 'ollama', baseUrl: 'http://localhost:11434/v1', label: buildLocalServerOptionLabel('ollama', 'http://localhost:11434/v1') },
-            { backend: 'lmStudio', baseUrl: 'http://localhost:1234/v1', label: buildLocalServerOptionLabel('lmStudio', 'http://localhost:1234/v1') }
+            { backend: 'lmStudio', baseUrl: 'http://localhost:1234/v1', label: buildLocalServerOptionLabel('lmStudio', 'http://localhost:1234/v1') },
+            // mlx_lm.server (Apple MLX) defaults to :8080 and is OpenAI-compatible.
+            { backend: 'openaiCompatible', baseUrl: 'http://localhost:8080/v1', label: buildLocalServerOptionLabel('openaiCompatible', 'http://localhost:8080/v1') }
         ];
         if (configured.baseUrl.trim()) {
             candidates.push({
@@ -3550,21 +3552,12 @@ export function renderAiSection(params: {
             });
     });
 
+    // One action: "Re-check" runs the whole chain (detect servers -> load models ->
+    // validate). The former separate "Load Servers" / "Load Models" buttons only
+    // re-triggered steps this already performs, so they are collapsed into this.
     const localLlmActionsSetting = new Settings(localLlmActionsRow)
         .setName(t('settings.ai.localLlm.actionsName'))
         .setDesc(t('settings.ai.localLlm.actionsDesc'));
-    localLlmActionsSetting.addButton(button => button
-        .setButtonText(t('settings.ai.localLlm.loadServersButton'))
-        .onClick(() => {
-            button.setDisabled(true);
-            void detectLocalLlmServers().finally(() => button.setDisabled(false));
-        }));
-    localLlmActionsSetting.addButton(button => button
-        .setButtonText(t('settings.ai.localLlm.loadModelsButton'))
-        .onClick(() => {
-            button.setDisabled(true);
-            void loadLocalLlmModels().finally(() => button.setDisabled(false));
-        }));
     localLlmActionsSetting.addButton(button => button
         .setButtonText(t('settings.ai.localLlm.validateButton'))
         .setCta()

@@ -1380,7 +1380,7 @@
 }
 
 .ert-timeline-session.clickable-icon.is-community-shared {
-  box-shadow: inset 0 0 0 1px rgba(var(--ert-social-accent-rgb-base), 0.5);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ert-social-accent-color-base) 50%, transparent);
 }
 
 .ert-timeline-session-panel__icon.clickable-icon {

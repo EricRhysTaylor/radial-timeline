@@ -2740,7 +2740,7 @@ export const en: TranslationKeys = {
         createNote: 'Create note\u2026',
         manageSubplots: 'Manage subplots',
         bookDesigner: 'Book designer',
-        timelineOrder: 'Quick scaffold',
+        timelineOrder: 'Timeline scaffold',
         timelineAudit: 'Timeline audit',
         manuscriptExport: 'Manuscript export',
         planetaryTimeCalculator: 'Planetary time calculator',

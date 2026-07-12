@@ -546,14 +546,15 @@ export class RadialTimelineView extends ItemView {
         return stage;
     }
 
-    private formatWritingSessionTargetMode(mode: WritingSessionTargetMode): string {
-        if (mode === 'words') return 'word target';
-        if (mode === 'both') return 'word + time target';
-        return 'time target';
+    private sessionHasWordGoal(active: ActiveWritingSession): boolean {
+        return (active.targetMode === 'words' || active.targetMode === 'both') && Boolean(active.goalWords);
     }
 
+    // A countdown timer always owns the rings (center + tab): in "word + time"
+    // mode word progress starts at 0 and would render an empty arc, hiding the
+    // countdown entirely. Words drive the ring only when no timer is set.
     private sessionUsesWordRing(active: ActiveWritingSession): boolean {
-        return (active.targetMode === 'words' || active.targetMode === 'both') && Boolean(active.goalWords);
+        return this.sessionHasWordGoal(active) && !active.goalMinutes;
     }
 
     private formatWordCount(value: number): string {
@@ -624,6 +625,9 @@ export class RadialTimelineView extends ItemView {
         const countdownElapsedMs = this.getCountdownSegmentElapsedMs(active, elapsedMs);
         const remainingMs = goalMs ? Math.max(0, goalMs - countdownElapsedMs) : undefined;
         const clockDisplay = this.formatSessionClockDisplay(remainingMs ?? elapsedMs, goalMs ? 'countdown' : 'elapsed');
+        const wordsSuffix = this.sessionHasWordGoal(active)
+            ? ` · ${Math.max(0, Math.round(active.typedWords || 0))}/${Math.max(1, Math.round(active.goalWords || 1))} words typed`
+            : '';
         if (goalMs && remainingMs === 0) {
             return {
                 headline: 'Session Complete',
@@ -634,13 +638,13 @@ export class RadialTimelineView extends ItemView {
         if (active.pausedAt) {
             return {
                 headline: active.idleAuto ? 'Idle' : 'Paused',
-                detail: `${clockDisplay.label} ${goalMs ? 'left' : 'elapsed'}`,
+                detail: `${clockDisplay.label} ${goalMs ? 'left' : 'elapsed'}${wordsSuffix}`,
                 tone: 'paused',
             };
         }
         return {
             headline: clockDisplay.value,
-            detail: `${clockDisplay.label} ${goalMs ? 'remaining' : 'elapsed'}`,
+            detail: `${clockDisplay.label} ${goalMs ? 'remaining' : 'elapsed'}${wordsSuffix}`,
             tone: 'running',
         };
     }
@@ -806,6 +810,12 @@ export class RadialTimelineView extends ItemView {
             return;
         }
         const elapsedMs = service.getActiveElapsedMs();
+        // Auto-track state marker inside the disc: a dot while the session is
+        // idle-suspended, a plus while activity is being tracked. Manual pauses
+        // and auto-track-off sessions show no marker.
+        const symbol = service.isAutoTrackEnabled()
+            ? (active.pausedAt ? (active.idleAuto ? 'dot' as const : undefined) : 'plus' as const)
+            : undefined;
         if (this.sessionUsesWordRing(active)) {
             const goalWords = Math.max(1, Math.round(active.goalWords || 1));
             const typedWords = Math.max(0, Math.round(active.typedWords || 0));
@@ -815,6 +825,7 @@ export class RadialTimelineView extends ItemView {
                 progress: elapsedProgress,
                 direction: 'clockwise',
                 paused: Boolean(active.pausedAt),
+                symbol,
             }));
             this.tabTimerIconActive = true;
             return;
@@ -829,6 +840,7 @@ export class RadialTimelineView extends ItemView {
             progress: countdown ? 1 - elapsedProgress : elapsedProgress,
             direction: countdown ? 'counterclockwise' : 'clockwise',
             paused: Boolean(active.pausedAt),
+            symbol,
         }));
         this.tabTimerIconActive = true;
     }
@@ -1125,9 +1137,13 @@ export class RadialTimelineView extends ItemView {
         setIcon(autoTrackIcon, 'calendar-sync');
         const autoTrackCopy = autoTrackCard.createDiv({ cls: 'ert-timeline-session-panel__idle-copy' });
         autoTrackCopy.createDiv({ cls: 'ert-timeline-session-panel__idle-title', text: 'Auto-track' });
+        const idleTimeoutMs = service.getIdleTimeoutMs();
+        const idleTimeoutLabel = idleTimeoutMs >= 60000
+            ? `${Math.round(idleTimeoutMs / 60000)} min`
+            : `${Math.round(idleTimeoutMs / 1000)} sec`;
         autoTrackCopy.createDiv({
             cls: 'ert-timeline-session-panel__idle-meta',
-            text: 'Once you start a session, it pauses after 2 min idle and resumes when you return to writing.',
+            text: `Once you start a session, it pauses after ${idleTimeoutLabel} idle and resumes when you return to writing.`,
         });
         const autoTrackToggle = autoTrackCard.createEl('input', { cls: 'ert-timeline-session-panel__toggle ert-timeline-session-panel__option-toggle' });
         autoTrackToggle.type = 'checkbox';
@@ -1362,17 +1378,9 @@ export class RadialTimelineView extends ItemView {
         const clock = panel.createDiv({ cls: `ert-timeline-session-panel__clock is-${statusDisplay.tone}` });
         this.applySessionProgressClass(clock, clockProgressStep);
         clock.createDiv({ cls: 'ert-timeline-session-panel__clock-value', text: clockText });
-        if (statusDisplay.tone !== 'complete') {
-            const meta = panel.createDiv({ cls: 'ert-timeline-session-panel__meta' });
-            meta.setText([
-                this.formatWritingSessionMode(active.mode),
-                this.formatWritingSessionTargetMode(active.targetMode ?? 'time'),
-                active.stage,
-                active.bookTitle,
-                this.sessionUsesWordRing(active) ? this.formatSessionClockHms(elapsedMs) : undefined,
-                this.sessionUsesWordRing(active) && active.goalMinutes ? `${active.goalMinutes} min timer` : undefined,
-            ].filter(Boolean).join(' · '));
-        }
+        // Live tracking stays one line: the clock is the whole story. Session
+        // shape (mode/stage/book/targets) lives in the aria detail and the
+        // start form, not repeated here.
 
         const actions = panel.createDiv({ cls: 'ert-timeline-session-panel__actions' });
         if (statusDisplay.tone === 'complete' && active.goalMinutes) {
@@ -1458,18 +1466,24 @@ export class RadialTimelineView extends ItemView {
     }
 
     private getActiveWritingSessionPanelClockText(active: ActiveWritingSession, elapsedMs: number): string {
-        if (this.sessionUsesWordRing(active)) {
-            const typedWords = Math.max(0, Math.round(active.typedWords || 0));
-            const goalWords = Math.max(1, Math.round(active.goalWords || 1));
-            return `${typedWords} / ${goalWords} words`;
-        }
         const goalMs = active.goalMinutes ? active.goalMinutes * 60000 : undefined;
         const countdownElapsedMs = this.getCountdownSegmentElapsedMs(active, elapsedMs);
         const remainingMs = goalMs ? Math.max(0, goalMs - countdownElapsedMs) : undefined;
         const statusDisplay = this.getSessionStatusDisplay(active, elapsedMs);
-        return statusDisplay.tone === 'complete'
-            ? this.formatCompletedSessionSummary(active, elapsedMs)
-            : this.formatSessionClockHms(remainingMs ?? elapsedMs);
+        if (statusDisplay.tone === 'complete') {
+            return this.formatCompletedSessionSummary(active, elapsedMs);
+        }
+        // Word-goal sessions get one compact line ("0/400w 31m"): word progress
+        // plus minutes remaining on a countdown, or minutes elapsed without one.
+        if (this.sessionHasWordGoal(active)) {
+            const typedWords = Math.max(0, Math.round(active.typedWords || 0));
+            const goalWords = Math.max(1, Math.round(active.goalWords || 1));
+            const minutes = remainingMs !== undefined
+                ? Math.ceil(remainingMs / 60000)
+                : Math.floor(elapsedMs / 60000);
+            return `${typedWords}/${goalWords}w ${minutes}m`;
+        }
+        return this.formatSessionClockHms(remainingMs ?? elapsedMs);
     }
 
     private syncActiveWritingSessionPanelClock(panel: HTMLElement, active: ActiveWritingSession): boolean {

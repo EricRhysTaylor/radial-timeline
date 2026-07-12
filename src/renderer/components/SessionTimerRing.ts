@@ -131,6 +131,8 @@ export function buildTabTimerDiscSvg(params: {
     progress: number;
     direction: 'clockwise' | 'counterclockwise';
     paused: boolean;
+    /** Auto-track marker: 'dot' = idle-suspended, 'plus' = actively tracking. */
+    symbol?: 'dot' | 'plus';
 }): SVGSVGElement {
     const ns = 'http://www.w3.org/2000/svg';
     const radius = TAB_TIMER_DISC_RADIUS;
@@ -152,6 +154,19 @@ export function buildTabTimerDiscSvg(params: {
         fill.setAttribute('d', wedge);
         fill.setAttribute('class', 'ert-tab-timer-disc__fill');
         svg.appendChild(fill);
+    }
+    if (params.symbol === 'dot') {
+        const dot = svg.ownerDocument.createElementNS(ns, 'circle');
+        dot.setAttribute('cx', '0');
+        dot.setAttribute('cy', '0');
+        dot.setAttribute('r', '3.5');
+        dot.setAttribute('class', 'ert-tab-timer-disc__symbol ert-tab-timer-disc__symbol--dot');
+        svg.appendChild(dot);
+    } else if (params.symbol === 'plus') {
+        const plus = svg.ownerDocument.createElementNS(ns, 'path');
+        plus.setAttribute('d', 'M -4.5 0 H 4.5 M 0 -4.5 V 4.5');
+        plus.setAttribute('class', 'ert-tab-timer-disc__symbol ert-tab-timer-disc__symbol--plus');
+        svg.appendChild(plus);
     }
     return svg;
 }

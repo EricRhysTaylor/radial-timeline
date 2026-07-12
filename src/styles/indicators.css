@@ -365,6 +365,21 @@
   opacity: 0.3;
 }
 
+/* Auto-track state marker inside the tab disc:
+   dot = idle-suspended, plus = actively tracking. */
+.ert-tab-timer-disc__symbol--dot {
+  fill: var(--text-warning);
+  opacity: 1;
+}
+
+.ert-tab-timer-disc__symbol--plus {
+  fill: none;
+  stroke: var(--text-normal);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  opacity: 0.9;
+}
+
 /* Estimate tick group - hover interaction */
 .radial-timeline-container .rt-estimate-tick-group {
   cursor: pointer;

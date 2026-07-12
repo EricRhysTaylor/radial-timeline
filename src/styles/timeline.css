@@ -1689,8 +1689,11 @@
   overflow-wrap: anywhere;
 }
 
+/* Live tracking is one line, never wrapped; only the "Save …?" complete
+   summary is allowed to wrap (overflow-wrap above). */
 .ert-timeline-session-panel__clock:not(.is-complete) .ert-timeline-session-panel__clock-value {
   min-width: 10.5ch;
+  white-space: nowrap;
 }
 
 .ert-timeline-session-panel__clock.is-paused .ert-timeline-session-panel__clock-value,
@@ -1705,13 +1708,6 @@
 
 .ert-timeline-session-panel__clock.is-complete {
   color: var(--text-success);
-}
-
-.ert-timeline-session-panel__meta,
-.ert-timeline-session-panel__note {
-  color: var(--text-muted);
-  font-size: var(--font-ui-small);
-  text-align: center;
 }
 
 .ert-timeline-search {

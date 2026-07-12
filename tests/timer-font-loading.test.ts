@@ -161,7 +161,11 @@ describe('writing session timer font loading', () => {
         expect(timelineViewSource).not.toContain("button.setAttribute('title', label)");
         expect(timelineViewSource).not.toContain("settingsBtn.setAttribute('title'");
         expect(timelineViewSource).toContain('formatCompletedSessionSummary');
-        expect(timelineViewSource).toContain("statusDisplay.tone !== 'complete'");
+        // Live tracking is a single compact clock line ("0/400w 31m") with no
+        // meta paragraph under it; only the complete summary may wrap.
+        expect(timelineViewSource).toContain('${typedWords}/${goalWords}w ${minutes}m');
+        expect(timelineViewSource).not.toContain("cls: 'ert-timeline-session-panel__meta'");
+        expect(readRuleBlock(timelineCss, '.ert-timeline-session-panel__clock:not(.is-complete) .ert-timeline-session-panel__clock-value')).toContain('white-space: nowrap');
         expect(timelineViewSource).not.toContain("? 'Session Complete'");
         expect(timelineViewSource).not.toContain("active.pausedAt ? 'Paused' : 'Running'");
     });

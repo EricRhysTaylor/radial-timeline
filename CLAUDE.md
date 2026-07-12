@@ -56,6 +56,14 @@ The primary branch is `master`.
 - CSS classes use `ert-` prefix (ERT design system)
 - Modal sizing uses inline styles (Obsidian pattern), marked with `// SAFE:` comments
 - Event listeners in Modal classes use direct `.addEventListener()` (Modal lifecycle manages cleanup)
+- **Scene YAML belongs to the author.** Never add frontmatter fields to
+  operate plugin features — operational state lives in sidecars or plugin
+  data. Every scene YAML field must serve the author (readable by them, or
+  materially helps AI understand the scene). Managed fields are defined by
+  the advanced YAML manager templates (Settings → Core); everything else is
+  an author custom field, untouched beyond sorting. Full rule + case study:
+  `docs/engineering/standards/code-doctrine.md` → "Scene YAML Belongs to the
+  Author"
 
 ## Refactor Guard
 

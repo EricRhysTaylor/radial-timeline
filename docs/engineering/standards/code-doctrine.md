@@ -203,6 +203,16 @@ We intentionally avoid:
 
 Correct software is simpler than defensive software.
 
+### Scene YAML Belongs to the Author — Never Add Fields to Operate Features
+
+Every field in a scene's frontmatter must serve the author directly: something they read or edit themselves, or that materially helps AI features understand the scene. **Plugin machinery never writes operational state into scene YAML** — no provenance stamps, confidence scores, tracking flags, or feature toggles. That state lives in sidecar files (e.g. `Radial Timeline/Snapshots/Timeline/`), plugin data, or in-session models.
+
+The managed-field boundary is the advanced YAML manager (Settings → Core): its base and advanced templates define the canonical, plugin-managed fields. Anything outside those templates is an **author custom field** and must not be touched beyond sorting — and sorting keeps each custom property attached to the canonical managed property directly above it.
+
+Case study (2026-07): the beta timeline tools wrote `WhenSource`, `WhenConfidence`, `DurationSource`, and `NeedsReview` into scene frontmatter to power ripple anchoring and review flags. None served the author. The fields were removed before release; ripple provenance moved to the When change log sidecar, which is also more correct — a hand-edited date automatically invalidates its stamp, which a YAML field could never detect.
+
+Litmus test for any new frontmatter write: *would an author scanning their own file want this line there?* If the honest answer is "it's for the plugin," it goes in a sidecar.
+
 ### Canonical YAML Keys Go Through Helpers, Never String Literals
 
 Note types that have undergone field renames (Beat: `Description → Purpose`; Backdrop: `Synopsis → Context`) must be read through the canonical helpers in [`src/utils/frontmatter.ts`](../../../src/utils/frontmatter.ts) — `readBeatPurpose`, `readBackdropContext`. The legacy-key fallback ladder lives once in those helpers; never inline it.

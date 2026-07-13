@@ -3667,9 +3667,13 @@
   word-break: break-word;
 }
 
-.ert-ui.ert-scope--settings .ert-ai-local-llm-model-summary,
-.ert-ui.ert-scope--settings .ert-ai-local-llm-status-timestamp {
+.ert-ui.ert-scope--settings .ert-ai-local-llm-model-summary {
   margin-top: 2px;
+}
+
+/* Single-line rollup ("All checks passed — ...") spans the full checks grid. */
+.ert-ui.ert-scope--settings .ert-ai-local-llm-checks-rollup {
+  grid-column: 1 / -1;
 }
 
 .ert-ui.ert-scope--settings .ert-ai-local-llm-model-list {

@@ -3007,13 +3007,13 @@ export function renderAiSection(params: {
         });
     localLlmServerSetting.settingEl.addClass(ERT_CLASSES.ROW, 'ert-settings-hidden');
     const localLlmStatusGrid = localLlmStatusSection.createDiv({ cls: 'ert-ai-local-llm-status-grid' });
-    const localLlmStatusConnection = localLlmStatusGrid.createDiv({ cls: `${ERT_CLASSES.STACK_TIGHT} ert-ai-local-llm-status-column` });
-    const localLlmStatusModel = localLlmStatusGrid.createDiv({ cls: `${ERT_CLASSES.STACK_TIGHT} ert-ai-local-llm-status-column` });
-    const localLlmStatusChecks = localLlmStatusGrid.createDiv({ cls: `${ERT_CLASSES.STACK_TIGHT} ert-ai-local-llm-status-column` });
+    const localLlmStatusSummaryCol = localLlmStatusGrid.createDiv({ cls: `${ERT_CLASSES.STACK_TIGHT} ert-ai-local-llm-status-column` });
+    const localLlmStatusServerCol = localLlmStatusGrid.createDiv({ cls: `${ERT_CLASSES.STACK_TIGHT} ert-ai-local-llm-status-column` });
+    const localLlmStatusCapabilityCol = localLlmStatusGrid.createDiv({ cls: `${ERT_CLASSES.STACK_TIGHT} ert-ai-local-llm-status-column` });
+    const localLlmChecksDetail = localLlmStatusSection.createDiv({ cls: 'ert-ai-local-llm-status-grid ert-ai-local-llm-checks-detail' });
     const localLlmModelsSummary = localLlmStatusSection.createDiv({ cls: 'ert-field-note ert-ai-local-llm-model-summary' });
     const localLlmModelsList = localLlmStatusSection.createDiv({ cls: `${ERT_CLASSES.INLINE} ert-ai-local-llm-model-list` });
     const localLlmModelsLegend = localLlmStatusSection.createDiv({ cls: 'ert-field-note ert-ai-local-llm-model-legend' });
-    const localLlmStatusTimestamp = localLlmStatusSection.createDiv({ cls: 'ert-field-note ert-ai-local-llm-status-timestamp' });
     const localLlmActionsRow = localLlmStatusSection.createDiv({
         cls: `${ERT_CLASSES.STACK_TIGHT} ert-card-subtle ert-ai-local-llm-actions-row ert-settings-hidden`
     });
@@ -3287,6 +3287,7 @@ export function renderAiSection(params: {
 
         localLlmModelsList.empty();
         localLlmModelsLegend.empty();
+        localLlmModelsSummary.toggleClass('ert-settings-hidden', false);
         if (localLlmModelLoadPending) {
             localLlmModelsSummary.setText(t('settings.ai.localLlm.modelsLoading'));
             return;
@@ -3306,11 +3307,9 @@ export function renderAiSection(params: {
             return;
         }
 
-        const loadStamp = formatLocalTimestamp(localLlmLastLoadedAt);
-        const activeServerLabel = buildLocalServerOptionLabel(getLocalLlmBackendId(), getOllamaBaseUrl());
-        localLlmModelsSummary.setText(
-            `${activeServerLabel}: ${localLlmLoadedModels.length} model${localLlmLoadedModels.length === 1 ? '' : 's'} loaded. ${selectedExists ? 'Selected model found.' : 'Selected model missing from the loaded list.'}${loadStamp ? ` Last loaded ${loadStamp}.` : ''}`
-        );
+        // The healthy state is already covered by the status grid and the pills; only surface the mismatch warning.
+        localLlmModelsSummary.setText(selectedExists ? '' : 'Selected model is missing from the loaded list.');
+        localLlmModelsSummary.toggleClass('ert-settings-hidden', selectedExists);
         const appendLegendItem = (tier: 0 | 1 | 3 | 4, label: string): void => {
             const item = localLlmModelsLegend.createSpan({ cls: 'ert-ai-local-llm-legend-item' });
             item.createSpan({ cls: `ert-ai-local-llm-legend-swatch ert-ai-local-llm-legend-swatch--tier${tier}` });
@@ -3437,9 +3436,10 @@ export function renderAiSection(params: {
         const selectedCapability = getLocalCapabilityAssessment(selectedModelId, localLlmLoadedModels.find(model => model.id === selectedModelId) ?? null);
         const multipleDetectedServers = getLocalLlmConfigurationMode() === 'auto' && localLlmDetectedServers.length > 1;
 
-        localLlmStatusConnection.empty();
-        localLlmStatusModel.empty();
-        localLlmStatusChecks.empty();
+        localLlmStatusSummaryCol.empty();
+        localLlmStatusServerCol.empty();
+        localLlmStatusCapabilityCol.empty();
+        localLlmChecksDetail.empty();
         if (localLlmServerDropdown) {
             localLlmServerDropdown.selectEl.empty();
             localLlmDetectedServers.forEach(server => {
@@ -3453,30 +3453,7 @@ export function renderAiSection(params: {
         localLlmServerSetting.settingEl.toggleClass('ert-settings-visible', multipleDetectedServers);
 
         const statusValue = buildLocalStatusValue();
-
-        const connectionItems: Array<[string, string]> = [
-            ['Status', statusValue],
-            ['Local server', localLlmDetectedServers.length
-                ? buildLocalServerOptionLabel(localLlm.backend, localLlm.baseUrl)
-                : 'No local server detected'],
-            ['Base URL', localLlm.baseUrl || 'Not set'],
-            ['Last checked', localLlmValidationPending ? 'Validating...' : (formatLocalTimestamp(localLlmLastValidatedAt) || 'Not yet validated')]
-        ];
-        const modelItems: Array<[string, string]> = [
-            ['Models loaded', localLlmModelLoadPending
-                ? 'Checking backend'
-                : localLlmModelLoadError
-                    ? 'Unavailable'
-                    : (localLlmLoadedModels.length > 0 ? String(localLlmLoadedModels.length) : 'Not loaded')],
-            ['Selected model', localLlmModelLoadPending
-                ? 'Checking availability'
-                : selectedModelId
-                    ? (selectedExists ? `${abbreviateLocalModelId(selectedModelId)} ready` : `${abbreviateLocalModelId(selectedModelId)} unavailable`)
-                    : 'Not set'],
-            ['Capability', `${selectedCapability.tierSummary} (${selectedCapability.tierName})${selectedCapability.confidence === 'heuristic' ? ' (heuristic)' : ''}`],
-            ['Supports', buildLocalFeatureSummary(selectedCapability)],
-            ['Confidence', 'Likely fit for Radial Timeline tasks. Final results still depend on corpus size and complexity.']
-        ];
+        const statusStamp = localLlmValidationPending ? null : formatLocalTimestamp(localLlmLastValidatedAt);
 
         const appendStatusItem = (container: HTMLElement, label: string, value: string): void => {
             const item = container.createDiv({ cls: 'ert-ai-local-llm-status-item' });
@@ -3484,8 +3461,13 @@ export function renderAiSection(params: {
             item.createDiv({ cls: 'ert-ai-local-llm-status-value', text: value });
         };
 
-        connectionItems.forEach(([label, value]) => appendStatusItem(localLlmStatusConnection, label, value));
-        modelItems.forEach(([label, value]) => appendStatusItem(localLlmStatusModel, label, value));
+        appendStatusItem(localLlmStatusSummaryCol, 'Status', statusStamp ? `${statusValue} · ${statusStamp}` : statusValue);
+        appendStatusItem(localLlmStatusServerCol, 'Local server', localLlmDetectedServers.length
+            ? `${LOCAL_LLM_BACKEND_LABELS[localLlm.backend]} · ${getOllamaBaseUrl()}`
+            : 'No local server detected');
+        appendStatusItem(localLlmStatusCapabilityCol, 'Capability', selectedModelId
+            ? `${selectedCapability.tierSummary} (${selectedCapability.tierName})${selectedCapability.confidence === 'heuristic' ? ' (heuristic)' : ''} — ${buildLocalFeatureSummary(selectedCapability)}`
+            : 'No local model selected');
 
         const checks: Array<[string, { ok: boolean; message: string } | null]> = [
             ['Connection', localLlmValidationReport?.reachable ?? null],
@@ -3494,18 +3476,37 @@ export function renderAiSection(params: {
             ['Structured validation', localLlmValidationReport?.structuredJson ?? null],
             ['Repair validation', localLlmValidationReport?.repairPath ?? null]
         ];
-        checks.forEach(([label, check]) => {
-            const value = buildLocalCheckValue(label as 'Connection' | 'Model availability' | 'Basic validation' | 'Structured validation' | 'Repair validation', check, selectedExists);
-            appendStatusItem(localLlmStatusChecks, label, value);
-        });
+        const hasHealthyServer = localLlmDetectedServers.length > 0;
+        const modelReady = !localLlmModelLoadPending && !localLlmModelLoadError
+            && localLlmLoadedModels.length > 0 && !!selectedModelId && selectedExists;
+        const allChecksPassed = modelReady
+            && checks.every(([, check]) => check?.ok)
+            && !localLlmValidationError
+            && !localLlmServerDetectionError;
+        const appendChecksRollup = (text: string): void => {
+            localLlmChecksDetail.createDiv({ cls: 'ert-field-note ert-ai-local-llm-checks-rollup', text });
+        };
 
-        if (localLlmValidationError) {
-            appendStatusItem(localLlmStatusChecks, 'Validation', formatLocalLlmUiError(localLlmValidationError));
+        if (localLlmValidationPending) {
+            appendChecksRollup('Running validation checks...');
+        } else if (allChecksPassed) {
+            appendChecksRollup('All checks passed — connection · model availability · basic · structured · repair.');
+        } else if (!hasHealthyServer) {
+            appendChecksRollup(localLlmServerDetectionError
+                ? 'No healthy local servers were detected automatically.'
+                : 'Checks run once a local server is detected.');
+        } else {
+            checks.forEach(([label, check]) => {
+                const value = buildLocalCheckValue(label as 'Connection' | 'Model availability' | 'Basic validation' | 'Structured validation' | 'Repair validation', check, selectedExists);
+                appendStatusItem(localLlmChecksDetail, label, value);
+            });
+            if (localLlmValidationError) {
+                appendStatusItem(localLlmChecksDetail, 'Validation', formatLocalLlmUiError(localLlmValidationError));
+            }
+            if (localLlmServerDetectionError) {
+                appendStatusItem(localLlmChecksDetail, 'Server detection', 'No healthy local servers were detected automatically.');
+            }
         }
-        if (localLlmServerDetectionError) {
-            appendStatusItem(localLlmStatusChecks, 'Server detection', 'No healthy local servers were detected automatically.');
-        }
-        localLlmStatusTimestamp.empty();
         const showActions = shouldRevealLocalLlmActionRow();
         localLlmActionsRow.toggleClass('ert-settings-hidden', !showActions);
         localLlmActionsRow.toggleClass('ert-settings-visible', showActions);

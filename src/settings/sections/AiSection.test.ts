@@ -423,15 +423,16 @@ describe('AI settings models table', () => {
         expect(source.includes("const localLlmServerSetting = new Settings(localLlmStatusSection)")).toBe(true);
         expect(source.includes("setName(t('settings.ai.localLlm.serverName'))")).toBe(true);
         expect(source.includes('shouldRevealLocalLlmActionRow')).toBe(true);
-        expect(source.includes("model${localLlmLoadedModels.length === 1 ? '' : 's'} loaded.")).toBe(true);
+        expect(source.includes('All checks passed — connection · model availability · basic · structured · repair.')).toBe(true);
         expect(source.includes("t('settings.ai.localLlm.legendNotUsable')")).toBe(true);
         expect(source.includes("t('settings.ai.localLlm.legendLimited')")).toBe(true);
         expect(source.includes("t('settings.ai.localLlm.legendStrong')")).toBe(true);
         expect(source.includes("t('settings.ai.localLlm.legendInquiryEligible')")).toBe(true);
         expect(source.includes('getLocalStrategyModelOptions')).toBe(true);
-        expect(source.includes("['Capability', `${selectedCapability.tierSummary} (${selectedCapability.tierName})${selectedCapability.confidence === 'heuristic' ? ' (heuristic)' : ''}`],")).toBe(true);
-        expect(source.includes("['Supports', buildLocalFeatureSummary(selectedCapability)],")).toBe(true);
-        expect(source.includes("['Confidence', 'Likely fit for Radial Timeline tasks. Final results still depend on corpus size and complexity.']")).toBe(true);
+        expect(source.includes("appendStatusItem(localLlmStatusCapabilityCol, 'Capability', selectedModelId")).toBe(true);
+        expect(source.includes(' — ${buildLocalFeatureSummary(selectedCapability)}')).toBe(true);
+        expect(source.includes('Likely fit for Radial Timeline tasks.')).toBe(false);
+        expect(source.includes('const allChecksPassed = modelReady')).toBe(true);
         expect(source.includes("t('settings.ai.localLlm.statusDesc')")).toBe(true);
         expect(source.includes('Summary —')).toBe(true);
         expect(source.includes('Inquiry —')).toBe(true);
@@ -441,7 +442,7 @@ describe('AI settings models table', () => {
         expect(source.includes("pill.createSpan({ cls: 'ert-ai-local-model-pill-active', text: t('settings.ai.localLlm.modelActive') })")).toBe(true);
         expect(source.includes('if (localLlmModelText) localLlmModelText.setValue(value);')).toBe(true);
         expect(source.includes("t('settings.ai.localLlm.modelsLoading')")).toBe(true);
-        expect(source.includes('Selected model missing from the loaded list.')).toBe(true);
+        expect(source.includes('Selected model is missing from the loaded list.')).toBe(true);
         expect(source.includes('No healthy local servers were detected automatically.')).toBe(true);
         expect(source.includes('No Local Server Detected')).toBe(true);
         expect(source.includes('Checking Local Server...')).toBe(true);
@@ -457,7 +458,7 @@ describe('AI settings models table', () => {
         expect(source.includes('const buildLocalCheckValue = (')).toBe(true);
         expect(source.includes('const formatLocalLlmUiError = (message: string | null | undefined): string => {')).toBe(true);
         expect(source.includes("const appendStatusItem = (container: HTMLElement, label: string, value: string): void => {")).toBe(true);
-        expect(source.includes("['Last checked', localLlmValidationPending ? 'Validating...' : (formatLocalTimestamp(localLlmLastValidatedAt) || 'Not yet validated')]")).toBe(true);
+        expect(source.includes("appendStatusItem(localLlmStatusSummaryCol, 'Status', statusStamp ? `${statusValue} · ${statusStamp}` : statusValue);")).toBe(true);
         expect(source.includes("'Connected & validated'")).toBe(true);
         expect(source.includes("'Waiting for a local server.'")).toBe(true);
     });

@@ -3569,34 +3569,48 @@
   transition: border-color 120ms ease, background-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
 }
 
+/* Canonical local-LLM tier accent colors — shared by model pills, the ACTIVE badge, and the legend swatches. */
+.ert-ui.ert-scope--settings {
+  --ert-local-llm-tier0-accent: color-mix(in srgb, var(--text-error) 68%, var(--text-normal));
+  --ert-local-llm-tier1-accent: color-mix(in srgb, var(--color-orange) 70%, var(--text-normal));
+  --ert-local-llm-tier2-accent: color-mix(in srgb, var(--color-yellow) 65%, var(--text-normal));
+  --ert-local-llm-tier3-accent: color-mix(in srgb, var(--color-green) 66%, var(--text-normal));
+  --ert-local-llm-tier4-accent: color-mix(in srgb, var(--color-cyan) 68%, var(--text-normal));
+}
+
 .ert-ui.ert-scope--settings .ert-ai-local-model-pill.ert-ai-local-model-pill--tier0 {
+  --ert-local-llm-tier-accent: var(--ert-local-llm-tier0-accent);
   border-color: color-mix(in srgb, var(--text-error) 75%, transparent);
   background: color-mix(in srgb, var(--text-error) 14%, transparent);
-  color: color-mix(in srgb, var(--text-error) 68%, var(--text-normal));
+  color: var(--ert-local-llm-tier0-accent);
 }
 
 .ert-ui.ert-scope--settings .ert-ai-local-model-pill.ert-ai-local-model-pill--tier1 {
+  --ert-local-llm-tier-accent: var(--ert-local-llm-tier1-accent);
   border-color: color-mix(in srgb, var(--color-orange) 72%, transparent);
   background: color-mix(in srgb, var(--color-orange) 14%, transparent);
-  color: color-mix(in srgb, var(--color-orange) 70%, var(--text-normal));
+  color: var(--ert-local-llm-tier1-accent);
 }
 
 .ert-ui.ert-scope--settings .ert-ai-local-model-pill.ert-ai-local-model-pill--tier2 {
+  --ert-local-llm-tier-accent: var(--ert-local-llm-tier2-accent);
   border-color: color-mix(in srgb, var(--color-yellow) 70%, transparent);
   background: color-mix(in srgb, var(--color-yellow) 12%, transparent);
-  color: color-mix(in srgb, var(--color-yellow) 65%, var(--text-normal));
+  color: var(--ert-local-llm-tier2-accent);
 }
 
 .ert-ui.ert-scope--settings .ert-ai-local-model-pill.ert-ai-local-model-pill--tier3 {
+  --ert-local-llm-tier-accent: var(--ert-local-llm-tier3-accent);
   border-color: color-mix(in srgb, var(--color-green) 74%, transparent);
   background: color-mix(in srgb, var(--color-green) 12%, transparent);
-  color: color-mix(in srgb, var(--color-green) 66%, var(--text-normal));
+  color: var(--ert-local-llm-tier3-accent);
 }
 
 .ert-ui.ert-scope--settings .ert-ai-local-model-pill.ert-ai-local-model-pill--tier4 {
+  --ert-local-llm-tier-accent: var(--ert-local-llm-tier4-accent);
   border-color: color-mix(in srgb, var(--color-cyan) 78%, transparent);
   background: color-mix(in srgb, var(--color-cyan) 12%, transparent);
-  color: color-mix(in srgb, var(--color-cyan) 68%, var(--text-normal));
+  color: var(--ert-local-llm-tier4-accent);
 }
 
 .ert-ui.ert-scope--settings .ert-ai-local-model-pill.is-active {
@@ -3619,7 +3633,7 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--background-primary);
-  background: color-mix(in srgb, currentColor 88%, white 12%);
+  background: var(--ert-local-llm-tier-accent, var(--text-muted));
 }
 
 .ert-ui.ert-scope--settings .ert-ai-local-llm-status-grid {
@@ -3664,23 +3678,40 @@
 
 .ert-ui.ert-scope--settings .ert-ai-local-llm-model-legend {
   margin-top: -2px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ert-gap-xs) var(--ert-gap-md);
   line-height: 1.35;
 }
 
-.ert-ui.ert-scope--settings .ert-ai-local-llm-legend-chip--tier0 {
-  color: color-mix(in srgb, var(--text-error) 68%, var(--text-normal));
+.ert-ui.ert-scope--settings .ert-ai-local-llm-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ert-gap-xs);
 }
 
-.ert-ui.ert-scope--settings .ert-ai-local-llm-legend-chip--tier1 {
-  color: color-mix(in srgb, var(--color-orange) 70%, var(--text-normal));
+.ert-ui.ert-scope--settings .ert-ai-local-llm-legend-swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  flex-shrink: 0;
 }
 
-.ert-ui.ert-scope--settings .ert-ai-local-llm-legend-chip--tier3 {
-  color: color-mix(in srgb, var(--color-green) 66%, var(--text-normal));
+.ert-ui.ert-scope--settings .ert-ai-local-llm-legend-swatch--tier0 {
+  background: var(--ert-local-llm-tier0-accent);
 }
 
-.ert-ui.ert-scope--settings .ert-ai-local-llm-legend-chip--tier4 {
-  color: color-mix(in srgb, var(--color-cyan) 68%, var(--text-normal));
+.ert-ui.ert-scope--settings .ert-ai-local-llm-legend-swatch--tier1 {
+  background: var(--ert-local-llm-tier1-accent);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-local-llm-legend-swatch--tier3 {
+  background: var(--ert-local-llm-tier3-accent);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-local-llm-legend-swatch--tier4 {
+  background: var(--ert-local-llm-tier4-accent);
 }
 
 @media (max-width: 980px) {

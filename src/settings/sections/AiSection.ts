@@ -3311,13 +3311,15 @@ export function renderAiSection(params: {
         localLlmModelsSummary.setText(
             `${activeServerLabel}: ${localLlmLoadedModels.length} model${localLlmLoadedModels.length === 1 ? '' : 's'} loaded. ${selectedExists ? 'Selected model found.' : 'Selected model missing from the loaded list.'}${loadStamp ? ` Last loaded ${loadStamp}.` : ''}`
         );
-        localLlmModelsLegend.createSpan({ cls: 'ert-ai-local-llm-legend-chip ert-ai-local-llm-legend-chip--tier0', text: t('settings.ai.localLlm.legendNotUsable') });
-        localLlmModelsLegend.createSpan({ text: ' · ' });
-        localLlmModelsLegend.createSpan({ cls: 'ert-ai-local-llm-legend-chip ert-ai-local-llm-legend-chip--tier1', text: t('settings.ai.localLlm.legendLimited') });
-        localLlmModelsLegend.createSpan({ text: ' · ' });
-        localLlmModelsLegend.createSpan({ cls: 'ert-ai-local-llm-legend-chip ert-ai-local-llm-legend-chip--tier3', text: t('settings.ai.localLlm.legendStrong') });
-        localLlmModelsLegend.createSpan({ text: ' · ' });
-        localLlmModelsLegend.createSpan({ cls: 'ert-ai-local-llm-legend-chip ert-ai-local-llm-legend-chip--tier4', text: t('settings.ai.localLlm.legendInquiryEligible') });
+        const appendLegendItem = (tier: 0 | 1 | 3 | 4, label: string): void => {
+            const item = localLlmModelsLegend.createSpan({ cls: 'ert-ai-local-llm-legend-item' });
+            item.createSpan({ cls: `ert-ai-local-llm-legend-swatch ert-ai-local-llm-legend-swatch--tier${tier}` });
+            item.createSpan({ text: label });
+        };
+        appendLegendItem(0, t('settings.ai.localLlm.legendNotUsable'));
+        appendLegendItem(1, t('settings.ai.localLlm.legendLimited'));
+        appendLegendItem(3, t('settings.ai.localLlm.legendStrong'));
+        appendLegendItem(4, t('settings.ai.localLlm.legendInquiryEligible'));
 
         localLlmLoadedModels.forEach(model => {
             const pill = localLlmModelsList.createSpan({

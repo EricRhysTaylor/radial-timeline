@@ -503,6 +503,20 @@ Doctrine fit: no new abstraction layer beyond the adapters, no fallback chains
   review checkpoints** (Split, Review), **Supabase prompt row provisioned at
   Slice 1**, and **Scrivener intake is export-only in V1** (no raw `.scriv`/RTF).
   Slice 1 is unblocked.
+- **2026-07-13/14 (post first E2E run)** — the first Odyssey run surfaced
+  **entity greed** (96 zero-byte stubs for every proper noun) and drove the
+  entity-notes formalization: `Class: Character` and `Class: Place` are now
+  first-class note types (`src/utils/entityNotes.ts`) with YAML
+  (`Class`/`Book`/`Scene Count`) + body scaffolds distilled from Eric's
+  author-vault `Class Template/`. **Body sections ship intentionally blank** —
+  no AI-hallucinated descriptions; `Scene Count` is auto-counted from linking
+  scenes. Entity folders sit **parallel to the book folder** (`Character/`,
+  `Place/` as siblings — Eric's convention), not inside it. The prompt gained
+  selectivity rules (principal characters who appear/act/speak; named
+  geographic places only; no peoples/nations/rooms) backed by hard caps
+  (`MAX_CHARACTERS=12`, `MAX_PLACES=8`). Onboarding never overwrites an
+  existing entity note. The Create-RT-note modal's "Story world" family gained
+  Character + Place subtypes so the same scaffolds are hand-creatable.
 
 ## Appendix A — Canonical onboarding prompt (instruction block)
 

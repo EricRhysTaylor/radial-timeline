@@ -34,7 +34,7 @@ const WELCOME_COPY = {
     cards: {
         website: {
             title: 'Visit the website',
-            desc: 'Guides, walkthroughs, release notes, pricing, and the story behind Radial Timeline.',
+            desc: 'Join the community and share your journey at your own comfort level. Learn about the features available using the Radial Timeline & Editorialist ecosystem and get help.',
             cta: 'Open Website'
         },
         sampleChecking: {

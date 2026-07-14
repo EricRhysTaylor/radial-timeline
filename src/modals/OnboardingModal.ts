@@ -13,7 +13,7 @@
  * See docs/engineering/plans/one-button-onboarding-local-llm-plan.md.
  */
 
-import { App, ButtonComponent, Modal, Notice } from 'obsidian';
+import { App, ButtonComponent, DropdownComponent, Modal, Notice } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import {
   OnboardingService,
@@ -24,6 +24,7 @@ import type { SurveyResult } from '../onboarding/extraction';
 import { flattenScenes, type ManuscriptModel } from '../onboarding/adapters/manuscriptModel';
 import { suggestOnboardingFolderName } from '../onboarding/paths';
 import { getActiveBook } from '../utils/books';
+import { STAGE_ORDER, type Stage } from '../utils/constants';
 import type { BookProfile } from '../types/settings';
 
 export class OnboardingModal extends Modal {
@@ -33,6 +34,7 @@ export class OnboardingModal extends Modal {
   private model: ManuscriptModel | null = null;
   private survey: SurveyResult | null = null;
   private proposals: SceneProposal[] = [];
+  private publishStage: Stage = 'Zero';
   private abortController: AbortController | null = null;
 
   constructor(app: App, plugin: RadialTimelinePlugin) {
@@ -141,6 +143,19 @@ export class OnboardingModal extends Modal {
       }
     });
 
+    const stageRow = contentEl.createDiv({ cls: 'ert-row' });
+    stageRow.createSpan({ text: 'Publish stage: ', cls: 'ert-muted' });
+    new DropdownComponent(stageRow)
+      .addOptions(Object.fromEntries(STAGE_ORDER.map((stage) => [stage, stage])))
+      .setValue(this.publishStage)
+      .onChange((value) => {
+        this.publishStage = value as Stage; // SAFE: dropdown options are exactly STAGE_ORDER
+      });
+    contentEl.createDiv({
+      cls: 'ert-muted',
+      text: 'Applied to every scene. A draft still being written is Zero; a finished, published book is Press.',
+    });
+
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
     new ButtonComponent(actions)
       .setButtonText('Extract metadata')
@@ -171,6 +186,7 @@ export class OnboardingModal extends Modal {
 
     this.proposals = await this.service.extractScenes(this.model, this.survey, {
       signal: this.abortController.signal,
+      publishStage: this.publishStage,
       onProgress: (current, total, title) => {
         statusEl.setText(`Extracting ${current} / ${total} — ${title}`);
         barFill.setCssStyles({ width: `${total > 0 ? Math.round((current / total) * 100) : 0}%` }); // SAFE: progress width
@@ -222,7 +238,10 @@ export class OnboardingModal extends Modal {
     }
 
     const destName = suggestOnboardingFolderName(this.book?.sourceFolder ?? 'Book');
-    contentEl.createDiv({ cls: 'ert-muted', text: `Will write to a new folder: ${destName} (source left untouched).` });
+    contentEl.createDiv({
+      cls: 'ert-muted',
+      text: `Will write to a new folder: ${destName} (source left untouched) · Publish Stage: ${this.publishStage}.`,
+    });
 
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
     new ButtonComponent(actions)

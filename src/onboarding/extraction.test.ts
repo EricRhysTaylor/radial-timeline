@@ -109,6 +109,11 @@ describe('buildSceneFrontmatter', () => {
     expect(fm.Place).toEqual(['[[Ithaca]]']);
   });
 
+  it('writes the chosen publish stage when one is supplied', () => {
+    const fm = buildSceneFrontmatter(extraction(), { actCount: 3, publishStage: 'Press' });
+    expect(fm['Publish Stage']).toBe('Press');
+  });
+
   it('clamps Act to the configured act count (floor of 3)', () => {
     expect(buildSceneFrontmatter(extraction({ act: 9 }), { actCount: 3 }).Act).toBe(3);
     expect(buildSceneFrontmatter(extraction({ act: 0 }), { actCount: 3 }).Act).toBe(1);

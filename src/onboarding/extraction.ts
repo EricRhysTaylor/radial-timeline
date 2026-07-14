@@ -9,6 +9,7 @@
  */
 
 import { clampActNumber } from '../utils/acts';
+import type { Stage } from '../utils/constants';
 
 export interface SurveyResult {
   acts: Array<{ act: number; startsAtScene: string }>;
@@ -139,6 +140,11 @@ export const MAX_PLACES = 8;
 
 export interface BuildFrontmatterOptions {
   actCount: number;
+  /**
+   * Book-wide publish stage chosen at Checkpoint 1. A draft in progress is Zero;
+   * a finished, published book being migrated from another tool is Press.
+   */
+  publishStage?: Stage;
   /** Non-canonical metadata carried from the source (written as-is). */
   carriedMetadata?: Record<string, string>;
 }
@@ -162,7 +168,7 @@ export function buildSceneFrontmatter(
     Character: dedupe(extraction.character.map(toWikiLink)).slice(0, MAX_CHARACTERS),
     Place: dedupe(extraction.place.map(toWikiLink)).slice(0, MAX_PLACES),
     Status: 'Complete',
-    'Publish Stage': 'Zero',
+    'Publish Stage': options.publishStage ?? 'Zero',
   };
   if (extraction.when) fm.When = extraction.when;
   if (extraction.duration) fm.Duration = extraction.duration;

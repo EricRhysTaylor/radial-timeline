@@ -375,7 +375,7 @@ the recommendation is grounded in real runs, not spec sheets.
 
 | Date | Model (quant) | Runtime | Hardware / RAM | Result (scene-acc / synopsis / class / sec/scene) | Notes |
 | --- | --- | --- | --- | --- | --- |
-| _tbd_ | _tbd_ | LM Studio (MLX) | Mac Studio, 64 GB | _tbd_ | first golden-fixture run |
+| 2026-07-14 | Qwen3-30B-A3B-Instruct-2507 (MLX 4-bit) | mlx_lm.server :8080 (OpenAI-compat) | Mac Studio, 64 GB | 3/3 scenes / accurate synopses + apt subplots / 26 selective entity notes / ~15–20 s total for survey + 3 scenes (~5 s per LLM call) | Odyssey fixture (Books I–III, ~4.1–4.7k words each). Tier 4, all checks passed. Correct null When/Duration on Books 1–2; Book 3 correctly flagged guessed act+when. LM Studio's own server fails plugin JSON validation — use mlx_lm.server. |
 
 ## Architecture — module layout
 
@@ -517,6 +517,15 @@ Doctrine fit: no new abstraction layer beyond the adapters, no fallback chains
   (`MAX_CHARACTERS=12`, `MAX_PLACES=8`). Onboarding never overwrites an
   existing entity note. The Create-RT-note modal's "Story world" family gained
   Character + Place subtypes so the same scaffolds are hand-creatable.
+- **2026-07-14 (post clean re-run)** — the clean Odyssey run (see tested-models
+  table) landed every scene at `Publish Stage: Zero`, wrong for a finished
+  classic. Checkpoint 1 now asks for a **book-wide Publish Stage** (dropdown,
+  `STAGE_ORDER`, default Zero) applied to every scene — an in-progress draft
+  migrated from another tool is Zero/Author; a published book is Press. The
+  choice is echoed at Checkpoint 2 next to the destination folder. `Status`
+  stays hardcoded `Complete` (the text exists by definition). Whether to ask
+  for further book-level metadata states at onboarding is open — revisit with
+  the Slice 4 settings card.
 
 ## Appendix A — Canonical onboarding prompt (instruction block)
 

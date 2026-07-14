@@ -50,6 +50,7 @@ import {
 } from './extraction';
 import { basename, openingWords, sanitizeFileName, suggestOnboardingFolderName } from './paths';
 import { buildEntityNoteContent, entityFolderFor, type EntityKind } from '../utils/entityNotes';
+import type { Stage } from '../utils/constants';
 
 export interface PreflightResult {
   ok: boolean;
@@ -82,6 +83,8 @@ export interface MaterializeReport {
 export interface ExtractOptions {
   signal?: AbortSignal;
   onProgress?: (current: number, total: number, title: string) => void;
+  /** Book-wide publish stage chosen at Checkpoint 1 (defaults to Zero). */
+  publishStage?: Stage;
 }
 
 const OVERRIDES = { temperature: 0.1, jsonStrict: true } as const;
@@ -200,6 +203,7 @@ export class OnboardingService {
           title,
           frontmatter: buildSceneFrontmatter(parsed.value, {
             actCount,
+            publishStage: options.publishStage,
             carriedMetadata: scene.knownMetadata,
           }),
           body: scene.rawText,

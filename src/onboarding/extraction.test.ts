@@ -5,7 +5,11 @@ import {
   buildSceneFrontmatter,
   sanitizeName,
   toWikiLink,
-  linkedEntities,
+  linkedCharacters,
+  linkedPlaces,
+  effectiveFlags,
+  MAX_CHARACTERS,
+  MAX_PLACES,
   type SceneExtraction,
 } from './extraction';
 
@@ -140,9 +144,33 @@ describe('buildSceneFrontmatter', () => {
   });
 });
 
-describe('linkedEntities', () => {
-  it('returns deduped sanitized character + place names for stubbing', () => {
-    const names = linkedEntities(extraction({ character: ['Odysseus'], place: ['Ithaca', 'Ithaca'] }));
-    expect(names).toEqual(['Odysseus', 'Ithaca']);
+describe('linked entities (stub sources)', () => {
+  it('returns deduped sanitized names, split by type', () => {
+    const e = extraction({ character: ['Odysseus', 'Odysseus'], place: ['Ithaca'] });
+    expect(linkedCharacters(e)).toEqual(['Odysseus']);
+    expect(linkedPlaces(e)).toEqual(['Ithaca']);
+  });
+
+  it('caps runaway entity lists so a chatty model cannot flood the vault', () => {
+    const many = (n: number, p: string) => Array.from({ length: n }, (_, i) => `${p}${i}`);
+    const e = extraction({ character: many(40, 'C'), place: many(40, 'P') });
+    expect(linkedCharacters(e)).toHaveLength(MAX_CHARACTERS);
+    expect(linkedPlaces(e)).toHaveLength(MAX_PLACES);
+    // The written frontmatter is capped to match, so stubs never exceed links.
+    const fm = buildSceneFrontmatter(e, { actCount: 3 });
+    expect(fm.Character).toHaveLength(MAX_CHARACTERS);
+    expect(fm.Place).toHaveLength(MAX_PLACES);
+  });
+});
+
+describe('effectiveFlags', () => {
+  it('drops When/Duration flags when the model returned null (nothing was written)', () => {
+    const e = extraction({ when: null, duration: null, flags: ['Act', 'When', 'Duration'] });
+    expect(effectiveFlags(e)).toEqual(['Act']);
+  });
+
+  it('keeps When/Duration flags when those fields were actually filled in', () => {
+    const e = extraction({ when: '1998', duration: '1 hour', flags: ['When', 'Duration'] });
+    expect(effectiveFlags(e)).toEqual(['When', 'Duration']);
   });
 });

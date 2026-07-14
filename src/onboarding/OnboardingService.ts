@@ -43,7 +43,9 @@ import {
   parseSurveyResult,
   parseSceneExtraction,
   buildSceneFrontmatter,
-  linkedEntities,
+  linkedCharacters,
+  linkedPlaces,
+  effectiveFlags,
   type SurveyResult,
 } from './extraction';
 import { basename, openingWords, sanitizeFileName, suggestOnboardingFolderName } from './paths';
@@ -200,8 +202,9 @@ export class OnboardingService {
             carriedMetadata: scene.knownMetadata,
           }),
           body: scene.rawText,
-          flags: parsed.value.flags,
-          entities: linkedEntities(parsed.value),
+          flags: effectiveFlags(parsed.value),
+          characters: linkedCharacters(parsed.value),
+          places: linkedPlaces(parsed.value),
         });
       } catch (error) {
         proposals.push(this.failed(scene, title, error instanceof Error ? error.message : String(error)));
@@ -228,7 +231,8 @@ export class OnboardingService {
     }
 
     const errors: string[] = [];
-    const stubs = new Set<string>();
+    const characterStubs = new Set<string>();
+    const placeStubs = new Set<string>();
     let notesCreated = 0;
     let index = 0;
 
@@ -246,13 +250,18 @@ export class OnboardingService {
           }
         });
         notesCreated += 1;
-        proposal.entities.forEach((entity) => stubs.add(entity));
+        proposal.characters.forEach((name) => characterStubs.add(name));
+        proposal.places.forEach((name) => placeStubs.add(name));
       } catch (error) {
         errors.push(`${noteName}: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
-    const stubsCreated = await this.createStubs(destFolder, stubs);
+    // Stubs live in their own subfolders — the book folder holds scenes, not a
+    // hundred loose entity notes.
+    const stubsCreated =
+      (await this.createStubs(`${destFolder}/Characters`, characterStubs))
+      + (await this.createStubs(`${destFolder}/Places`, placeStubs));
     await this.registerBook(sourceBook, destFolder);
 
     return {
@@ -275,18 +284,29 @@ export class OnboardingService {
       frontmatter: null,
       body: scene.rawText,
       flags: [],
-      entities: [],
+      characters: [],
+      places: [],
       error,
     };
   }
 
-  private async createStubs(destFolder: string, names: Set<string>): Promise<number> {
+  /** Create stub notes for linked entities inside `folder`, creating the folder on demand. */
+  private async createStubs(folder: string, names: Set<string>): Promise<number> {
+    if (names.size === 0) return 0;
     const vault = this.plugin.app.vault;
+    const stubFolder = normalizePath(folder);
+    if (!(vault.getAbstractFileByPath(stubFolder) instanceof TFolder)) {
+      try {
+        await vault.createFolder(stubFolder);
+      } catch {
+        // Already exists (race) — fall through and write into it.
+      }
+    }
     let created = 0;
     for (const name of names) {
       const stubName = sanitizeFileName(name);
       if (!stubName) continue;
-      const path = normalizePath(`${destFolder}/${stubName}.md`);
+      const path = normalizePath(`${stubFolder}/${stubName}.md`);
       if (vault.getAbstractFileByPath(path)) continue;
       try {
         await vault.create(path, '');

@@ -71,6 +71,7 @@ if (isReleaseBuild) {
 		{ path: "/Users/ericrhystaylor/Documents/RT LLC/Plugin/Test Vaults/Obsidian Vault Sherlock Holmes/.obsidian/plugins/radial-timeline", name: "Sherlock Holmes" },
 		{ path: "/Users/ericrhystaylor/Documents/RT LLC/Plugin/Test Vaults/Obsidian Vault Pride & Prejudice Demo/.obsidian/plugins/radial-timeline", name: "P&P" },
 		{ path: "/Users/ericrhystaylor/Documents/Author Eric Rhys Taylor/Obsidian Vault Author timelapse/.obsidian/plugins/radial-timeline", name: "Timelapse" },
+		{ path: "/Users/ericrhystaylor/Documents/RT LLC/Demo Vaults/Odyssey Vault/.obsidian/plugins/radial-timeline", name: "Odyssey" },
 		{ path: "./release", name: "release" }
 	];
 }

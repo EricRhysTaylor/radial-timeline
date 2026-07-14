@@ -49,6 +49,7 @@ import {
   type SurveyResult,
 } from './extraction';
 import { basename, openingWords, sanitizeFileName, suggestOnboardingFolderName } from './paths';
+import { buildEntityNoteContent, entityFolderFor, type EntityKind } from '../utils/entityNotes';
 
 export interface PreflightResult {
   ok: boolean;
@@ -231,8 +232,8 @@ export class OnboardingService {
     }
 
     const errors: string[] = [];
-    const characterStubs = new Set<string>();
-    const placeStubs = new Set<string>();
+    const characterCounts = new Map<string, number>();
+    const placeCounts = new Map<string, number>();
     let notesCreated = 0;
     let index = 0;
 
@@ -250,18 +251,20 @@ export class OnboardingService {
           }
         });
         notesCreated += 1;
-        proposal.characters.forEach((name) => characterStubs.add(name));
-        proposal.places.forEach((name) => placeStubs.add(name));
+        proposal.characters.forEach((name) => characterCounts.set(name, (characterCounts.get(name) ?? 0) + 1));
+        proposal.places.forEach((name) => placeCounts.set(name, (placeCounts.get(name) ?? 0) + 1));
       } catch (error) {
         errors.push(`${noteName}: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
-    // Stubs live in their own subfolders — the book folder holds scenes, not a
-    // hundred loose entity notes.
+    // Entity notes are full Character/Place profiles (Class, Book, Scene Count +
+    // section scaffold), filed in Character/ and Place/ folders PARALLEL to the
+    // book folder — the author-vault convention. Sections stay blank on purpose.
+    const bookTitle = sourceBook?.title ?? basename(destFolder);
     const stubsCreated =
-      (await this.createStubs(`${destFolder}/Characters`, characterStubs))
-      + (await this.createStubs(`${destFolder}/Places`, placeStubs));
+      (await this.createEntityNotes('character', destFolder, characterCounts, bookTitle))
+      + (await this.createEntityNotes('place', destFolder, placeCounts, bookTitle));
     await this.registerBook(sourceBook, destFolder);
 
     return {
@@ -290,26 +293,34 @@ export class OnboardingService {
     };
   }
 
-  /** Create stub notes for linked entities inside `folder`, creating the folder on demand. */
-  private async createStubs(folder: string, names: Set<string>): Promise<number> {
-    if (names.size === 0) return 0;
+  /**
+   * Create Character/Place profile notes for linked entities in the entity folder
+   * parallel to the book folder. Existing notes are never overwritten.
+   */
+  private async createEntityNotes(
+    kind: EntityKind,
+    bookFolder: string,
+    counts: Map<string, number>,
+    bookTitle: string
+  ): Promise<number> {
+    if (counts.size === 0) return 0;
     const vault = this.plugin.app.vault;
-    const stubFolder = normalizePath(folder);
-    if (!(vault.getAbstractFileByPath(stubFolder) instanceof TFolder)) {
+    const entityFolder = normalizePath(entityFolderFor(bookFolder, kind));
+    if (!(vault.getAbstractFileByPath(entityFolder) instanceof TFolder)) {
       try {
-        await vault.createFolder(stubFolder);
+        await vault.createFolder(entityFolder);
       } catch {
         // Already exists (race) — fall through and write into it.
       }
     }
     let created = 0;
-    for (const name of names) {
-      const stubName = sanitizeFileName(name);
-      if (!stubName) continue;
-      const path = normalizePath(`${stubFolder}/${stubName}.md`);
+    for (const [name, sceneCount] of counts) {
+      const noteName = sanitizeFileName(name);
+      if (!noteName) continue;
+      const path = normalizePath(`${entityFolder}/${noteName}.md`);
       if (vault.getAbstractFileByPath(path)) continue;
       try {
-        await vault.create(path, '');
+        await vault.create(path, buildEntityNoteContent(kind, { book: bookTitle, sceneCount }));
         created += 1;
       } catch {
         // A collision or invalid name shouldn't abort the run.

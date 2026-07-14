@@ -12,7 +12,9 @@ export type RtNoteSubtypeId =
     | 'back-matter'
     | 'bookmeta'
     | 'backdrop'
-    | 'beat';
+    | 'beat'
+    | 'character'
+    | 'place';
 
 interface RtNoteSubtypeOption {
     id: RtNoteSubtypeId;
@@ -56,6 +58,8 @@ const RT_NOTE_FAMILIES: RtNoteFamilyOption[] = [
         subtypes: [
             { id: 'beat', title: 'Beat', description: 'A single story beat note with act and purpose fields.' },
             { id: 'backdrop', title: 'Backdrop', description: 'Timeline context note with start and end dates.' },
+            { id: 'character', title: 'Character', description: 'Character profile: description, motivations, change arc, summary.' },
+            { id: 'place', title: 'Place', description: 'Setting profile: description, layout, role in story, history.' },
         ],
     },
 ];

@@ -252,7 +252,7 @@ export class OnboardingModal extends Modal {
 
     const panel = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
     this.renderStatusRow(panel, 'Scenes written', String(report.notesCreated), report.notesCreated > 0);
-    this.renderStatusRow(panel, 'Stub notes created', String(report.stubsCreated), true);
+    this.renderStatusRow(panel, 'Character & Place notes created', String(report.stubsCreated), true);
     if (report.needsReview.length > 0) {
       this.renderStatusRow(panel, 'Needs review', `${report.needsReview.length} (flagged guesses or failures)`, false);
     }

@@ -20,6 +20,7 @@ import { TimelineRepairModal } from '../modals/TimelineRepairModal';
 import { TimelineAuditModal } from '../modals/TimelineAuditModal';
 import { AuthorProgressModal } from '../modals/AuthorProgressModal';
 import { CreateRtNoteModal, type RtNoteSubtypeId } from '../modals/CreateRtNoteModal';
+import { buildEntityNoteContent, entityFolderFor, type EntityKind } from '../utils/entityNotes';
 import { ensureActiveBookFolder } from '../modals/EnsureFirstBookModal';
 import { generateSceneContent } from '../utils/sceneGenerator';
 import { sanitizeSourcePath, buildInitialSceneFilename, buildInitialBackdropFilename } from '../utils/sceneCreation';
@@ -1160,6 +1161,40 @@ export class CommandRegistrar {
             case 'beat':
                 await this.createBeatNote();
                 return;
+            case 'character':
+                await this.createEntityNote('character');
+                return;
+            case 'place':
+                await this.createEntityNote('place');
+                return;
+        }
+    }
+
+    /**
+     * Create a Character or Place profile note in the entity folder that sits
+     * parallel to the active book's scene folder (author-vault convention).
+     */
+    private async createEntityNote(kind: EntityKind): Promise<void> {
+        const book = await ensureActiveBookFolder(this.plugin);
+        if (!book) return;
+        try {
+            const folderPath = entityFolderFor(sanitizeSourcePath(book.sourceFolder), kind);
+            if (folderPath && !this.app.vault.getAbstractFileByPath(folderPath)) {
+                await this.app.vault.createFolder(folderPath);
+            }
+            const label = kind === 'character' ? 'Character' : 'Place';
+            let path = `${folderPath}/New ${label}.md`;
+            for (let i = 2; this.app.vault.getAbstractFileByPath(path); i++) {
+                path = `${folderPath}/New ${label} ${i}.md`;
+            }
+            const content = buildEntityNoteContent(kind, { book: book.title ?? '', sceneCount: 0 });
+            const newFile = await this.app.vault.create(path, content);
+            const leaf = this.app.workspace.getLeaf(true);
+            await leaf.openFile(newFile);
+            new Notice(`Created ${label.toLowerCase()} note: ${path.split('/').pop()}`);
+        } catch (error) {
+            const msg = (error as Error)?.message || String(error);
+            new Notice(`Failed to create ${kind} note: ` + msg);
         }
     }
 

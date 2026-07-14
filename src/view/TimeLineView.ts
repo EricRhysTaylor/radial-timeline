@@ -38,6 +38,7 @@ import {
 } from '../renderer/ChangeDetection';
 import { WritingSessionCompletionModal } from '../modals/WritingSessionCompletionModal';
 import { canPostSessionsToFeed, postSessionToCommunityFeed } from '../communityShare/communityShareClient';
+import { OfficeHoursChip } from '../communityShare/officeHoursChip';
 import { projectSessionFeedPost } from '../services/WritingSessionLog';
 import { isMatterNote } from '../utils/sceneHelpers';
 import { DEFAULT_BOOK_TITLE, getTimelineScope, getTimelineScopeTitle, isSagaScopeAvailable } from '../utils/books';
@@ -146,6 +147,7 @@ export class RadialTimelineView extends ItemView {
     private writingSessionButton?: HTMLButtonElement;
     private writingSessionLabel?: HTMLElement;
     private writingSessionPanel?: HTMLElement;
+    private officeHoursChip?: OfficeHoursChip;
     private writingSessionModeSelect?: HTMLSelectElement;
     private writingSessionCountdownToggle?: HTMLInputElement;
     private writingSessionGoalInput?: HTMLInputElement;
@@ -396,6 +398,18 @@ export class RadialTimelineView extends ItemView {
             sessionPanel.setAttribute('role', 'dialog');
             doc.body.appendChild(sessionPanel);
             this.register(() => sessionPanel.remove());
+
+            // Office-hours chip: fetch/timer state outlives panel re-renders.
+            // Wake events refetch the schedule (spec §4, laptop-asleep case).
+            this.officeHoursChip = new OfficeHoursChip(this.plugin);
+            this.register(() => {
+                this.officeHoursChip?.destroy();
+                this.officeHoursChip = undefined;
+            });
+            this.registerDomEvent(window, 'focus', () => this.officeHoursChip?.onWake());
+            this.registerDomEvent(doc, 'visibilitychange', () => {
+                if (doc.visibilityState === 'visible') this.officeHoursChip?.onWake();
+            });
 
             let hideLegendTimer: number | null = null;
             const showLegend = () => {
@@ -1097,6 +1111,9 @@ export class RadialTimelineView extends ItemView {
             const sharedBadge = header.createSpan({ cls: 'ert-timeline-session-panel__shared-badge', text: 'Shared' });
             applyTooltip(sharedBadge, 'Saved sessions post a progress summary to your community feed', 'bottom');
         }
+        // Office-hours chip (right of the title): renders only when signed in
+        // with the community connect toggle on. Spec: OFFICE-HOURS-CHIP-SPEC.
+        this.officeHoursChip?.renderInto(header);
 
         const settingsBtn = header.createEl('button', { cls: 'ert-timeline-session-panel__icon clickable-icon' });
         settingsBtn.type = 'button';

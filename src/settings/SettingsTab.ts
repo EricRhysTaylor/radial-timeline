@@ -768,14 +768,14 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             badgeVariant: ERT_CLASSES.BADGE_PILL_PRO,
             wikiHref: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Publishing',
             title: 'Prepare your manuscript for export and publication.',
-            subtitle: 'Turn your draft into a polished, shareable manuscript. Radial Timeline brings your book details, pages, and layout together—so you can generate clean, print-ready PDFs without wrestling with formatting.',
-            helperLine: 'Powered by Pandoc and LaTeX — industry-standard tools for high-quality document formatting, handled for you behind the scenes.',
+            subtitle: 'Markdown export is always available with no setup — export your manuscript anytime. The steps below are only for formatted PDF export: a print-ready book built from your details, pages, and chosen style.',
+            helperLine: 'PDF export is powered by Pandoc and LaTeX — industry-standard formatting tools, handled for you behind the scenes. Book Details and Book Pages are optional; you can export a PDF from a built-in style without them.',
             kicker: 'WHAT YOU CAN DO',
             features: [
-                { icon: 'file-text', text: 'Book Details — Define your title, author, and publishing info in one place' },
-                { icon: 'book-open-text', text: 'Book Pages — Add title page, dedication, epigraph, and other front/back matter' },
-                { icon: 'layout-template', text: 'PDF Layouts — Choose from built-in styles or import your own templates' },
-                { icon: 'file-output', text: 'Export — Generate clean, print-ready PDFs with one click' }
+                { icon: 'layout-template', text: 'PDF Style — Start here. Two styles free with Core, two more with Pro, or import your own' },
+                { icon: 'file-output', text: 'Export — Markdown anytime; a print-ready PDF once a style is set' },
+                { icon: 'file-text', text: 'Book Details (optional) — Title, author, and publishing info in one place' },
+                { icon: 'book-open-text', text: 'Book Pages (optional) — Front & back matter: title page, dedication, epigraph, and more' }
             ]
         });
     }

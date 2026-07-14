@@ -3661,7 +3661,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             });
         };
 
-        renderMatterBookMetaSection('frontmatter', 'Frontmatter', 'Define standard pages for your book.', [
+        renderMatterBookMetaSection('frontmatter', 'Frontmatter book pages', 'Pages before the manuscript — title page, dedication, epigraph. All optional.', [
             {
                 field: 'title-page-note',
                 label: 'Title page note',
@@ -3710,7 +3710,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             },
         ]);
 
-        renderMatterBookMetaSection('backmatter', 'Backmatter', 'Define standard pages for your book.', [
+        renderMatterBookMetaSection('backmatter', 'Backmatter book pages', 'Pages after the manuscript — acknowledgments, about the author. All optional.', [
             {
                 field: 'acknowledgments',
                 label: 'Acknowledgments',
@@ -3811,13 +3811,17 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         title: string,
         value: string,
         desc: string,
-        statusKey: 'needs-setup' | 'attention' | 'blocked' | 'ready',
+        statusKey: 'optional' | 'setup' | 'attention' | 'blocked' | 'ready',
         stageNumber: number,
         pressLabel: string,
         actionLabel: string,
+        quickStart: boolean,
         onClick?: () => void
     ): void => {
-        const col = statusGrid.createDiv({ cls: `ert-publishing-status-col ert-publishing-status-col--${statusKey}` });
+        const col = statusGrid.createDiv({ cls: `ert-publishing-status-col ert-publishing-status-col--${statusKey}${quickStart ? ' is-quick-start' : ''}` });
+        if (quickStart) {
+            col.createSpan({ cls: 'ert-publishing-status-col-quickstart', text: 'Start here' });
+        }
         if (onClick) {
             col.setAttr('role', 'button');
             col.setAttr('tabindex', '0');
@@ -3853,9 +3857,14 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         exportOptionsButtonComponent = null;
 
         const exportStage = stages.find(stage => stage.id === 'export-check');
-        const showExportButton = !!exportStage && exportStage.statusKey !== 'needs-setup';
+        // Show "Export now" once export is genuinely possible (tools + a valid
+        // style) — not while the one-time 'setup' step is still pending.
+        const showExportButton = !!exportStage
+            && (exportStage.statusKey === 'ready' || exportStage.statusKey === 'attention');
         const exportPrimary = exportStage?.statusKey === 'ready';
-        const allReady = stages.every(stage => stage.statusKey === 'ready');
+        // Nothing left that needs the author: every stage is either done or an
+        // untaken optional. (Optional stages never block "all set".)
+        const allReady = stages.every(stage => stage.statusKey === 'ready' || stage.statusKey === 'optional');
 
         // Auto configure — rendered first (left position)
         setupButtonComponent = new ButtonComponent(setupActionRow)
@@ -3940,6 +3949,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                 index + 1,
                 pressLabelByStage[stage.id],
                 stage.actionLabel,
+                stage.quickStart === true,
                 () => {
                     if (stage.id === 'export-check' && systemConfigPanel.hasClass('is-hidden')) {
                         revealSystemConfig();

@@ -8413,9 +8413,19 @@
   z-index: 1;
 }
 
-.ert-ui.ert-scope--settings .ert-publishing-status-col--needs-setup {
-  --ert-stage-accent: color-mix(in srgb, var(--text-muted) 68%, var(--background-modifier-border));
-  background: color-mix(in srgb, var(--background-secondary) 84%, var(--ert-stage-accent) 5%);
+/* Optional — calm, neutral-positive. A "you can skip this" state, not an
+   alarm. Slightly cooler than the raw surface so it reads as a real card
+   without pulling the eye ahead of the green go-states. */
+.ert-ui.ert-scope--settings .ert-publishing-status-col--optional {
+  --ert-stage-accent: color-mix(in srgb, var(--text-accent) 42%, var(--text-muted));
+  background: color-mix(in srgb, var(--background-secondary) 90%, var(--ert-stage-accent) 6%);
+}
+
+/* Setup — calm amber "a one-time setup step is needed", distinct from the red
+   error state. Used for the export-tools step before Pandoc is installed. */
+.ert-ui.ert-scope--settings .ert-publishing-status-col--setup {
+  --ert-stage-accent: color-mix(in srgb, var(--ert-alert-warning-color) 70%, var(--text-muted));
+  background: color-mix(in srgb, var(--ert-stage-accent) 6%, var(--background-secondary) 90%);
 }
 
 .ert-ui.ert-scope--settings .ert-publishing-status-col--attention {
@@ -8431,6 +8441,30 @@
 .ert-ui.ert-scope--settings .ert-publishing-status-col--ready {
   --ert-stage-accent: color-mix(in srgb, var(--text-success) 92%, var(--text-normal));
   background: color-mix(in srgb, var(--ert-stage-accent) 7%, var(--background-secondary) 88%);
+}
+
+/* Quick-start anchor: the zero-config card an author starts from. A brighter
+   ring + a "Start here" badge draw the eye here first, ahead of the optional
+   cards and the calm setup card. */
+.ert-ui.ert-scope--settings .ert-publishing-status-col.is-quick-start {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ert-stage-accent) 55%, transparent);
+}
+
+.ert-ui.ert-scope--settings .ert-publishing-status-col-quickstart {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 2;
+  padding: var(--ert-gap-3xs) var(--ert-gap-sm);
+  border-bottom-left-radius: var(--radius-s);
+  background: color-mix(in srgb, var(--ert-stage-accent) 85%, var(--background-primary));
+  color: var(--background-primary);
+  font-family: var(--font-monospace);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.2;
 }
 
 .ert-ui.ert-scope--settings .ert-publishing-status-col-footer {

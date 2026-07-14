@@ -129,6 +129,14 @@ function dedupe(values: string[]): string[] {
   return out;
 }
 
+/**
+ * Safety caps. The prompt asks the model to be selective, but a chatty model that
+ * sweeps every proper noun would otherwise flood the vault with stub notes (a real
+ * run on 3 Odyssey books produced 96). These bound the damage.
+ */
+export const MAX_CHARACTERS = 12;
+export const MAX_PLACES = 8;
+
 export interface BuildFrontmatterOptions {
   actCount: number;
   /** Non-canonical metadata carried from the source (written as-is). */
@@ -151,8 +159,8 @@ export function buildSceneFrontmatter(
     Act: clampActNumber(extraction.act, Math.max(3, options.actCount)),
     Synopsis: extraction.synopsis,
     Subplot: dedupe(extraction.subplot.map(sanitizeName)),
-    Character: dedupe(extraction.character.map(toWikiLink)),
-    Place: dedupe(extraction.place.map(toWikiLink)),
+    Character: dedupe(extraction.character.map(toWikiLink)).slice(0, MAX_CHARACTERS),
+    Place: dedupe(extraction.place.map(toWikiLink)).slice(0, MAX_PLACES),
     Status: 'Complete',
     'Publish Stage': 'Zero',
   };
@@ -165,7 +173,26 @@ export function buildSceneFrontmatter(
   return fm;
 }
 
-/** Bare character/place names that need a stub note created (deduped, sanitized). */
-export function linkedEntities(extraction: SceneExtraction): string[] {
-  return dedupe([...extraction.character, ...extraction.place].map(sanitizeName));
+/** Bare character names needing a stub note (deduped, sanitized, capped to match what was written). */
+export function linkedCharacters(extraction: SceneExtraction): string[] {
+  return dedupe(extraction.character.map(sanitizeName)).slice(0, MAX_CHARACTERS);
+}
+
+/** Bare place names needing a stub note (deduped, sanitized, capped to match what was written). */
+export function linkedPlaces(extraction: SceneExtraction): string[] {
+  return dedupe(extraction.place.map(sanitizeName)).slice(0, MAX_PLACES);
+}
+
+/**
+ * Flags, minus any field the model didn't actually fill in. Models tend to flag
+ * When/Duration as "guessed" even when they correctly returned null — reporting
+ * those would claim a guess we never wrote.
+ */
+export function effectiveFlags(extraction: SceneExtraction): string[] {
+  return extraction.flags.filter((flag) => {
+    const key = flag.trim().toLowerCase();
+    if (key === 'when') return extraction.when !== null;
+    if (key === 'duration') return extraction.duration !== null;
+    return true;
+  });
 }

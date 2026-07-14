@@ -1167,6 +1167,19 @@ export function renderAiSection(params: {
     let lastResolvedPreviewState: ResolvedPreviewRenderState | null = null;
     let lastPreviewCertificateContext: PreviewCertificateContext | null = null;
 
+    /**
+     * Local-engine preview certificate — the local analogue of the cloud
+     * certificate state. Re-applied by the 1s certificate tick so the local
+     * status line and pills survive the shared reset, exactly like cloud.
+     */
+    type LocalPreviewCertificate = {
+        tone: 'success' | 'warning';
+        statusIcon: string;
+        statusText: string;
+        pills: PreviewPill[];
+    };
+    let lastLocalPreviewCertificate: LocalPreviewCertificate | null = null;
+
     const getInquirySessionStoreSnapshot = (): InquirySessionStore => new InquirySessionStore(plugin);
 
     // formatPreviewReasonLabel + formatPreviewCacheRemaining live in ./aiSettingsPreview.
@@ -1401,6 +1414,22 @@ export function renderAiSection(params: {
 
     const applyResolvedPreviewCertificate = (): void => {
         resetResolvedPreviewCertificateUi();
+        if (lastLocalPreviewCertificate) {
+            const cert = lastLocalPreviewCertificate;
+            renderResolvedPreviewPills(cert.pills);
+            setIcon(resolvedPreviewStatusIcon, cert.statusIcon);
+            resolvedPreviewStatusText.setText(cert.statusText);
+            resolvedPreviewStatus.toggleClass('ert-settings-hidden', false);
+            resolvedPreviewStatus.classList.remove('ert-preview-status-line--muted');
+            if (cert.tone === 'success') {
+                resolvedPreviewFrame.classList.add('ert-ai-resolved-preview-frame--success');
+                resolvedPreviewStatus.classList.add('ert-preview-status-line--success');
+            } else {
+                resolvedPreviewFrame.classList.add('ert-ai-resolved-preview-frame--warning');
+                resolvedPreviewStatus.classList.add('ert-preview-status-line--warning');
+            }
+            return;
+        }
         if (!lastResolvedPreviewState) return;
         const certificate = resolvePreviewCertificateState(lastPreviewCertificateContext);
         const basePreviewPills = resolvePreviewSignals({
@@ -1513,11 +1542,59 @@ export function renderAiSection(params: {
     const renderLocalPreviewUnavailable = (title: string, detail: string): void => {
         lastResolvedPreviewState = null;
         lastPreviewCertificateContext = null;
+        lastLocalPreviewCertificate = null;
         resolvedPreviewKicker.setText(t('settings.ai.preview.kicker'));
         resolvedPreviewModel.setText(title);
         resolvedPreviewProvider.setText(detail);
         renderResolvedPreviewPills([]);
         resetResolvedPreviewCertificateUi();
+    };
+
+    /**
+     * Local engines get the same first-class preview card as cloud engines:
+     * big model name, server line, validation status line, and capability
+     * pills — sourced from the Local LLM detection/validation state instead
+     * of the cloud capacity estimator (which cannot price local runs).
+     */
+    const renderLocalResolvedPreview = (): void => {
+        lastResolvedPreviewState = null;
+        lastPreviewCertificateContext = null;
+        const localLlm = getLocalLlmSettings(ensureCanonicalAiSettings());
+        const selectedModelId = getOllamaModelId().trim();
+        const liveEntry = localLlmLoadedModels.find(model => model.id === selectedModelId) ?? null;
+        const capability = getLocalCapabilityAssessment(selectedModelId, liveEntry);
+
+        resolvedPreviewKicker.setText(t('settings.ai.preview.kicker'));
+        resolvedPreviewModel.setText(abbreviateLocalModelId(selectedModelId) || 'Local model');
+        resolvedPreviewProvider.setText(`${LOCAL_LLM_BACKEND_LABELS[localLlm.backend]} · ${getOllamaBaseUrl()}`);
+
+        const statusValue = buildLocalStatusValue();
+        const statusStamp = localLlmValidationPending ? null : formatLocalTimestamp(localLlmLastValidatedAt);
+        const validated = statusValue === 'Connected & validated';
+
+        const pills: PreviewPill[] = [{
+            text: `${capability.tierSummary} (${capability.tierName})`,
+            extraCls: `ert-ai-pill--active ert-ai-local-model-pill--tier${capability.tier}`
+        }];
+        buildLocalFeatureSummary(capability)
+            .split(' · ')
+            .filter(Boolean)
+            .forEach(feature => pills.push({ text: feature }));
+        const contextWindow = liveEntry?.contextWindow;
+        if (typeof contextWindow === 'number' && Number.isFinite(contextWindow) && contextWindow > 0) {
+            pills.push({ text: `Context · ${Math.round(contextWindow / 1000)}k tokens` });
+        }
+        pills.push({ text: 'On-device · no API cost' });
+
+        lastLocalPreviewCertificate = {
+            tone: validated ? 'success' : 'warning',
+            statusIcon: validated ? 'shield-check' : 'alert-triangle',
+            statusText: validated
+                ? `Connected & validated${statusStamp ? ` · ${statusStamp}` : ''} — all checks passed`
+                : `${statusValue}${statusStamp ? ` · ${statusStamp}` : ''}`,
+            pills
+        };
+        applyResolvedPreviewCertificate();
     };
 
     const createResolvedPreviewPill = (container: HTMLElement, pill: PreviewPill): void => {
@@ -1539,6 +1616,7 @@ export function renderAiSection(params: {
     };
 
     const renderResolvedPreview = (state: ResolvedPreviewRenderState): void => {
+        lastLocalPreviewCertificate = null;
         lastResolvedPreviewState = state;
         lastPreviewCertificateContext = {
             provider: state.provider,
@@ -2372,8 +2450,15 @@ export function renderAiSection(params: {
                         : { text: `Context · ${passes}-pass likely at this corpus` };
                 }
             }
-            renderResolvedPreview(previewState);
-            setActiveCostComparisonRow(provider, displayModel.id);
+            if (isOllama) {
+                // Local engines render from live detection/validation state so
+                // the card matches the cloud presentation (status + capability).
+                renderLocalResolvedPreview();
+                setActiveCostComparisonRow(null, null);
+            } else {
+                renderResolvedPreview(previewState);
+                setActiveCostComparisonRow(provider, displayModel.id);
+            }
             const forecasts = await computeVaultForecasts({
                 provider,
                 modelId: estimate.model.id
@@ -2435,13 +2520,10 @@ export function renderAiSection(params: {
             const message = error instanceof Error ? error.message : String(error);
             if (isOllama) {
                 // The cost/capacity forecast is cloud-oriented and can't resolve a
-                // local model's path id, but the model is validated in the Local LLM
-                // Status panel above. Show a benign local state instead of a false
-                // "No eligible model" contradiction.
-                renderLocalPreviewUnavailable(
-                    'Local model ready',
-                    'Capacity preview is not computed for local models. See Local LLM Status above.'
-                );
+                // local model's path id, but the local state has everything the
+                // card needs — render the same first-class local preview instead
+                // of a false "No eligible model" contradiction.
+                renderLocalResolvedPreview();
                 setActiveCostComparisonRow(null, null);
                 return;
             }
@@ -2979,7 +3061,22 @@ export function renderAiSection(params: {
         cls: [`${ERT_CLASSES.CARD}`, `${ERT_CLASSES.PANEL}`, `${ERT_CLASSES.STACK}`, 'ert-ai-local-llm-status', 'ert-settings-hidden']
     });
     localLlmStatusSectionEl = localLlmStatusSection;
-    localLlmStatusSection.createDiv({ cls: 'ert-section-title', text: t('settings.ai.localLlm.statusTitle') });
+    // Header row doubles as the collapse control: when everything is healthy
+    // the card folds down to this one line (the preview card above already
+    // carries the full story) and expands on click or on any problem.
+    const localLlmStatusHeader = localLlmStatusSection.createDiv({ cls: 'ert-ai-local-llm-status-header' });
+    localLlmStatusHeader.createDiv({ cls: 'ert-section-title', text: t('settings.ai.localLlm.statusTitle') });
+    const localLlmStatusHeaderSummary = localLlmStatusHeader.createDiv({ cls: 'ert-ai-local-llm-status-header-summary' });
+    const localLlmStatusChevron = localLlmStatusHeader.createEl('button', {
+        cls: 'clickable-icon ert-ai-local-llm-status-chevron',
+        attr: { type: 'button', 'aria-label': 'Toggle local LLM status details' }
+    });
+    let localLlmStatusManuallyExpanded = false;
+    plugin.registerDomEvent(localLlmStatusHeader, 'click', () => {
+        if (!localLlmStatusSection.hasClass('is-collapsible')) return;
+        localLlmStatusManuallyExpanded = !localLlmStatusManuallyExpanded;
+        renderLocalLlmStatus();
+    });
     localLlmStatusSection.createDiv({
         cls: 'ert-section-desc',
         text: t('settings.ai.localLlm.statusDesc')
@@ -3510,6 +3607,20 @@ export function renderAiSection(params: {
         const showActions = shouldRevealLocalLlmActionRow();
         localLlmActionsRow.toggleClass('ert-settings-hidden', !showActions);
         localLlmActionsRow.toggleClass('ert-settings-visible', showActions);
+
+        // Collapse to the header line when fully healthy — the preview card
+        // above already tells the whole story. Any pending or problem state
+        // force-expands so issues are never hidden behind a fold.
+        const statusHealthy = allChecksPassed && !localLlmValidationPending;
+        if (!statusHealthy) localLlmStatusManuallyExpanded = false;
+        const statusCollapsed = statusHealthy && !localLlmStatusManuallyExpanded;
+        localLlmStatusSection.toggleClass('is-collapsible', statusHealthy);
+        localLlmStatusSection.toggleClass('is-collapsed', statusCollapsed);
+        localLlmStatusChevron.toggleClass('ert-settings-hidden', !statusHealthy);
+        setIcon(localLlmStatusChevron, statusCollapsed ? 'chevron-right' : 'chevron-down');
+        localLlmStatusHeaderSummary.setText(statusCollapsed
+            ? [statusValue, statusStamp, abbreviateLocalModelId(selectedModelId)].filter(Boolean).join(' · ')
+            : '');
     };
 
     async function loadLocalLlmModels(options: { quiet?: boolean } = {}): Promise<void> {
@@ -3582,6 +3693,9 @@ export function renderAiSection(params: {
                 localLlmValidationPending = false;
                 localLlmValidationPromise = null;
                 renderLocalLlmStatus();
+                // The preview card mirrors validation state — refresh it so
+                // "Connected & validated" lands there too, not only in the panel.
+                void refreshRoutingUi();
             }
         })();
         return localLlmValidationPromise;

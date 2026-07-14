@@ -44,7 +44,7 @@ export class OnboardingModal extends Modal {
   onOpen(): void {
     const { modalEl, contentEl } = this;
     modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell');
-    modalEl.setCssStyles({ width: '640px', maxWidth: '92vw' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
+    modalEl.setCssStyles({ width: '832px', maxWidth: '94vw' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
     contentEl.addClass('ert-modal-container', 'ert-stack');
     void this.showPreflight();
   }

@@ -174,12 +174,18 @@ const ONBOARDING_SCENE_SCHEMA = {
     },
     character: {
       type: 'array',
-      description: 'Character names to wiki-link (bare names, no [[ ]], no commas).',
+      description:
+        'PRINCIPAL characters only — those who appear, act, or speak in this scene. ' +
+        'Do NOT list names merely mentioned in passing, backstory, genealogy, or simile. ' +
+        'Bare names, no [[ ]], no commas. Prefer fewer than 8.',
       items: { type: 'string' },
     },
     place: {
       type: 'array',
-      description: 'Place names to wiki-link (bare names, no [[ ]], no commas).',
+      description:
+        'Named GEOGRAPHIC locations where the scene actually takes place (city, island, region, named building). ' +
+        'NOT peoples or nations (e.g. "Taphians", "Ethiopians"), NOT generic interiors ' +
+        '(e.g. "The Sea", "The Cloisters", "The Tower"). Bare names, no [[ ]], no commas. Prefer fewer than 5.',
       items: { type: 'string' },
     },
     when: {
@@ -207,10 +213,17 @@ export function getOnboardingSceneJsonSchema(): Record<string, unknown> {
 export function getOnboardingSceneInstructions(): string {
   return [
     'Extract Radial Timeline scene metadata from one scene of a manuscript. Never rewrite prose.',
-    'Set Act by structural read. Write a 1-2 sentence Synopsis. List Characters and Places as bare',
-    'names (the plugin adds the wiki links) with no commas. Give When as YYYY-MM-DD or a bare year',
-    'only when grounded in the text — otherwise null; same for Duration. Prefer any metadata the',
-    'source already carried. Flag any guessed field (e.g. "Act", "When") in "flags". Return only the schema.',
+    'Set Act by structural read. Write a 1-2 sentence Synopsis.',
+    'BE SELECTIVE with entities — this is the difference between a usable vault and hundreds of junk notes:',
+    '- Character: only the PRINCIPAL people who appear, act, or speak in this scene. Exclude names that are',
+    '  merely mentioned in passing, backstory, genealogy, or simile. Aim for fewer than 8.',
+    '- Place: only NAMED geographic settings where the scene actually happens (city, island, region, named',
+    '  building). Exclude peoples/nations and generic interiors. Aim for fewer than 5.',
+    'Give both as bare names (the plugin adds the wiki links), no commas.',
+    'Give When as YYYY-MM-DD or a bare year only when grounded in the text — otherwise null; same for',
+    'Duration. Never fabricate. Prefer any metadata the source already carried.',
+    'In "flags", list ONLY fields you actually filled in but guessed at (e.g. "Act"). Do not flag a field',
+    'you returned as null. Return only the schema.',
   ].join('\n');
 }
 

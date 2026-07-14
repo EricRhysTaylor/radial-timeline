@@ -61,8 +61,10 @@ export interface SceneProposal {
   frontmatter: Record<string, unknown> | null;
   body: string;
   flags: string[];
-  /** Bare character/place names to stub. */
-  entities: string[];
+  /** Bare character names to stub (filed under Characters/). */
+  characters: string[];
+  /** Bare place names to stub (filed under Places/). */
+  places: string[];
   error?: string;
 }
 

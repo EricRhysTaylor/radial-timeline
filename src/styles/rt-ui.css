@@ -3636,6 +3636,40 @@
   background: var(--ert-local-llm-tier-accent, var(--text-muted));
 }
 
+/* Status card header: title + healthy-state summary + collapse chevron.
+   When healthy the card folds to this single line; problems force-expand. */
+.ert-ui.ert-scope--settings .ert-ai-local-llm-status-header {
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+  width: 100%;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-local-llm-status.is-collapsible .ert-ai-local-llm-status-header {
+  cursor: pointer;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-local-llm-status-header .ert-section-title {
+  margin: 0;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-local-llm-status-header-summary {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-local-llm-status-chevron {
+  flex: 0 0 auto;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-local-llm-status.is-collapsed > *:not(.ert-ai-local-llm-status-header) {
+  display: none;
+}
+
 .ert-ui.ert-scope--settings .ert-ai-local-llm-status-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

@@ -35,7 +35,7 @@ describe('migrateAiSettings', () => {
         });
 
         expect(result.warnings.length).toBeGreaterThan(0);
-        expect(result.aiSettings.provider).toBe('openai');
+        expect(result.aiSettings.provider).toBe('ollama');
         expect(result.aiSettings.modelPolicy.type).toBe('latestStable');
     });
 
@@ -83,7 +83,7 @@ describe('migrateAiSettings', () => {
             localBaseUrl: 'http://localhost:1234/v1'
         } as any);
 
-        expect(result.aiSettings.provider).toBe('openai');
+        expect(result.aiSettings.provider).toBe('ollama');
         expect(result.aiSettings.localLlm.baseUrl).toBe('http://localhost:1234/v1');
         expect(result.aiSettings.localLlm.defaultModelId).toBe('mistral-local');
     });

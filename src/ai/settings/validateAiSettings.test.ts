@@ -14,7 +14,7 @@ describe('validateAiSettings', () => {
             privacy: { allowTelemetry: false, allowProviderSnapshot: false }
         } as any);
 
-        expect(result.value.provider).toBe('openai');
+        expect(result.value.provider).toBe('ollama');
         expect(result.value.modelPolicy.type).toBe('latestStable');
         expect(result.warnings.length).toBeGreaterThan(0);
     });

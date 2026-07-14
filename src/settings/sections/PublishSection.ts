@@ -1798,7 +1798,10 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     // Migration escape hatches for authors arriving with an existing Pandoc
     // setup: extra --metadata pairs (custom templates read variables beyond
     // title/author) and raw LaTeX preamble injected via --include-in-header.
-    const advancedPanel = section.createDiv({
+    // Deliberately parented to systemConfigPanel so it lives inside the
+    // collapsed "Advanced configuration" disclosure — this is power-user
+    // territory that must not clutter the default publishing flow.
+    const advancedPanel = systemConfigPanel.createDiv({
         cls: ERT_CLASSES.STACK,
         attr: { [ERT_DATA.SECTION]: 'pandoc-advanced' }
     });

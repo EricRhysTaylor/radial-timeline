@@ -90,7 +90,7 @@ function relativeDayWord(now: Date, start: Date): string {
 export class OfficeHoursChip {
     private readonly plugin: RadialTimelinePlugin;
     private data: OfficeHoursAnswer | null = null;
-    private lastSuccessAt = 0; // last successful fetch (staleness clock)
+    private lastSuccessAt = 0; // last successful refresh — the staleness clock
     private lastAttemptAt = 0; // last fetch attempt (paranoia + wake debounce)
     private timers: number[] = [];
     private el: HTMLAnchorElement | null = null;

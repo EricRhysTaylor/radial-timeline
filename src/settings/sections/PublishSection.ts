@@ -2539,43 +2539,33 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             // omitted intentionally — neutral states should not add chrome).
             if (s.descEl) {
                 const fontDiag = getStructuredFontDiagnostic(layout);
-                if (fontDiag.state === 'missing-system' || fontDiag.state === 'missing-bundled') {
-                    const row = s.descEl.createDiv({ cls: 'ert-layout-font-status ert-layout-font-status--missing' });
+                if (fontDiag.state === 'missing-bundled') {
+                    // Bundled font simply not copied into the vault yet — a
+                    // not-set-up state, not an error. "Auto configure" and the
+                    // top-level "Install fonts" both handle it in one click, so
+                    // keep a quiet note with no per-card button (which would
+                    // duplicate the top-level flow and clutter every card).
+                    const row = s.descEl.createDiv({ cls: 'ert-layout-font-status ert-layout-font-status--pending' });
                     row.createSpan({
                         cls: 'ert-layout-font-status-badge',
-                        text: `Missing: ${fontDiag.primaryFontName}`,
+                        text: 'Fonts install with setup',
+                    });
+                } else if (fontDiag.state === 'missing-system') {
+                    // A system font the author must install on their own OS —
+                    // this genuinely needs action outside the app, so keep an
+                    // (amber) prompt with instructions.
+                    const row = s.descEl.createDiv({ cls: 'ert-layout-font-status ert-layout-font-status--needs-system' });
+                    row.createSpan({
+                        cls: 'ert-layout-font-status-badge',
+                        text: `Needs font: ${fontDiag.primaryFontName}`,
                     });
                     const installBtn = row.createEl('button', {
                         cls: 'ert-layout-font-install ert-link-accent',
-                        text: fontDiag.state === 'missing-bundled' ? 'Install bundled fonts' : 'How to install',
+                        text: 'How to install',
                     });
                     installBtn.type = 'button';
-                    installBtn.addEventListener('click', (ev) => { void (async () => {
+                    installBtn.addEventListener('click', (ev) => {
                         ev.preventDefault();
-                        if (fontDiag.state === 'missing-bundled') {
-                            installBtn.disabled = true;
-                            installBtn.setText('Installing...');
-                            try {
-                                const refresh = await ensureBundledLayoutInstalledForExport(plugin, layout);
-                                if (ensureBundledPandocLayoutsRegistered(plugin)) {
-                                    await plugin.saveSettings();
-                                }
-                                if (refresh.failed) {
-                                    new Notice(`Could not install bundled font files for ${fontDiag.primaryFontName}.`);
-                                } else {
-                                    new Notice(`Installed bundled font files for ${fontDiag.primaryFontName} into ${getConfiguredPandocFolder(plugin)}/fonts.`);
-                                }
-                                renderLayoutRows();
-                                refreshPublishingStatusCard();
-                                refreshInstallAllButtonState();
-                            } catch (error) {
-                                new Notice(error instanceof Error ? error.message : `Could not install bundled font files for ${fontDiag.primaryFontName}.`);
-                            } finally {
-                                installBtn.disabled = false;
-                                installBtn.setText('Install bundled fonts');
-                            }
-                            return;
-                        }
                         const hint = fontDiag.installHint;
                         const fragment = installBtn.ownerDocument.createDocumentFragment();
                         const wrapper = fragment.createDiv();
@@ -2595,7 +2585,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                             text: 'After installing, re-open Settings to refresh status.',
                         });
                         new Notice(fragment, 12000);
-                    })(); });
+                    });
                 }
             }
 

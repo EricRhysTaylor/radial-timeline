@@ -3280,15 +3280,24 @@ body > .tooltip {
   font-size: 0.8rem;
 }
 
-.ert-layout-font-status--missing .ert-layout-font-status-badge {
-  color: var(--text-error, var(--text-warning));
+/* Bundled font not yet copied — a not-set-up state, kept quiet and muted so a
+   fresh vault does not read as a wall of errors. */
+.ert-layout-font-status--pending .ert-layout-font-status-badge {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* System font the author must install on their OS — a real prompt, amber
+   (warning) rather than red (error). */
+.ert-layout-font-status--needs-system .ert-layout-font-status-badge {
+  color: var(--text-warning);
   font-weight: 500;
 }
 
 .ert-layout-font-install {
   background: transparent;
-  border: 1px solid var(--text-error, var(--text-warning));
-  color: var(--text-error, var(--text-warning));
+  border: 1px solid var(--text-warning);
+  color: var(--text-warning);
   padding: var(--ert-gap-2xs) var(--ert-gap-sm);
   font-size: 0.75rem;
   border-radius: var(--radius-s, 4px);

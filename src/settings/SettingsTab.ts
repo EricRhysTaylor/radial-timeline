@@ -51,6 +51,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
     hide(): void {
         this.releaseNotesComponent?.unload();
         this.releaseNotesComponent = null;
+        this._aiTabActivationHandler = null;
         super.hide();
     }
 
@@ -63,6 +64,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
     private _ollamaBaseUrlInput?: HTMLInputElement;
     private _ollamaModelIdInput?: HTMLInputElement;
     private _aiRelatedElements: HTMLElement[] = [];
+    private _aiTabActivationHandler: (() => void) | null = null;
     private _activeTab: RadialTimelineSettingsTabId = 'core';
     private _hasExplicitTabRequest = false;
     private _forceExpandCoreCompletionPreview = false;
@@ -77,6 +79,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         this._activeTab = tab;
         this._hasExplicitTabRequest = true;
         this.updateRenderedTabState();
+        if (tab === 'ai') this._aiTabActivationHandler?.();
     }
 
     /**
@@ -113,6 +116,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         this._activeTab = tab;
         this._hasExplicitTabRequest = true;
         this.updateRenderedTabState();
+        if (tab === 'ai') this._aiTabActivationHandler?.();
         if (this._pendingSectionRevealTimer !== null) {
             window.clearTimeout(this._pendingSectionRevealTimer);
             this._pendingSectionRevealTimer = null;
@@ -888,6 +892,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         containerEl.addClass('ert-ui', 'ert-settings-root', 'ert-scope--settings');
         containerEl.closest('.vertical-tab-content')?.classList.add('ert-settings-scroll-host');
         this._aiRelatedElements = [];
+        this._aiTabActivationHandler = null;
 
         // Restore the last tab the user had open only when the caller did not
         // request a specific destination such as Core alerts.
@@ -981,6 +986,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             this.plugin.settings.lastSettingsTab = tab;
             void this.plugin.saveSettings();
             this.updateRenderedTabState();
+            if (tab === 'ai') this._aiTabActivationHandler?.();
         };
         this.plugin.registerDomEvent(coreTab, 'click', () => persistTab('core'));
         this.plugin.registerDomEvent(socialTab, 'click', () => persistTab('social'));
@@ -1195,6 +1201,8 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
                     if (baseInput) this._ollamaBaseUrlInput = baseInput;
                     if (modelInput) this._ollamaModelIdInput = modelInput;
                 },
+                isAiTabActive: () => this._activeTab === 'ai',
+                setAiTabActivationHandler: (handler) => { this._aiTabActivationHandler = handler; },
             });
         } catch (error) {
             console.error('[Settings] Failed to render AI tab content:', error);

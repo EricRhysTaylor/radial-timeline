@@ -59,4 +59,14 @@ describe('settings section navigation anchors', () => {
         expect(controllerSource.includes("revealSettingsSection('core', CORE_ALERTS_SECTION_KEY)")).toBe(true);
         expect(controllerSource.includes('lastSettingsTab')).toBe(false);
     });
+
+    it('starts Local LLM discovery only when the AI tab is active', () => {
+        const settingsSource = readFileSync(resolve(process.cwd(), 'src/settings/SettingsTab.ts'), 'utf8');
+        const aiSource = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
+
+        expect(settingsSource.includes("if (tab === 'ai') this._aiTabActivationHandler?.();")).toBe(true);
+        expect(settingsSource.includes("isAiTabActive: () => this._activeTab === 'ai'")).toBe(true);
+        expect(aiSource.includes('params.setAiTabActivationHandler(autoValidateActiveLocalLlm);')).toBe(true);
+        expect(aiSource.includes('if (params.isAiTabActive()) autoValidateActiveLocalLlm();')).toBe(true);
+    });
 });

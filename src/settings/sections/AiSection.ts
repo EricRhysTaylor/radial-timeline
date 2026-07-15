@@ -120,6 +120,8 @@ export function renderAiSection(params: {
     setProviderSections: (sections: { anthropic?: HTMLElement; google?: HTMLElement; openai?: HTMLElement; ollama?: HTMLElement }) => void;
     setKeyInputRef: (provider: Provider, input: HTMLInputElement | undefined) => void;
     setOllamaConnectionInputs: (refs: { baseInput?: HTMLInputElement; modelInput?: HTMLInputElement }) => void;
+    isAiTabActive: () => boolean;
+    setAiTabActivationHandler: (handler: () => void) => void;
 }): void {
     const { app, plugin, containerEl } = params;
     containerEl.classList.add(ERT_CLASSES.STACK);
@@ -3946,10 +3948,14 @@ export function renderAiSection(params: {
 
     // Apply provider dimming on first render
     params.refreshProviderDimming();
-    void refreshRoutingUi().then(() => {
+    const autoValidateActiveLocalLlm = (): void => {
         if (ensureCanonicalAiSettings().provider === 'ollama') {
             queueLocalLlmAutoValidation();
         }
+    };
+    params.setAiTabActivationHandler(autoValidateActiveLocalLlm);
+    void refreshRoutingUi().then(() => {
+        if (params.isAiTabActive()) autoValidateActiveLocalLlm();
     });
 
     // Set initial visibility state

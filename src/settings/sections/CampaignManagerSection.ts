@@ -986,10 +986,15 @@ function renderCampaignDetails(
     // to My Share without enabling writing-activity summaries.
     const communitySettings = normalizeCommunityShareSettings(plugin.settings.communityShare);
     const canSendToCommunity = canShareAprToCommunity(communitySettings);
+    const communityStatus = campaign.lastCommunityUploadError
+        ? `Last send failed: ${campaign.lastCommunityUploadError}`
+        : campaign.lastCommunityUploadedAt
+            ? `${campaign.lastCommunityUploadStatus === 'active' ? 'Public APR refreshed' : 'Private APR sent'} ${new Date(campaign.lastCommunityUploadedAt).toLocaleString()}.`
+            : 'No APR has been sent for this campaign.';
     new Setting(details)
         .setName('Send to Community')
         .setDesc(canSendToCommunity
-            ? 'Adds this APR to campaign publishes and scheduled updates. It lands privately on My Share until you activate it there.'
+            ? `Adds this APR to campaign publishes and scheduled updates. It lands privately on My Share until you activate it there. ${communityStatus}`
             : 'Choose Level 2 (Profile, books + APR) or Level 3 (Writing activity) in Community settings before sending an APR.')
         .addToggle((toggle) => toggle
             .setValue(campaign.sendToCommunity ?? false)
@@ -1002,16 +1007,7 @@ function renderCampaignDetails(
                 plugin.settings.authorProgress.campaigns[index].sendToCommunity = value;
                 await plugin.saveSettings();
                 onUpdate();
-            }));
-
-    const communityStatus = campaign.lastCommunityUploadError
-        ? `Last send failed: ${campaign.lastCommunityUploadError}`
-        : campaign.lastCommunityUploadedAt
-            ? `${campaign.lastCommunityUploadStatus === 'active' ? 'Public APR refreshed' : 'Private APR sent'} ${new Date(campaign.lastCommunityUploadedAt).toLocaleString()}.`
-            : 'No APR has been sent for this campaign.';
-    new Setting(details)
-        .setName('Community APR')
-        .setDesc(communityStatus)
+            }))
         .addButton(button => button
             .setButtonText('Send now')
             .setDisabled(!canSendToCommunity || !(campaign.sendToCommunity ?? false))

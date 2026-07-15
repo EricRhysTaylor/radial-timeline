@@ -242,6 +242,7 @@ export class AuthorProgressCampaignService {
                 width: result.width,
                 height: result.height,
                 teaserLevel: revealLevel,
+                updateFrequency: campaign.updateFrequency ?? 'manual',
                 bookKey,
                 campaignLabel: campaign.name
             });

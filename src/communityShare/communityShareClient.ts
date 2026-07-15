@@ -418,6 +418,7 @@ export async function uploadAprToCommunity(
         width: number;
         height: number;
         teaserLevel: 'ring' | 'scenes' | 'colors' | 'full';
+        updateFrequency: 'manual' | 'daily' | 'weekly' | 'monthly';
         bookKey: string;
         campaignLabel?: string;
     }
@@ -444,6 +445,7 @@ export async function uploadAprToCommunity(
             current_secret: currentSecret,
             plugin_book_key: bookKey,
             teaser_level: args.teaserLevel,
+            update_frequency: args.updateFrequency,
             svg: args.svg,
             width: args.width,
             height: args.height,

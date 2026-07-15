@@ -317,6 +317,7 @@ describe('Community Share activation client', () => {
             width: 480,
             height: 480,
             teaserLevel: 'ring',
+            updateFrequency: 'daily',
             bookKey: 'book-1',
             campaignLabel: 'Newsletter'
         });
@@ -328,6 +329,7 @@ describe('Community Share activation client', () => {
         expect(body.plugin_book_key).toBe('book-1');
         expect(body.project_id).toBeUndefined();
         expect(body.teaser_level).toBe('ring');
+        expect(body.update_frequency).toBe('daily');
         expect(body.campaign_label).toBe('Newsletter');
         expect(result.status).toBe('private');
     });
@@ -348,6 +350,7 @@ describe('Community Share activation client', () => {
             width: 480,
             height: 480,
             teaserLevel: 'ring',
+            updateFrequency: 'manual',
             bookKey: 'book-1'
         })).rejects.toMatchObject({ code: 'sharing_level_required' });
     });

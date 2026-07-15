@@ -23,6 +23,13 @@ import {
 } from '../onboarding/OnboardingService';
 import type { SurveyResult } from '../onboarding/extraction';
 import { flattenScenes, type ManuscriptModel } from '../onboarding/adapters/manuscriptModel';
+import {
+  planSceneSplit,
+  toggleBreak,
+  segmentCount,
+  applySplitsToModel,
+  type ScenePlan,
+} from '../onboarding/sceneSplitting';
 import { suggestOnboardingFolderName } from '../onboarding/paths';
 import { getActiveBook } from '../utils/books';
 import { STAGE_ORDER, type Stage } from '../utils/constants';
@@ -40,6 +47,12 @@ function stripWikiLink(value: string): string {
   return value.replace(/^\[\[/, '').replace(/\]\]$/, '');
 }
 
+/** First `max` chars of a paragraph for the split-editor preview, with an ellipsis. */
+function truncateText(text: string, max: number): string {
+  const collapsed = text.replace(/\s+/g, ' ').trim();
+  return collapsed.length > max ? `${collapsed.slice(0, max).trimEnd()}…` : collapsed;
+}
+
 export class OnboardingModal extends Modal {
   private readonly plugin: RadialTimelinePlugin;
   private readonly service: OnboardingService;
@@ -48,6 +61,8 @@ export class OnboardingModal extends Modal {
   private survey: SurveyResult | null = null;
   private proposals: SceneProposal[] = [];
   private entityProposals: EntityProposal[] = [];
+  /** Per-file split proposals, keyed by sourceRef; edited at Checkpoint 1. */
+  private splitPlans: Map<string, ScenePlan> = new Map();
   private publishStage: Stage = 'Zero';
   // Extra work beyond scenes — all off by default so the core run is just
   // "split into scene notes with YAML + Synopsis". The author opts in.
@@ -148,19 +163,29 @@ export class OnboardingModal extends Modal {
     if (!this.model) return;
     const { contentEl } = this;
     contentEl.empty();
-    this.renderStageHeader(2, 'Confirm scenes', 'Each note becomes one scene, in reading order. Nothing is written yet.');
+    this.renderStageHeader(2, 'Confirm scenes', 'Split each file into scenes, in reading order. Click between paragraphs to place a scene break. Nothing is written yet.');
 
-    const list = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
-    list.setCssStyles({ maxHeight: '340px', overflowY: 'auto' }); // SAFE: scrollable list (Obsidian pattern)
+    // One split plan per source file (built once; edits persist across re-render).
     const scenes = flattenScenes(this.model);
+    if (this.splitPlans.size === 0) {
+      for (const scene of scenes) this.splitPlans.set(scene.sourceRef, planSceneSplit(scene));
+    }
+
+    const totalLine = contentEl.createDiv({ cls: 'ert-muted' });
+    const updateTotal = (): void => {
+      const total = scenes.reduce((sum, scene) => {
+        const plan = this.splitPlans.get(scene.sourceRef);
+        return sum + (plan ? segmentCount(plan) : 1);
+      }, 0);
+      totalLine.setText(`Will create ${total} scene note${total === 1 ? '' : 's'} from ${scenes.length} file${scenes.length === 1 ? '' : 's'}.`);
+    };
+
+    const list = contentEl.createDiv({ cls: 'ert-onb-list' });
     scenes.forEach((scene, i) => {
-      const row = list.createDiv({ cls: 'ert-row' });
-      row.createSpan({ text: `${String(i + 1).padStart(2, '0')}. `, cls: 'ert-muted' });
-      row.createSpan({ text: scene.title ?? scene.sourceRef });
-      if (scene.alreadyOnboarded) {
-        row.createSpan({ text: '  · already onboarded (skip)', cls: 'ert-muted' });
-      }
+      const plan = this.splitPlans.get(scene.sourceRef);
+      if (plan) this.renderSplitCard(list, plan, i + 1, i === 0, updateTotal);
     });
+    updateTotal();
 
     const stageRow = contentEl.createDiv({ cls: 'ert-row' });
     stageRow.createSpan({ text: 'Publish stage: ', cls: 'ert-muted' });
@@ -229,8 +254,110 @@ export class OnboardingModal extends Modal {
     return input;
   }
 
+  /** One file's split card: headline count, lazily-built paragraph break editor. */
+  private renderSplitCard(
+    list: HTMLElement,
+    plan: ScenePlan,
+    displayIndex: number,
+    openByDefault: boolean,
+    onTotalChange: () => void
+  ): void {
+    const card = list.createDiv({ cls: 'ert-onb-scene' });
+    const head = card.createEl('button', { cls: 'ert-onb-scene__head', attr: { type: 'button' } });
+    head.createSpan({ cls: 'ert-onb-scene__idx', text: String(displayIndex).padStart(2, '0') });
+    head.createSpan({ cls: 'ert-onb-scene__title', text: plan.baseTitle ?? plan.sourceRef });
+    const meta = head.createDiv({ cls: 'ert-onb-scene__meta' });
+    const countPill = meta.createSpan({ cls: 'ert-badgePill ert-onb-pill--act' });
+    const refreshCount = (): void => {
+      const n = segmentCount(plan);
+      countPill.setText(plan.alreadyOnboarded ? 'skip' : `${n} scene${n === 1 ? '' : 's'}`);
+    };
+    refreshCount();
+    if (plan.labels.length > 0) meta.createSpan({ cls: 'ert-onb-flag', text: `❖ ${plan.labels.length} beats` });
+    const caret = meta.createSpan({ cls: 'ert-onb-caret' });
+    setIcon(caret, 'chevron-right');
+
+    const body = card.createDiv({ cls: 'ert-onb-scene__body' });
+    let built = false;
+    const buildOnce = (): void => {
+      if (built) return;
+      built = true;
+      this.buildSplitEditor(body, plan, () => {
+        refreshCount();
+        onTotalChange();
+      });
+    };
+    head.addEventListener('click', () => {
+      if (card.hasClass('is-open')) {
+        card.removeClass('is-open');
+      } else {
+        buildOnce();
+        card.addClass('is-open');
+      }
+    });
+    if (openByDefault) {
+      buildOnce();
+      card.addClass('is-open');
+    }
+  }
+
+  /** The break editor: argument beats (if any) + paragraphs with clickable break dividers. */
+  private buildSplitEditor(body: HTMLElement, plan: ScenePlan, onChange: () => void): void {
+    if (plan.alreadyOnboarded) {
+      body.createDiv({ cls: 'ert-onb-error', text: 'Already onboarded — this file is skipped, not split.' });
+      return;
+    }
+    if (plan.paragraphs.length === 0) {
+      body.createDiv({ cls: 'ert-onb-error', text: 'No prose found in this file.' });
+      return;
+    }
+    if (plan.labels.length > 0) {
+      const hint = body.createDiv({ cls: 'ert-onb-split-hint' });
+      hint.createDiv({ cls: 'ert-onb-synopsis__label', text: `Argument beats (${plan.labels.length})` });
+      const chips = hint.createDiv({ cls: 'ert-onb-fm__val' });
+      plan.labels.forEach((label) => this.pill(chips, label, 'ert-onb-pill--subplot', true));
+      hint.createDiv({
+        cls: 'ert-onb-split-note',
+        text: 'No scene markers in this text — click a break to place scene boundaries (a later pass will propose these automatically).',
+      });
+    }
+    const editor = body.createDiv({ cls: 'ert-onb-para-list' });
+    this.renderParagraphs(editor, plan, onChange);
+  }
+
+  /** Render paragraphs with break dividers; re-renders in place on toggle. */
+  private renderParagraphs(editor: HTMLElement, plan: ScenePlan, onChange: () => void): void {
+    editor.empty();
+    plan.paragraphs.forEach((paragraph, i) => {
+      if (i > 0) {
+        const isBreak = plan.breaks.includes(i);
+        const divider = editor.createDiv({ cls: 'ert-onb-break' });
+        divider.toggleClass('is-break', isBreak);
+        const btn = divider.createEl('button', { cls: 'ert-onb-break__btn', attr: { type: 'button' } });
+        btn.setText(isBreak ? '✕ remove break' : '＋ scene break');
+        btn.addEventListener('click', () => {
+          plan.breaks = toggleBreak(plan, i);
+          this.renderParagraphs(editor, plan, onChange);
+          onChange();
+        });
+      }
+      if (i === 0 || plan.breaks.includes(i)) {
+        const segIndex = plan.breaks.filter((b) => b <= i).length;
+        const segHead = editor.createDiv({ cls: 'ert-onb-seg-head' });
+        segHead.createSpan({ cls: 'ert-onb-seg-num', text: `Scene ${segIndex + 1}` });
+        const label = plan.labels[segIndex];
+        if (label) segHead.createSpan({ cls: 'ert-onb-seg-label', text: label });
+      }
+      const row = editor.createDiv({ cls: 'ert-onb-para' });
+      row.createSpan({ cls: 'ert-onb-para__idx', text: String(i + 1) });
+      row.createSpan({ cls: 'ert-onb-para__text', text: truncateText(paragraph, 180) });
+    });
+  }
+
   private async runExtraction(): Promise<void> {
     if (!this.model) return;
+    // Apply the confirmed scene split: one source file may now yield several scenes.
+    const model = applySplitsToModel(this.model, this.splitPlans);
     this.abortController = new AbortController();
     const { contentEl } = this;
     contentEl.empty();
@@ -247,9 +374,9 @@ export class OnboardingModal extends Modal {
     new ButtonComponent(actions).setButtonText('Abort').setWarning().onClick(() => this.abortController?.abort());
     // (setWarning is the Obsidian ButtonComponent API for the muted-danger style.)
 
-    this.survey = await this.service.survey(this.model);
+    this.survey = await this.service.survey(model);
 
-    this.proposals = await this.service.extractScenes(this.model, this.survey, {
+    this.proposals = await this.service.extractScenes(model, this.survey, {
       signal: this.abortController.signal,
       publishStage: this.publishStage,
       onProgress: (current, total, title) => {

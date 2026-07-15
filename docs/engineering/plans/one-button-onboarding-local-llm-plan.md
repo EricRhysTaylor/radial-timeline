@@ -558,6 +558,25 @@ Doctrine fit: no new abstraction layer beyond the adapters, no fallback chains
   `enrichEntities` gained a fast path: profiles-on + summaries-off creates plain
   scaffolds with zero AI calls. Sequencing: land the scene core, then re-enable
   the extras once it's proven.
+- **2026-07-15 (scene splitting — step 1, deterministic)** — until now one source
+  file = one scene, so a chapter-sized file became a single giant scene. Step 1
+  adds deterministic in-file splitting (`src/onboarding/sceneSplitting.ts`, pure
+  + unit-tested): (a) explicit scene-break markers (`***`, `* * *`, `---`, `⁂`,
+  heading rules…) become breaks and are dropped from prose; (b) a Butler-style
+  **argument header** — an all-caps, dash-separated first paragraph enumerating a
+  book's scenes (the Odyssey's `THE GODS IN COUNCIL—MINERVA'S VISIT…`) — is parsed
+  into scene *labels*. Inspecting the fixture settled the design: the Odyssey has
+  **zero** literal markers, so marker-splitting can't touch it; the argument line
+  gives the scene *count + labels* but not boundaries. Checkpoint 1 ("Confirm
+  scenes") is now an adjustable **break editor** — paragraphs with click-to-place
+  break dividers, seeded from markers, with the argument beats shown as guidance;
+  segments are titled from the labels (`Book 1 — Minerva's visit to Ithaca`). The
+  author places breaks by hand in step 1. **Step 2 (deferred): AI boundary
+  alignment** — feed the model the prose + the known argument labels and have it
+  return each scene's opening phrase (a constrained align-to-known-beats task, not
+  open-ended "find the scenes"), then locate the cut deterministically — auto-
+  seeding the breaks the author currently places manually. The `Book:` structural
+  field (canonical "Cyclops scene → Act 2 + Book 9") also lands with step 2.
 
 ## Appendix A — Canonical onboarding prompt (instruction block)
 

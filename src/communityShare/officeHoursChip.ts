@@ -93,6 +93,7 @@ export class OfficeHoursChip {
     private lastSuccessAt = 0; // last successful refresh — the staleness clock
     private lastAttemptAt = 0; // last fetch attempt (paranoia + wake debounce)
     private timers: number[] = [];
+    private host: HTMLElement | null = null;
     private el: HTMLAnchorElement | null = null;
     private fetching = false;
     private destroyed = false;
@@ -111,17 +112,36 @@ export class OfficeHoursChip {
     }
 
     /**
-     * Mount the chip into the session-panel header. Called on every panel
-     * render (the panel empties itself); state lives on this controller, so
-     * the chip re-appears in whatever state the schedule is in.
+     * Mount the chip into a persistent title-bar host (right of the writing-
+     * session control) so the schedule is visible without opening the popover.
+     * The host outlives the popover; state lives on this controller.
      */
-    renderInto(header: HTMLElement): void {
-        this.el = null;
-        if (this.destroyed || !this.eligible()) return; // absence by choice is silent
-        const el = header.createEl('a', { cls: 'ert-timeline-session-panel__oh-chip ert-hidden' });
+    mount(host: HTMLElement): void {
+        this.host = host;
+        this.sync();
+    }
+
+    /**
+     * Ensure the chip element exists iff eligible, then let update() paint it.
+     * Cheap and idempotent — safe to call on the session tick to catch a
+     * community connect/disconnect. Absence by choice is silent (no element);
+     * a fresh connection re-arms the poll so the chip appears with live data.
+     */
+    sync(): void {
+        const host = this.host;
+        if (!host) return;
+        if (this.destroyed || !this.eligible()) {
+            this.el?.remove();
+            this.el = null;
+            return;
+        }
+        if (this.el && this.el.isConnected) return; // already mounted; timers drive content
+        const el = host.createEl('a', { cls: 'ert-timeline-oh-chip ert-hidden' });
         el.rel = 'noopener';
         this.el = el;
         this.update();
+        // Just became eligible with no armed poll (toggle flipped on) — refresh.
+        if (this.timers.length === 0) void this.refetch();
     }
 
     /** Refetch on window focus / visibilitychange (laptop-was-asleep case). */
@@ -134,7 +154,9 @@ export class OfficeHoursChip {
     destroy(): void {
         this.destroyed = true;
         this.clearTimers();
+        this.el?.remove();
         this.el = null;
+        this.host = null;
     }
 
     // ── data freshness ──────────────────────────────────────────────────────

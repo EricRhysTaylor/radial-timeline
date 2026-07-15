@@ -495,6 +495,14 @@ export class RadialTimelineView extends ItemView {
                 headerEl.insertBefore(sessionBtn, headerEl.firstChild);
             }
 
+            // Office-hours chip lives in the title bar beside the session control
+            // (not inside the popover, where an author who never opens it would
+            // miss the schedule). Persistent host; state on the controller.
+            const officeHoursHost = doc.createElement('span');
+            officeHoursHost.className = 'ert-timeline-oh-chip-host';
+            sessionBtn.parentElement?.insertBefore(officeHoursHost, sessionBtn.nextSibling);
+            this.officeHoursChip?.mount(officeHoursHost);
+
             this.bookSwitcherEl = wrapper;
             this.bookSwitcherSelect = select;
             this.bookSwitcherManageBtn = manageBtn;
@@ -838,6 +846,10 @@ export class RadialTimelineView extends ItemView {
             this.pulseWritingSessionTitleCount(pulseColor);
         }
         this.writingSessionLastTitlePulseKey = snapshot.pulseKey;
+        // Keep the title-bar office-hours chip's presence in step with a
+        // community connect/disconnect made while the view is open (cheap;
+        // no-op once mounted — the chip's own timers drive its content).
+        this.officeHoursChip?.sync();
         this.syncOpenWritingSessionPanel();
         this.updateWritingSessionRing(undefined, { pulseColor });
         this.updateTabTimerIcon();
@@ -1111,10 +1123,6 @@ export class RadialTimelineView extends ItemView {
             const sharedBadge = header.createSpan({ cls: 'ert-timeline-session-panel__shared-badge', text: 'Shared' });
             applyTooltip(sharedBadge, 'Saved sessions post a progress summary to your community feed', 'bottom');
         }
-        // Office-hours chip (right of the title): renders only when signed in
-        // with the community connect toggle on. Spec: OFFICE-HOURS-CHIP-SPEC.
-        this.officeHoursChip?.renderInto(header);
-
         const settingsBtn = header.createEl('button', { cls: 'ert-timeline-session-panel__icon clickable-icon' });
         settingsBtn.type = 'button';
         setIcon(settingsBtn, 'settings');

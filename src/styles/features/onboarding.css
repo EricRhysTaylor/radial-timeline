@@ -100,6 +100,25 @@
   color: var(--text-warning, var(--text-accent));
 }
 
+/* Checkpoint 1 — marker discoverability tip */
+.ert-ui .ert-onb-tip {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ert-gap-sm);
+  margin-bottom: var(--ert-gap-sm);
+  padding: var(--ert-pad-sm) var(--ert-pad-cozy);
+  border-left: 3px solid var(--interactive-accent);
+  border-radius: var(--ert-radius-sm, 4px);
+  background: color-mix(in srgb, var(--interactive-accent) 6%, transparent);
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.ert-ui .ert-onb-tip__icon {
+  flex: 0 0 auto;
+}
+
 /* Checkpoint 1 — auto-split control row */
 .ert-ui .ert-onb-split-controls {
   display: flex;

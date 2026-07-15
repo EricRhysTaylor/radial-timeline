@@ -180,6 +180,13 @@ export class OnboardingModal extends Modal {
       totalLine.setText(`Will create ${total} scene note${total === 1 ? '' : 's'} from ${scenes.length} file${scenes.length === 1 ? '' : 's'}.`);
     };
 
+    // Discoverability: authors can hard-mark breaks in the source itself.
+    const tip = contentEl.createDiv({ cls: 'ert-onb-tip' });
+    tip.createSpan({ cls: 'ert-onb-tip__icon', text: '💡' });
+    tip.createSpan({
+      text: 'Tip: put *** (or ---, ⁂, or a # heading) on its own line in your manuscript to force a scene break there. It’s exact, survives re-runs, and the AI won’t override it.',
+    });
+
     // AI auto-split — one action for the whole manuscript, for files that have no
     // markers. Splitting on markers is already applied; this fills the rest.
     const splittable = [...this.splitPlans.values()].some(
@@ -188,7 +195,7 @@ export class OnboardingModal extends Modal {
     if (splittable) {
       const controls = contentEl.createDiv({ cls: 'ert-onb-split-controls' });
       new ButtonComponent(controls)
-        .setButtonText('✦ Auto-split with AI')
+        .setButtonText('Auto-split with AI')
         .setCta()
         .onClick(() => void this.runSplitProposal());
       controls.createSpan({
@@ -335,7 +342,7 @@ export class OnboardingModal extends Modal {
       plan.labels.forEach((label) => this.pill(chips, label, 'ert-onb-pill--subplot', true));
       hint.createDiv({
         cls: 'ert-onb-split-note',
-        text: 'No scene markers in this text — click a break to place scene boundaries (a later pass will propose these automatically).',
+        text: 'No scene markers in this text — use “Auto-split with AI” above, or click a break below to place one by hand.',
       });
     }
     const editor = body.createDiv({ cls: 'ert-onb-para-list' });
@@ -519,7 +526,7 @@ export class OnboardingModal extends Modal {
     displayIndex: number,
     openByDefault: boolean
   ): void {
-    const fm = proposal.frontmatter as Record<string, unknown> | null;
+    const fm = proposal.frontmatter;
     const scene = list.createDiv({ cls: 'ert-onb-scene' });
     if (!fm) scene.addClass('is-failed');
 
@@ -563,7 +570,7 @@ export class OnboardingModal extends Modal {
 
   /** The expanded detail: frontmatter keys, pill'd arrays, and the synopsis. */
   private buildSceneBody(body: HTMLElement, proposal: SceneProposal): void {
-    const fm = proposal.frontmatter as Record<string, unknown> | null;
+    const fm = proposal.frontmatter;
     if (!fm) {
       body.createDiv({
         cls: 'ert-onb-error',

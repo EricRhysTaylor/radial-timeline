@@ -104,7 +104,7 @@ function inferBaseline() {
   const head = safe('git rev-parse HEAD');
   const candidates = [
     { label: 'upstream merge-base', ref: safe('git merge-base HEAD @{upstream} 2>/dev/null') },
-    { label: 'origin/master merge-base', ref: safe('git merge-base HEAD origin/master 2>/dev/null') },
+    { label: 'origin/main merge-base', ref: safe('git merge-base HEAD origin/main 2>/dev/null') },
     { label: 'HEAD~1', ref: safe('git rev-parse HEAD~1 2>/dev/null') }
   ];
 

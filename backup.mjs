@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 const quiet = process.argv.includes('--quiet');
+const PRIMARY_BRANCH = 'main';
 
 // Env-independent verification hold. A bare `.rt-verification-hold` file in
 // the repo root makes every auto-backup path a no-op regardless of how the
@@ -36,6 +37,27 @@ function safeRun(cmd) {
 
 function shellQuote(value) {
   return `'${String(value).replace(/'/g, `'\\''`)}'`;
+}
+
+function readCliNote(args) {
+  const positional = [];
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === '--quiet') continue;
+    if (arg === '--note' || arg === '--message') {
+      const valueParts = [];
+      for (let valueIndex = index + 1; valueIndex < args.length; valueIndex += 1) {
+        if (args[valueIndex].startsWith('--')) break;
+        valueParts.push(args[valueIndex]);
+      }
+      return valueParts.join(' ').trim();
+    }
+    if (arg.startsWith('--note=') || arg.startsWith('--message=')) {
+      return arg.slice(arg.indexOf('=') + 1).trim();
+    }
+    if (!arg.startsWith('--')) positional.push(arg);
+  }
+  return positional.join(' ').trim();
 }
 
 function assertNoGitOperationInProgress() {
@@ -89,8 +111,12 @@ try {
   // Ensure we are in a git repo
   run('git rev-parse --is-inside-work-tree');
 
-  // Use current branch for backups
-  const branch = safeRun('git rev-parse --abbrev-ref HEAD') || 'master';
+  // Backups are a main-only publishing path. Never silently push a feature or
+  // stale legacy branch just because it happens to be checked out.
+  const branch = safeRun('git rev-parse --abbrev-ref HEAD');
+  if (branch !== PRIMARY_BRANCH) {
+    throw new Error(`Backups must run from '${PRIMARY_BRANCH}'. Current branch: '${branch || 'unknown'}'.`);
+  }
   if (!quiet) {
     console.log(`[backup] backing up branch: ${branch}`);
   }
@@ -135,7 +161,7 @@ try {
       }
     } catch (_) { /* ignore */ }
   }
-  const userNote = (process.argv.slice(2).join(' ') || '').trim() || (process.env.BACKUP_NOTE || '').trim() || npmArgvNote;
+  const userNote = readCliNote(process.argv.slice(2)) || (process.env.BACKUP_NOTE || '').trim() || npmArgvNote;
   const shortstat = safeRun('git diff --cached --shortstat');
   let insertions = 0, deletions = 0;
   if (shortstat) {

@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { execSync } from 'node:child_process';
 
+const PRIMARY_BRANCH = 'main';
+
 function run(cmd) {
   return execSync(cmd, { stdio: 'pipe' }).toString().trim();
 }
@@ -13,11 +15,18 @@ try {
   // Ensure we are in a git repo
   run('git rev-parse --is-inside-work-tree');
 
-  // Get the timestamp of the last commit on master branch
-  const lastCommitTime = safeRun('git log origin/master -1 --format=%ct');
+  const branch = safeRun('git rev-parse --abbrev-ref HEAD');
+  if (branch !== PRIMARY_BRANCH) {
+    console.log(`[backup-check] Automatic backup is main-only; current branch is ${branch || 'unknown'}.`);
+    process.exit(0);
+  }
+
+  // Get the timestamp of the last commit on the canonical remote branch.
+  const remoteRef = `origin/${PRIMARY_BRANCH}`;
+  const lastCommitTime = safeRun(`git log ${remoteRef} -1 --format=%ct`);
   
   if (!lastCommitTime) {
-    console.log('[backup-check] No commits found on origin/master. Backup recommended.');
+    console.log(`[backup-check] No commits found on ${remoteRef}. Backup recommended.`);
     process.exit(1); // Exit code 1 means backup needed
   }
 
@@ -40,4 +49,3 @@ try {
   console.error('[backup-check] Failed:', err?.message || err);
   process.exit(0); // Don't fail the build if check fails
 }
-

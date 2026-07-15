@@ -37,10 +37,10 @@ describe('writing session completion modal', () => {
         expect(compactInfoBlock).toContain('align-self: start');
         expect(compactControlBlock).toContain('align-self: start');
         expect(compactControlBlock).toContain('justify-self: end');
-        expect(noteSettingBlock).toContain('border-top: 1px solid var(--background-modifier-border)');
+        expect(noteSettingBlock).toContain('border-top: none');
         expect(dateInputBlock).toContain('width: 13.5ch');
         expect(source).toContain('private formatHeaderMeta()');
-        expect(source).toContain("header.createSpan({ cls: 'ert-modal-badge', text: this.formatHeaderMeta() })");
+        expect(source).toContain("const badge = header.createSpan({ cls: 'ert-modal-badge', text: badgeBaseText })");
         expect(source).toContain('Review word counts, confirm touched scenes, choose the writing day, then save this session record.');
         expect(source).toContain("cls: 'ert-writing-session-section ert-writing-session-section--words'");
         expect(source).toContain("cls: 'ert-writing-session-grid ert-writing-session-grid--words'");

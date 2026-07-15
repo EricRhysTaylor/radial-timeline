@@ -45,7 +45,7 @@ import { estimateInputTokens, estimateUncertaintyTokens } from '../tokens/inputT
 import { extractTokenUsage } from '../usage/providerUsage';
 
 const DEFAULT_REMOTE_PROVIDER_SNAPSHOT_URL = 'https://raw.githubusercontent.com/ericrhystaylor/radial-timeline/HEAD/scripts/models/latest-models.json';
-const DEFAULT_REMOTE_PRICING_URL = 'https://raw.githubusercontent.com/ericrhystaylor/radial-timeline/master/scripts/models/pricing.json';
+const DEFAULT_REMOTE_PRICING_URL = 'https://raw.githubusercontent.com/ericrhystaylor/radial-timeline/main/scripts/models/pricing.json';
 
 interface PluginWithAiDebug extends RadialTimelinePlugin {
     _aiLastRunAdvancedByFeature?: Record<string, AIRunAdvancedContext>;

@@ -7,7 +7,7 @@ This project is released under the **Radial Timeline Source-Available Non-Commer
 
 Radial Timeline is protected by U.S. Copyright Registration TX0009593938 and U.S. Trademark Registration No. 8,251,843. The Radial Timeline visualization system is the subject of U.S. Provisional Patent Application No. 63/951,412 and is marked Patent Pending.
 
-For the canonical license text, see: [`LICENSE`](https://github.com/EricRhysTaylor/radial-timeline/blob/master/LICENSE)
+For the canonical license text, see: [`LICENSE`](https://github.com/EricRhysTaylor/radial-timeline/blob/main/LICENSE)
 
 ### What the license means in practice
 
@@ -34,7 +34,7 @@ In short: **what you write belongs to you, commercially and completely. The tool
 <a name="notice"></a>
 ## Notice
 
-For the canonical notice text, see: [`NOTICE`](https://github.com/EricRhysTaylor/radial-timeline/blob/master/NOTICE)
+For the canonical notice text, see: [`NOTICE`](https://github.com/EricRhysTaylor/radial-timeline/blob/main/NOTICE)
 
 ---
 

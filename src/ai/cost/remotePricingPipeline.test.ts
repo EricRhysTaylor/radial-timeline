@@ -638,17 +638,17 @@ describe('AiSection cost table BUILTIN_MODELS fallback', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 15. URL correctness: master branch
+// 15. URL correctness: main branch
 // ---------------------------------------------------------------------------
 
-describe('remote URLs use master branch', () => {
+describe('remote URLs use main branch', () => {
 
-    it('aiClient uses master branch for pricing URL', () => {
+    it('aiClient uses main branch for pricing URL', () => {
         const { readFileSync } = require('node:fs');
         const { resolve } = require('node:path');
         const source = readFileSync(resolve(process.cwd(), 'src/ai/runtime/aiClient.ts'), 'utf8');
 
-        expect(source).toContain("radial-timeline/master/scripts/models/pricing.json");
-        expect(source).not.toContain("radial-timeline/main/scripts/models/pricing.json");
+        expect(source).toContain("radial-timeline/main/scripts/models/pricing.json");
+        expect(source).not.toContain("radial-timeline/master/scripts/models/pricing.json");
     });
 });

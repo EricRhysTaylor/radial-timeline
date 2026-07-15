@@ -9,17 +9,17 @@ Always work directly in the main repository at:
 
 Do NOT use git worktrees. Do NOT work from agent worktree directories (e.g. `~/.claude-worktrees/`). If you find yourself in a worktree path, switch to the main repo path above before making any changes.
 
-The primary branch is `master`.
+The primary branch is `main`.
 
 ## Git Workflow
 
-- Work directly on `master`. Do NOT create feature branches — committing
+- Work directly on `main`. Do NOT create feature branches — committing
   to a new branch breaks the auto-backup push (a fresh branch has no
-  `origin` upstream) and adds friction for a solo, master-only repo.
+  `origin` upstream) and adds friction for a solo, main-only repo.
 - After a self-contained, verified change, **commit AND push to
-  `origin/master` without asking.** Pushing is the default, not an
+  `origin/main` without asking.** Pushing is the default, not an
   opt-in. (The auto-backup script pushes the current branch to its
-  upstream; on `master` that always works.)
+  upstream; on `main` that always works.)
 - **NEVER ask whether to commit or push.** Do not ask "want me to
   commit now or wait?", "should I commit?", or any variant. After a
   verified change, commit and push — no confirmation question. This

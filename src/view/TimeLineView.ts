@@ -2859,23 +2859,23 @@ export class RadialTimelineView extends ItemView {
         foreignObject.setAttribute('y', String(panelY));
         foreignObject.setAttribute('width', String(panelWidth));
         foreignObject.setAttribute('height', String(panelHeight));
-        foreignObject.setAttribute('class', 'rt-recent-moves-fo');
+        foreignObject.setAttribute('class', 'ert-recent-moves-fo');
         foreignObject.classList.add('ert-pointer-events-none');
 
         const panel = doc.createElementNS(xhtmlNs, 'section');
-        panel.className = 'rt-recent-moves';
+        panel.className = 'ert-recent-moves';
         panel.style.setProperty('--rt-recent-moves-fade-center-x', `${-panelX}px`);
         panel.style.setProperty('--rt-recent-moves-fade-center-y', `${-panelY}px`);
         panel.style.setProperty('--rt-recent-moves-fade-radius', `${MONTH_LABEL_RADIUS}px`);
         panel.setCssProps({ '--rt-recent-moves-fade-width': '110px' });
 
         const header = doc.createElementNS(xhtmlNs, 'div');
-        header.className = 'rt-recent-moves__header';
+        header.className = 'ert-recent-moves__header';
         header.textContent = 'Recent moves';
         panel.appendChild(header);
 
         const list = doc.createElementNS(xhtmlNs, 'div');
-        list.className = 'rt-recent-moves__list';
+        list.className = 'ert-recent-moves__list';
         panel.appendChild(list);
 
         entries.forEach((entry) => {
@@ -3186,18 +3186,18 @@ export class RadialTimelineView extends ItemView {
         const xhtmlNs = 'http://www.w3.org/1999/xhtml';
         const doc = this.containerEl.ownerDocument;
         const row = doc.createElementNS(xhtmlNs, 'div');
-        row.className = 'rt-recent-moves__item';
+        row.className = 'ert-recent-moves__item';
 
         const header = doc.createElementNS(xhtmlNs, 'div');
-        header.className = 'rt-recent-moves__header-row';
+        header.className = 'ert-recent-moves__header-row';
 
         const icon = doc.createElementNS(xhtmlNs, 'div');
-        icon.className = 'rt-recent-moves__icon';
+        icon.className = 'ert-recent-moves__icon';
         setIcon(icon, 'arrow-right-to-line');
         header.appendChild(icon);
 
         const summary = doc.createElementNS(xhtmlNs, 'div');
-        summary.className = 'rt-recent-moves__summary';
+        summary.className = 'ert-recent-moves__summary';
         const [sourceLabel, targetLabel] = entry.summary.split('|').map((part) => part.trim());
         if (sourceLabel && targetLabel) {
             const source = doc.createElementNS(xhtmlNs, 'span');
@@ -3205,7 +3205,7 @@ export class RadialTimelineView extends ItemView {
             summary.appendChild(source);
 
             const cornerIcon = doc.createElementNS(xhtmlNs, 'span');
-            cornerIcon.className = 'rt-recent-moves__inline-icon';
+            cornerIcon.className = 'ert-recent-moves__inline-icon';
             setIcon(cornerIcon, 'corner-up-right');
             summary.appendChild(cornerIcon);
 
@@ -3219,7 +3219,7 @@ export class RadialTimelineView extends ItemView {
         row.appendChild(header);
 
         const meta = doc.createElementNS(xhtmlNs, 'div');
-        meta.className = 'rt-recent-moves__meta';
+        meta.className = 'ert-recent-moves__meta';
         const parts = [this.formatRecentMoveAge(entry.timestamp)];
         if (entry.sourceContext && entry.destinationContext) {
             parts.push(`${entry.sourceContext} -> ${entry.destinationContext}`);

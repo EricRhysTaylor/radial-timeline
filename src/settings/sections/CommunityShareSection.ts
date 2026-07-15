@@ -752,6 +752,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
 
     new Setting(actionCard)
         .setName('Delete vault report data')
+        // eslint-disable-next-line obsidianmd/ui/sentence-case -- APR is a product acronym and must remain uppercase.
         .setDesc('Permanently deletes this vault report\'s stored payload. It does not delete your account, profile, books, APRs, posts, or report history.')
         .addButton(button => button
             .setButtonText('Delete report data')

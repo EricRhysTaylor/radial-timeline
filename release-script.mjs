@@ -319,7 +319,7 @@ function generateChangelog(fromTag, toRef = 'HEAD') {
 // upload happen on GitHub-hosted runners so assets carry provenance).
 function runReleaseWorkflowAndWait(version) {
     runCommand(
-        `gh workflow run release-build.yml --ref master -f version=${version}`,
+        `gh workflow run release-build.yml --ref main -f version=${version}`,
         "Dispatching release build workflow on GitHub"
     );
 
@@ -432,8 +432,8 @@ async function main() {
 
     try {
         const branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim();
-        if (branch !== 'master') {
-            console.error(`❌ Releases must be cut from 'master'. Current: '${branch}'`);
+        if (branch !== 'main') {
+            console.error(`❌ Releases must be cut from 'main'. Current: '${branch}'`);
             process.exit(1);
         }
     } catch (e) { /* ignore */ }
@@ -512,7 +512,7 @@ async function main() {
     // 4. Create Draft on GitHub (Text Only)
     // We create the tag now so we can attach the release to it
     runCommand(`git tag ${newVersion}`, `Creating tag ${newVersion}`);
-    runCommand(`git push origin master`, "Pushing code");
+    runCommand(`git push origin main`, "Pushing code");
     runCommand(`git push origin ${newVersion}`, "Pushing tag");
 
     const notesFile = '.release-notes-temp.md';

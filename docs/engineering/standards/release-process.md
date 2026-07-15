@@ -61,12 +61,12 @@ Dispatch with `dry_run=true` (skips the upload step; build and attestation
 still run):
 
 ```
-gh workflow run release-build.yml --ref master \
-  -f version=<existing-tag> -f ref=master -f dry_run=true
+gh workflow run release-build.yml --ref main \
+  -f version=<existing-tag> -f ref=main -f dry_run=true
 ```
 
 `ref` overrides what gets built (defaults to the version tag) — useful for
-validating workflow changes on master before a tag exists.
+validating workflow changes on main before a tag exists.
 
 ## Failure modes
 

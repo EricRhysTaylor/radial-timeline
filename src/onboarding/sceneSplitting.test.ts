@@ -132,9 +132,11 @@ describe('scenesFromPlan', () => {
     expect(scenesFromPlan(plan)).toHaveLength(1);
   });
 
-  it('strips the argument header from the single-scene body', () => {
+  it('keeps the argument header in the single-scene body', () => {
     const plan = planSceneSplit(scene({ rawText: 'THE COUNCIL—THE VISIT.\n\nProse body.' }));
-    expect(scenesFromPlan(plan)[0].rawText).toBe('Prose body.');
+    expect(scenesFromPlan(plan)[0].rawText).toBe('THE COUNCIL—THE VISIT.\n\nProse body.');
+    // ...while still parsing the beats for titling/guidance.
+    expect(plan.labels).toEqual(['The council', 'The visit']);
   });
 });
 

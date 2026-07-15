@@ -88,12 +88,16 @@ export interface ScenePlan {
   knownSynopsis: string | null;
 }
 
-/** Build the initial split proposal for one scene: markers → breaks; argument → labels. */
+/**
+ * Build the initial split proposal for one scene: markers → breaks; argument →
+ * labels. The argument header is parsed for its labels but LEFT in the prose (it
+ * becomes scene 1's opening paragraph) — an editorial summary the author keeps.
+ */
 export function planSceneSplit(scene: ManuscriptScene): ScenePlan {
-  const { labels, body } = parseArgumentHeader(scene.rawText);
+  const { labels } = parseArgumentHeader(scene.rawText);
   const paragraphs: string[] = [];
   const breaks: number[] = [];
-  for (const paragraph of splitIntoParagraphs(body)) {
+  for (const paragraph of splitIntoParagraphs(scene.rawText)) {
     if (isSceneBreakMarker(paragraph)) {
       if (paragraphs.length > 0) breaks.push(paragraphs.length); // break before the next paragraph
     } else {

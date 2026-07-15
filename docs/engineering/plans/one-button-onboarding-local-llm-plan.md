@@ -565,7 +565,8 @@ Doctrine fit: no new abstraction layer beyond the adapters, no fallback chains
   heading rules…) become breaks and are dropped from prose; (b) a Butler-style
   **argument header** — an all-caps, dash-separated first paragraph enumerating a
   book's scenes (the Odyssey's `THE GODS IN COUNCIL—MINERVA'S VISIT…`) — is parsed
-  into scene *labels*. Inspecting the fixture settled the design: the Odyssey has
+  into scene *labels* but **left in the prose** (Eric: keep the ALL-CAPS line; it
+  becomes scene 1's opening). Inspecting the fixture settled the design: the Odyssey has
   **zero** literal markers, so marker-splitting can't touch it; the argument line
   gives the scene *count + labels* but not boundaries. Checkpoint 1 ("Confirm
   scenes") is now an adjustable **break editor** — paragraphs with click-to-place

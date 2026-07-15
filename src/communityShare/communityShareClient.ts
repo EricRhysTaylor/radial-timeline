@@ -884,7 +884,7 @@ export async function disconnectCommunityShare(plugin: RadialTimelinePlugin): Pr
     const result = await callReportAction(plugin, 'community-share-disconnect', {
         connection_id: current.connection.connectionId,
         current_secret: secret,
-        mode: 'disconnect_only'
+        mode: 'disconnect_and_revoke'
     });
     const at = result.disconnected_at || new Date().toISOString();
     if (current.connection.secretId) {
@@ -906,7 +906,7 @@ export async function disconnectCommunityShare(plugin: RadialTimelinePlugin): Pr
             action: 'disconnect',
             status: 'success',
             at,
-            message: 'Plugin disconnected from Community Share.'
+            message: 'Plugin disconnected and its live reports were taken offline.'
         }),
         preview: {
             status: 'not_generated'

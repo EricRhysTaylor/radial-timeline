@@ -68,7 +68,7 @@ const MODE_NOTES: Record<CommunityShareMode, string> = {
     progress: 'Includes your profile, books, and APR, plus rounded writing activity: writing days, words, minutes, streak, and mode mix.'
 };
 
-const MY_SHARE_URL = 'https://www.radialtimeline.com/community/me';
+const MY_SHARE_URL = 'https://community.radialtimeline.com/me';
 
 // Canonical website context for the Complete Preview. Profile and project
 // shell fields (title, status, genre, description) are managed on the
@@ -145,6 +145,17 @@ function hasReadyPreview(settings: CommunityShareSettings): boolean {
     return settings.preview.status === 'ready' && Boolean(settings.preview.previewHash && settings.preview.payloadHash);
 }
 
+function latestReportState(settings: CommunityShareSettings): 'live' | 'revoked' | 'deleted' | 'none' {
+    for (let index = settings.publishHistory.length - 1; index >= 0; index -= 1) {
+        const entry = settings.publishHistory[index];
+        if (entry.status !== 'success') continue;
+        if (entry.action === 'publish' || entry.action === 'sync') return 'live';
+        if (entry.action === 'revoke') return 'revoked';
+        if (entry.action === 'delete') return 'deleted';
+    }
+    return 'none';
+}
+
 function getSelectedFieldLabels(settings: CommunityShareSettings): string[] {
     return COMMUNITY_SHARE_FIELD_KEYS
         .filter(key => settings.fieldPolicy[key])
@@ -173,29 +184,32 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     const selectedFields = getSelectedFieldLabels(settings);
     const communityAprCampaigns = (plugin.settings.authorProgress?.campaigns ?? [])
         .filter(campaign => campaign.sendToCommunity);
-    const hasPublishedReport = settings.publishHistory.some(entry => (entry.action === 'publish' || entry.action === 'sync') && entry.status === 'success' && Boolean(entry.publishId));
+    const reportState = latestReportState(settings);
+    const hasLiveReport = reportState === 'live';
+    const hasStoredReport = reportState === 'live' || reportState === 'revoked';
 
     const section = containerEl.createDiv({
         cls: `${ERT_CLASSES.ROOT} ${ERT_CLASSES.STACK}`
     });
 
     const save = async (next: Partial<CommunityShareSettings>) => {
+        const currentSettings = normalizeCommunityShareSettings(plugin.settings.communityShare);
         const invalidatesPreview = next.fieldPolicy !== undefined
             || next.audience !== undefined
             || next.tier !== undefined;
         plugin.settings.communityShare = normalizeCommunityShareSettings({
-            ...settings,
+            ...currentSettings,
             ...next,
-            fieldPolicy: next.fieldPolicy ?? settings.fieldPolicy,
-            connection: next.connection ?? settings.connection,
+            fieldPolicy: next.fieldPolicy ?? currentSettings.fieldPolicy,
+            connection: next.connection ?? currentSettings.connection,
             preview: next.preview ?? (invalidatesPreview
                 ? {
-                    ...settings.preview,
-                    status: settings.preview.status === 'not_generated' ? 'not_generated' : 'stale',
+                    ...currentSettings.preview,
+                    status: currentSettings.preview.status === 'not_generated' ? 'not_generated' : 'stale',
                     previewHash: undefined,
                     payloadHash: undefined
                 }
-                : settings.preview)
+                : currentSettings.preview)
         });
         await plugin.saveSettings();
         containerEl.empty();
@@ -336,7 +350,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         .setDesc('Pick one sharing level. The complete preview always shows exactly what a level includes before anything publishes.');
     addHeadingIcon(sharingHeading, 'share-2');
     const profileLink = sharingHeading.nameEl.createEl('a', {
-        href: 'https://www.radialtimeline.com/community/me',
+        href: MY_SHARE_URL,
         cls: 'ert-wiki-link',
         attr: {
             'aria-label': 'Open your community profile',
@@ -355,16 +369,38 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
             dropdown.addOption('profile_books', MODE_LABELS.profile_books);
             dropdown.addOption('progress', MODE_LABELS.progress);
             dropdown.setValue(mode);
-            dropdown.onChange(value => {
+            dropdown.onChange(async value => {
                 const nextMode = value as CommunityShareMode;
                 const update = buildCommunityShareModeUpdate(nextMode);
+                if (nextMode === 'private' && hasLiveReport) {
+                    const confirmed = window.confirm(
+                        'Make this vault private and take its current Community report offline? Your website account, profile, books, posts, and report history stay in place.'
+                    );
+                    if (!confirmed) {
+                        dropdown.setValue(mode);
+                        fitSelectToSelectedLabel(dropdown.selectEl, { minPx: 112, maxPx: 360, extraPx: 18 });
+                        return;
+                    }
+                    dropdown.setDisabled(true);
+                    try {
+                        await revokeCommunityShareReport(plugin);
+                    } catch (error) {
+                        const message = error instanceof CommunityShareError ? error.message : 'Could not take the current report offline.';
+                        new Notice(message);
+                        dropdown.setValue(mode);
+                        dropdown.setDisabled(false);
+                        return;
+                    }
+                }
                 // Scope changes re-arm the explicit consent step: sharing pauses
                 // until the author begins sharing again at the new level.
                 if (settings.scheduledPublishEnabled && nextMode !== mode) {
                     update.scheduledPublishEnabled = false;
-                    new Notice('Sharing level changed. Review the preview, then begin sharing again.');
+                    new Notice(nextMode === 'private'
+                        ? 'This vault is private and its current report is offline.'
+                        : 'Sharing level changed. Review the preview, then begin sharing again.');
                 }
-                void save(update);
+                await save(update);
             });
             fitSelectToSelectedLabel(dropdown.selectEl, { minPx: 112, maxPx: 360, extraPx: 18 });
         });
@@ -626,7 +662,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     const actionHeading = new Setting(actionCard)
         .setName('Sharing and safety')
         .setHeading()
-        .setDesc('Begin sharing to put your selected level on the community site and keep it current automatically. Pause, revoke, or disconnect anytime.');
+        .setDesc('Pause stops future updates but leaves the current report visible. Take offline hides the report. Delete removes its stored payload. Disconnect also removes this vault connection.');
     addHeadingIcon(actionHeading, 'shield-check');
     applyErtHeaderLayout(actionHeading);
     const sharingOn = settings.scheduledPublishEnabled;
@@ -690,69 +726,69 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         });
 
     new Setting(actionCard)
-        .setName('Revoke sharing')
-        .setDesc('Takes down what you have shared from the website. Your connection stays in place, so you can begin sharing again later.')
+        .setName('Take vault report offline')
+        .setDesc('Hides this vault\'s current report and stops updates. Your account, profile, books, posts, report history, and vault connection stay in place.')
         .addButton(button => button
-            .setButtonText('Revoke')
-            .setDisabled(!isConnected || !hasPublishedReport)
+            .setButtonText('Take offline')
+            .setDisabled(!isConnected || !hasLiveReport)
             .onClick(async () => {
                 button.setDisabled(true);
-                button.setButtonText('Revoking...');
+                button.setButtonText('Taking offline...');
                 try {
                     await revokeCommunityShareReport(plugin);
-                    new Notice('Sharing revoked. Nothing is shared on the website now.');
+                    new Notice('This vault\'s report is offline. Your other Community content is unchanged.');
                     containerEl.empty();
                     renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
                 } catch (error) {
-                    const message = error instanceof CommunityShareError ? error.message : 'Could not revoke sharing.';
+                    const message = error instanceof CommunityShareError ? error.message : 'Could not take the vault report offline.';
                     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
                     plugin.settings.communityShare = normalizeCommunityShareSettings({ ...current, lastError: message });
                     void plugin.saveSettings();
                     new Notice(message);
-                    button.setButtonText('Revoke');
-                    button.setDisabled(!isConnected || !hasPublishedReport);
+                    button.setButtonText('Take offline');
+                    button.setDisabled(!isConnected || !hasLiveReport);
                 }
             }));
 
     new Setting(actionCard)
-        .setName('Delete shared data')
-        .setDesc('Deletes your shared data from the website. Audit metadata remains for your records.')
+        .setName('Delete vault report data')
+        .setDesc('Permanently deletes this vault report\'s stored payload. It does not delete your account, profile, books, APRs, posts, or report history.')
         .addButton(button => button
-            .setButtonText('Delete shared data')
-            .setDisabled(!isConnected || !hasPublishedReport)
+            .setButtonText('Delete report data')
+            .setDisabled(!isConnected || !hasStoredReport)
             .onClick(async () => {
-                if (!window.confirm('Delete the shared Community report payload from the website? Local writing data stays in this vault.')) return;
+                if (!window.confirm('Permanently delete this vault report payload from Community? Your account, profile, books, APRs, posts, report history, and local writing data stay in place.')) return;
                 button.setDisabled(true);
                 button.setButtonText('Deleting...');
                 try {
                     await deleteCommunityShareReport(plugin);
-                    new Notice('Shared community report data deleted.');
+                    new Notice('This vault report payload was deleted. Your other Community content is unchanged.');
                     containerEl.empty();
                     renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
                 } catch (error) {
-                    const message = error instanceof CommunityShareError ? error.message : 'Could not delete shared Community report data.';
+                    const message = error instanceof CommunityShareError ? error.message : 'Could not delete the vault report data.';
                     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
                     plugin.settings.communityShare = normalizeCommunityShareSettings({ ...current, lastError: message });
                     void plugin.saveSettings();
                     new Notice(message);
-                    button.setButtonText('Delete shared data');
-                    button.setDisabled(!isConnected || !hasPublishedReport);
+                    button.setButtonText('Delete report data');
+                    button.setDisabled(!isConnected || !hasStoredReport);
                 }
             }));
 
     new Setting(actionCard)
         .setName('Disconnect plugin')
-        .setDesc('Unlinks this vault from the website. Your writing data stays in this vault, and you can reconnect anytime.')
+        .setDesc('Takes this vault\'s report offline, stops sharing, and removes its saved connection key. Your account and other Community content stay in place. To share from this vault again, generate and enter a new one-time linking key.')
         .addButton(button => button
             .setButtonText('Disconnect')
             .setDisabled(!isConnected)
             .onClick(async () => {
-                if (!window.confirm('Disconnect this vault from Community Share? Your writing data stays in this vault.')) return;
+                if (!window.confirm('Disconnect this vault? Its current report will be taken offline, sharing will stop, and a new one-time linking key will be required to reconnect. Your Community account and other content will remain.')) return;
                 button.setDisabled(true);
                 button.setButtonText('Disconnecting...');
                 try {
                     await disconnectCommunityShare(plugin);
-                    new Notice('Community share disconnected.');
+                    new Notice('Vault disconnected and its report taken offline. Use a new one-time linking key to share again.');
                     containerEl.empty();
                     renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
                 } catch (error) {

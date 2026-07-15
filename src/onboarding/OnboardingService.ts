@@ -35,23 +35,28 @@ import {
   getOnboardingSurveyJsonSchema,
   getOnboardingSceneJsonSchema,
   getOnboardingEntityJsonSchema,
+  getOnboardingSplitJsonSchema,
   getOnboardingSurveyInstructions,
   getOnboardingSceneInstructions,
   getOnboardingEntityInstructions,
+  getOnboardingSplitInstructions,
   buildOnboardingSurveyPrompt,
   buildOnboardingScenePrompt,
   buildOnboardingEntityPrompt,
+  buildOnboardingSplitPrompt,
 } from '../ai/prompts/onboarding';
 import {
   parseSurveyResult,
   parseSceneExtraction,
   parseEntityEnrichment,
+  parseSplitProposal,
   buildSceneFrontmatter,
   linkedCharacters,
   linkedPlaces,
   effectiveFlags,
   type SurveyResult,
 } from './extraction';
+import { breaksFromStarts, type ScenePlan } from './sceneSplitting';
 import { basename, openingWords, sanitizeFileName, suggestOnboardingFolderName } from './paths';
 import { buildEntityNoteContent, entityFolderFor, type EntityKind } from '../utils/entityNotes';
 import type { Stage } from '../utils/constants';
@@ -101,6 +106,11 @@ export interface ExtractOptions {
   onProgress?: (current: number, total: number, title: string) => void;
   /** Book-wide publish stage chosen at Checkpoint 1 (defaults to Zero). */
   publishStage?: Stage;
+}
+
+export interface SplitOptions {
+  signal?: AbortSignal;
+  onProgress?: (current: number, total: number, title: string) => void;
 }
 
 export interface EnrichOptions {
@@ -247,6 +257,50 @@ export class OnboardingService {
       }
     }
     return proposals;
+  }
+
+  /**
+   * AI scene splitting: for each plan without breaks yet, ask the model where
+   * each scene begins (aligned to the argument beats when present) and set the
+   * plan's breaks in place. Best-effort and abortable — a failed file is left as
+   * the author had it. Skips already-onboarded, single-paragraph, and
+   * already-broken files (markers or manual edits win).
+   */
+  async proposeSplits(plans: ScenePlan[], options: SplitOptions = {}): Promise<void> {
+    const targets = plans.filter(
+      (plan) => !plan.alreadyOnboarded && plan.paragraphs.length > 1 && plan.breaks.length === 0
+    );
+    const aiClient = getAIClient(this.plugin);
+    for (let i = 0; i < targets.length; i++) {
+      if (options.signal?.aborted) break;
+      const plan = targets[i];
+      options.onProgress?.(i + 1, targets.length, plan.baseTitle ?? plan.sourceRef);
+      try {
+        const result = await aiClient.run({
+          feature: 'Onboarding',
+          task: 'OnboardingSplit',
+          requiredCapabilities: ['jsonStrict'],
+          featureModeInstructions: getOnboardingSplitInstructions(),
+          userInput: buildOnboardingSplitPrompt({ paragraphs: plan.paragraphs, labels: plan.labels }),
+          returnType: 'json',
+          responseSchema: getOnboardingSplitJsonSchema(),
+          providerOverride: 'ollama',
+          overrides: { ...OVERRIDES },
+        });
+        if (result.aiStatus === 'success' && result.content) {
+          const parsed = parseSplitProposal(result.content);
+          if (parsed.ok) {
+            plan.breaks = breaksFromStarts(parsed.value.starts, plan.paragraphs.length);
+            // Adopt AI labels only when the file had no argument beats of its own.
+            if (plan.labels.length === 0) {
+              plan.labels = parsed.value.labels.filter((label) => label.length > 0);
+            }
+          }
+        }
+      } catch {
+        // best-effort — leave this file's breaks unchanged
+      }
+    }
   }
 
   /**

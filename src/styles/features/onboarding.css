@@ -100,6 +100,15 @@
   color: var(--text-warning, var(--text-accent));
 }
 
+/* Checkpoint 1 — auto-split control row */
+.ert-ui .ert-onb-split-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+  flex-wrap: wrap;
+  margin-bottom: var(--ert-gap-sm);
+}
+
 /* Checkpoint 1 — scene split editor */
 .ert-ui .ert-onb-split-hint {
   display: flex;

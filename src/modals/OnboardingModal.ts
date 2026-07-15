@@ -163,7 +163,7 @@ export class OnboardingModal extends Modal {
     if (!this.model) return;
     const { contentEl } = this;
     contentEl.empty();
-    this.renderStageHeader(2, 'Confirm scenes', 'Split each file into scenes, in reading order. Click between paragraphs to place a scene break. Nothing is written yet.');
+    this.renderStageHeader(2, 'Confirm scenes', 'Files with scene-break markers split automatically. For unmarked prose, let AI propose the breaks, then adjust. Nothing is written yet.');
 
     // One split plan per source file (built once; edits persist across re-render).
     const scenes = flattenScenes(this.model);
@@ -179,6 +179,23 @@ export class OnboardingModal extends Modal {
       }, 0);
       totalLine.setText(`Will create ${total} scene note${total === 1 ? '' : 's'} from ${scenes.length} file${scenes.length === 1 ? '' : 's'}.`);
     };
+
+    // AI auto-split — one action for the whole manuscript, for files that have no
+    // markers. Splitting on markers is already applied; this fills the rest.
+    const splittable = [...this.splitPlans.values()].some(
+      (plan) => !plan.alreadyOnboarded && plan.paragraphs.length > 1 && plan.breaks.length === 0
+    );
+    if (splittable) {
+      const controls = contentEl.createDiv({ cls: 'ert-onb-split-controls' });
+      new ButtonComponent(controls)
+        .setButtonText('✦ Auto-split with AI')
+        .setCta()
+        .onClick(() => void this.runSplitProposal());
+      controls.createSpan({
+        cls: 'ert-muted',
+        text: 'Proposes scene breaks across the manuscript for files that have none — you can adjust after.',
+      });
+    }
 
     const list = contentEl.createDiv({ cls: 'ert-onb-list' });
     scenes.forEach((scene, i) => {
@@ -352,6 +369,35 @@ export class OnboardingModal extends Modal {
       row.createSpan({ cls: 'ert-onb-para__idx', text: String(i + 1) });
       row.createSpan({ cls: 'ert-onb-para__text', text: truncateText(paragraph, 180) });
     });
+  }
+
+  /** AI auto-split: propose breaks for unmarked files, then return to Confirm scenes. */
+  private async runSplitProposal(): Promise<void> {
+    const plans = [...this.splitPlans.values()];
+    this.abortController = new AbortController();
+    const { contentEl } = this;
+    contentEl.empty();
+    this.renderStageHeader(2, 'Auto-splitting', 'Proposing scene boundaries with the local model…');
+
+    const progressWrap = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
+    const statusEl = progressWrap.createDiv({ cls: 'ert-muted', text: 'Reading each file…' });
+    const barTrack = progressWrap.createDiv({ cls: 'ert-progress-track' });
+    barTrack.setCssStyles({ height: '6px', background: 'var(--background-modifier-border)', borderRadius: '3px' }); // SAFE: progress track
+    const barFill = barTrack.createDiv();
+    barFill.setCssStyles({ height: '100%', width: '0%', background: 'var(--interactive-accent)', borderRadius: '3px' }); // SAFE: progress fill
+
+    const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
+    new ButtonComponent(actions).setButtonText('Abort').setWarning().onClick(() => this.abortController?.abort());
+
+    await this.service.proposeSplits(plans, {
+      signal: this.abortController.signal,
+      onProgress: (current, total, title) => {
+        statusEl.setText(`Splitting ${current} / ${total} — ${title}`);
+        barFill.setCssStyles({ width: `${total > 0 ? Math.round((current / total) * 100) : 0}%` }); // SAFE: progress width
+      },
+    });
+
+    this.showSplitCheckpoint();
   }
 
   private async runExtraction(): Promise<void> {

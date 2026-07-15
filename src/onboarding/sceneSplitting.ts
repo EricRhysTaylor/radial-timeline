@@ -116,6 +116,15 @@ export function planSceneSplit(scene: ManuscriptScene): ScenePlan {
   };
 }
 
+/**
+ * Convert AI-proposed 1-based scene start paragraphs into normalized break
+ * indices. A scene starting at paragraph `p` (1-based) becomes a break before
+ * 0-based index `p - 1`; paragraph 1 (the implicit first start) is dropped.
+ */
+export function breaksFromStarts(starts: number[], paragraphCount: number): number[] {
+  return normalizeBreaks(starts.map((start) => start - 1), paragraphCount);
+}
+
 /** Toggle a break before paragraph `index` (no-op for out-of-range/0). Returns a new break array. */
 export function toggleBreak(plan: ScenePlan, index: number): number[] {
   if (index <= 0 || index >= plan.paragraphs.length) return plan.breaks;

@@ -289,6 +289,78 @@ export interface EntityEnrichmentInput {
   sceneExcerpts: string[];
 }
 
+// ---------------------------------------------------------------------------
+// Scene splitting — one call per file, proposing where each scene begins.
+// Constrained by the file's own argument beats when present (align, don't guess).
+// ---------------------------------------------------------------------------
+
+const ONBOARDING_SPLIT_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    scenes: {
+      type: 'array',
+      description: 'The scenes of this file, in reading order. The first scene starts at paragraph 1.',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          startParagraph: {
+            type: 'number',
+            description: 'The 1-based paragraph number where this scene begins (use the numbers shown).',
+          },
+          label: {
+            type: 'string',
+            description: 'A short scene label — reuse the matching argument beat verbatim when beats are given.',
+          },
+        },
+        required: ['startParagraph', 'label'],
+      },
+    },
+  },
+  required: ['scenes'],
+} as const;
+
+export function getOnboardingSplitJsonSchema(): Record<string, unknown> {
+  return ONBOARDING_SPLIT_SCHEMA;
+}
+
+export function getOnboardingSplitInstructions(): string {
+  return [
+    'Divide ONE file of a manuscript into its scenes. You are given the paragraphs, each numbered.',
+    'Return the 1-based paragraph number where each scene BEGINS, in reading order, plus a short label.',
+    'The first scene always begins at paragraph 1. Never split inside a paragraph; boundaries fall between them.',
+    'When the file lists "argument beats", those ARE the scenes in order — align each beat to the paragraph',
+    'where it begins and reuse the beat text as the label. Return exactly that many scenes.',
+    'When no beats are given, find natural boundaries — a clear shift in location, time, viewpoint, or action —',
+    'and prefer fewer, well-justified scenes over many small ones. Do not rewrite any prose. Return only the schema.',
+  ].join('\n');
+}
+
+export interface SplitProposalInput {
+  /** Body paragraphs in reading order (argument header, if any, is paragraph 1). */
+  paragraphs: string[];
+  /** Argument beats when the file had them — the model aligns scenes to these. */
+  labels: string[];
+  /** Per-paragraph char cap so a long chapter can't blow the context window. */
+  perParagraphChars?: number;
+}
+
+export function buildOnboardingSplitPrompt(input: SplitProposalInput): string {
+  const cap = input.perParagraphChars ?? 600;
+  const numbered = input.paragraphs
+    .map((paragraph, i) => {
+      const text = paragraph.length > cap ? `${paragraph.slice(0, cap)}…` : paragraph;
+      return `[${i + 1}] ${text}`;
+    })
+    .join('\n\n');
+  const beats = input.labels.length > 0
+    ? `Argument beats (the scenes, in order — return exactly ${input.labels.length}):\n` +
+      input.labels.map((label, i) => `${i + 1}. ${label}`).join('\n')
+    : 'No argument beats — infer the scene boundaries from the prose.';
+  return `${beats}\n\nParagraphs (numbered):\n${numbered}`;
+}
+
 export function buildOnboardingEntityPrompt(input: EntityEnrichmentInput): string {
   const scenes = input.sceneExcerpts
     .map((text, i) => `--- Scene ${i + 1} ---\n${text.trim()}`)

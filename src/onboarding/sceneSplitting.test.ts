@@ -5,6 +5,7 @@ import {
   parseArgumentHeader,
   planSceneSplit,
   toggleBreak,
+  breaksFromStarts,
   segmentCount,
   planSegments,
   scenesFromPlan,
@@ -113,6 +114,16 @@ describe('toggleBreak', () => {
     expect(toggleBreak(plan, 1)).toEqual([]); // toggles off
     expect(toggleBreak(plan, 0)).toEqual([1]); // index 0 is implicit start
     expect(toggleBreak(plan, 9)).toEqual([1]); // past the end
+  });
+});
+
+describe('breaksFromStarts', () => {
+  it('converts 1-based scene starts to normalized breaks, dropping paragraph 1', () => {
+    // Scenes start at paragraphs 1, 4, 9 → breaks before 0-based 3 and 8.
+    expect(breaksFromStarts([1, 4, 9], 20)).toEqual([3, 8]);
+  });
+  it('drops out-of-range and duplicate starts', () => {
+    expect(breaksFromStarts([1, 4, 4, 99, 0], 10)).toEqual([3]);
   });
 });
 

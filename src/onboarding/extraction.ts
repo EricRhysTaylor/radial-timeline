@@ -126,6 +126,33 @@ export function parseEntityEnrichment(raw: string | null | undefined): ParseResu
   return { ok: true, value: { role, summary } };
 }
 
+export interface SplitProposal {
+  /** 1-based paragraph numbers where each scene begins, in reading order. */
+  starts: number[];
+  /** Per-scene labels, aligned to `starts`. */
+  labels: string[];
+}
+
+export function parseSplitProposal(raw: string | null | undefined): ParseResult<SplitProposal> {
+  const parsed = parseJson(raw);
+  if (!parsed.ok) return parsed;
+  const obj = parsed.value as Record<string, unknown>;
+  if (typeof obj !== 'object' || obj === null || !Array.isArray(obj.scenes)) {
+    return { ok: false, error: 'Split response was not an object with a scenes array.' };
+  }
+  const starts: number[] = [];
+  const labels: string[] = [];
+  for (const entry of obj.scenes) {
+    if (typeof entry !== 'object' || entry === null) continue;
+    const record = entry as Record<string, unknown>;
+    const start = typeof record.startParagraph === 'number' ? Math.floor(record.startParagraph) : NaN;
+    if (!Number.isFinite(start)) continue;
+    starts.push(start);
+    labels.push(typeof record.label === 'string' ? record.label.replace(/\s+/g, ' ').trim() : '');
+  }
+  return { ok: true, value: { starts, labels } };
+}
+
 /** Strip commas (canonical RULE: no commas in Subplot/Character/Place) and collapse whitespace. */
 export function sanitizeName(name: string): string {
   return name.replace(/,/g, ' ').replace(/\s+/g, ' ').trim();

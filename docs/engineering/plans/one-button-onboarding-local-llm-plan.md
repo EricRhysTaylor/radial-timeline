@@ -578,6 +578,23 @@ Doctrine fit: no new abstraction layer beyond the adapters, no fallback chains
   open-ended "find the scenes"), then locate the cut deterministically — auto-
   seeding the breaks the author currently places manually. The `Book:` structural
   field (canonical "Cyclops scene → Act 2 + Book 9") also lands with step 2.
+- **2026-07-15 (scene splitting — step 2, AI auto-split)** — manual per-break
+  clicking was unusable at manuscript scale (Eric: "this should be automatic…
+  having to do each one will take forever"). Decision: **both** automatic paths.
+  (a) *Markers* already auto-apply deterministically in `planSceneSplit` — a
+  marked manuscript arrives pre-split, zero clicks. (b) *Unmarked prose* (the
+  Odyssey — zero delimiters, boundaries are semantic) now gets an **AI auto-split**:
+  one "✦ Auto-split with AI" action at Confirm scenes runs `proposeSplits`, one
+  local call per unmarked file, returning the 1-based paragraph where each scene
+  begins. It's a **constrained align-to-beats** task, not open-ended guessing —
+  the file's own argument beats are handed to the model as the ordered scene list
+  (`buildOnboardingSplitPrompt`), so it places known beats rather than inventing
+  boundaries. Results pre-seed `plan.breaks`; the manual editor stays for
+  adjustment only. Best-effort + abortable; skips already-onboarded, marked, and
+  single-paragraph files (markers/manual edits win). Still pending: the
+  manuscript-wide **delimiter picker** (surface detected patterns, pick one, apply
+  across all files) — lower value now since markers already auto-apply; and the
+  `Book:` structural field.
 
 ## Appendix A — Canonical onboarding prompt (instruction block)
 

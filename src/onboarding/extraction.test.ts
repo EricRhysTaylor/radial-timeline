@@ -3,6 +3,7 @@ import {
   parseSurveyResult,
   parseSceneExtraction,
   parseEntityEnrichment,
+  parseSplitProposal,
   buildSceneFrontmatter,
   sanitizeName,
   toWikiLink,
@@ -27,6 +28,35 @@ function extraction(over: Partial<SceneExtraction> = {}): SceneExtraction {
     ...over,
   };
 }
+
+describe('parseSplitProposal', () => {
+  it('parses scene starts and labels', () => {
+    const raw = JSON.stringify({
+      scenes: [
+        { startParagraph: 1, label: 'The gods in council' },
+        { startParagraph: 9, label: "Minerva's visit" },
+      ],
+    });
+    const result = parseSplitProposal(raw);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.starts).toEqual([1, 9]);
+      expect(result.value.labels).toEqual(['The gods in council', "Minerva's visit"]);
+    }
+  });
+
+  it('skips malformed entries and floors non-integers', () => {
+    const raw = JSON.stringify({ scenes: [{ startParagraph: 3.7, label: 'A' }, { label: 'no start' }] });
+    const result = parseSplitProposal(raw);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.starts).toEqual([3]);
+  });
+
+  it('fails when scenes is missing', () => {
+    expect(parseSplitProposal(JSON.stringify({})).ok).toBe(false);
+    expect(parseSplitProposal('nope').ok).toBe(false);
+  });
+});
 
 describe('parseEntityEnrichment', () => {
   it('parses role and summary, collapsing role whitespace', () => {

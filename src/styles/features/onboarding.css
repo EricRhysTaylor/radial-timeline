@@ -1,0 +1,201 @@
+/*
+ * Onboarding — Checkpoint 2 review accordion.
+ *
+ * A scannable, scroll-bounded list of proposed scenes: each row shows the
+ * headline metadata (title, act, entity counts, guess flag); one row is
+ * expanded at a time into a full RT scene-template preview (frontmatter keys +
+ * pill'd Subplot/Character/Place + Synopsis) so the author sees exactly how a
+ * scene slots into the template before anything is written.
+ *
+ * Tokens only — no hardcoded colors (brand rule). Rides the `.ert-badgePill`
+ * primitive for pills and Obsidian theme vars for surfaces.
+ */
+
+.ert-ui .ert-onb-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ert-gap-sm);
+  max-height: 52vh;
+  overflow-y: auto;
+  padding-right: var(--ert-pad-xs);
+}
+
+.ert-ui .ert-onb-scene {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--ert-radius-md, 8px);
+  background: var(--background-secondary);
+  overflow: hidden;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.ert-ui .ert-onb-scene.is-open {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 1px var(--interactive-accent) inset;
+}
+
+.ert-ui .ert-onb-scene.is-failed {
+  border-color: color-mix(in srgb, var(--text-error) 55%, var(--background-modifier-border));
+}
+
+/* Row header — always visible, click to toggle */
+.ert-ui .ert-onb-scene__head {
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+  width: 100%;
+  padding: var(--ert-pad-sm) var(--ert-pad-cozy);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-normal);
+}
+
+.ert-ui .ert-onb-scene__head:hover {
+  background: color-mix(in srgb, var(--interactive-accent) 8%, transparent);
+}
+
+.ert-ui .ert-onb-scene__idx {
+  flex: 0 0 auto;
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  min-width: 2.2em;
+}
+
+.ert-ui .ert-onb-scene__title {
+  flex: 1 1 auto;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ert-ui .ert-onb-scene__meta {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-xs);
+}
+
+.ert-ui .ert-onb-caret {
+  flex: 0 0 auto;
+  display: inline-flex;
+  color: var(--text-muted);
+  transition: transform 120ms ease;
+}
+
+.ert-ui .ert-onb-scene.is-open .ert-onb-caret {
+  transform: rotate(90deg);
+}
+
+.ert-ui .ert-onb-flag {
+  color: var(--text-warning, var(--text-accent));
+  font-size: 12px;
+}
+
+/* Expanded body — the RT scene-template preview */
+.ert-ui .ert-onb-scene__body {
+  padding: var(--ert-pad-cozy) var(--ert-pad-cozy) var(--ert-pad-comfy);
+  border-top: 1px solid var(--background-modifier-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ert-gap-cozy);
+}
+
+.ert-ui .ert-onb-scene:not(.is-open) .ert-onb-scene__body {
+  display: none;
+}
+
+.ert-ui .ert-onb-fm {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--ert-gap-xs) var(--ert-gap-cozy);
+  align-items: baseline;
+}
+
+.ert-ui .ert-onb-fm__key {
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.ert-ui .ert-onb-fm__val {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ert-gap-xs);
+  align-items: center;
+  min-width: 0;
+}
+
+.ert-ui .ert-onb-fm__val--mono {
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  color: var(--text-normal);
+}
+
+.ert-ui .ert-onb-fm__val--empty {
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+/* Pills — set the badgePill custom props so they ride the base primitive */
+.ert-ui .ert-onb-pill--act {
+  --ert-badgePill-bg: color-mix(in srgb, var(--interactive-accent) 20%, var(--background-secondary));
+  --ert-badgePill-border: color-mix(in srgb, var(--interactive-accent) 40%, transparent);
+  --ert-badgePill-color: var(--text-normal);
+}
+
+.ert-ui .ert-onb-pill--subplot {
+  --ert-badgePill-bg: color-mix(in srgb, var(--text-accent) 14%, var(--background-secondary));
+  --ert-badgePill-border: color-mix(in srgb, var(--text-accent) 34%, transparent);
+}
+
+.ert-ui .ert-onb-pill--char {
+  --ert-badgePill-bg: color-mix(in srgb, var(--color-green, var(--interactive-accent)) 14%, var(--background-secondary));
+  --ert-badgePill-border: color-mix(in srgb, var(--color-green, var(--interactive-accent)) 32%, transparent);
+}
+
+.ert-ui .ert-onb-pill--place {
+  --ert-badgePill-bg: color-mix(in srgb, var(--color-orange, var(--text-accent)) 14%, var(--background-secondary));
+  --ert-badgePill-border: color-mix(in srgb, var(--color-orange, var(--text-accent)) 32%, transparent);
+}
+
+.ert-ui .ert-onb-pill--count {
+  --ert-badgePill-bg: var(--background-primary);
+  --ert-badgePill-color: var(--text-muted);
+  font-weight: 600;
+}
+
+.ert-ui .ert-onb-pill--warn {
+  --ert-badgePill-bg: color-mix(in srgb, var(--text-warning, var(--text-accent)) 20%, transparent);
+  --ert-badgePill-border: transparent;
+  --ert-badgePill-color: var(--text-warning, var(--text-accent));
+}
+
+/* Synopsis + carried body */
+.ert-ui .ert-onb-synopsis {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ert-gap-xs);
+}
+
+.ert-ui .ert-onb-synopsis__label {
+  font-family: var(--font-monospace);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.ert-ui .ert-onb-synopsis__text {
+  color: var(--text-normal);
+  line-height: 1.45;
+}
+
+.ert-ui .ert-onb-error {
+  color: var(--text-error);
+  font-size: 13px;
+}

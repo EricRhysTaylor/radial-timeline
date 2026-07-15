@@ -13,7 +13,7 @@
  * See docs/engineering/plans/one-button-onboarding-local-llm-plan.md.
  */
 
-import { App, ButtonComponent, DropdownComponent, Modal, Notice } from 'obsidian';
+import { App, ButtonComponent, DropdownComponent, Modal, Notice, setIcon } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import {
   OnboardingService,
@@ -27,6 +27,17 @@ import { suggestOnboardingFolderName } from '../onboarding/paths';
 import { getActiveBook } from '../utils/books';
 import { STAGE_ORDER, type Stage } from '../utils/constants';
 import type { BookProfile } from '../types/settings';
+
+/** Narrow an unknown frontmatter value to a list of non-empty strings. */
+function asStringList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
+}
+
+/** Display a `[[Wiki Link]]` as its bare name for a pill. */
+function stripWikiLink(value: string): string {
+  return value.replace(/^\[\[/, '').replace(/\]\]$/, '');
+}
 
 export class OnboardingModal extends Modal {
   private readonly plugin: RadialTimelinePlugin;
@@ -215,7 +226,7 @@ export class OnboardingModal extends Modal {
     this.showReviewCheckpoint();
   }
 
-  /** Checkpoint 2 — review proposed frontmatter (and flagged guesses) before writing. */
+  /** Checkpoint 2 — review each scene's RT-template mapping before writing. */
   private showReviewCheckpoint(): void {
     const { contentEl } = this;
     contentEl.empty();
@@ -225,32 +236,18 @@ export class OnboardingModal extends Modal {
     const flagged = ok.filter((p) => p.flags.length > 0);
     this.renderHeader(
       'Checkpoint 2 · Review',
-      `${ok.length} scenes ready${flagged.length ? `, ${flagged.length} with flagged guesses` : ''}${failed.length ? `, ${failed.length} failed` : ''}. Nothing is written until you apply.`
+      `${ok.length} scenes ready${flagged.length ? `, ${flagged.length} with flagged guesses` : ''}${failed.length ? `, ${failed.length} failed` : ''}. Expand a scene to see how it maps into the Radial Timeline template. Nothing is written until you apply.`
     );
 
-    const list = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
-    list.setCssStyles({ maxHeight: '340px', overflowY: 'auto' }); // SAFE: scrollable list
-    for (const proposal of this.proposals) {
-      const row = list.createDiv({ cls: 'ert-row ert-stack' });
-      const head = row.createDiv();
-      head.createSpan({ text: proposal.title || proposal.sourceRef });
-      if (proposal.error) {
-        head.createSpan({ text: `  · failed: ${proposal.error}`, cls: 'ert-error' });
-        continue;
-      }
-      const fm = proposal.frontmatter as Record<string, unknown>;
-      const bits = [
-        `Act ${String(fm.Act ?? '?')}`,
-        Array.isArray(fm.Subplot) && fm.Subplot.length ? (fm.Subplot as string[]).join(' · ') : '',
-        Array.isArray(fm.Character) ? `${(fm.Character as string[]).length} chars` : '',
-        Array.isArray(fm.Place) ? `${(fm.Place as string[]).length} places` : '',
-        fm.When ? `When ${String(fm.When)}` : '',
-      ].filter(Boolean);
-      row.createDiv({ cls: 'ert-muted', text: bits.join('  ·  ') });
-      if (proposal.flags.length > 0) {
-        row.createSpan({ text: `⚑ guessed: ${proposal.flags.join(', ')}`, cls: 'ert-error' });
-      }
-    }
+    // Accordion: one detailed card open, the rest collapsed in a scroll view.
+    // The first successful scene starts expanded; bodies build lazily on open.
+    const list = contentEl.createDiv({ cls: 'ert-onb-list' });
+    let firstOpenTaken = false;
+    this.proposals.forEach((proposal, i) => {
+      const openByDefault = !firstOpenTaken && !!proposal.frontmatter;
+      if (openByDefault) firstOpenTaken = true;
+      this.renderReviewScene(list, proposal, i + 1, openByDefault);
+    });
 
     const destName = suggestOnboardingFolderName(this.book?.sourceFolder ?? 'Book');
     const summarized = this.entityProposals.filter((entity) => entity.summary).length;
@@ -269,6 +266,118 @@ export class OnboardingModal extends Modal {
       .setDisabled(ok.length === 0)
       .onClick(() => void this.applyProposals());
     new ButtonComponent(actions).setButtonText('Cancel').onClick(() => this.close());
+  }
+
+  /** One accordion row: headline metadata always visible, detail lazily built on open. */
+  private renderReviewScene(
+    list: HTMLElement,
+    proposal: SceneProposal,
+    displayIndex: number,
+    openByDefault: boolean
+  ): void {
+    const fm = proposal.frontmatter as Record<string, unknown> | null;
+    const scene = list.createDiv({ cls: 'ert-onb-scene' });
+    if (!fm) scene.addClass('is-failed');
+
+    const head = scene.createEl('button', { cls: 'ert-onb-scene__head', attr: { type: 'button' } });
+    head.createSpan({ cls: 'ert-onb-scene__idx', text: String(displayIndex).padStart(2, '0') });
+    head.createSpan({ cls: 'ert-onb-scene__title', text: proposal.title || proposal.sourceRef });
+    const meta = head.createDiv({ cls: 'ert-onb-scene__meta' });
+    if (fm) {
+      this.pill(meta, `Act ${String(fm.Act ?? '?')}`, 'ert-onb-pill--act');
+      const chars = Array.isArray(fm.Character) ? fm.Character.length : 0;
+      const places = Array.isArray(fm.Place) ? fm.Place.length : 0;
+      this.pill(meta, `${chars} chars`, 'ert-onb-pill--count', true);
+      this.pill(meta, `${places} places`, 'ert-onb-pill--count', true);
+      if (proposal.flags.length > 0) meta.createSpan({ cls: 'ert-onb-flag', text: '⚑' });
+    } else {
+      this.pill(meta, 'failed', 'ert-onb-pill--warn', true);
+    }
+    const caret = meta.createSpan({ cls: 'ert-onb-caret' });
+    setIcon(caret, 'chevron-right');
+
+    const body = scene.createDiv({ cls: 'ert-onb-scene__body' });
+    let built = false;
+    const buildOnce = (): void => {
+      if (built) return;
+      built = true;
+      this.buildSceneBody(body, proposal);
+    };
+    head.addEventListener('click', () => {
+      if (scene.hasClass('is-open')) {
+        scene.removeClass('is-open');
+      } else {
+        buildOnce();
+        scene.addClass('is-open');
+      }
+    });
+    if (openByDefault) {
+      buildOnce();
+      scene.addClass('is-open');
+    }
+  }
+
+  /** The expanded detail: frontmatter keys, pill'd arrays, and the synopsis. */
+  private buildSceneBody(body: HTMLElement, proposal: SceneProposal): void {
+    const fm = proposal.frontmatter as Record<string, unknown> | null;
+    if (!fm) {
+      body.createDiv({
+        cls: 'ert-onb-error',
+        text: proposal.error ? `Extraction failed: ${proposal.error}` : 'Extraction failed — this scene will be skipped.',
+      });
+      return;
+    }
+
+    const grid = body.createDiv({ cls: 'ert-onb-fm' });
+    this.fmScalar(grid, 'Class', String(fm.Class ?? 'Scene'));
+    this.fmScalar(grid, 'Act', String(fm.Act ?? ''));
+    this.fmScalar(grid, 'Status', String(fm.Status ?? ''));
+    this.fmScalar(grid, 'Publish Stage', String(fm['Publish Stage'] ?? ''));
+    if (fm.When) this.fmScalar(grid, 'When', String(fm.When));
+    if (fm.Duration) this.fmScalar(grid, 'Duration', String(fm.Duration));
+    this.fmPills(grid, 'Subplot', asStringList(fm.Subplot), 'ert-onb-pill--subplot');
+    this.fmPills(grid, 'Character', asStringList(fm.Character).map(stripWikiLink), 'ert-onb-pill--char');
+    this.fmPills(grid, 'Place', asStringList(fm.Place).map(stripWikiLink), 'ert-onb-pill--place');
+
+    const synopsis = String(fm.Synopsis ?? '').trim();
+    if (synopsis) {
+      const syn = body.createDiv({ cls: 'ert-onb-synopsis' });
+      syn.createDiv({ cls: 'ert-onb-synopsis__label', text: 'Synopsis' });
+      syn.createDiv({ cls: 'ert-onb-synopsis__text', text: synopsis });
+    }
+
+    if (proposal.flags.length > 0) {
+      const flags = body.createDiv({ cls: 'ert-onb-fm__val' });
+      proposal.flags.forEach((flag) => this.pill(flags, `guessed: ${flag}`, 'ert-onb-pill--warn', true));
+    }
+  }
+
+  private pill(parent: HTMLElement, text: string, variant: string, small = false): void {
+    const cls = ['ert-badgePill', variant];
+    if (small) cls.push('ert-badgePill--sm');
+    parent.createSpan({ cls: cls.join(' '), text });
+  }
+
+  private fmScalar(grid: HTMLElement, key: string, value: string): void {
+    grid.createDiv({ cls: 'ert-onb-fm__key', text: `${key}:` });
+    const val = grid.createDiv({ cls: 'ert-onb-fm__val ert-onb-fm__val--mono' });
+    if (value.trim().length > 0) {
+      val.setText(value);
+    } else {
+      val.addClass('ert-onb-fm__val--empty');
+      val.setText('—');
+    }
+  }
+
+  private fmPills(grid: HTMLElement, key: string, values: string[], variant: string): void {
+    grid.createDiv({ cls: 'ert-onb-fm__key', text: `${key}:` });
+    const val = grid.createDiv({ cls: 'ert-onb-fm__val' });
+    if (values.length === 0) {
+      val.addClass('ert-onb-fm__val--empty');
+      val.setText('—');
+      return;
+    }
+    values.forEach((value) => this.pill(val, value, variant, true));
   }
 
   private async applyProposals(): Promise<void> {

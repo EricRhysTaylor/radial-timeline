@@ -71,6 +71,7 @@ const files = [
     'features/icon-suggestions.css',
     'features/backdrop-presets.css',
     'features/apr-size-buttons.css',
+    'features/onboarding.css',
     'inquiry.css',
     'legacy/apr-legacy.css',
     'legacy/rt-ui-legacy.css',

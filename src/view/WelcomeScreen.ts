@@ -3,9 +3,11 @@
  * Copyright (c) 2025 Eric Rhys Taylor
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
+/* global __RT_RELEASE__ -- build-time flag injected by esbuild define; see esbuild.config.mjs */
 import { normalizePath, setIcon, TFolder } from 'obsidian';
 import RadialTimelinePlugin from '../main';
 import { BookDesignerModal } from '../modals/BookDesignerModal';
+import { OnboardingModal } from '../modals/OnboardingModal';
 import { RT_LOGO_PATHS, RT_LOGO_VIEWBOX } from '../branding/rtLogo';
 import { WELCOME_AUTHOR_IMAGE } from '../branding/welcomeAuthorImage';
 import { hasInquirySessionSidecarInVault, readInquirySidecarVaultIdentity } from '../inquiry/InquiryArtifactStore';
@@ -57,6 +59,11 @@ const WELCOME_COPY = {
             desc: 'Choose the manuscript folder that drives the timeline, exports, Inquiry scope, and Book Manager.',
             cta: 'Open Book Manager',
             secondary: '→ or open Book Designer'
+        },
+        onboard: {
+            title: 'Onboard existing manuscript',
+            desc: 'Bring an existing draft into the timeline. Point it at your book folder and it splits scenes, fills the YAML across acts, and previews everything before anything is written.',
+            cta: 'Onboard manuscript'
         }
     },
     workflow: {
@@ -86,7 +93,8 @@ const WELCOME_URLS = {
 const CARD_ICONS = {
     website: 'globe',
     sample: 'book-open',
-    design: 'compass'
+    design: 'compass',
+    onboard: 'book-up'
 } as const;
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -487,11 +495,19 @@ export function renderWelcomeScreen({ container, plugin, refreshTimeline }: Welc
         }
     }
 
-    // Three hero cards: Book Project · Sample Vault · Website.
+    // Hero cards: Book Project · [Onboard] · Sample Vault · Website. The onboard
+    // card follows "Set Book Project" (onboarding needs a book folder) and, like
+    // its command, is dev-build only until the feature ships.
+    const showOnboard = !__RT_RELEASE__;
     const cards = body.createDiv({ cls: 'rt-welcome-cards' });
+    cards.style.setProperty('--rt-welcome-card-count', String(showOnboard ? 4 : 3));
+
+    // Two-pass numbering keeps badges 01..N sequential in the built order.
+    let cardNumber = 0;
+    const nextNumber = (): string => String(++cardNumber).padStart(2, '0');
 
     const designRefs = buildCard(cards, plugin, {
-        number: '01',
+        number: nextNumber(),
         icon: CARD_ICONS.design,
         title: WELCOME_COPY.cards.design.title,
         desc: WELCOME_COPY.cards.design.desc,
@@ -501,9 +517,20 @@ export function renderWelcomeScreen({ container, plugin, refreshTimeline }: Welc
         onSecondaryActivate: () => { new BookDesignerModal(plugin.app, plugin).open(); }
     });
 
+    const onboardRefs = showOnboard
+        ? buildCard(cards, plugin, {
+            number: nextNumber(),
+            icon: CARD_ICONS.onboard,
+            title: WELCOME_COPY.cards.onboard.title,
+            desc: WELCOME_COPY.cards.onboard.desc,
+            ctaLabel: WELCOME_COPY.cards.onboard.cta,
+            onActivate: () => { new OnboardingModal(plugin.app, plugin).open(); }
+        })
+        : null;
+
     const sampleRefs = buildCard(cards, plugin, {
         hero: true,
-        number: '02',
+        number: nextNumber(),
         icon: CARD_ICONS.sample,
         title: WELCOME_COPY.cards.sampleChecking.title,
         desc: WELCOME_COPY.cards.sampleChecking.desc,
@@ -513,7 +540,7 @@ export function renderWelcomeScreen({ container, plugin, refreshTimeline }: Welc
     sampleRefs.root.addClass('rt-welcome-card-pending');
 
     const websiteRefs = buildCard(cards, plugin, {
-        number: '03',
+        number: nextNumber(),
         icon: CARD_ICONS.website,
         title: WELCOME_COPY.cards.website.title,
         desc: WELCOME_COPY.cards.website.desc,
@@ -522,11 +549,11 @@ export function renderWelcomeScreen({ container, plugin, refreshTimeline }: Welc
     });
 
     void hydrateSampleVaultCard(sampleRefs, plugin, refreshTimeline, () => {
-        applyWelcomeCardOrder([
-            { refs: sampleRefs, number: '01' },
-            { refs: designRefs, number: '02' },
-            { refs: websiteRefs, number: '03' }
-        ]);
+        // On detection the sample vault leads; onboard stays right after Book Project.
+        const ordered = [sampleRefs, designRefs, onboardRefs, websiteRefs].filter(
+            (refs): refs is CardRefs => refs !== null
+        );
+        applyWelcomeCardOrder(ordered.map((refs, i) => ({ refs, number: String(i + 1).padStart(2, '0') })));
     });
 
     // Quick-start workflow, below the hero cards. Inlined author image on the

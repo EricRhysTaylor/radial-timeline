@@ -195,13 +195,20 @@
   white-space: nowrap;
 }
 
-/* Three hero cards */
+/* Hero cards (3, or 4 when the dev-only onboard card is present) */
 .rt-welcome-cards {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(var(--rt-welcome-card-count, 3), 1fr);
   gap: 16px;
   margin: 8px 0;
+}
+
+/* Medium widths: 4 cards wrap to two rows so they don't get cramped. */
+@media (max-width: 1000px) and (min-width: 721px) {
+  .rt-welcome-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 720px) {

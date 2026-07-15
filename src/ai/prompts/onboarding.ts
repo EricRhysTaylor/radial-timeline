@@ -237,6 +237,71 @@ export interface SceneExtractionInput {
   knownSynopsis?: string | null;
 }
 
+// ---------------------------------------------------------------------------
+// Entity enrichment — one structured call per Character/Place, grounded ONLY in
+// the scenes that entity is linked from (no outside knowledge of the name).
+// ---------------------------------------------------------------------------
+
+const ONBOARDING_ENTITY_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    role: {
+      type: 'string',
+      description:
+        'Short appositive naming what this entity IS in the book (e.g. "Odysseus\' son and heir of Ithaca", ' +
+        'or for a place "the rocky island Odysseus rules"). One phrase, no trailing period. Empty string if the ' +
+        'scenes do not establish it.',
+    },
+    summary: {
+      type: 'string',
+      description:
+        'A grounded prose summary of who/what this entity is and what they do ACROSS the provided scenes of this ' +
+        'book. Use ONLY the provided scenes — never outside knowledge of the name. Stay near the target word ' +
+        'count. If the scenes give little, be brief rather than padding. No headings, plain prose.',
+    },
+  },
+  required: ['role', 'summary'],
+} as const;
+
+export function getOnboardingEntityJsonSchema(): Record<string, unknown> {
+  return ONBOARDING_ENTITY_SCHEMA;
+}
+
+/** Task instructions for the per-entity enrichment call. */
+export function getOnboardingEntityInstructions(): string {
+  return [
+    'Summarize one character or place for a story bible, grounded ONLY in the manuscript scenes provided.',
+    'This is a real, possibly well-known work — but you must ignore any outside knowledge of the name and',
+    'describe ONLY what these scenes actually show. Do not import myth, history, or later plot the text has',
+    'not yet reached. Never invent traits, relationships, or events not present in the scenes.',
+    'Return: "role" (a short appositive of what the entity is here) and "summary" (grounded prose near the',
+    'requested word count). If the scenes barely feature the entity, keep both short. Return only the schema.',
+  ].join('\n');
+}
+
+export interface EntityEnrichmentInput {
+  kind: 'character' | 'place';
+  name: string;
+  /** Target summary length (words) — from the Summary-generation setting. */
+  targetWords: number;
+  /** Excerpts of the scenes this entity is linked from, in reading order. */
+  sceneExcerpts: string[];
+}
+
+export function buildOnboardingEntityPrompt(input: EntityEnrichmentInput): string {
+  const scenes = input.sceneExcerpts
+    .map((text, i) => `--- Scene ${i + 1} ---\n${text.trim()}`)
+    .join('\n\n');
+  return [
+    `Entity type: ${input.kind}`,
+    `Name: ${input.name}`,
+    `Target summary length: about ${input.targetWords} words.`,
+    `Scenes this ${input.kind} appears in (grounding — use nothing else):`,
+    scenes,
+  ].join('\n\n');
+}
+
 export function buildOnboardingScenePrompt(input: SceneExtractionInput): string {
   const parts: string[] = [];
   if (input.subplotVocabulary.length > 0) {

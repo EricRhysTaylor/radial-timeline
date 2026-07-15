@@ -8,10 +8,32 @@ describe('buildEntityNoteContent', () => {
     expect(content).toContain('Class: Character');
     expect(content).toContain('Book: Odyssey');
     expect(content).toContain('Scene Count: 3');
+    expect(content).toContain('Summary:');
     // The section scaffold is present but intentionally blank.
     for (const heading of ['# Description', '## Motivations', '##### External (Wants)', '# Change', '# Summary']) {
       expect(content).toContain(heading);
     }
+  });
+
+  it('keeps the placeholder header when no name/role is supplied', () => {
+    const content = buildEntityNoteContent('character', { book: 'Odyssey', sceneCount: 1 });
+    expect(content).toContain('NAME — role or position');
+  });
+
+  it('fills the character header line when name and role are supplied', () => {
+    const content = buildEntityNoteContent('character', {
+      book: 'Odyssey',
+      sceneCount: 3,
+      name: 'Telemachus',
+      role: "Odysseus' son and heir of Ithaca",
+    });
+    expect(content).toContain("Telemachus — Odysseus' son and heir of Ithaca");
+    expect(content).not.toContain('NAME — role or position');
+  });
+
+  it('ignores name without a role (needs both to fill the header)', () => {
+    const content = buildEntityNoteContent('character', { book: 'Odyssey', sceneCount: 1, name: 'Telemachus' });
+    expect(content).toContain('NAME — role or position');
   });
 
   it('builds a place note with its own scaffold', () => {

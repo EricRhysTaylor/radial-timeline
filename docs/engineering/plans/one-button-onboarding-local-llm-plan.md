@@ -526,6 +526,25 @@ Doctrine fit: no new abstraction layer beyond the adapters, no fallback chains
   stays hardcoded `Complete` (the text exists by definition). Whether to ask
   for further book-level metadata states at onboarding is open — revisit with
   the Slice 4 settings card.
+- **2026-07-14 (entity enrichment)** — the clean run's Character/Place notes
+  were pure blank scaffolds (only `Book` + `Scene Count`), which read as broken.
+  Root cause traced two ways: (1) onboarding did **zero** AI generation for
+  entities, and (2) a plumbing gap — Inquiry reads the YAML `Summary` field
+  (`frontmatter.ts` `extractSummary`), but entity scaffolds had only a blank
+  body `# Summary` *heading*, invisible to Inquiry. Decision (Eric): **generate
+  grounded entity Summaries now.** New **second AI phase** (`enrichEntities`)
+  after scene extraction: one structured call per linked Character/Place,
+  grounded ONLY in that entity's own scenes (explicit "ignore outside knowledge
+  of the name" — critical for public-domain works the model already knows).
+  Produces a short `role` (fills the character header line) and a `Summary`
+  (~`synopsisTargetWords`, default 200) written into a **new YAML `Summary`
+  field** now added to both scaffolds. Best-effort and abortable — a failed or
+  aborted entity still creates a plain scaffold; existing notes never
+  overwritten. **Craft sections (Motivations, arc, Habits) stay blank** — the
+  never-hallucinate rule holds; only grounded extraction (Summary + role) is
+  auto-filled. Synopsis was rejected for entities: it's Scene-only and there's
+  an architectural guard barring it from Inquiry. Cost: one extra local call
+  per distinct entity (~26 for the 3-book Odyssey fixture).
 
 ## Appendix A — Canonical onboarding prompt (instruction block)
 

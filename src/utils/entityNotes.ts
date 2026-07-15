@@ -8,8 +8,12 @@
  *
  * Templates are distilled from the author-convention originals (description,
  * characteristics, motivations, summary) with series-specific fields removed.
- * Sections are intentionally left blank for the author: a hallucinated
- * character description is worse than an empty one.
+ * The craft sections (Motivations, arc, Habits) are intentionally left blank for
+ * the author: a hallucinated character description is worse than an empty one.
+ * Two fields are safe to populate from the manuscript itself, because they are
+ * grounded extraction rather than invention: the YAML `Summary` (read by Inquiry)
+ * and the character header line (name — role). Onboarding fills these from the
+ * entity's own scenes; hand-created notes leave them as the blank scaffold.
  *
  * Folder convention: entity folders sit PARALLEL to the book folder
  * (`Character/`, `Place/` as siblings), mirroring the author-vault layout —
@@ -23,14 +27,16 @@ export type EntityKind = 'character' | 'place';
 const CHARACTER_YAML = `Class: Character
 Book: {{Book}}
 Scene Count: {{SceneCount}}
+Summary:
 Place:
 Support Files:`;
 
 const PLACE_YAML = `Class: Place
 Book: {{Book}}
-Scene Count: {{SceneCount}}`;
+Scene Count: {{SceneCount}}
+Summary:`;
 
-const CHARACTER_BODY = `NAME — role or position
+const CHARACTER_BODY = `{{Header}}
 *"A line that carries the voice."*
 
 # Description
@@ -91,14 +97,28 @@ export interface EntityNoteContext {
     book: string;
     /** Number of scenes linking this entity (0 for a hand-created note). */
     sceneCount: number;
+    /** Entity display name — fills the character header line when a role is present. */
+    name?: string;
+    /**
+     * Short grounded role/appositive (e.g. "Odysseus' son and heir of Ithaca").
+     * Character only; when omitted the header stays the blank `NAME — role or
+     * position` placeholder. Never invented — supplied by grounded extraction.
+     */
+    role?: string;
 }
+
+const CHARACTER_HEADER_PLACEHOLDER = 'NAME — role or position';
 
 /** Full note content (frontmatter + body scaffold) for a new entity note. */
 export function buildEntityNoteContent(kind: EntityKind, context: EntityNoteContext): string {
     const yaml = (kind === 'character' ? CHARACTER_YAML : PLACE_YAML)
         .replace(/{{Book}}/g, context.book.trim())
         .replace(/{{SceneCount}}/g, String(Math.max(0, Math.floor(context.sceneCount))));
-    const body = kind === 'character' ? CHARACTER_BODY : PLACE_BODY;
+    const name = context.name?.trim();
+    const role = context.role?.trim();
+    const header = name && role ? `${name} — ${role}` : CHARACTER_HEADER_PLACEHOLDER;
+    const body = (kind === 'character' ? CHARACTER_BODY : PLACE_BODY)
+        .replace('{{Header}}', header);
     return `---\n${yaml}\n---\n\n${body}`;
 }
 

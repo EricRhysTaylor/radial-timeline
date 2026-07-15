@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   parseSurveyResult,
   parseSceneExtraction,
+  parseEntityEnrichment,
   buildSceneFrontmatter,
   sanitizeName,
   toWikiLink,
@@ -26,6 +27,31 @@ function extraction(over: Partial<SceneExtraction> = {}): SceneExtraction {
     ...over,
   };
 }
+
+describe('parseEntityEnrichment', () => {
+  it('parses role and summary, collapsing role whitespace', () => {
+    const raw = JSON.stringify({ role: "Odysseus'  son\n and heir", summary: 'He sails to Pylos seeking news.' });
+    const result = parseEntityEnrichment(raw);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.role).toBe("Odysseus' son and heir");
+      expect(result.value.summary).toBe('He sails to Pylos seeking news.');
+    }
+  });
+
+  it('tolerates missing fields (blank rather than throwing)', () => {
+    const result = parseEntityEnrichment(JSON.stringify({}));
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.role).toBe('');
+      expect(result.value.summary).toBe('');
+    }
+  });
+
+  it('fails on non-JSON', () => {
+    expect(parseEntityEnrichment('not json').ok).toBe(false);
+  });
+});
 
 describe('parseSurveyResult', () => {
   it('parses a well-formed survey', () => {

@@ -107,6 +107,25 @@ export function parseSceneExtraction(raw: string | null | undefined): ParseResul
   };
 }
 
+export interface EntityEnrichment {
+  /** Short grounded appositive (character header line); '' when unestablished. */
+  role: string;
+  /** Grounded prose summary written into the entity note's YAML `Summary`. */
+  summary: string;
+}
+
+export function parseEntityEnrichment(raw: string | null | undefined): ParseResult<EntityEnrichment> {
+  const parsed = parseJson(raw);
+  if (!parsed.ok) return parsed;
+  const obj = parsed.value as Record<string, unknown>;
+  if (typeof obj !== 'object' || obj === null) {
+    return { ok: false, error: 'Entity response was not an object.' };
+  }
+  const summary = typeof obj.summary === 'string' ? obj.summary.trim() : '';
+  const role = typeof obj.role === 'string' ? obj.role.replace(/\s+/g, ' ').trim() : '';
+  return { ok: true, value: { role, summary } };
+}
+
 /** Strip commas (canonical RULE: no commas in Subplot/Character/Place) and collapse whitespace. */
 export function sanitizeName(name: string): string {
   return name.replace(/,/g, ' ').replace(/\s+/g, ' ').trim();

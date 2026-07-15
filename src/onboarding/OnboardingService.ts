@@ -34,14 +34,18 @@ import {
 import {
   getOnboardingSurveyJsonSchema,
   getOnboardingSceneJsonSchema,
+  getOnboardingEntityJsonSchema,
   getOnboardingSurveyInstructions,
   getOnboardingSceneInstructions,
+  getOnboardingEntityInstructions,
   buildOnboardingSurveyPrompt,
   buildOnboardingScenePrompt,
+  buildOnboardingEntityPrompt,
 } from '../ai/prompts/onboarding';
 import {
   parseSurveyResult,
   parseSceneExtraction,
+  parseEntityEnrichment,
   buildSceneFrontmatter,
   linkedCharacters,
   linkedPlaces,
@@ -72,6 +76,18 @@ export interface SceneProposal {
   error?: string;
 }
 
+/** One Character/Place note to create, with its grounded enrichment (if any). */
+export interface EntityProposal {
+  kind: EntityKind;
+  name: string;
+  /** Scenes this entity is linked from. */
+  sceneCount: number;
+  /** Grounded appositive for the character header line ('' = leave placeholder). */
+  role: string;
+  /** Grounded prose written into the note's YAML `Summary` ('' = leave blank). */
+  summary: string;
+}
+
 export interface MaterializeReport {
   bookFolder: string;
   notesCreated: number;
@@ -87,7 +103,15 @@ export interface ExtractOptions {
   publishStage?: Stage;
 }
 
+export interface EnrichOptions {
+  signal?: AbortSignal;
+  onProgress?: (current: number, total: number, name: string) => void;
+}
+
 const OVERRIDES = { temperature: 0.1, jsonStrict: true } as const;
+
+/** Cap on grounding text fed to one entity call, so a heavily-linked entity can't blow the context. */
+const ENTITY_GROUNDING_CHAR_BUDGET = 12000;
 
 export class OnboardingService {
   constructor(private readonly plugin: RadialTimelinePlugin) {}
@@ -219,12 +243,115 @@ export class OnboardingService {
   }
 
   /**
+   * Aggregate linked entities of one kind from scene proposals: distinct name →
+   * scene count + the scene bodies it appears in (reading order). Names are
+   * already sanitized/capped upstream by linkedCharacters/linkedPlaces.
+   */
+  private aggregateEntities(
+    proposals: SceneProposal[],
+    kind: EntityKind
+  ): Array<{ name: string; sceneCount: number; bodies: string[] }> {
+    const map = new Map<string, { name: string; sceneCount: number; bodies: string[] }>();
+    for (const proposal of proposals) {
+      if (!proposal.frontmatter) continue;
+      const names = kind === 'character' ? proposal.characters : proposal.places;
+      for (const name of names) {
+        const key = name.toLowerCase();
+        const entry = map.get(key) ?? { name, sceneCount: 0, bodies: [] };
+        entry.sceneCount += 1;
+        if (proposal.body) entry.bodies.push(proposal.body);
+        map.set(key, entry);
+      }
+    }
+    return [...map.values()];
+  }
+
+  /** Keep whole linked-scene bodies until the grounding char budget is spent. */
+  private budgetedExcerpts(bodies: string[]): string[] {
+    const out: string[] = [];
+    let used = 0;
+    for (const body of bodies) {
+      if (used >= ENTITY_GROUNDING_CHAR_BUDGET) break;
+      const text = body.slice(0, ENTITY_GROUNDING_CHAR_BUDGET - used);
+      out.push(text);
+      used += text.length;
+    }
+    return out;
+  }
+
+  /**
+   * Second AI phase: for each linked Character/Place, generate a grounded role +
+   * Summary from ONLY that entity's own scenes (never outside knowledge of the
+   * name). Best-effort — a failed, empty, or aborted entity still yields a
+   * proposal with blank role/summary so the note is created as a plain scaffold.
+   */
+  async enrichEntities(
+    proposals: SceneProposal[],
+    options: EnrichOptions = {}
+  ): Promise<EntityProposal[]> {
+    const items = (['character', 'place'] as EntityKind[]).flatMap((kind) =>
+      this.aggregateEntities(proposals, kind).map((entry) => ({ kind, ...entry }))
+    );
+    const targetWords = Math.max(50, this.plugin.settings.synopsisTargetWords ?? 200);
+    const aiClient = getAIClient(this.plugin);
+    const results: EntityProposal[] = [];
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const blank: EntityProposal = { kind: item.kind, name: item.name, sceneCount: item.sceneCount, role: '', summary: '' };
+      if (options.signal?.aborted) {
+        // Remaining entities still get created — just as blank scaffolds.
+        for (let j = i; j < items.length; j++) {
+          const rest = items[j];
+          results.push({ kind: rest.kind, name: rest.name, sceneCount: rest.sceneCount, role: '', summary: '' });
+        }
+        break;
+      }
+      options.onProgress?.(i + 1, items.length, item.name);
+      try {
+        const result = await aiClient.run({
+          feature: 'Onboarding',
+          task: 'OnboardingEntity',
+          requiredCapabilities: ['jsonStrict'],
+          featureModeInstructions: getOnboardingEntityInstructions(),
+          userInput: buildOnboardingEntityPrompt({
+            kind: item.kind,
+            name: item.name,
+            targetWords,
+            sceneExcerpts: this.budgetedExcerpts(item.bodies),
+          }),
+          returnType: 'json',
+          responseSchema: getOnboardingEntityJsonSchema(),
+          providerOverride: 'ollama',
+          overrides: { ...OVERRIDES },
+        });
+        if (result.aiStatus === 'success' && result.content) {
+          const parsed = parseEntityEnrichment(result.content);
+          if (parsed.ok) {
+            results.push({
+              ...blank,
+              role: item.kind === 'character' ? parsed.value.role : '',
+              summary: parsed.value.summary,
+            });
+            continue;
+          }
+        }
+      } catch {
+        // best-effort — fall through to the blank scaffold
+      }
+      results.push(blank);
+    }
+    return results;
+  }
+
+  /**
    * Write accepted proposals into a NEW book folder (source untouched), create
-   * stub notes for linked entities, and register the folder as a book.
+   * profile notes for linked entities, and register the folder as a book.
    */
   async materialize(
     sourceBook: BookProfile | null,
     proposals: SceneProposal[],
+    entityProposals: EntityProposal[],
     options?: { folderName?: string }
   ): Promise<MaterializeReport> {
     const vault = this.plugin.app.vault;
@@ -236,8 +363,6 @@ export class OnboardingService {
     }
 
     const errors: string[] = [];
-    const characterCounts = new Map<string, number>();
-    const placeCounts = new Map<string, number>();
     let notesCreated = 0;
     let index = 0;
 
@@ -255,20 +380,28 @@ export class OnboardingService {
           }
         });
         notesCreated += 1;
-        proposal.characters.forEach((name) => characterCounts.set(name, (characterCounts.get(name) ?? 0) + 1));
-        proposal.places.forEach((name) => placeCounts.set(name, (placeCounts.get(name) ?? 0) + 1));
       } catch (error) {
         errors.push(`${noteName}: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
-    // Entity notes are full Character/Place profiles (Class, Book, Scene Count +
-    // section scaffold), filed in Character/ and Place/ folders PARALLEL to the
-    // book folder — the author-vault convention. Sections stay blank on purpose.
+    // Entity notes are full Character/Place profiles (Class, Book, Scene Count,
+    // grounded Summary + header), filed in Character/ and Place/ folders PARALLEL
+    // to the book folder — the author-vault convention. Craft sections stay blank
+    // on purpose; only the grounded Summary/role come from the AI.
     const bookTitle = sourceBook?.title ?? basename(destFolder);
-    const stubsCreated =
-      (await this.createEntityNotes('character', destFolder, characterCounts, bookTitle))
-      + (await this.createEntityNotes('place', destFolder, placeCounts, bookTitle));
+    const entities = entityProposals.length > 0
+      ? entityProposals
+      : (['character', 'place'] as EntityKind[]).flatMap((kind) =>
+          this.aggregateEntities(proposals, kind).map((e): EntityProposal => ({
+            kind,
+            name: e.name,
+            sceneCount: e.sceneCount,
+            role: '',
+            summary: '',
+          }))
+        );
+    const stubsCreated = await this.createEntityNotes(destFolder, entities, bookTitle);
     await this.registerBook(sourceBook, destFolder);
 
     return {
@@ -299,32 +432,50 @@ export class OnboardingService {
 
   /**
    * Create Character/Place profile notes for linked entities in the entity folder
-   * parallel to the book folder. Existing notes are never overwritten.
+   * parallel to the book folder. Existing notes are never overwritten. A grounded
+   * Summary is written into YAML via processFrontMatter (safe escaping); the role
+   * fills the character header line through the scaffold builder.
    */
   private async createEntityNotes(
-    kind: EntityKind,
     bookFolder: string,
-    counts: Map<string, number>,
+    entities: EntityProposal[],
     bookTitle: string
   ): Promise<number> {
-    if (counts.size === 0) return 0;
+    if (entities.length === 0) return 0;
     const vault = this.plugin.app.vault;
-    const entityFolder = normalizePath(entityFolderFor(bookFolder, kind));
-    if (!(vault.getAbstractFileByPath(entityFolder) instanceof TFolder)) {
-      try {
-        await vault.createFolder(entityFolder);
-      } catch {
-        // Already exists (race) — fall through and write into it.
-      }
-    }
+    const ensuredFolders = new Set<string>();
     let created = 0;
-    for (const [name, sceneCount] of counts) {
-      const noteName = sanitizeFileName(name);
+    for (const entity of entities) {
+      const noteName = sanitizeFileName(entity.name);
       if (!noteName) continue;
+      const entityFolder = normalizePath(entityFolderFor(bookFolder, entity.kind));
+      if (!ensuredFolders.has(entityFolder)) {
+        if (!(vault.getAbstractFileByPath(entityFolder) instanceof TFolder)) {
+          try {
+            await vault.createFolder(entityFolder);
+          } catch {
+            // Already exists (race) — fall through and write into it.
+          }
+        }
+        ensuredFolders.add(entityFolder);
+      }
       const path = normalizePath(`${entityFolder}/${noteName}.md`);
       if (vault.getAbstractFileByPath(path)) continue;
       try {
-        await vault.create(path, buildEntityNoteContent(kind, { book: bookTitle, sceneCount }));
+        const file = await vault.create(
+          path,
+          buildEntityNoteContent(entity.kind, {
+            book: bookTitle,
+            sceneCount: entity.sceneCount,
+            name: entity.name,
+            role: entity.role,
+          })
+        );
+        if (entity.summary && file instanceof TFile) {
+          await this.plugin.app.fileManager.processFrontMatter(file, (frontmatter) => {
+            (frontmatter as Record<string, unknown>).Summary = entity.summary;
+          });
+        }
         created += 1;
       } catch {
         // A collision or invalid name shouldn't abort the run.

@@ -19,6 +19,7 @@ import {
   OnboardingService,
   type MaterializeReport,
   type SceneProposal,
+  type EntityProposal,
 } from '../onboarding/OnboardingService';
 import type { SurveyResult } from '../onboarding/extraction';
 import { flattenScenes, type ManuscriptModel } from '../onboarding/adapters/manuscriptModel';
@@ -34,6 +35,7 @@ export class OnboardingModal extends Modal {
   private model: ManuscriptModel | null = null;
   private survey: SurveyResult | null = null;
   private proposals: SceneProposal[] = [];
+  private entityProposals: EntityProposal[] = [];
   private publishStage: Stage = 'Zero';
   private abortController: AbortController | null = null;
 
@@ -197,6 +199,19 @@ export class OnboardingModal extends Modal {
       this.renderMessage('Onboarding cancelled', 'No files were written.', true);
       return;
     }
+
+    // Second phase: grounded Character/Place summaries. Abort here still lets the
+    // already-summarized entities through; the rest become plain scaffolds.
+    statusEl.setText('Summarizing characters and places…');
+    barFill.setCssStyles({ width: '0%' }); // SAFE: progress width
+    this.entityProposals = await this.service.enrichEntities(this.proposals, {
+      signal: this.abortController.signal,
+      onProgress: (current, total, name) => {
+        statusEl.setText(`Summarizing ${current} / ${total} — ${name}`);
+        barFill.setCssStyles({ width: `${total > 0 ? Math.round((current / total) * 100) : 0}%` }); // SAFE: progress width
+      },
+    });
+
     this.showReviewCheckpoint();
   }
 
@@ -238,9 +253,13 @@ export class OnboardingModal extends Modal {
     }
 
     const destName = suggestOnboardingFolderName(this.book?.sourceFolder ?? 'Book');
+    const summarized = this.entityProposals.filter((entity) => entity.summary).length;
+    const entityNote = this.entityProposals.length > 0
+      ? ` · ${this.entityProposals.length} Character/Place notes (${summarized} summarized)`
+      : '';
     contentEl.createDiv({
       cls: 'ert-muted',
-      text: `Will write to a new folder: ${destName} (source left untouched) · Publish Stage: ${this.publishStage}.`,
+      text: `Will write to a new folder: ${destName} (source left untouched) · Publish Stage: ${this.publishStage}${entityNote}.`,
     });
 
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
@@ -256,7 +275,7 @@ export class OnboardingModal extends Modal {
     this.renderBusy('Writing scene notes…');
     let report: MaterializeReport;
     try {
-      report = await this.service.materialize(this.book, this.proposals);
+      report = await this.service.materialize(this.book, this.proposals, this.entityProposals);
     } catch (error) {
       this.renderMessage('Onboarding failed', error instanceof Error ? error.message : String(error), true);
       return;

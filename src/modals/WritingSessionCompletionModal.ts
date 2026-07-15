@@ -121,7 +121,8 @@ export class WritingSessionCompletionModal extends Modal {
         contentEl.addClass('ert-modal-container', 'ert-stack');
 
         const header = contentEl.createDiv({ cls: 'ert-modal-header' });
-        header.createSpan({ cls: 'ert-modal-badge', text: this.formatHeaderMeta() });
+        const badgeBaseText = this.formatHeaderMeta();
+        const badge = header.createSpan({ cls: 'ert-modal-badge', text: badgeBaseText });
         header.createDiv({ cls: 'ert-modal-title', text: 'Save writing session' });
         header.createDiv({
             cls: 'ert-modal-subtitle',
@@ -270,23 +271,32 @@ export class WritingSessionCompletionModal extends Modal {
 
         let postToFeed = this.feedShare.eligible && this.feedShare.defaultOn;
         const syncFeedAccent = () => {
+            // When this save will post, the whole share group and the top pill
+            // go community-yellow so it is unmistakable the note is public.
             modalEl?.classList.toggle('is-feed-shared', postToFeed);
+            badge.classList.toggle('is-community-sharing', postToFeed);
+            badge.setText(postToFeed ? `${badgeBaseText} · Community sharing` : badgeBaseText);
         };
 
-        const noteSetting = new Setting(form)
+        // Note and the community-feed toggle live in one bordered group so it is
+        // clear the toggle governs whether THIS note is shared — not a stray
+        // control at the bottom of the modal.
+        const shareGroup = form.createDiv({ cls: 'ert-writing-session-share' });
+
+        const noteSetting = new Setting(shareGroup)
             .setName('Note')
             .setDesc(this.feedShare.eligible
                 ? 'Note about what you worked on. Posted with your progress when the feed toggle is on; otherwise private.'
                 : 'Optional private note about what you worked on.')
             .addTextArea((text: TextAreaComponent) => {
                 text.inputEl.addClass('ert-input--full');
-                text.inputEl.rows = 3;
+                text.inputEl.rows = 6;
                 text.onChange(value => { note = value; });
             });
         noteSetting.settingEl.addClass('ert-writing-session-note');
 
         if (this.feedShare.eligible) {
-            const feedSetting = new Setting(form)
+            const feedSetting = new Setting(shareGroup)
                 .setName('Post to community feed')
                 .setDesc('Share this progress summary and note on your public feed. Turn off to keep the note private.')
                 .addToggle(toggle => {

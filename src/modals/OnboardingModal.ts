@@ -122,7 +122,7 @@ export class OnboardingModal extends Modal {
 
     const { contentEl } = this;
     contentEl.empty();
-    this.renderHeader('Onboard existing manuscript', book.sourceFolder);
+    this.renderStageHeader(1, 'Prepare', `Onboard "${book.sourceFolder}"`);
 
     const status = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
     this.renderStatusRow(status, 'Local model', preflightOk ? `Ready — tier ${tier}` : `Not ready — ${preflightReason}`, preflightOk);
@@ -148,7 +148,7 @@ export class OnboardingModal extends Modal {
     if (!this.model) return;
     const { contentEl } = this;
     contentEl.empty();
-    this.renderHeader('Checkpoint 1 · Confirm scenes', 'Each note becomes one scene, in reading order. Nothing is written yet.');
+    this.renderStageHeader(2, 'Confirm scenes', 'Each note becomes one scene, in reading order. Nothing is written yet.');
 
     const list = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
     list.setCssStyles({ maxHeight: '340px', overflowY: 'auto' }); // SAFE: scrollable list (Obsidian pattern)
@@ -234,7 +234,7 @@ export class OnboardingModal extends Modal {
     this.abortController = new AbortController();
     const { contentEl } = this;
     contentEl.empty();
-    this.renderHeader('Reading the manuscript…', 'Surveying structure, then extracting each scene.');
+    this.renderStageHeader(2, 'Extracting metadata', 'Surveying structure, then extracting each scene.');
 
     const progressWrap = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
     const statusEl = progressWrap.createDiv({ cls: 'ert-muted', text: 'Surveying the whole book…' });
@@ -304,8 +304,9 @@ export class OnboardingModal extends Modal {
     const ok = this.proposals.filter((p) => p.frontmatter);
     const failed = this.proposals.filter((p) => !p.frontmatter);
     const flagged = ok.filter((p) => p.flags.length > 0);
-    this.renderHeader(
-      'Checkpoint 2 · Review',
+    this.renderStageHeader(
+      3,
+      'Review',
       `${ok.length} scenes ready${flagged.length ? `, ${flagged.length} with flagged guesses` : ''}${failed.length ? `, ${failed.length} failed` : ''}. Expand a scene to see how it maps into the Radial Timeline template. Nothing is written until you apply.`
     );
 
@@ -465,13 +466,24 @@ export class OnboardingModal extends Modal {
   private showReport(report: MaterializeReport): void {
     const { contentEl } = this;
     contentEl.empty();
-    this.renderHeader('Onboarding complete', report.bookFolder);
+    this.renderStageHeader(4, 'Complete', report.bookFolder);
 
     const panel = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
     this.renderStatusRow(panel, 'Scenes written', String(report.notesCreated), report.notesCreated > 0);
     this.renderStatusRow(panel, 'Character & Place notes created', String(report.stubsCreated), true);
     if (report.needsReview.length > 0) {
-      this.renderStatusRow(panel, 'Needs review', `${report.needsReview.length} (flagged guesses or failures)`, false);
+      this.renderStatusRow(panel, 'Needs review', String(report.needsReview.length), false);
+      const reviewList = panel.createDiv({ cls: 'ert-onb-review-list ert-stack' });
+      for (const proposal of report.needsReview) {
+        const reason = proposal.error
+          ? `failed: ${proposal.error}`
+          : proposal.flags.length > 0
+            ? `guessed: ${proposal.flags.join(', ')}`
+            : 'flagged';
+        const item = reviewList.createDiv({ cls: 'ert-onb-review-item' });
+        item.createSpan({ cls: 'ert-onb-review-item__name', text: proposal.title || proposal.sourceRef });
+        item.createSpan({ cls: 'ert-onb-review-item__reason', text: reason });
+      }
     }
     for (const err of report.errors) {
       panel.createDiv({ cls: 'ert-error', text: err });
@@ -488,6 +500,26 @@ export class OnboardingModal extends Modal {
     const header = this.contentEl.createDiv({ cls: 'ert-modal-header' });
     header.createDiv({ cls: 'ert-modal-title', text: title });
     if (subtitle) header.createDiv({ cls: 'ert-modal-subtitle', text: subtitle });
+  }
+
+  /**
+   * Consistent numbered header for the 4-stage onboarding sequence
+   * (1 Prepare → 2 Confirm → 3 Review → 4 Complete), with a step indicator so
+   * the author always knows where they are.
+   */
+  private renderStageHeader(stage: number, title: string, subtitle?: string): void {
+    const total = 4;
+    const header = this.contentEl.createDiv({ cls: 'ert-onb-stage' });
+    header.createDiv({ cls: 'ert-onb-stage__num', text: String(stage) });
+    const titles = header.createDiv({ cls: 'ert-onb-stage__titles' });
+    titles.createDiv({ cls: 'ert-onb-stage__title', text: `${title}` });
+    if (subtitle) titles.createDiv({ cls: 'ert-onb-stage__subtitle', text: subtitle });
+    const steps = header.createDiv({ cls: 'ert-onb-steps', attr: { 'aria-label': `Step ${stage} of ${total}` } });
+    for (let i = 1; i <= total; i++) {
+      const pip = steps.createSpan({ cls: 'ert-onb-step' });
+      if (i < stage) pip.addClass('is-done');
+      else if (i === stage) pip.addClass('is-current');
+    }
   }
 
   private renderBusy(message: string): void {

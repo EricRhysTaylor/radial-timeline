@@ -11,6 +11,95 @@
  * primitive for pills and Obsidian theme vars for surfaces.
  */
 
+/* Numbered stage header (1 Prepare → 2 Confirm → 3 Review → 4 Complete) */
+.ert-ui .ert-onb-stage {
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-cozy);
+  margin-bottom: var(--ert-gap-cozy);
+}
+
+.ert-ui .ert-onb-stage__num {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--ert-radius-md, 10px);
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.ert-ui .ert-onb-stage__titles {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ert-ui .ert-onb-stage__title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-normal);
+}
+
+.ert-ui .ert-onb-stage__subtitle {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.ert-ui .ert-onb-steps {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-xs);
+  align-self: flex-start;
+  margin-top: var(--ert-gap-xs);
+}
+
+.ert-ui .ert-onb-step {
+  width: 22px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--background-modifier-border);
+}
+
+.ert-ui .ert-onb-step.is-done {
+  background: color-mix(in srgb, var(--interactive-accent) 55%, transparent);
+}
+
+.ert-ui .ert-onb-step.is-current {
+  background: var(--interactive-accent);
+}
+
+/* Report — name the scenes that still need review */
+.ert-ui .ert-onb-review-list {
+  gap: var(--ert-gap-xs);
+  padding-left: var(--ert-pad-sm);
+}
+
+.ert-ui .ert-onb-review-item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ert-gap-sm);
+}
+
+.ert-ui .ert-onb-review-item__name {
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.ert-ui .ert-onb-review-item__reason {
+  font-size: 12px;
+  color: var(--text-warning, var(--text-accent));
+}
+
 /* Checkpoint 1 — opt-in extra actions */
 .ert-ui .ert-onb-options {
   gap: var(--ert-gap-xs);

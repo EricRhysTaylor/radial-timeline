@@ -104,6 +104,13 @@ export interface ExtractOptions {
 }
 
 export interface EnrichOptions {
+  /** Which entity kinds to create profile notes for (empty = none). */
+  kinds: EntityKind[];
+  /**
+   * Run the (slow) grounded per-entity AI summary pass. When false, profiles are
+   * created as plain scaffolds with no AI calls — fast.
+   */
+  generateSummaries: boolean;
   signal?: AbortSignal;
   onProgress?: (current: number, total: number, name: string) => void;
 }
@@ -287,11 +294,22 @@ export class OnboardingService {
    */
   async enrichEntities(
     proposals: SceneProposal[],
-    options: EnrichOptions = {}
+    options: EnrichOptions
   ): Promise<EntityProposal[]> {
-    const items = (['character', 'place'] as EntityKind[]).flatMap((kind) =>
+    const items = options.kinds.flatMap((kind) =>
       this.aggregateEntities(proposals, kind).map((entry) => ({ kind, ...entry }))
     );
+    if (items.length === 0) return [];
+    // Fast path: create the profile scaffolds with no AI calls.
+    if (!options.generateSummaries) {
+      return items.map((item) => ({
+        kind: item.kind,
+        name: item.name,
+        sceneCount: item.sceneCount,
+        role: '',
+        summary: '',
+      }));
+    }
     const targetWords = Math.max(50, this.plugin.settings.synopsisTargetWords ?? 200);
     const aiClient = getAIClient(this.plugin);
     const results: EntityProposal[] = [];
@@ -386,22 +404,12 @@ export class OnboardingService {
     }
 
     // Entity notes are full Character/Place profiles (Class, Book, Scene Count,
-    // grounded Summary + header), filed in Character/ and Place/ folders PARALLEL
-    // to the book folder — the author-vault convention. Craft sections stay blank
-    // on purpose; only the grounded Summary/role come from the AI.
+    // optional grounded Summary + header), filed in Character/ and Place/ folders
+    // PARALLEL to the book folder — the author-vault convention. Only the kinds
+    // the author enabled at Checkpoint 1 are present in entityProposals; an empty
+    // list means "scenes only". Craft sections always stay blank.
     const bookTitle = sourceBook?.title ?? basename(destFolder);
-    const entities = entityProposals.length > 0
-      ? entityProposals
-      : (['character', 'place'] as EntityKind[]).flatMap((kind) =>
-          this.aggregateEntities(proposals, kind).map((e): EntityProposal => ({
-            kind,
-            name: e.name,
-            sceneCount: e.sceneCount,
-            role: '',
-            summary: '',
-          }))
-        );
-    const stubsCreated = await this.createEntityNotes(destFolder, entities, bookTitle);
+    const stubsCreated = await this.createEntityNotes(destFolder, entityProposals, bookTitle);
     await this.registerBook(sourceBook, destFolder);
 
     return {

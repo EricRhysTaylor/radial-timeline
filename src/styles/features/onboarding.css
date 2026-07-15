@@ -11,6 +11,27 @@
  * primitive for pills and Obsidian theme vars for surfaces.
  */
 
+/* Checkpoint 1 — opt-in extra actions */
+.ert-ui .ert-onb-options {
+  gap: var(--ert-gap-xs);
+  padding: var(--ert-pad-sm) var(--ert-pad-cozy);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--ert-radius-md, 8px);
+  background: var(--background-secondary);
+}
+
+.ert-ui .ert-onb-check {
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+  cursor: pointer;
+  color: var(--text-normal);
+}
+
+.ert-ui .ert-onb-check input {
+  cursor: pointer;
+}
+
 .ert-ui .ert-onb-list {
   display: flex;
   flex-direction: column;

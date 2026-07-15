@@ -26,6 +26,7 @@ import { flattenScenes, type ManuscriptModel } from '../onboarding/adapters/manu
 import { suggestOnboardingFolderName } from '../onboarding/paths';
 import { getActiveBook } from '../utils/books';
 import { STAGE_ORDER, type Stage } from '../utils/constants';
+import type { EntityKind } from '../utils/entityNotes';
 import type { BookProfile } from '../types/settings';
 
 /** Narrow an unknown frontmatter value to a list of non-empty strings. */
@@ -48,6 +49,11 @@ export class OnboardingModal extends Modal {
   private proposals: SceneProposal[] = [];
   private entityProposals: EntityProposal[] = [];
   private publishStage: Stage = 'Zero';
+  // Extra work beyond scenes — all off by default so the core run is just
+  // "split into scene notes with YAML + Synopsis". The author opts in.
+  private createCharacters = false;
+  private createPlaces = false;
+  private generateSummaries = false;
   private abortController: AbortController | null = null;
 
   constructor(app: App, plugin: RadialTimelinePlugin) {
@@ -169,12 +175,58 @@ export class OnboardingModal extends Modal {
       text: 'Applied to every scene. A draft still being written is Zero; a finished, published book is Press.',
     });
 
+    // Extra work, opt-in. The core run (always on) is: split into scene notes
+    // with YAML across acts + Synopsis. The rest is slower and off by default.
+    const optionsPanel = contentEl.createDiv({ cls: 'ert-onb-options ert-stack' });
+    optionsPanel.createDiv({ cls: 'ert-onb-synopsis__label', text: 'Also create (optional)' });
+    this.renderCheckbox(optionsPanel, 'Create Character profiles', this.createCharacters, (checked) => {
+      this.createCharacters = checked;
+      syncSummaryToggle();
+    });
+    this.renderCheckbox(optionsPanel, 'Create Place profiles', this.createPlaces, (checked) => {
+      this.createPlaces = checked;
+      syncSummaryToggle();
+    });
+    const summaryToggle = this.renderCheckbox(
+      optionsPanel,
+      'Generate AI summaries for profiles (slow — one call per character/place)',
+      this.generateSummaries,
+      (checked) => {
+        this.generateSummaries = checked;
+      }
+    );
+    const syncSummaryToggle = (): void => {
+      const anyProfile = this.createCharacters || this.createPlaces;
+      summaryToggle.disabled = !anyProfile;
+      summaryToggle.parentElement?.toggleClass('ert-setting-dimmed', !anyProfile);
+      if (!anyProfile && this.generateSummaries) {
+        this.generateSummaries = false;
+        summaryToggle.checked = false;
+      }
+    };
+    syncSummaryToggle();
+
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
     new ButtonComponent(actions)
       .setButtonText('Extract metadata')
       .setCta()
       .onClick(() => void this.runExtraction());
     new ButtonComponent(actions).setButtonText('Cancel').onClick(() => this.close());
+  }
+
+  /** A labeled checkbox row; returns the input for enable/disable wiring. */
+  private renderCheckbox(
+    parent: HTMLElement,
+    label: string,
+    checked: boolean,
+    onChange: (checked: boolean) => void
+  ): HTMLInputElement {
+    const row = parent.createEl('label', { cls: 'ert-onb-check' });
+    const input = row.createEl('input', { attr: { type: 'checkbox' } });
+    input.checked = checked;
+    input.addEventListener('change', () => onChange(input.checked));
+    row.createSpan({ text: label });
+    return input;
   }
 
   private async runExtraction(): Promise<void> {
@@ -211,17 +263,35 @@ export class OnboardingModal extends Modal {
       return;
     }
 
-    // Second phase: grounded Character/Place summaries. Abort here still lets the
-    // already-summarized entities through; the rest become plain scaffolds.
-    statusEl.setText('Summarizing characters and places…');
-    barFill.setCssStyles({ width: '0%' }); // SAFE: progress width
-    this.entityProposals = await this.service.enrichEntities(this.proposals, {
-      signal: this.abortController.signal,
-      onProgress: (current, total, name) => {
-        statusEl.setText(`Summarizing ${current} / ${total} — ${name}`);
-        barFill.setCssStyles({ width: `${total > 0 ? Math.round((current / total) * 100) : 0}%` }); // SAFE: progress width
-      },
-    });
+    // Optional second phase: only for the profile kinds the author enabled. When
+    // summaries are on this is the slow part (one AI call per entity); otherwise
+    // it just builds plain-scaffold proposals. Skipped entirely when no profile
+    // kind is enabled — the core run is scenes only.
+    const kinds: EntityKind[] = [];
+    if (this.createCharacters) kinds.push('character');
+    if (this.createPlaces) kinds.push('place');
+
+    if (kinds.length === 0) {
+      this.entityProposals = [];
+    } else if (this.generateSummaries) {
+      statusEl.setText('Summarizing characters and places…');
+      barFill.setCssStyles({ width: '0%' }); // SAFE: progress width
+      this.entityProposals = await this.service.enrichEntities(this.proposals, {
+        kinds,
+        generateSummaries: true,
+        signal: this.abortController.signal,
+        onProgress: (current, total, name) => {
+          statusEl.setText(`Summarizing ${current} / ${total} — ${name}`);
+          barFill.setCssStyles({ width: `${total > 0 ? Math.round((current / total) * 100) : 0}%` }); // SAFE: progress width
+        },
+      });
+    } else {
+      // No AI — just plan the scaffolds.
+      this.entityProposals = await this.service.enrichEntities(this.proposals, {
+        kinds,
+        generateSummaries: false,
+      });
+    }
 
     this.showReviewCheckpoint();
   }

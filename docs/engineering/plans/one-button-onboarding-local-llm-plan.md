@@ -545,6 +545,19 @@ Doctrine fit: no new abstraction layer beyond the adapters, no fallback chains
   auto-filled. Synopsis was rejected for entities: it's Scene-only and there's
   an architectural guard barring it from Inquiry. Cost: one extra local call
   per distinct entity (~26 for the 3-book Odyssey fixture).
+- **2026-07-15 (scope back to a reliable core)** — per-entity summarization is
+  slow (~26 calls) and the feature was taking on too much at once. Decision
+  (Eric): make the **core run just "split into scene notes with YAML across acts
+  + Synopsis + basic meta"** — always on, cheap (one call per scene), the thing
+  that must be rock-solid first. Everything beyond scenes is now **opt-in at
+  Checkpoint 1** via three checkboxes, all **default OFF**: *Create Character
+  profiles*, *Create Place profiles*, and *Generate AI summaries for profiles*
+  (the slow pass; auto-disabled unless a profile kind is checked). With all off,
+  `enrichEntities` is skipped entirely and no entity notes are written — but
+  scene YAML still carries `Character`/`Place` wiki links (basic meta stays).
+  `enrichEntities` gained a fast path: profiles-on + summaries-off creates plain
+  scaffolds with zero AI calls. Sequencing: land the scene core, then re-enable
+  the extras once it's proven.
 
 ## Appendix A — Canonical onboarding prompt (instruction block)
 

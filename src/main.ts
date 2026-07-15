@@ -689,14 +689,15 @@ export default class RadialTimelinePlugin extends Plugin {
             console.warn('[RadialTimeline] Version check failed on startup:', err);
         });
 
-        // APR Auto-Update Check
-        void this.authorProgressService.checkAutoUpdate();
-
-        // Community share surface 2: keep the website's private project shells
-        // in sync with Book Manager (no-op unless Community Share is connected).
-        // Routed through the throttle so it opens the sync window — settings
-        // edits right after startup coalesce instead of double-firing.
-        scheduleCommunityProjectSync(this);
+        // Sync private Book Manager shells before APR catch-up so a campaign
+        // targeting a newly added book has a server-side project mapping.
+        void scheduleCommunityProjectSync(this).then(() => this.authorProgressService.checkAutoUpdate());
+        // APR campaigns are client-scheduled: startup catches up after a closed
+        // vault, then an hourly due check keeps daily/weekly/monthly campaigns
+        // current while Obsidian remains open.
+        this.registerInterval(window.setInterval(() => {
+            void this.authorProgressService.checkAutoUpdate();
+        }, 60 * 60 * 1000));
 
         // Initial status bar update (placeholder for future stats)
         // this.statusBarService.update(...);

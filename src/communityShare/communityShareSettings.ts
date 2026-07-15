@@ -102,6 +102,15 @@ export function deriveCommunityShareMode(settings: CommunityShareSettings): Comm
     return settings.tier >= 3 ? 'progress' : 'profile_books';
 }
 
+/** APR is a curated project artifact available from Level 2 upward. */
+export function canShareAprToCommunity(settings: CommunityShareSettings): boolean {
+    return settings.enabled
+        && settings.connection.status === 'connected'
+        && settings.audience === 'public'
+        && settings.tier >= 2
+        && settings.tier <= 4;
+}
+
 export function buildCommunityShareModeUpdate(mode: CommunityShareMode): Partial<CommunityShareSettings> {
     return {
         enabled: mode !== 'private',

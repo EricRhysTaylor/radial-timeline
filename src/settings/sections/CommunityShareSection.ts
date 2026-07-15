@@ -57,15 +57,15 @@ const FIELD_LABELS: Record<CommunityShareFieldKey, string> = {
 };
 
 const MODE_LABELS: Record<CommunityShareMode, string> = {
-    private: 'Private',
-    profile_books: 'Profile + books',
-    progress: 'Profile, books + progress summaries'
+    private: 'Level 1 — Private',
+    profile_books: 'Level 2 — Profile, books + APR',
+    progress: 'Level 3 — Profile, books + writing activity'
 };
 
 const MODE_NOTES: Record<CommunityShareMode, string> = {
     private: 'Nothing is shared. Your connection stays in place for when you are ready.',
-    profile_books: 'Shows your public author profile and book projects so fellow authors can see what you are working on.',
-    progress: 'Manage your public profile and book projects on the website. Plus shares progress summaries: writing days, words, minutes, streak.'
+    profile_books: 'Shows your profile and selected books. APR campaigns can add a controlled visual progress report without sharing writing activity.',
+    progress: 'Includes your profile, books, and APR, plus rounded writing activity: writing days, words, minutes, streak, and mode mix.'
 };
 
 const MY_SHARE_URL = 'https://www.radialtimeline.com/community/me';
@@ -171,6 +171,8 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     const isConnected = settings.connection.status === 'connected';
     const mode = deriveCommunityShareMode(settings);
     const selectedFields = getSelectedFieldLabels(settings);
+    const communityAprCampaigns = (plugin.settings.authorProgress?.campaigns ?? [])
+        .filter(campaign => campaign.sendToCommunity);
     const hasPublishedReport = settings.publishHistory.some(entry => (entry.action === 'publish' || entry.action === 'sync') && entry.status === 'success' && Boolean(entry.publishId));
 
     const section = containerEl.createDiv({
@@ -223,7 +225,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     });
     hero.createEl('p', {
         cls: `${ERT_CLASSES.SECTION_DESC} ert-hero-subtitle`,
-        text: 'Show your author profile, show your books, and optionally share progress summaries. Review the complete preview, then begin sharing.'
+        text: 'Show your profile and books, add a controlled APR progress graphic, or share rounded writing activity. Review the complete preview, then begin sharing.'
     });
 
     const heroFeatures = hero.createDiv({
@@ -451,6 +453,25 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
             cls: 'ert-communityPreview__note',
             text: 'Your target dates (Zero / Author / House / Press) and Zero-draft mode sync to your active book, but stay hidden until you reveal them in My Share.'
         });
+        if (communityAprCampaigns.length > 0) {
+            const aprPills = previewFrame.createDiv({ cls: 'ert-communityPreview__pills' });
+            communityAprCampaigns.forEach(campaign => {
+                const targetBook = campaign.targetBookId
+                    ? plugin.settings.books.find(book => book.id === campaign.targetBookId)
+                    : activeBook;
+                const frequency = campaign.updateFrequency ?? 'manual';
+                addChip(aprPills, 'APR', `${campaign.name} · ${targetBook?.title ?? 'No book'} · ${frequency}`);
+            });
+            previewFrame.createDiv({
+                cls: 'ert-communityPreview__note',
+                text: 'APR graphics land privately on My Share. Preview the exact graphic and teaser reveal in Social, then activate public display on the website.'
+            });
+        } else {
+            previewFrame.createDiv({
+                cls: 'ert-communityPreview__note',
+                text: 'No APR campaigns send to Community. Enable one in Social → Campaigns when you want a controlled visual progress report.'
+            });
+        }
         // The preview card speaks in general terms — the author wants the gist
         // of what leaves the vault, not the telemetry schema. The field-policy
         // controls elsewhere keep the precise FIELD_LABELS names.

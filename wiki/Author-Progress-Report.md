@@ -117,3 +117,20 @@ Create multiple APR configurations for different platforms:
 - **Website**: 30-day refresh reminders
 
 Each campaign can have its own update frequency, refresh alert threshold, output file, export size, and reveal settings. Teaser Reveal can be enabled per campaign, and manual reveal options are available when Teaser Reveal is disabled.
+
+### Send A Campaign To Community
+
+Community sharing is available when this vault is connected and **Profile, books + progress report** (Level 2) or **Profile, books + writing activity** (Level 3) is selected in Community settings.
+
+For each campaign:
+
+1. Choose the campaign's target book.
+2. Enable **Send to Community**.
+3. Click **Send now** to upload the current APR directly to your private My Share area, or use the campaign's Daily, Weekly, or Monthly update frequency.
+4. Review the exact image on **My Share**, then activate it when you are ready. Its book must be public first.
+
+The local **Update** action still creates the campaign's PNG or SVG export. **Send now** renders and uploads without requiring a separate local export. A scheduled campaign can do both when it becomes due.
+
+Community uploads always land privately first. Level 2 permits the visual APR but does not share writing-day, streak, minutes, inactivity, or session statistics. Level 3 is the separate opt-in for broader writing activity.
+
+Campaign schedules run in the plugin, not on a server. Due campaigns are checked on plugin startup and hourly while the vault is open. If an update is missed while Obsidian is closed, it runs on the next startup.

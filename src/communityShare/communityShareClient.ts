@@ -1,7 +1,7 @@
 import { requestUrl } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { deleteSecret, getSecret, isSecretStorageAvailable, setSecret } from '../ai/credentials/secretStorage';
-import { deriveCommunityShareMode, normalizeCommunityShareSettings } from './communityShareSettings';
+import { canShareAprToCommunity, deriveCommunityShareMode, normalizeCommunityShareSettings } from './communityShareSettings';
 import { COMMUNITY_SHARE_REPORT_SCHEMA_VERSION, buildCommunityDailyEntries, buildCommunitySharePreview } from './communitySharePreview';
 import type { CommunitySharePublishHistoryEntry, CommunityShareSettings } from '../types/settings';
 import type { SessionFeedPost } from '../services/WritingSessionLog';
@@ -413,9 +413,27 @@ async function requireActiveConnection(plugin: RadialTimelinePlugin): Promise<{
  */
 export async function uploadAprToCommunity(
     plugin: RadialTimelinePlugin,
-    args: { svg: string; width: number; height: number; teaserLevel: 'ring' | 'scenes' | 'colors' | 'full'; campaignLabel?: string }
+    args: {
+        svg: string;
+        width: number;
+        height: number;
+        teaserLevel: 'ring' | 'scenes' | 'colors' | 'full';
+        bookKey: string;
+        campaignLabel?: string;
+    }
 ): Promise<AprUploadSuccess> {
-    const { connectionId, projectId, currentSecret } = await requireActiveConnection(plugin);
+    const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
+    if (!canShareAprToCommunity(current)) {
+        throw new CommunityShareError(
+            'sharing_level_required',
+            'Sending an APR to Community requires Level 2 (Profile, books + APR) or Level 3 (Writing activity).'
+        );
+    }
+    const { connectionId, currentSecret } = await requireActiveConnection(plugin);
+    const bookKey = args.bookKey.trim();
+    if (!bookKey) {
+        throw new CommunityShareError('project_mapping_required', 'Choose a campaign book before sending its APR to Community.');
+    }
 
     const response = await requestUrl({
         url: `${FUNCTIONS_BASE_URL}/community-apr-upload`,
@@ -424,7 +442,7 @@ export async function uploadAprToCommunity(
         body: JSON.stringify({
             connection_id: connectionId,
             current_secret: currentSecret,
-            project_id: projectId,
+            plugin_book_key: bookKey,
             teaser_level: args.teaserLevel,
             svg: args.svg,
             width: args.width,
@@ -568,19 +586,19 @@ const PROJECT_SYNC_WINDOW_MS = 5 * 60 * 1000;
 let lastProjectSyncAt = 0;
 let pendingProjectSync: number | null = null;
 
-export function scheduleCommunityProjectSync(plugin: RadialTimelinePlugin): void {
+export function scheduleCommunityProjectSync(plugin: RadialTimelinePlugin): Promise<void> {
     const elapsed = Date.now() - lastProjectSyncAt;
     if (elapsed >= PROJECT_SYNC_WINDOW_MS) {
         lastProjectSyncAt = Date.now();
-        void syncCommunityProjectsIfConnected(plugin);
-        return;
+        return syncCommunityProjectsIfConnected(plugin);
     }
-    if (pendingProjectSync !== null) return; // trailing sync already queued
+    if (pendingProjectSync !== null) return Promise.resolve(); // trailing sync already queued
     pendingProjectSync = window.setTimeout(() => {
         pendingProjectSync = null;
         lastProjectSyncAt = Date.now();
         void syncCommunityProjectsIfConnected(plugin);
     }, PROJECT_SYNC_WINDOW_MS - elapsed);
+    return Promise.resolve();
 }
 
 export async function beginCommunitySharing(plugin: RadialTimelinePlugin): Promise<PublishSuccess> {
@@ -902,7 +920,7 @@ export async function disconnectCommunityShare(plugin: RadialTimelinePlugin): Pr
 /**
  * True when the author's standing sharing state allows posting a session
  * summary to the community feed: connected, sharing on, public audience, and
- * the top sharing level (progress summaries). UI gates the toggle on this;
+ * Level 3 (writing activity). UI gates the toggle on this;
  * the edge function re-verifies every gate server-side.
  */
 export function canPostSessionsToFeed(plugin: RadialTimelinePlugin): boolean {
@@ -925,7 +943,7 @@ export async function postSessionToCommunityFeed(
 ): Promise<void> {
     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
     if (!canPostSessionsToFeed(plugin)) {
-        throw new CommunityShareError('sharing_level_required', 'Posting to the community feed requires the top sharing level.');
+        throw new CommunityShareError('sharing_level_required', 'Posting to the community feed requires Level 3 (writing activity).');
     }
     const secret = await getConnectedSecret(plugin, current);
     const response = await requestUrl({

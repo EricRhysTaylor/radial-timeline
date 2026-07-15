@@ -721,6 +721,10 @@ export interface AuthorProgressCampaign {
     // My Share page on the community website. It arrives private there; the
     // author activates public display on the website (never from the plugin).
     sendToCommunity?: boolean;
+    lastCommunityUploadAttemptAt?: string;
+    lastCommunityUploadedAt?: string;
+    lastCommunityUploadStatus?: 'private' | 'active';
+    lastCommunityUploadError?: string;
 
     // Output
     exportPath: string;              // Where to save the exported report for this campaign

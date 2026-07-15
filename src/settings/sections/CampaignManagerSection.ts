@@ -26,6 +26,8 @@ import { fitSelectToSelectedLabel } from '../selectSizing';
 import { scheduleFocusAfterPaint } from '../../utils/domFocus';
 import { mountSvgMarkup } from '../../utils/svgDom';
 import { getActiveBook } from '../../utils/books';
+import { AuthorProgressService } from '../../services/AuthorProgressService';
+import { canShareAprToCommunity, normalizeCommunityShareSettings } from '../../communityShare/communityShareSettings';
 
 export interface CampaignManagerProps {
     app: App;
@@ -980,16 +982,50 @@ function renderCampaignDetails(
         });
     fitSelectToSelectedLabel(frequencyDropdown.selectEl, { minPx: 72, extraPx: 16 });
 
-    // Community share surface: send this campaign's APR to the website.
+    // Community share surface: Level 2+ authors can send this campaign's APR
+    // to My Share without enabling writing-activity summaries.
+    const communitySettings = normalizeCommunityShareSettings(plugin.settings.communityShare);
+    const canSendToCommunity = canShareAprToCommunity(communitySettings);
     new Setting(details)
         .setName('Send to Community')
-        .setDesc('Each publish also sends this progress report to your My Share page on the community website. It stays private there until you activate it on the website.')
+        .setDesc(canSendToCommunity
+            ? 'Adds this APR to campaign publishes and scheduled updates. It lands privately on My Share until you activate it there.'
+            : 'Choose Level 2 (Profile, books + APR) or Level 3 (Writing activity) in Community settings before sending an APR.')
         .addToggle((toggle) => toggle
             .setValue(campaign.sendToCommunity ?? false)
+            // A lower sharing level blocks enabling this destination, but an
+            // already-enabled campaign must remain switchable off.
+            .setDisabled(!canSendToCommunity && !(campaign.sendToCommunity ?? false))
             .onChange(async (value) => {
                 if (!plugin.settings.authorProgress?.campaigns) return;
+                if (value && !canSendToCommunity) return;
                 plugin.settings.authorProgress.campaigns[index].sendToCommunity = value;
                 await plugin.saveSettings();
+                onUpdate();
+            }));
+
+    const communityStatus = campaign.lastCommunityUploadError
+        ? `Last send failed: ${campaign.lastCommunityUploadError}`
+        : campaign.lastCommunityUploadedAt
+            ? `${campaign.lastCommunityUploadStatus === 'active' ? 'Public APR refreshed' : 'Private APR sent'} ${new Date(campaign.lastCommunityUploadedAt).toLocaleString()}.`
+            : 'No APR has been sent for this campaign.';
+    new Setting(details)
+        .setName('Community APR')
+        .setDesc(communityStatus)
+        .addButton(button => button
+            .setButtonText('Send now')
+            .setDisabled(!canSendToCommunity || !(campaign.sendToCommunity ?? false))
+            .onClick(async () => {
+                button.setDisabled(true);
+                button.setButtonText('Sending...');
+                try {
+                    const service = new AuthorProgressService(plugin, plugin.app);
+                    const status = await service.sendCampaignToCommunity(campaign.id);
+                    if (!status) throw new Error('Campaign could not be rendered.');
+                } catch (error) {
+                    new Notice(error instanceof Error ? error.message : 'Could not send the APR to Community.');
+                }
+                onUpdate();
             }));
 
     // Refresh threshold — subordinate to frequency setting (manual only)

@@ -844,7 +844,7 @@ export function renderProgressSection(params: {
                         plugin.onSettingChanged(IMPACT_PROGRESS_TICKS); // Tier 2: target date tick marks on timeline
                         // Target dates ride to the website with project sync —
                         // throttled so a burst of edits lands as one push.
-                        scheduleCommunityProjectSync(plugin);
+                        void scheduleCommunityProjectSync(plugin);
                         // Update icon color
                         const icon = setting.nameEl.querySelector('.ert-target-tick-icon');
                         if (icon) {
@@ -886,7 +886,7 @@ export function renderProgressSection(params: {
 
                     await plugin.saveSettings();
                     plugin.onSettingChanged(IMPACT_PROGRESS_TICKS); // Tier 2: target date tick marks on timeline
-                    scheduleCommunityProjectSync(plugin);
+                    void scheduleCommunityProjectSync(plugin);
                 };
 
                 plugin.registerDomEvent(text.inputEl, 'blur', () => { void handleBlur(); });
@@ -937,7 +937,7 @@ export function renderProgressSection(params: {
                     backgroundColor: value ? `${zeroStageColor}20` : 'transparent'
                 });
                 // Zero-draft mode syncs to the active book's website shell.
-                scheduleCommunityProjectSync(plugin);
+                void scheduleCommunityProjectSync(plugin);
             }));
 
     // Apply initial styles including background tint if enabled

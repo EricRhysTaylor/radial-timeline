@@ -418,6 +418,12 @@ function migrateCampaign(
             isActive: asBoolean(record.isActive, true),
             updateFrequency,
             sendToCommunity: asBoolean(record.sendToCommunity, false),
+            lastCommunityUploadAttemptAt: asString(record.lastCommunityUploadAttemptAt),
+            lastCommunityUploadedAt: asString(record.lastCommunityUploadedAt),
+            lastCommunityUploadStatus: record.lastCommunityUploadStatus === 'private' || record.lastCommunityUploadStatus === 'active'
+                ? record.lastCommunityUploadStatus
+                : undefined,
+            lastCommunityUploadError: asString(record.lastCommunityUploadError),
             refreshThresholdDays: asNumber(record.refreshThresholdDays, defaults.stalenessThresholdDays),
             lastPublishedDate: asString(record.lastPublishedDate),
             exportPath: asString(record.exportPath ?? record.embedPath) ?? buildCampaignEmbedPath({

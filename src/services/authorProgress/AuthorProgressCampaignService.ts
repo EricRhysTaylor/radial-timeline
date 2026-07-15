@@ -4,7 +4,7 @@ import type { AuthorProgressCampaign, AuthorProgressSettings } from '../../types
 import { hasProFeatureAccess } from '../../settings/featureGate';
 import { getTeaserRevealLevel, getTeaserThresholds } from '../../renderer/apr/AprConstants';
 import { uploadAprToCommunity } from '../../communityShare/communityShareClient';
-import { AuthorProgressRenderService } from './AuthorProgressRenderService';
+import { AuthorProgressRenderService, type AuthorProgressCampaignBuildResult } from './AuthorProgressRenderService';
 import { AuthorProgressPublishService } from './AuthorProgressPublishService';
 
 export class AuthorProgressCampaignService {
@@ -105,30 +105,11 @@ export class AuthorProgressCampaignService {
             new Notice(`Campaign "${campaign.name}" published!\nFormat: ${format.toUpperCase()} | Size: ${result.meta.size} | Stage: ${result.meta.stage} | Progress: ${result.meta.percent.toFixed(1)}%`);
         }
 
-        // Community share surface 3: send the portable APR to the website.
+        // Community share surface: send the portable APR to the website.
         // It arrives private on My Share; activation is website-only.
         if (campaign.sendToCommunity && hasProFeatureAccess(this.plugin)) {
             try {
-                const teaser = campaign.teaserReveal;
-                const revealLevel = teaser?.enabled
-                    ? getTeaserRevealLevel(
-                        result.meta.percent,
-                        getTeaserThresholds(teaser.preset ?? 'standard', teaser.customThresholds),
-                        teaser.disabledStages
-                    )
-                    : 'full';
-                const uploaded = await uploadAprToCommunity(this.plugin, {
-                    svg: svgString,
-                    width,
-                    height,
-                    teaserLevel: revealLevel,
-                    campaignLabel: campaign.name
-                });
-                if (!options?.silent) {
-                    new Notice(uploaded.status === 'active'
-                        ? 'Progress report refreshed on your public Community card.'
-                        : 'Progress report sent to Community — activate it on your My Share page.');
-                }
+                await this.uploadCampaignReport(result, options);
             } catch (error) {
                 const message = error instanceof Error ? error.message : 'Unknown error';
                 console.error(`Community APR upload failed for campaign ${campaign.name}:`, message);
@@ -138,6 +119,15 @@ export class AuthorProgressCampaignService {
             }
         }
         return path;
+    }
+
+    public async sendCampaignToCommunity(campaignId: string, options?: { silent?: boolean }): Promise<'private' | 'active' | null> {
+        if (!hasProFeatureAccess(this.plugin)) {
+            throw new Error('Community APR sharing requires Pro access.');
+        }
+        const result = await this.renderService.buildCampaignReport(campaignId);
+        if (!result) return null;
+        return this.uploadCampaignReport(result, options);
     }
 
     public async generateCampaignSnapshot(campaignId: string): Promise<string | null> {
@@ -180,8 +170,6 @@ export class AuthorProgressCampaignService {
         for (const campaign of campaigns) {
             if (!campaign.isActive) continue;
             const frequency = campaign.updateFrequency ?? 'manual';
-            if (frequency === 'manual') continue;
-
             const last = campaign.lastPublishedDate ? new Date(campaign.lastPublishedDate).getTime() : 0;
             const diffMs = now - last;
 
@@ -192,18 +180,86 @@ export class AuthorProgressCampaignService {
                 case 'monthly': thresholdMs = 30 * 24 * 60 * 60 * 1000; break;
             }
 
-            if (diffMs > thresholdMs && diffMs > cooldown) {
+            const localUpdateDue = frequency !== 'manual' && diffMs > thresholdMs && diffMs > cooldown;
+            const communityRetryDue = campaign.sendToCommunity
+                && Boolean(campaign.lastCommunityUploadError)
+                && now - (campaign.lastCommunityUploadAttemptAt ? new Date(campaign.lastCommunityUploadAttemptAt).getTime() : 0) > cooldown;
+
+            if (localUpdateDue) {
                 try {
                     await this.generateCampaignReport(campaign.id, { silent: true });
                     updatedCount++;
                 } catch {
                     // Silent failure; user can publish manually.
                 }
+            } else if (communityRetryDue) {
+                try {
+                    await this.sendCampaignToCommunity(campaign.id, { silent: true });
+                    updatedCount++;
+                } catch {
+                    // Error state is persisted by uploadCampaignReport.
+                }
             }
         }
 
         if (updatedCount > 0) {
             new Notice(`Updated ${updatedCount} campaign${updatedCount > 1 ? 's' : ''} automatically.`);
+        }
+    }
+
+    private async uploadCampaignReport(
+        result: AuthorProgressCampaignBuildResult,
+        options?: { silent?: boolean }
+    ): Promise<'private' | 'active'> {
+        const authorProgress = this.plugin.settings.authorProgress;
+        const campaignIndex = authorProgress?.campaigns?.findIndex(campaign => campaign.id === result.campaign.id) ?? -1;
+        if (!authorProgress?.campaigns || campaignIndex < 0) {
+            throw new Error('Campaign not found.');
+        }
+
+        const campaign = authorProgress.campaigns[campaignIndex];
+        const bookKey = campaign.targetBookId ?? this.plugin.settings.activeBookId;
+        if (!bookKey || !this.plugin.settings.books.some(book => book.id === bookKey)) {
+            throw new Error('Choose a campaign book before sending its APR to Community.');
+        }
+
+        const attemptedAt = new Date().toISOString();
+        campaign.lastCommunityUploadAttemptAt = attemptedAt;
+        campaign.lastCommunityUploadError = undefined;
+        await this.plugin.saveSettings();
+
+        try {
+            const teaser = campaign.teaserReveal;
+            const revealLevel = teaser?.enabled
+                ? getTeaserRevealLevel(
+                    result.meta.percent,
+                    getTeaserThresholds(teaser.preset ?? 'standard', teaser.customThresholds),
+                    teaser.disabledStages
+                )
+                : 'full';
+            const uploaded = await uploadAprToCommunity(this.plugin, {
+                svg: result.svgString,
+                width: result.width,
+                height: result.height,
+                teaserLevel: revealLevel,
+                bookKey,
+                campaignLabel: campaign.name
+            });
+            campaign.lastCommunityUploadedAt = uploaded.updated_at;
+            campaign.lastCommunityUploadStatus = uploaded.status;
+            campaign.lastCommunityUploadError = undefined;
+            await this.plugin.saveSettings();
+            if (!options?.silent) {
+                new Notice(uploaded.status === 'active'
+                    ? 'Progress report refreshed on your public Community card.'
+                    : 'Progress report sent to Community — activate it on your My Share page.');
+            }
+            return uploaded.status;
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Could not send the progress report to Community.';
+            campaign.lastCommunityUploadError = message;
+            await this.plugin.saveSettings();
+            throw error;
         }
     }
 }

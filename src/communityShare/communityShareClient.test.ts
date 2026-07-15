@@ -290,6 +290,8 @@ describe('Community Share activation client', () => {
         vi.clearAllMocks();
         const settings = plugin.settings.communityShare;
         settings.enabled = true;
+        settings.tier = 2;
+        settings.audience = 'public';
         settings.connection = {
             status: 'connected',
             connectionId: 'conn-1',
@@ -315,6 +317,7 @@ describe('Community Share activation client', () => {
             width: 480,
             height: 480,
             teaserLevel: 'ring',
+            bookKey: 'book-1',
             campaignLabel: 'Newsletter'
         });
 
@@ -322,10 +325,31 @@ describe('Community Share activation client', () => {
         const body = JSON.parse(request.body) as Record<string, unknown>;
         expect(request.url).toContain('/community-apr-upload');
         expect(body.current_secret).toBe('rtcs_current-secret');
-        expect(body.project_id).toBe('project-1');
+        expect(body.plugin_book_key).toBe('book-1');
+        expect(body.project_id).toBeUndefined();
         expect(body.teaser_level).toBe('ring');
         expect(body.campaign_label).toBe('Newsletter');
         expect(result.status).toBe('private');
+    });
+
+    it('blocks APR upload while the sharing level is Private', async () => {
+        const { plugin } = createPluginHarness();
+        plugin.settings.communityShare.enabled = true;
+        plugin.settings.communityShare.connection = {
+            status: 'connected',
+            connectionId: 'conn-1',
+            profileId: 'profile-1',
+            projectId: 'project-1',
+            secretId: 'rt.community-share.connection-secret'
+        };
+
+        await expect(uploadAprToCommunity(plugin as never, {
+            svg: '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+            width: 480,
+            height: 480,
+            teaserLevel: 'ring',
+            bookKey: 'book-1'
+        })).rejects.toMatchObject({ code: 'sharing_level_required' });
     });
 
     it('syncs Book Manager books as private community project shells', async () => {

@@ -75,6 +75,10 @@ export class AuthorProgressService {
         return this.campaignService.generateCampaignReport(campaignId, options);
     }
 
+    public sendCampaignToCommunity(campaignId: string, options?: { silent?: boolean }): Promise<'private' | 'active' | null> {
+        return this.campaignService.sendCampaignToCommunity(campaignId, options);
+    }
+
     public generateCampaignSnapshot(campaignId: string): Promise<string | null> {
         return this.campaignService.generateCampaignSnapshot(campaignId);
     }

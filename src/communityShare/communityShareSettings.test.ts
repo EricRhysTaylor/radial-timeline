@@ -3,6 +3,7 @@ import {
     buildCommunityShareFieldPolicyForMode,
     buildCommunityShareModeUpdate,
     buildDefaultCommunityShareSettings,
+    canShareAprToCommunity,
     deriveCommunityShareMode,
     normalizeCommunityShareSettings
 } from './communityShareSettings';
@@ -94,6 +95,27 @@ describe('Community Share settings', () => {
             expect(policy['structure.real_scene_titles']).toBe(false);
             expect(policy['activity.exact_session_timestamps']).toBe(false);
         }
+    });
+
+    it('allows the separate APR artifact from Profile + books upward, never while private', () => {
+        const base = buildDefaultCommunityShareSettings();
+        const connection = { status: 'connected' as const, connectionId: 'connection-1' };
+
+        expect(canShareAprToCommunity(normalizeCommunityShareSettings({
+            ...base,
+            ...buildCommunityShareModeUpdate('private'),
+            connection
+        }))).toBe(false);
+        expect(canShareAprToCommunity(normalizeCommunityShareSettings({
+            ...base,
+            ...buildCommunityShareModeUpdate('profile_books'),
+            connection
+        }))).toBe(true);
+        expect(canShareAprToCommunity(normalizeCommunityShareSettings({
+            ...base,
+            ...buildCommunityShareModeUpdate('progress'),
+            connection
+        }))).toBe(true);
     });
 
     it('derives the sharing mode from stored tier and enabled state', () => {

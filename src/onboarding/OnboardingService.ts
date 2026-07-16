@@ -230,7 +230,9 @@ export class OnboardingService {
     for (let i = 0; i < scenes.length; i++) {
       if (options.signal?.aborted) break;
       const scene = scenes[i];
-      const title = titleFromFileName(basename(scene.sourceRef));
+      // Split scenes carry real titles ("Book I — The gods in council"); only
+      // fall back to the filename when the source didn't provide one.
+      const title = scene.title ?? titleFromFileName(basename(scene.sourceRef));
       options.onProgress?.(i + 1, scenes.length, title);
 
       if (nonScenes.has(basename(scene.sourceRef))) continue; // classified as a non-scene note

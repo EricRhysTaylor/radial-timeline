@@ -287,16 +287,21 @@ export class OnboardingService {
    * plan's breaks in place. Best-effort and abortable — a failed file is left as
    * the author had it. Skips already-onboarded, single-paragraph, and
    * already-broken files (markers or manual edits win).
+   *
+   * Returns per-file outcomes keyed by sourceRef so the checkpoint can show
+   * exactly which files the AI split and which it could not.
    */
-  async proposeSplits(plans: ScenePlan[], options: SplitOptions = {}): Promise<void> {
+  async proposeSplits(plans: ScenePlan[], options: SplitOptions = {}): Promise<Map<string, 'split' | 'failed'>> {
     const targets = plans.filter(
       (plan) => !plan.alreadyOnboarded && plan.paragraphs.length > 1 && plan.breaks.length === 0
     );
+    const outcomes = new Map<string, 'split' | 'failed'>();
     const aiClient = getAIClient(this.plugin);
     for (let i = 0; i < targets.length; i++) {
       if (options.signal?.aborted) break;
       const plan = targets[i];
       options.onProgress?.(i + 1, targets.length, plan.baseTitle ?? plan.sourceRef);
+      outcomes.set(plan.sourceRef, 'failed');
       try {
         const result = await aiClient.run({
           feature: 'Onboarding',
@@ -317,12 +322,14 @@ export class OnboardingService {
             if (plan.labels.length === 0) {
               plan.labels = parsed.value.labels.filter((label) => label.length > 0);
             }
+            outcomes.set(plan.sourceRef, 'split');
           }
         }
       } catch {
         // best-effort — leave this file's breaks unchanged
       }
     }
+    return outcomes;
   }
 
   /**

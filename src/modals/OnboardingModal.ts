@@ -63,6 +63,8 @@ export class OnboardingModal extends Modal {
   private entityProposals: EntityProposal[] = [];
   /** Per-file split proposals, keyed by sourceRef; edited at Checkpoint 1. */
   private splitPlans: Map<string, ScenePlan> = new Map();
+  /** Per-file auto-split outcomes; null until "Auto-split with AI" has run. */
+  private splitOutcomes: Map<string, 'split' | 'failed'> | null = null;
   private publishStage: Stage = 'Press';
   // Extra work beyond scenes — all off by default so the core run is just
   // "split into scene notes with YAML + Synopsis". The author opts in.
@@ -192,27 +194,27 @@ export class OnboardingModal extends Modal {
       text: ' on its own line in your manuscript forces a scene break there. It’s exact, survives re-runs, and the AI won’t override it.',
     });
 
-    // AI auto-split — one action for the whole manuscript, for files that have no
-    // markers. Splitting on markers is already applied; this fills the rest.
-    const splittable = [...this.splitPlans.values()].some(
-      (plan) => !plan.alreadyOnboarded && plan.paragraphs.length > 1 && plan.breaks.length === 0
-    );
-    if (splittable) {
-      const controls = contentEl.createDiv({ cls: 'ert-onb-split-controls' });
-      new ButtonComponent(controls)
-        .setButtonText('Auto-split with AI')
-        .setCta()
-        .onClick(() => void this.runSplitProposal());
-      controls.createSpan({
-        cls: 'ert-muted',
-        text: 'Proposes scene breaks across the manuscript for files that have none — you can adjust after.',
+    // After an auto-split run, say plainly what just happened — the author
+    // should see "done" at a glance, not have to re-derive it from the rows.
+    if (this.splitOutcomes) {
+      const split = [...this.splitOutcomes.values()].filter((o) => o === 'split').length;
+      const failed = this.splitOutcomes.size - split;
+      const sceneTotal = scenes.reduce((sum, scene) => {
+        const plan = this.splitPlans.get(scene.sourceRef);
+        return sum + (plan ? segmentCount(plan) : 1);
+      }, 0);
+      const done = contentEl.createDiv({ cls: 'ert-onb-splitdone' });
+      done.createSpan({ cls: 'ert-onb-splitdone__icon', text: '✓' });
+      done.createSpan({
+        text: `Auto-split done — ${scenes.length} file${scenes.length === 1 ? '' : 's'} → ${sceneTotal} scenes.`
+          + (failed > 0 ? ` ${failed} file${failed === 1 ? '' : 's'} need${failed === 1 ? 's' : ''} attention below.` : ' Review the rows below, then continue.'),
       });
     }
 
     const list = contentEl.createDiv({ cls: 'ert-onb-list' });
     scenes.forEach((scene, i) => {
       const plan = this.splitPlans.get(scene.sourceRef);
-      if (plan) this.renderSplitCard(list, plan, i + 1, i === 0, updateTotal);
+      if (plan) this.renderSplitCard(list, plan, i + 1, updateTotal);
     });
     updateTotal();
 
@@ -229,42 +231,30 @@ export class OnboardingModal extends Modal {
       text: 'Set first draft to Zero; a finished, published book is Press.',
     });
 
-    // Extra work, opt-in. The core run (always on) is: split into scene notes
-    // with YAML across acts + Synopsis. The rest is slower and off by default.
-    const optionsPanel = contentEl.createDiv({ cls: 'ert-onb-options ert-stack' });
-    optionsPanel.createDiv({ cls: 'ert-onb-synopsis__label', text: 'Also create (optional)' });
-    this.renderCheckbox(optionsPanel, 'Create Character profiles', this.createCharacters, (checked) => {
-      this.createCharacters = checked;
-      syncSummaryToggle();
-    });
-    this.renderCheckbox(optionsPanel, 'Create Place profiles', this.createPlaces, (checked) => {
-      this.createPlaces = checked;
-      syncSummaryToggle();
-    });
-    const summaryToggle = this.renderCheckbox(
-      optionsPanel,
-      'Generate AI summaries for profiles (slow — one call per character/place)',
-      this.generateSummaries,
-      (checked) => {
-        this.generateSummaries = checked;
-      }
+    // All actions live together at the bottom. Auto-split is the main path for
+    // unmarked prose, so it takes the CTA until it has run; Continue takes over
+    // after (or when there is nothing to auto-split).
+    const splittable = [...this.splitPlans.values()].some(
+      (plan) => !plan.alreadyOnboarded && plan.paragraphs.length > 1 && plan.breaks.length === 0
     );
-    const syncSummaryToggle = (): void => {
-      const anyProfile = this.createCharacters || this.createPlaces;
-      summaryToggle.disabled = !anyProfile;
-      summaryToggle.parentElement?.toggleClass('ert-setting-dimmed', !anyProfile);
-      if (!anyProfile && this.generateSummaries) {
-        this.generateSummaries = false;
-        summaryToggle.checked = false;
-      }
-    };
-    syncSummaryToggle();
-
+    const offerAutoSplit = splittable && !this.splitOutcomes;
+    if (offerAutoSplit) {
+      contentEl.createDiv({
+        cls: 'ert-muted',
+        text: 'Auto-split proposes scene breaks for every file that has none — you can adjust after.',
+      });
+    }
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
-    new ButtonComponent(actions)
-      .setButtonText('Extract metadata')
-      .setCta()
+    if (offerAutoSplit) {
+      new ButtonComponent(actions)
+        .setButtonText('Auto-split with AI')
+        .setCta()
+        .onClick(() => void this.runSplitProposal());
+    }
+    const continueBtn = new ButtonComponent(actions)
+      .setButtonText('Continue')
       .onClick(() => void this.runExtraction());
+    if (!offerAutoSplit) continueBtn.setCta();
     new ButtonComponent(actions).setButtonText('Cancel').onClick(() => this.close());
   }
 
@@ -283,15 +273,32 @@ export class OnboardingModal extends Modal {
     return input;
   }
 
-  /** One file's split card: headline count, lazily-built paragraph break editor. */
+  /** One file's split card: headline count, status tint, lazily-built break editor. */
   private renderSplitCard(
     list: HTMLElement,
     plan: ScenePlan,
     displayIndex: number,
-    openByDefault: boolean,
     onTotalChange: () => void
   ): void {
     const card = list.createDiv({ cls: 'ert-onb-scene' });
+
+    // Row status: red = hard failure (nothing to split), orange = needs the
+    // author's attention, green = processed by a completed auto-split run.
+    // Neutral until auto-split has run so the initial list stays calm.
+    let statusText = '';
+    if (plan.paragraphs.length === 0 && !plan.alreadyOnboarded) {
+      card.addClass('is-failed');
+      statusText = 'No prose found in this file.';
+    } else if (plan.alreadyOnboarded) {
+      card.addClass('is-warn');
+      statusText = 'Already onboarded — this file will be skipped.';
+    } else if (this.splitOutcomes?.get(plan.sourceRef) === 'failed') {
+      card.addClass('is-warn');
+      statusText = 'AI could not place breaks here — open the row to add them by hand.';
+    } else if (this.splitOutcomes) {
+      card.addClass('is-ok');
+    }
+
     const head = card.createEl('button', { cls: 'ert-onb-scene__head', attr: { type: 'button' } });
     head.createSpan({ cls: 'ert-onb-scene__idx', text: String(displayIndex).padStart(2, '0') });
     head.createSpan({ cls: 'ert-onb-scene__title', text: plan.baseTitle ?? plan.sourceRef });
@@ -308,6 +315,9 @@ export class OnboardingModal extends Modal {
     if (plan.labels.length > 0) meta.createSpan({ cls: 'ert-onb-flag', text: `❖ ${plan.labels.length} title${plan.labels.length === 1 ? '' : 's'}` });
     const caret = meta.createSpan({ cls: 'ert-onb-caret' });
     setIcon(caret, 'chevron-right');
+
+    // Issue rows carry their message in the collapsed row itself.
+    if (statusText) card.createDiv({ cls: 'ert-onb-scene__status', text: statusText });
 
     const body = card.createDiv({ cls: 'ert-onb-scene__body' });
     let built = false;
@@ -327,10 +337,6 @@ export class OnboardingModal extends Modal {
         card.addClass('is-open');
       }
     });
-    if (openByDefault) {
-      buildOnce();
-      card.addClass('is-open');
-    }
   }
 
   /** The break editor: section titles (if any) + paragraphs with clickable break dividers. */
@@ -350,7 +356,7 @@ export class OnboardingModal extends Modal {
       plan.labels.forEach((label) => this.pill(chips, label, 'ert-onb-pill--subplot', true));
       hint.createDiv({
         cls: 'ert-onb-split-note',
-        text: 'No scene markers in this text — use “Auto-split with AI” above, or click a break below to place one by hand.',
+        text: 'No scene markers in this text — use “Auto-split with AI” below, or click a break to place one by hand.',
       });
     }
     const editor = body.createDiv({ cls: 'ert-onb-para-list' });
@@ -404,7 +410,7 @@ export class OnboardingModal extends Modal {
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
     new ButtonComponent(actions).setButtonText('Abort').setWarning().onClick(() => this.abortController?.abort());
 
-    await this.service.proposeSplits(plans, {
+    this.splitOutcomes = await this.service.proposeSplits(plans, {
       signal: this.abortController.signal,
       onProgress: (current, total, title) => {
         statusEl.setText(`Splitting ${current} / ${total} — ${title}`);
@@ -422,7 +428,7 @@ export class OnboardingModal extends Modal {
     this.abortController = new AbortController();
     const { contentEl } = this;
     contentEl.empty();
-    this.renderStageHeader(2, 'Extracting metadata', 'Surveying structure, then extracting each scene.');
+    this.renderStageHeader(2, 'Reading scenes', 'Filling in each scene’s details — synopsis, characters, places, timing. Nothing is written yet.');
 
     const progressWrap = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
     const statusEl = progressWrap.createDiv({ cls: 'ert-muted', text: 'Surveying the whole book…' });
@@ -451,35 +457,9 @@ export class OnboardingModal extends Modal {
       return;
     }
 
-    // Optional second phase: only for the profile kinds the author enabled. When
-    // summaries are on this is the slow part (one AI call per entity); otherwise
-    // it just builds plain-scaffold proposals. Skipped entirely when no profile
-    // kind is enabled — the core run is scenes only.
-    const kinds: EntityKind[] = [];
-    if (this.createCharacters) kinds.push('character');
-    if (this.createPlaces) kinds.push('place');
-
-    if (kinds.length === 0) {
-      this.entityProposals = [];
-    } else if (this.generateSummaries) {
-      statusEl.setText('Summarizing characters and places…');
-      barFill.setCssStyles({ width: '0%' }); // SAFE: progress width
-      this.entityProposals = await this.service.enrichEntities(this.proposals, {
-        kinds,
-        generateSummaries: true,
-        signal: this.abortController.signal,
-        onProgress: (current, total, name) => {
-          statusEl.setText(`Summarizing ${current} / ${total} — ${name}`);
-          barFill.setCssStyles({ width: `${total > 0 ? Math.round((current / total) * 100) : 0}%` }); // SAFE: progress width
-        },
-      });
-    } else {
-      // No AI — just plan the scaffolds.
-      this.entityProposals = await this.service.enrichEntities(this.proposals, {
-        kinds,
-        generateSummaries: false,
-      });
-    }
+    // Character/Place profiles are decided at the Review checkpoint and built
+    // at apply time — this stage stays about the narrative only.
+    this.entityProposals = [];
 
     this.showReviewCheckpoint();
   }
@@ -509,14 +489,41 @@ export class OnboardingModal extends Modal {
     });
 
     const destName = suggestOnboardingFolderName(this.book?.sourceFolder ?? 'Book');
-    const summarized = this.entityProposals.filter((entity) => entity.summary).length;
-    const entityNote = this.entityProposals.length > 0
-      ? ` · ${this.entityProposals.length} Character/Place notes (${summarized} summarized)`
-      : '';
     contentEl.createDiv({
       cls: 'ert-muted',
-      text: `Will write to a new folder: ${destName} (source left untouched) · Publish Stage: ${this.publishStage}${entityNote}.`,
+      text: `Will write to a new folder: ${destName} (source left untouched) · Publish Stage: ${this.publishStage}.`,
     });
+
+    // Optional extras, decided here — after the narrative is settled. Built at
+    // apply time; summaries are the slow part (one AI call per entity).
+    const optionsPanel = contentEl.createDiv({ cls: 'ert-onb-options ert-stack' });
+    optionsPanel.createDiv({ cls: 'ert-onb-synopsis__label', text: 'Also create (optional)' });
+    this.renderCheckbox(optionsPanel, 'Create Character profiles', this.createCharacters, (checked) => {
+      this.createCharacters = checked;
+      syncSummaryToggle();
+    });
+    this.renderCheckbox(optionsPanel, 'Create Place profiles', this.createPlaces, (checked) => {
+      this.createPlaces = checked;
+      syncSummaryToggle();
+    });
+    const summaryToggle = this.renderCheckbox(
+      optionsPanel,
+      'Generate AI summaries for profiles (slow — one call per character/place)',
+      this.generateSummaries,
+      (checked) => {
+        this.generateSummaries = checked;
+      }
+    );
+    const syncSummaryToggle = (): void => {
+      const anyProfile = this.createCharacters || this.createPlaces;
+      summaryToggle.disabled = !anyProfile;
+      summaryToggle.parentElement?.toggleClass('ert-setting-dimmed', !anyProfile);
+      if (!anyProfile && this.generateSummaries) {
+        this.generateSummaries = false;
+        summaryToggle.checked = false;
+      }
+    };
+    syncSummaryToggle();
 
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
     new ButtonComponent(actions)
@@ -640,6 +647,50 @@ export class OnboardingModal extends Modal {
   }
 
   private async applyProposals(): Promise<void> {
+    // Profiles were chosen at Review; build them now, just before writing.
+    const kinds: EntityKind[] = [];
+    if (this.createCharacters) kinds.push('character');
+    if (this.createPlaces) kinds.push('place');
+
+    if (kinds.length === 0) {
+      this.entityProposals = [];
+    } else if (this.generateSummaries) {
+      // The slow path — one local-AI call per character/place, abortable back
+      // to the Review checkpoint (nothing has been written yet).
+      this.abortController = new AbortController();
+      const { contentEl } = this;
+      contentEl.empty();
+      this.renderStageHeader(3, 'Creating profiles', 'Summarizing characters and places with the local model…');
+      const progressWrap = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
+      const statusEl = progressWrap.createDiv({ cls: 'ert-muted', text: 'Gathering characters and places…' });
+      const barTrack = progressWrap.createDiv({ cls: 'ert-progress-track' });
+      barTrack.setCssStyles({ height: '6px', background: 'var(--background-modifier-border)', borderRadius: '3px' }); // SAFE: progress track
+      const barFill = barTrack.createDiv();
+      barFill.setCssStyles({ height: '100%', width: '0%', background: 'var(--interactive-accent)', borderRadius: '3px' }); // SAFE: progress fill
+      const abortRow = contentEl.createDiv({ cls: 'ert-modal-actions' });
+      new ButtonComponent(abortRow).setButtonText('Abort').setWarning().onClick(() => this.abortController?.abort());
+
+      this.entityProposals = await this.service.enrichEntities(this.proposals, {
+        kinds,
+        generateSummaries: true,
+        signal: this.abortController.signal,
+        onProgress: (current, total, name) => {
+          statusEl.setText(`Summarizing ${current} / ${total} — ${name}`);
+          barFill.setCssStyles({ width: `${total > 0 ? Math.round((current / total) * 100) : 0}%` }); // SAFE: progress width
+        },
+      });
+      if (this.abortController.signal.aborted) {
+        this.showReviewCheckpoint();
+        return;
+      }
+    } else {
+      // No AI — just plan the scaffolds.
+      this.entityProposals = await this.service.enrichEntities(this.proposals, {
+        kinds,
+        generateSummaries: false,
+      });
+    }
+
     this.renderBusy('Writing scene notes…');
     let report: MaterializeReport;
     try {

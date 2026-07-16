@@ -125,15 +125,6 @@
   line-height: 1.5;
 }
 
-/* Checkpoint 1 — auto-split control row */
-.ert-ui .ert-onb-split-controls {
-  display: flex;
-  align-items: center;
-  gap: var(--ert-gap-sm);
-  flex-wrap: wrap;
-  margin-bottom: var(--ert-gap-sm);
-}
-
 /* Checkpoint 1 — scene split editor */
 .ert-ui .ert-onb-split-hint {
   display: flex;
@@ -278,8 +269,57 @@
   box-shadow: 0 0 0 1px var(--interactive-accent) inset;
 }
 
+/* Row status tints: green = processed, orange = needs attention, red = failed.
+   Solid muted border + faint background wash; status text carries the detail. */
 .ert-ui .ert-onb-scene.is-failed {
   border-color: color-mix(in srgb, var(--text-error) 55%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--text-error) 5%, var(--background-secondary));
+}
+
+.ert-ui .ert-onb-scene.is-warn {
+  border-color: color-mix(in srgb, var(--color-orange) 55%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--color-orange) 5%, var(--background-secondary));
+}
+
+.ert-ui .ert-onb-scene.is-ok {
+  border-color: color-mix(in srgb, var(--color-green) 45%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--color-green) 4%, var(--background-secondary));
+}
+
+/* Issue rows carry their message inside the collapsed row — slightly taller,
+   message under the title line. */
+.ert-ui .ert-onb-scene__status {
+  padding: 0 var(--ert-pad-cozy) var(--ert-pad-sm) calc(var(--ert-pad-cozy) + 28px);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.ert-ui .ert-onb-scene.is-failed .ert-onb-scene__status {
+  color: color-mix(in srgb, var(--text-error) 80%, var(--text-normal));
+}
+
+.ert-ui .ert-onb-scene.is-warn .ert-onb-scene__status {
+  color: color-mix(in srgb, var(--color-orange) 80%, var(--text-normal));
+}
+
+/* Post-auto-split summary — the "what just happened" line. */
+.ert-ui .ert-onb-splitdone {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ert-gap-sm);
+  padding: var(--ert-pad-sm) var(--ert-pad-cozy);
+  border-left: 3px solid var(--color-green);
+  border-radius: var(--ert-radius-sm, 4px);
+  background: color-mix(in srgb, var(--color-green) 7%, transparent);
+  color: var(--text-normal);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ert-ui .ert-onb-splitdone__icon {
+  flex: 0 0 auto;
+  color: var(--color-green);
+  font-weight: 800;
 }
 
 /* Row header — always visible, click to toggle */

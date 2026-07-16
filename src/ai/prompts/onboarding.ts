@@ -143,9 +143,13 @@ export function getOnboardingSurveyInstructions(): string {
     '',
     'SUBPLOT VOCABULARY — this is the hard part; be disciplined:',
     '- Return between 4 and 14 subplots for the WHOLE book. "Main Plot" is always first.',
-    '- Organize the classic way: the main plot; then the major character or relationship',
-    '  arcs (a journey, a courtship, a rivalry, a homecoming); then at most a few broad',
-    '  thematic threads (e.g. divine intervention, revenge, disguise and recognition).',
+    '- "Main Plot" is the LOGLINE — the key movement of the whole story (the Odyssey\'s:',
+    '  the hero\'s return home to his wife; Interstellar\'s: saving humanity by finding a',
+    '  new world). It need not contain the most scenes; it is the spine every other',
+    '  thread hangs from.',
+    '- Then the major character or relationship arcs (a journey, a courtship, a rivalry,',
+    '  a homecoming); then at most a few broad thematic threads (e.g. divine',
+    '  intervention, revenge, disguise and recognition).',
     '- Every subplot must plausibly span MANY scenes. Never create a subplot that would',
     '  apply to only one or two scenes — fold it into a broader thread instead.',
     'Return only the schema.',
@@ -186,9 +190,10 @@ const ONBOARDING_SCENE_SCHEMA = {
     synopsis: { type: 'string', description: '1-2 sentences of what happens in the scene.' },
     subplot: {
       type: 'array',
+      maxItems: 1,
       description:
-        'One or more names chosen ONLY from the given subplot vocabulary, verbatim. ' +
-        'Never invent a new subplot name. No commas in names.',
+        'Exactly ONE name chosen from the given subplot vocabulary, verbatim — the single ' +
+        'thread this scene most advances. Never invent a new subplot name. No commas.',
       items: { type: 'string' },
     },
     character: {
@@ -234,7 +239,8 @@ export function getOnboardingSceneInstructions(): string {
     'Extract Radial Timeline scene metadata from one scene of a manuscript. Never rewrite prose.',
     'Set Act by structural read. Write a 1-2 sentence Synopsis, and a short 2-4 word Title',
     'drawn from the scene\'s action ("Leaving home", "The Cyclops blinded").',
-    'Subplot names MUST come from the given vocabulary, verbatim — never invent one.',
+    'Assign the scene to exactly ONE subplot — the single thread it most advances, chosen from the',
+    'given vocabulary verbatim. Never invent a subplot name. (The author can layer more later.)',
     'BE SELECTIVE with entities — this is the difference between a usable vault and hundreds of junk notes:',
     '- Character: only the PRINCIPAL people who appear, act, or speak in this scene. Exclude names that are',
     '  merely mentioned in passing, backstory, genealogy, or simile. Aim for fewer than 8.',

@@ -266,18 +266,19 @@ export function linkedPlaces(extraction: SceneExtraction): string[] {
 }
 
 /**
- * Restrict a scene's subplot names to the survey vocabulary (case-insensitive,
- * canonical casing restored). Anything unmatched is dropped; an empty result —
- * including everything when there is no vocabulary — becomes ["Main Plot"].
+ * Restrict a scene's subplot to the survey vocabulary (case-insensitive,
+ * canonical casing restored) — and to exactly ONE thread: onboarding places a
+ * scene in the single subplot it most advances, until a local model can handle
+ * selective multi-subplot placement (the author layers more later). Unmatched
+ * names are dropped; no match — including when there is no vocabulary — becomes
+ * ["Main Plot"].
  */
 export function enforceSubplotVocabulary(subplots: string[], vocabulary: string[]): string[] {
   const canonical = new Map(vocabulary.map((name) => [name.toLowerCase(), name]));
-  const matched = dedupe(
-    subplots
-      .map((name) => canonical.get(sanitizeName(name).toLowerCase()))
-      .filter((name): name is string => typeof name === 'string')
-  );
-  return matched.length > 0 ? matched : ['Main Plot'];
+  const first = subplots
+    .map((name) => canonical.get(sanitizeName(name).toLowerCase()))
+    .find((name): name is string => typeof name === 'string');
+  return [first ?? 'Main Plot'];
 }
 
 /**

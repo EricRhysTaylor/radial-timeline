@@ -49,6 +49,10 @@ describe('enforceSubplotVocabulary', () => {
     expect(enforceSubplotVocabulary(['divine intervention', 'The Wine-Dark Sea'], vocab))
       .toEqual(['Divine Intervention']);
   });
+  it('caps a scene to ONE subplot — the first vocabulary match', () => {
+    expect(enforceSubplotVocabulary(['telemachus’ journey', 'Divine Intervention'], vocab))
+      .toEqual(['Telemachus’ Journey']);
+  });
   it('falls back to Main Plot when nothing matches or vocabulary is empty', () => {
     expect(enforceSubplotVocabulary(['Invented Thread'], vocab)).toEqual(['Main Plot']);
     expect(enforceSubplotVocabulary(['Anything'], [])).toEqual(['Main Plot']);

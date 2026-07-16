@@ -645,6 +645,15 @@ Doctrine fit: no new abstraction layer beyond the adapters, no fallback chains
   ~40k chars gets a deterministic paragraph split (`forcedEvenBreaks`); its
   split outcome stays "failed" so review still draws the eye.
 
+- **2026-07-16 (subplot doctrine refined)** — Eric's craft rules, now in prompt
+  + code: **"Main Plot" is the logline** — the key movement of the whole story
+  (Interstellar: saving humanity by finding a new world; the Odyssey: the hero's
+  return home to his wife). It need not have the most scenes; it is the spine
+  the other threads hang from. And **onboarding places each scene in exactly ONE
+  subplot** — the single thread it most advances (schema `maxItems: 1`, enforced
+  in `enforceSubplotVocabulary`) — until a local model can handle selective
+  multi-subplot placement; the author layers more later.
+
 ## Appendix A — Canonical onboarding prompt (instruction block)
 
 Source of truth for this text is **Supabase** (see "The Onboarding Prompt —

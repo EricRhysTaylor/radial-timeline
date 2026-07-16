@@ -57,7 +57,7 @@ import {
   effectiveFlags,
   type SurveyResult,
 } from './extraction';
-import { breaksFromStarts, type ScenePlan } from './sceneSplitting';
+import { breaksFromStarts, forcedEvenBreaks, type ScenePlan } from './sceneSplitting';
 import { basename, openingWords, sanitizeFileName, suggestOnboardingFolderName } from './paths';
 import { buildEntityNoteContent, entityFolderFor, type EntityKind } from '../utils/entityNotes';
 import type { Stage } from '../utils/constants';
@@ -130,6 +130,13 @@ const OVERRIDES = { temperature: 0.1, jsonStrict: true } as const;
 
 /** Cap on grounding text fed to one entity call, so a heavily-linked entity can't blow the context. */
 const ENTITY_GROUNDING_CHAR_BUDGET = 12000;
+
+/**
+ * A still-unsplit unit larger than this gets a deterministic paragraph split so
+ * per-scene extraction can't blow the context window (~10k tokens; Book XXIV
+ * failed whole at ~21k tokens against a 17k threshold).
+ */
+const FORCED_SPLIT_CHAR_LIMIT = 40000;
 
 export class OnboardingService {
   constructor(private readonly plugin: RadialTimelinePlugin) {}
@@ -265,10 +272,13 @@ export class OnboardingService {
         }
         proposals.push({
           sourceRef: scene.sourceRef,
-          title,
+          // Best name wins: the model's short action title ("Leaving home"),
+          // else the split/source title, else the filename fallback.
+          title: parsed.value.title.length > 0 ? parsed.value.title : title,
           frontmatter: buildSceneFrontmatter(parsed.value, {
             actCount,
             publishStage: options.publishStage,
+            subplotVocabulary,
             carriedMetadata: scene.knownMetadata,
           }),
           body: scene.rawText,
@@ -329,6 +339,16 @@ export class OnboardingService {
         }
       } catch {
         // best-effort — leave this file's breaks unchanged
+      }
+      // Safety net: if the model left an oversized unit whole, split it
+      // deterministically at paragraph boundaries so per-scene extraction can't
+      // blow the context window (Book XXIV failed whole at ~21k tokens). The
+      // outcome stays 'failed' so the review still draws the author's eye to it.
+      if (plan.breaks.length === 0) {
+        const totalChars = plan.paragraphs.reduce((sum, paragraph) => sum + paragraph.length + 2, 0);
+        if (totalChars > FORCED_SPLIT_CHAR_LIMIT) {
+          plan.breaks = forcedEvenBreaks(plan.paragraphs, FORCED_SPLIT_CHAR_LIMIT);
+        }
       }
     }
     return outcomes;

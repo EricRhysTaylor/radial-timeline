@@ -710,18 +710,33 @@ export class OnboardingModal extends Modal {
     const panel = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
     this.renderStatusRow(panel, 'Scenes written', String(report.notesCreated), report.notesCreated > 0);
     this.renderStatusRow(panel, 'Character & Place notes created', String(report.stubsCreated), true);
-    if (report.needsReview.length > 0) {
-      this.renderStatusRow(panel, 'Needs review', String(report.needsReview.length), false);
+    // Roll guesses up to counts (at 106 scenes a per-scene list is noise — most
+    // flags are the expected "Act guessed" for a manuscript without explicit
+    // structure). Failures are rare and important: list those individually.
+    const failures = report.needsReview.filter((proposal) => proposal.error);
+    const flagged = report.needsReview.filter((proposal) => !proposal.error && proposal.flags.length > 0);
+    if (flagged.length > 0) {
+      const counts = new Map<string, number>();
+      for (const proposal of flagged) {
+        for (const flag of proposal.flags) counts.set(flag, (counts.get(flag) ?? 0) + 1);
+      }
+      const rollup = [...counts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([flag, count]) => `${flag} on ${count}`)
+        .join(' · ');
+      this.renderStatusRow(panel, 'Guessed fields', `${rollup} scene${flagged.length === 1 ? '' : 's'}`, true);
+      panel.createDiv({
+        cls: 'ert-muted',
+        text: 'Expected when the text has no explicit dates or act marks — spot-check on the timeline.',
+      });
+    }
+    if (failures.length > 0) {
+      this.renderStatusRow(panel, 'Failed', String(failures.length), false);
       const reviewList = panel.createDiv({ cls: 'ert-onb-review-list ert-stack' });
-      for (const proposal of report.needsReview) {
-        const reason = proposal.error
-          ? `failed: ${proposal.error}`
-          : proposal.flags.length > 0
-            ? `guessed: ${proposal.flags.join(', ')}`
-            : 'flagged';
+      for (const proposal of failures) {
         const item = reviewList.createDiv({ cls: 'ert-onb-review-item' });
         item.createSpan({ cls: 'ert-onb-review-item__name', text: proposal.title || proposal.sourceRef });
-        item.createSpan({ cls: 'ert-onb-review-item__reason', text: reason });
+        item.createSpan({ cls: 'ert-onb-review-item__reason', text: proposal.error ?? 'failed' });
       }
     }
     for (const err of report.errors) {

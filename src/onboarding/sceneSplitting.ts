@@ -125,6 +125,25 @@ export function breaksFromStarts(starts: number[], paragraphCount: number): numb
   return normalizeBreaks(starts.map((start) => start - 1), paragraphCount);
 }
 
+/**
+ * Safety-net split for an oversized unit the AI failed to break: place breaks at
+ * paragraph boundaries so no segment exceeds ~maxChars (a whole unsplit Odyssey
+ * book otherwise blows the extraction context window). Returns [] when it fits.
+ */
+export function forcedEvenBreaks(paragraphs: string[], maxChars: number): number[] {
+  const breaks: number[] = [];
+  let used = 0;
+  for (let i = 0; i < paragraphs.length; i++) {
+    const length = paragraphs[i].length + 2;
+    if (used > 0 && used + length > maxChars) {
+      breaks.push(i);
+      used = 0;
+    }
+    used += length;
+  }
+  return normalizeBreaks(breaks, paragraphs.length);
+}
+
 /** Toggle a break before paragraph `index` (no-op for out-of-range/0). Returns a new break array. */
 export function toggleBreak(plan: ScenePlan, index: number): number[] {
   if (index <= 0 || index >= plan.paragraphs.length) return plan.breaks;

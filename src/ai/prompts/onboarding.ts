@@ -106,7 +106,9 @@ const ONBOARDING_SURVEY_SCHEMA = {
     },
     subplots: {
       type: 'array',
-      description: 'Candidate subplot vocabulary for the whole book (e.g. "Main Plot"). No commas in names.',
+      description:
+        'The book\'s subplot vocabulary: 4 to 14 MAJOR thematic threads, "Main Plot" first. ' +
+        'These are the only subplot names scenes may use. No commas in names.',
       items: { type: 'string' },
     },
     scenes: {
@@ -135,9 +137,18 @@ export function getOnboardingSurveyInstructions(): string {
   return [
     'Survey a whole manuscript to establish shared structure before per-scene extraction.',
     'From the ordered file list and each scene opening, determine: probable act boundaries',
-    '(Radial Timeline defaults to 3 acts — pick a practical number), a consistent subplot',
-    'vocabulary for the book, and whether each file is a prose scene or a non-scene note',
-    '(character sheet, place, research). Do not read or rewrite prose. Return only the schema.',
+    '(Radial Timeline defaults to 3 acts — pick a practical number), the book\'s subplot',
+    'vocabulary, and whether each file is a prose scene or a non-scene note',
+    '(character sheet, place, research). Do not read or rewrite prose.',
+    '',
+    'SUBPLOT VOCABULARY — this is the hard part; be disciplined:',
+    '- Return between 4 and 14 subplots for the WHOLE book. "Main Plot" is always first.',
+    '- Organize the classic way: the main plot; then the major character or relationship',
+    '  arcs (a journey, a courtship, a rivalry, a homecoming); then at most a few broad',
+    '  thematic threads (e.g. divine intervention, revenge, disguise and recognition).',
+    '- Every subplot must plausibly span MANY scenes. Never create a subplot that would',
+    '  apply to only one or two scenes — fold it into a broader thread instead.',
+    'Return only the schema.',
   ].join('\n');
 }
 
@@ -166,10 +177,18 @@ const ONBOARDING_SCENE_SCHEMA = {
       type: 'number',
       description: 'Act number by structural read; clamped downstream to the configured act count.',
     },
+    title: {
+      type: 'string',
+      description:
+        'A short scene title, 2-4 words drawn from the scene\'s action (e.g. "Leaving home", ' +
+        '"The Cyclops blinded"). Plain words — no numbering, no punctuation-heavy styling.',
+    },
     synopsis: { type: 'string', description: '1-2 sentences of what happens in the scene.' },
     subplot: {
       type: 'array',
-      description: 'One or more subplot names from the survey vocabulary. No commas in names.',
+      description:
+        'One or more names chosen ONLY from the given subplot vocabulary, verbatim. ' +
+        'Never invent a new subplot name. No commas in names.',
       items: { type: 'string' },
     },
     character: {
@@ -202,7 +221,7 @@ const ONBOARDING_SCENE_SCHEMA = {
       items: { type: 'string' },
     },
   },
-  required: ['act', 'synopsis', 'subplot', 'character', 'place', 'when', 'duration', 'flags'],
+  required: ['act', 'title', 'synopsis', 'subplot', 'character', 'place', 'when', 'duration', 'flags'],
 } as const;
 
 export function getOnboardingSceneJsonSchema(): Record<string, unknown> {
@@ -213,7 +232,9 @@ export function getOnboardingSceneJsonSchema(): Record<string, unknown> {
 export function getOnboardingSceneInstructions(): string {
   return [
     'Extract Radial Timeline scene metadata from one scene of a manuscript. Never rewrite prose.',
-    'Set Act by structural read. Write a 1-2 sentence Synopsis.',
+    'Set Act by structural read. Write a 1-2 sentence Synopsis, and a short 2-4 word Title',
+    'drawn from the scene\'s action ("Leaving home", "The Cyclops blinded").',
+    'Subplot names MUST come from the given vocabulary, verbatim — never invent one.',
     'BE SELECTIVE with entities — this is the difference between a usable vault and hundreds of junk notes:',
     '- Character: only the PRINCIPAL people who appear, act, or speak in this scene. Exclude names that are',
     '  merely mentioned in passing, backstory, genealogy, or simile. Aim for fewer than 8.',

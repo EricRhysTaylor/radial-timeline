@@ -4,6 +4,9 @@ import {
   parseSceneExtraction,
   parseEntityEnrichment,
   parseSplitProposal,
+  capSubplotVocabulary,
+  enforceSubplotVocabulary,
+  MAX_SUBPLOTS,
   buildSceneFrontmatter,
   sanitizeName,
   toWikiLink,
@@ -18,6 +21,7 @@ import {
 function extraction(over: Partial<SceneExtraction> = {}): SceneExtraction {
   return {
     act: 1,
+    title: 'Homecoming',
     synopsis: 'Odysseus returns home.',
     subplot: ['Main Plot'],
     character: ['Odysseus'],
@@ -28,6 +32,28 @@ function extraction(over: Partial<SceneExtraction> = {}): SceneExtraction {
     ...over,
   };
 }
+
+describe('capSubplotVocabulary', () => {
+  it('puts Main Plot first, dedupes case-insensitively, and caps at MAX_SUBPLOTS', () => {
+    const many = ['main plot', 'Revenge', 'revenge', ...Array.from({ length: 30 }, (_, i) => `Thread ${i}`)];
+    const capped = capSubplotVocabulary(many);
+    expect(capped[0]).toBe('Main Plot');
+    expect(capped.filter((s) => s.toLowerCase() === 'revenge')).toHaveLength(1);
+    expect(capped.length).toBeLessThanOrEqual(MAX_SUBPLOTS);
+  });
+});
+
+describe('enforceSubplotVocabulary', () => {
+  const vocab = ['Main Plot', 'Telemachus’ Journey', 'Divine Intervention'];
+  it('keeps only vocabulary names, restoring canonical casing', () => {
+    expect(enforceSubplotVocabulary(['divine intervention', 'The Wine-Dark Sea'], vocab))
+      .toEqual(['Divine Intervention']);
+  });
+  it('falls back to Main Plot when nothing matches or vocabulary is empty', () => {
+    expect(enforceSubplotVocabulary(['Invented Thread'], vocab)).toEqual(['Main Plot']);
+    expect(enforceSubplotVocabulary(['Anything'], [])).toEqual(['Main Plot']);
+  });
+});
 
 describe('parseSplitProposal', () => {
   it('parses scene starts and labels', () => {
@@ -227,6 +253,11 @@ describe('linked entities (stub sources)', () => {
 describe('effectiveFlags', () => {
   it('drops When/Duration flags when the model returned null (nothing was written)', () => {
     const e = extraction({ when: null, duration: null, flags: ['Act', 'When', 'Duration'] });
+    expect(effectiveFlags(e)).toEqual(['Act']);
+  });
+
+  it('normalizes casing and dedupes ("act" and "Act" become one "Act")', () => {
+    const e = extraction({ flags: ['act', 'Act', 'ACT'] });
     expect(effectiveFlags(e)).toEqual(['Act']);
   });
 

@@ -19,6 +19,8 @@ export interface SurveyResult {
 
 export interface SceneExtraction {
   act: number;
+  /** Short 2-4 word scene title from the model ('' when it gave none). */
+  title: string;
   synopsis: string;
   subplot: string[];
   character: string[];
@@ -79,7 +81,27 @@ export function parseSurveyResult(raw: string | null | undefined): ParseResult<S
           isScene: s.isScene !== false, // default to scene unless explicitly false
         }))
     : [];
-  return { ok: true, value: { acts, subplots: asStringArray(obj.subplots), scenes } };
+  return { ok: true, value: { acts, subplots: capSubplotVocabulary(asStringArray(obj.subplots)), scenes } };
+}
+
+/** Timeline rings stay legible up to this many subplots (Eric: 4–14 major threads). */
+export const MAX_SUBPLOTS = 14;
+
+/**
+ * Bound the survey's subplot vocabulary: dedupe (case-insensitive), "Main Plot"
+ * always present and first, hard-capped at MAX_SUBPLOTS.
+ */
+export function capSubplotVocabulary(subplots: string[]): string[] {
+  const seen = new Set<string>(['main plot']);
+  const rest: string[] = [];
+  for (const raw of subplots) {
+    const name = sanitizeName(raw);
+    const key = name.toLowerCase();
+    if (name.length === 0 || seen.has(key)) continue;
+    seen.add(key);
+    rest.push(name);
+  }
+  return ['Main Plot', ...rest.slice(0, MAX_SUBPLOTS - 1)];
 }
 
 export function parseSceneExtraction(raw: string | null | undefined): ParseResult<SceneExtraction> {
@@ -96,6 +118,7 @@ export function parseSceneExtraction(raw: string | null | undefined): ParseResul
     ok: true,
     value: {
       act: typeof obj.act === 'number' ? obj.act : 1,
+      title: typeof obj.title === 'string' ? obj.title.replace(/\s+/g, ' ').trim() : '',
       synopsis: obj.synopsis.trim(),
       subplot: asStringArray(obj.subplot),
       character: asStringArray(obj.character),
@@ -191,6 +214,13 @@ export interface BuildFrontmatterOptions {
    * a finished, published book being migrated from another tool is Press.
    */
   publishStage?: Stage;
+  /**
+   * The survey's capped subplot vocabulary. Scene subplots are restricted to it
+   * (case-insensitive, canonical casing restored); anything else — including
+   * everything when the survey failed — falls back to "Main Plot". This is what
+   * keeps the timeline at 4–14 rings instead of one ring per invented name.
+   */
+  subplotVocabulary?: string[];
   /** Non-canonical metadata carried from the source (written as-is). */
   carriedMetadata?: Record<string, string>;
 }
@@ -210,7 +240,7 @@ export function buildSceneFrontmatter(
     Class: 'Scene',
     Act: clampActNumber(extraction.act, Math.max(3, options.actCount)),
     Synopsis: extraction.synopsis,
-    Subplot: dedupe(extraction.subplot.map(sanitizeName)),
+    Subplot: enforceSubplotVocabulary(extraction.subplot, options.subplotVocabulary ?? []),
     Character: dedupe(extraction.character.map(toWikiLink)).slice(0, MAX_CHARACTERS),
     Place: dedupe(extraction.place.map(toWikiLink)).slice(0, MAX_PLACES),
     Status: 'Complete',
@@ -236,15 +266,37 @@ export function linkedPlaces(extraction: SceneExtraction): string[] {
 }
 
 /**
+ * Restrict a scene's subplot names to the survey vocabulary (case-insensitive,
+ * canonical casing restored). Anything unmatched is dropped; an empty result —
+ * including everything when there is no vocabulary — becomes ["Main Plot"].
+ */
+export function enforceSubplotVocabulary(subplots: string[], vocabulary: string[]): string[] {
+  const canonical = new Map(vocabulary.map((name) => [name.toLowerCase(), name]));
+  const matched = dedupe(
+    subplots
+      .map((name) => canonical.get(sanitizeName(name).toLowerCase()))
+      .filter((name): name is string => typeof name === 'string')
+  );
+  return matched.length > 0 ? matched : ['Main Plot'];
+}
+
+/**
  * Flags, minus any field the model didn't actually fill in. Models tend to flag
  * When/Duration as "guessed" even when they correctly returned null — reporting
- * those would claim a guess we never wrote.
+ * those would claim a guess we never wrote. Names are normalized ("act" → "Act")
+ * and deduped so downstream rollups can count them.
  */
 export function effectiveFlags(extraction: SceneExtraction): string[] {
-  return extraction.flags.filter((flag) => {
+  const kept = extraction.flags.filter((flag) => {
     const key = flag.trim().toLowerCase();
     if (key === 'when') return extraction.when !== null;
     if (key === 'duration') return extraction.duration !== null;
     return true;
   });
+  return dedupe(
+    kept
+      .map((flag) => flag.trim())
+      .filter((flag) => flag.length > 0)
+      .map((flag) => flag.charAt(0).toUpperCase() + flag.slice(1).toLowerCase())
+  );
 }

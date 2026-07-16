@@ -622,6 +622,29 @@ Doctrine fit: no new abstraction layer beyond the adapters, no fallback chains
   across all files) — lower value now since markers already auto-apply; and the
   `Book:` structural field.
 
+- **2026-07-16 (first full-manuscript run: 106 scenes — scale fixes)** — the
+  single-file Odyssey run wrote 106 scenes end to end, and scale broke four
+  things (Eric: "the RT is completely useless… major disaster"). Fixes:
+  **(1) Subplot discipline** — the timeline drowned in one-off subplot rings.
+  The survey now returns **4–14 major thematic subplots** ("Main Plot" always
+  first; classic organization: main plot → major character/relationship arcs →
+  a few broad thematic threads; never one-scene subplots), capped in code
+  (`capSubplotVocabulary`), and per-scene subplots are **restricted to that
+  vocabulary in code** (`enforceSubplotVocabulary` — unmatched names drop to
+  "Main Plot", so a failed survey degrades to one ring, never an explosion).
+  Genre/period-aware subplot guidance (classics vs modern, romance, sci-fi…)
+  noted as a possible refinement — not built. **(2) Scene naming** — notes were
+  "pg1727-images.html 6 14". The scene extraction schema gained a required
+  short **title** (2–4 words from the action, "Leaving home"); precedence:
+  AI title → split/source title → filename. **(3) Report rollup** — Complete
+  listed 88 flagged scenes individually; guesses now roll up to counts per
+  field ("Act on 84 · When on 22") with failures still listed one-by-one
+  (settings-quiet-when-healthy). Flags normalize casing ("act"→"Act").
+  **(4) Context overflow** — Book XXIV went whole to extraction (~21k tokens >
+  17k threshold) and failed. After the AI split pass, a still-unsplit unit over
+  ~40k chars gets a deterministic paragraph split (`forcedEvenBreaks`); its
+  split outcome stays "failed" so review still draws the eye.
+
 ## Appendix A — Canonical onboarding prompt (instruction block)
 
 Source of truth for this text is **Supabase** (see "The Onboarding Prompt —

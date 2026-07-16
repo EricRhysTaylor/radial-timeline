@@ -6,6 +6,7 @@ import {
   planSceneSplit,
   toggleBreak,
   breaksFromStarts,
+  forcedEvenBreaks,
   segmentCount,
   planSegments,
   scenesFromPlan,
@@ -124,6 +125,17 @@ describe('breaksFromStarts', () => {
   });
   it('drops out-of-range and duplicate starts', () => {
     expect(breaksFromStarts([1, 4, 4, 99, 0], 10)).toEqual([3]);
+  });
+});
+
+describe('forcedEvenBreaks', () => {
+  it('places breaks so no segment exceeds the budget', () => {
+    const paragraphs = Array.from({ length: 10 }, () => 'x'.repeat(100)); // ~102 chars each
+    const breaks = forcedEvenBreaks(paragraphs, 350); // ~3 paragraphs per segment
+    expect(breaks).toEqual([3, 6, 9]);
+  });
+  it('returns no breaks when the text already fits', () => {
+    expect(forcedEvenBreaks(['short', 'also short'], 10000)).toEqual([]);
   });
 });
 

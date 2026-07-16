@@ -1383,16 +1383,16 @@
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ert-social-accent-color-base) 50%, transparent);
 }
 
-/* Office-hours chip: title-bar indicator beside the writing-session control,
-   so the schedule is visible without opening the popover. Muted; bright green
-   ONLY during the live window. Spec: Platform/OFFICE-HOURS-CHIP-SPEC.md. */
-.ert-timeline-oh-chip-host {
+/* Discord chip: title-bar link beside the writing-session control. Muted
+   "Discord" normally; bright green ONLY while Eric is actually online (per the
+   discord-presence endpoint — never green on stale data). */
+.ert-timeline-discord-chip-host {
   display: inline-flex;
   align-items: center;
   flex: 0 0 auto;
 }
 
-.ert-timeline-oh-chip {
+.ert-timeline-discord-chip {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
@@ -1411,18 +1411,18 @@
   border-radius: var(--radius-m);
 }
 
-.ert-timeline-oh-chip:hover {
+.ert-timeline-discord-chip:hover {
   color: var(--text-normal);
   background: var(--background-modifier-hover);
 }
 
-.ert-timeline-oh-chip.is-live {
+.ert-timeline-discord-chip.is-live {
   color: var(--text-success);
   font-weight: var(--font-semibold);
   background: color-mix(in srgb, var(--text-success) 10%, var(--background-secondary));
 }
 
-.ert-timeline-oh-chip.is-live:hover {
+.ert-timeline-discord-chip.is-live:hover {
   color: var(--text-success);
   text-decoration: underline;
 }

@@ -38,7 +38,7 @@ import {
 } from '../renderer/ChangeDetection';
 import { WritingSessionCompletionModal } from '../modals/WritingSessionCompletionModal';
 import { canPostSessionsToFeed, postSessionToCommunityFeed } from '../communityShare/communityShareClient';
-import { OfficeHoursChip } from '../communityShare/officeHoursChip';
+import { DiscordChip } from '../communityShare/discordChip';
 import { projectSessionFeedPost } from '../services/WritingSessionLog';
 import { isMatterNote } from '../utils/sceneHelpers';
 import { DEFAULT_BOOK_TITLE, getTimelineScope, getTimelineScopeTitle, isSagaScopeAvailable } from '../utils/books';
@@ -147,7 +147,7 @@ export class RadialTimelineView extends ItemView {
     private writingSessionButton?: HTMLButtonElement;
     private writingSessionLabel?: HTMLElement;
     private writingSessionPanel?: HTMLElement;
-    private officeHoursChip?: OfficeHoursChip;
+    private discordChip?: DiscordChip;
     private writingSessionModeSelect?: HTMLSelectElement;
     private writingSessionCountdownToggle?: HTMLInputElement;
     private writingSessionGoalInput?: HTMLInputElement;
@@ -399,16 +399,16 @@ export class RadialTimelineView extends ItemView {
             doc.body.appendChild(sessionPanel);
             this.register(() => sessionPanel.remove());
 
-            // Office-hours chip: fetch/timer state outlives panel re-renders.
-            // Wake events refetch the schedule (spec §4, laptop-asleep case).
-            this.officeHoursChip = new OfficeHoursChip(this.plugin);
+            // Discord presence chip: fetch/timer state outlives panel re-renders.
+            // Wake events refetch presence (laptop-asleep case).
+            this.discordChip = new DiscordChip(this.plugin);
             this.register(() => {
-                this.officeHoursChip?.destroy();
-                this.officeHoursChip = undefined;
+                this.discordChip?.destroy();
+                this.discordChip = undefined;
             });
-            this.registerDomEvent(window, 'focus', () => this.officeHoursChip?.onWake());
+            this.registerDomEvent(window, 'focus', () => this.discordChip?.onWake());
             this.registerDomEvent(doc, 'visibilitychange', () => {
-                if (doc.visibilityState === 'visible') this.officeHoursChip?.onWake();
+                if (doc.visibilityState === 'visible') this.discordChip?.onWake();
             });
 
             let hideLegendTimer: number | null = null;
@@ -495,13 +495,13 @@ export class RadialTimelineView extends ItemView {
                 headerEl.insertBefore(sessionBtn, headerEl.firstChild);
             }
 
-            // Office-hours chip lives in the title bar beside the session control
-            // (not inside the popover, where an author who never opens it would
-            // miss the schedule). Persistent host; state on the controller.
-            const officeHoursHost = doc.createElement('span');
-            officeHoursHost.className = 'ert-timeline-oh-chip-host';
-            sessionBtn.parentElement?.insertBefore(officeHoursHost, sessionBtn.nextSibling);
-            this.officeHoursChip?.mount(officeHoursHost);
+            // Discord chip lives in the title bar beside the session control —
+            // muted "Discord" link normally, green when Eric is online (per the
+            // discord-presence endpoint). Persistent host; state on the controller.
+            const discordChipHost = doc.createElement('span');
+            discordChipHost.className = 'ert-timeline-discord-chip-host';
+            sessionBtn.parentElement?.insertBefore(discordChipHost, sessionBtn.nextSibling);
+            this.discordChip?.mount(discordChipHost);
 
             this.bookSwitcherEl = wrapper;
             this.bookSwitcherSelect = select;
@@ -846,10 +846,10 @@ export class RadialTimelineView extends ItemView {
             this.pulseWritingSessionTitleCount(pulseColor);
         }
         this.writingSessionLastTitlePulseKey = snapshot.pulseKey;
-        // Keep the title-bar office-hours chip's presence in step with a
-        // community connect/disconnect made while the view is open (cheap;
-        // no-op once mounted — the chip's own timers drive its content).
-        this.officeHoursChip?.sync();
+        // Keep the title-bar Discord chip's presence in step with a community
+        // connect/disconnect made while the view is open (cheap; no-op once
+        // mounted — the chip's own poll drives its content).
+        this.discordChip?.sync();
         this.syncOpenWritingSessionPanel();
         this.updateWritingSessionRing(undefined, { pulseColor });
         this.updateTabTimerIcon();

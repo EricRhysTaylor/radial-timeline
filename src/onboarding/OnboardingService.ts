@@ -26,6 +26,7 @@ import {
   titleFromFileName,
   type MarkdownIngestResult,
 } from './adapters/mdAdapter';
+import { ingestSingleFile } from './adapters/singleFileAdapter';
 import {
   flattenScenes,
   type ManuscriptModel,
@@ -157,8 +158,29 @@ export class OnboardingService {
 
   /** Parse a folder of prose notes into a Manuscript Model (reading order resolved). */
   async ingest(folderPath: string): Promise<MarkdownIngestResult> {
+    // Route by folder contents: exactly one prose file → single-file flow (detect
+    // internal book/chapter structure); several files → one unit per file.
+    const proseFiles = this.listProseFiles(folderPath);
+    if (proseFiles.length === 1) {
+      const file = proseFiles[0];
+      const content = await this.plugin.app.vault.read(file);
+      return { kind: 'ok', model: ingestSingleFile(file.name, content) };
+    }
     const source = createObsidianMarkdownSource(this.plugin.app);
     return ingestMarkdownFolder(source, folderPath);
+  }
+
+  /** Prose files (md/txt/html) directly in the book folder; TOC excluded. */
+  private listProseFiles(folderPath: string): TFile[] {
+    const folder = this.plugin.app.vault.getAbstractFileByPath(normalizePath(folderPath));
+    if (!(folder instanceof TFolder)) return [];
+    const proseExts = new Set(['md', 'txt', 'html', 'htm']);
+    return folder.children.filter(
+      (child): child is TFile =>
+        child instanceof TFile &&
+        proseExts.has(child.extension.toLowerCase()) &&
+        child.name.toLowerCase() !== 'toc.md'
+    );
   }
 
   /** One structured survey call establishing acts, subplot vocabulary, and scene classification. */

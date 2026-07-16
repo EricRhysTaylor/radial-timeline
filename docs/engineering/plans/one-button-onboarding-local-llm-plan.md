@@ -13,6 +13,32 @@ now lives in **Supabase** (with a bundled plugin fallback). The full canonical
 prompt is captured in Appendix A. See the Decision Log at the end for what
 changed and why.
 
+## Import flows (locked 2026-07-15)
+
+Three ways an author arrives with a manuscript. **All three normalize to the
+same `ManuscriptModel`, then share every downstream stage** (scene split → AI
+auto-split → survey → per-scene extraction → review → materialize → entity
+enrichment). Only the *ingest adapter* differs.
+
+1. **Single big file** — one file holding the whole book: a plain `.txt`/`.md`,
+   an old **PDF**, a Gutenberg-style **HTML** classic, whatever. This is the
+   hard, high-value case and the point of a "1-click, local-LLM" onboard:
+   **one file in → ~60 scenes out.** Ingest detects the internal book/chapter
+   divisions (headings, argument lines), then AI auto-split breaks each division
+   into scenes. Format priority: **text first** (txt/md) as the engine, **HTML**
+   next (strip tags + trim PG boilerplate → text), **PDF in V2** (bundled parser,
+   page-furniture stripping — the messiest).
+2. **Scrivener export** — compiled scene/chapter files **plus a metadata
+   sidecar** (synopses, labels, custom fields). Ingest reads the files as units
+   and maps the sidecar metadata (map→RT key / keep-as-custom / ignore).
+3. **Word `.docx`, distinct scene files** — a folder of one-scene-per-file docs
+   (or headings within). Ingest = one unit per file (split within if marked).
+
+**Routing is automatic from the book folder contents:** exactly one prose file →
+single-file path (detect internal structure); several files → multi-file path
+(one unit per file). No new selection UX — the author drops the manuscript in
+the book folder and onboards.
+
 ## Goal
 
 Book Designer covers the *fresh vault* path (template scaffold). There is no

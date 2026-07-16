@@ -42,17 +42,9 @@
   min-width: 0;
 }
 
-.ert-ui .ert-onb-stage__title {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text-normal);
-}
-
-.ert-ui .ert-onb-stage__subtitle {
-  color: var(--text-muted);
-  font-size: 13px;
-  line-height: 1.4;
-}
+/* Typography comes from the canonical .ert-modal-title / .ert-modal-subtitle
+   classes (see rt-ui.css) so onboarding headers match every other ERT modal.
+   These onboarding classes are layout hooks only. */
 
 .ert-ui .ert-onb-steps {
   flex: 0 0 auto;
@@ -117,6 +109,20 @@
 
 .ert-ui .ert-onb-tip__icon {
   flex: 0 0 auto;
+}
+
+/* Marker glyph chips inside the tip — symbols lead, prose follows. */
+.ert-ui .ert-onb-tip__marker {
+  display: inline-block;
+  margin-right: var(--ert-gap-xs);
+  padding: 1px 6px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--ert-radius-sm, 4px);
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-family: var(--font-monospace);
+  font-size: 11px;
+  line-height: 1.5;
 }
 
 /* Checkpoint 1 — auto-split control row */
@@ -257,6 +263,9 @@
 }
 
 .ert-ui .ert-onb-scene {
+  /* Never let flex shrink collapsed rows to make an open card fit — rows keep
+     their natural height and the list scrolls instead. */
+  flex: 0 0 auto;
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--ert-radius-md, 8px);
   background: var(--background-secondary);

@@ -63,7 +63,7 @@ export class OnboardingModal extends Modal {
   private entityProposals: EntityProposal[] = [];
   /** Per-file split proposals, keyed by sourceRef; edited at Checkpoint 1. */
   private splitPlans: Map<string, ScenePlan> = new Map();
-  private publishStage: Stage = 'Zero';
+  private publishStage: Stage = 'Press';
   // Extra work beyond scenes — all off by default so the core run is just
   // "split into scene notes with YAML + Synopsis". The author opts in.
   private createCharacters = false;
@@ -181,10 +181,15 @@ export class OnboardingModal extends Modal {
     };
 
     // Discoverability: authors can hard-mark breaks in the source itself.
+    // Marker glyphs lead as code chips so the eye lands on the symbols first.
     const tip = contentEl.createDiv({ cls: 'ert-onb-tip' });
     tip.createSpan({ cls: 'ert-onb-tip__icon', text: '💡' });
-    tip.createSpan({
-      text: 'Tip: put *** (or ---, ⁂, or a # heading) on its own line in your manuscript to force a scene break there. It’s exact, survives re-runs, and the AI won’t override it.',
+    const tipBody = tip.createSpan();
+    for (const marker of ['***', '---', '⁂', '# heading']) {
+      tipBody.createEl('code', { cls: 'ert-onb-tip__marker', text: marker });
+    }
+    tipBody.createSpan({
+      text: ' on its own line in your manuscript forces a scene break there. It’s exact, survives re-runs, and the AI won’t override it.',
     });
 
     // AI auto-split — one action for the whole manuscript, for files that have no
@@ -219,9 +224,9 @@ export class OnboardingModal extends Modal {
       .onChange((value) => {
         this.publishStage = value as Stage; // SAFE: dropdown options are exactly STAGE_ORDER
       });
-    contentEl.createDiv({
+    stageRow.createSpan({
       cls: 'ert-muted',
-      text: 'Applied to every scene. A draft still being written is Zero; a finished, published book is Press.',
+      text: 'Set first draft to Zero; a finished, published book is Press.',
     });
 
     // Extra work, opt-in. The core run (always on) is: split into scene notes
@@ -297,7 +302,10 @@ export class OnboardingModal extends Modal {
       countPill.setText(plan.alreadyOnboarded ? 'skip' : `${n} scene${n === 1 ? '' : 's'}`);
     };
     refreshCount();
-    if (plan.labels.length > 0) meta.createSpan({ cls: 'ert-onb-flag', text: `❖ ${plan.labels.length} beats` });
+    // "Section titles", never "beats" — beats is the story-structure system
+    // (Save the Cat etc.) elsewhere in RT; these are TOC-style titles parsed
+    // from the chapter's argument line that become scene titles on split.
+    if (plan.labels.length > 0) meta.createSpan({ cls: 'ert-onb-flag', text: `❖ ${plan.labels.length} title${plan.labels.length === 1 ? '' : 's'}` });
     const caret = meta.createSpan({ cls: 'ert-onb-caret' });
     setIcon(caret, 'chevron-right');
 
@@ -325,7 +333,7 @@ export class OnboardingModal extends Modal {
     }
   }
 
-  /** The break editor: argument beats (if any) + paragraphs with clickable break dividers. */
+  /** The break editor: section titles (if any) + paragraphs with clickable break dividers. */
   private buildSplitEditor(body: HTMLElement, plan: ScenePlan, onChange: () => void): void {
     if (plan.alreadyOnboarded) {
       body.createDiv({ cls: 'ert-onb-error', text: 'Already onboarded — this file is skipped, not split.' });
@@ -337,7 +345,7 @@ export class OnboardingModal extends Modal {
     }
     if (plan.labels.length > 0) {
       const hint = body.createDiv({ cls: 'ert-onb-split-hint' });
-      hint.createDiv({ cls: 'ert-onb-synopsis__label', text: `Argument beats (${plan.labels.length})` });
+      hint.createDiv({ cls: 'ert-onb-synopsis__label', text: `Section titles (${plan.labels.length})` });
       const chips = hint.createDiv({ cls: 'ert-onb-fm__val' });
       plan.labels.forEach((label) => this.pill(chips, label, 'ert-onb-pill--subplot', true));
       hint.createDiv({
@@ -692,8 +700,10 @@ export class OnboardingModal extends Modal {
     const header = this.contentEl.createDiv({ cls: 'ert-onb-stage' });
     header.createDiv({ cls: 'ert-onb-stage__num', text: String(stage) });
     const titles = header.createDiv({ cls: 'ert-onb-stage__titles' });
-    titles.createDiv({ cls: 'ert-onb-stage__title', text: `${title}` });
-    if (subtitle) titles.createDiv({ cls: 'ert-onb-stage__subtitle', text: subtitle });
+    // Canonical modal typography — same title/subtitle treatment as every
+    // other ERT modal; the onboarding classes only carry layout.
+    titles.createDiv({ cls: 'ert-modal-title ert-onb-stage__title', text: `${title}` });
+    if (subtitle) titles.createDiv({ cls: 'ert-modal-subtitle ert-onb-stage__subtitle', text: subtitle });
     const steps = header.createDiv({ cls: 'ert-onb-steps', attr: { 'aria-label': `Step ${stage} of ${total}` } });
     for (let i = 1; i <= total; i++) {
       const pip = steps.createSpan({ cls: 'ert-onb-step' });

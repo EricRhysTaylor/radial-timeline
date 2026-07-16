@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { buildDefaultCommunityShareSettings } from './communityShareSettings';
-import { COMMUNITY_DAILY_WINDOW_DAYS, buildCommunityDailyEntries, buildCommunitySharePreview } from './communitySharePreview';
+import {
+    COMMUNITY_DAILY_WINDOW_DAYS,
+    buildCommunityDailyEntries,
+    buildCommunityHourModeMixEntries,
+    buildCommunitySharePreview
+} from './communitySharePreview';
 
 describe('Community Share preview builder', () => {
     it('builds a public aggregate payload without private titles or sensitive fields', async () => {
@@ -211,5 +216,67 @@ describe('Community daily activity aggregates', () => {
         expect(serialized).not.toContain('Private Path');
         expect(serialized).not.toContain('T09:00');
         expect(serialized).not.toContain('s1');
+    });
+});
+
+describe('Community hour x mode mix rollup', () => {
+    const localKey = (date: Date) => {
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${date.getFullYear()}-${month}-${day}`;
+    };
+
+    it('rolls trailing 28-day session minutes into local-hour x mode buckets', async () => {
+        const now = new Date();
+        const todayKey = localKey(now);
+        const staleKey = localKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 40));
+
+        const plugin = {
+            getWritingSessionService: () => ({
+                getSettings: () => ({
+                    records: [
+                        {
+                            id: 's1',
+                            mode: 'drafting',
+                            startedAt: `${todayKey}T09:15:00.000Z`,
+                            endedAt: `${todayKey}T09:45:00.000Z`,
+                            sessionDate: todayKey,
+                            elapsedMs: 30 * 60000,
+                            scenePaths: ['Books/Private Path/S1.md']
+                        },
+                        {
+                            id: 's2',
+                            mode: 'editing',
+                            startedAt: `${todayKey}T09:50:00.000Z`,
+                            endedAt: `${todayKey}T10:10:00.000Z`,
+                            sessionDate: todayKey,
+                            elapsedMs: 20 * 60000
+                        },
+                        // Outside the trailing 28-day window: must not appear.
+                        {
+                            id: 's3',
+                            mode: 'planning',
+                            startedAt: `${staleKey}T09:00:00.000Z`,
+                            endedAt: `${staleKey}T09:30:00.000Z`,
+                            sessionDate: staleKey,
+                            elapsedMs: 30 * 60000
+                        }
+                    ]
+                })
+            })
+        };
+
+        const mix = await buildCommunityHourModeMixEntries(plugin as never);
+
+        const hour = new Date(`${todayKey}T09:15:00.000Z`).getHours();
+        expect(mix[String(hour)]).toEqual({ drafting: 30, revising: 20, planning: 0 });
+        // Only the one populated hour is present — no zero-activity hours,
+        // no stale-window entries.
+        expect(Object.keys(mix)).toHaveLength(1);
+
+        const serialized = JSON.stringify(mix);
+        expect(serialized).not.toContain('Private Path');
+        expect(serialized).not.toContain('s1');
+        expect(serialized).not.toContain(staleKey);
     });
 });

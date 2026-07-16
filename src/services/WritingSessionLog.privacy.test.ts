@@ -15,6 +15,7 @@ import { describe, expect, it } from 'vitest';
 import type { WritingSessionRecord } from '../types/settings';
 import {
     buildCommunityDailyLog,
+    buildCommunityHourModeMix,
     projectCommunityDaily,
     projectFriends,
     projectPrivate,
@@ -177,6 +178,53 @@ describe('WritingSessionLog privacy boundary', () => {
             for (const row of rows) {
                 expect(row).not.toHaveProperty('id');
             }
+        });
+    });
+
+    describe('community hour x mode mix rollup', () => {
+        it('strips all private tracers, including bookTitle', () => {
+            const out = buildCommunityHourModeMix({
+                records: [tracedRecord()],
+                endDate: '2026-06-01',
+            });
+            assertNoTracers(out);
+        });
+
+        it('never emits per-session detail, ids, or calendar dates', () => {
+            const out = buildCommunityHourModeMix({
+                records: [tracedRecord(), tracedRecord({ id: 'rec-tracer-2' })],
+                endDate: '2026-06-01',
+            }) as Record<string, unknown>;
+            expect(JSON.stringify(out)).not.toContain('rec-tracer');
+            expect(JSON.stringify(out)).not.toMatch(/\d{4}-\d{2}-\d{2}/);
+        });
+
+        it('buckets by local start hour and folds editing into revising', () => {
+            const out = buildCommunityHourModeMix({
+                records: [
+                    tracedRecord({ id: 'a', mode: 'drafting', startedAt: '2026-06-01T09:00:00.000Z', elapsedMs: 30 * 60000 }),
+                    tracedRecord({ id: 'b', mode: 'editing', startedAt: '2026-06-01T09:15:00.000Z', elapsedMs: 20 * 60000 }),
+                ],
+                endDate: '2026-06-02',
+            });
+            const hour = new Date('2026-06-01T09:00:00.000Z').getHours();
+            expect(out[String(hour)]).toEqual({ drafting: 30, revising: 20, planning: 0 });
+        });
+
+        it('omits hours with zero activity entirely', () => {
+            const out = buildCommunityHourModeMix({
+                records: [tracedRecord({ startedAt: '2026-06-01T09:00:00.000Z', elapsedMs: 10 * 60000 })],
+                endDate: '2026-06-01',
+            });
+            expect(Object.keys(out)).toHaveLength(1);
+        });
+
+        it('excludes records outside the trailing 28-day window', () => {
+            const out = buildCommunityHourModeMix({
+                records: [tracedRecord({ startedAt: '2026-04-01T09:00:00.000Z', endedAt: '2026-04-01T09:30:00.000Z', elapsedMs: 30 * 60000 })],
+                endDate: '2026-06-01',
+            });
+            expect(out).toEqual({});
         });
     });
 

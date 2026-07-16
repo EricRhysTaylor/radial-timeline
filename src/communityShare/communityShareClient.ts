@@ -2,7 +2,7 @@ import { requestUrl } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { deleteSecret, getSecret, isSecretStorageAvailable, setSecret } from '../ai/credentials/secretStorage';
 import { canShareAprToCommunity, deriveCommunityShareMode, normalizeCommunityShareSettings } from './communityShareSettings';
-import { COMMUNITY_SHARE_REPORT_SCHEMA_VERSION, buildCommunityDailyEntries, buildCommunitySharePreview } from './communitySharePreview';
+import { COMMUNITY_SHARE_REPORT_SCHEMA_VERSION, buildCommunityDailyEntries, buildCommunityHourModeMixEntries, buildCommunitySharePreview } from './communitySharePreview';
 import type { CommunitySharePublishHistoryEntry, CommunityShareSettings } from '../types/settings';
 import type { SessionFeedPost } from '../services/WritingSessionLog';
 
@@ -660,12 +660,15 @@ function isDailySyncSuccess(value: unknown): value is DailySyncSuccess {
 
 /**
  * Fire-and-forget daily-activity sync: sends the last two weeks of per-day
- * aggregates (community_daily) so the author page can show weekly stats.
- * Consent-consistent — runs only while the standing share is active at the
- * progress level (public, tier 4); private, paused, or revoked shares never
- * send. Silent by design: a standing-authorization failure stops scheduled
- * sharing (same auto-stop rule as the report sync); transient failures only
- * log to the console, never Notices, never repeated history entries.
+ * aggregates (community_daily) so the author page can show weekly stats,
+ * plus the optional `hour_mode_mix` companion field — a trailing 28-day,
+ * undated rollup of session minutes by local start hour and mode, for the
+ * community "activity dial." Consent-consistent — runs only while the
+ * standing share is active at the progress level (public, tier 4); private,
+ * paused, or revoked shares never send either field. Silent by design: a
+ * standing-authorization failure stops scheduled sharing (same auto-stop
+ * rule as the report sync); transient failures only log to the console,
+ * never Notices, never repeated history entries.
  */
 export async function syncCommunityDailyIfEligible(plugin: RadialTimelinePlugin): Promise<void> {
     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
@@ -678,6 +681,10 @@ export async function syncCommunityDailyIfEligible(plugin: RadialTimelinePlugin)
 
         const days = await buildCommunityDailyEntries(plugin);
         if (!days.length) return;
+        // Same tier-4 public gate as `days` above — hour_mode_mix is a
+        // companion rollup of the identical session store, not a separately
+        // gated field. Optional on the wire: the server accepts its absence.
+        const hourModeMix = await buildCommunityHourModeMixEntries(plugin);
 
         const response = await requestUrl({
             url: `${FUNCTIONS_BASE_URL}/community-daily-sync`,
@@ -686,7 +693,8 @@ export async function syncCommunityDailyIfEligible(plugin: RadialTimelinePlugin)
             body: JSON.stringify({
                 connection_id: current.connection.connectionId,
                 current_secret: currentSecret,
-                days
+                days,
+                hour_mode_mix: hourModeMix
             }),
             throw: false
         });

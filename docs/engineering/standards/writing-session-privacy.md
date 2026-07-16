@@ -108,6 +108,8 @@ type Audience = 'private' | 'friends' | 'community';
 projectPrivate(record): PrivateSessionLogRow         // full row
 projectFriends(record): FriendsSessionLogRow         // per-session, redacted
 projectCommunityDaily(records[]): CommunityDailyRow  // daily aggregate ONLY
+buildCommunityHourModeMix(records[], endDate)        // 28-day hour x mode
+                                                     // minutes rollup, UNDATED
 projectSessionFeedPost(record): SessionFeedPost      // authored public post,
                                                      // explicit per-save opt-in
 ```
@@ -119,6 +121,21 @@ post (equivalent to typing on the website feed), produced only when the
 author arms the per-save toggle at the top sharing level. It carries the
 stats headline and the note; it never carries paths, scene titles, book
 identity, ids, or exact timestamps.
+
+`buildCommunityHourModeMix` is a second community aggregate, alongside
+`projectCommunityDaily`, not a replacement: it rolls the trailing 28 days
+(inclusive of today) of session minutes into buckets keyed by the session's
+**local wall-clock start hour** (0-23, no timezone conversion — each
+author's own local hour is the point) and a folded mode (`drafting`,
+`revising` — absorbing `editing` — `planning`; unrecognized modes drop).
+Each session's full minutes attribute to its start hour only, no splitting
+across hour boundaries, and hours with zero activity are omitted. It carries
+**no calendar date at all** — only a recurring hour-of-day shape aggregated
+over the window — which makes it strictly less identifying than the
+day-precision `community` tier already permits. It ships as the optional
+`hour_mode_mix` field on the same daily sync payload and under the exact
+same tier-4 public gate as `projectCommunityDaily`'s `community_daily` rows;
+it is never gated separately and never introduces a new setting.
 
 **No fallbacks.** If a field cannot be safely projected, omit it. Never
 substitute "Untitled scene" or "Anonymous" — surface absence honestly. The

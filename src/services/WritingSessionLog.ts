@@ -10,6 +10,9 @@
  *   - projectPrivate(record):          full row, this device only
  *   - projectFriends(record, opts):    per-session row, sensitive fields stripped
  *   - projectCommunityDaily(rows[]):   daily aggregate, NEVER per-session
+ *   - buildCommunityHourModeMix(...):  28-day hour x mode minutes rollup,
+ *     NEVER per-session and NEVER dated — only a recurring local-hour habit
+ *     shape, aggregated across the trailing window.
  *   - projectSessionFeedPost(record):  author-composed public feed post — the
  *     ONLY exit that may carry `note`, and only because the author explicitly
  *     armed the per-save "post to community feed" toggle at the top sharing
@@ -392,4 +395,72 @@ export function buildCommunityDailyLog(params: {
     return [...byDay.entries()]
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([day, dayRecords]) => projectCommunityDaily(day, dayRecords));
+}
+
+// -- Community hour x mode rollup (trailing window, no date) -----------------
+
+/** Trailing window for the hour x mode community rollup, inclusive of today. */
+export const COMMUNITY_HOUR_MODE_MIX_WINDOW_DAYS = 28;
+
+/** Minutes per folded mode for one local hour bucket (0-23). */
+export interface CommunityHourModeMinutes {
+    drafting: number;
+    revising: number;
+    planning: number;
+}
+
+type HourModeKey = 'drafting' | 'revising' | 'planning';
+
+function zeroHourModeMinutes(): CommunityHourModeMinutes {
+    return { drafting: 0, revising: 0, planning: 0 };
+}
+
+/**
+ * Folds a session's mode into one of the three hour-dial buckets. `editing`
+ * folds into `revising` (line-edit time reads as revision on the dial); any
+ * other/unrecognized mode value is dropped rather than guessed at.
+ */
+function foldHourMode(mode: WritingSessionMode): HourModeKey | undefined {
+    if (mode === 'editing') return 'revising';
+    if (mode === 'drafting' || mode === 'revising' || mode === 'planning') return mode;
+    return undefined;
+}
+
+/**
+ * Trailing-28-day (inclusive of today) rollup of session minutes bucketed by
+ * the session's LOCAL wall-clock start hour (0-23 as a string key). "Local"
+ * means this device's own timezone at read time — no timezone conversion —
+ * because the community dial aggregates every writer's own local hour, not a
+ * shared clock. Each session's full minutes attribute to its start hour only
+ * (no splitting across hour boundaries). Hours with zero total activity are
+ * omitted entirely. Aggregate-only and undated, like `projectCommunityDaily`:
+ * NEVER per-session, no scene paths, no notes, no book identity, no calendar
+ * date — only a recurring hour-of-day shape.
+ */
+export function buildCommunityHourModeMix(params: {
+    records: WritingSessionRecord[];
+    endDate: string;
+}): Record<string, CommunityHourModeMinutes> {
+    const filtered = filterRecordsForWindow(params.records, {
+        endDate: params.endDate,
+        days: COMMUNITY_HOUR_MODE_MIX_WINDOW_DAYS,
+    });
+    const byHour = new Map<number, CommunityHourModeMinutes>();
+    for (const record of filtered) {
+        const started = new Date(record.startedAt);
+        if (Number.isNaN(started.getTime())) continue;
+        const minutes = Math.max(0, Math.round((record.elapsedMs ?? 0) / 60000));
+        if (minutes <= 0) continue;
+        const modeKey = foldHourMode(record.mode);
+        if (!modeKey) continue;
+        const hour = started.getHours();
+        const bucket = byHour.get(hour) ?? zeroHourModeMinutes();
+        bucket[modeKey] += minutes;
+        byHour.set(hour, bucket);
+    }
+    const out: Record<string, CommunityHourModeMinutes> = {};
+    [...byHour.keys()].sort((a, b) => a - b).forEach(hour => {
+        out[String(hour)] = byHour.get(hour) as CommunityHourModeMinutes;
+    });
+    return out;
 }

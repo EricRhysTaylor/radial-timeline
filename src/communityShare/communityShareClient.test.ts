@@ -475,6 +475,7 @@ describe('Community Share activation client', () => {
             connection_id: string;
             current_secret: string;
             days: Array<Record<string, unknown>>;
+            hour_mode_mix: Record<string, { drafting: number; revising: number; planning: number }>;
         };
         expect(body.connection_id).toBe('conn-1');
         expect(body.current_secret).toBe('rtcs_current-secret');
@@ -486,6 +487,11 @@ describe('Community Share activation client', () => {
         expect(todayEntry?.session_count).toBe(1);
         expect(todayEntry?.mode_mix).toEqual({ drafting: 100 });
         expect(todayEntry?.scenes_completed_by_stage).toEqual({ Zero: 0, Author: 0, House: 0, Press: 0 });
+        // Companion trailing-28-day hour x mode rollup rides the same sync,
+        // same tier-4 gate, no separate opt-in.
+        const startHour = new Date(`${todayKey}T09:00:00.000Z`).getHours();
+        expect(body.hour_mode_mix[String(startHour)]).toEqual({ drafting: 63, revising: 0, planning: 0 });
+        expect(Object.keys(body.hour_mode_mix)).toHaveLength(1);
         // Aggregates only — no session ids, paths, or timestamps on the wire.
         expect(request.body).not.toContain('session-1');
         expect(request.body).not.toContain('T09:00');

@@ -6,6 +6,10 @@ import type {
     WritingSessionMode
 } from '../types/settings';
 import { buildDailyWritingStats, type WritingRangeStats } from '../services/WritingSessionService';
+import {
+    buildCommunityHourModeMix,
+    type CommunityHourModeMinutes
+} from '../services/WritingSessionLog';
 import type { TimelineItem } from '../types';
 import { buildProgressSnapshot } from '../progress/progressSnapshot';
 import { STAGE_ORDER, type Stage } from '../utils/constants';
@@ -217,6 +221,24 @@ export async function buildCommunityDailyEntries(
         });
     }
     return entries;
+}
+
+/**
+ * Optional companion field on the daily sync payload: a trailing-28-day
+ * (inclusive of today) rollup of session minutes by local start hour and
+ * folded mode (drafting/revising/planning — `editing` folds into
+ * `revising`), for the community "activity dial." Reads the same vault-wide
+ * session records `buildCommunityDailyEntries` reads and delegates to the
+ * canonical `buildCommunityHourModeMix` projection in WritingSessionLog, so
+ * it can never drift from — or duplicate — the plugin's own session store.
+ * Ships under the exact same tier-4 public gate as the rest of the daily
+ * sync; callers must not send it under any other condition.
+ */
+export async function buildCommunityHourModeMixEntries(
+    plugin: RadialTimelinePlugin
+): Promise<Record<string, CommunityHourModeMinutes>> {
+    const sessions = plugin.getWritingSessionService().getSettings().records;
+    return buildCommunityHourModeMix({ records: sessions, endDate: localDateString() });
 }
 
 export async function buildCommunitySharePreview(plugin: RadialTimelinePlugin): Promise<CommunitySharePreviewBuild> {

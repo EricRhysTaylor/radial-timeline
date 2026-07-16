@@ -399,9 +399,9 @@ export class RadialTimelineView extends ItemView {
             doc.body.appendChild(sessionPanel);
             this.register(() => sessionPanel.remove());
 
-            // Discord presence chip: fetch/timer state outlives panel re-renders.
-            // Wake events refetch presence (laptop-asleep case).
-            this.discordChip = new DiscordChip(this.plugin);
+            // Discord presence chip (shown to every user): fetch/timer state
+            // outlives panel re-renders. Wake events refetch presence.
+            this.discordChip = new DiscordChip();
             this.register(() => {
                 this.discordChip?.destroy();
                 this.discordChip = undefined;
@@ -846,8 +846,7 @@ export class RadialTimelineView extends ItemView {
             this.pulseWritingSessionTitleCount(pulseColor);
         }
         this.writingSessionLastTitlePulseKey = snapshot.pulseKey;
-        // Keep the title-bar Discord chip's presence in step with a community
-        // connect/disconnect made while the view is open (cheap; no-op once
+        // Ensure the title-bar Discord chip stays mounted (cheap; no-op once
         // mounted — the chip's own poll drives its content).
         this.discordChip?.sync();
         this.syncOpenWritingSessionPanel();

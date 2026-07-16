@@ -13,15 +13,14 @@
  * ({ online, url }) — presence comes from Discord itself (via Lanyard), the
  * invite URL from the office_hours config row. This module never guesses.
  *
- * Trust rules (inherited from the office-hours chip, spec §5): absence by
- * choice (community connect off) is silent — no chip at all. Failure is
- * quiet — a fetch error reads as offline (muted), the chip is NEVER green
- * on stale data, and alerts never escalate to an Obsidian Notice.
+ * Shown to EVERY plugin user (decision 2026-07-16) — the Discord community is
+ * open to all, so unlike the office-hours chip there is no community-connect
+ * gate. Failure is quiet — a fetch error reads as offline (muted), the chip
+ * is NEVER green on stale data, and alerts never escalate to an Obsidian
+ * Notice.
  */
 
 import { requestUrl } from 'obsidian';
-import type RadialTimelinePlugin from '../main';
-import { normalizeCommunityShareSettings } from './communityShareSettings';
 import { tooltip as applyTooltip } from '../utils/tooltip';
 
 const DISCORD_PRESENCE_URL = 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/functions/v1/discord-presence';
@@ -43,7 +42,6 @@ function isPresenceAnswer(value: unknown): value is PresenceAnswer {
 }
 
 export class DiscordChip {
-    private readonly plugin: RadialTimelinePlugin;
     private data: PresenceAnswer | null = null;
     private lastSuccessAt = 0; // last successful refresh — the freshness clock
     private lastAttemptAt = 0; // last fetch attempt (wake debounce)
@@ -53,17 +51,8 @@ export class DiscordChip {
     private fetching = false;
     private destroyed = false;
 
-    constructor(plugin: RadialTimelinePlugin) {
-        this.plugin = plugin;
+    constructor() {
         void this.refetch(); // refetch on load
-    }
-
-    /** Signed in (connected) AND the community connect toggle is on. */
-    private eligible(): boolean {
-        const cs = normalizeCommunityShareSettings(this.plugin.settings.communityShare);
-        return cs.enabled
-            && cs.connection.status === 'connected'
-            && Boolean(cs.connection.connectionId);
     }
 
     /**
@@ -77,14 +66,13 @@ export class DiscordChip {
     }
 
     /**
-     * Ensure the chip element exists iff eligible, then let update() paint it.
-     * Cheap and idempotent — safe to call on the session tick to catch a
-     * community connect/disconnect. A fresh connection re-arms the poll.
+     * Ensure the chip element exists, then let update() paint it. Cheap and
+     * idempotent — safe to call on the session tick.
      */
     sync(): void {
         const host = this.host;
         if (!host) return;
-        if (this.destroyed || !this.eligible()) {
+        if (this.destroyed) {
             this.el?.remove();
             this.el = null;
             return;
@@ -94,13 +82,12 @@ export class DiscordChip {
         el.rel = 'noopener';
         this.el = el;
         this.update();
-        // Just became eligible with no armed poll (toggle flipped on) — refresh.
         if (this.timer === null) void this.refetch();
     }
 
     /** Refetch on window focus / visibilitychange (laptop-was-asleep case). */
     onWake(): void {
-        if (this.destroyed || !this.eligible()) return;
+        if (this.destroyed) return;
         if (Date.now() - this.lastAttemptAt < WAKE_REFETCH_GAP_MS) return;
         void this.refetch();
     }
@@ -117,10 +104,6 @@ export class DiscordChip {
 
     private async refetch(): Promise<void> {
         if (this.destroyed || this.fetching) return;
-        if (!this.eligible()) {
-            this.clearTimer();
-            return;
-        }
         this.fetching = true;
         this.lastAttemptAt = Date.now();
         try {
@@ -150,7 +133,7 @@ export class DiscordChip {
 
     private armTimer(): void {
         this.clearTimer();
-        if (this.destroyed || !this.eligible()) return;
+        if (this.destroyed) return;
         this.timer = window.setTimeout(() => void this.refetch(), POLL_MS + Math.random() * JITTER_MS);
     }
 
@@ -160,7 +143,7 @@ export class DiscordChip {
         const el = this.el;
         if (!el || !el.isConnected) return;
         const data = this.data;
-        if (!this.eligible() || !data) {
+        if (!data) {
             el.classList.add('ert-hidden');
             return;
         }

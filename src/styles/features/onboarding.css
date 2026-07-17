@@ -289,7 +289,8 @@
 /* Issue rows carry their message inside the collapsed row — slightly taller,
    message under the title line. */
 .ert-ui .ert-onb-scene__status {
-  padding: 0 var(--ert-pad-cozy) var(--ert-pad-sm) calc(var(--ert-pad-cozy) + 28px);
+  /* Balanced vertical spacing so the message never butts against the row border. */
+  padding: var(--ert-gap-xs) var(--ert-pad-cozy) var(--ert-pad-sm) calc(var(--ert-pad-cozy) + 28px);
   font-size: 12px;
   line-height: 1.4;
 }

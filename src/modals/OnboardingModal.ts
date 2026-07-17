@@ -165,7 +165,7 @@ export class OnboardingModal extends Modal {
     if (!this.model) return;
     const { contentEl } = this;
     contentEl.empty();
-    this.renderStageHeader(2, 'Confirm scenes', 'Files with scene-break markers split automatically. For unmarked prose, let AI propose the breaks, then adjust. Nothing is written yet.');
+    this.renderStageHeader(2, 'Confirm scenes', 'Files with scene-break markers split automatically. For unmarked prose, let AI propose the breaks, then adjust.');
 
     // One split plan per source file (built once; edits persist across re-render).
     const scenes = flattenScenes(this.model);
@@ -428,7 +428,7 @@ export class OnboardingModal extends Modal {
     this.abortController = new AbortController();
     const { contentEl } = this;
     contentEl.empty();
-    this.renderStageHeader(2, 'Reading scenes', 'Filling in each scene’s details — synopsis, characters, places, timing. Nothing is written yet.');
+    this.renderStageHeader(2, 'Reading scenes', 'Filling in each scene’s details — synopsis, characters, places, timing.');
 
     const progressWrap = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
     const statusEl = progressWrap.createDiv({ cls: 'ert-muted', text: 'Surveying the whole book…' });
@@ -475,7 +475,7 @@ export class OnboardingModal extends Modal {
     this.renderStageHeader(
       3,
       'Review',
-      `${ok.length} scenes ready${flagged.length ? `, ${flagged.length} with flagged guesses` : ''}${failed.length ? `, ${failed.length} failed` : ''}. Expand a scene to see how it maps into the Radial Timeline template. Nothing is written until you apply.`
+      `${ok.length} scenes ready${flagged.length ? `, ${flagged.length} with flagged guesses` : ''}${failed.length ? `, ${failed.length} failed` : ''}. Expand a scene to see how it maps into the Radial Timeline template — Apply writes the book.`
     );
 
     // Accordion: one detailed card open, the rest collapsed in a scroll view.

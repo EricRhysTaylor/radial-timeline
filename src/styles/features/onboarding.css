@@ -46,13 +46,25 @@
    classes (see rt-ui.css) so onboarding headers match every other ERT modal.
    These onboarding classes are layout hooks only. */
 
+/* Top bar: modal pill (left) and stage step indicator (right) on one line. */
+.ert-ui .ert-onb-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ert-gap-sm);
+  margin-bottom: var(--ert-gap-sm);
+}
+
+/* The pill's own bottom margin is redundant inside the flex top bar. */
+.ert-ui .ert-onb-topbar .ert-modal-badge {
+  margin-bottom: 0;
+}
+
 .ert-ui .ert-onb-steps {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: var(--ert-gap-xs);
-  align-self: flex-start;
-  margin-top: var(--ert-gap-xs);
 }
 
 .ert-ui .ert-onb-step {

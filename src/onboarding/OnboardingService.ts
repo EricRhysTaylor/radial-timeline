@@ -67,6 +67,8 @@ export interface PreflightResult {
   ok: boolean;
   tier: number;
   reason: string;
+  /** The active local model id (for the modal's header pill), when reachable. */
+  modelId?: string;
 }
 
 export interface SceneProposal {
@@ -159,9 +161,10 @@ export class OnboardingService {
         ok: false,
         tier: capability.tier,
         reason: `Local model is ${capability.tierName} — onboarding needs tier 2 or higher.`,
+        modelId: diagnostics.modelId,
       };
     }
-    return { ok: true, tier: capability.tier, reason: capability.tierSummary };
+    return { ok: true, tier: capability.tier, reason: capability.tierSummary, modelId: diagnostics.modelId };
   }
 
   /** Parse a folder of prose notes into a Manuscript Model (reading order resolved). */

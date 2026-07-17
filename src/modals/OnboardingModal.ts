@@ -47,6 +47,12 @@ function stripWikiLink(value: string): string {
   return value.replace(/^\[\[/, '').replace(/\]\]$/, '');
 }
 
+/** Local model ids can be full filesystem paths — show just the leaf name in the header pill. */
+function abbreviateModelId(id: string): string {
+  const leaf = (id || '').trim().split(/[\\/]/).pop() ?? '';
+  return leaf.replace(/\.(gguf|safetensors|bin)$/i, '');
+}
+
 /** First `max` chars of a paragraph for the split-editor preview, with an ellipsis. */
 function truncateText(text: string, max: number): string {
   const collapsed = text.replace(/\s+/g, ' ').trim();
@@ -71,6 +77,8 @@ export class OnboardingModal extends Modal {
   private createCharacters = false;
   private createPlaces = false;
   private generateSummaries = false;
+  /** Abbreviated local model name for the header pill (set once preflight runs). */
+  private modelLabel = '';
   private abortController: AbortController | null = null;
 
   constructor(app: App, plugin: RadialTimelinePlugin) {
@@ -116,6 +124,7 @@ export class OnboardingModal extends Modal {
       preflightOk = preflight.ok;
       preflightReason = preflight.reason;
       tier = preflight.tier;
+      if (preflight.modelId) this.modelLabel = abbreviateModelId(preflight.modelId);
     } catch (error) {
       preflightReason = error instanceof Error ? error.message : String(error);
     }
@@ -773,6 +782,19 @@ export class OnboardingModal extends Modal {
    */
   private renderStageHeader(stage: number, title: string, subtitle?: string): void {
     const total = 4;
+
+    // Top bar: canonical modal pill (modal name · local model) on the left,
+    // stage step indicator on the right, same line.
+    const topbar = this.contentEl.createDiv({ cls: 'ert-onb-topbar' });
+    const badgeText = this.modelLabel ? `Onboarding · ${this.modelLabel}` : 'Onboarding';
+    topbar.createSpan({ cls: 'ert-modal-badge', text: badgeText });
+    const steps = topbar.createDiv({ cls: 'ert-onb-steps', attr: { 'aria-label': `Step ${stage} of ${total}` } });
+    for (let i = 1; i <= total; i++) {
+      const pip = steps.createSpan({ cls: 'ert-onb-step' });
+      if (i < stage) pip.addClass('is-done');
+      else if (i === stage) pip.addClass('is-current');
+    }
+
     const header = this.contentEl.createDiv({ cls: 'ert-onb-stage' });
     header.createDiv({ cls: 'ert-onb-stage__num', text: String(stage) });
     const titles = header.createDiv({ cls: 'ert-onb-stage__titles' });
@@ -780,12 +802,6 @@ export class OnboardingModal extends Modal {
     // other ERT modal; the onboarding classes only carry layout.
     titles.createDiv({ cls: 'ert-modal-title ert-onb-stage__title', text: `${title}` });
     if (subtitle) titles.createDiv({ cls: 'ert-modal-subtitle ert-onb-stage__subtitle', text: subtitle });
-    const steps = header.createDiv({ cls: 'ert-onb-steps', attr: { 'aria-label': `Step ${stage} of ${total}` } });
-    for (let i = 1; i <= total; i++) {
-      const pip = steps.createSpan({ cls: 'ert-onb-step' });
-      if (i < stage) pip.addClass('is-done');
-      else if (i === stage) pip.addClass('is-current');
-    }
   }
 
   private renderBusy(message: string): void {

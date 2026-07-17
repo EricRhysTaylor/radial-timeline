@@ -12,9 +12,8 @@ import { clampActNumber } from '../utils/acts';
 import type { Stage } from '../utils/constants';
 
 export interface SurveyResult {
-  acts: Array<{ act: number; startsAtScene: string }>;
+  /** The book's capped subplot vocabulary (4–14, "Main Plot" first). */
   subplots: string[];
-  scenes: Array<{ fileName: string; isScene: boolean }>;
 }
 
 export interface SceneExtraction {
@@ -65,23 +64,13 @@ export function parseSurveyResult(raw: string | null | undefined): ParseResult<S
   if (typeof obj !== 'object' || obj === null) {
     return { ok: false, error: 'Survey response was not an object.' };
   }
-  const acts = Array.isArray(obj.acts)
-    ? obj.acts
-        .filter((a): a is Record<string, unknown> => typeof a === 'object' && a !== null)
-        .map((a) => ({
-          act: typeof a.act === 'number' ? a.act : 1,
-          startsAtScene: typeof a.startsAtScene === 'string' ? a.startsAtScene : '',
-        }))
-    : [];
-  const scenes = Array.isArray(obj.scenes)
-    ? obj.scenes
-        .filter((s): s is Record<string, unknown> => typeof s === 'object' && s !== null)
-        .map((s) => ({
-          fileName: typeof s.fileName === 'string' ? s.fileName : '',
-          isScene: s.isScene !== false, // default to scene unless explicitly false
-        }))
-    : [];
-  return { ok: true, value: { acts, subplots: capSubplotVocabulary(asStringArray(obj.subplots)), scenes } };
+  const names = asStringArray(obj.subplots);
+  // No usable subplots is a real failure, not a one-thread book — surface it so
+  // the caller falls back visibly instead of silently landing on Main Plot.
+  if (names.length === 0) {
+    return { ok: false, error: 'Survey returned no subplots.' };
+  }
+  return { ok: true, value: { subplots: capSubplotVocabulary(names) } };
 }
 
 /** Timeline rings stay legible up to this many subplots (Eric: 4–14 major threads). */

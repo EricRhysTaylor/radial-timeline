@@ -70,7 +70,7 @@ export class OnboardingModal extends Modal {
   /** Per-file split proposals, keyed by sourceRef; edited at Checkpoint 1. */
   private splitPlans: Map<string, ScenePlan> = new Map();
   /** Per-file auto-split outcomes; null until "Auto-split with AI" has run. */
-  private splitOutcomes: Map<string, 'split' | 'failed'> | null = null;
+  private splitOutcomes: Map<string, 'split' | 'failed' | 'fallback'> | null = null;
   private publishStage: Stage = 'Press';
   // Extra work beyond scenes — all off by default so the core run is just
   // "split into scene notes with YAML + Synopsis". The author opts in.
@@ -301,9 +301,12 @@ export class OnboardingModal extends Modal {
     } else if (plan.alreadyOnboarded) {
       card.addClass('is-warn');
       statusText = 'Already onboarded — this file will be skipped.';
+    } else if (this.splitOutcomes?.get(plan.sourceRef) === 'fallback') {
+      card.addClass('is-warn');
+      statusText = 'AI couldn’t find clean breaks, so this was split into even parts — open the row to adjust.';
     } else if (this.splitOutcomes?.get(plan.sourceRef) === 'failed') {
       card.addClass('is-warn');
-      statusText = 'AI could not place breaks here — open the row to add them by hand.';
+      statusText = 'Couldn’t split this file — open the row to place breaks by hand.';
     } else if (this.splitOutcomes) {
       card.addClass('is-ok');
     }

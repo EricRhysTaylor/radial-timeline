@@ -669,6 +669,27 @@ Doctrine fit: no new abstraction layer beyond the adapters, no fallback chains
   scene to Main Plot); and Review now says plainly when the survey failed
   instead of letting the timeline look broken.
 
+- **2026-07-16 (local-LLM viability: bound the global asks)** — a third full run
+  still failed the survey (all Main Plot) and left Book III one unsplit scene
+  with a hand-break prompt. Root-cause reframe, now the guiding principle:
+  **local models do bounded per-scene work well (the 109 synopses/titles were
+  genuinely good) and fail at hold-the-whole-book, emit-a-huge-structure asks.**
+  So global steps must be deterministic or tiny. Fixes: **(1) Survey slimmed to
+  a ONE-FIELD schema** (`subplots` only) over a **sampled** ~30 openings — the
+  old schema forced a 109-element per-scene classification array + acts in one
+  strict-JSON call, which is what actually broke and collapsed everything to
+  Main Plot. Acts are positional; single-file units are all prose; the per-scene
+  classification was dropped. Survey now *fails loudly* (empty subplots →
+  error) instead of silently degrading. **(2) Split fallback is automatic** —
+  a unit the AI can't break is deterministically even-split (~9k chars/scene,
+  `FALLBACK_SCENE_CHAR_TARGET`), never left whole for the author to hand-break;
+  the row says "split into even parts — open to adjust" (outcome `fallback`),
+  reserving the hand-break message for the rare true failure. The Book III comma
+  was faithful (Homer's sentence straddles the III/IV boundary) — it only looked
+  wrong because the book hadn't split. Open lever for the global steps that stay
+  hard: allow an optional cloud model for JUST the subplot survey when a key is
+  present (per-scene stays local).
+
 ## Appendix A — Canonical onboarding prompt (instruction block)
 
 Source of truth for this text is **Supabase** (see "The Onboarding Prompt —

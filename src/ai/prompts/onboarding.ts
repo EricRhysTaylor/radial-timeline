@@ -84,26 +84,14 @@ RULES
 // Corpus survey — one structured call over the whole book.
 // ---------------------------------------------------------------------------
 
+// Deliberately a ONE-FIELD schema. Asking a local model for a long per-scene
+// array (acts, scene classification) in one strict-JSON call is where the survey
+// failed and collapsed every subplot to Main Plot. Acts are positional (computed
+// downstream); single-file units are all prose. We want only the subplot list.
 const ONBOARDING_SURVEY_SCHEMA = {
   type: 'object',
   additionalProperties: false,
   properties: {
-    acts: {
-      type: 'array',
-      description: 'Probable act boundaries. One entry per act, in order.',
-      items: {
-        type: 'object',
-        additionalProperties: false,
-        properties: {
-          act: { type: 'number', description: 'Act number, starting at 1' },
-          startsAtScene: {
-            type: 'string',
-            description: 'File name of the scene this act begins on',
-          },
-        },
-        required: ['act', 'startsAtScene'],
-      },
-    },
     subplots: {
       type: 'array',
       description:
@@ -111,37 +99,21 @@ const ONBOARDING_SURVEY_SCHEMA = {
         'These are the only subplot names scenes may use. No commas in names.',
       items: { type: 'string' },
     },
-    scenes: {
-      type: 'array',
-      description: 'Per-file classification: prose scene vs. non-scene (character/place/research note).',
-      items: {
-        type: 'object',
-        additionalProperties: false,
-        properties: {
-          fileName: { type: 'string' },
-          isScene: { type: 'boolean' },
-        },
-        required: ['fileName', 'isScene'],
-      },
-    },
   },
-  required: ['acts', 'subplots', 'scenes'],
+  required: ['subplots'],
 } as const;
 
 export function getOnboardingSurveyJsonSchema(): Record<string, unknown> {
   return ONBOARDING_SURVEY_SCHEMA;
 }
 
-/** Task instructions for the survey call (derived from the canonical rules). */
+/** Task instructions for the survey call — subplot vocabulary ONLY (small, reliable). */
 export function getOnboardingSurveyInstructions(): string {
   return [
-    'Survey a whole manuscript to establish shared structure before per-scene extraction.',
-    'From the ordered file list and each scene opening, determine: probable act boundaries',
-    '(Radial Timeline defaults to 3 acts — pick a practical number), the book\'s subplot',
-    'vocabulary, and whether each file is a prose scene or a non-scene note',
-    '(character sheet, place, research). Do not read or rewrite prose.',
+    'You are given a sample of scene openings from across ONE book, in reading order.',
+    'From them, name the book\'s subplot vocabulary. Return ONLY that list — nothing else.',
     '',
-    'SUBPLOT VOCABULARY — this is the hard part; be disciplined:',
+    'SUBPLOT VOCABULARY — this is the whole task; be disciplined:',
     '- Return between 4 and 14 subplots for the WHOLE book. "Main Plot" is always first.',
     '- "Main Plot" is the LOGLINE — the key movement of the whole story (the Odyssey\'s:',
     '  the hero\'s return home to his wife; Interstellar\'s: saving humanity by finding a',
@@ -164,9 +136,9 @@ export interface SurveySceneInput {
 
 export function buildOnboardingSurveyPrompt(scenes: SurveySceneInput[]): string {
   const list = scenes
-    .map((scene, i) => `${i + 1}. ${scene.fileName}\n   ${scene.opening.trim()}`)
+    .map((scene, i) => `${i + 1}. ${scene.opening.trim()}`)
     .join('\n');
-  return `Manuscript files in reading order (file name + opening):\n${list}`;
+  return `Scene openings sampled across the book, in reading order:\n${list}`;
 }
 
 // ---------------------------------------------------------------------------

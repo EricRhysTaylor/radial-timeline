@@ -135,11 +135,21 @@ const OVERRIDES = { temperature: 0.1, jsonStrict: true } as const;
 const ENTITY_GROUNDING_CHAR_BUDGET = 12000;
 
 /**
- * A still-unsplit unit larger than this gets a deterministic paragraph split so
- * per-scene extraction can't blow the context window (~10k tokens; Book XXIV
- * failed whole at ~21k tokens against a 17k threshold).
+ * When the AI split leaves a unit whole, fall back to a deterministic split
+ * targeting ~this many chars per scene (~1.3k words) — so a book that couldn't
+ * be split automatically still becomes several scenes instead of one giant one
+ * the author has to hand-break. Also keeps per-scene extraction inside context.
  */
-const FORCED_SPLIT_CHAR_LIMIT = 40000;
+const FALLBACK_SCENE_CHAR_TARGET = 9000;
+
+/** Pick up to `max` evenly-spaced items across an array (endpoints included). */
+function sampleEvenly<T>(items: T[], max: number): T[] {
+  if (items.length <= max) return items;
+  const step = items.length / max;
+  const out: T[] = [];
+  for (let i = 0; i < max; i++) out.push(items[Math.min(items.length - 1, Math.floor(i * step))]);
+  return out;
+}
 
 export class OnboardingService {
   constructor(private readonly plugin: RadialTimelinePlugin) {}
@@ -198,13 +208,13 @@ export class OnboardingService {
   async survey(model: ManuscriptModel): Promise<SurveyResult | null> {
     const scenes = this.candidateScenes(model);
     if (scenes.length === 0) return null;
-    // Keep the survey prompt bounded: at 100+ scenes, 80-word openings blow the
-    // context and the whole survey fails — which collapses every subplot to
-    // Main Plot downstream. Shorter openings at scale keep the call reliable.
-    const openingLength = scenes.length > 40 ? 25 : 80;
-    const surveyInput = scenes.map((scene) => ({
+    // Naming subplots is a whole-book gestalt task — a representative SAMPLE of
+    // openings is plenty, and keeping the prompt small (input AND, via the
+    // one-field schema, output) is what makes the call reliable on a local model.
+    const sampled = sampleEvenly(scenes, 30);
+    const surveyInput = sampled.map((scene) => ({
       fileName: basename(scene.sourceRef),
-      opening: openingWords(scene.rawText, openingLength),
+      opening: openingWords(scene.rawText, 40),
     }));
     try {
       const result = await getAIClient(this.plugin).run({
@@ -235,9 +245,6 @@ export class OnboardingService {
   ): Promise<SceneProposal[]> {
     const actCount = Math.max(3, this.plugin.settings.actCount ?? 3);
     const scenes = this.candidateScenes(model);
-    const nonScenes = new Set(
-      (survey?.scenes ?? []).filter((entry) => !entry.isScene).map((entry) => entry.fileName)
-    );
     const subplotVocabulary = survey?.subplots ?? [];
     const aiClient = getAIClient(this.plugin);
     const proposals: SceneProposal[] = [];
@@ -249,8 +256,6 @@ export class OnboardingService {
       // fall back to the filename when the source didn't provide one.
       const title = scene.title ?? titleFromFileName(basename(scene.sourceRef));
       options.onProgress?.(i + 1, scenes.length, title);
-
-      if (nonScenes.has(basename(scene.sourceRef))) continue; // classified as a non-scene note
 
       try {
         const result = await aiClient.run({
@@ -323,11 +328,11 @@ export class OnboardingService {
    * Returns per-file outcomes keyed by sourceRef so the checkpoint can show
    * exactly which files the AI split and which it could not.
    */
-  async proposeSplits(plans: ScenePlan[], options: SplitOptions = {}): Promise<Map<string, 'split' | 'failed'>> {
+  async proposeSplits(plans: ScenePlan[], options: SplitOptions = {}): Promise<Map<string, 'split' | 'failed' | 'fallback'>> {
     const targets = plans.filter(
       (plan) => !plan.alreadyOnboarded && plan.paragraphs.length > 1 && plan.breaks.length === 0
     );
-    const outcomes = new Map<string, 'split' | 'failed'>();
+    const outcomes = new Map<string, 'split' | 'failed' | 'fallback'>();
     const aiClient = getAIClient(this.plugin);
     for (let i = 0; i < targets.length; i++) {
       if (options.signal?.aborted) break;
@@ -360,14 +365,14 @@ export class OnboardingService {
       } catch {
         // best-effort — leave this file's breaks unchanged
       }
-      // Safety net: if the model left an oversized unit whole, split it
-      // deterministically at paragraph boundaries so per-scene extraction can't
-      // blow the context window (Book XXIV failed whole at ~21k tokens). The
-      // outcome stays 'failed' so the review still draws the author's eye to it.
+      // The AI couldn't place breaks — never leave a whole book as one scene for
+      // the author to hand-break. Fall back to a deterministic even split so it
+      // still becomes several scenes; the author refines boundaries if they want.
       if (plan.breaks.length === 0) {
-        const totalChars = plan.paragraphs.reduce((sum, paragraph) => sum + paragraph.length + 2, 0);
-        if (totalChars > FORCED_SPLIT_CHAR_LIMIT) {
-          plan.breaks = forcedEvenBreaks(plan.paragraphs, FORCED_SPLIT_CHAR_LIMIT);
+        const fallback = forcedEvenBreaks(plan.paragraphs, FALLBACK_SCENE_CHAR_TARGET);
+        if (fallback.length > 0) {
+          plan.breaks = fallback;
+          outcomes.set(plan.sourceRef, 'fallback');
         }
       }
     }

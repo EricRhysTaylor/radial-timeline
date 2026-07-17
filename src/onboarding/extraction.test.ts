@@ -140,24 +140,16 @@ describe('parseEntityEnrichment', () => {
 });
 
 describe('parseSurveyResult', () => {
-  it('parses a well-formed survey', () => {
-    const raw = JSON.stringify({
-      acts: [{ act: 1, startsAtScene: '01 A.md' }],
-      subplots: ['Main Plot'],
-      scenes: [{ fileName: '01 A.md', isScene: true }],
-    });
+  it('parses a subplots-only survey and caps the vocabulary', () => {
+    const raw = JSON.stringify({ subplots: ['Main Plot', 'Revenge', 'Homecoming'] });
     const result = parseSurveyResult(raw);
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.value.subplots).toEqual(['Main Plot']);
+    if (result.ok) expect(result.value.subplots).toEqual(['Main Plot', 'Revenge', 'Homecoming']);
   });
 
-  it('defaults isScene to true when omitted, false only when explicit', () => {
-    const raw = JSON.stringify({ scenes: [{ fileName: 'a' }, { fileName: 'b', isScene: false }] });
-    const result = parseSurveyResult(raw);
-    if (result.ok) {
-      expect(result.value.scenes[0].isScene).toBe(true);
-      expect(result.value.scenes[1].isScene).toBe(false);
-    }
+  it('fails when subplots is missing or empty (real failure, not a one-thread book)', () => {
+    expect(parseSurveyResult(JSON.stringify({ subplots: [] })).ok).toBe(false);
+    expect(parseSurveyResult(JSON.stringify({})).ok).toBe(false);
   });
 
   it('fails on non-JSON', () => {

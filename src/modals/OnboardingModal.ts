@@ -303,16 +303,17 @@ export class OnboardingModal extends Modal {
     head.createSpan({ cls: 'ert-onb-scene__idx', text: String(displayIndex).padStart(2, '0') });
     head.createSpan({ cls: 'ert-onb-scene__title', text: plan.baseTitle ?? plan.sourceRef });
     const meta = head.createDiv({ cls: 'ert-onb-scene__meta' });
+    // "Section titles", never "beats" — beats is the story-structure system
+    // (Save the Cat etc.) elsewhere in RT; these are TOC-style titles parsed
+    // from the chapter's argument line that become scene titles on split.
+    // Titles sit left of the scene-count pill (the count is the primary status).
+    if (plan.labels.length > 0) meta.createSpan({ cls: 'ert-onb-flag', text: `❖ ${plan.labels.length} title${plan.labels.length === 1 ? '' : 's'}` });
     const countPill = meta.createSpan({ cls: 'ert-badgePill ert-onb-pill--act' });
     const refreshCount = (): void => {
       const n = segmentCount(plan);
       countPill.setText(plan.alreadyOnboarded ? 'skip' : `${n} scene${n === 1 ? '' : 's'}`);
     };
     refreshCount();
-    // "Section titles", never "beats" — beats is the story-structure system
-    // (Save the Cat etc.) elsewhere in RT; these are TOC-style titles parsed
-    // from the chapter's argument line that become scene titles on split.
-    if (plan.labels.length > 0) meta.createSpan({ cls: 'ert-onb-flag', text: `❖ ${plan.labels.length} title${plan.labels.length === 1 ? '' : 's'}` });
     const caret = meta.createSpan({ cls: 'ert-onb-caret' });
     setIcon(caret, 'chevron-right');
 

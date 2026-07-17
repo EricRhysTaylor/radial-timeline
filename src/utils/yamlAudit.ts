@@ -320,18 +320,29 @@ export async function runYamlAudit(options: YamlAuditOptions): Promise<YamlAudit
         'currentSceneAnalysis',
         'nextSceneAnalysis',
     ]);
+    // AI off: the AI schema keys are TOLERATED, not required and not extra.
+    // Dropping them from allTemplateKeys stops the audit demanding them, but a
+    // scene that already carries them (template-seeded, or from a past AI run)
+    // must stay clean — flagging them "extra" would route every such scene into
+    // the repair flow and invite deleting the author's existing analysis.
     if (noteType === 'Scene' && !aiEnabled) {
         for (const key of sceneAiSchemaKeys) {
             allTemplateKeys.delete(key);
         }
         canonicalOrder = canonicalOrder.filter((key) => !sceneAiSchemaKeys.has(key));
     }
+    const isToleratedAiKey = (key: string): boolean =>
+        noteType === 'Scene' && !aiEnabled && sceneAiSchemaKeys.has(key);
 
     const mappings = getActiveFrontmatterMappings(settings);
     const sceneTitleIndex = noteType === 'Backdrop' ? collectSceneTitleIndex(app, settings) : [];
 
-    // Build the known-key set for the safety scanner (template + dynamic keys)
+    // Build the known-key set for the safety scanner (template + dynamic keys).
+    // AI keys stay known even when AI is off — they are RT-owned schema.
     const knownKeysForSafety = new Set<string>([...allTemplateKeys]);
+    if (noteType === 'Scene') {
+        for (const key of sceneAiSchemaKeys) knownKeysForSafety.add(key);
+    }
     // Add common Obsidian-internal keys
     for (const k of ['position', 'cssclasses', 'tags', 'aliases']) knownKeysForSafety.add(k);
 
@@ -396,9 +407,10 @@ export async function runYamlAudit(options: YamlAuditOptions): Promise<YamlAudit
         const referenceId = readReferenceId(rawFm) ?? readReferenceId(fm);
         const missingReferenceId = !referenceId;
 
-        // Extra: note keys not in any template and not excluded
+        // Extra: note keys not in any template and not excluded. Tolerated AI
+        // keys (AI off) are never extra — see the tolerance note above.
         const extraKeys = noteKeys.filter(k =>
-            !allTemplateKeys.has(k) && !excludeKey(k)
+            !allTemplateKeys.has(k) && !excludeKey(k) && !isToleratedAiKey(k)
         );
 
         // Order drift: only evaluated when no fields are missing

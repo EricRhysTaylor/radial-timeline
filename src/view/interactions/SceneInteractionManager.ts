@@ -461,8 +461,13 @@ export class SceneInteractionManager {
         const hoveredData = actElements.find(e => e.id === hoveredGroup.id);
         if (!hoveredData) return;
         
-        const hoveredMidR = (hoveredData.innerRadius + hoveredData.outerRadius) / 2;
-        const currentArcPx = (hoveredData.endAngle - hoveredData.startAngle) * hoveredMidR;
+        // Measure fit at the title's actual render radius (outerR - inset), not the
+        // ring mid-radius — on thick rings (e.g. a single subplot) midR sits far below
+        // the text path and computing angle = arc/midR over-expands the slice.
+        const hoveredInsetAttr = hoveredGroup.getAttribute('data-title-inset');
+        const hoveredTitleInset = hoveredInsetAttr ? Number(hoveredInsetAttr) : SCENE_TITLE_INSET;
+        const hoveredTitleR = Math.max(hoveredData.innerRadius, hoveredData.outerRadius - hoveredTitleInset);
+        const currentArcPx = (hoveredData.endAngle - hoveredData.startAngle) * hoveredTitleR;
         
         // Measure text width
         const hoveredSceneTitle = hoveredGroup.querySelector('.rt-scene-title');
@@ -484,12 +489,12 @@ export class SceneInteractionManager {
         const textWidth = textBBox.width;
         
         // Check if expansion is needed
-        if (!needsExpansion(textWidth, currentArcPx, hoveredMidR)) {
+        if (!needsExpansion(textWidth, currentArcPx, hoveredTitleR)) {
             return; // Text already fits
         }
-        
+
         // Calculate target size
-        const targetSize = calculateTargetSize(textWidth, hoveredMidR);
+        const targetSize = calculateTargetSize(textWidth, hoveredTitleR);
         
         // Get act boundaries
         this.refreshActCount();

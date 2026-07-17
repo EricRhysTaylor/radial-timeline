@@ -690,8 +690,10 @@ export default class RadialTimelinePlugin extends Plugin {
         });
 
         // Sync private Book Manager shells before APR catch-up so a campaign
-        // targeting a newly added book has a server-side project mapping.
-        void scheduleCommunityProjectSync(this).then(() => this.authorProgressService.checkAutoUpdate());
+        // targeting a newly added book has a server-side project mapping. Use
+        // finally so a failed sync still runs the catch-up (best effort — an
+        // unmapped campaign simply retries on the hourly tick).
+        void scheduleCommunityProjectSync(this).finally(() => this.authorProgressService.checkAutoUpdate());
         // APR campaigns are client-scheduled: startup catches up after a closed
         // vault, then an hourly due check keeps daily/weekly/monthly campaigns
         // current while Obsidian remains open.

@@ -55,10 +55,13 @@ export class AuthorProgressCampaignService {
 
     public async checkAutoUpdate(): Promise<void> {
         const authorProgress = this.plugin.settings.authorProgress;
-        const settings = authorProgress?.defaults;
-        if (!authorProgress || !settings || !authorProgress.enabled) return;
+        if (!authorProgress) return;
+        const settings = authorProgress.defaults;
 
-        if (settings.updateFrequency !== 'manual') {
+        // Legacy default/hover APR auto-publish. This branch — and only this
+        // branch — is gated by the `enabled` flag and `defaults`. Campaigns are
+        // a separate feature and must not inherit this gate.
+        if (authorProgress.enabled && settings && settings.updateFrequency !== 'manual') {
             const last = settings.lastPublishedDate ? new Date(settings.lastPublishedDate).getTime() : 0;
             const now = Date.now();
             const diffMs = now - last;
@@ -81,7 +84,20 @@ export class AuthorProgressCampaignService {
             }
         }
 
+        // Campaigns schedule independently of the legacy default APR.
         await this.checkCampaignAutoUpdates(authorProgress);
+    }
+
+    // A campaign's scheduled work is "regenerate, and upload when shared". Track
+    // staleness from the most recent of either timestamp: a campaign pushed
+    // straight to Community stamps lastCommunityUploadedAt but not
+    // lastPublishedDate, and must not then read as never-run.
+    private campaignLastRunAt(campaign: AuthorProgressCampaign): number {
+        const published = campaign.lastPublishedDate ? new Date(campaign.lastPublishedDate).getTime() : 0;
+        const uploaded = campaign.sendToCommunity && campaign.lastCommunityUploadedAt
+            ? new Date(campaign.lastCommunityUploadedAt).getTime()
+            : 0;
+        return Math.max(published, uploaded);
     }
 
     public async generateCampaignReport(campaignId: string, options?: { silent?: boolean }): Promise<string | null> {
@@ -170,7 +186,7 @@ export class AuthorProgressCampaignService {
         for (const campaign of campaigns) {
             if (!campaign.isActive) continue;
             const frequency = campaign.updateFrequency ?? 'manual';
-            const last = campaign.lastPublishedDate ? new Date(campaign.lastPublishedDate).getTime() : 0;
+            const last = this.campaignLastRunAt(campaign);
             const diffMs = now - last;
 
             let thresholdMs = 0;

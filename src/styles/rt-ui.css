@@ -4687,6 +4687,43 @@
   background: rgba(var(--ert-social-accent-rgb-base), 0.06);
 }
 
+/* Read-only session stats (typed words, net manuscript change) render as
+   pills — a locked input invites editing and then refuses it; a pill reads
+   as a fact. Tone by sign for the net delta. */
+.ert-ui .ert-writing-session-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--ert-gap-2xs) var(--ert-gap-md);
+  border: 1px solid color-mix(in srgb, var(--text-accent) 25%, var(--background-modifier-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-accent) 8%, var(--background-secondary));
+  font-family: var(--font-monospace);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--font-ui-small);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-normal);
+  white-space: nowrap;
+}
+
+.ert-ui .ert-writing-session-stat-pill.is-positive {
+  border-color: color-mix(in srgb, var(--text-success) 40%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--text-success) 10%, var(--background-secondary));
+  color: var(--text-success);
+}
+
+.ert-ui .ert-writing-session-stat-pill.is-negative {
+  border-color: color-mix(in srgb, var(--text-warning) 40%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--text-warning) 10%, var(--background-secondary));
+  color: var(--text-warning);
+}
+
+.ert-ui .ert-writing-session-stat-pill.is-muted {
+  border-color: var(--background-modifier-border);
+  background: transparent;
+  color: var(--text-muted);
+}
+
 /* Note stacks vertically — label/desc above a full-width, taller textarea so
    there is real room to write. */
 .ert-ui .ert-writing-session-note.setting-item {

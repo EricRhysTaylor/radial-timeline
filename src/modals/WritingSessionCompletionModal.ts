@@ -170,16 +170,21 @@ export class WritingSessionCompletionModal extends Modal {
             });
         };
 
+        // Read-only stats render as pills, not locked inputs — a disabled text
+        // box invites editing and then refuses it. A pill reads as a fact.
+        const addStatPill = (setting: Setting, value: string, tone?: 'positive' | 'negative' | 'muted'): void => {
+            setting.controlEl.createSpan({
+                cls: `ert-writing-session-stat-pill${tone ? ` is-${tone}` : ''}`,
+                text: value,
+            });
+        };
+
         const wordsSection = form.createDiv({ cls: 'ert-writing-session-section ert-writing-session-section--words' });
         const wordSummary = wordsSection.createDiv({ cls: 'ert-writing-session-grid ert-writing-session-grid--words' });
         const typedWordsSetting = new Setting(wordSummary)
             .setName('Typed during session')
-            .setDesc('Additive live count from keyboard typing only. Paste, cut, deletion, and undo do not subtract from this meter.')
-            .addText(text => {
-                text.inputEl.addClass('ert-input--sm');
-                text.setValue(hasTypedWords ? String(typedWords) : '0');
-                text.setDisabled(true);
-            });
+            .setDesc('Additive live count from keyboard typing only. Paste, cut, deletion, and undo do not subtract from this meter.');
+        addStatPill(typedWordsSetting, `${hasTypedWords ? typedWords : 0} words`);
         typedWordsSetting.settingEl.addClass('ert-writing-session-compact-setting');
         wireNumber(
             new Setting(wordSummary)
@@ -193,12 +198,12 @@ export class WritingSessionCompletionModal extends Modal {
         const workSummary = wordsSection.createDiv({ cls: 'ert-writing-session-grid ert-writing-session-grid--work' });
         const netWordSetting = new Setting(workSummary)
             .setName('Net manuscript change')
-            .setDesc('Snapshot difference for the open scene notes captured at session start. This can be negative after cuts or revision.')
-            .addText(text => {
-                text.inputEl.addClass('ert-input--sm');
-                text.setValue(netWordDelta === undefined ? 'Unavailable' : `${netWordDelta > 0 ? '+' : ''}${netWordDelta}`);
-                text.setDisabled(true);
-            });
+            .setDesc('Snapshot difference for the open scene notes captured at session start. This can be negative after cuts or revision.');
+        addStatPill(
+            netWordSetting,
+            netWordDelta === undefined ? 'Unavailable' : `${netWordDelta > 0 ? '+' : ''}${netWordDelta} words`,
+            netWordDelta === undefined ? 'muted' : netWordDelta >= 0 ? 'positive' : 'negative'
+        );
         netWordSetting.settingEl.addClass('ert-writing-session-compact-setting');
         wireNumber(
             new Setting(workSummary)

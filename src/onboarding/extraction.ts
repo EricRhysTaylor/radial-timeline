@@ -96,7 +96,7 @@ export function capSubplotVocabulary(subplots: string[]): string[] {
   const rest: string[] = [];
   for (const raw of subplots) {
     const name = sanitizeName(raw);
-    const key = name.toLowerCase();
+    const key = subplotKey(name);
     if (name.length === 0 || seen.has(key)) continue;
     seen.add(key);
     rest.push(name);
@@ -266,19 +266,44 @@ export function linkedPlaces(extraction: SceneExtraction): string[] {
 }
 
 /**
- * Restrict a scene's subplot to the survey vocabulary (case-insensitive,
- * canonical casing restored) — and to exactly ONE thread: onboarding places a
- * scene in the single subplot it most advances, until a local model can handle
- * selective multi-subplot placement (the author layers more later). Unmatched
- * names are dropped; no match — including when there is no vocabulary — becomes
- * ["Main Plot"].
+ * Comparison key for subplot names: case-folded with curly quotes/dashes
+ * normalized, so "Telemachus’ Journey" matches "Telemachus' journey" instead of
+ * silently dropping to Main Plot over a typographic apostrophe.
+ */
+function subplotKey(name: string): string {
+  return sanitizeName(name)
+    .replace(/[’‘]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/[—–]/g, '-')
+    .toLowerCase();
+}
+
+/**
+ * Restrict a scene's subplot to the survey vocabulary (case- and punctuation-
+ * insensitive, canonical casing restored) — and to exactly ONE thread: onboarding
+ * places a scene in the single subplot it most advances, until a local model can
+ * handle selective multi-subplot placement (the author layers more later).
+ * Unmatched names are dropped; no match — including when there is no vocabulary —
+ * becomes ["Main Plot"].
  */
 export function enforceSubplotVocabulary(subplots: string[], vocabulary: string[]): string[] {
-  const canonical = new Map(vocabulary.map((name) => [name.toLowerCase(), name]));
+  const canonical = new Map(vocabulary.map((name) => [subplotKey(name), name]));
   const first = subplots
-    .map((name) => canonical.get(sanitizeName(name).toLowerCase()))
+    .map((name) => canonical.get(subplotKey(name)))
     .find((name): name is string => typeof name === 'string');
   return [first ?? 'Main Plot'];
+}
+
+/**
+ * Ordinal act assignment (Eric: "it's all based on order — purely mathematical").
+ * The written sequence divides into `actCount` contiguous blocks: with 108 scenes
+ * and 3 acts, 1–36 → Act 1, 37–72 → Act 2, 73–108 → Act 3. Scene N can never
+ * land in an earlier act than scene N-1.
+ */
+export function positionalAct(index: number, total: number, actCount: number): number {
+  if (total <= 0 || actCount <= 0) return 1;
+  const clampedIndex = Math.min(Math.max(index, 0), total - 1);
+  return Math.min(actCount, Math.floor((clampedIndex * actCount) / total) + 1);
 }
 
 /**

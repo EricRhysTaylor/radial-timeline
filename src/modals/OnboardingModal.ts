@@ -478,6 +478,15 @@ export class OnboardingModal extends Modal {
       `${ok.length} scenes ready${flagged.length ? `, ${flagged.length} with flagged guesses` : ''}${failed.length ? `, ${failed.length} failed` : ''}. Expand a scene to see how it maps into the Radial Timeline template — Apply writes the book.`
     );
 
+    // An all-Main-Plot book is almost always a failed structure survey, not a
+    // one-thread story — say so instead of letting the timeline look broken.
+    if (!this.survey || this.survey.subplots.length === 0) {
+      contentEl.createDiv({
+        cls: 'ert-onb-error',
+        text: 'The structure survey failed, so every scene is on Main Plot. You can re-run onboarding for another pass, or layer subplots later.',
+      });
+    }
+
     // Accordion: one detailed card open, the rest collapsed in a scroll view.
     // The first successful scene starts expanded; bodies build lazily on open.
     const list = contentEl.createDiv({ cls: 'ert-onb-list' });

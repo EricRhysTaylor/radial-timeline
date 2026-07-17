@@ -55,6 +55,7 @@ import {
   linkedCharacters,
   linkedPlaces,
   effectiveFlags,
+  positionalAct,
   type SurveyResult,
 } from './extraction';
 import { breaksFromStarts, forcedEvenBreaks, type ScenePlan } from './sceneSplitting';
@@ -194,9 +195,13 @@ export class OnboardingService {
   async survey(model: ManuscriptModel): Promise<SurveyResult | null> {
     const scenes = this.candidateScenes(model);
     if (scenes.length === 0) return null;
+    // Keep the survey prompt bounded: at 100+ scenes, 80-word openings blow the
+    // context and the whole survey fails — which collapses every subplot to
+    // Main Plot downstream. Shorter openings at scale keep the call reliable.
+    const openingLength = scenes.length > 40 ? 25 : 80;
     const surveyInput = scenes.map((scene) => ({
       fileName: basename(scene.sourceRef),
-      opening: openingWords(scene.rawText, 80),
+      opening: openingWords(scene.rawText, openingLength),
     }));
     try {
       const result = await getAIClient(this.plugin).run({
@@ -290,6 +295,18 @@ export class OnboardingService {
         proposals.push(this.failed(scene, title, error instanceof Error ? error.message : String(error)));
       }
     }
+
+    // Acts are ORDINAL — scene N can never precede scene N-1's act — so they are
+    // computed from position, not asked of the model (which sees one scene at a
+    // time and cannot know where it falls): the written sequence divides into
+    // actCount contiguous blocks. "Act" also leaves the flag list — it is no
+    // longer a guess.
+    const written = proposals.filter((proposal) => proposal.frontmatter);
+    written.forEach((proposal, index) => {
+      (proposal.frontmatter as Record<string, unknown>).Act = positionalAct(index, written.length, actCount);
+      proposal.flags = proposal.flags.filter((flag) => flag.toLowerCase() !== 'act');
+    });
+
     return proposals;
   }
 

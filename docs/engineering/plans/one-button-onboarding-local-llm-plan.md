@@ -654,6 +654,21 @@ Doctrine fit: no new abstraction layer beyond the adapters, no fallback chains
   in `enforceSubplotVocabulary`) — until a local model can handle selective
   multi-subplot placement; the author layers more later.
 
+- **2026-07-16 (acts are ordinal; survey reliability)** — second full run put
+  scene 108 in Act 1 and collapsed every subplot to Main Plot. **Acts:** each
+  scene call sees one scene and cannot know where it falls, so the model is no
+  longer asked for Act at all (removed from the scene schema). Acts are computed
+  **positionally** (Eric: "purely mathematical") — the written sequence divides
+  into `actCount` contiguous blocks (`positionalAct`: 108 scenes / 3 acts →
+  1–36, 37–72, 73–108), monotonically non-decreasing, and "Act" left the flag
+  rollup (it is computed, not guessed). Structural clues (Book field, metadata)
+  can refine this later. **Subplot collapse:** all-Main-Plot means the structure
+  survey failed — at 107 scenes the 80-word openings blew the survey context.
+  Openings now shrink to 25 words above 40 scenes; vocabulary matching folds
+  curly/straight apostrophes and dashes (a typographic ’ was enough to drop a
+  scene to Main Plot); and Review now says plainly when the survey failed
+  instead of letting the timeline look broken.
+
 ## Appendix A — Canonical onboarding prompt (instruction block)
 
 Source of truth for this text is **Supabase** (see "The Onboarding Prompt —

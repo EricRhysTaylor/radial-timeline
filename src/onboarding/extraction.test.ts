@@ -6,6 +6,7 @@ import {
   parseSplitProposal,
   capSubplotVocabulary,
   enforceSubplotVocabulary,
+  positionalAct,
   MAX_SUBPLOTS,
   buildSceneFrontmatter,
   sanitizeName,
@@ -56,6 +57,31 @@ describe('enforceSubplotVocabulary', () => {
   it('falls back to Main Plot when nothing matches or vocabulary is empty', () => {
     expect(enforceSubplotVocabulary(['Invented Thread'], vocab)).toEqual(['Main Plot']);
     expect(enforceSubplotVocabulary(['Anything'], [])).toEqual(['Main Plot']);
+  });
+  it('matches across curly/straight apostrophes instead of dropping to Main Plot', () => {
+    expect(enforceSubplotVocabulary(["Telemachus' Journey"], vocab)).toEqual(['Telemachus’ Journey']);
+  });
+});
+
+describe('positionalAct', () => {
+  it('divides 108 scenes into three contiguous acts of 36', () => {
+    expect(positionalAct(0, 108, 3)).toBe(1);
+    expect(positionalAct(35, 108, 3)).toBe(1);
+    expect(positionalAct(36, 108, 3)).toBe(2);
+    expect(positionalAct(71, 108, 3)).toBe(2);
+    expect(positionalAct(72, 108, 3)).toBe(3);
+    expect(positionalAct(107, 108, 3)).toBe(3); // the last scene can never be Act 1
+  });
+  it('is monotonically non-decreasing and clamps degenerate inputs', () => {
+    let last = 1;
+    for (let i = 0; i < 10; i++) {
+      const act = positionalAct(i, 10, 4);
+      expect(act).toBeGreaterThanOrEqual(last);
+      last = act;
+    }
+    expect(positionalAct(5, 0, 3)).toBe(1);
+    expect(positionalAct(-2, 10, 3)).toBe(1);
+    expect(positionalAct(99, 10, 3)).toBe(3);
   });
 });
 

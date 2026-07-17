@@ -177,10 +177,6 @@ const ONBOARDING_SCENE_SCHEMA = {
   type: 'object',
   additionalProperties: false,
   properties: {
-    act: {
-      type: 'number',
-      description: 'Act number by structural read; clamped downstream to the configured act count.',
-    },
     title: {
       type: 'string',
       description:
@@ -226,7 +222,7 @@ const ONBOARDING_SCENE_SCHEMA = {
       items: { type: 'string' },
     },
   },
-  required: ['act', 'title', 'synopsis', 'subplot', 'character', 'place', 'when', 'duration', 'flags'],
+  required: ['title', 'synopsis', 'subplot', 'character', 'place', 'when', 'duration', 'flags'],
 } as const;
 
 export function getOnboardingSceneJsonSchema(): Record<string, unknown> {
@@ -237,7 +233,7 @@ export function getOnboardingSceneJsonSchema(): Record<string, unknown> {
 export function getOnboardingSceneInstructions(): string {
   return [
     'Extract Radial Timeline scene metadata from one scene of a manuscript. Never rewrite prose.',
-    'Set Act by structural read. Write a 1-2 sentence Synopsis, and a short 2-4 word Title',
+    'Write a 1-2 sentence Synopsis, and a short 2-4 word Title',
     'drawn from the scene\'s action ("Leaving home", "The Cyclops blinded").',
     'Assign the scene to exactly ONE subplot — the single thread it most advances, chosen from the',
     'given vocabulary verbatim. Never invent a subplot name. (The author can layer more later.)',
@@ -249,7 +245,7 @@ export function getOnboardingSceneInstructions(): string {
     'Give both as bare names (the plugin adds the wiki links), no commas.',
     'Give When as YYYY-MM-DD or a bare year only when grounded in the text — otherwise null; same for',
     'Duration. Never fabricate. Prefer any metadata the source already carried.',
-    'In "flags", list ONLY fields you actually filled in but guessed at (e.g. "Act"). Do not flag a field',
+    'In "flags", list ONLY fields you actually filled in but guessed at (e.g. "When"). Do not flag a field',
     'you returned as null. Return only the schema.',
   ].join('\n');
 }

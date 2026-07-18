@@ -1,11 +1,11 @@
 # Agent Instructions — Radial Timeline
 
-Applies to all coding agents (Claude Code, Codex — AGENTS.md is a symlink to this file). Company-wide context and shared doctrine: `/Users/ericrhystaylor/Documents/RT LLC/CLAUDE.md`.
+Applies to all coding agents (Claude Code, Codex — AGENTS.md is a symlink to this file). Company-wide context and shared doctrine: `/Users/ericrhystaylor/Documents/Radial Timeline LLC/CLAUDE.md`.
 
 ## Working Directory
 
 Always work directly in the main repository at:
-`/Users/ericrhystaylor/Documents/RT LLC/Plugin/radial-timeline`
+`/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/radial-timeline`
 
 Do NOT use git worktrees. Do NOT work from agent worktree directories (e.g. `~/.claude-worktrees/`). If you find yourself in a worktree path, switch to the main repo path above before making any changes.
 

@@ -62,8 +62,8 @@ sync. The launch contract is:
 
 ## Source Contracts
 
-- `/Users/ericrhystaylor/Documents/RT LLC/Platform/COMMUNITY-SHARE-PRODUCT-CONTRACT.md`
-- `/Users/ericrhystaylor/Documents/RT LLC/Platform/radial-timeline-platform/COMMUNITY-SHARE-BACKEND-SCHEMA-PLAN.md`
+- `/Users/ericrhystaylor/Documents/Radial Timeline LLC/Platform/COMMUNITY-SHARE-PRODUCT-CONTRACT.md`
+- `/Users/ericrhystaylor/Documents/Radial Timeline LLC/Platform/radial-timeline-platform/COMMUNITY-SHARE-BACKEND-SCHEMA-PLAN.md`
 - `docs/engineering/standards/writing-session-privacy.md`
 - `src/services/WritingSessionLog.ts`
 - `src/services/WritingSessionLog.privacy.test.ts`

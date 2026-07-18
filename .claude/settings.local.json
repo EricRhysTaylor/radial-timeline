@@ -44,7 +44,7 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(cd \"/Users/ericrhystaylor/Documents/RT LLC/Plugin/radial-timeline\" && echo \"=== pass/fail summary ===\" && grep -iE \"Test Files|Tests |failed|passed\" /tmp/vitest_out.txt | tail -8 ; echo \"=== how env-gated tests behave \\(skip vs require\\) ===\" && grep -nE \"describe\\\\.skip|it\\\\.skip|RT_USE_LIVE_OBSIDIAN_REQUEST|RT_PUBLISH_PDF_ASSEMBLY|skipIf|process.env\" src/ai/certification/anthropicCertification.test.ts tests/publishing-pdf-assembly.test.ts 2>/dev/null | head -20)",
+      "Bash(cd \"/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/radial-timeline\" && echo \"=== pass/fail summary ===\" && grep -iE \"Test Files|Tests |failed|passed\" /tmp/vitest_out.txt | tail -8 ; echo \"=== how env-gated tests behave \\(skip vs require\\) ===\" && grep -nE \"describe\\\\.skip|it\\\\.skip|RT_USE_LIVE_OBSIDIAN_REQUEST|RT_PUBLISH_PDF_ASSEMBLY|skipIf|process.env\" src/ai/certification/anthropicCertification.test.ts tests/publishing-pdf-assembly.test.ts 2>/dev/null | head -20)",
       "Bash(npx eslint *)",
       "Bash(node scripts/lint-obsidian-report.mjs)",
       "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{try{const j=JSON.parse\\(s\\);console.log\\(JSON.stringify\\(j.byRule||j,null,2\\)\\)}catch\\(e\\){console.log\\(s.slice\\(0,500\\)\\)}}\\)\")",

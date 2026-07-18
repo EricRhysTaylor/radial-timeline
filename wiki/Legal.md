@@ -5,7 +5,7 @@ Radial Timeline® © 2025 Eric Rhys Taylor
 
 This project is released under the **Radial Timeline Source-Available Non-Commercial License**.
 
-Radial Timeline is protected by U.S. Copyright Registration TX0009593938 and U.S. Trademark Registration No. 8,251,843. The Radial Timeline visualization system is the subject of U.S. Provisional Patent Application No. 63/951,412 and is marked Patent Pending.
+Radial Timeline is protected by U.S. Copyright Registration TX0009593938 and U.S. Trademark Registration No. 8,251,843. The Radial Timeline visualization system is the subject of a pending U.S. patent application and is marked Patent Pending.
 
 For the canonical license text, see: [`LICENSE`](https://github.com/EricRhysTaylor/radial-timeline/blob/main/LICENSE)
 

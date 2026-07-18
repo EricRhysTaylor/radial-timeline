@@ -173,7 +173,7 @@ Released under the **Radial Timeline Source-Available Non-Commercial License**.
 - You may use the software to create commercial creative works such as books, scripts, outlines, and related authored content.
 - Redistribution, public forks, hosted versions, and commercial exploitation of the software itself are prohibited without written permission.
 - Radial Timeline is protected by U.S. Copyright Registration TX0009593938 and U.S. Trademark Registration No. 8,251,843.
-- The Radial Timeline visualization system is the subject of U.S. Provisional Patent Application No. 63/951,412 and is marked Patent Pending.
+- The Radial Timeline visualization system is the subject of a pending U.S. patent application and is marked Patent Pending.
 
 See the [Legal page](https://github.com/EricRhysTaylor/Radial-Timeline/wiki/Legal) on the wiki for a plain-English permission table, the [License](https://github.com/EricRhysTaylor/radial-timeline/blob/main/LICENSE) text, and the [Notice](https://github.com/EricRhysTaylor/radial-timeline/blob/main/NOTICE) file.
 

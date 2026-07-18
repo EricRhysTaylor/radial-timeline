@@ -19,20 +19,21 @@ These are the main command-palette entries.
 2. **[Create note…](#create-note)**
 3. **Open inquiry** — opens the [Inquiry View](Inquiry).
 4. **[Book designer](Book-Designer)** ← standalone guide
-5. **[Timeline order](#timeline-order)** *(beta)*
-6. **[Timeline audit](#timeline-audit)** *(beta)*
-7. **[Manage subplots](#manage-subplots)**
-8. **[Summary refresh](#summary-refresh)**
-9. **[Search timeline](#search-timeline)**
-10. **[Gossamer analysis](#gossamer-analysis)**
-11. **[Runtime estimator](#runtime-estimator)** *(Pro)*
-12. **[Manuscript export](Manuscript-Export)** ← standalone guide
-13. **[Inquiry omnibus](#inquiry-omnibus-pass)** *(beta)*
-14. **[Gossamer score manager](#gossamer-score-manager)**
-15. **[Planetary time calculator](#planetary-time-calculator)**
-16. **[Author progress report (APR)](Author-Progress-Report)** ← standalone guide
-17. **[Scene pulse analysis (subplot order)](#scene-pulse-analysis-subplot-order)**
-18. **[Scene pulse analysis (manuscript order)](#scene-pulse-analysis-manuscript-order)**
+5. **[Onboard manuscript](#onboard-manuscript)** *(beta)*
+6. **[Timeline order](#timeline-order)** *(beta)*
+7. **[Timeline audit](#timeline-audit)** *(beta)*
+8. **[Manage subplots](#manage-subplots)**
+9. **[Summary refresh](#summary-refresh)**
+10. **[Search timeline](#search-timeline)**
+11. **[Gossamer analysis](#gossamer-analysis)**
+12. **[Runtime estimator](#runtime-estimator)** *(Pro)*
+13. **[Manuscript export](Manuscript-Export)** ← standalone guide
+14. **[Inquiry omnibus](#inquiry-omnibus-pass)** *(beta)*
+15. **[Gossamer score manager](#gossamer-score-manager)**
+16. **[Planetary time calculator](#planetary-time-calculator)**
+17. **[Author progress report (APR)](Author-Progress-Report)** ← standalone guide
+18. **[Scene pulse analysis (subplot order)](#scene-pulse-analysis-subplot-order)**
+19. **[Scene pulse analysis (manuscript order)](#scene-pulse-analysis-manuscript-order)**
 
 ## Conditional Visibility
 
@@ -45,6 +46,7 @@ Some commands are hidden until their required feature is enabled. Others remain 
 *   **Planetary time calculator** is visible, but it needs at least one configured planetary profile before it can produce a conversion.
 *   **Timeline order** and **Timeline audit** show a release-pending notice in public release builds and are usable in development/testing builds.
 *   **Inquiry omnibus** appears only in development/testing builds.
+*   **Onboard manuscript** appears only in development/testing builds, and only runs against a local LLM (no hosted-provider path).
 
 ---
 
@@ -66,6 +68,20 @@ The selector is organized into three families:
 After you choose a subtype, the file is created in the active book folder and opened immediately. Scene creation includes built-in scaffolds: minimal properties for basic scenes, richer metadata for advanced scenes, screenplay/podcast body scaffolds plus runtime defaults for those types.
 
 Related: [Scene Properties (Core + Advanced)](YAML-Frontmatter).
+
+---
+
+<a name="onboard-manuscript"></a>
+## Onboard manuscript *(beta)*
+
+Opens the guided onboarding flow for importing an existing manuscript.
+
+> [!NOTE]
+> Currently undergoing beta testing. Available only in development/testing builds for now. This command runs entirely against a local LLM — see [Settings → AI → Local LLM](Settings-AI#local-llm) for setup and the hardware guidance in [Onboarding And Local Model Hardware](Settings-AI#onboarding-and-local-model-hardware).
+
+Walks a book folder through a four-stage sequence — preparing and reading the source text, proposing scene splits for confirmation, generating scene profiles (characters, places, summaries) for review, and writing the accepted result to the vault. Each stage is reviewable before it commits anything.
+
+Related: [Settings → AI → Local LLM](Settings-AI#local-llm), [Book Designer](Book-Designer).
 
 ---
 

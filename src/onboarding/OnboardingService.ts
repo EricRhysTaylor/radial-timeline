@@ -213,7 +213,6 @@ export class OnboardingService {
     // one-field schema, output) is what makes the call reliable on a local model.
     const sampled = sampleEvenly(scenes, 30);
     const surveyInput = sampled.map((scene) => ({
-      fileName: basename(scene.sourceRef),
       opening: openingWords(scene.rawText, 40),
     }));
     try {

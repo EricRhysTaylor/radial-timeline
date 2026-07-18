@@ -129,7 +129,6 @@ export function getOnboardingSurveyInstructions(): string {
 }
 
 export interface SurveySceneInput {
-  fileName: string;
   /** First ~80 words of the note — the opening, not the full text. */
   opening: string;
 }

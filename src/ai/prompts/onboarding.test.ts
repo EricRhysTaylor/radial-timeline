@@ -71,13 +71,16 @@ describe('onboarding prompt text', () => {
 });
 
 describe('onboarding prompt builders', () => {
-  it('survey prompt lists files with their openings in order', () => {
+  it('survey prompt lists scene openings in reading order, without file names', () => {
     const prompt = buildOnboardingSurveyPrompt([
-      { fileName: '01 Ithaca.md', opening: 'On Ithaca.' },
-      { fileName: '02 Troy.md', opening: 'At Troy.' },
+      { opening: 'On Ithaca.' },
+      { opening: 'At Troy.' },
     ]);
-    expect(prompt).toContain('01 Ithaca.md');
-    expect(prompt.indexOf('01 Ithaca.md')).toBeLessThan(prompt.indexOf('02 Troy.md'));
+    expect(prompt).toContain('On Ithaca.');
+    expect(prompt.indexOf('On Ithaca.')).toBeLessThan(prompt.indexOf('At Troy.'));
+    // File names are deliberately excluded (53b22416): the survey must derive
+    // subplots from the prose, never from how the author named their files.
+    expect(prompt).not.toContain('01 Ithaca.md');
   });
 
   it('scene prompt threads survey vocabulary and source metadata', () => {

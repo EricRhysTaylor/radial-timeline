@@ -33,7 +33,7 @@ The plugin does **not** publish:
 
 Only the categories included in your selected sharing level are published.
 
-At Level 3, the hourly activity rollup is coarse and undated by design: it reports minutes per local hour-of-day (0–23) and mode, folded across a trailing 28-day window — never a per-session row, never a calendar date, never tied to a specific scene or book.
+At Level 3, the hourly rollup behind the Community's **Working Clock** (the activity dial on the website) is coarse and undated by design: it reports minutes per local hour-of-day (0–23) and mode, folded across a trailing 28-day window — never a per-session row, never a calendar date, never tied to a specific scene or book.
 
 ## Basic Setup
 
@@ -54,7 +54,7 @@ Sharing is controlled by a single **What you share** level:
 
 *   **Level 1 — Private** — nothing is published.
 *   **Level 2 — Profile, books + APR** — your public profile and project shells, plus the option to send a campaign's visual progress report for one selected book. This level does not include writing days, streaks, minutes, inactivity, or session statistics.
-*   **Level 3 — Profile, books + writing activity** — includes Level 2 and adds two activity feeds: a daily aggregate feed (writing days, rounded minutes and word totals, and coarse mode mix) and an hourly rollup that powers the Community "activity dial" — a trailing 28-day summary of your writing minutes bucketed by the local hour of day you started each session and by mode (drafting/revising/planning).
+*   **Level 3 — Profile, books + writing activity** — includes Level 2 and adds two activity feeds: a daily aggregate feed (writing days, rounded minutes and word totals, and coarse mode mix) and the **Working Clock** rollup — a trailing 28-day summary of your writing minutes bucketed by the local hour of day you started each session and by mode (drafting/revising/planning). This is what your time-of-day writing pattern looks like on the website.
 
 Sensitive fields, such as real scene titles or exact session timestamps, are never included.
 

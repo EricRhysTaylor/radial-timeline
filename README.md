@@ -102,7 +102,7 @@ Radial Timeline ships complete English interface text and partial interface tran
 
 - No telemetry or analytics SDKs are shipped with the plugin.
 - API keys use Obsidian secret storage when available.
-- AI is optional and can be disabled with the **AI Off** toggle.
+- AI ships **off by default** — new installs are AI-free until you enable **Settings → AI → Enable AI LLM features**. Existing installs keep whatever choice they already made; upgrading never flips this setting for you.
 - Vault content should only leave the vault when you explicitly use enabled external features.
 - Shell commands are run only to invoke Pandoc (and its LaTeX engine) when you export a manuscript, and to probe for those binaries with `which`/`where` during setup.
 - Files outside the vault are read or written only to save exports where you choose and to locate the Pandoc executable.
@@ -112,13 +112,13 @@ See [Privacy & Security](docs/privacy-and-security.md) for the detailed posture.
 
 ## External Services & Network Access
 
-Radial Timeline may contact external services only in specific optional workflows:
+Radial Timeline may contact external services in these workflows:
 
 - AI provider requests when you actively use enabled AI features
 - Optional provider/model/pricing metadata refreshes governed by AI privacy settings
 - Optional version/update checks
-
-Upcoming **Social Connections** for the website launch is planned as an explicit integration surface and should remain opt-in, documented, and separately controllable.
+- A Discord presence chip in the Radial Timeline View title bar polls a public `discord-presence` endpoint roughly every 60 seconds, **by default, for every user**. It is not gated on connecting to Community and does not require any sign-in — it only reports whether the Discord community is currently staffed. See [Radial Timeline View → Discord Presence Chip](https://github.com/EricRhysTaylor/Radial-Timeline/wiki/Radial-Timeline-View#discord-presence-chip)
+- Community Share publish and daily-activity sync calls, sent only when you connect to Community and choose a sharing level above Private — see [Settings → Community](https://github.com/EricRhysTaylor/Radial-Timeline/wiki/Settings-Community)
 
 ## Known Conflicts
 

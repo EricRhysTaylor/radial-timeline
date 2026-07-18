@@ -12,7 +12,7 @@ Launch scope:
 *   Optional Author Progress Report (APR) graphics.
 *   Optional writing-activity summaries at the highest sharing level.
 *   A live preview of exactly what will be shared.
-*   Pause, revoke, delete shared data, and disconnect controls.
+*   Pause, take offline, delete shared data, and disconnect controls.
 
 Future community features may include follows, timeline views, review circles, and editor/alpha-reader workflows. Those are not part of the launch publish path.
 
@@ -33,6 +33,8 @@ The plugin does **not** publish:
 
 Only the categories included in your selected sharing level are published.
 
+At Level 3, the hourly activity rollup is coarse and undated by design: it reports minutes per local hour-of-day (0–23) and mode, folded across a trailing 28-day window — never a per-session row, never a calendar date, never tied to a specific scene or book.
+
 ## Basic Setup
 
 1. Open the website Community page and sign in.
@@ -52,7 +54,7 @@ Sharing is controlled by a single **What you share** level:
 
 *   **Level 1 — Private** — nothing is published.
 *   **Level 2 — Profile, books + APR** — your public profile and project shells, plus the option to send a campaign's visual progress report for one selected book. This level does not include writing days, streaks, minutes, inactivity, or session statistics.
-*   **Level 3 — Profile, books + writing activity** — includes Level 2 and adds rounded, bucketed activity summaries such as writing days, rounded minutes and word totals, and coarse mode mix.
+*   **Level 3 — Profile, books + writing activity** — includes Level 2 and adds two activity feeds: a daily aggregate feed (writing days, rounded minutes and word totals, and coarse mode mix) and an hourly rollup that powers the Community "activity dial" — a trailing 28-day summary of your writing minutes bucketed by the local hour of day you started each session and by mode (drafting/revising/planning).
 
 Sensitive fields, such as real scene titles or exact session timestamps, are never included.
 
@@ -63,19 +65,19 @@ The preview under your sharing selection always reflects the current level ("Pre
 ## Sharing And Safety Controls
 
 *   **Begin sharing / Pause sharing** puts your selected level on the community site and keeps it current automatically. Pausing stops updates; what you already shared stays visible until you revoke it.
-*   **Revoke sharing** removes the current public report from public viewing while keeping your connection.
+*   **Take offline** (the button that revokes your report) removes the current public report from public viewing while keeping your connection.
 *   **Delete shared data** removes the shared report payload from the website. Minimal audit metadata may remain.
-*   **Disconnect plugin** removes the plugin's Community Share connection for this vault. Local writing data stays local.
+*   **Disconnect plugin** takes this vault's report offline, stops sharing, and removes its saved connection key. Your account and other Community content stay in place. Reconnecting this vault later requires generating and entering a **new one-time linking key** — the old one cannot be reused.
 
 ## Sharing An APR
 
-The [Author Progress Report](Author-Progress-Report) remains a local visual/social export tool, and Level 2 adds a controlled route to Community:
+The [Author Progress Report](Author-Progress-Report) remains a local visual/social export tool, with a controlled route to Community available from Level 2 upward (Level 2 and Level 3):
 
 1. In **Social**, choose a campaign and its target book.
 2. Enable **Send to Community** for that campaign.
 3. Use **Send now** for a private upload, or let Daily, Weekly, or Monthly campaign updates refresh it while Obsidian is open.
 4. Open **My Share** on the website to inspect the exact graphic and activate it. The book must already be public before its APR can be activated.
 
-Selecting Level 2 never uploads an APR by itself. The campaign destination is separately opt-in and defaults off. Uploaded APRs arrive privately; public activation and deactivation happen only on My Share.
+Selecting Level 2 or Level 3 never uploads an APR by itself. The campaign destination is separately opt-in and defaults off. Uploaded APRs arrive privately; public activation and deactivation happen only on My Share.
 
 APR schedules are client-side. Radial Timeline checks on plugin startup and hourly while the vault is open. If Obsidian is closed when an update becomes due, it catches up the next time the plugin starts; there is no Community server job generating reports in the background.

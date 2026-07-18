@@ -91,6 +91,16 @@ The title bar also includes the compact count/session button used for Sessions.
   <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Writing Session panel — timer, daily goal context, and session controls</div>
 </div>
 
+## Discord Presence Chip
+
+A small chip sits in the title bar, to the right of the writing-session count/session control. It links to the Radial Timeline Discord community.
+
+*   **Green ("Discord · online")** means presence has been confirmed recently — the community is actively staffed right now.
+*   **Muted ("Discord")** means either no one is confirmed present, or the chip's last successful check is stale. A failed network check always reads as muted, never green — the chip can only ever go quiet, never falsely light up.
+*   Clicking the chip opens the Discord invite.
+
+The chip polls a public status endpoint roughly every 60 seconds by default, for every user. **It is shown to everyone and is not gated on connecting to Community** — the Discord server is open to all Radial Timeline users regardless of whether you use Community Share. See [External Services & Network Access](https://github.com/EricRhysTaylor/Radial-Timeline#external-services--network-access) in the README for the network-access disclosure.
+
 ## Timeline Legend
 
 The legend is a quick visual guide for the current mode.

@@ -118,7 +118,7 @@ This is a model-capability question, not a Local LLM-versus-hosted question: a s
 
 [Onboard manuscript](Commands#onboard-manuscript) (development/testing builds only, currently in beta) runs entirely against a local model — nothing is sent to a hosted provider during onboarding, regardless of your other AI settings.
 
-Onboarding asks more of a local model than everyday features do: it reads and reasons over an entire manuscript across several stages, so it needs both a capable model and a machine that can run one. The owner has tested onboarding successfully with **Qwen3-30B-A3B-2507** on a **Mac Studio M4 Max with 64GB of unified memory**. A 30B-class model needs a substantial amount of RAM to load and run at all, so a robust machine with ample memory is strongly recommended — an underpowered machine will struggle or fail to run a model at this size. This isn't a claim that smaller machines or other models can't work, only what has been verified so far.
+Onboarding asks more of a local model than everyday features do: it reads and reasons over an entire manuscript across several stages, so it needs both a capable model and a machine that can run one. Onboarding has been tested successfully with **Qwen3-30B-A3B-2507** on a **Mac Studio M4 Max with 64GB of unified memory**. A 30B-class model needs a substantial amount of RAM to load and run at all, so a robust machine with ample memory is strongly recommended — an underpowered machine will struggle or fail to run a model at this size. This isn't a claim that smaller machines or other models can't work, only what has been verified so far.
 
 ### Recommended Use
 

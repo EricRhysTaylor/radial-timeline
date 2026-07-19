@@ -143,9 +143,10 @@ export function setupSubplotKeyController(
     };
 
     entries.forEach((entry, i) => {
-        const row = doc.createElement('button');
+        // Plain div, not <button>: rows are hover targets, and button chrome
+        // (theme bevel/background) fights the flat panel look.
+        const row = doc.createElement('div');
         row.className = 'ert-timeline-subplot-key__row';
-        row.type = 'button';
 
         const num = doc.createElement('span');
         num.className = 'ert-timeline-subplot-key__num';
@@ -166,12 +167,14 @@ export function setupSubplotKeyController(
         if (isOuterRow) name.classList.add('ert-timeline-subplot-key__name--ring-label');
         row.appendChild(name);
 
+        // Spotlight switches directly ring→ring on the next row's mouseenter
+        // (spotlightRing un-dims and re-dims synchronously, so no paint shows
+        // the all-rings-on state between rows). Clearing happens only when the
+        // pointer leaves the whole list — see the rows mouseleave below.
         row.addEventListener('mouseenter', () => spotlightRing(entry.ring)); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
-        row.addEventListener('mouseleave', clearSpotlight); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
-        row.addEventListener('focus', () => spotlightRing(entry.ring)); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
-        row.addEventListener('blur', clearSpotlight); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
         rows.appendChild(row);
     });
+    rows.addEventListener('mouseleave', clearSpotlight); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
 
     let hideTimer: number | null = null;
     const cancelHide = () => {

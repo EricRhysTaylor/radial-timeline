@@ -2182,10 +2182,12 @@
   white-space: nowrap;
 }
 
+/* Flat list: no per-row card/bevel. Rows sit back to back (no gap) so the
+   pointer moves ring→ring with no dead zone; a thin dashed rule separates
+   them. */
 .ert-timeline-subplot-key__rows {
   display: flex;
   flex-direction: column;
-  gap: var(--size-2-2);
 }
 
 .ert-timeline-subplot-key__row {
@@ -2193,18 +2195,16 @@
   grid-template-columns: 16px 14px minmax(0, 1fr);
   align-items: center;
   gap: var(--size-4-2);
-  padding: var(--size-2-1) var(--size-2-2);
-  margin: 0;
-  border: 0;
-  border-radius: var(--radius-s);
-  background: transparent;
-  box-shadow: none;
+  padding: var(--size-2-2) var(--size-2-2);
+  border-bottom: 1px dashed var(--background-modifier-border);
   cursor: default;
-  text-align: left;
 }
 
-.ert-timeline-subplot-key__row:hover,
-.ert-timeline-subplot-key__row:focus-visible {
+.ert-timeline-subplot-key__row:last-child {
+  border-bottom: 0;
+}
+
+.ert-timeline-subplot-key__row:hover {
   background: var(--background-modifier-hover);
 }
 

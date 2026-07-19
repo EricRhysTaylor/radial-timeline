@@ -42,12 +42,17 @@ function collectEntries(svg: SVGSVGElement): SubplotKeyEntry[] {
     const labels = Array.from(svg.querySelectorAll('.rt-subplot-ring-label-text'));
     const entries: SubplotKeyEntry[] = [];
     labels.forEach(label => {
-        const ring = parseInt(label.getAttribute('data-ring') || '', 10);
-        const colorIndex = parseInt(label.getAttribute('data-color-index') || '', 10);
-        const subplotName = label.getAttribute('data-subplot-name') || '';
-        const ringLabel = label.textContent?.trim() || subplotName;
-        if (isNaN(ring) || !subplotName) return;
-        entries.push({ ring, colorIndex: isNaN(colorIndex) ? 0 : colorIndex, ringLabel, subplotName });
+        // Stamped by SubplotLabels.ts in the same render; a label missing them
+        // is stale markup and gets no key row rather than an invented color.
+        const ringAttr = label.getAttribute('data-ring');
+        const colorAttr = label.getAttribute('data-color-index');
+        const subplotName = label.getAttribute('data-subplot-name');
+        if (!ringAttr || !colorAttr || !subplotName) return;
+        const ring = parseInt(ringAttr, 10);
+        const colorIndex = parseInt(colorAttr, 10);
+        if (isNaN(ring) || isNaN(colorIndex)) return;
+        const text = label.textContent?.trim();
+        entries.push({ ring, colorIndex, ringLabel: text ? text : subplotName, subplotName });
     });
     // Outer ring first (largest ring index renders outermost).
     entries.sort((a, b) => b.ring - a.ring);
@@ -71,6 +76,8 @@ export function setupSubplotKeyController(
     if (entries.length < 2) return;
 
     const doc = container.ownerDocument;
+    // SAFE: the container is part of a live view; its document always has a window (popout-safe)
+    const win = doc.defaultView!;
 
     const trigger = doc.createElement('button');
     trigger.className = 'ert-timeline-subplot-key__trigger clickable-icon';
@@ -153,7 +160,7 @@ export function setupSubplotKeyController(
     let hideTimer: number | null = null;
     const cancelHide = () => {
         if (hideTimer !== null) {
-            window.clearTimeout(hideTimer);
+            win.clearTimeout(hideTimer);
             hideTimer = null;
         }
     };
@@ -171,7 +178,7 @@ export function setupSubplotKeyController(
     };
     const scheduleHide = () => {
         cancelHide();
-        hideTimer = window.setTimeout(() => {
+        hideTimer = win.setTimeout(() => {
             hideTimer = null;
             if (panel.matches(':hover') || trigger.matches(':hover') || panel.classList.contains('is-key-held')) return;
             hide();
@@ -221,7 +228,7 @@ export function setupSubplotKeyController(
     // every re-render before re-setup, and on view close).
     doc.addEventListener('keydown', handleKeyDown);
     doc.addEventListener('keyup', handleKeyUp);
-    window.addEventListener('blur', handleWindowBlur);
+    win.addEventListener('blur', handleWindowBlur);
 
     container.appendChild(trigger);
     container.appendChild(panel);
@@ -237,7 +244,7 @@ export function setupSubplotKeyController(
         clearSpotlight();
         doc.removeEventListener('keydown', handleKeyDown);
         doc.removeEventListener('keyup', handleKeyUp);
-        window.removeEventListener('blur', handleWindowBlur);
+        win.removeEventListener('blur', handleWindowBlur);
         trigger.remove();
         panel.remove();
     };

@@ -110,10 +110,11 @@ ensure(includesAll(readme, [
 ]), 'README must include desktop, privacy, and network disclosure sections.', failures);
 
 ensure(includesAll(privacyDoc, [
-  'AI Off',
-  'Social Connections',
+  'Enable AI LLM features',
+  'ships off by default',
+  'Community Share',
   'No telemetry'
-]), 'Privacy/security doc must cover AI Off, Social Connections, and no-telemetry posture.', failures);
+]), 'Privacy/security doc must cover the AI master switch (off by default), Community Share posture, and no-telemetry posture.', failures);
 
 ensure(eyeballDoc.includes('## Always check'), 'Pre-release eyeball checklist must include always-check guidance.', failures);
 

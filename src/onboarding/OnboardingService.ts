@@ -202,7 +202,7 @@ export class OnboardingService {
 
   /**
    * Inspect the book folder and say which import flow its contents suggest,
-   * with human-readable evidence and any plausible alternatives. The author
+   * with human-readable evidence and any credible alternatives. The author
    * sees this on the Prepare screen and can override when contents are
    * ambiguous (e.g. numbered .md notes next to an unrelated .csv).
    */

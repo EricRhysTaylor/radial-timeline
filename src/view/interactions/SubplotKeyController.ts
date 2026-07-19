@@ -99,7 +99,7 @@ export function setupSubplotKeyController(
     header.textContent = 'Ring key';
     const headerHint = doc.createElement('span');
     headerHint.className = 'ert-timeline-subplot-key__hint';
-    headerHint.textContent = 'outer → inner';
+    headerHint.textContent = 'Outer → inner';
     header.appendChild(headerHint);
     surface.appendChild(header);
 
@@ -150,10 +150,10 @@ export function setupSubplotKeyController(
         if (isOuterRow) name.classList.add('ert-timeline-subplot-key__name--ring-label');
         row.appendChild(name);
 
-        row.addEventListener('mouseenter', () => spotlightRing(entry.ring));
-        row.addEventListener('mouseleave', clearSpotlight);
-        row.addEventListener('focus', () => spotlightRing(entry.ring));
-        row.addEventListener('blur', clearSpotlight);
+        row.addEventListener('mouseenter', () => spotlightRing(entry.ring)); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
+        row.addEventListener('mouseleave', clearSpotlight); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
+        row.addEventListener('focus', () => spotlightRing(entry.ring)); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
+        row.addEventListener('blur', clearSpotlight); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
         rows.appendChild(row);
     });
 
@@ -185,8 +185,9 @@ export function setupSubplotKeyController(
         }, HIDE_DELAY_MS);
     };
 
-    trigger.addEventListener('mouseenter', show);
-    trigger.addEventListener('mouseleave', scheduleHide);
+    trigger.addEventListener('mouseenter', show); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
+    trigger.addEventListener('mouseleave', scheduleHide); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
+    // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
     trigger.addEventListener('click', (evt: MouseEvent) => {
         evt.preventDefault();
         evt.stopPropagation();
@@ -194,8 +195,8 @@ export function setupSubplotKeyController(
         trigger.classList.toggle('is-pinned', view.subplotKeyPinned);
         if (view.subplotKeyPinned) show(); else hide();
     });
-    panel.addEventListener('mouseenter', show);
-    panel.addEventListener('mouseleave', scheduleHide);
+    panel.addEventListener('mouseenter', show); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
+    panel.addEventListener('mouseleave', scheduleHide); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
 
     // Hold Shift to peek at the key. Chronologue owns Shift (elapsed-time
     // comparison), so the shortcut is disabled there.
@@ -226,9 +227,9 @@ export function setupSubplotKeyController(
     };
     // SAFE: document/window listeners removed via view._subplotKeyCleanup (called on
     // every re-render before re-setup, and on view close).
-    doc.addEventListener('keydown', handleKeyDown);
-    doc.addEventListener('keyup', handleKeyUp);
-    win.addEventListener('blur', handleWindowBlur);
+    doc.addEventListener('keydown', handleKeyDown); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
+    doc.addEventListener('keyup', handleKeyUp); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
+    win.addEventListener('blur', handleWindowBlur); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
 
     container.appendChild(trigger);
     container.appendChild(panel);

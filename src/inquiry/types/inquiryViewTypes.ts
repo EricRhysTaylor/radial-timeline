@@ -148,6 +148,19 @@ export type InquiryOmnibusModalOptions = {
     priorProgress?: OmnibusProgressState;
     resumeAvailable?: boolean;
     resumeUnavailableReason?: string;
+    /**
+     * Pre-run cost band (healthy cached total vs costly uncached total) for the
+     * selected corpus, provider, and question count. Undefined when the model
+     * has no usable pricing or the corpus token estimate is unavailable.
+     */
+    costRange?: OmnibusCostRangePlan;
+};
+
+export type OmnibusCostRangePlan = {
+    uncachedUSD: number;
+    cachedUSD?: number;
+    corpusInputTokens: number;
+    estimateMethod?: string;
 };
 
 export type CorpusCcEntry = {

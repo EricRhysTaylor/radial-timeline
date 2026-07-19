@@ -212,6 +212,15 @@ import {
     formatExactUsdCost,
     formatApproxUsdCost
 } from '../ai/cost/estimateCorpusCost';
+import {
+    accumulateOmnibusPassCost,
+    buildOmnibusCacheMissMessage,
+    createOmnibusCostAccumulator,
+    estimateOmnibusCostRange,
+    evaluateOmnibusCachePass,
+    readOmnibusCacheProbe,
+    type OmnibusCostAccumulator
+} from './runner/omnibusCacheHealth';
 import { tokenEstimateFromMethod } from '../ai/estimates';
 import { resolveInquirySourceRoots } from './utils/sourceRoots';
 import { renderInquiryCorpusStrip } from './corpus/inquiryCorpusStripRenderer';
@@ -292,6 +301,7 @@ import type {
     InquiryGuidanceState,
     InquiryOmnibusPlan,
     InquiryOmnibusModalOptions,
+    OmnibusCostRangePlan,
     InquiryPurgePreviewItem,
     InquiryPreviewRow,
     InquiryQuestion,
@@ -6747,7 +6757,8 @@ export class InquiryView extends ItemView {
             runDisabledReason,
             priorProgress: priorProgress ?? undefined,
             resumeAvailable: resumeCheck.available,
-            resumeUnavailableReason: resumeCheck.reason
+            resumeUnavailableReason: resumeCheck.reason,
+            costRange: this.buildOmnibusCostRangePlan(questions.length, providerPlan)
         });
         if (!plan) return;
 
@@ -6886,6 +6897,15 @@ export class InquiryView extends ItemView {
                 modal.setAiAdvancedContext(this.getEffectiveReuseAdvancedContext());
                 // Combined path is a single provider call; report cache once for the whole run.
                 modal.notePassResult(1, 1, traceForLogs?.usage ?? null);
+                const combinedProbe = readOmnibusCacheProbe(traceForLogs?.usage);
+                const combinedCost = accumulateOmnibusPassCost(
+                    createOmnibusCostAccumulator(),
+                    providerChoice.provider,
+                    providerChoice.modelId,
+                    traceForLogs?.usage ?? null,
+                    combinedProbe.cacheReadTokens
+                );
+                modal.noteRunningCost(combinedCost);
             }
             const completedAt = new Date();
             const questionsById = new Map(questions.map(question => [question.id, question]));
@@ -7004,6 +7024,17 @@ export class InquiryView extends ItemView {
         let lastSession: InquirySession | null = null;
         let lastResult: InquiryResult | null = null;
         let aborted = false;
+        // Cache-health kill-switch state (see runner/omnibusCacheHealth.ts).
+        // `cacheArmed` carries forward whether an earlier question created or
+        // reused the provider cache, so a question >=2 with no cache read can be
+        // distinguished as a costly MISS (abort) vs an uncacheably-small corpus.
+        let cacheArmed = false;
+        let costAcc: OmnibusCostAccumulator = createOmnibusCostAccumulator();
+        let cacheMissDetail: string | undefined;
+        const cacheTtlLabel = formatProviderCacheTtlLabel(
+            providerChoice.provider,
+            this.plugin.settings.aiSettings ?? buildDefaultAiSettings()
+        );
 
         const modal = this.activeOmnibusModal;
 
@@ -7088,8 +7119,28 @@ export class InquiryView extends ItemView {
                     trace = await this.buildFallbackTrace(runnerInput, `Runner exception: ${message}`);
                 }
 
+                // Cache-health kill-switch: evaluate this pass's cache result
+                // against the pure decision that also drives the UI pill. A
+                // question >=2 that re-sent the corpus at full price (armed
+                // cache, zero cache read) terminates the remaining run.
+                const probe = readOmnibusCacheProbe(trace?.usage);
+                const cacheDecision = evaluateOmnibusCachePass({
+                    passIndex: questionIndex,
+                    probe,
+                    cacheArmedBefore: cacheArmed
+                });
+                cacheArmed = cacheDecision.cacheArmed;
+                costAcc = accumulateOmnibusPassCost(
+                    costAcc,
+                    providerChoice.provider,
+                    providerChoice.modelId,
+                    trace?.usage ?? null,
+                    probe.cacheReadTokens
+                );
+
                 if (modal) {
-                    modal.notePassResult(questionIndex, total, trace?.usage ?? null);
+                    modal.notePassResult(questionIndex, total, trace?.usage ?? null, cacheDecision.health);
+                    modal.noteRunningCost(costAcc);
                     modal.updateProgress(questionIndex, total, zoneLabel, question.label, 'Writing brief/log...');
                 }
 
@@ -7111,6 +7162,25 @@ export class InquiryView extends ItemView {
                 completedIds.push(question.id);
                 lastSession = persisted.session;
                 lastResult = persisted.normalized;
+
+                // The completed question's result is already saved above; only
+                // the REMAINING questions are terminated. Fail clearly (RT
+                // doctrine) — never continue silently at full price.
+                if (cacheDecision.abort) {
+                    aborted = true;
+                    const corpusInputTokens = trace?.usage?.inputTokens
+                        ?? probe.cacheReadTokens + probe.cacheCreatedTokens;
+                    cacheMissDetail = buildOmnibusCacheMissMessage({
+                        passIndex: questionIndex,
+                        totalQuestions: total,
+                        questionLabel: question.label,
+                        fullPriceInputTokens: corpusInputTokens,
+                        remainingQuestions: questions.length - questionIndex,
+                        cacheTtlLabel
+                    });
+                    new Notice(cacheMissDetail);
+                    break;
+                }
             }
         } finally {
             const indexPath = (createIndex && briefPaths.length > 1)
@@ -7132,8 +7202,12 @@ export class InquiryView extends ItemView {
                     abortedAt: new Date().toISOString()
                 });
             }
-            if (modal) modal.showResult(completedIds.length, total, !isComplete);
-            if (lastSession && lastResult) {
+            if (modal) modal.showResult(completedIds.length, total, !isComplete, cacheMissDetail);
+            if (cacheMissDetail) {
+                this.state.isRunning = false;
+                this.setApiStatus('error', cacheMissDetail);
+                this.refreshUI();
+            } else if (lastSession && lastResult) {
                 this.applySession({
                     result: lastResult,
                     key: lastSession.key,
@@ -7395,6 +7469,43 @@ export class InquiryView extends ItemView {
                 ? `Using canonical Inquiry engine ${engine.providerLabel} · ${engine.modelLabel} for a combined omnibus run.`
                 : `Using canonical Inquiry engine ${engine.providerLabel} · ${engine.modelLabel}. This provider will execute omnibus sequentially.`,
             label: useOmnibus ? `${engine.providerLabel} omnibus` : `Sequential · ${engine.providerLabel}`
+        };
+    }
+
+    /**
+     * Pre-run cost band for the Omnibus plan modal. Uses the synchronous
+     * estimate snapshot (byte-on-the-wire input tokens for the current corpus)
+     * and the resolved engine's pricing. Returns undefined when either the
+     * corpus token estimate or the model pricing is unavailable, so the modal
+     * can say "unavailable" honestly rather than show a fabricated number.
+     */
+    private buildOmnibusCostRangePlan(
+        questionCount: number,
+        providerPlan: OmnibusProviderPlan
+    ): OmnibusCostRangePlan | undefined {
+        const choice = providerPlan.choice;
+        if (!choice) return undefined;
+        const snapshot = this.plugin.getInquiryEstimateService().getSnapshot();
+        const corpusInputTokens = snapshot?.estimate?.estimatedInputTokens;
+        if (typeof corpusInputTokens !== 'number' || !Number.isFinite(corpusInputTokens) || corpusInputTokens <= 0) {
+            return undefined;
+        }
+        const range = estimateOmnibusCostRange({
+            provider: choice.provider,
+            modelId: choice.modelId,
+            corpusInputTokens,
+            // Each question returns a bounded findings JSON; the input corpus,
+            // not the output, dominates the band, so a conservative fixed
+            // per-question output estimate is sufficient for a range.
+            expectedOutputTokensPerQuestion: Math.min(INQUIRY_MAX_OUTPUT_TOKENS, 4000),
+            questionCount
+        });
+        if (!range) return undefined;
+        return {
+            uncachedUSD: range.uncachedUSD,
+            cachedUSD: range.cachedUSD,
+            corpusInputTokens,
+            estimateMethod: snapshot?.estimate?.estimationMethod
         };
     }
 

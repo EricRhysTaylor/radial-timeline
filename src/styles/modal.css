@@ -2228,8 +2228,33 @@
 .ert-ui.ert-scope--modal .ert-omnibus-cache-pill.is-none {
   background-color: var(--background-modifier-border);
   color: var(--text-muted);
-  text-decoration: line-through;
-  text-decoration-color: var(--text-faint);
+}
+
+/* Omnibus: running-cost pill */
+.ert-ui.ert-scope--modal .ert-omnibus-cost-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.ert-ui.ert-scope--modal .ert-omnibus-cost-pill .ert-omnibus-cost-pill-label {
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.ert-ui.ert-scope--modal .ert-omnibus-cost-pill .ert-omnibus-cost-pill-detail {
+  opacity: 0.95;
+}
+
+.ert-ui.ert-scope--modal .ert-omnibus-cost-pill.is-pending {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-muted);
+}
+
+/* Omnibus: pre-run cost estimate line */
+.ert-ui.ert-scope--modal .ert-omnibus-cost-estimate {
+  margin-top: var(--ert-gap-xs);
 }
 
 /* Omnibus: result panel */
@@ -2241,6 +2266,27 @@
 .ert-ui.ert-scope--modal .ert-omnibus-result-text {
   font-size: 0.85rem;
   color: var(--text-normal);
+}
+
+/* Omnibus: cache-miss termination (error) block */
+.ert-ui.ert-scope--modal .ert-omnibus-result-error {
+  padding: var(--ert-gap-md);
+  border: 1px solid rgba(207, 34, 46, 0.50);
+  border-radius: var(--ert-radius-sm, 6px);
+  background-color: rgba(207, 34, 46, 0.10);
+  text-align: left;
+}
+
+.ert-ui.ert-scope--modal .ert-omnibus-result-error-title {
+  font-weight: 600;
+  color: rgb(176, 30, 40);
+  margin-bottom: var(--ert-gap-xs);
+}
+
+.ert-ui.ert-scope--modal .ert-omnibus-result-error-detail {
+  font-size: 0.82rem;
+  color: var(--text-normal);
+  margin-bottom: var(--ert-gap-xs);
 }
 
 /* Omnibus: config panel spacing */

@@ -7,6 +7,8 @@ import {
 } from 'obsidian';
 import type { AIRunAdvancedContext } from '../../ai/types';
 import type { TokenUsage } from '../../ai/usage/providerUsage';
+import { formatExactUsdCost } from '../../ai/cost/estimateCorpusCost';
+import type { OmnibusCacheHealth, OmnibusCostAccumulator } from '../runner/omnibusCacheHealth';
 import { redactSensitiveValue } from '../../ai/credentials/redactSensitive';
 import { SIGMA_CHAR } from '../constants/inquiryUi';
 import type {
@@ -193,6 +195,8 @@ export class InquiryOmnibusModal extends Modal {
     private aiAdvancedContext: AIRunAdvancedContext | null = null;
     private cachePillEl?: HTMLSpanElement;
     private cachePillDetailEl?: HTMLSpanElement;
+    private costPillEl?: HTMLSpanElement;
+    private costPillDetailEl?: HTMLSpanElement;
     private cacheReadCumulative = 0;
     private cacheCreatedCumulative = 0;
     private cacheMissCount = 0;
@@ -388,6 +392,26 @@ export class InquiryOmnibusModal extends Modal {
         const logsDisabledNote = this.options.logsEnabled ? '' : ' Logs are disabled in settings.';
         const volumeLine = this.configPanel.createDiv({ cls: 'ert-field-note' });
         volumeLine.setText(`This will generate ${totalQuestions} Inquiry ${briefLabel} and ${totalQuestions} ${logLabel}.${logsDisabledNote}`);
+
+        const costRange = this.options.costRange;
+        const costLine = this.configPanel.createDiv({ cls: 'ert-field-note ert-omnibus-cost-estimate' });
+        if (costRange) {
+            const corpusTokens = Math.max(0, Math.round(costRange.corpusInputTokens)).toLocaleString();
+            if (typeof costRange.cachedUSD === 'number') {
+                costLine.setText(
+                    `Estimated cost: ~${formatExactUsdCost(costRange.cachedUSD)} with cache reuse (healthy) vs ~${formatExactUsdCost(costRange.uncachedUSD)} uncached, `
+                    + `over ${totalQuestions} question${totalQuestions === 1 ? '' : 's'} against ~${corpusTokens} corpus input tokens. `
+                    + `The run aborts automatically if the cache is not reused after question 1.`
+                );
+            } else {
+                costLine.setText(
+                    `Estimated cost: ~${formatExactUsdCost(costRange.uncachedUSD)} (this model has no cache-read price to model reuse), `
+                    + `over ${totalQuestions} question${totalQuestions === 1 ? '' : 's'} against ~${corpusTokens} corpus input tokens.`
+                );
+            }
+        } else {
+            costLine.setText('Estimated cost: unavailable (no corpus token estimate or model pricing yet).');
+        }
     }
 
     private renderConfigActions(): void {
@@ -450,6 +474,13 @@ export class InquiryOmnibusModal extends Modal {
             this.cachePillDetailEl = this.cachePillEl.createSpan({ cls: 'ert-omnibus-cache-pill-detail', text: 'pending' });
             setTooltip(this.cachePillEl, 'Cache reuse is confirmed only when the provider reports cache_read tokens. Pass 1 primes the cache; pass 2+ should report a read.');
 
+            this.costPillEl = statusRow.createSpan({
+                cls: 'ert-badgePill ert-badgePill--sm ert-omnibus-cost-pill is-pending'
+            });
+            this.costPillEl.createSpan({ cls: 'ert-omnibus-cost-pill-label', text: 'Cost' });
+            this.costPillDetailEl = this.costPillEl.createSpan({ cls: 'ert-omnibus-cost-pill-detail', text: 'pending' });
+            setTooltip(this.costPillEl, 'Running total billed so far, computed from each response’s actual token usage (input, output, cache-write, cache-read).');
+
             this.progressTextEl = this.progressEl.createDiv({ cls: 'ert-omnibus-progress-text' });
             this.progressTextEl.setText('Preparing...');
             this.progressMicroEl = this.progressEl.createDiv({ cls: 'ert-omnibus-progress-micro ert-field-note' });
@@ -485,7 +516,19 @@ export class InquiryOmnibusModal extends Modal {
         this.renderAiAdvancedContext();
     }
 
-    notePassResult(passIndex: number, total: number, usage: TokenUsage | null | undefined): void {
+    /**
+     * Update the cache pill for a completed pass. When `health` is provided
+     * (sequential Omnibus) it is authoritative — it comes from the same pure
+     * decision that drives the kill-switch, so the pill and the abort logic
+     * can never disagree. Without `health` (the single-call combined path) the
+     * pill falls back to deriving state from the usage payload alone.
+     */
+    notePassResult(
+        passIndex: number,
+        total: number,
+        usage: TokenUsage | null | undefined,
+        health?: OmnibusCacheHealth
+    ): void {
         if (!this.cachePillEl || !this.cachePillDetailEl) return;
 
         const cacheRead = usage?.cacheReadInputTokens ?? 0;
@@ -509,6 +552,27 @@ export class InquiryOmnibusModal extends Modal {
             this.cachePillDetailEl.setText(detail);
         };
 
+        if (health) {
+            switch (health) {
+                case 'reused':
+                    setState('confirmed', `confirmed · read ${formatCacheTokens(this.cacheReadCumulative)} tok (pass ${passIndex}/${total})`);
+                    return;
+                case 'armed':
+                    setState('primed', `primed · wrote ${formatCacheTokens(cacheCreated)} tok (pass ${passIndex})`);
+                    return;
+                case 'miss':
+                    this.cacheMissCount += 1;
+                    setState('miss', `miss on pass ${passIndex} · terminating run`);
+                    return;
+                case 'below_minimum':
+                    setState('none', 'corpus below minimum cacheable size');
+                    return;
+                case 'unknown':
+                    setState('none', 'cache status unknown (no provider signal)');
+                    return;
+            }
+        }
+
         if (!usage) {
             setState('pending', `pass ${passIndex}/${total} · usage unknown`);
             return;
@@ -531,6 +595,19 @@ export class InquiryOmnibusModal extends Modal {
             return;
         }
         setState('pending', `pass ${passIndex}/${total} · no cache activity`);
+    }
+
+    noteRunningCost(acc: OmnibusCostAccumulator): void {
+        if (!this.costPillEl || !this.costPillDetailEl) return;
+        if (acc.pricedPasses === 0) {
+            this.costPillDetailEl.setText(acc.unpricedPasses > 0 ? 'unpriced' : 'pending');
+            return;
+        }
+        const unpricedNote = acc.unpricedPasses > 0
+            ? ` (+${acc.unpricedPasses} unpriced)`
+            : '';
+        this.costPillEl.classList.remove('is-pending');
+        this.costPillDetailEl.setText(`${formatExactUsdCost(acc.totalCostUSD)} so far${unpricedNote}`);
     }
 
     private renderAiAdvancedContext(): void {
@@ -560,7 +637,7 @@ export class InquiryOmnibusModal extends Modal {
         this.aiAdvancedPreEl.setText(lines.join('\n'));
     }
 
-    showResult(completed: number, total: number, aborted: boolean): void {
+    showResult(completed: number, total: number, aborted: boolean, cacheMissDetail?: string): void {
         this.isRunning = false;
         this.setHidden(this.progressEl, true);
         if (this.resultEl) {
@@ -568,7 +645,18 @@ export class InquiryOmnibusModal extends Modal {
             this.resultEl.empty();
             const briefLabel = completed === 1 ? 'Brief' : 'Briefs';
             const logLabel = completed === 1 ? 'Log' : 'Logs';
-            if (aborted) {
+            if (cacheMissDetail) {
+                const errorBlock = this.resultEl.createDiv({ cls: 'ert-omnibus-result-error' });
+                errorBlock.createDiv({
+                    cls: 'ert-omnibus-result-error-title',
+                    text: 'Run terminated to prevent uncached (full-price) billing'
+                });
+                errorBlock.createDiv({ cls: 'ert-omnibus-result-error-detail', text: cacheMissDetail });
+                errorBlock.createDiv({
+                    cls: 'ert-omnibus-result-text',
+                    text: `${completed} of ${total} completed and saved before termination.`
+                });
+            } else if (aborted) {
                 this.resultEl.createDiv({
                     cls: 'ert-omnibus-result-text',
                     text: `Omnibus pass stopped. ${completed} of ${total} completed.`

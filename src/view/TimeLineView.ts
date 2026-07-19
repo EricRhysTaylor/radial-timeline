@@ -558,7 +558,7 @@ export class RadialTimelineView extends ItemView {
             // Active state is kept in sync through the currentMode setter, so
             // keyboard, click, and saga-forced switches all reflect here.
             const modeNav = doc.createElement('div');
-            modeNav.className = 'rt-mode-nav';
+            modeNav.className = 'ert-timeline-mode-nav';
             modeNav.setAttribute('role', 'tablist');
             modeNav.setAttribute('aria-label', 'Timeline mode');
             const modeButtons = new Map<string, HTMLButtonElement>();
@@ -567,7 +567,7 @@ export class RadialTimelineView extends ItemView {
                 const translated = t(modeKey);
                 const label = translated && !translated.startsWith('[missing:') ? translated : mode.name;
                 const btn = doc.createElement('button');
-                btn.className = 'rt-mode-nav__btn';
+                btn.className = 'ert-timeline-mode-nav__btn';
                 btn.type = 'button';
                 btn.dataset.mode = mode.id;
                 btn.setAttribute('role', 'tab');

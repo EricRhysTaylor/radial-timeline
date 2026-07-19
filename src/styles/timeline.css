@@ -208,7 +208,7 @@
 }
 
 /* Mode selector grid.
-   The mode selector now lives in the view title bar (.rt-mode-nav); this
+   The mode selector now lives in the view title bar (.ert-timeline-mode-nav); this
    in-canvas SVG grid is hidden so there is a single, unambiguous mode control.
    The grid is still rendered (its keyboard 1–4 handler and switch state ride
    along in ModeToggleController), so hiding here is fully reversible pending a
@@ -1065,14 +1065,14 @@
 
 /* Center mode navigation — compact text buttons replacing the view title.
    Active mode uses the theme accent; everything else stays theme-muted. */
-.rt-mode-nav {
+.ert-timeline-mode-nav {
   display: flex;
   align-items: center;
   gap: 2px;
   min-width: 0;
 }
 
-.rt-mode-nav__btn {
+.ert-timeline-mode-nav__btn {
   height: 24px;
   padding: 0 8px;
   border: thin solid transparent;
@@ -1086,22 +1086,22 @@
   box-shadow: none;
 }
 
-.rt-mode-nav__btn:hover {
+.ert-timeline-mode-nav__btn:hover {
   color: var(--text-normal);
   background: var(--background-modifier-hover);
 }
 
-.rt-mode-nav__btn.is-active {
+.ert-timeline-mode-nav__btn.is-active {
   color: var(--text-on-accent);
   background: var(--interactive-accent);
 }
 
-.rt-mode-nav__btn.is-active:hover {
+.ert-timeline-mode-nav__btn.is-active:hover {
   color: var(--text-on-accent);
   background: var(--interactive-accent-hover);
 }
 
-.rt-mode-nav__btn:focus-visible {
+.ert-timeline-mode-nav__btn:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent) 45%, transparent);
 }
@@ -1113,7 +1113,7 @@
     width: clamp(72px, 10vw, 140px);
     flex: 1 1 auto;
   }
-  .rt-mode-nav__btn {
+  .ert-timeline-mode-nav__btn {
     padding: 0 5px;
   }
 }
@@ -2000,7 +2000,7 @@
 /* Center mode nav: its auto side-margins absorb the free space evenly, which
    also anchors the right cluster (book switcher + native actions) to the end
    of the bar. Collapses cleanly to inline at narrow widths. */
-.view-header:has(.rt-book-switcher) .rt-mode-nav {
+.view-header:has(.rt-book-switcher) .ert-timeline-mode-nav {
   margin-inline: auto;
 }
 

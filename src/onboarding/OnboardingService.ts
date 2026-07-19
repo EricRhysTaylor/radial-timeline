@@ -54,6 +54,7 @@ import {
   parseEntityEnrichment,
   parseSplitProposal,
   buildSceneFrontmatter,
+  deterministicExtraction,
   linkedCharacters,
   linkedPlaces,
   effectiveFlags,
@@ -329,6 +330,39 @@ export class OnboardingService {
   }
 
   /** Sequential per-scene extraction. Skips already-onboarded notes and survey-classified non-scenes. */
+  /**
+   * Structure-only extraction — NO local model required. Builds every scene
+   * proposal from what the source carried: split/filename titles, sidecar
+   * synopses, mapped Subplot/When via carried metadata, positional acts. The
+   * AI-derived fields (characters, places, invented synopses) stay empty for
+   * the author or a later AI pass. Instant; used when preflight finds no model.
+   */
+  buildStructureOnlyProposals(model: ManuscriptModel, options: { publishStage?: Stage } = {}): SceneProposal[] {
+    const actCount = Math.max(3, this.plugin.settings.actCount ?? 3);
+    const scenes = this.candidateScenes(model);
+    const proposals: SceneProposal[] = scenes.map((scene) => {
+      const extraction = deterministicExtraction(scene);
+      return {
+        sourceRef: scene.sourceRef,
+        title: scene.title ?? titleFromFileName(basename(scene.sourceRef)),
+        frontmatter: buildSceneFrontmatter(extraction, {
+          actCount,
+          publishStage: options.publishStage,
+          subplotVocabulary: extraction.subplot,
+          carriedMetadata: scene.knownMetadata,
+        }),
+        body: scene.rawText,
+        flags: [],
+        characters: [],
+        places: [],
+      };
+    });
+    proposals.forEach((proposal, index) => {
+      (proposal.frontmatter as Record<string, unknown>).Act = positionalAct(index, proposals.length, actCount);
+    });
+    return proposals;
+  }
+
   async extractScenes(
     model: ManuscriptModel,
     survey: SurveyResult | null,

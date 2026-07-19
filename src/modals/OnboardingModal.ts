@@ -98,6 +98,12 @@ export class OnboardingModal extends Modal {
   private flowOverride: ImportFlow | null = null;
   /** Scrivener metadata mapping table (seeded from the automap; author-edited). */
   private metadataMapping: Record<string, ScrivenerFieldTarget> | null = null;
+  /**
+   * False when preflight found no capable local model. Onboarding still runs —
+   * structure-only (split titles, sidecar synopses, mapped metadata, positional
+   * acts) — with every AI stage skipped and its controls hidden.
+   */
+  private aiAvailable = false;
   private abortController: AbortController | null = null;
 
   constructor(app: App, plugin: RadialTimelinePlugin) {
@@ -171,8 +177,18 @@ export class OnboardingModal extends Modal {
     contentEl.empty();
     this.renderStageHeader(1, 'Prepare', `Onboard "${book.sourceFolder}"`);
 
+    // The local model is optional: without one, onboarding runs structure-only
+    // (split titles, sidecar synopses, mapped metadata, positional acts) and
+    // every AI stage is skipped. Scrivener/Word migrations rarely need more.
+    this.aiAvailable = preflightOk;
     const status = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
-    this.renderStatusRow(status, 'Local model', preflightOk ? `Ready — tier ${tier}` : `Not ready — ${preflightReason}`, preflightOk);
+    this.renderStatusRow(status, 'Local model', preflightOk ? `Ready — tier ${tier}` : `Not available — ${preflightReason}`, preflightOk);
+    if (!preflightOk) {
+      status.createDiv({
+        cls: 'ert-muted',
+        text: 'Onboarding will run structure-only: scenes, titles, and any carried Scrivener metadata are used as-is. AI synopses, characters/places, and auto-split need a local model (Settings → AI).',
+      });
+    }
 
     // Import lane: say what was detected and why. When the folder's contents
     // support more than one reading, the author can switch lanes right here.
@@ -212,9 +228,9 @@ export class OnboardingModal extends Modal {
     }
 
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
-    const canStart = preflightOk && !ingestReason && candidateCount > 0 && this.model !== null;
+    const canStart = !ingestReason && candidateCount > 0 && this.model !== null;
     new ButtonComponent(actions)
-      .setButtonText('Continue')
+      .setButtonText(preflightOk ? 'Continue' : 'Continue without AI')
       .setCta()
       .setDisabled(!canStart)
       .onClick(() => this.showSplitCheckpoint());
@@ -226,7 +242,13 @@ export class OnboardingModal extends Modal {
     if (!this.model) return;
     const { contentEl } = this;
     contentEl.empty();
-    this.renderStageHeader(2, 'Confirm scenes', 'Each chapter is split into its scenes. Marker breaks split automatically; Auto-split proposes the rest, then you adjust.');
+    this.renderStageHeader(
+      2,
+      'Confirm scenes',
+      this.aiAvailable
+        ? 'Each chapter is split into its scenes. Marker breaks split automatically; Auto-split proposes the rest, then you adjust.'
+        : 'Each chapter is split into its scenes. Marker breaks split automatically; place any others by hand.'
+    );
 
     // One split plan per source file (built once; edits persist across re-render).
     const scenes = flattenScenes(this.model);
@@ -313,7 +335,7 @@ export class OnboardingModal extends Modal {
     const splittable = [...this.splitPlans.values()].some(
       (plan) => !plan.alreadyOnboarded && plan.paragraphs.length > 1 && plan.breaks.length === 0
     );
-    const offerAutoSplit = splittable && !this.splitOutcomes;
+    const offerAutoSplit = splittable && !this.splitOutcomes && this.aiAvailable;
     if (offerAutoSplit) {
       contentEl.createDiv({
         cls: 'ert-muted',
@@ -565,6 +587,22 @@ export class OnboardingModal extends Modal {
     if (this.metadataMapping) {
       model = applyMetadataMappingToModel(model, this.metadataMapping);
     }
+
+    // Structure-only path (no local model): everything is deterministic and
+    // instant — no survey, no per-scene calls, no entity summaries.
+    if (!this.aiAvailable) {
+      this.survey = null;
+      this.proposals = this.service.buildStructureOnlyProposals(model, { publishStage: this.publishStage });
+      const kinds: EntityKind[] = [];
+      if (this.createCharacters) kinds.push('character');
+      if (this.createPlaces) kinds.push('place');
+      this.entityProposals = kinds.length > 0
+        ? await this.service.enrichEntities(this.proposals, { kinds, generateSummaries: false })
+        : [];
+      this.showReviewCheckpoint();
+      return;
+    }
+
     this.abortController = new AbortController();
     const { contentEl } = this;
     contentEl.empty();
@@ -620,7 +658,8 @@ export class OnboardingModal extends Modal {
 
     // An all-Main-Plot book is almost always a failed structure survey, not a
     // one-thread story — say so instead of letting the timeline look broken.
-    if (!this.survey || this.survey.subplots.length === 0) {
+    // (Structure-only runs skip the survey by design; no banner there.)
+    if (this.aiAvailable && (!this.survey || this.survey.subplots.length === 0)) {
       contentEl.createDiv({
         cls: 'ert-onb-error',
         text: 'The structure survey failed, so every scene is on Main Plot. You can re-run onboarding for another pass, or layer subplots later.',
@@ -664,10 +703,12 @@ export class OnboardingModal extends Modal {
       }
     );
     const syncSummaryToggle = (): void => {
-      const anyProfile = this.createCharacters || this.createPlaces;
-      summaryToggle.disabled = !anyProfile;
-      summaryToggle.parentElement?.toggleClass('ert-setting-dimmed', !anyProfile);
-      if (!anyProfile && this.generateSummaries) {
+      // Profiles-without-summaries needs zero AI, so those boxes stay live in
+      // structure-only mode; only the summary pass itself requires the model.
+      const enabled = (this.createCharacters || this.createPlaces) && this.aiAvailable;
+      summaryToggle.disabled = !enabled;
+      summaryToggle.parentElement?.toggleClass('ert-setting-dimmed', !enabled);
+      if (!enabled && this.generateSummaries) {
         this.generateSummaries = false;
         summaryToggle.checked = false;
       }

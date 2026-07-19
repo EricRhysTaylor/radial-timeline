@@ -6,6 +6,7 @@ import {
   parseSplitProposal,
   capSubplotVocabulary,
   enforceSubplotVocabulary,
+  deterministicExtraction,
   positionalAct,
   MAX_SUBPLOTS,
   buildSceneFrontmatter,
@@ -60,6 +61,42 @@ describe('enforceSubplotVocabulary', () => {
   });
   it('matches across curly/straight apostrophes instead of dropping to Main Plot', () => {
     expect(enforceSubplotVocabulary(["Telemachus' Journey"], vocab)).toEqual(['Telemachus’ Journey']);
+  });
+});
+
+describe('deterministicExtraction (structure-only mode)', () => {
+  it('carries the sidecar synopsis and a mapped Subplot; AI fields stay empty', () => {
+    const e = deterministicExtraction({
+      knownSynopsis: 'The ferry docks at dawn.',
+      knownMetadata: { Subplot: 'Homecoming', Label: 'Travel' },
+    });
+    expect(e.synopsis).toBe('The ferry docks at dawn.');
+    expect(e.subplot).toEqual(['Homecoming']);
+    expect(e.character).toEqual([]);
+    expect(e.place).toEqual([]);
+    expect(e.when).toBeNull();
+    expect(e.flags).toEqual([]);
+    // Feeding the subplot back as vocabulary keeps the carried thread alive.
+    const fm = buildSceneFrontmatter(e, { actCount: 3, subplotVocabulary: e.subplot });
+    expect(fm.Subplot).toEqual(['Homecoming']);
+    expect(fm.Synopsis).toBe('The ferry docks at dawn.');
+  });
+
+  it('yields blank synopsis and Main Plot when the source carried nothing', () => {
+    const e = deterministicExtraction({ knownSynopsis: null, knownMetadata: {} });
+    expect(e.synopsis).toBe('');
+    const fm = buildSceneFrontmatter(e, { actCount: 3, subplotVocabulary: e.subplot });
+    expect(fm.Subplot).toEqual(['Main Plot']);
+  });
+
+  it('lets a mapped When arrive through carried-metadata gap-fill', () => {
+    const e = deterministicExtraction({ knownSynopsis: null, knownMetadata: { When: '1184-06-15' } });
+    const fm = buildSceneFrontmatter(e, {
+      actCount: 3,
+      subplotVocabulary: e.subplot,
+      carriedMetadata: { When: '1184-06-15' },
+    });
+    expect(fm.When).toBe('1184-06-15');
   });
 });
 

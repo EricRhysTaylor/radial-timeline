@@ -736,6 +736,21 @@ Doctrine fit: no new abstraction layer beyond the adapters, no fallback chains
   contents are ambiguous; chapters-vs-scenes language fixed at Stage 2 (unsplit
   chapters say "unsplit", never "1 scene").
 
+- **2026-07-18 (structure-only mode — local LLM now optional)** — Eric: needing
+  a local model wired up is a big adoption barrier, especially for Scrivener/
+  Word migrations where the author already curated titles, synopses (sidecar),
+  and metadata. Preflight is now a **soft gate**: with no capable model, the
+  Prepare screen says so, the button reads **"Continue without AI"**, and the
+  run is structure-only — deterministic split (markers/manual; Auto-split
+  hidden), split/filename titles, **sidecar synopses**, mapped Subplot/When via
+  the mapping table, positional acts, entity scaffolds (profiles-without-
+  summaries needs zero AI; the summaries checkbox disables). No survey (all
+  Main Plot unless a Subplot column is mapped), no characters/places, no
+  invented synopses — the author or a later AI pass fills those.
+  `buildStructureOnlyProposals` + pure `deterministicExtraction` (tested).
+  This makes onboarding usable by every author on install, with the local
+  model as an enhancement rather than a prerequisite.
+
 ## Appendix A — Canonical onboarding prompt (instruction block)
 
 Source of truth for this text is **Supabase** (see "The Onboarding Prompt —

@@ -165,6 +165,32 @@ export function parseSplitProposal(raw: string | null | undefined): ParseResult<
   return { ok: true, value: { starts, labels } };
 }
 
+/**
+ * Structure-only extraction (no local model available): a SceneExtraction built
+ * purely from what the source carried. Scrivener sidecars supply the synopsis
+ * and (via the mapping table) Subplot/When; everything AI-derived — characters,
+ * places, invented titles — stays empty for the author (or a later AI pass) to
+ * fill. Feed the returned subplot back as the vocabulary so a carried Subplot
+ * survives `enforceSubplotVocabulary` instead of collapsing to Main Plot.
+ */
+export function deterministicExtraction(source: {
+  knownSynopsis: string | null;
+  knownMetadata: Record<string, string>;
+}): SceneExtraction {
+  const carriedSubplot = sanitizeName(source.knownMetadata['Subplot'] ?? '');
+  return {
+    act: 1, // recomputed positionally downstream
+    title: '',
+    synopsis: source.knownSynopsis?.trim() ?? '',
+    subplot: carriedSubplot ? [carriedSubplot] : [],
+    character: [],
+    place: [],
+    when: null, // a mapped When arrives via carriedMetadata gap-fill
+    duration: null,
+    flags: [],
+  };
+}
+
 /** Strip commas (canonical RULE: no commas in Subplot/Character/Place) and collapse whitespace. */
 export function sanitizeName(name: string): string {
   return name.replace(/,/g, ' ').replace(/\s+/g, ' ').trim();

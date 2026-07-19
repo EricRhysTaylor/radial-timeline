@@ -35,6 +35,20 @@ function publish() {
     // Using cp -R for simplicity on Mac
     run(`cp -R ${SOURCE_DIR}/. ${TEMP_DIR}/`);
 
+    // 3b. Prune pages that no longer exist in wiki/. cp never deletes, so
+    // renamed or retired pages otherwise stay live on the public wiki forever
+    // (36 such orphans had accumulated by 2026-07, including a stale License.md
+    // that still marked the trademark TM after it registered as R).
+    const orphans = fs.readdirSync(TEMP_DIR)
+        .filter(f => f.endsWith('.md'))
+        .filter(f => !fs.existsSync(path.join(SOURCE_DIR, f)));
+    if (orphans.length > 0) {
+        console.log(`Pruning ${orphans.length} orphaned page(s): ${orphans.join(', ')}`);
+        for (const f of orphans) {
+            fs.rmSync(path.join(TEMP_DIR, f));
+        }
+    }
+
     // 4. Commit and Push
     console.log('Committing and pushing changes...');
     const cwd = path.resolve(TEMP_DIR);

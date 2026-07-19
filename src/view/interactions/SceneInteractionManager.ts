@@ -13,6 +13,7 @@
 
 import type { App } from 'obsidian';
 import type { RadialTimelineView } from '../TimeLineView';
+import { measureInteraction } from '../../renderer/utils/Performance';
 import { updateSynopsisTitleColor } from './SynopsisTitleColorManager';
 import {
     SceneAngleData,
@@ -134,12 +135,20 @@ export class SceneInteractionManager {
     }
     
     /**
-     * Handle scene hover
+     * Handle scene hover.
+     * Instrumented: 'hover.enter.js' / 'hover.enter.frame' in the perf buffer
+     * (read via the "Copy performance report" command) so hover cost on large
+     * books is measured, not guessed.
      */
     onSceneHover(group: Element, sceneId: string, mouseEvent?: MouseEvent): void {
         const view = this.getView();
         if (!view) return;
+        // SAFE: the svg belongs to a live view; its document always has a window
+        const win = this.svg.ownerDocument.defaultView!;
+        measureInteraction(view.plugin, 'hover.enter', win, () => this.doSceneHover(view, group, sceneId, mouseEvent));
+    }
 
+    private doSceneHover(view: RadialTimelineView, group: Element, sceneId: string, mouseEvent?: MouseEvent): void {
         // If an expanded state is already active, always return to baseline first.
         // This keeps consecutive hover transitions deterministic.
         if (this.originalAngles.size > 0) {
@@ -182,21 +191,32 @@ export class SceneInteractionManager {
     }
     
     /**
-     * Handle scene leave
+     * Handle scene leave.
+     * Instrumented: 'hover.leave.js' / 'hover.leave.frame' (see onSceneHover).
      */
     onSceneLeave(): void {
-        // Always reset expansion if we have stored angles
-        // This ensures we clean up properly even if state changed during hover
-        if (this.originalAngles.size > 0) {
-            this.resetAngularRedistribution();
+        const view = this.getView();
+        // SAFE: the svg belongs to a live view; its document always has a window
+        const win = this.svg.ownerDocument.defaultView!;
+        const leave = () => {
+            // Always reset expansion if we have stored angles
+            // This ensures we clean up properly even if state changed during hover
+            if (this.originalAngles.size > 0) {
+                this.resetAngularRedistribution();
+            }
+
+            // Clear selection
+            this.clearSelection();
+
+            this.currentGroup = null;
+            this.currentSynopsis = null;
+            this.currentSceneId = null;
+        };
+        if (view) {
+            measureInteraction(view.plugin, 'hover.leave', win, leave);
+        } else {
+            leave();
         }
-        
-        // Clear selection
-        this.clearSelection();
-        
-        this.currentGroup = null;
-        this.currentSynopsis = null;
-        this.currentSceneId = null;
     }
     
     /**

@@ -9,6 +9,7 @@ import type RadialTimelinePlugin from '../main';
 import type { BookLayoutOptions, BookMeta, ManuscriptExportCleanupOptions, PublishingValidationSnapshot } from '../types';
 import { assembleManuscript, getSceneFilesByOrder, ManuscriptSceneSelection, type ManuscriptSceneHeadingMode, updateSceneWordCounts } from '../utils/manuscript';
 import { openGossamerScoreEntry, runGossamerAiAnalysis } from '../GossamerCommands';
+import { summarizePerfMeasurements, resetPerfMeasurements } from '../renderer/utils/Performance';
 import { registerRuntimeCommands } from '../RuntimeCommands';
 import type { SceneAnalysisService } from './SceneAnalysisService';
 import { ManageSubplotsModal } from '../modals/ManageSubplotsModal';
@@ -118,6 +119,48 @@ export class CommandRegistrar {
                 this.plugin.openSearchPrompt();
             }
         });
+
+        // Dev-only diagnostics: dump hover/render timings + a DOM census so
+        // performance work starts from evidence, not guesses. Never ships in
+        // release builds.
+        if (!__RT_RELEASE__) {
+            this.plugin.addCommand({
+                id: 'copy-performance-report',
+                name: 'Copy performance report (dev)',
+                callback: async () => {
+                    const rows = summarizePerfMeasurements(this.plugin);
+                    const view = this.plugin.getTimelineViews()[0];
+                    const svg = view?.contentEl.querySelector<SVGSVGElement>('.radial-timeline-svg') ?? null;
+                    const lines: string[] = ['# Radial Timeline performance report', `- generated: ${new Date().toISOString()}`];
+                    if (view) {
+                        lines.push(`- mode: ${view.currentMode}`);
+                        lines.push(`- timeline items: ${view.sceneData?.length ?? 0}`);
+                    }
+                    lines.push('', '## Timings (ms) — *.js = handler cost, *.frame = through the paint after the mutation');
+                    if (rows.length === 0) {
+                        lines.push('No samples yet — hover scenes on the timeline, then run this again.');
+                    } else {
+                        lines.push('| label | count | median | p95 | max |', '| --- | ---: | ---: | ---: | ---: |');
+                        rows.forEach(r => lines.push(`| ${r.label} | ${r.count} | ${r.median.toFixed(1)} | ${r.p95.toFixed(1)} | ${r.max.toFixed(1)} |`));
+                    }
+                    if (svg) {
+                        const count = (selector: string) => svg.querySelectorAll(selector).length;
+                        lines.push('', '## DOM census (active timeline SVG)');
+                        lines.push(`- total elements: ${svg.getElementsByTagName('*').length}`);
+                        lines.push(`- scene groups: ${count('.rt-scene-group')}`);
+                        lines.push(`- scene paths: ${count('.rt-scene-path')}`);
+                        lines.push(`- scene titles: ${count('.rt-scene-title')}`);
+                        lines.push(`- curved text (textPath): ${count('textPath')}`);
+                        lines.push(`- number squares: ${count('.rt-number-square')}`);
+                        lines.push(`- number texts: ${count('.rt-number-text')}`);
+                        lines.push(`- synopsis blocks: ${count('.rt-scene-info')}`);
+                    }
+                    await navigator.clipboard.writeText(lines.join('\n'));
+                    resetPerfMeasurements(this.plugin);
+                    new Notice('Performance report copied. Sample buffer reset for the next window.');
+                },
+            });
+        }
 
         this.plugin.addCommand({
             id: 'create-note',

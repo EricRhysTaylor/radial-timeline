@@ -79,6 +79,18 @@ export interface PreflightResult {
   modelId?: string;
 }
 
+/** The four import lanes (see the plan's "Import flows" section). */
+export type ImportFlow = 'single' | 'docx' | 'scrivener' | 'folder';
+
+export interface FlowDetection {
+  /** The lane the folder's contents suggest. */
+  flow: ImportFlow;
+  /** Human-readable evidence, e.g. "24 scene files + outline sidecar (Outline.csv)". */
+  evidence: string;
+  /** Other lanes these contents could plausibly support (author may override). */
+  alternatives: ImportFlow[];
+}
+
 export interface SceneProposal {
   sourceRef: string;
   title: string;
@@ -188,14 +200,64 @@ export class OnboardingService {
     return { ok: true, tier: capability.tier, reason: capability.tierSummary, modelId: diagnostics.modelId };
   }
 
-  /** Parse a folder of prose notes into a Manuscript Model (reading order resolved). */
-  async ingest(folderPath: string): Promise<MarkdownIngestResult> {
-    // Route by folder contents: exactly one prose file → single-file flow (detect
-    // internal book/chapter structure); several files → one unit per file.
+  /**
+   * Inspect the book folder and say which import flow its contents suggest,
+   * with human-readable evidence and any plausible alternatives. The author
+   * sees this on the Prepare screen and can override when contents are
+   * ambiguous (e.g. numbered .md notes next to an unrelated .csv).
+   */
+  detectImportFlow(folderPath: string): FlowDetection | null {
+    const folder = this.plugin.app.vault.getAbstractFileByPath(normalizePath(folderPath));
+    if (!(folder instanceof TFolder)) return null;
     const proseFiles = this.listProseFiles(folderPath);
+    if (proseFiles.length === 0) return null;
+
+    const csv = folder.children.find(
+      (child): child is TFile => child instanceof TFile && child.extension.toLowerCase() === 'csv'
+    );
+    const txtCount = proseFiles.filter((file) => file.extension.toLowerCase() === 'txt').length;
+    const mdCount = proseFiles.filter((file) => file.extension.toLowerCase() === 'md').length;
+
     if (proseFiles.length === 1) {
+      const only = proseFiles[0];
+      if (only.extension.toLowerCase() === 'docx') {
+        return { flow: 'docx', evidence: `one Word file (${only.name})`, alternatives: [] };
+      }
+      return { flow: 'single', evidence: `one manuscript file (${only.name})`, alternatives: [] };
+    }
+
+    if (csv || txtCount > 0) {
+      const bits = [`${proseFiles.length} scene files`];
+      if (csv) bits.push(`outline sidecar (${csv.name})`);
+      return {
+        flow: 'scrivener',
+        evidence: bits.join(' + '),
+        // With .md notes present the folder also reads as a vault-native book.
+        alternatives: mdCount > 0 ? ['folder'] : [],
+      };
+    }
+
+    return {
+      flow: 'folder',
+      evidence: `${proseFiles.length} notes`,
+      alternatives: ['scrivener'],
+    };
+  }
+
+  /**
+   * Parse the book folder into a Manuscript Model. The flow is auto-detected
+   * from the folder contents; `flowOverride` (the author's Prepare-screen
+   * choice) wins when provided.
+   */
+  async ingest(folderPath: string, flowOverride?: ImportFlow): Promise<MarkdownIngestResult> {
+    const detection = this.detectImportFlow(folderPath);
+    const flow = flowOverride ?? detection?.flow ?? 'folder';
+
+    if (flow === 'docx' || flow === 'single') {
+      const proseFiles = this.listProseFiles(folderPath);
       const file = proseFiles[0];
-      if (file.extension.toLowerCase() === 'docx') {
+      if (!file) return { kind: 'needs-order', reason: 'The book folder contains no manuscript files.' };
+      if (flow === 'docx') {
         // .docx is a ZIP — must be read as binary, never through vault.read.
         try {
           const data = await this.plugin.app.vault.readBinary(file);
@@ -210,25 +272,12 @@ export class OnboardingService {
       const content = await this.plugin.app.vault.read(file);
       return { kind: 'ok', model: ingestSingleFile(file.name, content) };
     }
-    // Scrivener export: a CSV outline sidecar and/or .txt scene files mark the
-    // folder as a Scrivener export (flow 2). Pure-.md folders stay on the md
-    // path — behavior there is near-identical and md is the vault-native case.
-    if (this.looksLikeScrivenerExport(folderPath, proseFiles)) {
+
+    if (flow === 'scrivener') {
       return ingestScrivenerFolder(createObsidianScrivenerSource(this.plugin.app), folderPath);
     }
     const source = createObsidianMarkdownSource(this.plugin.app);
     return ingestMarkdownFolder(source, folderPath);
-  }
-
-  /** Flow-2 signature: a .csv sidecar alongside the prose, or any .txt scene files. */
-  private looksLikeScrivenerExport(folderPath: string, proseFiles: TFile[]): boolean {
-    const folder = this.plugin.app.vault.getAbstractFileByPath(normalizePath(folderPath));
-    if (!(folder instanceof TFolder)) return false;
-    const hasCsv = folder.children.some(
-      (child) => child instanceof TFile && child.extension.toLowerCase() === 'csv'
-    );
-    const hasTxt = proseFiles.some((file) => file.extension.toLowerCase() === 'txt');
-    return hasCsv || hasTxt;
   }
 
   /** Prose files (md/txt/html/docx) directly in the book folder; TOC excluded. */

@@ -20,6 +20,7 @@ import {
   type MaterializeReport,
   type SceneProposal,
   type EntityProposal,
+  type ImportFlow,
 } from '../onboarding/OnboardingService';
 import type { SurveyResult } from '../onboarding/extraction';
 import { flattenScenes, type ManuscriptModel } from '../onboarding/adapters/manuscriptModel';
@@ -46,6 +47,14 @@ function asStringList(value: unknown): string[] {
 function stripWikiLink(value: string): string {
   return value.replace(/^\[\[/, '').replace(/\]\]$/, '');
 }
+
+/** Author-facing names for the import lanes shown on the Prepare screen. */
+const FLOW_LABELS: Record<ImportFlow, string> = {
+  single: 'Single manuscript file',
+  docx: 'Word manuscript (.docx)',
+  scrivener: 'Scrivener export',
+  folder: 'Folder of notes',
+};
 
 /** Local model ids can be full filesystem paths — show just the leaf name in the header pill. */
 function abbreviateModelId(id: string): string {
@@ -79,6 +88,8 @@ export class OnboardingModal extends Modal {
   private generateSummaries = false;
   /** Abbreviated local model name for the header pill (set once preflight runs). */
   private modelLabel = '';
+  /** Author's Prepare-screen lane choice; null = trust auto-detection. */
+  private flowOverride: ImportFlow | null = null;
   private abortController: AbortController | null = null;
 
   constructor(app: App, plugin: RadialTimelinePlugin) {
@@ -132,8 +143,10 @@ export class OnboardingModal extends Modal {
     let ingestReason = '';
     let candidateCount = 0;
     let skippedCount = 0;
+    const detection = this.service.detectImportFlow(book.sourceFolder);
+    const activeFlow: ImportFlow | null = this.flowOverride ?? detection?.flow ?? null;
     try {
-      const ingest = await this.service.ingest(book.sourceFolder);
+      const ingest = await this.service.ingest(book.sourceFolder, this.flowOverride ?? undefined);
       if (ingest.kind === 'needs-order') {
         ingestReason = ingest.reason;
       } else {
@@ -152,11 +165,40 @@ export class OnboardingModal extends Modal {
 
     const status = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
     this.renderStatusRow(status, 'Local model', preflightOk ? `Ready — tier ${tier}` : `Not ready — ${preflightReason}`, preflightOk);
+
+    // Import lane: say what was detected and why. When the folder's contents
+    // support more than one reading, the author can switch lanes right here.
+    if (detection && activeFlow) {
+      const overridden = this.flowOverride !== null && this.flowOverride !== detection.flow;
+      this.renderStatusRow(
+        status,
+        'Import flow',
+        `${FLOW_LABELS[activeFlow]} — ${detection.evidence}${overridden ? ' (your choice)' : ''}`,
+        true
+      );
+      const choices = [detection.flow, ...detection.alternatives];
+      if (choices.length > 1) {
+        const switchRow = status.createDiv({ cls: 'ert-row' });
+        switchRow.createSpan({ text: 'Treat this folder as: ', cls: 'ert-muted' });
+        new DropdownComponent(switchRow)
+          .addOptions(Object.fromEntries(choices.map((flow) => [flow, FLOW_LABELS[flow]])))
+          .setValue(activeFlow)
+          .onChange((value) => {
+            this.flowOverride = value as ImportFlow; // SAFE: options are exactly ImportFlow values
+            // A lane switch re-ingests: split plans/outcomes are keyed by the
+            // old model's sourceRefs and must rebuild from scratch.
+            this.splitPlans = new Map();
+            this.splitOutcomes = null;
+            void this.showPreflight();
+          });
+      }
+    }
+
     if (ingestReason) {
       this.renderStatusRow(status, 'Book folder', ingestReason, false);
     } else {
       const skipNote = skippedCount > 0 ? ` (${skippedCount} already onboarded, skipped)` : '';
-      this.renderStatusRow(status, 'Scenes found', `${candidateCount}${skipNote}`, candidateCount > 0);
+      this.renderStatusRow(status, 'Chapters found', `${candidateCount}${skipNote}`, candidateCount > 0);
     }
 
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });

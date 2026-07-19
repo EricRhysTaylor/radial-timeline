@@ -461,6 +461,15 @@
   --ert-badgePill-border: color-mix(in srgb, var(--color-orange, var(--text-accent)) 32%, transparent);
 }
 
+/* A chapter not yet split into scenes — muted, dashed: a pending state, not a count. */
+.ert-ui .ert-onb-pill--undecided {
+  --ert-badgePill-bg: transparent;
+  --ert-badgePill-border: var(--background-modifier-border);
+  --ert-badgePill-color: var(--text-faint);
+  border-style: dashed;
+  font-weight: 600;
+}
+
 .ert-ui .ert-onb-pill--count {
   --ert-badgePill-bg: var(--background-primary);
   --ert-badgePill-color: var(--text-muted);

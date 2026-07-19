@@ -174,7 +174,7 @@ export class OnboardingModal extends Modal {
     if (!this.model) return;
     const { contentEl } = this;
     contentEl.empty();
-    this.renderStageHeader(2, 'Confirm scenes', 'Files with scene-break markers split automatically. For unmarked prose, let AI propose the breaks, then adjust.');
+    this.renderStageHeader(2, 'Confirm scenes', 'Each chapter is split into its scenes. Marker breaks split automatically; Auto-split proposes the rest, then you adjust.');
 
     // One split plan per source file (built once; edits persist across re-render).
     const scenes = flattenScenes(this.model);
@@ -184,11 +184,24 @@ export class OnboardingModal extends Modal {
 
     const totalLine = contentEl.createDiv({ cls: 'ert-muted' });
     const updateTotal = (): void => {
-      const total = scenes.reduce((sum, scene) => {
-        const plan = this.splitPlans.get(scene.sourceRef);
-        return sum + (plan ? segmentCount(plan) : 1);
-      }, 0);
-      totalLine.setText(`Will create ${total} scene note${total === 1 ? '' : 's'} from ${scenes.length} file${scenes.length === 1 ? '' : 's'}.`);
+      // No scene count until the chapters are actually split — quoting "24
+      // scenes" before splitting and "90" after read as a contradiction.
+      const plans = scenes
+        .map((scene) => this.splitPlans.get(scene.sourceRef))
+        .filter((plan): plan is ScenePlan => !!plan);
+      const undecided = plans.filter(
+        (plan) => !plan.alreadyOnboarded && plan.paragraphs.length > 1 && plan.breaks.length === 0
+      ).length;
+      if (!this.splitOutcomes && undecided > 0) {
+        totalLine.setText(
+          `${plans.length} chapter${plans.length === 1 ? '' : 's'} found. Auto-split with AI detects the scenes inside them.`
+        );
+        return;
+      }
+      const total = plans.reduce((sum, plan) => sum + segmentCount(plan), 0);
+      totalLine.setText(
+        `Will create ${total} scene note${total === 1 ? '' : 's'} from ${plans.length} chapter${plans.length === 1 ? '' : 's'}.`
+      );
     };
 
     // Discoverability: authors can hard-mark breaks in the source itself.
@@ -215,8 +228,8 @@ export class OnboardingModal extends Modal {
       const done = contentEl.createDiv({ cls: 'ert-onb-splitdone' });
       done.createSpan({ cls: 'ert-onb-splitdone__icon', text: '✓' });
       done.createSpan({
-        text: `Auto-split done — ${scenes.length} file${scenes.length === 1 ? '' : 's'} → ${sceneTotal} scenes.`
-          + (failed > 0 ? ` ${failed} file${failed === 1 ? '' : 's'} need${failed === 1 ? 's' : ''} attention below.` : ' Review the rows below, then continue.'),
+        text: `Auto-split done — ${scenes.length} chapter${scenes.length === 1 ? '' : 's'} → ${sceneTotal} scenes.`
+          + (failed > 0 ? ` ${failed} chapter${failed === 1 ? '' : 's'} need${failed === 1 ? 's' : ''} attention below.` : ' Review the rows below, then continue.'),
       });
     }
 
@@ -322,8 +335,18 @@ export class OnboardingModal extends Modal {
     if (plan.labels.length > 0) meta.createSpan({ cls: 'ert-onb-flag', text: `❖ ${plan.labels.length} title${plan.labels.length === 1 ? '' : 's'}` });
     const countPill = meta.createSpan({ cls: 'ert-badgePill ert-onb-pill--act' });
     const refreshCount = (): void => {
+      // Language model: a row is a CHAPTER; scenes are what splitting produces.
+      // Until a chapter has been split (markers, AI, or by hand), its pill says
+      // "unsplit" — never "1 scene", which read as a final count and made the
+      // later total look like a contradiction (24 scenes → split → 90).
+      const undecided =
+        !plan.alreadyOnboarded &&
+        plan.paragraphs.length > 1 &&
+        plan.breaks.length === 0 &&
+        !this.splitOutcomes;
       const n = segmentCount(plan);
-      countPill.setText(plan.alreadyOnboarded ? 'skip' : `${n} scene${n === 1 ? '' : 's'}`);
+      countPill.setText(plan.alreadyOnboarded ? 'skip' : undecided ? 'unsplit' : `${n} scene${n === 1 ? '' : 's'}`);
+      countPill.toggleClass('ert-onb-pill--undecided', undecided);
     };
     refreshCount();
     const caret = meta.createSpan({ cls: 'ert-onb-caret' });

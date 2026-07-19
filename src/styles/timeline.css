@@ -1997,10 +1997,31 @@
   display: none;
 }
 
-/* Center mode nav: its auto side-margins absorb the free space evenly, which
-   also anchors the right cluster (book switcher + native actions) to the end
-   of the bar. Collapses cleanly to inline at narrow widths. */
-.view-header:has(.rt-book-switcher) .ert-timeline-mode-nav {
+/* Three true clusters. Obsidian wraps the left controls in .view-header-left;
+   grow it and the right cluster (.rt-book-switcher) by an equal flex basis so
+   the center mode nav lands at the real center of the bar rather than trailing
+   the left cluster. Left stays left-justified (its own justify-content), the
+   right cluster is right-justified against the native "…" actions, and the mode
+   nav keeps its natural width in the middle. */
+.view-header:has(.rt-book-switcher):has(.view-header-left) .view-header-left {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.view-header:has(.rt-book-switcher):has(.view-header-left) .rt-book-switcher {
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: flex-end;
+}
+
+.view-header:has(.rt-book-switcher):has(.view-header-left) .ert-timeline-mode-nav {
+  flex: 0 0 auto;
+}
+
+/* Fallback for any header layout without a .view-header-left wrapper: center
+   the mode nav in the free space via balanced auto margins (this also anchors
+   the right cluster to the end of the bar). */
+.view-header:has(.rt-book-switcher):not(:has(.view-header-left)) .ert-timeline-mode-nav {
   margin-inline: auto;
 }
 

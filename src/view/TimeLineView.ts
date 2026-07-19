@@ -557,6 +557,9 @@ export class RadialTimelineView extends ItemView {
             // keyboard shortcuts 1–4 remain wired by ModeToggleController.
             // Active state is kept in sync through the currentMode setter, so
             // keyboard, click, and saga-forced switches all reflect here.
+            // Inserted as a DIRECT child of .view-header (not nested with the
+            // left cluster inside .view-header-left) so its auto side-margins
+            // resolve against the whole bar's free space and truly center it.
             const modeNav = doc.createElement('div');
             modeNav.className = 'ert-timeline-mode-nav';
             modeNav.setAttribute('role', 'tablist');
@@ -583,7 +586,7 @@ export class RadialTimelineView extends ItemView {
                 modeNav.appendChild(btn);
                 modeButtons.set(mode.id, btn);
             });
-            subplotKeyBtn.parentElement?.insertBefore(modeNav, subplotKeyBtn.nextSibling);
+            headerEl.insertBefore(modeNav, wrapper);
             this.modeNavButtons = modeButtons;
 
             this.bookSwitcherEl = wrapper;

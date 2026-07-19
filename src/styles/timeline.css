@@ -2133,7 +2133,7 @@
   top: var(--size-4-3);
   left: var(--size-4-3);
   z-index: 4;
-  max-width: min(280px, 40%);
+  max-width: min(320px, 45%);
   display: none;
 }
 
@@ -2198,6 +2198,7 @@
   padding: var(--size-2-2) var(--size-2-2);
   border-bottom: 1px dashed var(--background-modifier-border);
   cursor: default;
+  text-align: left;
 }
 
 .ert-timeline-subplot-key__row:last-child {
@@ -2225,14 +2226,15 @@
   box-sizing: border-box;
 }
 
+/* Full subplot names, always: wrap long titles (Odyssey-length) rather than
+   truncate. */
 .ert-timeline-subplot-key__name {
   font-size: 12px;
   font-weight: 600;
   line-height: 1.3;
   color: var(--text-normal);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .ert-timeline-subplot-key__name--ring-label {

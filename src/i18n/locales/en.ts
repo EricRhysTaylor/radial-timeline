@@ -547,6 +547,8 @@ export interface TranslationKeys {
         gossamerScoreManager: string;
         gossamerAnalysis: string;
         authorProgressReport: string;
+        exportTimelineImage: string;
+        exportTimelineData: string;
     };
     common: {
         yes: string;
@@ -2794,6 +2796,8 @@ export const en: TranslationKeys = {
         gossamerScoreManager: 'Gossamer score manager',
         gossamerAnalysis: 'Gossamer analysis',
         authorProgressReport: 'Author progress report (APR)',
+        exportTimelineImage: 'Export timeline as image (SVG / PNG)',
+        exportTimelineData: 'Export timeline data (JSON)',
     },
     common: {
         yes: 'Yes',

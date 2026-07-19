@@ -20,6 +20,8 @@ import { OnboardingModal } from '../modals/OnboardingModal';
 import { TimelineRepairModal } from '../modals/TimelineRepairModal';
 import { TimelineAuditModal } from '../modals/TimelineAuditModal';
 import { AuthorProgressModal } from '../modals/AuthorProgressModal';
+import { TimelineImageExportModal } from '../modals/TimelineImageExportModal';
+import { TimelineExportService } from './export/TimelineExportService';
 import { CreateRtNoteModal, type RtNoteSubtypeId } from '../modals/CreateRtNoteModal';
 import { buildEntityNoteContent, entityFolderFor, type EntityKind } from '../utils/entityNotes';
 import { ensureActiveBookFolder } from '../modals/EnsureFirstBookModal';
@@ -251,6 +253,28 @@ export class CommandRegistrar {
             name: t('commands.authorProgressReport'),
             callback: () => {
                 new AuthorProgressModal(this.app, this.plugin).open();
+            }
+        });
+
+        // Export the currently rendered timeline as a self-contained image.
+        this.plugin.addCommand({
+            id: 'export-timeline-image',
+            name: t('commands.exportTimelineImage'),
+            callback: () => {
+                new TimelineImageExportModal(this.app, async (choice) => {
+                    const service = new TimelineExportService(this.plugin, this.app);
+                    await service.exportImage(choice.format, choice.scale);
+                }).open();
+            }
+        });
+
+        // Export the timeline render input pipeline as schema-stamped JSON.
+        this.plugin.addCommand({
+            id: 'export-timeline-data',
+            name: t('commands.exportTimelineData'),
+            callback: async () => {
+                const service = new TimelineExportService(this.plugin, this.app);
+                await service.exportDataJson();
             }
         });
     }

@@ -723,6 +723,19 @@ Doctrine fit: no new abstraction layer beyond the adapters, no fallback chains
   subplot dominance corners not rendering on the onboarded book and Chronologue
   ticks with sparse `When` coverage — under investigation renderer-side.
 
+- **2026-07-18 (Scrivener mapping table — flow 2 complete)** — the last planned
+  Scrivener piece. Stage 2 shows a **metadata mapping table** (Scrivener lane
+  only): one row per exported sidecar field, disposition per row — *Map to
+  \<RT key\>* (targets from `getSupportedFrontmatterRemapTargets`), *Keep as
+  custom field*, or *Ignore* — seeded from `proposeScrivenerAutomap` and applied
+  to the model right before extraction (`applyMetadataMapping[ToModel]`, pure +
+  tested; rt-key renames, first-writer-wins, ignores dropped). Mapped canonical
+  values fill gaps the AI leaves (carried metadata never overwrites computed
+  frontmatter). Earlier same day: import-lane detection surfaced on Prepare
+  ("Import flow: … — evidence") with a "Treat this folder as" override when
+  contents are ambiguous; chapters-vs-scenes language fixed at Stage 2 (unsplit
+  chapters say "unsplit", never "1 scene").
+
 ## Appendix A — Canonical onboarding prompt (instruction block)
 
 Source of truth for this text is **Supabase** (see "The Onboarding Prompt —

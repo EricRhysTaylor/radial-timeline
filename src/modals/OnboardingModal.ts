@@ -32,6 +32,12 @@ import {
   type ScenePlan,
 } from '../onboarding/sceneSplitting';
 import { suggestOnboardingFolderName } from '../onboarding/paths';
+import {
+  proposeScrivenerAutomap,
+  applyMetadataMappingToModel,
+  type ScrivenerFieldTarget,
+} from '../onboarding/adapters/scrivenerAdapter';
+import { getSupportedFrontmatterRemapTargets } from '../utils/frontmatter';
 import { getActiveBook } from '../utils/books';
 import { STAGE_ORDER, type Stage } from '../utils/constants';
 import type { EntityKind } from '../utils/entityNotes';
@@ -90,6 +96,8 @@ export class OnboardingModal extends Modal {
   private modelLabel = '';
   /** Author's Prepare-screen lane choice; null = trust auto-detection. */
   private flowOverride: ImportFlow | null = null;
+  /** Scrivener metadata mapping table (seeded from the automap; author-edited). */
+  private metadataMapping: Record<string, ScrivenerFieldTarget> | null = null;
   private abortController: AbortController | null = null;
 
   constructor(app: App, plugin: RadialTimelinePlugin) {
@@ -186,9 +194,11 @@ export class OnboardingModal extends Modal {
           .onChange((value) => {
             this.flowOverride = value as ImportFlow; // SAFE: options are exactly ImportFlow values
             // A lane switch re-ingests: split plans/outcomes are keyed by the
-            // old model's sourceRefs and must rebuild from scratch.
+            // old model's sourceRefs and must rebuild from scratch — and the
+            // metadata table belongs to the old lane's fields.
             this.splitPlans = new Map();
             this.splitOutcomes = null;
+            this.metadataMapping = null;
             void this.showPreflight();
           });
       }
@@ -295,6 +305,8 @@ export class OnboardingModal extends Modal {
       text: 'Set first draft to Zero; a finished, published book is Press.',
     });
 
+    this.renderMetadataMappingTable(contentEl);
+
     // All actions live together at the bottom. Auto-split is the main path for
     // unmarked prose, so it takes the CTA until it has run; Continue takes over
     // after (or when there is nothing to auto-split).
@@ -320,6 +332,52 @@ export class OnboardingModal extends Modal {
       .onClick(() => void this.runExtraction());
     if (!offerAutoSplit) continueBtn.setCta();
     new ButtonComponent(actions).setButtonText('Cancel').onClick(() => this.close());
+  }
+
+  /**
+   * Scrivener metadata mapping table (flow 2 only): one row per sidecar field,
+   * disposition per row — map to an RT key, keep as a custom field, or ignore.
+   * Seeded from the automap proposal; the author's edits persist across
+   * re-renders and are applied to the model just before extraction.
+   */
+  private renderMetadataMappingTable(contentEl: HTMLElement): void {
+    if (!this.model || this.model.sourceKind !== 'scrivener' || this.model.customFields.length === 0) return;
+    if (!this.metadataMapping) {
+      this.metadataMapping = proposeScrivenerAutomap(this.model.customFields);
+    }
+    const mapping = this.metadataMapping;
+
+    const panel = contentEl.createDiv({ cls: 'ert-onb-options ert-stack' });
+    panel.createDiv({ cls: 'ert-onb-synopsis__label', text: 'Scrivener metadata' });
+    panel.createDiv({
+      cls: 'ert-muted',
+      text: 'Each exported field can map to a Radial Timeline key, ride along as a custom field, or be dropped.',
+    });
+
+    const rtKeys = getSupportedFrontmatterRemapTargets();
+    const options: Record<string, string> = {
+      custom: 'Keep as custom field',
+      ignore: 'Ignore',
+    };
+    for (const key of rtKeys) options[`rt:${key}`] = `Map to ${key}`;
+
+    const encode = (decision: ScrivenerFieldTarget): string =>
+      decision.target === 'rt-key' ? `rt:${decision.key}` : decision.target;
+
+    const grid = panel.createDiv({ cls: 'ert-onb-map' });
+    for (const field of this.model.customFields) {
+      const decision = mapping[field] ?? { target: 'custom' as const };
+      grid.createDiv({ cls: 'ert-onb-map__field', text: field });
+      const cell = grid.createDiv({ cls: 'ert-onb-map__choice' });
+      new DropdownComponent(cell)
+        .addOptions(options)
+        .setValue(encode(decision))
+        .onChange((value) => {
+          mapping[field] = value.startsWith('rt:')
+            ? { target: 'rt-key', key: value.slice(3) }
+            : { target: value as 'custom' | 'ignore' }; // SAFE: options are exactly custom|ignore|rt:*
+        });
+    }
   }
 
   /** A labeled checkbox row; returns the input for enable/disable wiring. */
@@ -502,7 +560,11 @@ export class OnboardingModal extends Modal {
   private async runExtraction(): Promise<void> {
     if (!this.model) return;
     // Apply the confirmed scene split: one source file may now yield several scenes.
-    const model = applySplitsToModel(this.model, this.splitPlans);
+    let model = applySplitsToModel(this.model, this.splitPlans);
+    // Then the Scrivener mapping table: rename/keep/drop carried metadata fields.
+    if (this.metadataMapping) {
+      model = applyMetadataMappingToModel(model, this.metadataMapping);
+    }
     this.abortController = new AbortController();
     const { contentEl } = this;
     contentEl.empty();

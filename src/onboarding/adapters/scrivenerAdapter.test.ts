@@ -4,9 +4,12 @@ import {
   parseDelimited,
   parseOutlineSidecar,
   proposeScrivenerAutomap,
+  applyMetadataMapping,
+  applyMetadataMappingToModel,
   titleFromExportFileName,
   type ScrivenerFile,
   type ScrivenerSource,
+  type ScrivenerFieldTarget,
 } from './scrivenerAdapter';
 import { flattenScenes } from './manuscriptModel';
 
@@ -234,5 +237,60 @@ describe('proposeScrivenerAutomap', () => {
     for (const field of Object.keys(proposals)) {
       expect(proposals[field]).toEqual({ target: 'ignore' });
     }
+  });
+});
+
+describe('applyMetadataMapping', () => {
+  const mapping: Record<string, ScrivenerFieldTarget> = {
+    'Scrivener Status': { target: 'rt-key', key: 'Status' },
+    Storyline: { target: 'rt-key', key: 'Subplot' },
+    'Word Count': { target: 'ignore' },
+    Label: { target: 'custom' },
+  };
+
+  it('renames rt-key fields, keeps custom, drops ignored', () => {
+    const out = applyMetadataMapping(
+      { 'Scrivener Status': 'First Draft', 'Word Count': '812', Label: 'Blue', Storyline: 'Revenge' },
+      mapping
+    );
+    expect(out).toEqual({ Status: 'First Draft', Label: 'Blue', Subplot: 'Revenge' });
+  });
+
+  it('keeps unmapped fields as-is and lets the first writer win on collision', () => {
+    const out = applyMetadataMapping(
+      { Mood: 'tense', A: 'first', B: 'second' },
+      { A: { target: 'rt-key', key: 'Same' }, B: { target: 'rt-key', key: 'Same' } }
+    );
+    expect(out.Mood).toBe('tense');
+    expect(out.Same).toBe('first');
+  });
+});
+
+describe('applyMetadataMappingToModel', () => {
+  it('maps every scene and recomputes customFields', () => {
+    const model = {
+      sourceKind: 'scrivener' as const,
+      customFields: ['Storyline', 'Word Count', 'Label'],
+      chapters: [{
+        title: null,
+        scenes: [{
+          title: 'One',
+          rawText: 'text',
+          knownMetadata: { Storyline: 'Revenge', 'Word Count': '812', Label: 'Blue' },
+          knownSynopsis: null,
+          sourceRef: '01 One.md',
+          alreadyOnboarded: false,
+        }],
+      }],
+    };
+    const out = applyMetadataMappingToModel(model, {
+      Storyline: { target: 'rt-key', key: 'Subplot' },
+      'Word Count': { target: 'ignore' },
+      Label: { target: 'custom' },
+    });
+    expect(out.chapters[0].scenes[0].knownMetadata).toEqual({ Subplot: 'Revenge', Label: 'Blue' });
+    expect(out.customFields).toEqual(['Label', 'Subplot']);
+    // Original model untouched (pure).
+    expect(model.chapters[0].scenes[0].knownMetadata['Word Count']).toBe('812');
   });
 });

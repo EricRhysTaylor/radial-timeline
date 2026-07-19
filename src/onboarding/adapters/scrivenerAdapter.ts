@@ -317,6 +317,45 @@ function fileToScene(file: ScrivenerFile, row: Record<string, string> | null): M
  * Ingest a folder of Scrivener-exported scene files (plus an optional CSV
  * outline sidecar) into a single-chapter Manuscript Model.
  */
+/**
+ * Apply the author's mapping-table decisions to one scene's carried metadata:
+ * `ignore` drops the field, `rt-key` renames it to the canonical key (first
+ * writer wins on collision), `custom` — and any unmapped field — keeps it as-is.
+ */
+export function applyMetadataMapping(
+  metadata: Record<string, string>,
+  mapping: Record<string, ScrivenerFieldTarget>
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(metadata)) {
+    const decision = mapping[key];
+    if (!decision || decision.target === 'custom') {
+      if (!(key in out)) out[key] = value;
+      continue;
+    }
+    if (decision.target === 'ignore') continue;
+    if (!(decision.key in out)) out[decision.key] = value;
+  }
+  return out;
+}
+
+/** Apply the mapping across every scene of a model, recomputing `customFields`. */
+export function applyMetadataMappingToModel(
+  model: ManuscriptModel,
+  mapping: Record<string, ScrivenerFieldTarget>
+): ManuscriptModel {
+  const fields = new Set<string>();
+  const chapters = model.chapters.map((chapter) => ({
+    title: chapter.title,
+    scenes: chapter.scenes.map((scene) => {
+      const knownMetadata = applyMetadataMapping(scene.knownMetadata, mapping);
+      for (const key of Object.keys(knownMetadata)) fields.add(key);
+      return { ...scene, knownMetadata };
+    }),
+  }));
+  return { ...model, chapters, customFields: [...fields].sort() };
+}
+
 export async function ingestScrivenerFolder(
   source: ScrivenerSource,
   folderPath: string

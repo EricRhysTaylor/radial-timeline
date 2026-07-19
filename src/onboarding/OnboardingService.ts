@@ -27,6 +27,7 @@ import {
   type MarkdownIngestResult,
 } from './adapters/mdAdapter';
 import { ingestSingleFile } from './adapters/singleFileAdapter';
+import { ingestDocxFile, DocxParseError } from './adapters/docxAdapter';
 import {
   flattenScenes,
   type ManuscriptModel,
@@ -193,6 +194,18 @@ export class OnboardingService {
     const proseFiles = this.listProseFiles(folderPath);
     if (proseFiles.length === 1) {
       const file = proseFiles[0];
+      if (file.extension.toLowerCase() === 'docx') {
+        // .docx is a ZIP — must be read as binary, never through vault.read.
+        try {
+          const data = await this.plugin.app.vault.readBinary(file);
+          return { kind: 'ok', model: ingestDocxFile(file.name, data) };
+        } catch (error) {
+          if (error instanceof DocxParseError) {
+            return { kind: 'needs-order', reason: error.message };
+          }
+          throw error;
+        }
+      }
       const content = await this.plugin.app.vault.read(file);
       return { kind: 'ok', model: ingestSingleFile(file.name, content) };
     }
@@ -200,11 +213,14 @@ export class OnboardingService {
     return ingestMarkdownFolder(source, folderPath);
   }
 
-  /** Prose files (md/txt/html) directly in the book folder; TOC excluded. */
+  /** Prose files (md/txt/html/docx) directly in the book folder; TOC excluded. */
   private listProseFiles(folderPath: string): TFile[] {
     const folder = this.plugin.app.vault.getAbstractFileByPath(normalizePath(folderPath));
     if (!(folder instanceof TFolder)) return [];
-    const proseExts = new Set(['md', 'txt', 'html', 'htm']);
+    // NOTE: .docx participates in the count but only the SINGLE-file path reads
+    // it (a mixed folder falls to the md adapter, which reads .md only — the
+    // folder-of-docx variant is a later slice).
+    const proseExts = new Set(['md', 'txt', 'html', 'htm', 'docx']);
     return folder.children.filter(
       (child): child is TFile =>
         child instanceof TFile &&

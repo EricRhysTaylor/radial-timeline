@@ -16,8 +16,9 @@ import { setupRotationController, setupSearchControls as setupSearchControlsExt,
 import { isShiftModeActive } from './interactions/ChronologueShiftController';
 import { RendererService } from '../services/RendererService';
 import { ModeManager, createModeManager } from '../modes/ModeManager';
-import { getModeDefinition } from '../modes/ModeRegistry';
+import { getModeDefinition, getToggleableModes } from '../modes/ModeRegistry';
 import { TimelineMode } from '../modes/ModeDefinition';
+import { BugReportModal } from '../modals/BugReportModal';
 import { ModeInteractionController, createInteractionController } from '../modes/ModeInteractionController';
 import { renderWelcomeScreen } from './WelcomeScreen';
 import {
@@ -139,6 +140,7 @@ export class RadialTimelineView extends ItemView {
     private bookSwitcherEl?: HTMLElement;
     private bookSwitcherSelect?: HTMLSelectElement;
     private bookSwitcherManageBtn?: HTMLButtonElement;
+    private modeNavButtons?: Map<string, HTMLButtonElement>;
     private timelineSearchInput?: HTMLInputElement;
     private timelineSearchButton?: HTMLButtonElement;
     private timelineSearchButtonMode: 'search' | 'clear' = 'search';
@@ -201,6 +203,7 @@ export class RadialTimelineView extends ItemView {
     public set currentMode(mode: string) {
         this._currentMode = mode;
         this.updateTimelineLegend();
+        this.syncModeNav();
     }
 
     /**
@@ -326,8 +329,18 @@ export class RadialTimelineView extends ItemView {
             legendPanel.className = 'ert-timeline-legend';
             legendPanel.setAttribute('role', 'tooltip');
 
+            // Book selector, badged with a book icon so the control reads
+            // unambiguously as "which book / Saga" (not a generic dropdown).
+            const booksGroup = doc.createElement('div');
+            booksGroup.className = 'rt-book-switcher__books';
+            const booksIcon = doc.createElement('span');
+            booksIcon.className = 'rt-book-switcher__icon';
+            booksIcon.setAttribute('aria-hidden', 'true');
+            setIcon(booksIcon, 'book');
+
             const select = doc.createElement('select');
             select.className = 'rt-book-switcher__select';
+            select.setAttribute('aria-label', 'Book selector');
             this.registerDomEvent(select, 'change', async () => {
                 const nextId = select.value;
                 if (nextId === SAGA_SCOPE_OPTION) {
@@ -383,6 +396,21 @@ export class RadialTimelineView extends ItemView {
                 evt.preventDefault();
                 evt.stopPropagation();
                 this.plugin.openManuscriptExportModal();
+            });
+
+            // Bug report — direct entry point in the title bar. Same action as
+            // the version-indicator fallback; ModeManager/version state are not
+            // duplicated, only this one trigger.
+            const bugBtn = doc.createElement('button');
+            bugBtn.className = 'ert-timeline-title-action clickable-icon';
+            bugBtn.type = 'button';
+            bugBtn.setAttribute('aria-label', 'Report a bug');
+            setIcon(bugBtn, 'bug');
+            applyTooltip(bugBtn, 'Report a bug', 'bottom');
+            this.registerDomEvent(bugBtn, 'click', (evt: MouseEvent) => {
+                evt.preventDefault();
+                evt.stopPropagation();
+                new BugReportModal(this.app, this.plugin, 'rt').open();
             });
 
             const sessionBtn = doc.createElement('button');
@@ -477,12 +505,16 @@ export class RadialTimelineView extends ItemView {
 
             searchShell.appendChild(searchBtn);
             searchShell.appendChild(searchInput);
+            booksGroup.appendChild(booksIcon);
+            booksGroup.appendChild(select);
+            // Right cluster order: legend · search · books · ⌘ · printer · bug · gear
             wrapper.appendChild(legendBtn);
             wrapper.appendChild(legendPanel);
             wrapper.appendChild(searchShell);
-            wrapper.appendChild(select);
+            wrapper.appendChild(booksGroup);
             wrapper.appendChild(commandPaletteBtn);
             wrapper.appendChild(exportBtn);
+            wrapper.appendChild(bugBtn);
             wrapper.appendChild(manageBtn);
 
             if (actionsEl && actionsEl.parentElement) {
@@ -519,6 +551,40 @@ export class RadialTimelineView extends ItemView {
             setIcon(subplotKeyBtn, 'layers');
             discordChipHost.parentElement?.insertBefore(subplotKeyBtn, discordChipHost.nextSibling);
             this.subplotKeyTriggerEl = subplotKeyBtn;
+
+            // Center mode navigation — compact text buttons that replace the
+            // removed view title. The canonical switch stays in ModeManager;
+            // keyboard shortcuts 1–4 remain wired by ModeToggleController.
+            // Active state is kept in sync through the currentMode setter, so
+            // keyboard, click, and saga-forced switches all reflect here.
+            const modeNav = doc.createElement('div');
+            modeNav.className = 'rt-mode-nav';
+            modeNav.setAttribute('role', 'tablist');
+            modeNav.setAttribute('aria-label', 'Timeline mode');
+            const modeButtons = new Map<string, HTMLButtonElement>();
+            getToggleableModes().forEach((mode, index) => {
+                const modeKey = `timeline.modes.${mode.id}.name`;
+                const translated = t(modeKey);
+                const label = translated && !translated.startsWith('[missing:') ? translated : mode.name;
+                const btn = doc.createElement('button');
+                btn.className = 'rt-mode-nav__btn';
+                btn.type = 'button';
+                btn.dataset.mode = mode.id;
+                btn.setAttribute('role', 'tab');
+                btn.setAttribute('aria-selected', 'false');
+                btn.textContent = label;
+                btn.setAttribute('aria-label', `${label} mode (${index + 1})`);
+                applyTooltip(btn, `${label} — press ${index + 1}`, 'bottom');
+                this.registerDomEvent(btn, 'click', (evt: MouseEvent) => {
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                    void this.switchTimelineModeFromNav(mode.id);
+                });
+                modeNav.appendChild(btn);
+                modeButtons.set(mode.id, btn);
+            });
+            subplotKeyBtn.parentElement?.insertBefore(modeNav, subplotKeyBtn.nextSibling);
+            this.modeNavButtons = modeButtons;
 
             this.bookSwitcherEl = wrapper;
             this.bookSwitcherSelect = select;
@@ -566,6 +632,40 @@ export class RadialTimelineView extends ItemView {
         this.updateTimelineLegend();
         this.syncTimelineSearchControl();
         this.refreshWritingSessionControl();
+        this.syncModeNav();
+    }
+
+    /**
+     * Reflect the active timeline mode on the header mode-nav buttons. Called
+     * from the currentMode setter, so keyboard (1–4), header clicks, and
+     * saga-forced narrative switches all keep the nav in sync from one place.
+     */
+    private syncModeNav(): void {
+        if (!this.modeNavButtons) return;
+        this.modeNavButtons.forEach((btn, modeId) => {
+            const isActive = modeId === this._currentMode;
+            btn.classList.toggle('is-active', isActive);
+            btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
+    }
+
+    /**
+     * Header mode-nav click handler. Routes through ModeManager (the single
+     * canonical switch path); the currentMode setter updates the nav state.
+     */
+    private async switchTimelineModeFromNav(modeId: string): Promise<void> {
+        if (modeId === this._currentMode) return;
+        this.closeWritingSessionPanel();
+        const modeManager = this.getModeManager();
+        if (modeManager) {
+            await modeManager.switchMode(modeId as TimelineMode);
+            return;
+        }
+        // Fallback mirrors ModeToggleController when no manager is present.
+        this.currentMode = modeId;
+        this.plugin.settings.currentMode = modeId;
+        await this.plugin.saveSettings();
+        this.refreshTimeline();
     }
 
     private formatSessionClock(ms: number): string {

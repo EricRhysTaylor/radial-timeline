@@ -207,9 +207,14 @@
   opacity: 0;
 }
 
-/* Mode selector grid */
+/* Mode selector grid.
+   The mode selector now lives in the view title bar (.rt-mode-nav); this
+   in-canvas SVG grid is hidden so there is a single, unambiguous mode control.
+   The grid is still rendered (its keyboard 1–4 handler and switch state ride
+   along in ModeToggleController), so hiding here is fully reversible pending a
+   decision to delete the SVG grid entirely. */
 .rt-mode-selector-grid {
-  pointer-events: all;
+  display: none;
 }
 
 .rt-mode-option {
@@ -1031,6 +1036,86 @@
 .rt-book-switcher__select:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+/* Book selector badged with a leading book icon so it reads as "which book". */
+.rt-book-switcher__books {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.rt-book-switcher__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  flex: 0 0 auto;
+}
+
+.rt-book-switcher__icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.rt-book-switcher__books:hover .rt-book-switcher__icon {
+  color: var(--text-normal);
+}
+
+/* Center mode navigation — compact text buttons replacing the view title.
+   Active mode uses the theme accent; everything else stays theme-muted. */
+.rt-mode-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rt-mode-nav__btn {
+  height: 24px;
+  padding: 0 8px;
+  border: thin solid transparent;
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.rt-mode-nav__btn:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+.rt-mode-nav__btn.is-active {
+  color: var(--text-on-accent);
+  background: var(--interactive-accent);
+}
+
+.rt-mode-nav__btn.is-active:hover {
+  color: var(--text-on-accent);
+  background: var(--interactive-accent-hover);
+}
+
+.rt-mode-nav__btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent) 45%, transparent);
+}
+
+/* Narrow bars (small monitors, split panes): height is fixed, so let the
+   search input surrender width first, then collapse mode-nav padding. */
+@media (max-width: 900px) {
+  .ert-timeline-search .ert-timeline-search__input[type="search"] {
+    width: clamp(72px, 10vw, 140px);
+    flex: 1 1 auto;
+  }
+  .rt-mode-nav__btn {
+    padding: 0 5px;
+  }
 }
 
 .ert-timeline-session.clickable-icon {
@@ -1900,29 +1985,23 @@
   transition: opacity 120ms ease, transform 120ms ease;
 }
 
-/* Center the view title even when our header controls take width on the right */
+/* RT view only: the centered view title is redundant — the book selector and
+   the Obsidian tab title both show the current book / Saga, and they update
+   together. Hide the in-header title (scoped to our view via :has), while
+   updateViewTitle() keeps updating the hidden node and the tab header. */
 .view-header:has(.rt-book-switcher) {
   position: relative;
 }
 
 .view-header:has(.rt-book-switcher) .view-header-title-container {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  max-width: 50%;
-  pointer-events: none;
-  z-index: 1;
+  display: none;
 }
 
-.view-header:has(.rt-book-switcher) .view-header-title-container .view-header-title,
-.view-header:has(.rt-book-switcher) .view-header-title-container .view-header-title-parent {
-  pointer-events: auto;
-}
-
-/* Keep our controls anchored to the right after pulling the title out of flow */
-.view-header:has(.rt-book-switcher) .rt-book-switcher {
-  margin-left: auto;
+/* Center mode nav: its auto side-margins absorb the free space evenly, which
+   also anchors the right cluster (book switcher + native actions) to the end
+   of the bar. Collapses cleanly to inline at narrow widths. */
+.view-header:has(.rt-book-switcher) .rt-mode-nav {
+  margin-inline: auto;
 }
 
 .ert-timeline-legend.is-visible {

@@ -295,37 +295,35 @@ export function shouldDisplayMissingWhenWarning(scene?: TimelineItem): boolean {
 }
 
 /**
- * Sort scenes chronologically by their When field
- * Scenes without When field fall back to manuscript order (prefix number, then alphanumeric)
+ * Sort scenes chronologically by their When field.
+ *
+ * Undated scenes are NOT piled into one block: each inherits the timestamp of
+ * the nearest PRECEDING dated scene in manuscript order, so it stays beside its
+ * narrative neighbors. With sparse dates (e.g. a freshly onboarded book where
+ * only ~15% of scenes carry When), the old all-undated-first rule crammed every
+ * dated scene — and thus every date tick/label — into one narrow wedge of the
+ * ring. Undated scenes before the first dated scene lead, in manuscript order;
+ * a fully dated or fully undated book sorts exactly as before.
  */
 export function sortScenesChronologically(scenes: TimelineItem[]): TimelineItem[] {
-    return scenes.slice().sort((a, b) => {
-        // Parse When fields - handle both Date objects and strings
-        const aWhen = a.when instanceof Date ? a.when : parseWhenField(typeof a.when === 'string' ? a.when : '');
-        const bWhen = b.when instanceof Date ? b.when : parseWhenField(typeof b.when === 'string' ? b.when : '');
-        const aHasWhen = !!(aWhen && !isNaN(aWhen.getTime()));
-        const bHasWhen = !!(bWhen && !isNaN(bWhen.getTime()));
-        
-        // If both have When fields, sort by date
-        if (aHasWhen && bHasWhen && aWhen && bWhen) {
-            const timeDiff = aWhen.getTime() - bWhen.getTime();
-            if (timeDiff !== 0) return timeDiff;
-            
-            // If same time, fall back to manuscript order (scene number)
-            return sortByManuscriptOrder(a, b);
-        }
-        
-        // If neither has a valid When, fall back to manuscript order
-        if (!aHasWhen && !bHasWhen) {
-            return sortByManuscriptOrder(a, b);
-        }
-        
-        // Scenes missing When should be surfaced earliest (placed at beginning)
-        if (!aHasWhen && bHasWhen) return -1;
-        if (aHasWhen && !bHasWhen) return 1;
-        
-        return 0;
+    // Manuscript order is the baseline; dated scenes act as chronological anchors.
+    const manuscript = scenes.slice().sort(sortByManuscriptOrder);
+    let lastTime = Number.NEGATIVE_INFINITY;
+    const keyed = manuscript.map((scene, index) => {
+        const when = scene.when instanceof Date
+            ? scene.when
+            : parseWhenField(typeof scene.when === 'string' ? scene.when : '');
+        const hasWhen = !!(when && !isNaN(when.getTime()));
+        if (hasWhen && when) lastTime = when.getTime();
+        return { scene, time: lastTime, index };
     });
+    return keyed
+        .sort((a, b) => {
+            // (-Infinity ties must not subtract — NaN breaks the comparator.)
+            if (a.time !== b.time) return a.time < b.time ? -1 : 1;
+            return a.index - b.index;
+        })
+        .map((entry) => entry.scene);
 }
 
 /**

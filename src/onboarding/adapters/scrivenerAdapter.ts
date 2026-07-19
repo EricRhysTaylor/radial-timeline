@@ -525,13 +525,44 @@ function collectCustomFields(scenes: ManuscriptScene[]): string[] {
 const SCENE_EXTENSIONS = new Set(['md', 'txt']);
 
 /** Adapt a live Obsidian App to the `ScrivenerSource` surface. */
-export function createObsidianScrivenerSource(app: App): ScrivenerSource {
-  const childrenOf = (folderPath: string): TFile[] => {
-    const folder = app.vault.getAbstractFileByPath(normalizePath(folderPath));
-    if (!(folder instanceof TFolder)) return [];
-    return folder.children.filter((child): child is TFile => child instanceof TFile);
+/**
+ * Locate the Outliner CSV sidecar. Scrivener exports it as a SIBLING of the
+ * exported folder tree, so the book folder rarely contains it: search anywhere
+ * under the book folder first (snapshot folders skipped), then climb the
+ * ancestor folders' direct children up to the vault root. "outlin*"-named CSVs
+ * win at every level.
+ */
+export function findScrivenerSidecarFile(app: App, folderPath: string): TFile | null {
+  const root = app.vault.getAbstractFileByPath(normalizePath(folderPath));
+  if (!(root instanceof TFolder)) return null;
+  const pick = (candidates: TFile[]): TFile | null => {
+    const csvs = candidates
+      .filter((file) => file.extension.toLowerCase() === 'csv')
+      .sort((a, b) => a.name.localeCompare(b.name));
+    if (csvs.length === 0) return null;
+    return csvs.find((file) => /outlin/i.test(file.name)) ?? csvs[0];
   };
+  const descendants: TFile[] = [];
+  const walk = (folder: TFolder): void => {
+    for (const child of folder.children) {
+      if (child instanceof TFolder) {
+        if (!isSnapshotFolderName(child.name)) walk(child);
+      } else if (child instanceof TFile) {
+        descendants.push(child);
+      }
+    }
+  };
+  walk(root);
+  const inside = pick(descendants);
+  if (inside) return inside;
+  for (let parent = root.parent; parent; parent = parent.parent) {
+    const hit = pick(parent.children.filter((child): child is TFile => child instanceof TFile));
+    if (hit) return hit;
+  }
+  return null;
+}
 
+export function createObsidianScrivenerSource(app: App): ScrivenerSource {
   // Exports preserve the binder hierarchy (Book/ACT 1/…) — walk it, skipping
   // snapshot folders wholesale.
   const walk = (folder: TFolder, out: TFile[]): void => {
@@ -565,13 +596,8 @@ export function createObsidianScrivenerSource(app: App): ScrivenerSource {
       );
     },
     async readSidecar(folderPath: string): Promise<string | null> {
-      const csvs = childrenOf(folderPath)
-        .filter((file) => file.extension.toLowerCase() === 'csv')
-        .sort((a, b) => a.name.localeCompare(b.name));
-      if (csvs.length === 0) return null;
-      // Prefer a file named like the outliner export; else the first CSV.
-      const preferred = csvs.find((file) => /outlin/i.test(file.name)) ?? csvs[0];
-      return app.vault.read(preferred);
+      const sidecar = findScrivenerSidecarFile(app, folderPath);
+      return sidecar ? app.vault.read(sidecar) : null;
     },
   };
 }

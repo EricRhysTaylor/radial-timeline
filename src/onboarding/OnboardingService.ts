@@ -30,6 +30,7 @@ import { ingestSingleFile } from './adapters/singleFileAdapter';
 import { ingestDocxFile, DocxParseError } from './adapters/docxAdapter';
 import {
   createObsidianScrivenerSource,
+  findScrivenerSidecarFile,
   ingestScrivenerFolder,
   isScrivenerAuxiliaryFile,
   isSnapshotFolderName,
@@ -219,9 +220,9 @@ export class OnboardingService {
     const proseFiles = this.listProseFiles(folderPath);
     if (proseFiles.length === 0) return null;
 
-    const csv = folder.children.find(
-      (child): child is TFile => child instanceof TFile && child.extension.toLowerCase() === 'csv'
-    );
+    // Same search the ingest uses: inside the book folder, then ancestor
+    // folders — Scrivener drops the outline CSV BESIDE the exported tree.
+    const csv = findScrivenerSidecarFile(this.plugin.app, folderPath);
     const txtCount = proseFiles.filter((file) => file.extension.toLowerCase() === 'txt').length;
     const mdCount = proseFiles.filter((file) => file.extension.toLowerCase() === 'md').length;
 

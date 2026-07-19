@@ -12,7 +12,7 @@ import { t } from '../i18n';
 import type { TimelineItem } from '../types';
 import { renderSvgFromString } from '../utils/svgDom';
 import { openOrRevealFileByPath } from '../utils/fileUtils';
-import { setupRotationController, setupSearchControls as setupSearchControlsExt, addHighlightRectangles as addHighlightRectanglesExt, setupModeToggleController, setupVersionIndicatorController, setupHelpIconController, setupTooltips } from './interactions';
+import { setupRotationController, setupSearchControls as setupSearchControlsExt, addHighlightRectangles as addHighlightRectanglesExt, setupModeToggleController, setupVersionIndicatorController, setupHelpIconController, setupTooltips, setupSubplotKeyController } from './interactions';
 import { isShiftModeActive } from './interactions/ChronologueShiftController';
 import { RendererService } from '../services/RendererService';
 import { ModeManager, createModeManager } from '../modes/ModeManager';
@@ -167,6 +167,10 @@ export class RadialTimelineView extends ItemView {
     // Chronologue shift-mode hooks installed per-render by ChronologueShiftController
     public handleShiftModeClick?: (e: MouseEvent, sceneGroup: Element) => boolean;
     public _chronologueShiftCleanup?: () => void;
+
+    // Subplot ring key overlay installed per-render by SubplotKeyController
+    public _subplotKeyCleanup?: () => void;
+    public subplotKeyPinned: boolean = false;
     
     // Mode system
     private _currentMode: string = 'narrative'; // TimelineMode enum value
@@ -1978,6 +1982,7 @@ export class RadialTimelineView extends ItemView {
                 title: 'Narrative Only',
                 rows: [
                     { icon: 'move-horizontal', label: 'Drag outer ring', detail: 'move scene or beat in manuscript order' },
+                    { icon: 'layers', label: 'Hold Shift', detail: 'show subplot ring key' },
                 ],
             });
         }
@@ -2509,6 +2514,10 @@ export class RadialTimelineView extends ItemView {
         if (this._chronologueShiftCleanup) {
             this._chronologueShiftCleanup();
         }
+        if (this._subplotKeyCleanup) {
+            this._subplotKeyCleanup();
+            this._subplotKeyCleanup = undefined;
+        }
         if (this.beatLabelAdjustTimeout !== null) {
             window.clearTimeout(this.beatLabelAdjustTimeout);
             this.beatLabelAdjustTimeout = null;
@@ -2531,7 +2540,12 @@ export class RadialTimelineView extends ItemView {
     }
     
     renderTimeline(container: HTMLElement, scenes: TimelineItem[]): void {
-        // Clear existing content
+        // Clear existing content (including the subplot key's document listeners;
+        // its DOM lives in the container being emptied)
+        if (this._subplotKeyCleanup) {
+            this._subplotKeyCleanup();
+            this._subplotKeyCleanup = undefined;
+        }
         container.empty();
         
         // Check if there are any actual scenes (not just backdrops or beats)
@@ -2629,6 +2643,9 @@ export class RadialTimelineView extends ItemView {
 
                 // Attach help icon click behavior
                 setupHelpIconController(this, svgElement);
+
+                // Attach subplot ring key overlay (hover trigger / pin / hold Shift)
+                setupSubplotKeyController(this, svgElement, timelineContainer);
 
                 // Attach Author Progress Indicator click behavior - opens Settings Social tab
                 const aprIndicator = svgElement.querySelector('.rt-apr-indicator');

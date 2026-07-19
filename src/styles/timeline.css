@@ -2091,6 +2091,156 @@
 }
 
 /* ============================================================
+ * Subplot Ring Key
+ * Rendered by src/view/interactions/SubplotKeyController.ts.
+ * Compact overlay mapping ring order + subplot color to subplot
+ * name, for books with many subplot rings. Shown on trigger
+ * hover, pinned by click, or while Shift is held.
+ * ============================================================ */
+
+.ert-timeline-subplot-key__trigger.clickable-icon {
+  position: absolute;
+  top: var(--size-4-3);
+  left: var(--size-4-3);
+  z-index: 4;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
+}
+
+.ert-timeline-subplot-key__trigger.clickable-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.ert-timeline-subplot-key__trigger.clickable-icon:hover,
+.ert-timeline-subplot-key__trigger.clickable-icon.is-pinned {
+  color: var(--text-normal);
+}
+
+.ert-timeline-subplot-key {
+  position: absolute;
+  top: calc(var(--size-4-3) + 30px);
+  left: var(--size-4-3);
+  z-index: 4;
+  max-width: min(260px, 40%);
+  opacity: 0;
+  transform: translateY(-4px);
+  transform-origin: top left;
+  pointer-events: none;
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.ert-timeline-subplot-key.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* Step aside while a scene synopsis is being read — unless the key is
+   being actively held open with Shift. */
+.radial-timeline-container:has(.radial-timeline-svg.scene-hover) .ert-timeline-subplot-key.is-visible:not(.is-key-held) {
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+.ert-timeline-subplot-key__surface {
+  padding: var(--size-4-2) var(--size-4-3);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--background-primary) 92%, transparent);
+  color: var(--text-normal);
+  box-shadow: var(--shadow-s);
+  backdrop-filter: blur(4px);
+  max-height: min(70vh, 480px);
+  overflow-y: auto;
+}
+
+.ert-timeline-subplot-key__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--size-4-2);
+  margin-bottom: var(--size-4-1);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: var(--text-normal);
+}
+
+.ert-timeline-subplot-key__hint {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: none;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.ert-timeline-subplot-key__rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.ert-timeline-subplot-key__row {
+  display: grid;
+  grid-template-columns: 16px 14px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--size-4-2);
+  padding: var(--size-2-1) var(--size-2-2);
+  margin: 0;
+  border: 0;
+  border-radius: var(--radius-s);
+  background: transparent;
+  box-shadow: none;
+  cursor: default;
+  text-align: left;
+}
+
+.ert-timeline-subplot-key__row:hover,
+.ert-timeline-subplot-key__row:focus-visible {
+  background: var(--background-modifier-hover);
+}
+
+.ert-timeline-subplot-key__num {
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--text-faint);
+}
+
+.ert-timeline-subplot-key__swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--ert-subplot-key-swatch, var(--rt-color-empty));
+  border: 1px solid var(--background-modifier-border);
+  box-sizing: border-box;
+}
+
+.ert-timeline-subplot-key__name {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-normal);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ert-timeline-subplot-key__name--ring-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+
+/* ============================================================
  * Session Log List
  * Rendered by src/renderer/components/SessionLogList.ts.
  * Two modes: preview (settings card expand) and compact

@@ -750,7 +750,7 @@ export function createTimelineSVG(
 
     // Subplot labels - rendered OUTSIDE rotatable so they stay fixed when rotation is applied
     svg += `<g class="background-layer subplot-labels-fixed">`;
-    svg += renderSubplotLabels({ NUM_RINGS, ringStartRadii, ringWidths, masterSubplotOrder, plugin });
+    svg += renderSubplotLabels({ NUM_RINGS, ringStartRadii, ringWidths, masterSubplotOrder, colorIndexBySubplot, plugin });
     svg += `</g>`;
 
     let chronologueOverlaysHtml = '';

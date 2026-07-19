@@ -7,9 +7,10 @@ export function renderSubplotLabels(params: {
   ringStartRadii: number[];
   ringWidths: number[];
   masterSubplotOrder: string[];
+  colorIndexBySubplot: Map<string, number>;
   plugin: PluginRendererFacade;
 }): string {
-  const { NUM_RINGS, ringStartRadii, ringWidths, masterSubplotOrder, plugin } = params;
+  const { NUM_RINGS, ringStartRadii, ringWidths, masterSubplotOrder, colorIndexBySubplot, plugin } = params;
   const totalRings = NUM_RINGS;
   const subplotCount = masterSubplotOrder.length;
   const ringsToUse = Math.min(subplotCount, totalRings);
@@ -31,10 +32,11 @@ export function renderSubplotLabels(params: {
     const d = `M ${formatNumber(labelRadius * Math.cos(startAngle))} ${formatNumber(labelRadius * Math.sin(startAngle))} A ${formatNumber(labelRadius)} ${formatNumber(labelRadius)} 0 0 1 ${formatNumber(labelRadius * Math.cos(endAngle))} ${formatNumber(labelRadius * Math.sin(endAngle))}`;
     const isOuterRing = ringOffset === 0;
     const labelRaw = getSubplotLabelText(plugin, subplot, isOuterRing);
+    const colorIndex = (colorIndexBySubplot.get(subplot) ?? ringOffset) % 16;
     svg += `
       <path id="${labelPathId}" d="${d}" fill="none" />
       <g class="subplot-label-group" data-font-size="${fontSize}">
-        <text class="rt-subplot-ring-label-text" data-subplot-index="${ringOffset}" data-subplot-name="${escapeXml(subplot)}" text-anchor="end">
+        <text class="rt-subplot-ring-label-text" data-subplot-index="${ringOffset}" data-subplot-name="${escapeXml(subplot)}" data-ring="${ring}" data-color-index="${colorIndex}" text-anchor="end">
           <textPath href="#${labelPathId}" startOffset="100%" textLength="${formatNumber(arcPixelLength)}" lengthAdjust="spacingAndGlyphs">${escapeXml(labelRaw)}</textPath>
         </text>
       </g>

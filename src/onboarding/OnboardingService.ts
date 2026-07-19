@@ -58,7 +58,13 @@ import {
   positionalAct,
   type SurveyResult,
 } from './extraction';
-import { breaksFromStarts, forcedEvenBreaks, type ScenePlan } from './sceneSplitting';
+import {
+  breaksFromStarts,
+  clampBreaksToCount,
+  forcedEvenBreaks,
+  mergeShortSegments,
+  type ScenePlan,
+} from './sceneSplitting';
 import { basename, openingWords, sanitizeFileName, suggestOnboardingFolderName } from './paths';
 import { buildEntityNoteContent, entityFolderFor, type EntityKind } from '../utils/entityNotes';
 import type { Stage } from '../utils/constants';
@@ -141,6 +147,9 @@ const ENTITY_GROUNDING_CHAR_BUDGET = 12000;
  * the author has to hand-break. Also keeps per-scene extraction inside context.
  */
 const FALLBACK_SCENE_CHAR_TARGET = 9000;
+
+/** Minimum size for an AI-split scene (~450 words) — smaller segments merge into a neighbor. */
+const MIN_SCENE_CHARS = 3000;
 
 /** Pick up to `max` evenly-spaced items across an array (endpoints included). */
 function sampleEvenly<T>(items: T[], max: number): T[] {
@@ -353,7 +362,15 @@ export class OnboardingService {
         if (result.aiStatus === 'success' && result.content) {
           const parsed = parseSplitProposal(result.content);
           if (parsed.ok) {
-            plan.breaks = breaksFromStarts(parsed.value.starts, plan.paragraphs.length);
+            let breaks = breaksFromStarts(parsed.value.starts, plan.paragraphs.length);
+            // Hold the split to the file's own argument structure: N section
+            // titles = N scenes. An eager model otherwise shatters a chapter
+            // into fragments (212 scenes where the arguments say ~90).
+            if (plan.labels.length >= 2) {
+              breaks = clampBreaksToCount(breaks, plan.labels.length);
+            }
+            // Scene-size floor: scenes are substantial units, not fragments.
+            plan.breaks = mergeShortSegments(plan.paragraphs, breaks, MIN_SCENE_CHARS);
             // Adopt AI labels only when the file had no argument beats of its own.
             if (plan.labels.length === 0) {
               plan.labels = parsed.value.labels.filter((label) => label.length > 0);

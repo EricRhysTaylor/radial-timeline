@@ -326,8 +326,10 @@ export function getOnboardingSplitInstructions(): string {
     'The first scene always begins at paragraph 1. Never split inside a paragraph; boundaries fall between them.',
     'When the file lists "argument beats", those ARE the scenes in order — align each beat to the paragraph',
     'where it begins and reuse the beat text as the label. Return exactly that many scenes.',
-    'When no beats are given, find natural boundaries — a clear shift in location, time, viewpoint, or action —',
-    'and prefer fewer, well-justified scenes over many small ones. Do not rewrite any prose. Return only the schema.',
+    'When no beats are given, find natural boundaries — a clear shift in location, time, viewpoint, or action.',
+    'Scenes are SUBSTANTIAL story units: a chapter typically holds 2-5 of them, each several hundred words',
+    'at minimum. Prefer fewer, well-justified scenes over many small ones — never split every exchange or',
+    'pause into its own scene. Do not rewrite any prose. Return only the schema.',
   ].join('\n');
 }
 

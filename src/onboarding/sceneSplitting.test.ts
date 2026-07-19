@@ -6,6 +6,8 @@ import {
   planSceneSplit,
   toggleBreak,
   breaksFromStarts,
+  clampBreaksToCount,
+  mergeShortSegments,
   forcedEvenBreaks,
   segmentCount,
   planSegments,
@@ -125,6 +127,32 @@ describe('breaksFromStarts', () => {
   });
   it('drops out-of-range and duplicate starts', () => {
     expect(breaksFromStarts([1, 4, 4, 99, 0], 10)).toEqual([3]);
+  });
+});
+
+describe('clampBreaksToCount', () => {
+  it('keeps the earliest boundaries so the split matches the argument structure', () => {
+    // 9 AI scenes against 3 section titles → keep the first 2 breaks (3 scenes).
+    expect(clampBreaksToCount([2, 4, 6, 8, 10, 12, 14, 16], 3)).toEqual([2, 4]);
+  });
+  it('leaves an already-conforming split alone', () => {
+    expect(clampBreaksToCount([5, 9], 3)).toEqual([5, 9]);
+    expect(clampBreaksToCount([5], 3)).toEqual([5]);
+  });
+});
+
+describe('mergeShortSegments', () => {
+  const paras = (sizes: number[]): string[] => sizes.map((n) => 'x'.repeat(n));
+  it('drops a break that would create a short middle segment', () => {
+    // Segments: [1000] | [100] | [1000] → the 100-char middle merges forward.
+    expect(mergeShortSegments(paras([1000, 100, 1000]), [1, 2], 500)).toEqual([1]);
+  });
+  it('merges a short tail backward into the previous scene', () => {
+    // Segments: [1000] | [1000] | [50] → tail folds into scene 2.
+    expect(mergeShortSegments(paras([1000, 1000, 50]), [1, 2], 500)).toEqual([1]);
+  });
+  it('keeps substantial segments untouched', () => {
+    expect(mergeShortSegments(paras([1000, 1000, 1000]), [1, 2], 500)).toEqual([1, 2]);
   });
 });
 

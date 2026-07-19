@@ -690,6 +690,23 @@ Doctrine fit: no new abstraction layer beyond the adapters, no fallback chains
   hard: allow an optional cloud model for JUST the subplot survey when a key is
   present (per-scene stays local).
 
+- **2026-07-16 (scene-count discipline)** — the fourth run succeeded end to end
+  (subplot rings, ordinal acts, good synopses) but produced **212 scenes**
+  (~9/book) where the argument structure says ~90: the split model ignored the
+  "exactly N beats" instruction. Now enforced in code: (1) `clampBreaksToCount`
+  holds an AI split to the file's argument structure (N section titles = N
+  scenes, earliest boundaries win); (2) `mergeShortSegments` applies a
+  scene-size floor (`MIN_SCENE_CHARS` ≈ 3k chars / ~450 words — short segments
+  merge into a neighbor); (3) the no-beats prompt now says a chapter typically
+  holds 2–5 substantial scenes. Expected Odyssey yield: ~90–100 scenes, not 212.
+  Wheel-side subplot legend readability (hover key) noted as a timeline
+  enhancement, out of onboarding scope.
+- **2026-07-16 (parallel adapter build-out)** — Scrivener-export and Word
+  `.docx` adapters (import flows 2 and 3) spun off to background agents working
+  in isolated worktrees against the frozen `ManuscriptModel` contract; the main
+  session integrates their output. Ship posture: the beta stays dev-gated until
+  the adapters land and one clean full-manuscript verification run passes.
+
 ## Appendix A — Canonical onboarding prompt (instruction block)
 
 Source of truth for this text is **Supabase** (see "The Onboarding Prompt —

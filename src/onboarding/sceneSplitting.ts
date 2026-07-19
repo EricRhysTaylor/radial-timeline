@@ -126,6 +126,42 @@ export function breaksFromStarts(starts: number[], paragraphCount: number): numb
 }
 
 /**
+ * Cap a break list so the split yields at most `sceneCount` scenes (keeps the
+ * earliest boundaries; trailing text folds into the final scene). Used to hold
+ * an AI split to the file's own argument structure — N section titles = N
+ * scenes — instead of letting an eager model shatter a chapter into fragments.
+ */
+export function clampBreaksToCount(breaks: number[], sceneCount: number): number[] {
+  if (sceneCount < 1) return breaks;
+  return breaks.slice(0, sceneCount - 1);
+}
+
+/**
+ * Scene-size floor: drop breaks that would create a segment shorter than
+ * `minChars`, merging it into the neighboring scene. Greedy left-to-right; a
+ * short final segment merges backward. Keeps scenes substantial — a scene is a
+ * unit of story, not a page.
+ */
+export function mergeShortSegments(paragraphs: string[], breaks: number[], minChars: number): number[] {
+  const sizeBetween = (from: number, to: number): number =>
+    paragraphs.slice(from, to).reduce((sum, paragraph) => sum + paragraph.length + 2, 0);
+  const kept: number[] = [];
+  let segStart = 0;
+  for (const b of breaks) {
+    if (sizeBetween(segStart, b) >= minChars) {
+      kept.push(b);
+      segStart = b;
+    }
+    // else: drop the break — the short segment merges forward into the next.
+  }
+  // A short tail merges backward into the previous scene.
+  while (kept.length > 0 && sizeBetween(kept[kept.length - 1], paragraphs.length) < minChars) {
+    segStart = kept.pop() ?? 0;
+  }
+  return kept;
+}
+
+/**
  * Safety-net split for an oversized unit the AI failed to break: place breaks at
  * paragraph boundaries so no segment exceeds ~maxChars (a whole unsplit Odyssey
  * book otherwise blows the extraction context window). Returns [] when it fits.

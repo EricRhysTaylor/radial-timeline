@@ -62,6 +62,19 @@ const FLOW_LABELS: Record<ImportFlow, string> = {
   folder: 'Folder of notes',
 };
 
+/** Open plugin settings scrolled to the Book Manager (same landing as the Welcome screen link). */
+function openSettingsAtBookManager(plugin: RadialTimelinePlugin): void {
+  plugin.settingsTab?.setActiveTab('core');
+  const setting = (plugin.app as unknown as { setting?: { open: () => void; openTabById: (id: string) => void } }).setting; // SAFE: undocumented settings surface (established WelcomeScreen pattern)
+  if (!setting) return;
+  setting.open();
+  setting.openTabById('radial-timeline');
+  // Settings render async after the tab opens; scroll once the heading exists.
+  window.setTimeout(() => {
+    activeDocument.querySelector('.ert-books-heading')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 200);
+}
+
 /** Local model ids can be full filesystem paths — show just the leaf name in the header pill. */
 function abbreviateModelId(id: string): string {
   const leaf = (id || '').trim().split(/[\\/]/).pop() ?? '';
@@ -132,11 +145,22 @@ export class OnboardingModal extends Modal {
 
     const book = getActiveBook(this.plugin.settings);
     if (!book || !book.sourceFolder) {
-      this.renderMessage(
-        'No book folder',
-        'Set an active book with a source folder (Book Designer) before onboarding.',
-        true
-      );
+      const { contentEl } = this;
+      contentEl.empty();
+      this.renderHeader('No book folder');
+      contentEl.createDiv({
+        cls: 'ert-muted',
+        text: 'Onboarding needs an active book pointing at the folder that holds your manuscript. Set one up in the Book Manager, then run onboarding again.',
+      });
+      const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
+      new ButtonComponent(actions)
+        .setButtonText('Open Book Manager')
+        .setCta()
+        .onClick(() => {
+          this.close();
+          openSettingsAtBookManager(this.plugin);
+        });
+      new ButtonComponent(actions).setButtonText('Close').onClick(() => this.close());
       return;
     }
     this.book = book;

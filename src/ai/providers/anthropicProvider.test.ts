@@ -51,6 +51,61 @@ describe('AnthropicProvider output truncation', () => {
         expect(result.aiReason).toBe('truncated');
     });
 
+    it('maps a pre-output refusal (stop_reason "refusal", empty content) to a terminal rejection', async () => {
+        // Pre-output refusal: HTTP 200 but no usable content, so callAnthropicApi
+        // reports success:false with its generic "invalid response" error.
+        vi.mocked(callAnthropicApi).mockResolvedValue({
+            success: false,
+            content: null,
+            responseData: {
+                stop_reason: 'refusal',
+                stop_details: { category: 'cyber' }
+            },
+            error: 'Invalid response structure from Anthropic.'
+        } as never);
+
+        const provider = new AnthropicProvider({ settings: {} } as never);
+        const result = await provider.generateJson({
+            modelId: 'claude-fable-5',
+            systemPrompt: 'analyze',
+            userPrompt: 'corpus',
+            jsonSchema: { type: 'object' }
+        } as never);
+
+        expect(result.success).toBe(false);
+        expect(result.aiStatus).toBe('rejected');
+        expect(result.aiReason).toBe('refusal');
+        // The category is surfaced and the message overrides the misleading
+        // generic "invalid response" error.
+        expect(result.error).toContain('category: cyber');
+        expect(result.error).toContain('refuse');
+    });
+
+    it('maps a mid-stream refusal (stop_reason "refusal", partial content, null category) to a rejection', async () => {
+        vi.mocked(callAnthropicApi).mockResolvedValue({
+            success: true,
+            content: 'partial text before refusal',
+            responseData: {
+                stop_reason: 'refusal',
+                stop_details: { category: null }
+            }
+        } as never);
+
+        const provider = new AnthropicProvider({ settings: {} } as never);
+        const result = await provider.generateText({
+            modelId: 'claude-fable-5',
+            systemPrompt: 'write',
+            userPrompt: 'prompt'
+        } as never);
+
+        expect(result.success).toBe(false);
+        expect(result.aiStatus).toBe('rejected');
+        expect(result.aiReason).toBe('refusal');
+        // Null category → no "(category: …)" suffix, branch on stop_reason only.
+        expect(result.error).not.toContain('category:');
+        expect(result.error).toContain('refuse');
+    });
+
     it('treats a normal end_turn stop_reason as success', async () => {
         vi.mocked(callAnthropicApi).mockResolvedValue({
             success: true,

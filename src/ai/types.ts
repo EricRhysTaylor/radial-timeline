@@ -77,6 +77,20 @@ export interface ModelInfo {
          * legacy shape with a 400; older Claude models require it.
          */
         supportsAdaptiveThinking?: boolean;
+        /**
+         * Whether this model's extended thinking is ALWAYS ON and cannot be
+         * configured (Claude Fable 5). Implications enforced in anthropicApi:
+         *   - The `thinking` field must be omitted entirely — every thinking
+         *     shape (`{type:'disabled'}` and `{type:'enabled',budget_tokens}`)
+         *     returns 400. Depth is set via `output_config.effort`.
+         *   - Forced `tool_choice` is incompatible with active thinking, so the
+         *     forced-tool structured-output path cannot run. Structured output
+         *     instead uses `output_config.format` (json_schema); the JSON then
+         *     arrives in a normal text block, not `tool_use.input`.
+         * Distinct from `supportsAdaptiveThinking` (which still emits a
+         * `thinking:{type:'adaptive'}` field); an always-on model emits none.
+         */
+        thinkingAlwaysOn?: boolean;
         /** Provider endpoint/lane RT should use for this model. */
         preferredOpenAiEndpoint?: 'responses' | 'chat_completions';
     };

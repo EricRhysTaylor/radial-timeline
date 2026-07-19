@@ -9,11 +9,43 @@ import * as obsidian from 'obsidian';
 import {
     buildAnthropicDispatchDiagnostics,
     buildAnthropicUserContent,
+    callAnthropicApi,
     countAnthropicTokens,
-    normalizeAnthropicTokenCountResponse
+    normalizeAnthropicTokenCountResponse,
+    sanitizeAnthropicOutputSchema
 } from './anthropicApi';
 
 const mockedRequestUrl = vi.spyOn(obsidian, 'requestUrl');
+
+type ParsedRequestBody = {
+    model?: string;
+    max_tokens?: number;
+    temperature?: number;
+    top_p?: number;
+    thinking?: unknown;
+    output_config?: {
+        effort?: string;
+        format?: { type?: string; schema?: Record<string, unknown> };
+    };
+    tools?: unknown;
+    tool_choice?: unknown;
+};
+
+function lastRequestBody(): ParsedRequestBody {
+    const request = mockedRequestUrl.mock.calls.at(-1)?.[0] as { body?: string };
+    return JSON.parse(request?.body ?? '{}') as ParsedRequestBody;
+}
+
+function mockTextResponse(text: string, extra: Record<string, unknown> = {}): void {
+    mockedRequestUrl.mockResolvedValue({
+        status: 200,
+        text: '',
+        json: {
+            content: [{ type: 'text', text }],
+            ...extra
+        }
+    } as never);
+}
 
 describe('anthropic token counting', () => {
     beforeEach(() => {
@@ -155,6 +187,190 @@ describe('anthropic token counting', () => {
         expect(normalizeAnthropicTokenCountResponse({
             total_tokens: 987
         }, 'claude-opus-4-7')).toBeNull();
+    });
+});
+
+describe('sanitizeAnthropicOutputSchema', () => {
+    it('strips unsupported numeric and string-length constraints and stamps additionalProperties:false', () => {
+        const sanitized = sanitizeAnthropicOutputSchema({
+            type: 'object',
+            properties: {
+                score: { type: 'number', minimum: 0, maximum: 10, multipleOf: 0.5 },
+                label: { type: 'string', minLength: 1, maxLength: 40 },
+                nested: {
+                    type: 'object',
+                    properties: {
+                        n: { type: 'integer', minimum: 1 }
+                    },
+                    required: ['n']
+                }
+            },
+            required: ['score', 'label']
+        });
+
+        expect(sanitized).toEqual({
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+                score: { type: 'number' },
+                label: { type: 'string' },
+                nested: {
+                    type: 'object',
+                    additionalProperties: false,
+                    properties: {
+                        n: { type: 'integer' }
+                    },
+                    required: ['n']
+                }
+            },
+            required: ['score', 'label']
+        });
+    });
+});
+
+describe('Claude Fable 5 always-on-thinking request shape', () => {
+    const SCHEMA = {
+        type: 'object',
+        properties: { answer: { type: 'string', maxLength: 10 } },
+        required: ['answer'],
+        additionalProperties: false
+    };
+
+    beforeEach(() => {
+        mockedRequestUrl.mockReset();
+    });
+
+    it('routes structured output through output_config.format (no forced tool) and omits the thinking field', async () => {
+        mockTextResponse('{"answer":"ACK"}', { stop_reason: 'end_turn' });
+
+        await callAnthropicApi(
+            'test-key',
+            'claude-fable-5',
+            'System rules',
+            'Return JSON per schema.',
+            4000,
+            true,
+            undefined,
+            undefined,
+            8192,
+            false,
+            undefined,
+            SCHEMA
+        );
+
+        const body = lastRequestBody();
+        // No forced tool: incompatible with always-on thinking.
+        expect(body.tools).toBeUndefined();
+        expect(body.tool_choice).toBeUndefined();
+        // Structured output via output_config.format (json_schema), sanitized.
+        expect(body.output_config?.format?.type).toBe('json_schema');
+        expect(body.output_config?.format?.schema).toEqual({
+            type: 'object',
+            properties: { answer: { type: 'string' } },
+            required: ['answer'],
+            additionalProperties: false
+        });
+        // Effort emitted even on the schema path; thinking field never emitted.
+        expect(body.output_config?.effort).toBe('high');
+        expect(body.thinking).toBeUndefined();
+        // Headroom applied on the schema path too; temperature/top_p omitted.
+        expect(body.max_tokens).toBe(4000 + 8192);
+        expect(body.temperature).toBeUndefined();
+        expect(body.top_p).toBeUndefined();
+    });
+
+    it('emits output_config.effort without a thinking field on the text path', async () => {
+        mockTextResponse('done', { stop_reason: 'end_turn' });
+
+        await callAnthropicApi(
+            'test-key',
+            'claude-fable-5',
+            'System rules',
+            'Write a paragraph.',
+            4000,
+            true,
+            undefined,
+            undefined,
+            2048
+        );
+
+        const body = lastRequestBody();
+        expect(body.thinking).toBeUndefined();
+        expect(body.output_config?.effort).toBe('medium');
+        expect(body.output_config?.format).toBeUndefined();
+        // Floor headroom (8000) applies when the budget is smaller.
+        expect(body.max_tokens).toBe(4000 + 8000);
+    });
+
+    it('defaults effort to medium when no thinking budget is supplied', async () => {
+        mockTextResponse('done', { stop_reason: 'end_turn' });
+
+        await callAnthropicApi('test-key', 'claude-fable-5', null, 'Hi', 4000, true);
+
+        expect(lastRequestBody().output_config?.effort).toBe('medium');
+    });
+
+    it('surfaces a zero-data-retention hint on a Fable 400 with no obvious request problem', async () => {
+        mockedRequestUrl.mockResolvedValue({
+            status: 400,
+            text: '',
+            json: { type: 'error', error: { type: 'invalid_request_error', message: 'Bad request.' } }
+        } as never);
+
+        const result = await callAnthropicApi('test-key', 'claude-fable-5', null, 'Hi', 4000, true);
+        expect(result.success).toBe(false);
+        expect(result.error).toContain('zero data retention');
+        expect(result.error).toContain('30-day data retention');
+    });
+
+    it('does NOT add the retention hint when the 400 names a concrete parameter problem', async () => {
+        mockedRequestUrl.mockResolvedValue({
+            status: 400,
+            text: '',
+            json: { type: 'error', error: { type: 'invalid_request_error', message: 'temperature is not supported for this model.' } }
+        } as never);
+
+        const result = await callAnthropicApi('test-key', 'claude-fable-5', null, 'Hi', 4000, true);
+        expect(result.error).not.toContain('zero data retention');
+    });
+});
+
+describe('Opus structured-output path is unchanged by the Fable addition', () => {
+    beforeEach(() => {
+        mockedRequestUrl.mockReset();
+    });
+
+    it('keeps the forced tool + tool_choice path for Opus 4.8 and never emits output_config.format', async () => {
+        mockedRequestUrl.mockResolvedValue({
+            status: 200,
+            text: '',
+            json: {
+                content: [{ type: 'tool_use', name: 'record_structured_response', input: { answer: 'ACK' } }],
+                stop_reason: 'tool_use'
+            }
+        } as never);
+
+        await callAnthropicApi(
+            'test-key',
+            'claude-opus-4-8',
+            'System rules',
+            'Return JSON.',
+            4000,
+            true,
+            undefined,
+            undefined,
+            8192,
+            false,
+            undefined,
+            { type: 'object', properties: { answer: { type: 'string' } }, required: ['answer'], additionalProperties: false }
+        );
+
+        const body = lastRequestBody();
+        expect(body.tool_choice).toEqual({ type: 'tool', name: 'record_structured_response' });
+        expect(body.output_config).toBeUndefined();
+        // hasJsonSchema → thinking stays off on the legacy path.
+        expect(body.thinking).toBeUndefined();
+        expect(body.max_tokens).toBe(4000);
     });
 });
 

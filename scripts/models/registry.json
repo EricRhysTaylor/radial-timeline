@@ -34,6 +34,22 @@
       "constraints": { "supportsTemperature": false, "supportsTopP": false, "supportsAdaptiveThinking": true }
     },
     {
+      "provider": "anthropic",
+      "id": "claude-fable-5",
+      "alias": "claude-fable-5",
+      "label": "Claude Fable 5",
+      "line": "claude-fable",
+      "tier": "DEEP",
+      "capabilities": ["longContext", "jsonStrict", "reasoningStrong", "highOutputCap"],
+      "personality": { "reasoning": 10, "writing": 10, "determinism": 9 },
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "releasedAt": "2026-07-15",
+      "status": "stable",
+      "rollout": { "channel": "pro", "status": "stable", "lane": "pro" },
+      "constraints": { "supportsTemperature": false, "supportsTopP": false, "supportsAdaptiveThinking": true, "thinkingAlwaysOn": true }
+    },
+    {
       "provider": "openai",
       "id": "gpt-5.5",
       "alias": "gpt-5.5",

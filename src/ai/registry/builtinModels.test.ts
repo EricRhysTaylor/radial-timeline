@@ -55,6 +55,30 @@ describe('BUILTIN_MODELS — Anthropic Claude Opus 4.8', () => {
     });
 });
 
+describe('BUILTIN_MODELS — Anthropic Claude Fable 5', () => {
+    it('exposes a 1M context / 128k output window on its own line', () => {
+        const model = byAlias('claude-fable-5');
+        expect(model.id).toBe('claude-fable-5');
+        expect(model.line).toBe('claude-fable');
+        expect(model.contextWindow).toBe(1000000);
+        expect(model.maxOutput).toBe(128000);
+        expect(model.status).toBe('stable');
+        expect(model.tier).toBe('DEEP');
+    });
+
+    it('declares always-on thinking and sits off the stable channel (explicit-choice only)', () => {
+        const model = byAlias('claude-fable-5');
+        expect(model.constraints).toMatchObject({
+            supportsTemperature: false,
+            supportsTopP: false,
+            supportsAdaptiveThinking: true,
+            thinkingAlwaysOn: true
+        });
+        // Keeps latest-stable auto-selection resolving to Opus 4.8.
+        expect(model.rollout?.channel).toBe('pro');
+    });
+});
+
 describe('BUILTIN_MODELS — Google Gemini', () => {
     it('declares Gemini 3.1 Pro Preview as the depth lane', () => {
         const model = byAlias('gemini-3.1-pro-preview');
@@ -76,15 +100,17 @@ describe('BUILTIN_MODELS — Google Gemini', () => {
 });
 
 describe('BUILTIN_MODELS — catalog policy invariants', () => {
-    it('keeps the catalog small enough to be deliberately curated (one top model per provider, plus Google fast/deep split)', () => {
+    it('keeps the catalog small enough to be deliberately curated (one top model per provider, plus deliberate splits)', () => {
         const cloud = BUILTIN_MODELS.filter(m => m.provider !== 'none' && m.provider !== 'ollama');
-        // Anthropic 2 (4.8 + 4.7 continuity) + OpenAI 2 (5.5 + 5.4 economy)
-        // + Google 2 (3.1 Pro depth / 3.5 Flash speed) = 6 cloud models.
+        // Anthropic 3 (Opus 4.8 + 4.7 continuity + Fable 5 premium pro lane)
+        // + OpenAI 2 (5.5 + 5.4 economy) + Google 2 (3.1 Pro depth / 3.5 Flash
+        // speed) = 7 cloud models. Fable 5 was promoted under the deliberate
+        // process in docs/engineering/standards/model-promotion.md as an
+        // explicit-choice premium model (2× Opus cost), NOT an auto-default.
         // If this assertion fails because a model was added, confirm the
-        // addition followed the promotion process documented in
-        // docs/engineering/standards/model-promotion.md before updating
-        // this expectation.
-        expect(cloud.length).toBeLessThanOrEqual(6);
+        // addition followed that promotion process before updating this
+        // expectation.
+        expect(cloud.length).toBeLessThanOrEqual(7);
     });
 
     it('does not curate experimental "*-pro" OpenAI lanes here (they would come via remote drift if needed)', () => {

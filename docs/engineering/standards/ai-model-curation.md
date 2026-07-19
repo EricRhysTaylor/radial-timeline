@@ -21,21 +21,20 @@ When promotion is approved for `<provider>/<model>`:
 Note specifically:
 - Which sampling parameters are accepted (`temperature`, `top_p`) — these change between model generations, especially for thinking-capable models
 - Which thinking / reasoning controls exist (`thinking_budget`, `reasoning_effort`, `thinkingConfig`)
-- Citation / structured-output / cache APIs and any model-specific constraints
+- Citation / structured-output / cache APIs and any model-specific constraints. **Structured-output mode is now constraint-dependent**, not one-size-fits-all: models with a forced-tool-compatible request use `record_structured_response` + `tool_choice` (Opus 4.8/4.7), but always-on-thinking models (`constraints.thinkingAlwaysOn`, e.g. Claude Fable 5) cannot use a forced `tool_choice` and must use `output_config.format` (json_schema) instead — the JSON then arrives in a text block. Note which one the model requires and set the constraint flags accordingly (`supportsAdaptiveThinking`, `thinkingAlwaysOn`)
 - Context window, output budget, and any long-context tier thresholds
 - Pricing (input, output, cache-read, cache-write where applicable)
 
 If the docs disagree with what an older sibling model accepted, **the docs win**. Do not transcribe from the previous model entry's profile.
 
-### 2. Update all five sources in lockstep
+### 2. Update all four sources in lockstep
 
 The promotion is atomic — these all change in the same PR:
 
 - `src/ai/registry/builtinModels.ts` — add the new model, remove the entry it replaces
 - `src/ai/registry/modelRequestProfiles.ts` — declare exactly the parameters from step 1; add a per-model override if it deviates from the provider default
 - `src/ai/cost/providerPricing.ts` — pricing rows, cache-read/write, long-context thresholds
-- `src/data/aiModels.ts` — picker entry
-- `scripts/models/registry.json` — drift-snapshot reference
+- `scripts/models/registry.json` — drift-snapshot reference (the picker reads `BUILTIN_MODELS` directly via `getPickerModelsForProvider`; there is no separate `src/data/aiModels.ts`)
 
 ### 3. Run one real call with the full RT parameter set
 

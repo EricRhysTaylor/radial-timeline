@@ -13,6 +13,12 @@ export interface ModelRequestProfile {
     preferredOpenAiEndpoint?: 'responses' | 'chat_completions';
     /** Adaptive thinking (type:'adaptive' + effort) vs legacy manual budget. */
     supportsAdaptiveThinking?: boolean;
+    /**
+     * Always-on, non-configurable thinking (Claude Fable 5). The `thinking`
+     * field is omitted entirely; depth is set via output_config.effort and
+     * structured output uses output_config.format instead of a forced tool.
+     */
+    thinkingAlwaysOn?: boolean;
 }
 
 const PROVIDER_DEFAULTS: Record<Exclude<AIProviderId, 'none'>, ModelRequestProfile> = {
@@ -73,6 +79,7 @@ function constraintsToProfileOverride(constraints: ModelInfo['constraints']): Pa
     if (constraints.supportsReasoningEffort !== undefined) override.supportsReasoningEffort = constraints.supportsReasoningEffort;
     if (constraints.preferredOpenAiEndpoint !== undefined) override.preferredOpenAiEndpoint = constraints.preferredOpenAiEndpoint;
     if (constraints.supportsAdaptiveThinking !== undefined) override.supportsAdaptiveThinking = constraints.supportsAdaptiveThinking;
+    if (constraints.thinkingAlwaysOn !== undefined) override.thinkingAlwaysOn = constraints.thinkingAlwaysOn;
     return override;
 }
 
@@ -134,4 +141,17 @@ export function modelSupportsAdaptiveThinking(
     modelId?: string
 ): boolean {
     return getModelRequestProfile(provider, modelId).supportsAdaptiveThinking === true;
+}
+
+/**
+ * Whether the model's thinking is always-on and non-configurable (Claude
+ * Fable 5): the `thinking` field must be omitted and structured output must
+ * use output_config.format rather than a forced tool. Declared per-model via
+ * ModelInfo.constraints.thinkingAlwaysOn — never pattern-matched on the id.
+ */
+export function modelUsesAlwaysOnThinking(
+    provider: Exclude<AIProviderId, 'none'>,
+    modelId?: string
+): boolean {
+    return getModelRequestProfile(provider, modelId).thinkingAlwaysOn === true;
 }

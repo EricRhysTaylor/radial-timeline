@@ -19,21 +19,48 @@ export class AnthropicProvider implements AIProvider {
     }
 
     /**
-     * Output-truncation outcome. Anthropic returns `stop_reason: 'max_tokens'`
-     * when the response hit the output cap — the partial text is unusable
-     * (e.g. a JSON object cut off mid-array). We surface this as a 'truncated'
-     * rejection (NOT success) so the runner routes to its truncation recovery
-     * (chunk + synthesize) instead of failing downstream as "malformed JSON".
-     * Without this check a too-low output cap silently masquerades as a model
-     * JSON error.
+     * Map the provider `stop_reason` to a normalized outcome. Two non-success
+     * stop reasons need explicit handling:
+     *
+     *   - `refusal` (Fable 5 and newer): HTTP 200 with empty (pre-output) or
+     *     partial (mid-stream) content plus a `stop_details` object. The model
+     *     declined for safety/policy reasons — this is terminal, NOT a
+     *     transport error and NOT retryable. We surface it as a 'refusal'
+     *     rejection with a clear message (including `stop_details.category`
+     *     when present). We branch on stop_reason only, because category can be
+     *     null even on a genuine refusal. No silent model fallback (fail
+     *     clearly, per RT doctrine).
+     *   - `max_tokens`: the response hit the output cap; the partial text is
+     *     unusable (e.g. a JSON object cut off mid-array). We surface this as a
+     *     'truncated' rejection so the runner routes to its truncation recovery
+     *     (chunk + synthesize) instead of failing downstream as "malformed
+     *     JSON". Without this check a too-low output cap silently masquerades
+     *     as a model JSON error.
      */
-    private resolveTruncationOutcome(
+    private resolveResponseOutcome(
         result: { success: boolean; responseData: unknown },
         classification: { aiStatus: ProviderExecutionResult['aiStatus']; aiReason?: string }
-    ): { aiStatus: ProviderExecutionResult['aiStatus']; aiReason?: string } {
-        const stopReason = result.responseData && typeof result.responseData === 'object'
-            ? (result.responseData as { stop_reason?: unknown }).stop_reason
+    ): { aiStatus: ProviderExecutionResult['aiStatus']; aiReason?: string; errorOverride?: string } {
+        const responseData = result.responseData && typeof result.responseData === 'object'
+            ? result.responseData as { stop_reason?: unknown; stop_details?: unknown }
             : undefined;
+        const stopReason = responseData?.stop_reason;
+
+        if (stopReason === 'refusal') {
+            const stopDetails = responseData?.stop_details && typeof responseData.stop_details === 'object'
+                ? responseData.stop_details as { category?: unknown }
+                : undefined;
+            const category = typeof stopDetails?.category === 'string' && stopDetails.category
+                ? stopDetails.category
+                : undefined;
+            const detail = category ? ` (category: ${category})` : '';
+            return {
+                aiStatus: 'rejected',
+                aiReason: 'refusal',
+                errorOverride: `Model refused to generate a response${detail}. This is a safety/policy refusal (HTTP 200, stop_reason "refusal"), not a transport or parameter error — retrying the same request will not help.`
+            };
+        }
+
         if (result.success && stopReason === 'max_tokens') {
             return { aiStatus: 'rejected', aiReason: 'truncated' };
         }
@@ -84,7 +111,7 @@ export class AnthropicProvider implements AIProvider {
             cacheTtl
         );
         const classification = classifyProviderError(result);
-        const outcome = this.resolveTruncationOutcome(result, classification);
+        const outcome = this.resolveResponseOutcome(result, classification);
         const cacheResult = this.deriveCacheResult(result.responseData);
         return {
             success: result.success && outcome.aiStatus === 'success',
@@ -96,7 +123,7 @@ export class AnthropicProvider implements AIProvider {
             aiProvider: 'anthropic',
             aiModelRequested: req.modelId,
             aiModelResolved: req.modelId,
-            error: result.error,
+            error: outcome.errorOverride ?? result.error,
             citations: result.citations,
             ...cacheResult
         };
@@ -124,7 +151,7 @@ export class AnthropicProvider implements AIProvider {
             cacheTtl
         );
         const classification = classifyProviderError(result);
-        const outcome = this.resolveTruncationOutcome(result, classification);
+        const outcome = this.resolveResponseOutcome(result, classification);
         const cacheResult = this.deriveCacheResult(result.responseData);
         return {
             success: result.success && outcome.aiStatus === 'success',
@@ -136,7 +163,7 @@ export class AnthropicProvider implements AIProvider {
             aiProvider: 'anthropic',
             aiModelRequested: req.modelId,
             aiModelResolved: req.modelId,
-            error: result.error,
+            error: outcome.errorOverride ?? result.error,
             citations: result.citations,
             ...cacheResult
         };

@@ -77,6 +77,49 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         }
     },
     {
+        // Premium always-on-thinking model on its own line ('claude-fable'),
+        // deliberately kept OFF the 'stable' rollout channel: latest-stable
+        // auto-selection (Pulse/Gossamer/Inquiry) reads channel === 'stable'
+        // only, so it continues to resolve to Opus 4.8. Fable is a 'pro'-channel
+        // entry — visible and pinnable in the picker, but never the silent
+        // default. This matters because Fable costs 2× Opus ($10/$50 vs $5/$25
+        // per MTok); it must be an explicit author choice.
+        //
+        // Request-shape facts (verified against Anthropic docs, mid-2026):
+        //   - Thinking is ALWAYS ON and non-configurable — omit `thinking`
+        //     entirely (any thinking:{...} shape → 400). Depth is set via
+        //     output_config.effort (thinkingAlwaysOn constraint drives this).
+        //   - Forced tool_choice is incompatible with active thinking, so
+        //     structured output uses output_config.format (json_schema), not
+        //     the forced-tool path used by Opus.
+        //   - temperature/top_p rejected (same as Opus 4.7+).
+        //   - Prompt-cache minimum prefix is 2048 tokens (Opus: 4096); cache
+        //     TTLs 5m/1h unchanged, so existing cache_control plumbing carries.
+        provider: 'anthropic',
+        id: 'claude-fable-5',
+        alias: 'claude-fable-5',
+        label: 'Claude Fable 5',
+        line: 'claude-fable',
+        tier: 'DEEP',
+        capabilities: [...DEEP_CAPS],
+        personality: { reasoning: 10, writing: 10, determinism: 9 },
+        contextWindow: 1_000_000,
+        maxOutput: 128_000,
+        releasedAt: '2026-07-15',
+        status: 'stable',
+        rollout: {
+            channel: 'pro',
+            status: 'stable',
+            lane: 'pro'
+        },
+        constraints: {
+            supportsTemperature: false,
+            supportsTopP: false,
+            supportsAdaptiveThinking: true,
+            thinkingAlwaysOn: true
+        }
+    },
+    {
         provider: 'openai',
         id: 'gpt-5.5',
         alias: 'gpt-5.5',

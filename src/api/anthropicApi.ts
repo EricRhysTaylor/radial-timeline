@@ -7,7 +7,7 @@
 import { requestUrl } from 'obsidian';
 import { warnLegacyAccess } from './legacyAccessGuard';
 import { CACHE_BREAK_DELIMITER } from '../ai/prompts/composeEnvelope';
-import { modelSupportsAdaptiveThinking } from '../ai/registry/modelRequestProfiles';
+import { modelSupportsAdaptiveThinking, modelUsesAlwaysOnThinking } from '../ai/registry/modelRequestProfiles';
 import type { AnthropicCacheTtl, EvidenceDocument, TokenCountResult } from '../ai/types';
 
 export type AnthropicTextBlock = {
@@ -141,10 +141,49 @@ type AnthropicMessageRequestBody = {
   thinking?:
     | { type: 'enabled'; budget_tokens: number }
     | { type: 'adaptive' };
-  output_config?: { effort: 'low' | 'medium' | 'high' };
+  output_config?: {
+    effort?: 'low' | 'medium' | 'high';
+    format?: { type: 'json_schema'; schema: Record<string, unknown> };
+  };
   tools?: AnthropicToolDefinition[];
   tool_choice?: AnthropicToolChoice;
 };
+
+// output_config.format json_schema does NOT support numeric constraints
+// (minimum/maximum/multipleOf) or string-length constraints
+// (minLength/maxLength), and requires additionalProperties:false on every
+// object. We strip the unsupported keywords (client-side validation still
+// enforces them) and stamp additionalProperties before sending.
+const UNSUPPORTED_JSON_SCHEMA_KEYWORDS = new Set([
+  'minimum',
+  'maximum',
+  'multipleOf',
+  'minLength',
+  'maxLength'
+]);
+
+export function sanitizeAnthropicOutputSchema(schema: Record<string, unknown>): Record<string, unknown> {
+  const walk = (node: unknown): unknown => {
+    if (Array.isArray(node)) {
+      return node.map(walk);
+    }
+    if (node && typeof node === 'object') {
+      const source = node as Record<string, unknown>;
+      const out: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(source)) {
+        if (UNSUPPORTED_JSON_SCHEMA_KEYWORDS.has(key)) continue;
+        out[key] = walk(value);
+      }
+      // Every object node must declare additionalProperties:false.
+      if (out.type === 'object' || out.properties !== undefined) {
+        out.additionalProperties = false;
+      }
+      return out;
+    }
+    return node;
+  };
+  return walk(schema) as Record<string, unknown>;
+}
 
 export function buildAnthropicUserContent(input: BuildAnthropicUserContentInput): AnthropicContentBlock[] {
   const delimIndex = input.userPrompt.indexOf(CACHE_BREAK_DELIMITER);
@@ -295,7 +334,16 @@ function buildAnthropicMessageRequestBody(
   //   https://platform.claude.com/docs/en/docs/build-with-claude/citations
   //   ("Citations and Structured Outputs are incompatible.")
   const hasJsonSchema = !!input.jsonSchema && Object.keys(input.jsonSchema).length > 0;
-  const forceStructuredTool = hasJsonSchema && !input.citationsEnabled;
+  const alwaysOnThinking = modelUsesAlwaysOnThinking('anthropic', input.modelId);
+  // Structured-output routing:
+  //   - Legacy path (Opus 4.8/4.7 and every non-always-on model): forced tool
+  //     + tool_choice. JSON returns in `tool_use.input`.
+  //   - Always-on-thinking path (Fable 5): forced tool_choice is incompatible
+  //     with active thinking, so we use output_config.format (json_schema).
+  //     The JSON arrives in a normal text block and is parsed via the text
+  //     path (same as the citations branch).
+  const forceStructuredTool = hasJsonSchema && !input.citationsEnabled && !alwaysOnThinking;
+  const useSchemaOutputFormat = hasJsonSchema && !input.citationsEnabled && alwaysOnThinking;
   if (forceStructuredTool) {
     // The tool description must be aggressively explicit because Opus 4.7+
     // observed (2026-05-23 Gossamer failure) wrapping its tool input in a
@@ -315,6 +363,20 @@ function buildAnthropicMessageRequestBody(
     };
   }
 
+  if (useSchemaOutputFormat) {
+    // Sanitize (strip unsupported numeric/string constraints, stamp
+    // additionalProperties:false) — client-side validation still enforces the
+    // stripped constraints on the parsed result. Set here (before the count
+    // return) so count_tokens reflects the same request shape.
+    requestBody.output_config = {
+      ...(requestBody.output_config ?? {}),
+      format: {
+        type: 'json_schema',
+        schema: sanitizeAnthropicOutputSchema(input.jsonSchema as Record<string, unknown>)
+      }
+    };
+  }
+
   if (input.mode === 'count') {
     return requestBody;
   }
@@ -322,6 +384,30 @@ function buildAnthropicMessageRequestBody(
   const thinkingBudget = typeof input.thinkingBudgetTokens === 'number'
     ? input.thinkingBudgetTokens
     : 0;
+
+  if (alwaysOnThinking) {
+    // Fable 5: thinking is ALWAYS ON and non-configurable. Never emit the
+    // `thinking` field (any shape → 400). Depth is set via output_config.effort,
+    // which is emitted on EVERY path — including the schema path, where legacy
+    // models would turn thinking off. Effort is mapped from the requested
+    // budget, defaulting to 'medium'; mapBudgetToEffort caps at 'high', so the
+    // default effort is never raised above 'high' (Fable can run many minutes
+    // at higher effort).
+    const effort = thinkingBudget >= 1024 ? mapBudgetToEffort(thinkingBudget) : 'medium';
+    requestBody.output_config = { ...(requestBody.output_config ?? {}), effort };
+    // Thinking spends tokens inside max_tokens for these models, so apply
+    // headroom on ALL paths (schema included). Floor the reasoning headroom so
+    // a small base (e.g. 4000) isn't starved by the thinking spend, and clamp
+    // to the model output ceiling so base+headroom can't exceed it and 400.
+    const baseMaxTokens = typeof input.maxTokens === 'number' ? input.maxTokens : 4000;
+    const headroom = Math.max(thinkingBudget, ALWAYS_ON_THINKING_MIN_HEADROOM_TOKENS);
+    requestBody.max_tokens = Math.min(baseMaxTokens + headroom, ALWAYS_ON_THINKING_MAX_OUTPUT_TOKENS);
+    // temperature/top_p are rejected while thinking is active — omit entirely.
+    // (The dispatch sanitizer already strips them for Fable; this is the
+    // defense-in-depth net so a direct caller can't reintroduce a 400.)
+    return requestBody;
+  }
+
   // Thinking is gated on the absence of any JSON-output path, not on tool_use
   // specifically. Two reasons:
   //   1. Mixing extended thinking with structured output (tool_use OR text-mode
@@ -368,11 +454,52 @@ function buildAnthropicMessageRequestBody(
   return requestBody;
 }
 
+// Always-on-thinking models spend reasoning tokens inside max_tokens, so we add
+// headroom on top of the requested base output. Floor keeps a small base (e.g.
+// 4000) from being starved; ceiling is the Fable 5 output cap (128k).
+const ALWAYS_ON_THINKING_MIN_HEADROOM_TOKENS = 8000;
+const ALWAYS_ON_THINKING_MAX_OUTPUT_TOKENS = 128_000;
+
 /** Map a budget-token target to the closest adaptive effort level. */
 function mapBudgetToEffort(budgetTokens: number): 'low' | 'medium' | 'high' {
   if (budgetTokens <= 1024) return 'low';
   if (budgetTokens <= 4096) return 'medium';
   return 'high';
+}
+
+// Keywords that signal a 400 names a concrete request-payload problem (a bad
+// or unsupported parameter/field). When none are present, a Fable 5 400 with
+// an otherwise-valid payload is likely the org's zero-data-retention config —
+// Fable requires 30-day retention and returns 400 on EVERY request under ZDR.
+const REQUEST_PARAM_ERROR_HINTS = [
+  'temperature',
+  'top_p',
+  'top_k',
+  'thinking',
+  'max_tokens',
+  'output_config',
+  'schema',
+  'tool',
+  'field',
+  'property',
+  'required',
+  'unexpected',
+  'invalid value',
+  'must be',
+  'not supported',
+  'unsupported'
+];
+
+function looksLikeRequestParamError(message: string): boolean {
+  const normalized = message.toLowerCase();
+  return REQUEST_PARAM_ERROR_HINTS.some(hint => normalized.includes(hint));
+}
+
+function annotateAnthropic400(modelId: string, status: number, message: string): string {
+  if (status !== 400) return message;
+  if (!modelUsesAlwaysOnThinking('anthropic', modelId)) return message;
+  if (looksLikeRequestParamError(message)) return message;
+  return `${message} — If your Anthropic organization is configured for zero data retention, ${modelId} returns 400 on every request regardless of payload: it requires 30-day data retention. Verify the organization's retention setting if the request itself looks correct.`;
 }
 
 function buildAnthropicBetaHeader(): string {
@@ -458,7 +585,8 @@ export async function callAnthropicApi(
     responseData = response.json;
     if (response.status >= 400) {
       const err = responseData as AnthropicErrorResponse;
-      const msg = err?.error?.message ?? response.text ?? `Anthropic error (${response.status})`;
+      const rawMsg = err?.error?.message ?? response.text ?? `Anthropic error (${response.status})`;
+      const msg = annotateAnthropic400(modelId, response.status, rawMsg);
       return {
         success: false,
         content: null,

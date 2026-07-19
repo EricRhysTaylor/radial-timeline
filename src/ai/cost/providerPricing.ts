@@ -69,6 +69,16 @@ export const BUILTIN_PRICING: ProviderPricingTable = {
             cacheWrite5mPer1M: 6.25,
             cacheWrite1hPer1M: 10.0,
             cacheReadPer1M: 0.5
+        },
+        // Premium always-on-thinking model. 2× Opus on input/output; cache
+        // read is 2× as well ($1.00 vs $0.50). Cache-write tiers: 5m $12.50,
+        // 1h $20.00 per MTok.
+        'claude-fable-5': {
+            inputPer1M: 10.0,
+            outputPer1M: 50.0,
+            cacheWrite5mPer1M: 12.5,
+            cacheWrite1hPer1M: 20.0,
+            cacheReadPer1M: 1.0
         }
     },
     openai: {

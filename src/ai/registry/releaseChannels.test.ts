@@ -24,11 +24,21 @@ describe('release channel curation', () => {
         expect(picker).toContain('gemini-3.5-flash');
     });
 
-    it('returns the current Anthropic model plus the one-back continuity model', () => {
+    it('returns the current Anthropic model, the premium pro entry, and the one-back continuity model', () => {
         const picker = getPickerModelsForProvider(BUILTIN_MODELS, 'anthropic').map(model => model.alias);
-        // 4.8 (newest stable, auto-selected) is offered first; 4.7 stays as
-        // an explicit opt-in so in-flight authors aren't force-migrated.
-        expect(picker).toEqual(['claude-opus-4.8', 'claude-opus-4.7']);
+        // Curated order is [newest-stable, newest-pro], then remainder:
+        //   - 4.8: newest stable, the auto-selected default, offered first.
+        //   - Fable 5: the 'pro'-channel premium model — visible and pinnable
+        //     but never the silent default (it is 2× Opus cost).
+        //   - 4.7: continuity opt-in so in-flight authors aren't force-migrated.
+        expect(picker).toEqual(['claude-opus-4.8', 'claude-fable-5', 'claude-opus-4.7']);
+    });
+
+    it('keeps Claude Fable 5 off the stable channel so latest-stable stays Opus 4.8', () => {
+        const stable = selectLatestModelByReleaseChannel(BUILTIN_MODELS, 'anthropic', 'stable');
+        expect(stable?.alias).toBe('claude-opus-4.8');
+        const fable = BUILTIN_MODELS.find(model => model.id === 'claude-fable-5');
+        expect(fable?.rollout?.channel).toBe('pro');
     });
 
     it('selectLatestModelByReleaseChannel returns the only stable OpenAI model', () => {

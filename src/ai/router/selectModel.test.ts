@@ -32,6 +32,35 @@ describe('selectModel', () => {
         expect(result.model.alias).toBe('claude-opus-4.8');
     });
 
+    it('does NOT auto-default to Claude Fable 5 despite its newer releasedAt (2× Opus cost — explicit choice only)', () => {
+        // Fable 5 is newer than Opus 4.8 but sits on the 'pro' rollout channel,
+        // so latest-stable resolution (which reads channel === 'stable') must
+        // keep resolving to Opus 4.8 for every capability-based feature
+        // (Pulse/Gossamer/Inquiry). This is the cost guard: Fable costs 2× Opus.
+        const fable = BUILTIN_MODELS.find(m => m.id === 'claude-fable-5');
+        expect(fable, 'Claude Fable 5 must be in the registry').toBeTruthy();
+        expect(fable?.rollout?.channel).not.toBe('stable');
+
+        const deepCaps = ['longContext', 'jsonStrict', 'reasoningStrong', 'highOutputCap'] as const;
+        const result = selectModel(BUILTIN_MODELS, {
+            provider: 'anthropic',
+            policy: { type: 'latestStable' },
+            requiredCapabilities: [...deepCaps]
+        });
+        expect(result.model.alias).toBe('claude-opus-4.8');
+        expect(result.model.id).not.toBe('claude-fable-5');
+    });
+
+    it('selects Claude Fable 5 only when explicitly pinned', () => {
+        const result = selectModel(BUILTIN_MODELS, {
+            provider: 'anthropic',
+            policy: { type: 'pinned', pinnedAlias: 'claude-fable-5' },
+            requiredCapabilities: ['longContext', 'jsonStrict', 'reasoningStrong', 'highOutputCap']
+        });
+        expect(result.model.id).toBe('claude-fable-5');
+        expect(result.warnings.length).toBe(0);
+    });
+
     it('resolves an OpenAI model for high-output Inquiry requirements', () => {
         const result = selectModel(BUILTIN_MODELS, {
             provider: 'openai',

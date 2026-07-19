@@ -196,13 +196,21 @@ export function deterministicExtraction(source: {
   knownMetadata: Record<string, string>;
 }): SceneExtraction {
   const carriedSubplot = sanitizeName(source.knownMetadata['Subplot'] ?? '');
+  // Mapped Character/Place columns (e.g. Scrivener "Characters", "Location")
+  // carry real per-scene lists — split on ;/, so they become proper wiki-linked
+  // arrays instead of being silently blocked by the pre-filled empty fields.
+  const splitList = (value: string | undefined): string[] =>
+    (value ?? '')
+      .split(/[;,]/)
+      .map((name) => name.trim())
+      .filter((name) => name.length > 0);
   return {
     act: 1, // recomputed positionally downstream
     title: '',
     synopsis: source.knownSynopsis?.trim() ?? '',
     subplot: carriedSubplot ? [carriedSubplot] : [],
-    character: [],
-    place: [],
+    character: splitList(source.knownMetadata['Character']),
+    place: splitList(source.knownMetadata['Place']),
     when: null, // a mapped When arrives via carriedMetadata gap-fill
     duration: null,
     flags: [],

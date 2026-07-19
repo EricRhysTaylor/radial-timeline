@@ -120,6 +120,18 @@ describe('deterministicExtraction (structure-only mode)', () => {
     expect(fm.Subplot).toEqual(['Main Plot']);
   });
 
+  it('splits mapped Character/Place columns into wiki-linked arrays', () => {
+    const e = deterministicExtraction({
+      knownSynopsis: null,
+      knownMetadata: { Character: 'Newlan; Michi, Aria', Place: 'BowShock' },
+    });
+    expect(e.character).toEqual(['Newlan', 'Michi', 'Aria']);
+    expect(e.place).toEqual(['BowShock']);
+    const fm = buildSceneFrontmatter(e, { actCount: 3, subplotVocabulary: e.subplot });
+    expect(fm.Character).toEqual(['[[Newlan]]', '[[Michi]]', '[[Aria]]']);
+    expect(fm.Place).toEqual(['[[BowShock]]']);
+  });
+
   it('lets a mapped When arrive through carried-metadata gap-fill', () => {
     const e = deterministicExtraction({ knownSynopsis: null, knownMetadata: { When: '1184-06-15' } });
     const fm = buildSceneFrontmatter(e, {

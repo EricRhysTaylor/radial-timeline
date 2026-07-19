@@ -353,8 +353,9 @@ export class OnboardingService {
         }),
         body: scene.rawText,
         flags: [],
-        characters: [],
-        places: [],
+        // Carried Character/Place columns feed profile creation like AI names do.
+        characters: linkedCharacters(extraction),
+        places: linkedPlaces(extraction),
       };
     });
     proposals.forEach((proposal, index) => {

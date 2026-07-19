@@ -10,20 +10,21 @@
  * curved ring labels become hard to read at a glance.
  *
  * Three ways in:
- * - Hover the layers trigger icon (top-left of the timeline container).
+ * - Hover the layers trigger icon in the view title bar (right of the
+ *   Discord chip; created once by TimeLineView, wired here per render).
  * - Click the trigger to pin the key open (survives re-renders).
  * - Hold Shift to show the key while held (not in Chronologue mode, which
  *   owns Shift for elapsed-time comparison).
  *
  * Hovering a key row spotlights that ring by dimming every other ring's
- * scenes with the existing rt-non-selected treatment.
+ * scenes, number squares, and titles with the existing rt-non-selected
+ * treatment — the same visual grammar as scene hover.
  *
  * Ring data is read from the rendered SVG's subplot ring labels (stamped by
  * SubplotLabels.ts from Precompute's masterSubplotOrder/colorIndexBySubplot),
  * so the key can never drift from what the rings actually show.
  */
 
-import { setIcon } from 'obsidian';
 import { RadialTimelineView } from '../TimeLineView';
 
 interface SubplotKeyEntry {
@@ -35,8 +36,9 @@ interface SubplotKeyEntry {
     subplotName: string;
 }
 
-const HIDE_DELAY_MS = 120;
-const DIMMABLE_SELECTOR = '.rt-scene-path, .rt-number-square, .rt-number-text, .rt-scene-title';
+// The trigger (title bar) and panel (timeline container) are spatially apart,
+// so give the pointer a comfortable window to travel between them.
+const HIDE_DELAY_MS = 260;
 
 function collectEntries(svg: SVGSVGElement): SubplotKeyEntry[] {
     const labels = Array.from(svg.querySelectorAll('.rt-subplot-ring-label-text'));
@@ -70,6 +72,11 @@ export function setupSubplotKeyController(
         view._subplotKeyCleanup = undefined;
     }
 
+    // The persistent title-bar trigger (created once in ensureBookSwitcher).
+    const trigger = view.subplotKeyTriggerEl;
+    if (!trigger) return;
+    trigger.hidden = true;
+
     // Gossamer hides ring labels entirely; a single ring needs no key.
     if (view.currentMode === 'gossamer') return;
     const entries = collectEntries(svg);
@@ -79,16 +86,11 @@ export function setupSubplotKeyController(
     // SAFE: the container is part of a live view; its document always has a window (popout-safe)
     const win = doc.defaultView!;
 
-    const trigger = doc.createElement('button');
-    trigger.className = 'ert-timeline-subplot-key__trigger clickable-icon';
-    trigger.type = 'button';
-    trigger.setAttribute('aria-label', 'Subplot ring key');
+    trigger.hidden = false;
     trigger.setAttribute('aria-expanded', 'false');
-    setIcon(trigger, 'layers');
 
     const panel = doc.createElement('div');
     panel.className = 'ert-timeline-subplot-key';
-    panel.setAttribute('role', 'tooltip');
 
     const surface = doc.createElement('div');
     surface.className = 'ert-timeline-subplot-key__surface';
@@ -110,19 +112,33 @@ export function setupSubplotKeyController(
     // Ring-spotlight state: elements we dimmed (only ones that were not
     // already dimmed by search/hover states, so we never clear foreign state).
     let dimmed: Element[] = [];
+    const dim = (el: Element) => {
+        if (el.classList.contains('rt-non-selected')) return;
+        el.classList.add('rt-non-selected');
+        dimmed.push(el);
+    };
     const clearSpotlight = () => {
         dimmed.forEach(el => el.classList.remove('rt-non-selected'));
         dimmed = [];
     };
     const spotlightRing = (ring: number) => {
         clearSpotlight();
+        // Scene paths and titles live inside ring-stamped groups; number
+        // squares/text live in their own layer keyed by data-scene-id, which
+        // matches the group path's id — same lookup scene hover uses.
+        const keepSceneIds = new Set<string>();
         svg.querySelectorAll('.rt-scene-group').forEach(group => {
-            if (group.getAttribute('data-ring') === String(ring)) return;
-            group.querySelectorAll(DIMMABLE_SELECTOR).forEach(el => {
-                if (el.classList.contains('rt-non-selected')) return;
-                el.classList.add('rt-non-selected');
-                dimmed.push(el);
-            });
+            const path = group.querySelector('.rt-scene-path');
+            if (group.getAttribute('data-ring') === String(ring)) {
+                if (path?.id) keepSceneIds.add(path.id);
+                return;
+            }
+            group.querySelectorAll('.rt-scene-path, .rt-scene-title').forEach(dim);
+        });
+        svg.querySelectorAll('.rt-number-square, .rt-number-text').forEach(el => {
+            const sceneId = el.getAttribute('data-scene-id');
+            if (sceneId && keepSceneIds.has(sceneId)) return;
+            dim(el);
         });
     };
 
@@ -185,16 +201,18 @@ export function setupSubplotKeyController(
         }, HIDE_DELAY_MS);
     };
 
-    trigger.addEventListener('mouseenter', show); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
-    trigger.addEventListener('mouseleave', scheduleHide); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
-    // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
-    trigger.addEventListener('click', (evt: MouseEvent) => {
+    // The trigger persists across renders, so its handlers must be named and
+    // explicitly removed in cleanup — otherwise each render stacks another set.
+    const handleTriggerClick = (evt: MouseEvent) => {
         evt.preventDefault();
         evt.stopPropagation();
         view.subplotKeyPinned = !view.subplotKeyPinned;
         trigger.classList.toggle('is-pinned', view.subplotKeyPinned);
         if (view.subplotKeyPinned) show(); else hide();
-    });
+    };
+    trigger.addEventListener('mouseenter', show); // SAFE: removed by _subplotKeyCleanup on re-render/close
+    trigger.addEventListener('mouseleave', scheduleHide); // SAFE: removed by _subplotKeyCleanup on re-render/close
+    trigger.addEventListener('click', handleTriggerClick); // SAFE: removed by _subplotKeyCleanup on re-render/close
     panel.addEventListener('mouseenter', show); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
     panel.addEventListener('mouseleave', scheduleHide); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
 
@@ -231,12 +249,11 @@ export function setupSubplotKeyController(
     doc.addEventListener('keyup', handleKeyUp); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
     win.addEventListener('blur', handleWindowBlur); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
 
-    container.appendChild(trigger);
     container.appendChild(panel);
 
     // Restore pinned state across re-renders.
+    trigger.classList.toggle('is-pinned', view.subplotKeyPinned);
     if (view.subplotKeyPinned) {
-        trigger.classList.add('is-pinned');
         show();
     }
 
@@ -246,7 +263,10 @@ export function setupSubplotKeyController(
         doc.removeEventListener('keydown', handleKeyDown);
         doc.removeEventListener('keyup', handleKeyUp);
         win.removeEventListener('blur', handleWindowBlur);
-        trigger.remove();
+        trigger.removeEventListener('mouseenter', show);
+        trigger.removeEventListener('mouseleave', scheduleHide);
+        trigger.removeEventListener('click', handleTriggerClick);
+        trigger.hidden = true;
         panel.remove();
     };
 }

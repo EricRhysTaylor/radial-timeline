@@ -2094,27 +2094,28 @@
  * Subplot Ring Key
  * Rendered by src/view/interactions/SubplotKeyController.ts.
  * Compact overlay mapping ring order + subplot color to subplot
- * name, for books with many subplot rings. Shown on trigger
- * hover, pinned by click, or while Shift is held.
+ * name, for books with many subplot rings. Trigger lives in the
+ * view title bar (right of the Discord chip); the panel overlays
+ * the timeline's top-left. Shown on trigger hover, pinned by
+ * click, or while Shift is held.
+ * No backdrop-filter here: a filter layer over the SVG re-blurs
+ * on every scene-hover repaint and stays resident after the
+ * panel hides, making hover sluggish.
  * ============================================================ */
 
 .ert-timeline-subplot-key__trigger.clickable-icon {
-  position: absolute;
-  top: var(--size-4-3);
-  left: var(--size-4-3);
-  z-index: 4;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-faint);
+  color: var(--text-muted);
 }
 
 .ert-timeline-subplot-key__trigger.clickable-icon svg {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
 }
 
 .ert-timeline-subplot-key__trigger.clickable-icon:hover,
@@ -2122,28 +2123,37 @@
   color: var(--text-normal);
 }
 
+.ert-timeline-subplot-key__trigger[hidden] {
+  display: none;
+}
+
 .ert-timeline-subplot-key {
   position: absolute;
-  top: calc(var(--size-4-3) + 30px);
+  top: var(--size-4-3);
   left: var(--size-4-3);
   z-index: 4;
-  max-width: min(260px, 40%);
+  max-width: min(280px, 40%);
   opacity: 0;
+  visibility: hidden;
   transform: translateY(-4px);
   transform-origin: top left;
   pointer-events: none;
-  transition: opacity 120ms ease, transform 120ms ease;
+  transition: opacity 120ms ease, transform 120ms ease, visibility 0s linear 120ms;
 }
 
 .ert-timeline-subplot-key.is-visible {
   opacity: 1;
+  visibility: visible;
   transform: translateY(0);
   pointer-events: auto;
+  transition: opacity 120ms ease, transform 120ms ease;
 }
 
 /* Step aside while a scene synopsis is being read — unless the key is
-   being actively held open with Shift. */
-.radial-timeline-container:has(.radial-timeline-svg.scene-hover) .ert-timeline-subplot-key.is-visible:not(.is-key-held) {
+   being actively held open with Shift. The panel is a following sibling
+   of the SVG inside the container (cheap selector; :has() here made every
+   hover force wide style invalidation). */
+.radial-timeline-svg.scene-hover ~ .ert-timeline-subplot-key.is-visible:not(.is-key-held) {
   opacity: 0.12;
   pointer-events: none;
 }
@@ -2152,10 +2162,9 @@
   padding: var(--size-4-2) var(--size-4-3);
   border: 1px solid var(--background-modifier-border);
   border-radius: 6px;
-  background: color-mix(in srgb, var(--background-primary) 92%, transparent);
+  background: color-mix(in srgb, var(--background-primary) 96%, transparent);
   color: var(--text-normal);
   box-shadow: var(--shadow-s);
-  backdrop-filter: blur(4px);
   max-height: min(70vh, 480px);
   overflow-y: auto;
 }
@@ -2184,6 +2193,7 @@
 .ert-timeline-subplot-key__rows {
   display: flex;
   flex-direction: column;
+  gap: var(--size-2-2);
 }
 
 .ert-timeline-subplot-key__row {

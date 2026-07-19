@@ -168,9 +168,11 @@ export class RadialTimelineView extends ItemView {
     public handleShiftModeClick?: (e: MouseEvent, sceneGroup: Element) => boolean;
     public _chronologueShiftCleanup?: () => void;
 
-    // Subplot ring key overlay installed per-render by SubplotKeyController
+    // Subplot ring key overlay installed per-render by SubplotKeyController;
+    // the title-bar trigger button is persistent (created in ensureBookSwitcher)
     public _subplotKeyCleanup?: () => void;
     public subplotKeyPinned: boolean = false;
+    public subplotKeyTriggerEl?: HTMLButtonElement;
     
     // Mode system
     private _currentMode: string = 'narrative'; // TimelineMode enum value
@@ -506,6 +508,17 @@ export class RadialTimelineView extends ItemView {
             discordChipHost.className = 'ert-timeline-discord-chip-host';
             sessionBtn.parentElement?.insertBefore(discordChipHost, sessionBtn.nextSibling);
             this.discordChip?.mount(discordChipHost);
+
+            // Subplot ring key trigger — action icon slot right of the Discord
+            // chip. Hidden until SubplotKeyController wires it to a rendered
+            // timeline with 2+ subplot rings; no tooltip by design.
+            const subplotKeyBtn = doc.createElement('button');
+            subplotKeyBtn.className = 'ert-timeline-subplot-key__trigger clickable-icon';
+            subplotKeyBtn.type = 'button';
+            subplotKeyBtn.hidden = true;
+            setIcon(subplotKeyBtn, 'layers');
+            discordChipHost.parentElement?.insertBefore(subplotKeyBtn, discordChipHost.nextSibling);
+            this.subplotKeyTriggerEl = subplotKeyBtn;
 
             this.bookSwitcherEl = wrapper;
             this.bookSwitcherSelect = select;

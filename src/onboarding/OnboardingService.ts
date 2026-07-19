@@ -28,6 +28,7 @@ import {
 } from './adapters/mdAdapter';
 import { ingestSingleFile } from './adapters/singleFileAdapter';
 import { ingestDocxFile, DocxParseError } from './adapters/docxAdapter';
+import { createObsidianScrivenerSource, ingestScrivenerFolder } from './adapters/scrivenerAdapter';
 import {
   flattenScenes,
   type ManuscriptModel,
@@ -209,8 +210,25 @@ export class OnboardingService {
       const content = await this.plugin.app.vault.read(file);
       return { kind: 'ok', model: ingestSingleFile(file.name, content) };
     }
+    // Scrivener export: a CSV outline sidecar and/or .txt scene files mark the
+    // folder as a Scrivener export (flow 2). Pure-.md folders stay on the md
+    // path — behavior there is near-identical and md is the vault-native case.
+    if (this.looksLikeScrivenerExport(folderPath, proseFiles)) {
+      return ingestScrivenerFolder(createObsidianScrivenerSource(this.plugin.app), folderPath);
+    }
     const source = createObsidianMarkdownSource(this.plugin.app);
     return ingestMarkdownFolder(source, folderPath);
+  }
+
+  /** Flow-2 signature: a .csv sidecar alongside the prose, or any .txt scene files. */
+  private looksLikeScrivenerExport(folderPath: string, proseFiles: TFile[]): boolean {
+    const folder = this.plugin.app.vault.getAbstractFileByPath(normalizePath(folderPath));
+    if (!(folder instanceof TFolder)) return false;
+    const hasCsv = folder.children.some(
+      (child) => child instanceof TFile && child.extension.toLowerCase() === 'csv'
+    );
+    const hasTxt = proseFiles.some((file) => file.extension.toLowerCase() === 'txt');
+    return hasCsv || hasTxt;
   }
 
   /** Prose files (md/txt/html/docx) directly in the book folder; TOC excluded. */

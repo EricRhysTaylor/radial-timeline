@@ -707,6 +707,22 @@ Doctrine fit: no new abstraction layer beyond the adapters, no fallback chains
   session integrates their output. Ship posture: the beta stays dev-gated until
   the adapters land and one clean full-manuscript verification run passes.
 
+- **2026-07-16 (all three import flows live)** — the background agents delivered
+  and both adapters are integrated on `main`: **Word `.docx`** (fflate@0.8.2 —
+  the repo's first runtime dep, ~8 KB bundled; headings→divisions through the
+  shared `detectDivisions` pipeline; `DocxParseError` surfaces as a blocked
+  state) and **Scrivener export** (File▸Export▸Files + optional "Outliner
+  Contents as CSV" sidecar; delimiter-sniffing RFC-4180 parser; synopsis/
+  metadata carry with canonical-key collisions prefixed `Scrivener `;
+  `proposeScrivenerAutomap` ready to seed the future mapping-table UI). Routing:
+  one prose file → single-file (docx via readBinary); CSV sidecar or .txt files
+  → Scrivener; else md adapter. 114 onboarding tests. Also: **Main Plot
+  starvation** fix (survey must not create a thread that restates the logline;
+  scenes advancing the central storyline go to Main Plot — it is "the spine,
+  not a leftover bucket"). Remaining known issues live outside onboarding:
+  subplot dominance corners not rendering on the onboarded book and Chronologue
+  ticks with sparse `When` coverage — under investigation renderer-side.
+
 ## Appendix A — Canonical onboarding prompt (instruction block)
 
 Source of truth for this text is **Supabase** (see "The Onboarding Prompt —

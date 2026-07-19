@@ -29,7 +29,11 @@ export class AnthropicProvider implements AIProvider {
      *     rejection with a clear message (including `stop_details.category`
      *     when present). We branch on stop_reason only, because category can be
      *     null even on a genuine refusal. No silent model fallback (fail
-     *     clearly, per RT doctrine).
+     *     clearly, per RT doctrine). Verified against claude-fable-5 on
+     *     2026-07-19: a refused request does NOT persist a usable prompt-cache
+     *     entry (the next call re-writes the full prefix, cache_read=0), so a
+     *     refusal on the arming run leaves later Gossamer signals uncached —
+     *     see src/gossamer/cacheWindow.ts.
      *   - `max_tokens`: the response hit the output cap; the partial text is
      *     unusable (e.g. a JSON object cut off mid-array). We surface this as a
      *     'truncated' rejection so the runner routes to its truncation recovery

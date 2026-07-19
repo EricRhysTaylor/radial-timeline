@@ -95,6 +95,10 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         //   - temperature/top_p rejected (same as Opus 4.7+).
         //   - Prompt-cache minimum prefix is 2048 tokens (Opus: 4096); cache
         //     TTLs 5m/1h unchanged, so existing cache_control plumbing carries.
+        // All four facts verified via live smoke probe against claude-fable-5
+        // on 2026-07-19 (basic effort request, output_config.format structured
+        // output, 1h cache-prefix reuse, and the temperature/thinking.disabled
+        // 400s). See anthropicApi.ts for the per-path probe notes.
         provider: 'anthropic',
         id: 'claude-fable-5',
         alias: 'claude-fable-5',

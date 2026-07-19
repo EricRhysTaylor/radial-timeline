@@ -368,6 +368,13 @@ function buildAnthropicMessageRequestBody(
     // additionalProperties:false) — client-side validation still enforces the
     // stripped constraints on the parsed result. Set here (before the count
     // return) so count_tokens reflects the same request shape.
+    // Verified via smoke probe against claude-fable-5 on 2026-07-19 (Probe B):
+    // output_config:{effort, format:{type:'json_schema', schema}} with a
+    // nested-object schema (additionalProperties:false) returned HTTP 200,
+    // stop_reason end_turn — the JSON arrived in a normal text block and
+    // parsed valid with exactly the schema's required keys. This is the
+    // working replacement for the forced-tool path (incompatible with the
+    // always-on thinking Fable can't turn off).
     requestBody.output_config = {
       ...(requestBody.output_config ?? {}),
       format: {
@@ -393,6 +400,14 @@ function buildAnthropicMessageRequestBody(
     // budget, defaulting to 'medium'; mapBudgetToEffort caps at 'high', so the
     // default effort is never raised above 'high' (Fable can run many minutes
     // at higher effort).
+    // Verified via smoke probe against claude-fable-5 on 2026-07-19:
+    //   - Probe A: `thinking` omitted + output_config.effort='low' → HTTP 200,
+    //     stop_reason end_turn (thinking defaults to adaptive when unspecified).
+    //   - Probe D (negatives): thinking:{type:'disabled'} → 400
+    //     "\"thinking.type.disabled\" is not supported for this model. Thinking
+    //     defaults to adaptive mode when not specified"; temperature=0.7 → 400
+    //     "`temperature` is deprecated for this model." Both match the registry
+    //     constraint flags (thinkingAlwaysOn / supportsTemperature:false).
     const effort = thinkingBudget >= 1024 ? mapBudgetToEffort(thinkingBudget) : 'medium';
     requestBody.output_config = { ...(requestBody.output_config ?? {}), effort };
     // Thinking spends tokens inside max_tokens for these models, so apply

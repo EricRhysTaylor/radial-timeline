@@ -14,6 +14,16 @@
  * Gemini reports the real cachedContent expiry; Anthropic/OpenAI don't, so the
  * window is derived from the configured provider TTL bound to creation time
  * (NOT extended on a later hit).
+ *
+ * Refusal interaction (empirical, claude-fable-5 smoke probe 2026-07-19):
+ * a refused request (stop_reason 'refusal') does NOT persist a usable cache
+ * entry — the probe saw the refused arming call write the prefix but the
+ * follow-up re-wrote the full prefix with cache_read=0. Consequence: if
+ * signal-1 of a Gossamer run is refused, signals 2–4 pay the full prefix
+ * price (no window is armed, which this module already enforces by only
+ * building on a real cache engagement). Fable's classifiers refuse
+ * degenerate/repetitive input; real manuscript prose cached cleanly (11.7k
+ * stable-prefix tokens, full reuse on call 2).
  */
 import type { AIProviderId, AIRunAdvancedContext, AiSettingsV1 } from '../ai/types';
 import { resolveProviderCacheWindowMs } from '../ai/settings/cacheWindows';

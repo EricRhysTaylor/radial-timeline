@@ -266,7 +266,7 @@ export class OnboardingModal extends Modal {
       const undecided = plans.filter(
         (plan) => !plan.alreadyOnboarded && plan.paragraphs.length > 1 && plan.breaks.length === 0
       ).length;
-      if (!this.splitOutcomes && undecided > 0) {
+      if (this.aiAvailable && !this.splitOutcomes && undecided > 0) {
         totalLine.setText(
           `${plans.length} chapter${plans.length === 1 ? '' : 's'} found. Auto-split with AI detects the scenes inside them.`
         );
@@ -461,7 +461,9 @@ export class OnboardingModal extends Modal {
       // Until a chapter has been split (markers, AI, or by hand), its pill says
       // "unsplit" — never "1 scene", which read as a final count and made the
       // later total look like a contradiction (24 scenes → split → 90).
+      // Without AI, nothing further will "decide" a chapter — it is what it is.
       const undecided =
+        this.aiAvailable &&
         !plan.alreadyOnboarded &&
         plan.paragraphs.length > 1 &&
         plan.breaks.length === 0 &&

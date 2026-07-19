@@ -28,7 +28,12 @@ import {
 } from './adapters/mdAdapter';
 import { ingestSingleFile } from './adapters/singleFileAdapter';
 import { ingestDocxFile, DocxParseError } from './adapters/docxAdapter';
-import { createObsidianScrivenerSource, ingestScrivenerFolder } from './adapters/scrivenerAdapter';
+import {
+  createObsidianScrivenerSource,
+  ingestScrivenerFolder,
+  isScrivenerAuxiliaryFile,
+  isSnapshotFolderName,
+} from './adapters/scrivenerAdapter';
 import {
   flattenScenes,
   type ManuscriptModel,
@@ -59,6 +64,7 @@ import {
   linkedPlaces,
   effectiveFlags,
   positionalAct,
+  resolveActs,
   type SurveyResult,
 } from './extraction';
 import {
@@ -281,19 +287,31 @@ export class OnboardingService {
     return ingestMarkdownFolder(source, folderPath);
   }
 
-  /** Prose files (md/txt/html/docx) directly in the book folder; TOC excluded. */
+  /**
+   * Prose files (md/txt/html/docx) in the book folder — RECURSIVE, because
+   * Scrivener exports preserve the binder hierarchy (Book/ACT 1/…). Snapshot
+   * folders, per-doc MetaData/Notes sidecars, and TOC.md are excluded.
+   */
   private listProseFiles(folderPath: string): TFile[] {
-    const folder = this.plugin.app.vault.getAbstractFileByPath(normalizePath(folderPath));
-    if (!(folder instanceof TFolder)) return [];
+    const root = this.plugin.app.vault.getAbstractFileByPath(normalizePath(folderPath));
+    if (!(root instanceof TFolder)) return [];
+    const files: TFile[] = [];
+    const walk = (folder: TFolder): void => {
+      for (const child of folder.children) {
+        if (child instanceof TFolder) {
+          if (!isSnapshotFolderName(child.name)) walk(child);
+        } else if (child instanceof TFile && !isScrivenerAuxiliaryFile(child.name)) {
+          files.push(child);
+        }
+      }
+    };
+    walk(root);
     // NOTE: .docx participates in the count but only the SINGLE-file path reads
     // it (a mixed folder falls to the md adapter, which reads .md only — the
     // folder-of-docx variant is a later slice).
     const proseExts = new Set(['md', 'txt', 'html', 'htm', 'docx']);
-    return folder.children.filter(
-      (child): child is TFile =>
-        child instanceof TFile &&
-        proseExts.has(child.extension.toLowerCase()) &&
-        child.name.toLowerCase() !== 'toc.md'
+    return files.filter(
+      (file) => proseExts.has(file.extension.toLowerCase()) && file.name.toLowerCase() !== 'toc.md'
     );
   }
 
@@ -358,10 +376,19 @@ export class OnboardingService {
         places: linkedPlaces(extraction),
       };
     });
+    const acts = resolveActs(scenes.map((scene) => scene.sourceAct), actCount);
     proposals.forEach((proposal, index) => {
-      (proposal.frontmatter as Record<string, unknown>).Act = positionalAct(index, proposals.length, actCount);
+      (proposal.frontmatter as Record<string, unknown>).Act = acts[index];
     });
     return proposals;
+  }
+
+  /** A scene's structural act, looked up by sourceRef (split refs fall back to their base file). */
+  private sourceActFor(scenes: ManuscriptScene[], sourceRef: string): number | undefined {
+    const exact = scenes.find((scene) => scene.sourceRef === sourceRef);
+    if (exact) return exact.sourceAct;
+    const base = sourceRef.replace(/#\d+$/, '');
+    return scenes.find((scene) => scene.sourceRef === base)?.sourceAct;
   }
 
   async extractScenes(
@@ -436,8 +463,9 @@ export class OnboardingService {
     // actCount contiguous blocks. "Act" also leaves the flag list — it is no
     // longer a guess.
     const written = proposals.filter((proposal) => proposal.frontmatter);
+    const acts = resolveActs(written.map((proposal) => this.sourceActFor(scenes, proposal.sourceRef)), actCount);
     written.forEach((proposal, index) => {
-      (proposal.frontmatter as Record<string, unknown>).Act = positionalAct(index, written.length, actCount);
+      (proposal.frontmatter as Record<string, unknown>).Act = acts[index];
       proposal.flags = proposal.flags.filter((flag) => flag.toLowerCase() !== 'act');
     });
 

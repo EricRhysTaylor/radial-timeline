@@ -9,6 +9,7 @@ import {
   deterministicExtraction,
   sanitizeWhen,
   positionalAct,
+  resolveActs,
   MAX_SUBPLOTS,
   buildSceneFrontmatter,
   sanitizeName,
@@ -366,5 +367,20 @@ describe('effectiveFlags', () => {
   it('keeps When/Duration flags when those fields were actually filled in', () => {
     const e = extraction({ when: '1998', duration: '1 hour', flags: ['When', 'Duration'] });
     expect(effectiveFlags(e)).toEqual(['When', 'Duration']);
+  });
+});
+
+describe('resolveActs', () => {
+  it('uses structural acts with carry-forward for unmarked trailing scenes (Wrapup)', () => {
+    expect(resolveActs([1, 1, 2, 2, 3, undefined, undefined], 3)).toEqual([1, 1, 2, 2, 3, 3, 3]);
+  });
+  it('falls back to positional thirds when no structural acts exist', () => {
+    expect(resolveActs([undefined, undefined, undefined], 3)).toEqual([1, 2, 3]);
+  });
+  it('clamps structural acts into the configured act count', () => {
+    expect(resolveActs([1, 5, 5], 3)).toEqual([1, 3, 3]);
+  });
+  it('leading unmarked scenes stay in act 1', () => {
+    expect(resolveActs([undefined, 2, undefined], 3)).toEqual([1, 2, 2]);
   });
 });

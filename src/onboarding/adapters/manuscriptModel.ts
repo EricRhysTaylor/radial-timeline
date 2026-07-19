@@ -24,6 +24,11 @@ export interface ManuscriptScene {
   sourceRef: string;
   /** True when the source note already carries `Class: Scene` (existing-vault re-run skip). */
   alreadyOnboarded: boolean;
+  /**
+   * Act carried by the source's own structure (e.g. a Scrivener "ACT 2" export
+   * folder). When present it overrides positional act math downstream.
+   */
+  sourceAct?: number;
 }
 
 export interface ManuscriptChapter {

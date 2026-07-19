@@ -177,7 +177,14 @@ export function titleFromExportFileName(fileName: string): string {
 
 /** Normalize a title for file↔row matching (case/whitespace-insensitive). */
 function normalizeTitle(title: string): string {
-  return title.replace(/\s+/g, ' ').trim().toLowerCase();
+  // Scrivener strips filename-hostile characters when exporting files but keeps
+  // them in outliner titles ("FB: A New Home" → "FB A New Home.txt") — fold
+  // that punctuation on both sides so title matching survives the round trip.
+  return title
+    .replace(/[:\\/*"<>|?]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
 }
 
 /** Case-insensitive column lookup on a sidecar record. */
@@ -356,13 +363,47 @@ export function applyMetadataMappingToModel(
   return { ...model, chapters, customFields: [...fields].sort() };
 }
 
+/**
+ * Scrivener's "Export Files" writes per-document sidecars next to the prose —
+ * "<Title> MetaData.txt" and "<Title> Notes.txt". They are not scenes.
+ */
+export function isScrivenerAuxiliaryFile(fileName: string): boolean {
+  return / (MetaData|Notes)\.(txt|md)$/i.test(fileName);
+}
+
+/** Snapshot folders exported alongside documents ("<Title> Snapshots/"). */
+export function isSnapshotFolderName(folderName: string): boolean {
+  return / Snapshots$/i.test(folderName.trim());
+}
+
+/**
+ * Act carried by the export's own folder structure: a file living under an
+ * "ACT <n>" folder gets that act (the deepest ACT segment wins). Undefined for
+ * files outside any ACT folder (e.g. a trailing "Wrapup" — downstream carry-
+ * forward keeps those in the last seen act).
+ */
+export function deriveSourceAct(path: string): number | undefined {
+  const matches = [...path.matchAll(/(?:^|\/)ACT[ _-]?(\d{1,2})(?=\/|$)/gi)];
+  const last = matches[matches.length - 1];
+  return last ? Number(last[1]) : undefined;
+}
+
 export async function ingestScrivenerFolder(
   source: ScrivenerSource,
   folderPath: string
 ): Promise<ScrivenerIngestResult> {
-  const files = await source.listSceneFiles(folderPath);
+  const listed = await source.listSceneFiles(folderPath);
+  // Real exports are messy: per-doc MetaData/Notes sidecars, snapshot folders,
+  // and empty placeholder docs (structure beats, art slots). Only non-empty
+  // prose survives; everything else is export furniture, not manuscript.
+  const files = listed.filter(
+    (file) =>
+      !isScrivenerAuxiliaryFile(file.fileName) &&
+      !/ Snapshots\//i.test(file.path) &&
+      file.content.trim().length > 0
+  );
   if (files.length === 0) {
-    return { kind: 'needs-order', reason: 'The book folder contains no exported scene files.' };
+    return { kind: 'needs-order', reason: 'The book folder contains no exported scene files with prose.' };
   }
   const sidecarText = await source.readSidecar(folderPath);
   const sidecar = sidecarText ? parseOutlineSidecar(sidecarText) : null;
@@ -371,7 +412,10 @@ export async function ingestScrivenerFolder(
   if (ordered.kind === 'needs-order') return ordered;
 
   const rowsByFile = matchRowsToFiles(ordered.files, sidecar);
-  const scenes = ordered.files.map((file, index) => fileToScene(file, rowsByFile[index]));
+  const scenes = ordered.files.map((file, index) => ({
+    ...fileToScene(file, rowsByFile[index]),
+    sourceAct: deriveSourceAct(file.path),
+  }));
 
   return {
     kind: 'ok',
@@ -488,9 +532,28 @@ export function createObsidianScrivenerSource(app: App): ScrivenerSource {
     return folder.children.filter((child): child is TFile => child instanceof TFile);
   };
 
+  // Exports preserve the binder hierarchy (Book/ACT 1/…) — walk it, skipping
+  // snapshot folders wholesale.
+  const walk = (folder: TFolder, out: TFile[]): void => {
+    for (const child of folder.children) {
+      if (child instanceof TFolder) {
+        if (!isSnapshotFolderName(child.name)) walk(child, out);
+      } else if (child instanceof TFile) {
+        out.push(child);
+      }
+    }
+  };
+  const descendantsOf = (folderPath: string): TFile[] => {
+    const folder = app.vault.getAbstractFileByPath(normalizePath(folderPath));
+    if (!(folder instanceof TFolder)) return [];
+    const out: TFile[] = [];
+    walk(folder, out);
+    return out;
+  };
+
   return {
     async listSceneFiles(folderPath: string): Promise<ScrivenerFile[]> {
-      const files = childrenOf(folderPath).filter((file) =>
+      const files = descendantsOf(folderPath).filter((file) =>
         SCENE_EXTENSIONS.has(file.extension.toLowerCase())
       );
       return Promise.all(

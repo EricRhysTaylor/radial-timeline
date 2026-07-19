@@ -764,6 +764,22 @@ Doctrine fit: no new abstraction layer beyond the adapters, no fallback chains
   subplots** — a thread with exactly one scene is trivia (the ≥2-scene rule):
   a post-pass collapses any one-scene subplot into Main Plot.
 
+- **2026-07-19 (real Scrivener export hardening)** — Eric exported his actual
+  project (The Lost Crew, 129 binder items) and the V1 flat-folder assumption
+  collapsed on contact: the export preserves binder hierarchy (Book/ACT n/…),
+  ships 75 snapshot folders + per-doc `MetaData.txt`/`Notes.txt` sidecars (645
+  files for 129 docs), 47 empty placeholder docs (Save-the-Cat beat notes, art
+  slots), unnumbered filenames, and titles whose `:`/`?` are stripped in
+  filenames but kept in the CSV. Fixes, dry-run-verified against the real
+  export (85 scenes, 72 with author synopses, acts 61/19/5): recursive listing
+  (adapter source + service detection) skipping snapshot folders; auxiliary
+  MetaData/Notes exclusion; empty-prose skip; punctuation-folding title match;
+  and **structural acts** — `ACT n` export folders stamp `sourceAct` on scenes
+  (new optional field on the ManuscriptScene contract), resolved via
+  `resolveActs` (structural wins, carry-forward covers trailing folders like
+  Wrapup, positional thirds only when no structure exists). Structure-only UI
+  also stops showing "unsplit"/chapters-found limbo when no model is present.
+
 ## Appendix A — Canonical onboarding prompt (instruction block)
 
 Source of truth for this text is **Supabase** (see "The Onboarding Prompt —

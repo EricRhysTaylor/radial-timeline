@@ -348,6 +348,28 @@ export function positionalAct(index: number, total: number, actCount: number): n
 }
 
 /**
+ * Resolve every scene's act in one pass. Structural acts from the source (a
+ * Scrivener "ACT 2" folder) are author truth and win; scenes without one carry
+ * the last seen structural act forward (a trailing "Wrapup" folder stays in the
+ * final act). Only when the source carries NO structural acts at all does the
+ * positional thirds math apply. Structural values clamp into [1, actCount].
+ */
+export function resolveActs(sourceActs: Array<number | undefined>, actCount: number): number[] {
+  const total = sourceActs.length;
+  const max = Math.max(1, actCount);
+  if (!sourceActs.some((act) => typeof act === 'number' && Number.isFinite(act))) {
+    return sourceActs.map((_, index) => positionalAct(index, total, max));
+  }
+  let current = 1;
+  return sourceActs.map((act) => {
+    if (typeof act === 'number' && Number.isFinite(act)) {
+      current = Math.min(Math.max(Math.floor(act), 1), max);
+    }
+    return current;
+  });
+}
+
+/**
  * Flags, minus any field the model didn't actually fill in. Models tend to flag
  * When/Duration as "guessed" even when they correctly returned null — reporting
  * those would claim a guess we never wrote. Names are normalized ("act" → "Act")

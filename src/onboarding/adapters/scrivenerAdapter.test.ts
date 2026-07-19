@@ -6,6 +6,9 @@ import {
   proposeScrivenerAutomap,
   applyMetadataMapping,
   applyMetadataMappingToModel,
+  isScrivenerAuxiliaryFile,
+  isSnapshotFolderName,
+  deriveSourceAct,
   titleFromExportFileName,
   type ScrivenerFile,
   type ScrivenerSource,
@@ -292,5 +295,40 @@ describe('applyMetadataMappingToModel', () => {
     expect(out.customFields).toEqual(['Label', 'Subplot']);
     // Original model untouched (pure).
     expect(model.chapters[0].scenes[0].knownMetadata['Word Count']).toBe('812');
+  });
+});
+
+describe('real-export furniture (recursive exports)', () => {
+  it('classifies MetaData/Notes sidecars and snapshot folders', () => {
+    expect(isScrivenerAuxiliaryFile('A Party MetaData.txt')).toBe(true);
+    expect(isScrivenerAuxiliaryFile('A Party Notes.txt')).toBe(true);
+    expect(isScrivenerAuxiliaryFile('A Party.txt')).toBe(false);
+    expect(isSnapshotFolderName('Intruder Snapshots')).toBe(true);
+    expect(isSnapshotFolderName('Intruder')).toBe(false);
+  });
+
+  it('derives the structural act from ACT folders (deepest wins, none = undefined)', () => {
+    expect(deriveSourceAct('Book/Book/ACT 1/A Party.txt')).toBe(1);
+    expect(deriveSourceAct('Book/ACT 2/sub/Scene.txt')).toBe(2);
+    expect(deriveSourceAct('Book/Book/Wrapup/Finale.txt')).toBeUndefined();
+    expect(deriveSourceAct('Practice ACT/Scene.txt')).toBeUndefined();
+  });
+
+  it('skips auxiliary, snapshot, and empty files during ingest and stamps sourceAct', async () => {
+    const files: ScrivenerFile[] = [
+      { fileName: '1 Hook.txt', path: 'Book/ACT 1/1 Hook.txt', content: 'Real prose.' },
+      { fileName: '1 Hook MetaData.txt', path: 'Book/ACT 1/1 Hook MetaData.txt', content: 'Status: First Pass' },
+      { fileName: '1 Hook Notes.txt', path: 'Book/ACT 1/1 Hook Notes.txt', content: 'author note' },
+      { fileName: 'Old.txt', path: 'Book/ACT 1/Hook Snapshots/Old.txt', content: 'stale snapshot' },
+      { fileName: '2 Beat.txt', path: 'Book/ACT 1/2 Beat.txt', content: '   ' },
+      { fileName: '3 Finale.txt', path: 'Book/Wrapup/3 Finale.txt', content: 'The end.' },
+    ];
+    const result = await ingestScrivenerFolder(sourceOf(files, null), 'Book');
+    expect(result.kind).toBe('ok');
+    if (result.kind !== 'ok') return;
+    const scenes = flattenScenes(result.model);
+    expect(scenes.map((scene) => scene.title)).toEqual(['Hook', 'Finale']);
+    expect(scenes[0].sourceAct).toBe(1);
+    expect(scenes[1].sourceAct).toBeUndefined();
   });
 });

@@ -75,6 +75,24 @@ When in doubt, leave the surface flat. If a surface needs emphasis, reach for a 
 - margins are exceptions, not the default
 - prefer ERT tokens and layout primitives over one-off wrappers
 
+## Timeline Hover Performance (no blur or animation near scene hover)
+
+Verified by hard experience (2026-07, subplot ring key): any blur or
+animation on or near the timeline's scene-hover path measurably slows
+hover for everyone.
+
+- **No `backdrop-filter`/`filter` on chrome overlaying the timeline SVG.**
+  A filter layer re-blurs on every underlying repaint (scene hover repaints
+  the whole SVG) and can stay resident even after the element hides via
+  `opacity: 0`.
+- **No `transition`/`animation` on chrome whose state is coupled to scene
+  hover** (e.g. rules keyed off `.scene-hover`). Transitions fire on every
+  hover enter/leave. Show/hide instantly; hide with `display: none`, not
+  `opacity: 0`.
+- **No `:has()` anchored on the timeline container** — it forces wide style
+  invalidation on every class toggle inside the SVG. Use sibling combinators
+  from `.radial-timeline-svg` instead.
+
 ## Token Scope (read before writing CSS for any new surface)
 
 `--ert-gap-*` and `--ert-pad-*` are defined **only** inside `.ert-ui`

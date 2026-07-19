@@ -2098,9 +2098,10 @@
  * view title bar (right of the Discord chip); the panel overlays
  * the timeline's top-left. Shown on trigger hover, pinned by
  * click, or while Shift is held.
- * No backdrop-filter here: a filter layer over the SVG re-blurs
- * on every scene-hover repaint and stays resident after the
- * panel hides, making hover sluggish.
+ * No backdrop-filter and no transitions here: blur or animation
+ * anywhere near the scene-hover path measurably slows hover
+ * (filter layers re-blur on every repaint; transitions fire on
+ * every scene-hover toggle). Show/hide is instant by design.
  * ============================================================ */
 
 .ert-timeline-subplot-key__trigger.clickable-icon {
@@ -2133,26 +2134,17 @@
   left: var(--size-4-3);
   z-index: 4;
   max-width: min(280px, 40%);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-4px);
-  transform-origin: top left;
-  pointer-events: none;
-  transition: opacity 120ms ease, transform 120ms ease, visibility 0s linear 120ms;
+  display: none;
 }
 
 .ert-timeline-subplot-key.is-visible {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-  pointer-events: auto;
-  transition: opacity 120ms ease, transform 120ms ease;
+  display: block;
 }
 
 /* Step aside while a scene synopsis is being read — unless the key is
    being actively held open with Shift. The panel is a following sibling
    of the SVG inside the container (cheap selector; :has() here made every
-   hover force wide style invalidation). */
+   hover force wide style invalidation). Instant, not transitioned. */
 .radial-timeline-svg.scene-hover ~ .ert-timeline-subplot-key.is-visible:not(.is-key-held) {
   opacity: 0.12;
   pointer-events: none;

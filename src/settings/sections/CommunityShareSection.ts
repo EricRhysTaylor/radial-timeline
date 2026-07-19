@@ -11,10 +11,10 @@ import {
     CommunityShareError,
     beginCommunitySharing,
     confirmCommunityShareActivation,
-    deleteCommunityShareReport,
     disconnectCommunityShare,
     fetchCommunityShareContext,
     pauseCommunitySharing,
+    resumeCommunitySharing,
     revokeCommunityShareReport,
     syncCommunityShareIfDue,
     type CommunityShareContext,
@@ -186,7 +186,6 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         .filter(campaign => campaign.sendToCommunity);
     const reportState = latestReportState(settings);
     const hasLiveReport = reportState === 'live';
-    const hasStoredReport = reportState === 'live' || reportState === 'revoked';
 
     const section = containerEl.createDiv({
         cls: `${ERT_CLASSES.ROOT} ${ERT_CLASSES.STACK}`
@@ -250,7 +249,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     [
         { icon: 'lock', text: 'Private by default. You choose exactly when and what to share.' },
         { icon: 'eye', text: 'The complete preview shows you the full report before you publish.' },
-        { icon: 'file-check', text: 'Reports share aggregate progress only. Your manuscript, paths, and raw sessions stay in this vault.' }
+        { icon: 'file-check', text: 'You share aggregate progress only. Your manuscript, paths, and raw sessions stay in this vault.' }
     ].forEach(item => {
         const li = featuresList.createEl('li', { cls: `${ERT_CLASSES.INLINE} ert-feature-item` });
         setIcon(li.createSpan({ cls: 'ert-feature-icon' }), item.icon);
@@ -662,10 +661,11 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     const actionHeading = new Setting(actionCard)
         .setName('Sharing and safety')
         .setHeading()
-        .setDesc('Pause stops future updates but leaves the current report visible. Take offline hides the report. Delete removes its stored payload. Disconnect also removes this vault connection.');
+        .setDesc('These controls manage this vault\'s connection only. Everything already on your Community account stays where it is. You view, download, or delete Community content on the website.');
     addHeadingIcon(actionHeading, 'shield-check');
     applyErtHeaderLayout(actionHeading);
-    const sharingOn = settings.scheduledPublishEnabled;
+    const isPaused = settings.sharingPaused;
+    const sharingOn = settings.scheduledPublishEnabled && !isPaused;
     const canBegin = mode !== 'private'
         && isConnected
         && settings.audience === 'public'
@@ -677,119 +677,101 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         ? formatGeneratedAt(settings.connection.lastSyncedAt)
         : null;
 
-    new Setting(actionCard)
-        .setDesc(sharingOn
-            ? `Sharing is on and kept current automatically.${lastSynced ? ` Last synced ${lastSynced}.` : ''}`
-            : canBegin
-                ? 'Sharing is off. Nothing leaves this vault until you begin sharing.'
-                : 'Next steps: connect this vault and pick a sharing level above, then begin sharing.')
-        .addButton(button => {
-            if (sharingOn) {
-                button
-                    .setButtonText('Pause sharing')
-                    .onClick(async () => {
-                        button.setDisabled(true);
-                        await pauseCommunitySharing(plugin);
-                        new Notice('Sharing paused. What you already shared stays visible until you revoke it.');
+    if (isPaused) {
+        new Setting(actionCard)
+            .setDesc('Sharing is paused. Nothing leaves this vault until you resume.')
+            .addButton(button => button
+                .setButtonText('Resume sharing')
+                .setCta()
+                .onClick(async () => {
+                    button.setDisabled(true);
+                    button.setButtonText('Resuming...');
+                    try {
+                        await resumeCommunitySharing(plugin);
+                        new Notice('Sharing resumed. This vault will keep your Community account current again.');
                         containerEl.empty();
                         renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
-                    });
-            } else {
-                button
-                    .setButtonText('Begin sharing')
-                    .setCta()
-                    .setDisabled(!canBegin)
-                    .onClick(async () => {
-                        button.setDisabled(true);
-                        button.setButtonText('Starting...');
-                        try {
-                            await beginCommunitySharing(plugin);
-                            new Notice('Community sharing is on. Your page stays current automatically.');
+                    } catch (error) {
+                        const message = error instanceof CommunityShareError
+                            ? error.message
+                            : 'Could not resume sharing. Try again.';
+                        const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
+                        plugin.settings.communityShare = normalizeCommunityShareSettings({ ...current, lastError: message });
+                        void plugin.saveSettings();
+                        new Notice(message);
+                        button.setButtonText('Resume sharing');
+                        button.setDisabled(false);
+                    }
+                }));
+    } else {
+        const shareRow = new Setting(actionCard)
+            .setDesc(sharingOn
+                ? `Sharing is on. This vault keeps your Community account current automatically.${lastSynced ? ` Last synced ${lastSynced}.` : ''}`
+                : canBegin
+                    ? 'Sharing is off. Nothing leaves this vault until you begin sharing.'
+                    : 'Next steps: connect this vault and pick a sharing level above, then begin sharing.')
+            .addButton(button => {
+                if (sharingOn) {
+                    button
+                        .setButtonText('Pause sharing')
+                        .onClick(async () => {
+                            button.setDisabled(true);
+                            await pauseCommunitySharing(plugin);
+                            new Notice('Sharing paused. Nothing will leave this vault until you resume. Everything already shared stays visible.');
                             containerEl.empty();
                             renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
-                        } catch (error) {
-                            const message = error instanceof CommunityShareError
-                                ? error.message
-                                : 'Community sharing failed. Review the complete preview and try again.';
-                            const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
-                            plugin.settings.communityShare = normalizeCommunityShareSettings({
-                                ...current,
-                                lastError: message
-                            });
-                            void plugin.saveSettings();
-                            new Notice(message);
-                            button.setButtonText('Begin sharing');
-                            button.setDisabled(!canBegin);
-                        }
-                    });
-            }
-        });
-
-    new Setting(actionCard)
-        .setName('Take vault report offline')
-        .setDesc('Hides this vault\'s current report and stops updates. Your account, profile, books, posts, report history, and vault connection stay in place.')
-        .addButton(button => button
-            .setButtonText('Take offline')
-            .setDisabled(!isConnected || !hasLiveReport)
-            .onClick(async () => {
-                button.setDisabled(true);
-                button.setButtonText('Taking offline...');
-                try {
-                    await revokeCommunityShareReport(plugin);
-                    new Notice('This vault\'s report is offline. Your other Community content is unchanged.');
-                    containerEl.empty();
-                    renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
-                } catch (error) {
-                    const message = error instanceof CommunityShareError ? error.message : 'Could not take the vault report offline.';
-                    const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
-                    plugin.settings.communityShare = normalizeCommunityShareSettings({ ...current, lastError: message });
-                    void plugin.saveSettings();
-                    new Notice(message);
-                    button.setButtonText('Take offline');
-                    button.setDisabled(!isConnected || !hasLiveReport);
+                        });
+                } else {
+                    button
+                        .setButtonText('Begin sharing')
+                        .setCta()
+                        .setDisabled(!canBegin)
+                        .onClick(async () => {
+                            button.setDisabled(true);
+                            button.setButtonText('Starting...');
+                            try {
+                                await beginCommunitySharing(plugin);
+                                new Notice('Community sharing is on. Your page stays current automatically.');
+                                containerEl.empty();
+                                renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
+                            } catch (error) {
+                                const message = error instanceof CommunityShareError
+                                    ? error.message
+                                    : 'Community sharing failed. Review the complete preview and try again.';
+                                const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
+                                plugin.settings.communityShare = normalizeCommunityShareSettings({
+                                    ...current,
+                                    lastError: message
+                                });
+                                void plugin.saveSettings();
+                                new Notice(message);
+                                button.setButtonText('Begin sharing');
+                                button.setDisabled(!canBegin);
+                            }
+                        });
                 }
-            }));
+            });
+        if (sharingOn) {
+            shareRow.descEl.createDiv({
+                cls: ERT_CLASSES.FIELD_NOTE,
+                text: 'Stops automatic updates. Everything already on your Community account stays visible. Resume anytime.'
+            });
+        }
+    }
 
     new Setting(actionCard)
-        .setName('Delete vault report data')
-        // eslint-disable-next-line obsidianmd/ui/sentence-case -- APR is a product acronym and must remain uppercase.
-        .setDesc('Permanently deletes this vault report\'s stored payload. It does not delete your account, profile, books, APRs, posts, or report history.')
-        .addButton(button => button
-            .setButtonText('Delete report data')
-            .setDisabled(!isConnected || !hasStoredReport)
-            .onClick(async () => {
-                if (!window.confirm('Permanently delete this vault report payload from Community? Your account, profile, books, APRs, posts, report history, and local writing data stay in place.')) return;
-                button.setDisabled(true);
-                button.setButtonText('Deleting...');
-                try {
-                    await deleteCommunityShareReport(plugin);
-                    new Notice('This vault report payload was deleted. Your other Community content is unchanged.');
-                    containerEl.empty();
-                    renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
-                } catch (error) {
-                    const message = error instanceof CommunityShareError ? error.message : 'Could not delete the vault report data.';
-                    const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
-                    plugin.settings.communityShare = normalizeCommunityShareSettings({ ...current, lastError: message });
-                    void plugin.saveSettings();
-                    new Notice(message);
-                    button.setButtonText('Delete report data');
-                    button.setDisabled(!isConnected || !hasStoredReport);
-                }
-            }));
-
-    new Setting(actionCard)
-        .setName('Disconnect plugin')
-        .setDesc('Takes this vault\'s report offline, stops sharing, and removes its saved connection key. Your account and other Community content stay in place. To share from this vault again, generate and enter a new one-time linking key.')
+        .setName('Disconnect this vault')
+        .setDesc('Stops updates and removes this vault\'s saved connection key. Your Community account isn\'t touched. To connect again, generate a new one-time linking key on the website.')
         .addButton(button => button
             .setButtonText('Disconnect')
             .setDisabled(!isConnected)
             .onClick(async () => {
-                if (!window.confirm('Disconnect this vault? Its current report will be taken offline, sharing will stop, and a new one-time linking key will be required to reconnect. Your Community account and other content will remain.')) return;
+                if (!window.confirm('Disconnect this vault? Updates will stop and the saved connection key will be removed. Everything on your Community account stays as it is. Reconnecting requires a new one-time linking key.')) return;
                 button.setDisabled(true);
                 button.setButtonText('Disconnecting...');
                 try {
                     await disconnectCommunityShare(plugin);
-                    new Notice('Vault disconnected and its report taken offline. Use a new one-time linking key to share again.');
+                    new Notice('Vault disconnected. Your Community account is unchanged. Use a new one-time linking key to share again.');
                     containerEl.empty();
                     renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
                 } catch (error) {

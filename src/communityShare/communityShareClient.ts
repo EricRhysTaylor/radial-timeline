@@ -221,6 +221,7 @@ export async function confirmCommunityShareActivation(
     plugin.settings.communityShare = normalizeCommunityShareSettings({
         ...current,
         enabled: true,
+        sharingPaused: false,
         connection: {
             ...current.connection,
             status: 'connected',
@@ -570,7 +571,7 @@ export async function syncCommunityProjects(plugin: RadialTimelinePlugin): Promi
  */
 export async function syncCommunityProjectsIfConnected(plugin: RadialTimelinePlugin): Promise<void> {
     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
-    if (!current.enabled || current.connection.status !== 'connected' || !current.connection.connectionId) return;
+    if (!current.enabled || current.sharingPaused || current.connection.status !== 'connected' || !current.connection.connectionId) return;
     try {
         await syncCommunityProjects(plugin);
     } catch (error) {
@@ -608,7 +609,8 @@ export async function beginCommunitySharing(plugin: RadialTimelinePlugin): Promi
     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
     plugin.settings.communityShare = normalizeCommunityShareSettings({
         ...current,
-        scheduledPublishEnabled: true
+        scheduledPublishEnabled: true,
+        sharingPaused: false
     });
     await plugin.saveSettings();
     // Companion daily-aggregate sync rides along with the successful publish;
@@ -623,15 +625,40 @@ export async function pauseCommunitySharing(plugin: RadialTimelinePlugin): Promi
     plugin.settings.communityShare = normalizeCommunityShareSettings({
         ...current,
         scheduledPublishEnabled: false,
+        // Hard freeze: block report sync, daily aggregates, project shell sync,
+        // APR uploads, and session feed posts until the author resumes.
+        sharingPaused: true,
         publishHistory: appendHistory(current, {
             id: `pause-${at}`,
             action: 'pause',
             status: 'success',
             at,
-            message: 'Sharing paused. Already shared data stays visible until revoked.'
+            message: 'Sharing paused. Nothing leaves this vault until resumed; already shared data stays visible.'
         })
     });
     await plugin.saveSettings();
+}
+
+export async function resumeCommunitySharing(plugin: RadialTimelinePlugin): Promise<void> {
+    const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
+    const at = new Date().toISOString();
+    plugin.settings.communityShare = normalizeCommunityShareSettings({
+        ...current,
+        sharingPaused: false,
+        scheduledPublishEnabled: true,
+        publishHistory: appendHistory(current, {
+            id: `resume-${at}`,
+            action: 'resume',
+            status: 'success',
+            at,
+            message: 'Sharing resumed.'
+        })
+    });
+    await plugin.saveSettings();
+    // Push anything that changed while paused so the website catches up, then
+    // refresh the daily aggregate companion. Both handle their own failures.
+    await syncCommunityShareIfDue(plugin);
+    await syncCommunityDailyIfEligible(plugin);
 }
 
 // Error codes that mean the standing authorization itself is broken; continuing
@@ -672,7 +699,8 @@ function isDailySyncSuccess(value: unknown): value is DailySyncSuccess {
  */
 export async function syncCommunityDailyIfEligible(plugin: RadialTimelinePlugin): Promise<void> {
     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
-    if (!current.enabled || current.connection.status !== 'connected' || !current.connection.connectionId || !current.connection.secretId) return;
+    if (!current.enabled || current.sharingPaused) return;
+    if (current.connection.status !== 'connected' || !current.connection.connectionId || !current.connection.secretId) return;
     if (current.audience !== 'public' || current.tier !== 4) return;
 
     try {
@@ -743,6 +771,9 @@ export async function syncCommunityDailyIfEligible(plugin: RadialTimelinePlugin)
 export async function syncCommunityShareIfDue(plugin: RadialTimelinePlugin): Promise<'synced' | 'skipped' | 'failed'> {
     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
     if (!current.enabled || !current.scheduledPublishEnabled) return 'skipped';
+    // Belt-and-braces alongside scheduledPublishEnabled: a paused vault never
+    // pushes, even if some path left the schedule flag on.
+    if (current.sharingPaused) return 'skipped';
     if (current.connection.status !== 'connected' || !current.connection.connectionId || !current.connection.secretId) return 'skipped';
     if (current.audience !== 'public' || current.tier < 1 || current.tier > 4) return 'skipped';
 
@@ -847,52 +878,16 @@ export async function revokeCommunityShareReport(plugin: RadialTimelinePlugin): 
     return result;
 }
 
-export async function deleteCommunityShareReport(plugin: RadialTimelinePlugin): Promise<ReportActionSuccess> {
-    const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
-    const publishId = latestPublishId(current);
-    if (!publishId) throw new CommunityShareError('publish_required', 'Publish a report before deleting shared data.');
-    const secret = await getConnectedSecret(plugin, current);
-    const result = await callReportAction(plugin, 'community-share-delete', {
-        publish_id: publishId,
-        current_secret: secret,
-        confirm: true,
-        delete_reason: 'plugin_user_requested'
-    });
-    const at = result.deleted_at || new Date().toISOString();
-    plugin.settings.communityShare = normalizeCommunityShareSettings({
-        ...current,
-        scheduledPublishEnabled: false,
-        connection: {
-            ...current.connection,
-            lastSyncedPayloadHash: undefined
-        },
-        publishHistory: appendHistory(current, {
-            id: `delete-${at}`,
-            action: 'delete',
-            status: 'success',
-            at,
-            publishId,
-            message: 'Shared data deleted from the website.'
-        }),
-        preview: {
-            ...current.preview,
-            status: 'stale',
-            previewHash: undefined,
-            payloadHash: undefined
-        },
-        lastError: undefined
-    });
-    await plugin.saveSettings();
-    return result;
-}
-
 export async function disconnectCommunityShare(plugin: RadialTimelinePlugin): Promise<ReportActionSuccess> {
     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
     const secret = await getConnectedSecret(plugin, current);
+    // disconnect_only: stop updates and drop the local connection key, but
+    // leave already-published content live. This matches the website's own
+    // disconnect behavior — content management lives on the website.
     const result = await callReportAction(plugin, 'community-share-disconnect', {
         connection_id: current.connection.connectionId,
         current_secret: secret,
-        mode: 'disconnect_and_revoke'
+        mode: 'disconnect_only'
     });
     const at = result.disconnected_at || new Date().toISOString();
     if (current.connection.secretId) {
@@ -902,6 +897,7 @@ export async function disconnectCommunityShare(plugin: RadialTimelinePlugin): Pr
         ...current,
         enabled: false,
         scheduledPublishEnabled: false,
+        sharingPaused: false,
         connection: {
             ...current.connection,
             status: 'disconnected',
@@ -914,7 +910,7 @@ export async function disconnectCommunityShare(plugin: RadialTimelinePlugin): Pr
             action: 'disconnect',
             status: 'success',
             at,
-            message: 'Plugin disconnected and its live reports were taken offline.'
+            message: 'Vault disconnected. Community account content stays as it is.'
         }),
         preview: {
             status: 'not_generated'
@@ -935,7 +931,8 @@ export async function disconnectCommunityShare(plugin: RadialTimelinePlugin): Pr
  */
 export function canPostSessionsToFeed(plugin: RadialTimelinePlugin): boolean {
     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
-    return current.connection.status === 'connected'
+    return !current.sharingPaused
+        && current.connection.status === 'connected'
         && Boolean(current.connection.connectionId)
         && Boolean(current.connection.secretId)
         && current.audience === 'public'

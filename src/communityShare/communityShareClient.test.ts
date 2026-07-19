@@ -265,8 +265,8 @@ describe('Community Share activation client', () => {
                 ok: true,
                 connection_id: 'conn-1',
                 status: 'disconnected',
-                mode: 'disconnect_and_revoke',
-                affected_publishes: 1,
+                mode: 'disconnect_only',
+                affected_publishes: 0,
                 disconnected_at: '2026-06-27T20:30:00.000Z'
             })
         } as never);
@@ -276,7 +276,7 @@ describe('Community Share activation client', () => {
         const body = JSON.parse((mockedRequestUrl.mock.calls[0]?.[0] as { body: string }).body) as Record<string, unknown>;
         expect(body.connection_id).toBe('conn-1');
         expect(body.current_secret).toBe('rtcs_current-secret');
-        expect(body.mode).toBe('disconnect_and_revoke');
+        expect(body.mode).toBe('disconnect_only');
         expect(secrets.has('rt-community-share-connection-secret')).toBe(false);
         expect(plugin.settings.communityShare.enabled).toBe(false);
         expect(plugin.settings.communityShare.connection.status).toBe('disconnected');

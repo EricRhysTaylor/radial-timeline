@@ -962,6 +962,15 @@ export interface CommunityShareSettings {
     audience: CommunityShareAudience;
     manualPublishEnabled: boolean;
     scheduledPublishEnabled: boolean;
+    /**
+     * True while the author has paused sharing. A hard freeze: no outbound
+     * community traffic (report sync, daily aggregates, project shell sync,
+     * APR uploads, session feed posts) leaves the vault. Distinct from
+     * scheduledPublishEnabled=false, which alone still allowed those side
+     * channels. Cleared on resume, begin sharing, connection activation, and
+     * disconnect.
+     */
+    sharingPaused: boolean;
     workingNowEnabled: boolean;
     fieldPolicy: CommunityShareFieldPolicy;
     redactionPolicy: Record<string, boolean>;

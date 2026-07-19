@@ -105,6 +105,7 @@ export function deriveCommunityShareMode(settings: CommunityShareSettings): Comm
 /** APR is a curated project artifact available from Level 2 upward. */
 export function canShareAprToCommunity(settings: CommunityShareSettings): boolean {
     return settings.enabled
+        && !settings.sharingPaused
         && settings.connection.status === 'connected'
         && settings.audience === 'public'
         && settings.tier >= 2
@@ -128,6 +129,7 @@ export function buildDefaultCommunityShareSettings(): CommunityShareSettings {
         audience: 'private_draft',
         manualPublishEnabled: true,
         scheduledPublishEnabled: false,
+        sharingPaused: false,
         workingNowEnabled: false,
         fieldPolicy: buildDefaultCommunityShareFieldPolicy(),
         redactionPolicy: {},
@@ -180,6 +182,9 @@ export function normalizeCommunityShareSettings(input?: Partial<CommunityShareSe
         // Standing share state: true while the author has sharing turned on
         // (set by Begin sharing, cleared by Pause/Revoke/Delete/Disconnect).
         scheduledPublishEnabled: input?.scheduledPublishEnabled === true,
+        // Hard-freeze flag: absent in pre-existing data normalizes to false,
+        // so an untouched connection keeps its current behavior.
+        sharingPaused: input?.sharingPaused === true,
         workingNowEnabled: false,
         fieldPolicy,
         redactionPolicy: input?.redactionPolicy && typeof input.redactionPolicy === 'object' ? input.redactionPolicy : {},

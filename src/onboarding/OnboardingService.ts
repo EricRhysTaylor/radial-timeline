@@ -440,6 +440,24 @@ export class OnboardingService {
       proposal.flags = proposal.flags.filter((flag) => flag.toLowerCase() !== 'act');
     });
 
+    // Substantial-subplot rule (Eric: a thread needs 2+ scenes): a subplot used
+    // by exactly one scene is trivia, not a thread — collapse it into Main Plot.
+    const subplotCounts = new Map<string, number>();
+    const subplotOf = (proposal: SceneProposal): string => {
+      const value = (proposal.frontmatter as Record<string, unknown>).Subplot;
+      return Array.isArray(value) && typeof value[0] === 'string' ? value[0] : 'Main Plot';
+    };
+    for (const proposal of written) {
+      const name = subplotOf(proposal);
+      subplotCounts.set(name, (subplotCounts.get(name) ?? 0) + 1);
+    }
+    for (const proposal of written) {
+      const name = subplotOf(proposal);
+      if (name !== 'Main Plot' && subplotCounts.get(name) === 1) {
+        (proposal.frontmatter as Record<string, unknown>).Subplot = ['Main Plot'];
+      }
+    }
+
     return proposals;
   }
 

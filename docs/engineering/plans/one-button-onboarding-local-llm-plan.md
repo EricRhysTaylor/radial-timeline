@@ -402,6 +402,7 @@ the recommendation is grounded in real runs, not spec sheets.
 | Date | Model (quant) | Runtime | Hardware / RAM | Result (scene-acc / synopsis / class / sec/scene) | Notes |
 | --- | --- | --- | --- | --- | --- |
 | 2026-07-14 | Qwen3-30B-A3B-Instruct-2507 (MLX 4-bit) | mlx_lm.server :8080 (OpenAI-compat) | Mac Studio, 64 GB | 3/3 scenes / accurate synopses + apt subplots / 26 selective entity notes / ~15–20 s total for survey + 3 scenes (~5 s per LLM call) | Odyssey fixture (Books I–III, ~4.1–4.7k words each). Tier 4, all checks passed. Correct null When/Duration on Books 1–2; Book 3 correctly flagged guessed act+when. LM Studio's own server fails plugin JSON validation — use mlx_lm.server. |
+| 2026-07-19 | Qwen3-30B-A3B-Instruct-2507 (MLX 4-bit) | mlx_lm.server :8080 (OpenAI-compat) | Mac Studio, 64 GB | Full-manuscript stress run from ONE Gutenberg HTML: 24 books → 93 scenes + 246 entity notes with AI summaries (~370 LLM calls). Synopses/titles good; summaries "believable, reasonable"; Main Plot healthy; guessed-When on only 5 scenes | The "whole 9 yards" run. 6 chapters used the even-split fallback (flagged). Surfaced two fixed bugs: fabricated `0000-…` When placeholders (rendered as 1900 via JS year mapping) and one-scene subplots. |
 
 ## Architecture — module layout
 
@@ -750,6 +751,18 @@ Doctrine fit: no new abstraction layer beyond the adapters, no fallback chains
   `buildStructureOnlyProposals` + pure `deterministicExtraction` (tested).
   This makes onboarding usable by every author on install, with the local
   model as an enhancement rather than a prerequisite.
+
+- **2026-07-19 (full stress run + two data-quality fixes)** — Eric ran "the
+  whole 9 yards": 93 scenes (inside the predicted 75–95), 246 Character/Place
+  notes **with AI summaries**, Main Plot healthy, summaries "believable…
+  reasonable", 6 fallback chapters correctly flagged. Two warts, both fixed
+  deterministically: **(1) zeroed placeholder dates** — the model fabricated
+  `When: 0000-01-01`/`0000-00-00` instead of null; JS date parsing maps years
+  0–99 to 1900+, so the timeline showed "1900 Jan 1". `sanitizeWhen` now
+  rejects any When with a 0000 year or 00 month/day component (the guess flag
+  drops with it); real dates like `1184-03-12` pass. **(2) singleton
+  subplots** — a thread with exactly one scene is trivia (the ≥2-scene rule):
+  a post-pass collapses any one-scene subplot into Main Plot.
 
 ## Appendix A — Canonical onboarding prompt (instruction block)
 

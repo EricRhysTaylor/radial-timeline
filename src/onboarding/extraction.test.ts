@@ -7,6 +7,7 @@ import {
   capSubplotVocabulary,
   enforceSubplotVocabulary,
   deterministicExtraction,
+  sanitizeWhen,
   positionalAct,
   MAX_SUBPLOTS,
   buildSceneFrontmatter,
@@ -61,6 +62,36 @@ describe('enforceSubplotVocabulary', () => {
   });
   it('matches across curly/straight apostrophes instead of dropping to Main Plot', () => {
     expect(enforceSubplotVocabulary(["Telemachus' Journey"], vocab)).toEqual(['Telemachus’ Journey']);
+  });
+});
+
+describe('sanitizeWhen', () => {
+  it('rejects zeroed placeholder dates the model fabricates', () => {
+    expect(sanitizeWhen('0000-00-00')).toBeNull();
+    expect(sanitizeWhen('0000-01-01')).toBeNull(); // renders as "1900 Jan 1" downstream
+    expect(sanitizeWhen('0000')).toBeNull();
+    expect(sanitizeWhen('1184-00-12')).toBeNull();
+    expect(sanitizeWhen('1184-03-00')).toBeNull();
+  });
+
+  it('keeps real in-world dates and bare years', () => {
+    expect(sanitizeWhen('1184-03-12')).toBe('1184-03-12');
+    expect(sanitizeWhen('1184')).toBe('1184');
+    expect(sanitizeWhen('1998-06-01')).toBe('1998-06-01');
+    expect(sanitizeWhen(null)).toBeNull();
+  });
+
+  it('is applied by parseSceneExtraction (a zeroed When also drops its flag)', () => {
+    const raw = JSON.stringify({
+      title: 'Sacrifice', synopsis: 'A rite at dawn.', subplot: ['Main Plot'],
+      character: [], place: [], when: '0000-01-01', duration: null, flags: ['When'],
+    });
+    const result = parseSceneExtraction(raw);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.when).toBeNull();
+      expect(effectiveFlags(result.value)).toEqual([]); // null When ⇒ no "guessed: When"
+    }
   });
 });
 

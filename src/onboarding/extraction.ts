@@ -57,6 +57,24 @@ function asNullableString(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+/**
+ * Reject placeholder "dates" the model fabricates instead of returning null —
+ * a year 0000 or a 00 month/day component is not a date. Left unchecked, a
+ * `When: 0000-01-01` reaches the timeline, where JS date parsing maps years
+ * 0–99 to 1900+ and the scene renders as "1900 Jan 1". Real in-world dates
+ * (e.g. `1184-03-12`, or a bare year) pass through untouched.
+ */
+export function sanitizeWhen(value: string | null): string | null {
+  if (value === null) return null;
+  const match = value.trim().match(/^(\d{1,4})(?:[-/](\d{1,2})(?:[-/](\d{1,2}))?)?/);
+  if (!match) return value;
+  const year = Number(match[1]);
+  if (year === 0) return null;
+  if (match[2] !== undefined && Number(match[2]) === 0) return null;
+  if (match[3] !== undefined && Number(match[3]) === 0) return null;
+  return value;
+}
+
 export function parseSurveyResult(raw: string | null | undefined): ParseResult<SurveyResult> {
   const parsed = parseJson(raw);
   if (!parsed.ok) return parsed;
@@ -112,7 +130,7 @@ export function parseSceneExtraction(raw: string | null | undefined): ParseResul
       subplot: asStringArray(obj.subplot),
       character: asStringArray(obj.character),
       place: asStringArray(obj.place),
-      when: asNullableString(obj.when),
+      when: sanitizeWhen(asNullableString(obj.when)),
       duration: asNullableString(obj.duration),
       flags: asStringArray(obj.flags),
     },

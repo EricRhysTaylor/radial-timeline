@@ -57,7 +57,8 @@ Two companion panels for building and repairing your story's dates. **Timeline S
 
 - **Timeline image & data export** — new commands export the timeline itself as SVG or PNG (with fonts embedded) plus a JSON data export.
 - **Session auto-tracking, refined** — redesigned tab timer disc, countdown ring in word + time mode, auto-track tab markers, and a compact popover clock.
-- **Local-first AI** — AI features are now off by default for new installs; Local LLM setup is one button with automatic model selection and MLX / LM Studio support; added Claude Fable 5.
+- **Local-first AI** — AI features are now off by default for new installs; Local LLM setup is one button with automatic model selection and MLX / LM Studio support.
+- **Claude Fable 5 support** — Anthropic's newest flagship model is available across RT's AI features, integrated with its always-on thinking and structured output.
 - **Redesigned main navigation** — numbered mode buttons (1–4) with the Chronologue sub-nav now live in the timeline title bar, plus a subplot ring key overlay for books with many subplots. All keyboard shortcuts remain unchanged.
 - **Character and Place notes** are now first-class RT note types.
 - **Your YAML stays yours** — plugin bookkeeping now lives entirely outside scene frontmatter; scene YAML belongs to the author.

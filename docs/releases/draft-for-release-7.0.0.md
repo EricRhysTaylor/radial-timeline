@@ -13,7 +13,7 @@ The Radial Timeline Community is live at [community.radialtimeline.com](https://
 - **Locales** — a world map of where the community is writing.
 - **My Share** — your private control room: see exactly what you're sharing and manage it in one place.
 
-Also shipping with the launch: the **free Pride & Prejudice Demo Vault** — a complete, fully tagged classic manuscript so you can explore every Radial Timeline mode with real material from your first minute.
+Also shipping with the launch: the **free Pride & Prejudice Demo Vault** — a complete, fully tagged classic manuscript so you can explore every Radial Timeline mode with real material from your first minute. Grab it from the plugin's Welcome screen ("Get the sample vault").
 
 ### Highlights
 
@@ -82,6 +82,10 @@ Two companion panels for building and repairing your story's dates. **Timeline S
 
 <p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/2f6825e8/wiki/images/community-project.webp" alt="A shared project page on the Radial Timeline Community" width="720"></p>
 
+**What you share — the Complete Preview in the Com settings tab**
+
+<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/e7e62419/wiki/images/settings-share.webp" alt="Community settings share preview showing exactly what publishes and what stays in the vault" width="720"></p>
+
 **Word (DOCX) in the Exports Panel**
 
 <p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/2f6825e8/wiki/images/export-word.webp" alt="Manuscript export output formats: Markdown, PDF, Word" width="720"></p>
@@ -101,6 +105,18 @@ Two companion panels for building and repairing your story's dates. **Timeline S
 **Local AI — Qwen3-30B-A3B-2507 connected and validated**
 
 <p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/2f6825e8/wiki/images/panel-local.webp" alt="AI settings with local LLM connected and validated via LM Studio" width="720"></p>
+
+**Manuscript onboarding — Prepare**
+
+<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/e7e62419/wiki/images/panel-onboard-1.webp" alt="Onboarding Prepare step with local model ready and import flow detected" width="720"></p>
+
+**Manuscript onboarding — Confirm scenes**
+
+<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/e7e62419/wiki/images/panel-onboard-2.webp" alt="Onboarding Confirm scenes step with chapter list and AI auto-split" width="720"></p>
+
+**The new Welcome screen — sample vault, onboarding, and website**
+
+<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/e7e62419/wiki/images/welcome.webp" alt="Redesigned Welcome screen with Set Book Project, Onboard manuscript, sample vault, and website cards" width="720"></p>
 
 **Redesigned main navigation — same keyboard shortcuts**
 

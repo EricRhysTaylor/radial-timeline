@@ -2071,6 +2071,11 @@
 .ert-ui.ert-scope--modal .ert-omnibus-question-grid {
   grid-template-columns: max-content minmax(0, 1fr) max-content max-content max-content;
   gap: var(--ert-gap-xs) var(--ert-gap-md);
+  /* Cap the list so the count, notes, and cost lines stay on-screen — the
+     question list scrolls instead of the whole modal towering. */
+  max-height: 38vh;
+  overflow-y: auto;
+  padding-right: var(--ert-gap-xs);
 }
 
 .ert-ui.ert-scope--modal .ert-omnibus-question-cell {
@@ -2169,6 +2174,31 @@
 /* Omnibus: per-question Skip/Rerun toggle pill */
 .ert-ui.ert-scope--modal .ert-omnibus-skip-pill {
   cursor: pointer;
+}
+
+/* Omnibus: post-run outcome states on the status pills (colors match the
+   cache pill's confirmed state above). */
+.ert-ui.ert-scope--modal .ert-omnibus-status-pill.is-done {
+  background-color: rgba(46, 160, 67, 0.20);
+  color: rgb(35, 134, 54);
+  border: 1px solid rgba(46, 160, 67, 0.55);
+}
+
+.ert-ui.ert-scope--modal .ert-omnibus-status-pill.is-skipped {
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+/* Omnibus: pulse the count/volume/cost readouts when a skip toggle changes
+   them, so the reaction is visible away from the clicked pill. */
+@keyframes ert-omnibus-updated-flash {
+  0% { background-color: color-mix(in srgb, var(--ert-accent) 30%, transparent); }
+  100% { background-color: transparent; }
+}
+
+.ert-ui.ert-scope--modal .ert-omnibus-flashable.is-updated {
+  animation: ert-omnibus-updated-flash 700ms ease-out 1;
+  border-radius: var(--ert-radius-sm, 6px);
 }
 
 .ert-ui.ert-scope--modal .ert-omnibus-skip-pill.is-skip {

@@ -6982,6 +6982,7 @@ export class InquiryView extends ItemView {
                     briefPaths.push(persisted.briefPath);
                 }
                 completedIds.push(question.id);
+                if (modal) modal.noteQuestionCompleted(question.id);
                 lastSession = persisted.session;
                 lastResult = persisted.normalized;
             }
@@ -7186,6 +7187,7 @@ export class InquiryView extends ItemView {
                     briefPaths.push(persisted.briefPath);
                 }
                 completedIds.push(question.id);
+                if (modal) modal.noteQuestionCompleted(question.id);
                 lastSession = persisted.session;
                 lastResult = persisted.normalized;
 

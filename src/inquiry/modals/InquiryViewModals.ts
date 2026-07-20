@@ -212,8 +212,20 @@ export class InquiryOmnibusModal extends Modal {
     private volumeLineEl?: HTMLDivElement;
     private costLineEl?: HTMLDivElement;
     private suggestionNoteEl?: HTMLDivElement;
+    private warmNoteEl?: HTMLDivElement;
+    private howSectionEl?: HTMLDivElement;
     private skipControls = new Map<string, { btn: HTMLButtonElement; plain: HTMLSpanElement }>();
+    /** Plain status pill for EVERY question row, for post-run outcome labels. */
+    private statusPills = new Map<string, HTMLSpanElement>();
+    private scopePillButtons: HTMLButtonElement[] = [];
+    private indexToggle?: ToggleComponent;
     private runButton?: ButtonComponent;
+    /** Questions persisted by the run in progress (drives the post-run list). */
+    private completedRunIds = new Set<string>();
+    /** True once the run ended and the list shows outcomes instead of a plan. */
+    private reviewMode = false;
+    /** True when the author launched this run via Resume (prior completions count as done). */
+    private resumedFromPrior = false;
 
     constructor(
         app: App,
@@ -273,8 +285,11 @@ export class InquiryOmnibusModal extends Modal {
         if (!this.configPanel) return;
         this.configPanel.empty();
         this.skipControls.clear();
+        this.statusPills.clear();
+        this.scopePillButtons = [];
 
         const howSection = this.configPanel.createDiv({ cls: 'ert-omnibus-how-section' });
+        this.howSectionEl = howSection;
         howSection.createDiv({ cls: 'ert-omnibus-how-title', text: 'How this run works' });
         const howList = howSection.createEl('ul', { cls: 'ert-omnibus-how-list' });
         howList.createEl('li', { text: 'Load corpus once for the selected scope' });
@@ -331,7 +346,7 @@ export class InquiryOmnibusModal extends Modal {
 
         const totalCell = summaryRow.createDiv({ cls: 'ert-apr-status-cell' });
         this.questionsCountPillEl = totalCell.createSpan({
-            cls: 'ert-badgePill ert-badgePill--sm ert-omnibus-table-pill',
+            cls: 'ert-badgePill ert-badgePill--sm ert-omnibus-table-pill ert-omnibus-flashable',
             text: `${this.options.questions.length} questions`
         });
 
@@ -345,11 +360,13 @@ export class InquiryOmnibusModal extends Modal {
         const indexCell = summaryRow.createDiv({ cls: 'ert-apr-status-cell' });
         const indexRow = indexCell.createDiv({ cls: 'ert-inline' });
         const indexToggle = new ToggleComponent(indexRow);
+        this.indexToggle = indexToggle;
         indexToggle.setValue(this.createIndex);
         indexToggle.onChange(value => {
             this.createIndex = value;
         });
         indexRow.createSpan({ text: 'Index note' });
+        this.scopePillButtons.push(bookPill, sagaPill);
 
         panel.createDiv({ cls: 'ert-divider' });
 
@@ -403,11 +420,14 @@ export class InquiryOmnibusModal extends Modal {
             const groupRow = questionGrid.createDiv({ cls: 'ert-apr-status-row' });
             groupRow.createDiv({ cls: 'ert-apr-status-cell ert-omnibus-group', text: zoneLabel });
 
-            zoneQuestions.forEach(question => {
+            zoneQuestions.forEach((question, zoneIndex) => {
                 const dataRow = questionGrid.createDiv({ cls: 'ert-apr-status-row ert-apr-status-row--data' });
 
                 const zoneCell = dataRow.createDiv({ cls: 'ert-apr-status-cell' });
-                zoneCell.createSpan({ cls: 'ert-badgePill ert-badgePill--sm ert-omnibus-table-pill', text: zoneLabel });
+                zoneCell.createSpan({
+                    cls: 'ert-badgePill ert-badgePill--sm ert-omnibus-table-pill',
+                    text: `${zoneLabel} ${zoneIndex + 1}`
+                });
 
                 const questionCell = dataRow.createDiv({ cls: 'ert-apr-status-cell ert-omnibus-question-cell' });
                 const questionText = questionCell.createSpan({ cls: 'ert-omnibus-question', text: question.standardPrompt });
@@ -424,7 +444,8 @@ export class InquiryOmnibusModal extends Modal {
                 scopePills.push(scopePill);
 
                 const statusCell = dataRow.createDiv({ cls: 'ert-apr-status-cell' });
-                const plainStatus = statusCell.createSpan({ cls: 'ert-badgePill ert-badgePill--sm ert-omnibus-table-pill', text: 'Brief + Log' });
+                const plainStatus = statusCell.createSpan({ cls: 'ert-badgePill ert-badgePill--sm ert-omnibus-table-pill ert-omnibus-status-pill', text: 'Brief + Log' });
+                this.statusPills.set(question.id, plainStatus);
                 const recent = this.options.recentResults?.[question.id];
                 if (recent) {
                     const skipBtn = statusCell.createEl('button', {
@@ -436,13 +457,13 @@ export class InquiryOmnibusModal extends Modal {
                         `This engine already answered this question on the current corpus ${formatOmnibusResultAge(recent.completedAt, Date.now())}. Click to toggle between skipping it and rerunning it.`
                     );
                     skipBtn.addEventListener('click', () => {
-                        if (!this.suggestionEligible) return;
+                        if (!this.suggestionEligible || this.reviewMode) return;
                         if (this.excludedIds.has(question.id)) {
                             this.excludedIds.delete(question.id);
                         } else {
                             this.excludedIds.add(question.id);
                         }
-                        this.refreshSuggestionUI();
+                        this.refreshSuggestionUI({ flash: true });
                     });
                     this.skipControls.set(question.id, { btn: skipBtn, plain: plainStatus });
                 }
@@ -457,14 +478,15 @@ export class InquiryOmnibusModal extends Modal {
         if (this.options.warmCacheExpiresAt && this.options.warmCacheExpiresAt > Date.now()) {
             const remainingMin = Math.max(1, Math.round((this.options.warmCacheExpiresAt - Date.now()) / 60_000));
             const warmNote = this.configPanel.createDiv({ cls: 'ert-field-note ert-omnibus-warm-note' });
+            this.warmNoteEl = warmNote;
             warmNote.setText(
                 `Provider cache is still warm from a recent run (~${remainingMin}m left) — this pass piggybacks on it: `
                 + `question 1 reads the cached corpus instead of re-priming it at write price.`
             );
         }
 
-        this.volumeLineEl = this.configPanel.createDiv({ cls: 'ert-field-note' });
-        this.costLineEl = this.configPanel.createDiv({ cls: 'ert-field-note ert-omnibus-cost-estimate' });
+        this.volumeLineEl = this.configPanel.createDiv({ cls: 'ert-field-note ert-omnibus-flashable' });
+        this.costLineEl = this.configPanel.createDiv({ cls: 'ert-field-note ert-omnibus-cost-estimate ert-omnibus-flashable' });
         this.refreshSuggestionUI();
     }
 
@@ -473,7 +495,8 @@ export class InquiryOmnibusModal extends Modal {
      * selection: per-row pills, the suggestion note, the question count, the
      * volume line, the cost band, and the Run button's enabled state.
      */
-    private refreshSuggestionUI(): void {
+    private refreshSuggestionUI(options?: { flash?: boolean }): void {
+        if (this.reviewMode) return;
         const totalQuestions = this.options.questions.length;
         const effectiveQuestions = this.getEffectiveQuestionCount();
         const now = Date.now();
@@ -535,6 +558,17 @@ export class InquiryOmnibusModal extends Modal {
 
         this.renderCostLine(effectiveQuestions);
         this.runButton?.setDisabled(!!this.runDisabledReason || effectiveQuestions === 0);
+
+        if (options?.flash) {
+            // A skip toggle changes text far from the clicked pill — pulse the
+            // count pill and the volume/cost lines so the reaction is visible.
+            [this.questionsCountPillEl, this.volumeLineEl, this.costLineEl].forEach(el => {
+                if (!el) return;
+                el.classList.remove('is-updated');
+                void el.offsetWidth; // restart the animation
+                el.classList.add('is-updated');
+            });
+        }
     }
 
     private renderCostLine(effectiveQuestions: number): void {
@@ -588,6 +622,7 @@ export class InquiryOmnibusModal extends Modal {
             }
             resumeBtn.onClick(() => {
                 if (this.runDisabledReason) return;
+                this.resumedFromPrior = true;
                 this.resolveOnce({
                     scope: this.selectedScope,
                     createIndex: this.createIndex,
@@ -807,9 +842,57 @@ export class InquiryOmnibusModal extends Modal {
         this.aiAdvancedPreEl.setText(lines.join('\n'));
     }
 
+    /** Record a question persisted by the running pass (drives the post-run list). */
+    noteQuestionCompleted(questionId: string): void {
+        this.completedRunIds.add(questionId);
+    }
+
+    /**
+     * Swap the plan list into an outcome list: Done ✓ for questions this run
+     * persisted, Done · earlier for prior-run completions on a resume,
+     * Skipped for rows the author excluded, Not run for the rest. All plan
+     * controls (scope, index toggle, skip pills) freeze; the stale
+     * will-generate/cost lines hide.
+     */
+    private applyReviewState(): void {
+        this.reviewMode = true;
+        this.setHidden(this.howSectionEl, true);
+        this.setHidden(this.suggestionNoteEl, true);
+        this.setHidden(this.warmNoteEl, true);
+        this.setHidden(this.volumeLineEl, true);
+        this.setHidden(this.costLineEl, true);
+        this.scopePillButtons.forEach(btn => { btn.disabled = true; });
+        this.indexToggle?.setDisabled(true);
+
+        const priorCompleted = new Set(
+            this.resumedFromPrior ? this.options.priorProgress?.completedQuestionIds ?? [] : []
+        );
+        this.statusPills.forEach((pill, questionId) => {
+            this.skipControls.get(questionId)?.btn.classList.add('is-hidden');
+            pill.classList.remove('is-hidden');
+            if (this.completedRunIds.has(questionId)) {
+                pill.setText('Done ✓');
+                pill.classList.add('is-done');
+            } else if (priorCompleted.has(questionId)) {
+                pill.setText('Done · earlier');
+                pill.classList.add('is-done');
+            } else if (this.suggestionEligible && this.excludedIds.has(questionId)) {
+                pill.setText('Skipped');
+                pill.classList.add('is-skipped');
+            } else {
+                pill.setText('Not run');
+                pill.classList.add('is-skipped');
+            }
+        });
+    }
+
     showResult(completed: number, total: number, aborted: boolean, cacheMissDetail?: string): void {
         this.isRunning = false;
         this.setHidden(this.progressEl, true);
+        // Bring the question list back so the author sees exactly which
+        // questions completed before an abort/termination and which remain.
+        this.setHidden(this.configPanel, false);
+        this.applyReviewState();
         if (this.resultEl) {
             this.setHidden(this.resultEl, false);
             this.resultEl.empty();

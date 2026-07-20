@@ -1148,31 +1148,46 @@
 .ert-timeline-chronologue-subnav {
   display: inline-flex;
   align-items: center;
-  margin-inline-start: var(--size-2-3);
-  padding-inline-start: var(--size-2-3);
-  border-inline-start: thin solid var(--background-modifier-border);
   gap: var(--size-2-1);
+  /* Sit tight to the Chronologue button, with a clear gap before "4 Gossamer",
+     so the sub-group reads as nested under Chronologue, not part of the row. */
+  margin-inline-start: var(--size-2-2);
+  margin-inline-end: var(--size-4-3);
 }
 
 .ert-timeline-chronologue-subnav[hidden] {
   display: none;
 }
 
+/* Sub-modes read as tags/annotations, not buttons: shorter than the mode
+   buttons, thin dashed outline with a little padding, transparent fill. Each
+   sub-mode carries its own hue via --ert-subnav-color — Shift neutral, Runtime
+   blue, Alt/Alien red (tokens in variables.css). The glyph/label inherit that
+   colour, so the narrow-width glyphs keep their per-sub-mode colour too. */
 .ert-timeline-chronologue-subnav__btn {
+  --ert-subnav-color: var(--text-muted);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 24px;
-  padding: 0 var(--size-2-3);
-  border: thin solid var(--background-modifier-border);
+  height: 18px;
+  padding: 0 var(--size-2-2);
+  border: thin dashed color-mix(in srgb, var(--ert-subnav-color) 60%, transparent);
   border-radius: var(--radius-s);
-  background: var(--interactive-normal);
-  color: var(--text-muted);
+  background: transparent;
+  color: var(--ert-subnav-color);
   font-size: var(--font-ui-smaller);
   line-height: 1;
   white-space: nowrap;
   cursor: pointer;
   box-shadow: none;
+}
+
+.ert-timeline-chronologue-subnav__btn[data-submode="runtime"] {
+  --ert-subnav-color: var(--rt-color-runtime);
+}
+
+.ert-timeline-chronologue-subnav__btn[data-submode="alt"] {
+  --ert-subnav-color: var(--rt-color-alt);
 }
 
 /* Center-align the label span so it never rides high in the chip. */
@@ -1183,22 +1198,29 @@
 }
 
 .ert-timeline-chronologue-subnav__btn:hover {
-  color: var(--text-normal);
-  border-color: var(--background-modifier-border-hover);
+  border-color: var(--ert-subnav-color);
 }
 
+/* Active: intensify with the sub-mode's own colour — solid outline + fill. */
 .ert-timeline-chronologue-subnav__btn.is-active {
+  border-style: solid;
+  border-color: var(--ert-subnav-color);
+  background: color-mix(in srgb, var(--ert-subnav-color) 85%, transparent);
   color: var(--text-on-accent);
-  background: var(--interactive-accent);
-  border-color: var(--interactive-accent);
 }
 
-/* No-data Runtime hint (mirrors the in-view keycap's no-data state); stays
-   clickable, just muted. Uses the canonical Pro token for the Pro sub-mode. */
+/* Shift is neutral, so a colour fill under white text would be low-contrast —
+   intensify with theme neutrals instead, still clearly on vs the dashed idle. */
+.ert-timeline-chronologue-subnav__btn[data-submode="shift"].is-active {
+  background: var(--background-modifier-hover);
+  border-color: var(--text-normal);
+  color: var(--text-normal);
+}
+
+/* No-data Runtime: keep the blue association but dim it to read "unavailable"
+   (mirrors the in-view keycap's no-data state); still clickable. */
 .ert-timeline-chronologue-subnav__btn.is-no-data {
-  color: var(--text-faint);
-  border-style: dashed;
-  border-color: color-mix(in srgb, var(--rt-pro-color-base) 45%, var(--background-modifier-border));
+  opacity: 0.5;
 }
 
 .ert-timeline-chronologue-subnav__btn[hidden] {
@@ -1207,7 +1229,7 @@
 
 .ert-timeline-chronologue-subnav__btn:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent) 45%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ert-subnav-color) 45%, transparent);
 }
 
 /* Glyph is the narrow-width fallback; the word label is the default. Carries

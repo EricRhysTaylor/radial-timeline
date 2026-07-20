@@ -43,6 +43,15 @@
   --rt-color-empty-selected: #EFEFEF;
   /* Slightly darker gray for selected empty cells */
 
+  /* Chronologue sub-mode overlay hues — the same colours the in-view Runtime
+     and Alt (planetary/alien) overlays and keycaps already use, promoted from
+     scattered raw rgba() literals to tokens (single source). Base colour at
+     full opacity; callers apply transparency via color-mix as needed. */
+  --rt-color-runtime: rgb(60, 140, 220);
+  /* Runtime overlay/keycap blue (was rgba(60,140,220,…)) */
+  --rt-color-alt: rgb(180, 60, 60);
+  /* Alt / Alien planetary-calendar red (was rgba(180,60,60,…)) */
+
   /* Inquiry Zone Colors */
   --ert-inquiry-zone-setup: #2fbf6a;
   --ert-inquiry-zone-setup-stroke: color-mix(in srgb, var(--ert-inquiry-zone-setup) 35%, #ffffff);

@@ -780,6 +780,18 @@ Doctrine fit: no new abstraction layer beyond the adapters, no fallback chains
   Wrapup, positional thirds only when no structure exists). Structure-only UI
   also stops showing "unsplit"/chapters-found limbo when no model is present.
 
+- **2026-07-19 (subplot-flag columns + no-AI polish)** — Eric's project models
+  subplots as one custom-metadata COLUMN per subplot whose cells hold prose
+  notes; mapping those columns to Subplot made each note text a subplot name,
+  and the singleton-collapse folded nearly all of them into Main Plot ("we lost
+  some subplots — only left with 3 plus main"). New mapping target
+  **`subplot-flag`** ("Mark scenes with this subplot (column name)"): a
+  non-empty cell assigns the scene to the subplot NAMED AFTER THE COLUMN, first
+  flagged column wins (one-subplot rule), and the cell text rides along as a
+  custom-field note so nothing is lost. Also: the Review "Also create" profiles
+  section hides entirely in structure-only runs with no carried entity names
+  (dead checkboxes), and the Publish-stage row gained flex gap spacing.
+
 ## Appendix A — Canonical onboarding prompt (instruction block)
 
 Source of truth for this text is **Supabase** (see "The Onboarding Prompt —

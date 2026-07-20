@@ -259,6 +259,33 @@ describe('applyMetadataMapping', () => {
     expect(out).toEqual({ Status: 'First Draft', Label: 'Blue', Subplot: 'Revenge' });
   });
 
+  it('subplot-flag: column NAME becomes the subplot, cell text stays as a note', () => {
+    const flags: Record<string, ScrivenerFieldTarget> = {
+      'Operation FarStar': { target: 'subplot-flag' },
+      'The IcT': { target: 'subplot-flag' },
+      'Scrivener Status': { target: 'rt-key', key: 'Status' },
+    };
+    // Only FarStar has a value → scene belongs to "Operation FarStar".
+    const out = applyMetadataMapping(
+      { 'Operation FarStar': 'Picked up and adopted by Char.', 'The IcT': '', 'Scrivener Status': 'First Pass' },
+      flags
+    );
+    expect(out.Subplot).toBe('Operation FarStar');
+    expect(out['Operation FarStar']).toBe('Picked up and adopted by Char.'); // note preserved
+    expect(out.Status).toBe('First Pass');
+    expect('The IcT' in out).toBe(false); // empty cell = not flagged, nothing carried
+  });
+
+  it('subplot-flag: first flagged column wins when a scene is marked in several', () => {
+    const flags: Record<string, ScrivenerFieldTarget> = {
+      'Newlan as Leader': { target: 'subplot-flag' },
+      BowShock: { target: 'subplot-flag' },
+    };
+    const out = applyMetadataMapping({ 'Newlan as Leader': 'x', BowShock: 'also x' }, flags);
+    expect(out.Subplot).toBe('Newlan as Leader');
+    expect(out.BowShock).toBe('also x'); // the other column's note still rides along
+  });
+
   it('keeps unmapped fields as-is and lets the first writer win on collision', () => {
     const out = applyMetadataMapping(
       { Mood: 'tense', A: 'first', B: 'second' },

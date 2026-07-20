@@ -338,7 +338,7 @@ export class OnboardingModal extends Modal {
     });
     updateTotal();
 
-    const stageRow = contentEl.createDiv({ cls: 'ert-row' });
+    const stageRow = contentEl.createDiv({ cls: 'ert-row ert-onb-stagerow' });
     stageRow.createSpan({ text: 'Publish stage: ', cls: 'ert-muted' });
     new DropdownComponent(stageRow)
       .addOptions(Object.fromEntries(STAGE_ORDER.map((stage) => [stage, stage])))
@@ -404,6 +404,9 @@ export class OnboardingModal extends Modal {
     const options: Record<string, string> = {
       custom: 'Keep as custom field',
       ignore: 'Ignore',
+      // Per-subplot COLUMN model: a non-empty cell marks the scene as belonging
+      // to the subplot NAMED AFTER THE COLUMN (cell text kept as a note).
+      'subplot-flag': 'Mark scenes with this subplot (column name)',
     };
     for (const key of rtKeys) options[`rt:${key}`] = `Map to ${key}`;
 
@@ -421,7 +424,7 @@ export class OnboardingModal extends Modal {
         .onChange((value) => {
           mapping[field] = value.startsWith('rt:')
             ? { target: 'rt-key', key: value.slice(3) }
-            : { target: value as 'custom' | 'ignore' }; // SAFE: options are exactly custom|ignore|rt:*
+            : { target: value as 'custom' | 'ignore' | 'subplot-flag' }; // SAFE: options are exactly custom|ignore|subplot-flag|rt:*
         });
     }
   }
@@ -710,6 +713,19 @@ export class OnboardingModal extends Modal {
 
     // Optional extras, decided here — after the narrative is settled. Built at
     // apply time; summaries are the slow part (one AI call per entity).
+    // Without a model there is no entity ANALYSIS either — profiles can only
+    // come from carried Character/Place columns. When neither AI nor carried
+    // names exist, the section would be dead weight: hide it entirely.
+    const hasEntityNames = this.proposals.some(
+      (proposal) => proposal.characters.length > 0 || proposal.places.length > 0
+    );
+    if (!this.aiAvailable && !hasEntityNames) {
+      this.createCharacters = false;
+      this.createPlaces = false;
+      this.generateSummaries = false;
+      this.renderReviewActions(contentEl, ok.length);
+      return;
+    }
     const optionsPanel = contentEl.createDiv({ cls: 'ert-onb-options ert-stack' });
     optionsPanel.createDiv({ cls: 'ert-onb-synopsis__label', text: 'Also create (optional)' });
     this.renderCheckbox(optionsPanel, 'Create Character profiles', this.createCharacters, (checked) => {
@@ -741,11 +757,16 @@ export class OnboardingModal extends Modal {
     };
     syncSummaryToggle();
 
+    this.renderReviewActions(contentEl, ok.length);
+  }
+
+  /** Apply/Cancel row for the Review screen (shared by both option-panel paths). */
+  private renderReviewActions(contentEl: HTMLElement, okCount: number): void {
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
     new ButtonComponent(actions)
-      .setButtonText(`Apply — write ${ok.length} scenes`)
+      .setButtonText(`Apply — write ${okCount} scenes`)
       .setCta()
-      .setDisabled(ok.length === 0)
+      .setDisabled(okCount === 0)
       .onClick(() => void this.applyProposals());
     new ButtonComponent(actions).setButtonText('Cancel').onClick(() => this.close());
   }

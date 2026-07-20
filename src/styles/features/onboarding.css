@@ -235,6 +235,14 @@
   background: color-mix(in srgb, var(--interactive-accent) 10%, transparent);
 }
 
+/* Publish-stage row — breathing room between the dropdown and its hint text. */
+.ert-ui .ert-onb-stagerow {
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+  flex-wrap: wrap;
+}
+
 /* Scrivener metadata mapping table — field name | disposition dropdown */
 .ert-ui .ert-onb-map {
   display: grid;

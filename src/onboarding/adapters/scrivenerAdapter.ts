@@ -223,7 +223,13 @@ const COLLISION_PREFIX = 'Scrivener ';
 export type ScrivenerFieldTarget =
   | { target: 'rt-key'; key: string }
   | { target: 'custom' }
-  | { target: 'ignore' };
+  | { target: 'ignore' }
+  /**
+   * Per-subplot COLUMN model: the column's NAME is the subplot; any non-empty
+   * cell marks the scene as belonging to it (the cell's text is a note and
+   * rides along as a custom field). First flagged column wins per scene.
+   */
+  | { target: 'subplot-flag' };
 
 /** Scrivener outliner columns that are tool/derived data — never worth carrying. */
 const IGNORED_FIELDS = new Set([
@@ -341,6 +347,16 @@ export function applyMetadataMapping(
       continue;
     }
     if (decision.target === 'ignore') continue;
+    if (decision.target === 'subplot-flag') {
+      // Membership marker: the COLUMN name is the subplot; the cell text is a
+      // per-scene note and is kept as a custom field so nothing is lost.
+      const subplotName = key.replace(/^Scrivener /i, '').trim();
+      if (value.trim().length > 0) {
+        if (!('Subplot' in out)) out['Subplot'] = subplotName;
+        if (!(key in out)) out[key] = value;
+      }
+      continue;
+    }
     if (!(decision.key in out)) out[decision.key] = value;
   }
   return out;

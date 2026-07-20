@@ -4,12 +4,13 @@ Radial Timeline is now three product lines working together: the **Radial Timeli
 
 ### The New Community
 
-The Radial Timeline Community is live at [community.radialtimeline.com](https://community.radialtimeline.com) — a home for authors to share their writing journey, built around five major sections:
+The Radial Timeline Community is live at [community.radialtimeline.com](https://community.radialtimeline.com) — a home for authors to share their writing journey, built around six major sections:
 
 - **Feed** — a live stream of writing activity across the community: session posts, milestones, and project updates.
 - **Authors** — public author profiles with writing pulse, progress, and the projects behind them.
 - **Projects** — every shared manuscript with stage progress, activity, and book details.
 - **Genre Tree** — browse the community's projects through a living taxonomy of genres.
+- **Locales** — a world map of where the community is writing.
 - **My Share** — your private control room: see exactly what you're sharing and manage it in one place.
 
 Also shipping with the launch: the **free Pride & Prejudice Demo Vault** — a complete, fully tagged classic manuscript so you can explore every Radial Timeline mode with real material from your first minute.
@@ -57,7 +58,7 @@ Two companion panels for building and repairing your story's dates. **Timeline S
 - **Timeline image & data export** — new commands export the timeline itself as SVG or PNG (with fonts embedded) plus a JSON data export.
 - **Session auto-tracking, refined** — redesigned tab timer disc, countdown ring in word + time mode, auto-track tab markers, and a compact popover clock.
 - **Local-first AI** — AI features are now off by default for new installs; Local LLM setup is one button with automatic model selection and MLX / LM Studio support; added Claude Fable 5.
-- **Timeline title bar redesign** — numbered mode buttons (1–4) with the Chronologue sub-nav in the title bar, and a subplot ring key overlay for books with many subplots.
+- **Redesigned main navigation** — numbered mode buttons (1–4) with the Chronologue sub-nav now live in the timeline title bar, plus a subplot ring key overlay for books with many subplots. All keyboard shortcuts remain unchanged.
 - **Character and Place notes** are now first-class RT note types.
 - **Your YAML stays yours** — plugin bookkeeping now lives entirely outside scene frontmatter; scene YAML belongs to the author.
 - A Discord presence chip in the title bar connects you to the community server.
@@ -100,6 +101,10 @@ Two companion panels for building and repairing your story's dates. **Timeline S
 **Local AI — Qwen3-30B-A3B-2507 connected and validated**
 
 <p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/2f6825e8/wiki/images/panel-local.webp" alt="AI settings with local LLM connected and validated via LM Studio" width="720"></p>
+
+**Redesigned main navigation — same keyboard shortcuts**
+
+<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/63c6c68f/wiki/images/ui-nav.webp" alt="Redesigned mode navigation with numbered buttons and Chronologue sub-nav" width="600"></p>
 
 **Subplot ring key**
 

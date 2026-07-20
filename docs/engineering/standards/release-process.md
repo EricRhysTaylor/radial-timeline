@@ -40,8 +40,8 @@ still runs in two phases:
    (`gh run watch`). The workflow:
    - checks out the version tag,
    - `npm ci`, then `RT_RELEASE_BUILD=1 node esbuild.config.mjs production`
-     (release builds always output to `./release`, even in CI),
-   - injects embedded fonts (`scripts/inject-embedded-fonts.mjs`),
+     (release builds always output to `./release`, even in CI; embedded
+     fonts ship as data URIs in `src/styles/font.css`),
    - signs a build-provenance attestation for `main.js`, `manifest.json`,
      and `styles.css`,
    - uploads the three assets to the release with `--clobber`.

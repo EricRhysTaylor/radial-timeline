@@ -1,7 +1,8 @@
 /* =============================================================================
    EMBEDDED FONTS
    04b03b - 8-bit pixel font for version indicator
-   Font loaded via embeddedFonts.ts and injected at runtime
+   Fonts are embedded here as base64 data URIs and bundled into styles.css
+   by scripts/bundle-css.mjs
    ============================================================================= */
 @font-face {
     font-family: 'Radial Timeline JetBrains Mono';

@@ -49,9 +49,6 @@ jobs:
       - name: Build release assets
         run: RT_RELEASE_BUILD=1 node esbuild.config.mjs production
 
-      - name: Inject embedded fonts
-        run: node scripts/inject-embedded-fonts.mjs
-
       - name: Verify assets exist
         run: ls -la release/main.js release/manifest.json release/styles.css
 

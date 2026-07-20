@@ -12,8 +12,8 @@ Start it from the Welcome screen (**Onboard manuscript**) or the Command Palette
 
 Onboarding detects the right lane from what you point it at, and you can override the detection on the Prepare step.
 
-*   **Scrivener export** — point it at an exported Scrivener project (the exported manuscript tree with its outline CSV alongside). Acts, subplots, and outline metadata are mapped into Radial Timeline's schema, with Main Plot as the spine.
-*   **Word document** — a full manuscript in a single `.docx`, split into scenes.
+*   **Scrivener export** — one file per scene, produced with Scrivener's **File ▸ Export ▸ Files…** (turn on "number exported files" so each filename carries its binder position) plus, optionally, **Outliner Contents as CSV** exported alongside. Scene order comes from the filename numbering, or from the CSV's row order; the CSV's Synopsis and metadata columns are carried into each scene's frontmatter. Acts, subplots, and outline metadata are mapped into Radial Timeline's schema, with Main Plot as the spine.
+*   **Word document** — the whole manuscript in **one** `.docx`. Word's built-in **Heading 1–3 / Title** paragraph styles become the chapter structure, in document order, and scenes are split inside each chapter (markers and Auto-split, same as the single-file lane). A folder of separate per-scene `.docx` files is not supported yet — export or combine into a single document first.
 *   **One big file** — a whole book in a single text, Markdown, or HTML file (a Project Gutenberg classic, for example). Its internal divisions (books/chapters) become the starting structure. PDF is not supported yet.
 
 ## With or without AI

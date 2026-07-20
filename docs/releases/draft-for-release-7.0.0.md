@@ -16,36 +16,59 @@ Also shipping with the launch: the **free Pride & Prejudice Demo Vault** — a c
 
 ### Highlights
 
-#### Website & Community — share your writing journey
+#### Plugin → Community connection
 
-The Community is dynamically linked to the Radial Timeline plugin and managed from a new **Com** (Community) settings tab. Connect your vault, choose what to publish — books, stages, session activity — and review the complete preview of everything the website will show before anything leaves your machine.
+The plugin and the Community are dynamically linked, managed from a new **Com** (Community) settings tab. Connect with a simple two-button model, choose what to publish — books, stages, writing activity — and pause or disconnect at any time with a true freeze.
 
-**Privacy first by design.** You share what you want and nothing more. Sharing is opt-in at the source, every published field is visible in the Complete Preview, and safety controls let you pause or withdraw your share at any time.
+**Privacy first by design.** You share what you want and nothing more. Sharing is opt-in at the source, the Complete Preview shows every field the website will display before anything leaves your machine, and safety controls let you withdraw your share whenever you choose.
 
-#### Word (DOCX) exports in the Exports Panel
+#### Author Progress Reports, direct to Community
 
-Professional manuscript export now includes **Word (DOCX)** — open the Exports Panel from the **Print icon in the Radial Timeline view** and generate a standard manuscript format document (Times New Roman 12 pt, double-spaced, first-line indents, centered chapter headings, page-number running header). No LaTeX engine or font setup required — perfect for agents, editors, and submission workflows.
+APR now publishes straight to your Community profile. Send a progress report to the website from the plugin, manage campaign controls and refresh schedules from one place, and keep your public progress current without leaving your vault. Writing sessions can also **optionally post to your Community stats and feed** — a per-save toggle (with memory) decides whether a session becomes a feed post, so nothing is shared by accident.
 
-#### PDF Design Wizard improvements
+#### Word (DOCX) export and better PDFs via Pandoc
 
-The PDF publishing pipeline got a full polish pass: restored running headers on the Standard and Contemporary Literary layouts, widow/orphan control in all bundled fiction layouts, an opt-in **print binding gutter** for duplex paperbacks (KDP/IngramSpark), and Advanced Pandoc passthrough (Pro) for authors migrating an existing Pandoc/LaTeX setup.
+Professional manuscript export now includes **Word (DOCX)** — open the Exports Panel from the **Print icon in the Radial Timeline view** and generate a standard manuscript format document (Times New Roman 12 pt, double-spaced, first-line indents, centered chapter headings, page-number running header). No LaTeX engine or font setup required — ready for agents, editors, and submission workflows.
 
-#### Session auto-tracking, refined
+The Pandoc PDF pipeline got a matching polish pass: restored running headers on the Standard and Contemporary Literary layouts, widow/orphan control in all bundled fiction layouts, an opt-in **print binding gutter** for duplex paperbacks (KDP/IngramSpark), and Advanced Pandoc passthrough (Pro) for authors migrating an existing LaTeX setup.
 
-Writing session tracking is easier to read at a glance: a redesigned tab timer disc, a countdown ring in word + time mode, auto-track tab markers, and a compact popover clock. Sessions can now **optionally publish to your Community stats and feed** — a per-save toggle (with memory) decides whether a session becomes a feed post, so nothing is shared by accident.
+#### New Website with support docs
+
+[radialtimeline.com](https://radialtimeline.com) relaunched alongside the Community, with full support documentation for the plugin — settings, timeline modes, publishing, and workflows — so help is one click away instead of buried in a repo.
+
+#### Onboard an existing manuscript (Beta)
+
+A new guided **onboarding workflow** brings a finished or in-progress manuscript into Radial Timeline. Three import lanes:
+
+- **Scrivener exports** — outline and manuscript tree, with acts, subplots, and metadata mapped into RT.
+- **Word (.docx)** — a full manuscript document, split into scenes.
+- **One conglomerate file** — a whole book in a single text/Markdown/HTML file (a Project Gutenberg classic, for example), broken into scenes automatically.
+
+Every lane works **with or without AI assistance**: an optional **local LLM** splits unmarked prose into scenes and generates grounded Character/Place summaries — entirely on your machine — or run structure-only mode with no AI at all. A checkpoint-based review flow keeps you in control of every scene before anything is written.
+
+> **Local model requirement:** onboarding is tested and verified with **Qwen3-30B-A3B-2507 (4-bit)**. Onboarding reads and reasons over your entire manuscript, so it demands far more from a model than everyday AI features — smaller or lesser models may fail to follow the workflow or produce unreliable scene splits. A 30B-class model needs a capable machine with ample memory (verified on a Mac Studio with 64 GB unified memory).
+
+#### Timeline Scaffold & Timeline Audit
+
+Two companion panels for building and repairing your story's dates. **Timeline Scaffold** lays down scene dates from scratch: an express one-click path, day-based ripple with WhenSource anchors, and a review-page triage UI for the scenes that need a human decision. **Timeline Audit** keeps them healthy: bulk decisions with provenance, per-scene date history, ripple handoff, and a unified backup system so every change is reversible.
 
 ### More Improvements
 
-- **Timeline scaffold & audit tools** — a guided workflow for building and repairing scene dates: express one-click scaffolding, day-based ripple with review-page triage, per-scene date history, and bulk audit decisions with provenance.
-- **Local LLM setup simplified** — one-button configuration with automatic model selection, MLX server discovery, and a status card that stays quiet when healthy.
+- **Timeline image & data export** — new commands export the timeline itself as SVG or PNG (with fonts embedded) plus a JSON data export.
+- **Session auto-tracking, refined** — redesigned tab timer disc, countdown ring in word + time mode, auto-track tab markers, and a compact popover clock.
+- **Local-first AI** — AI features are now off by default for new installs; Local LLM setup is one button with automatic model selection and MLX / LM Studio support; added Claude Fable 5.
+- **Timeline title bar redesign** — numbered mode buttons (1–4) with the Chronologue sub-nav in the title bar, and a subplot ring key overlay for books with many subplots.
+- **Character and Place notes** are now first-class RT note types.
 - **Your YAML stays yours** — plugin bookkeeping now lives entirely outside scene frontmatter; scene YAML belongs to the author.
-- Stage target dates are now stored per book.
+- A Discord presence chip in the title bar connects you to the community server.
 
 ### Fixes
 
-- Fixed Word export failures from missing fonts and stale Pandoc paths — Auto locate now repairs the toolchain path.
+- Fixed Word export failures from missing fonts and stale Pandoc paths — Auto locate now repairs the toolchain.
 - Fixed running headers being wiped on the Standard and Contemporary Literary PDF layouts.
-- Fixed stage target dates being lost during book data normalization.
+- Fixed exported timeline and APR images missing their fonts (SVG/PNG exports now embed the fonts they use).
+- Fixed stage target dates being lost during book data normalization; target dates are now stored per book.
+- Fixed Chronologue placement of undated scenes — they now interleave beside their dated anchors.
 - Fixed LM Studio structured-JSON requests and a Local LLM server-discovery crash.
 
 ### Screenshots
@@ -60,13 +83,21 @@ Writing session tracking is easier to read at a glance: a redesigned tab timer d
 
 <p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/COMMIT/wiki/images/release-7-0-0-settings-com-rounded.png" alt="Community settings tab with complete share preview" width="720"></p>
 
+**APR direct to Community**
+
+<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/COMMIT/wiki/images/release-7-0-0-apr-community-rounded.png" alt="Author Progress Report campaign controls with send-to-Community" width="720"></p>
+
 **Word (DOCX) export in the Exports Panel**
 
 <p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/COMMIT/wiki/images/release-7-0-0-word-export-rounded.png" alt="Manuscript export panel with Word output format" width="720"></p>
 
-**Session auto-tracking**
+**Timeline Scaffold & Audit**
 
-<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/COMMIT/wiki/images/release-7-0-0-session-tracking-rounded.png" alt="Session timer disc and save popover with community feed toggle" width="360"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/COMMIT/wiki/images/release-7-0-0-timeline-scaffold-rounded.png" alt="Timeline Scaffold review triage and Timeline Audit panel" width="720"></p>
+
+**Manuscript onboarding (Beta)**
+
+<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/COMMIT/wiki/images/release-7-0-0-onboarding-rounded.png" alt="Onboard existing manuscript checkpoint review" width="720"></p>
 
 **Pride & Prejudice Demo Vault**
 

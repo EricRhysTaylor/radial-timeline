@@ -1102,7 +1102,7 @@
    the lowercase label text. */
 .ert-timeline-mode-nav__num {
   position: relative;
-  top: 0.1em;
+  top: calc(0.1em - 1px);
   font-family: var(--font-monospace);
   font-size: 0.85em;
   line-height: 1;

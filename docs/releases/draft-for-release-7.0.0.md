@@ -61,7 +61,6 @@ Two companion panels for building and repairing your story's dates. **Timeline S
 - **Claude Fable 5 support** — Anthropic's newest flagship model is available across RT's AI features, integrated with its always-on thinking and structured output.
 - **Redesigned main navigation** — numbered mode buttons (1–4) with the Chronologue sub-nav now live in the timeline title bar, plus a subplot ring key overlay for books with many subplots. All keyboard shortcuts remain unchanged.
 - **Character and Place notes** are now first-class RT note types.
-- **Your YAML stays yours** — plugin bookkeeping now lives entirely outside scene frontmatter; scene YAML belongs to the author.
 - A Discord presence chip in the title bar connects you to the community server.
 
 ### Fixes

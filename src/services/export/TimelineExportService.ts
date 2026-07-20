@@ -430,7 +430,7 @@ function buildProvenanceMetadata(
     doc: Document,
     params: { exportId: string; exportedAt: string; pluginVersion: string }
 ): SVGMetadataElement {
-    const metadata = doc.createElementNS(SVG_NS, 'metadata') as SVGMetadataElement;
+    const metadata = doc.createElementNS(SVG_NS, 'metadata');
     const rdf = doc.createElementNS(RDF_NS, 'rdf:RDF');
     const description = doc.createElementNS(RDF_NS, 'rdf:Description');
     description.setAttributeNS(RDF_NS, 'rdf:about', '');

@@ -51,7 +51,7 @@ Every lane works **with or without AI assistance**: an optional **local LLM** sp
 
 #### Timeline Scaffold & Timeline Audit
 
-Two companion panels for building and repairing your story's dates. **Timeline Scaffold** lays down scene dates from scratch: an express one-click path, day-based ripple with WhenSource anchors, and a review-page triage UI for the scenes that need a human decision. **Timeline Audit** keeps them healthy: bulk decisions with provenance, per-scene date history, ripple handoff, and a unified backup system so every change is reversible.
+Two companion panels for building and repairing your story's dates. **Timeline Scaffold** lays down scene dates from scratch: an express one-click path, day-based ripple with anchored dates, and a review-page triage UI for the scenes that need a human decision. **Timeline Audit** keeps them healthy: an instant audit checks every dated scene against its summary, synopsis, and body text to flag contradictions, and for the scenes that remain unclear, an optional **AI audit** gives each one a deeper read — clarifying what's happening in the scene and where it belongs in time. It runs in the background and never changes your files: you review every suggestion, accept the safe ones in bulk, and every change is reversible with per-scene date history and unified backups.
 
 ### More Improvements
 

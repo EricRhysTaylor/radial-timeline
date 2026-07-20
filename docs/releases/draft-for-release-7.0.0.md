@@ -69,7 +69,7 @@ Two companion panels for building and repairing your story's dates. **Timeline S
 - Fixed running headers being wiped on the Standard and Contemporary Literary PDF layouts.
 - Fixed exported timeline and APR images missing their fonts (SVG/PNG exports now embed the fonts they use).
 - Fixed stage target dates being lost during book data normalization; target dates are now stored per book.
-- Fixed Chronologue placement of undated scenes — they now interleave beside their dated anchors.
+- Rethought undated scenes in Chronologue. They used to gather at the front of the ring to draw attention — which fell apart on a freshly onboarded novel where only a handful of scenes carry a When. Undated scenes now interleave beside their dated neighbors in manuscript order, and a red number square still calls out any Working or Complete scene missing its When.
 - Fixed LM Studio structured-JSON requests and a Local LLM server-discovery crash.
 
 ### Screenshots

@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+    buildFontFaceCss,
     buildTimelineDataExport,
+    isDataUriOnlySrc,
+    parseFontFamilyList,
+    selectFontFacesForFamilies,
     snapshotRenderConfig,
     TIMELINE_DATA_EXPORT_SCHEMA_VERSION,
     type BuildTimelineDataExportParams,
+    type ExportFontFaceRule,
 } from './TimelineExportService';
 import type { BookMeta, RadialTimelineSettings, TimelineItem } from '../../types';
 
@@ -112,5 +117,82 @@ describe('snapshotRenderConfig', () => {
         const settings = makeSettings({ pandocPath: '/usr/local/bin/pandoc' } as Partial<RadialTimelineSettings>);
         const config = snapshotRenderConfig(settings);
         expect(config as Record<string, unknown>).not.toHaveProperty('pandocPath');
+    });
+});
+
+describe('font embedding helpers', () => {
+    const asimovian: ExportFontFaceRule = {
+        family: 'Asimovian',
+        cssText: "@font-face { font-family: 'Asimovian'; src: url(\"data:font/woff2;base64,AAEAAAAR\") format(\"woff2\"); font-weight: 400; }",
+    };
+    const pixel: ExportFontFaceRule = {
+        family: '04b03b',
+        cssText: "@font-face { font-family: '04b03b'; src: url(\"data:font/woff2;base64,AAEAAAAO\") format(\"woff2\"); font-weight: 400; }",
+    };
+    const hooge: ExportFontFaceRule = {
+        family: 'hooge05_55Regular',
+        cssText: "@font-face { font-family: 'hooge05_55Regular'; src: url(\"data:font/ttf;base64,AAEAAAAO\") format(\"truetype\"); }",
+    };
+
+    describe('parseFontFamilyList', () => {
+        it('splits a computed family list and strips quotes', () => {
+            expect(parseFontFamilyList('"04b03b", Monaco, "Courier New", monospace'))
+                .toEqual(['04b03b', 'Monaco', 'Courier New', 'monospace']);
+            expect(parseFontFamilyList("'Asimovian', Impact, sans-serif"))
+                .toEqual(['Asimovian', 'Impact', 'sans-serif']);
+        });
+
+        it('tolerates empty values and stray whitespace', () => {
+            expect(parseFontFamilyList('')).toEqual([]);
+            expect(parseFontFamilyList('  serif  ')).toEqual(['serif']);
+        });
+    });
+
+    describe('isDataUriOnlySrc', () => {
+        it('accepts data-URI sources, with or without quotes and local() entries', () => {
+            expect(isDataUriOnlySrc("url('data:font/woff2;base64,AAAA') format('woff2')")).toBe(true);
+            expect(isDataUriOnlySrc('url(data:font/ttf;base64,AAAA)')).toBe(true);
+            expect(isDataUriOnlySrc("local('X'), url(\"data:font/woff2;base64,AAAA\")")).toBe(true);
+        });
+
+        it('rejects sources that reference external files', () => {
+            expect(isDataUriOnlySrc("url('assets/fonts/JetBrainsMono-Thin.woff2') format('woff2')")).toBe(false);
+            expect(isDataUriOnlySrc("url('data:font/woff2;base64,AAAA'), url('https://x.test/f.woff2')")).toBe(false);
+            expect(isDataUriOnlySrc('')).toBe(false);
+            expect(isDataUriOnlySrc("local('OnlyLocal')")).toBe(false);
+        });
+    });
+
+    describe('selectFontFacesForFamilies', () => {
+        it('keeps only rules whose family the render uses, case-insensitively', () => {
+            const selected = selectFontFacesForFamilies(
+                [asimovian, pixel, hooge],
+                ['asimovian', '04B03B', 'Monaco', 'monospace']
+            );
+            expect(selected).toEqual([asimovian, pixel]);
+        });
+
+        it('deduplicates identical rules but keeps distinct variants of a family', () => {
+            const bold: ExportFontFaceRule = {
+                family: 'Asimovian',
+                cssText: asimovian.cssText.replace('font-weight: 400', 'font-weight: 700'),
+            };
+            const selected = selectFontFacesForFamilies([asimovian, asimovian, bold], ['Asimovian']);
+            expect(selected).toEqual([asimovian, bold]);
+        });
+
+        it('returns nothing when no used family has an embeddable rule', () => {
+            expect(selectFontFacesForFamilies([asimovian], ['Impact', 'sans-serif'])).toEqual([]);
+        });
+    });
+
+    it('composes a <style> payload carrying the @font-face rules the SVG export embeds', () => {
+        const css = buildFontFaceCss(selectFontFacesForFamilies([asimovian, pixel, hooge], ['Asimovian', 'hooge05_55Regular']));
+        expect(css).toContain('@font-face');
+        expect(css).toContain("font-family: 'Asimovian'");
+        expect(css).toContain('data:font/ttf;base64,');
+        expect(css).not.toContain('04b03b');
+        // XML-safe as an SVG <style> text node: no markup-significant chars.
+        expect(css).not.toMatch(/[<&]/);
     });
 });

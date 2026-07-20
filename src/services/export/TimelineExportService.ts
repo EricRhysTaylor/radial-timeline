@@ -230,6 +230,100 @@ function shouldInlineProp(prop: string, value: string): boolean {
     return value !== 'normal' && value !== 'none';
 }
 
+/** SVG elements that actually render glyphs — the only places a font matters. */
+const TEXT_BEARING_SVG_TAGS: ReadonlySet<string> = new Set(['text', 'tspan', 'textPath']);
+
+/** A @font-face rule harvested from the live document's stylesheets. */
+export interface ExportFontFaceRule {
+    /** Unquoted font-family name as declared in the rule. */
+    family: string;
+    /** The full `@font-face { ... }` rule text, src data URIs included. */
+    cssText: string;
+}
+
+/** Strip one matching pair of surrounding quotes from a font-family name. */
+function unquoteFontFamily(name: string): string {
+    const match = name.match(/^(['"])(.*)\1$/);
+    return (match ? match[2] : name).trim();
+}
+
+/** Parse a CSS font-family list ("'04b03b', Monaco, monospace") into names. */
+export function parseFontFamilyList(value: string): string[] {
+    return value
+        .split(',')
+        .map((part) => unquoteFontFamily(part.trim()))
+        .filter((name) => name.length > 0);
+}
+
+/**
+ * True when every url() in a @font-face src is a data: URI, i.e. the rule can
+ * be copied into a standalone file without introducing external references.
+ */
+export function isDataUriOnlySrc(src: string): boolean {
+    if (!src) return false;
+    const urls = Array.from(
+        src.matchAll(/url\(\s*(["']?)([^"')]*)\1\s*\)/gi),
+        (match) => match[2].trim()
+    );
+    return urls.length > 0 && urls.every((url) => url.toLowerCase().startsWith('data:'));
+}
+
+/**
+ * Filter harvested @font-face rules down to the families a render actually
+ * uses (case-insensitive, per CSS family matching), deduplicating identical
+ * rules while keeping distinct weight/style variants of the same family.
+ */
+export function selectFontFacesForFamilies(
+    available: ExportFontFaceRule[],
+    usedFamilies: Iterable<string>
+): ExportFontFaceRule[] {
+    const used = new Set(Array.from(usedFamilies, (family) => family.toLowerCase()));
+    const seen = new Set<string>();
+    const selected: ExportFontFaceRule[] = [];
+    for (const rule of available) {
+        if (!used.has(rule.family.toLowerCase())) continue;
+        if (seen.has(rule.cssText)) continue;
+        seen.add(rule.cssText);
+        selected.push(rule);
+    }
+    return selected;
+}
+
+/** Join selected @font-face rules into the CSS for the exported <style>. */
+export function buildFontFaceCss(rules: ExportFontFaceRule[]): string {
+    return rules.map((rule) => rule.cssText).join('\n');
+}
+
+/**
+ * Harvest every self-contained @font-face rule (all srcs are data: URIs) from
+ * the document's stylesheets. The plugin bundle embeds its custom fonts as
+ * base64 data URIs in styles.css, so the runtime CSSOM is the single source of
+ * truth — rules are copied verbatim, never re-encoded. Rules whose src points
+ * at an external URL are skipped: they could not resolve outside Obsidian.
+ */
+export function collectSelfContainedFontFaces(doc: Document): ExportFontFaceRule[] {
+    const view = doc.defaultView;
+    if (!view) return [];
+    const rules: ExportFontFaceRule[] = [];
+    for (const sheet of Array.from(doc.styleSheets)) {
+        if (sheet.disabled) continue;
+        let cssRules: CSSRuleList;
+        try {
+            cssRules = sheet.cssRules;
+        } catch {
+            continue; // cross-origin stylesheet — cannot be one of ours
+        }
+        for (const rule of Array.from(cssRules)) {
+            if (!(rule instanceof view.CSSFontFaceRule)) continue;
+            const family = unquoteFontFamily(rule.style.getPropertyValue('font-family').trim());
+            const src = rule.style.getPropertyValue('src');
+            if (!family || !isDataUriOnlySrc(src)) continue;
+            rules.push({ family, cssText: rule.cssText });
+        }
+    }
+    return rules;
+}
+
 export class TimelineExportService {
     constructor(private plugin: RadialTimelinePlugin, private app: App) {}
 
@@ -249,7 +343,9 @@ export class TimelineExportService {
      * Serialize a live timeline SVG into a self-contained standalone document.
      * Reads getComputedStyle from the live (in-DOM) elements and bakes the
      * resolved presentation values onto a detached clone, so the file needs no
-     * external CSS or custom-property definitions.
+     * external CSS or custom-property definitions. Custom fonts used by text
+     * elements are embedded as @font-face data-URI rules in a <style> element,
+     * so glyphs render identically in external viewers and rasterizers.
      */
     private serializeSelfContainedSvg(liveSvg: SVGSVGElement): { svgString: string; width: number; height: number } {
         const doc = liveSvg.ownerDocument;
@@ -265,6 +361,7 @@ export class TimelineExportService {
         const liveEls: Element[] = [liveSvg, ...Array.from(liveSvg.querySelectorAll('*'))];
         const cloneEls: Element[] = [clone, ...Array.from(clone.querySelectorAll('*'))];
         const count = Math.min(liveEls.length, cloneEls.length);
+        const usedFontFamilies = new Set<string>();
         for (let i = 0; i < count; i++) {
             const computed = view.getComputedStyle(liveEls[i]);
             const declarations: string[] = [];
@@ -277,6 +374,24 @@ export class TimelineExportService {
             if (declarations.length > 0) {
                 cloneEls[i].setAttribute('style', declarations.join(';'));
             }
+            if (
+                TEXT_BEARING_SVG_TAGS.has(liveEls[i].localName) &&
+                computed.getPropertyValue('display') !== 'none'
+            ) {
+                for (const family of parseFontFamilyList(computed.getPropertyValue('font-family'))) {
+                    usedFontFamilies.add(family);
+                }
+            }
+        }
+
+        // Embed only the @font-face rules for families the timeline text
+        // actually uses; families without a self-contained rule (system and
+        // interface fonts) resolve from the viewer's fallback stack.
+        const fontFaces = selectFontFacesForFamilies(collectSelfContainedFontFaces(doc), usedFontFamilies);
+        if (fontFaces.length > 0) {
+            const styleEl = doc.createElementNS('http://www.w3.org/2000/svg', 'style');
+            styleEl.textContent = buildFontFaceCss(fontFaces);
+            clone.insertBefore(styleEl, clone.firstChild);
         }
 
         // Resolve concrete pixel dimensions from the viewBox so the standalone
@@ -315,6 +430,12 @@ export class TimelineExportService {
                 img.onerror = () => reject(new Error('Failed to load SVG for PNG rendering.'));
                 img.src = objectUrl;
             });
+            // decode() blocks until the SVG image document is fully ready to
+            // paint — including its embedded @font-face data-URI fonts, which
+            // load inside the isolated image context and are not observable
+            // via this document's FontFaceSet. Without it, drawImage can race
+            // the font load and rasterize fallback glyphs.
+            await image.decode();
 
             const targetWidth = Math.max(1, Math.round(width * scale));
             const targetHeight = Math.max(1, Math.round(height * scale));

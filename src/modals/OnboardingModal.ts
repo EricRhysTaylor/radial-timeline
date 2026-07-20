@@ -206,11 +206,16 @@ export class OnboardingModal extends Modal {
     // every AI stage is skipped. Scrivener/Word migrations rarely need more.
     this.aiAvailable = preflightOk;
     const status = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
-    this.renderStatusRow(status, 'Local model', preflightOk ? `Ready — tier ${tier}` : `Not available — ${preflightReason}`, preflightOk);
+    // Raw diagnostics text ("Structured JSON path not tested") is engineer-speak
+    // — authors get a plain state; the tier reason stays since it is actionable.
+    const notAvailable = /tier/i.test(preflightReason)
+      ? `Not available — ${preflightReason}`
+      : 'Not connected — onboarding runs without AI.';
+    this.renderStatusRow(status, 'Local model', preflightOk ? `Ready — tier ${tier}` : notAvailable, preflightOk);
     if (!preflightOk) {
       status.createDiv({
         cls: 'ert-muted',
-        text: 'Onboarding will run structure-only: scenes, titles, and any carried Scrivener metadata are used as-is. AI synopses, characters/places, and auto-split need a local model (Settings → AI).',
+        text: 'You still get scenes, titles, and any carried Scrivener metadata. AI synopses, characters/places, and auto-split need a local model (Settings → AI).',
       });
     }
 
@@ -258,6 +263,13 @@ export class OnboardingModal extends Modal {
       .setCta()
       .setDisabled(!canStart)
       .onClick(() => this.showSplitCheckpoint());
+    // Set/reset the active book project without hunting through settings.
+    new ButtonComponent(actions)
+      .setButtonText('Book Manager')
+      .onClick(() => {
+        this.close();
+        openSettingsAtBookManager(this.plugin);
+      });
     new ButtonComponent(actions).setButtonText('Close').onClick(() => this.close());
   }
 
@@ -401,32 +413,49 @@ export class OnboardingModal extends Modal {
     });
 
     const rtKeys = getSupportedFrontmatterRemapTargets();
-    const options: Record<string, string> = {
-      custom: 'Keep as custom field',
-      ignore: 'Ignore',
-      // Per-subplot COLUMN model: a non-empty cell marks the scene as belonging
-      // to the subplot NAMED AFTER THE COLUMN (cell text kept as a note).
-      'subplot-flag': 'Mark scenes with this subplot (column name)',
-    };
-    for (const key of rtKeys) options[`rt:${key}`] = `Map to ${key}`;
-
     const encode = (decision: ScrivenerFieldTarget): string =>
       decision.target === 'rt-key' ? `rt:${decision.key}` : decision.target;
+    const fields = this.model.customFields;
+
+    // Bulk lane for the per-subplot-column model: most exported custom columns
+    // ARE subplots, so one click flips every still-custom field at once.
+    const bulkRow = panel.createDiv({ cls: 'ert-onb-map__bulk' });
+    new ButtonComponent(bulkRow)
+      .setButtonText('Mark all custom fields as subplots')
+      .onClick(() => {
+        for (const field of fields) {
+          const current = mapping[field] ?? { target: 'custom' as const };
+          if (current.target === 'custom') mapping[field] = { target: 'subplot-flag' };
+        }
+        renderRows();
+      });
 
     const grid = panel.createDiv({ cls: 'ert-onb-map' });
-    for (const field of this.model.customFields) {
-      const decision = mapping[field] ?? { target: 'custom' as const };
-      grid.createDiv({ cls: 'ert-onb-map__field', text: field });
-      const cell = grid.createDiv({ cls: 'ert-onb-map__choice' });
-      new DropdownComponent(cell)
-        .addOptions(options)
-        .setValue(encode(decision))
-        .onChange((value) => {
-          mapping[field] = value.startsWith('rt:')
-            ? { target: 'rt-key', key: value.slice(3) }
-            : { target: value as 'custom' | 'ignore' | 'subplot-flag' }; // SAFE: options are exactly custom|ignore|subplot-flag|rt:*
-        });
-    }
+    const renderRows = (): void => {
+      grid.empty();
+      for (const field of fields) {
+        const bare = field.replace(/^Scrivener /i, '').trim();
+        const options: Record<string, string> = {
+          custom: 'Keep as custom field',
+          ignore: 'Ignore',
+          // The column NAME is the subplot; a non-empty cell marks membership.
+          'subplot-flag': `Subplot “${bare}” — mark its scenes`,
+        };
+        for (const key of rtKeys) options[`rt:${key}`] = `Map to ${key}`;
+        const decision = mapping[field] ?? { target: 'custom' as const };
+        grid.createDiv({ cls: 'ert-onb-map__field', text: field });
+        const cell = grid.createDiv({ cls: 'ert-onb-map__choice' });
+        new DropdownComponent(cell)
+          .addOptions(options)
+          .setValue(encode(decision))
+          .onChange((value) => {
+            mapping[field] = value.startsWith('rt:')
+              ? { target: 'rt-key', key: value.slice(3) }
+              : { target: value as 'custom' | 'ignore' | 'subplot-flag' }; // SAFE: options are exactly custom|ignore|subplot-flag|rt:*
+          });
+      }
+    };
+    renderRows();
   }
 
   /** A labeled checkbox row; returns the input for enable/disable wiring. */

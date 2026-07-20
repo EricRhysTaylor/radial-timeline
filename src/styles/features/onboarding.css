@@ -244,6 +244,12 @@
 }
 
 /* Scrivener metadata mapping table — field name | disposition dropdown */
+.ert-ui .ert-onb-map__bulk {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--ert-gap-xs);
+}
+
 .ert-ui .ert-onb-map {
   display: grid;
   grid-template-columns: max-content 1fr;

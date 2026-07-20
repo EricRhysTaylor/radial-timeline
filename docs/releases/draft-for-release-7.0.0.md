@@ -19,7 +19,7 @@ Also shipping with the launch: the **free Pride & Prejudice Demo Vault** — a c
 
 #### Plugin → Community connection
 
-The plugin and the Community are dynamically linked, managed from a new **Com** (Community) settings tab. Connect with a simple two-button model, choose what to publish — books, stages, writing activity — and pause or disconnect at any time with a true freeze.
+The plugin and the Community are dynamically linked, managed from a new **Com** (Community) settings tab. Connect with a simple two-button model, choose what to publish — books, stages, writing activity — and pause or disconnect at any time.
 
 **Privacy first by design.** You share what you want and nothing more. Sharing is opt-in at the source, the Complete Preview shows every field the website will display before anything leaves your machine, and safety controls let you withdraw your share whenever you choose.
 

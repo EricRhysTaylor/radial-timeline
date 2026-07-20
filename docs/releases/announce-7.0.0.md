@@ -3,8 +3,30 @@
 Derived from `draft-for-release-7.0.0.md`. Structure and rules live in
 `Brand/messaging-canon.md` §8.
 
-**HOLD — do not publish any social rung until the six release screenshots exist.**
-See §8.4: on Bluesky and X the image is the post, and this is a visual product.
+**Images: unblocked.** 13 in `wiki/images/`, onboarding and share-settings gaps
+now closed. Only *APR direct to Community* still has no capture — minor, and no
+rung depends on it.
+
+**The copy now names The Odyssey.** The onboarding captures show a single
+HTML file imported to 24 chapters, split into scenes, via a local model. That is
+a concrete, checkable demo of the hardest import lane, using a text everyone
+recognizes — it beats any abstract statement of the capability. Lead with it.
+
+### Hero image per rung
+
+| Rung | Image |
+|---|---|
+| X / Alert | `panel-onboard-1.webp` — wide, few words, legible at thumbnail size |
+| Bluesky / Post | `panel-onboard-2.webp` — shows the actual work product, 24 books with scene counts |
+| Facebook (if used) | `community-project.webp` — most beautiful image in the set |
+| Forum / Brief | `website.webp`, then inline the rest |
+
+`panel-onboard-2.webp` is tall and dense — good in a feed that expands images,
+poor as a small thumbnail. That's why the two onboarding shots split by channel
+rather than both going to the same one.
+
+Also unused and easy adds to the release notes: `ui-nav.webp` and
+`subplots-key.webp` both have matching prose in *More Improvements*.
 
 **Editorial choice:** every rung leads with **manuscript onboarding**, not the
 Community. Onboarding kills the "I already have a draft somewhere else"
@@ -16,28 +38,53 @@ one member.
 
 ## Alert — X (~150 chars)
 
+`@RadialTimeline` is a **brand** account — no "I". Company voice.
+
 ```
-Radial Timeline 7.0.0 is out. Bring an existing manuscript into Obsidian — Scrivener, Word, or one big file — and see its shape. radialtimeline.com
+Radial Timeline 7.0.0 is out. The Odyssey, imported into Obsidian from a single HTML file — 24 chapters, scenes proposed, all on-device. radialtimeline.com
 ```
 
-Attach: timeline SVG export or the demo vault screenshot.
+Attach: `panel-onboard-1.webp`.
+
+**Reach check: 0 followers, account opened June 2026.** This rung reaches
+nobody today. Post it for the record and for anyone who arrives later, but do
+not count X as a launch channel this cycle, and do not spend drafting time here
+that the Obsidian forum could use.
 
 ---
 
-## Post — Bluesky (~320 chars)
+## Post — Bluesky `@radialtimeline` (brand, ~320 chars)
 
 ```
 Radial Timeline 7.0.0 is out.
 
-The big one: you can bring an existing manuscript in now. Scrivener exports, a Word doc, or a whole book in a single file — split into scenes, with or without AI. Nothing leaves your machine.
+The big one: you can bring an existing manuscript in now. Here's The Odyssey, imported from a single HTML file — 24 chapters found, scenes split, all on my own machine. Scrivener exports and Word docs work the same way.
 
 Also: Word export for agents and editors, and a free Pride & Prejudice demo vault.
 
 radialtimeline.com
 ```
 
-Attach: demo vault screenshot (real manuscript, immediately legible) — better
-than a UI shot for a cold audience.
+Attach: `panel-onboard-2.webp`.
+
+## Quote-post — Bluesky `@ericrhystaylor` (personal)
+
+Where the reach actually is: 18 followers vs 0. Quote the brand post, don't
+repeat it. First person, and give the angle the company account can't.
+
+**Constraint:** this account is becoming the author platform for *Shail +
+Trisan*. Per canon §1, RT may appear here as *process*, never as *product* —
+so this is the only RT-adjacent post of the cycle, it carries no version
+number or feature list, and it is framed as a writer's story about their own
+draft. If 7.1.0 wants the same treatment, the answer is no.
+
+```
+Two years ago I started building this because I couldn't see the shape of my own draft.
+
+The part I didn't expect: it now takes someone else's finished manuscript and does the same thing. I fed it The Odyssey to see if it would break. It didn't.
+```
+
+No link — the quoted post carries it.
 
 ---
 
@@ -62,9 +109,11 @@ Radial Timeline 7.0.0 is out.
 
 The headline for anyone who's been holding off: you can bring an existing
 manuscript in now. Three import lanes — Scrivener exports, a Word .docx, or a
-whole book in one file — split into scenes with acts and subplots mapped. It
-works with or without AI; the optional local LLM runs entirely on your machine,
-and a checkpoint review flow means you approve every scene before anything is
+whole book in one file — split into scenes with acts and subplots mapped. As a
+test I onboarded The Odyssey from a single Project Gutenberg HTML file: 24
+chapters found, scenes proposed inside each one, nothing leaving my machine. It
+works with or without AI; the optional local LLM runs on-device, and a
+checkpoint review flow means you approve every scene before anything is
 written. It's marked Beta and I'd genuinely like people to break it.
 
 Also in 7.0.0: Word (DOCX) manuscript export in standard format for agents and

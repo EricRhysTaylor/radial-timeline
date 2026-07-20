@@ -1080,7 +1080,7 @@
 
 .ert-timeline-mode-nav__btn {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--size-2-1);
   height: 24px;
   padding: 0 var(--size-4-2);
@@ -1095,11 +1095,18 @@
   box-shadow: none;
 }
 
-/* Keyboard-hint numeral: mono + fainter than the name so it reads as a hint. */
+/* Keyboard-hint numeral: mono + fainter than the name so it reads as a hint.
+   Center-aligned with the label (not baseline) so its smaller size never lifts
+   the label or the content off the button's vertical center. */
 .ert-timeline-mode-nav__num {
   font-family: var(--font-monospace);
   font-size: 0.85em;
+  line-height: 1;
   color: var(--text-faint);
+}
+
+.ert-timeline-mode-nav__label {
+  line-height: 1;
 }
 
 .ert-timeline-mode-nav__btn:hover .ert-timeline-mode-nav__num {
@@ -1150,7 +1157,8 @@
 .ert-timeline-chronologue-subnav__btn {
   display: inline-flex;
   align-items: center;
-  height: 22px;
+  justify-content: center;
+  height: 24px;
   padding: 0 var(--size-2-3);
   border: thin solid var(--background-modifier-border);
   border-radius: var(--radius-s);
@@ -1161,6 +1169,13 @@
   white-space: nowrap;
   cursor: pointer;
   box-shadow: none;
+}
+
+/* Center-align the label span so it never rides high in the chip. */
+.ert-timeline-chronologue-subnav__label {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
 }
 
 .ert-timeline-chronologue-subnav__btn:hover {
@@ -1191,9 +1206,12 @@
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent) 45%, transparent);
 }
 
-/* Glyph is the narrow-width fallback; the word label is the default. */
+/* Glyph is the narrow-width fallback; the word label is the default. Carries
+   the same centering so it sits optically centered when it takes over. */
 .ert-timeline-chronologue-subnav__glyph {
   display: none;
+  align-items: center;
+  line-height: 1;
 }
 
 /* Narrow bars (small monitors, split panes): height is fixed, so let the
@@ -1211,7 +1229,7 @@
     display: none;
   }
   .ert-timeline-chronologue-subnav__glyph {
-    display: inline;
+    display: inline-flex;
   }
 }
 

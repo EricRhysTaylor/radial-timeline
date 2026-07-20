@@ -97,6 +97,10 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
     let selectedScenes: TimelineItem[] = []; // Locked scenes (stay selected)
     let elapsedTimeClickCount = 0;
 
+    // Observes the keycap buttons' active class so the header sub-nav mirrors
+    // sub-mode state no matter how it was toggled (keyboard, keycap, or chip).
+    let subNavObserver: MutationObserver | null = null;
+
     // Calculate outerRadius from SVG viewBox or use default
     const viewBox = svg.getAttribute('viewBox');
     let outerRadius = 300; // Default fallback
@@ -807,6 +811,14 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
         doc.removeEventListener('keydown', handleKeyDown);
         doc.removeEventListener('keyup', handleKeyUp);
 
+        // Tear down the header sub-nav mirror and hide the sub-nav.
+        if (subNavObserver) {
+            subNavObserver.disconnect();
+            subNavObserver = null;
+        }
+        view.chronologueSubNav = undefined;
+        view.hideChronologueSubNav();
+
         // Explicitly remove buttons and slider to ensure instant disappearance on mode switch
         if (shiftButton && shiftButton.parentNode) {
             shiftButton.parentNode.removeChild(shiftButton);
@@ -1053,6 +1065,50 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
     } else if (shouldStartInPlanetaryCalendar()) {
         schedulePlanetaryDefaultActivation();
     }
+
+    // ── Header sub-nav bridge ────────────────────────────────────────────────
+    // Expose the sub-mode toggles as the single source of truth for the header
+    // chips. Clicking a chip runs the exact same closure the keycap click uses,
+    // so keyboard, keycap, and chip stay unified.
+    const syncHeaderSubNav = () => {
+        view.syncChronologueSubNav({
+            shift: shiftModeActive,
+            alt: alienModeActive,
+            runtime: runtimeModeActive,
+        });
+    };
+
+    view.chronologueSubNav = {
+        hasAlt: shouldShowAlt,
+        runtimeNoData: !hasRuntimeData,
+        // Mirrors the keycap click handler: toggle Shift on/off.
+        toggleShift: () => {
+            if (shiftModeActive) {
+                deactivateShiftMode();
+            } else {
+                activateShiftMode(false);
+            }
+            syncHeaderSubNav();
+        },
+        toggleAlt: () => {
+            toggleAlienMode();
+            syncHeaderSubNav();
+        },
+        toggleRuntime: () => {
+            toggleRuntimeMode();
+            syncHeaderSubNav();
+        },
+    };
+    view.showChronologueSubNav({ hasAlt: shouldShowAlt, runtimeNoData: !hasRuntimeData });
+
+    // Mirror sub-mode state onto the header chips whenever a keycap's active
+    // class flips — covering physical Shift/CapsLock/Alt and keycap clicks that
+    // bypass the chip handlers above. The keycaps are the single state owner.
+    const observedButtons = [shiftButton, altButton, rtButton].filter((b): b is SVGGElement => b !== null);
+    subNavObserver = new MutationObserver(syncHeaderSubNav);
+    observedButtons.forEach(btn => subNavObserver?.observe(btn, { attributes: true, attributeFilter: ['class'] }));
+    // Reflect any state restored above (observer only fires on future changes).
+    syncHeaderSubNav();
 }
 
 /**

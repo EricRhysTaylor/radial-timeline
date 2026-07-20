@@ -141,6 +141,18 @@ export class RadialTimelineView extends ItemView {
     private bookSwitcherSelect?: HTMLSelectElement;
     private bookSwitcherManageBtn?: HTMLButtonElement;
     private modeNavButtons?: Map<string, HTMLButtonElement>;
+    private chronologueSubNavEl?: HTMLElement;
+    private chronologueSubNavBtns?: { shift: HTMLButtonElement; alt: HTMLButtonElement; runtime: HTMLButtonElement };
+    // Populated by ChronologueShiftController each render (the single source of
+    // truth for the sub-mode toggles); cleared on its teardown. The header
+    // sub-nav routes clicks through these so keyboard/click stay unified.
+    public chronologueSubNav?: {
+        hasAlt: boolean;
+        runtimeNoData: boolean;
+        toggleShift: () => void;
+        toggleAlt: () => void;
+        toggleRuntime: () => void;
+    };
     private timelineSearchInput?: HTMLInputElement;
     private timelineSearchButton?: HTMLButtonElement;
     private timelineSearchButtonMode: 'search' | 'clear' = 'search';
@@ -565,6 +577,7 @@ export class RadialTimelineView extends ItemView {
             modeNav.setAttribute('role', 'tablist');
             modeNav.setAttribute('aria-label', 'Timeline mode');
             const modeButtons = new Map<string, HTMLButtonElement>();
+            let chronologueModeBtn: HTMLButtonElement | undefined;
             getToggleableModes().forEach((mode, index) => {
                 const modeKey = `timeline.modes.${mode.id}.name`;
                 const translated = t(modeKey);
@@ -575,7 +588,18 @@ export class RadialTimelineView extends ItemView {
                 btn.dataset.mode = mode.id;
                 btn.setAttribute('role', 'tab');
                 btn.setAttribute('aria-selected', 'false');
-                btn.textContent = label;
+                // Numeral prefix = the keyboard shortcut, taken from the same
+                // getToggleableModes() index the handler uses (never hardcoded).
+                // Styled as a subtle mono hint, distinct from the mode name.
+                const num = doc.createElement('span');
+                num.className = 'ert-timeline-mode-nav__num';
+                num.setAttribute('aria-hidden', 'true');
+                num.textContent = String(index + 1);
+                const labelSpan = doc.createElement('span');
+                labelSpan.className = 'ert-timeline-mode-nav__label';
+                labelSpan.textContent = label;
+                btn.appendChild(num);
+                btn.appendChild(labelSpan);
                 btn.setAttribute('aria-label', `${label} mode (${index + 1})`);
                 applyTooltip(btn, `${label} — press ${index + 1}`, 'bottom');
                 this.registerDomEvent(btn, 'click', (evt: MouseEvent) => {
@@ -585,9 +609,11 @@ export class RadialTimelineView extends ItemView {
                 });
                 modeNav.appendChild(btn);
                 modeButtons.set(mode.id, btn);
+                if (mode.id === 'chronologue') chronologueModeBtn = btn;
             });
             headerEl.insertBefore(modeNav, wrapper);
             this.modeNavButtons = modeButtons;
+            this.buildChronologueSubNav(doc, modeNav, chronologueModeBtn);
 
             this.bookSwitcherEl = wrapper;
             this.bookSwitcherSelect = select;
@@ -650,6 +676,122 @@ export class RadialTimelineView extends ItemView {
             btn.classList.toggle('is-active', isActive);
             btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
         });
+        // Leaving Chronologue: hide its sub-nav immediately (the controller
+        // teardown also hides it, but the mode setter fires before re-render).
+        if (this._currentMode !== 'chronologue') this.hideChronologueSubNav();
+    }
+
+    /**
+     * Build the persistent Chronologue sub-nav (Shift / Alt / Runtime) once,
+     * anchored right after the Chronologue mode button. Hidden until the
+     * ChronologueShiftController wires it up via showChronologueSubNav().
+     * Clicks route through this.chronologueSubNav (the controller's toggles);
+     * physical Shift/CapsLock/Alt and the RT click keep working untouched.
+     */
+    private buildChronologueSubNav(doc: Document, modeNav: HTMLElement, anchorBtn?: HTMLButtonElement): void {
+        const subNav = doc.createElement('div');
+        subNav.className = 'ert-timeline-chronologue-subnav';
+        subNav.setAttribute('role', 'group');
+        subNav.setAttribute('aria-label', 'Chronologue sub-modes');
+        subNav.hidden = true;
+
+        const makeBtn = (submode: 'shift' | 'alt' | 'runtime', label: string, glyph: string, aria: string): HTMLButtonElement => {
+            const btn = doc.createElement('button');
+            btn.className = 'ert-timeline-chronologue-subnav__btn';
+            btn.type = 'button';
+            btn.dataset.submode = submode;
+            btn.setAttribute('aria-pressed', 'false');
+            btn.setAttribute('aria-label', aria);
+            const glyphEl = doc.createElement('span');
+            glyphEl.className = 'ert-timeline-chronologue-subnav__glyph';
+            glyphEl.setAttribute('aria-hidden', 'true');
+            glyphEl.textContent = glyph;
+            const labelEl = doc.createElement('span');
+            labelEl.className = 'ert-timeline-chronologue-subnav__label';
+            labelEl.textContent = label;
+            btn.appendChild(glyphEl);
+            btn.appendChild(labelEl);
+            applyTooltip(btn, aria, 'bottom');
+            return btn;
+        };
+
+        const shift = makeBtn('shift', 'Shift', '⇧', 'Shift — elapsed time comparison');
+        const alt = makeBtn('alt', 'Alt', '⌥', 'Alt — planetary calendar');
+        const runtime = makeBtn('runtime', 'Runtime', 'RT', 'Runtime overlay');
+
+        this.registerDomEvent(shift, 'click', (evt: MouseEvent) => {
+            evt.preventDefault();
+            evt.stopPropagation();
+            this.chronologueSubNav?.toggleShift();
+        });
+        this.registerDomEvent(alt, 'click', (evt: MouseEvent) => {
+            evt.preventDefault();
+            evt.stopPropagation();
+            this.chronologueSubNav?.toggleAlt();
+        });
+        this.registerDomEvent(runtime, 'click', (evt: MouseEvent) => {
+            evt.preventDefault();
+            evt.stopPropagation();
+            this.chronologueSubNav?.toggleRuntime();
+        });
+
+        subNav.appendChild(shift);
+        subNav.appendChild(alt);
+        subNav.appendChild(runtime);
+
+        if (anchorBtn && anchorBtn.parentElement === modeNav) {
+            modeNav.insertBefore(subNav, anchorBtn.nextSibling);
+        } else {
+            modeNav.appendChild(subNav);
+        }
+
+        this.chronologueSubNavEl = subNav;
+        this.chronologueSubNavBtns = { shift, alt, runtime };
+    }
+
+    /**
+     * Reveal the Chronologue sub-nav and reflect per-book availability. Called
+     * by the controller once its buttons exist. Alt is shown only when a valid
+     * planetary profile exists; Runtime carries a no-data hint when no scene
+     * has Runtime data (mirroring the in-view keycap — the overlay itself is
+     * not click-gated).
+     */
+    public showChronologueSubNav(opts: { hasAlt: boolean; runtimeNoData: boolean }): void {
+        const el = this.chronologueSubNavEl;
+        const btns = this.chronologueSubNavBtns;
+        if (!el || !btns) return;
+        el.hidden = false;
+        btns.alt.hidden = !opts.hasAlt;
+        btns.runtime.classList.toggle('is-no-data', opts.runtimeNoData);
+    }
+
+    /** Hide the Chronologue sub-nav and clear its active states. */
+    public hideChronologueSubNav(): void {
+        const el = this.chronologueSubNavEl;
+        if (el) el.hidden = true;
+        const btns = this.chronologueSubNavBtns;
+        if (!btns) return;
+        for (const btn of [btns.shift, btns.alt, btns.runtime]) {
+            btn.classList.remove('is-active');
+            btn.setAttribute('aria-pressed', 'false');
+        }
+    }
+
+    /**
+     * Mirror the active Chronologue sub-mode onto the sub-nav. Driven from the
+     * controller's own state, so it reflects activation via keyboard (Shift /
+     * CapsLock / Alt), the in-view keycaps, or these header chips alike.
+     */
+    public syncChronologueSubNav(state: { shift: boolean; alt: boolean; runtime: boolean }): void {
+        const btns = this.chronologueSubNavBtns;
+        if (!btns) return;
+        const apply = (btn: HTMLButtonElement, active: boolean) => {
+            btn.classList.toggle('is-active', active);
+            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        };
+        apply(btns.shift, state.shift);
+        apply(btns.alt, state.alt);
+        apply(btns.runtime, state.runtime);
     }
 
     /**

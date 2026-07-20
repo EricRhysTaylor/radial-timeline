@@ -386,7 +386,11 @@ export class TimelineExportService {
             const scaleTag = scale === 1 ? '' : `@${scale}x`;
             const baseName = this.buildFileName(active.mode, 'png').replace(/\.png$/, `${scaleTag}.png`);
             const path = `${TIMELINE_EXPORT_FOLDER}/${baseName}`;
-            await this.app.vault.adapter.writeBinary(path, png);
+            // Vault API, not adapter: re-exporting the same mode+scale must
+            // overwrite, so modify an existing file rather than failing create.
+            const existing = this.app.vault.getFileByPath(path);
+            if (existing) await this.app.vault.modifyBinary(existing, png);
+            else await this.app.vault.createBinary(path, png);
             new Notice(`Timeline PNG (${scale}x) exported to ${path}`);
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);

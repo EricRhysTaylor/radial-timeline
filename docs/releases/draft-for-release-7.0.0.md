@@ -35,7 +35,7 @@ The Pandoc PDF pipeline got a matching polish pass: restored running headers on 
 
 #### New Website with supplemental docs
 
-[radialtimeline.com](https://radialtimeline.com) relaunched alongside the Community, with supplemental documentation for the plugin — highlights of settings, timeline modes, publishing, and workflows — so help is one click away instead of buried in a repo.
+[radialtimeline.com](https://radialtimeline.com) relaunched alongside the Community, with supplemental documentation for the plugin — highlights of settings, timeline modes, publishing, and workflows — so help is one click away.
 
 #### Onboard an existing manuscript (Beta)
 

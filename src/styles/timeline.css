@@ -1171,7 +1171,9 @@
   justify-content: center;
   height: 18px;
   padding: 0 var(--size-2-2);
-  border: thin dashed color-mix(in srgb, var(--ert-subnav-color) 60%, transparent);
+  /* Opaque mix (not alpha) + explicit 1px: semi-transparent hairlines
+     anti-alias into the header and read as soft/blurry. */
+  border: 1px dashed color-mix(in srgb, var(--ert-subnav-color) 60%, var(--background-primary));
   border-radius: var(--radius-s);
   background: transparent;
   color: var(--ert-subnav-color);

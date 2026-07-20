@@ -13,6 +13,7 @@ import type {
     InquiryZone
 } from '../state';
 import type { InquirySession } from '../sessionTypes';
+import type { OmnibusRecentQuestionResult } from '../runner/omnibusRecentResults';
 import type { SynopsisQuality } from '../../sceneAnalysis/synopsisQuality';
 
 export type InquiryQuestion = {
@@ -128,6 +129,11 @@ export type InquiryOmnibusPlan = {
     scope: InquiryScope;
     createIndex: boolean;
     resume?: boolean;
+    /**
+     * Questions the author chose to skip in the plan modal (typically ones
+     * already answered recently by the same engine on the identical corpus).
+     */
+    excludedQuestionIds?: string[];
 };
 
 export type InquiryPurgePreviewItem = {
@@ -154,6 +160,18 @@ export type InquiryOmnibusModalOptions = {
      * has no usable pricing or the corpus token estimate is unavailable.
      */
     costRange?: OmnibusCostRangePlan;
+    /**
+     * Questions already answered by the SAME engine on the byte-identical
+     * corpus (full session-key match), keyed by question id. Computed for
+     * `initialScope` only — the modal must not apply these to the other scope.
+     */
+    recentResults?: Record<string, OmnibusRecentQuestionResult>;
+    /**
+     * Epoch ms when the provider cache window primed by a recent run (same
+     * engine + corpus reuse fingerprint + scope) expires. Undefined when no
+     * window is open — presence means this pass can piggyback on that cache.
+     */
+    warmCacheExpiresAt?: number;
 };
 
 export type OmnibusCostRangePlan = {
@@ -161,6 +179,16 @@ export type OmnibusCostRangePlan = {
     cachedUSD?: number;
     corpusInputTokens: number;
     estimateMethod?: string;
+    /**
+     * Estimator inputs, carried so the modal can recompute the band when the
+     * author toggles questions in or out of the pass — single computation path
+     * (estimateOmnibusCostRange) for both the initial and recomputed bands.
+     */
+    provider: Exclude<AIProviderId, 'none'>;
+    modelId: string;
+    expectedOutputTokensPerQuestion: number;
+    /** True when the pre-run band was priced against an already-warm cache. */
+    cacheAlreadyWarm?: boolean;
 };
 
 export type CorpusCcEntry = {

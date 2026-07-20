@@ -221,6 +221,7 @@ import {
     readOmnibusCacheProbe,
     type OmnibusCostAccumulator
 } from './runner/omnibusCacheHealth';
+import type { OmnibusRecentQuestionResult } from './runner/omnibusRecentResults';
 import { tokenEstimateFromMethod } from '../ai/estimates';
 import { resolveInquirySourceRoots } from './utils/sourceRoots';
 import { renderInquiryCorpusStrip } from './corpus/inquiryCorpusStripRenderer';
@@ -6746,6 +6747,15 @@ export class InquiryView extends ItemView {
             ? this.checkOmnibusResumeEligibility(priorProgress, questions, providerPlan)
             : { available: false };
 
+        // Piggyback signals for the plan modal: a still-open provider cache
+        // window from a recent run (manual or omnibus) of the same engine +
+        // corpus, and any questions that engine already answered on the
+        // byte-identical corpus (suggested skips).
+        const warmCacheExpiresAt = this.getActiveCacheWindowExpiry() ?? undefined;
+        const recentResults = providerPlan.choice
+            ? this.buildOmnibusRecentResults(questions, providerPlan.choice)
+            : undefined;
+
         const plan = await this.promptOmnibusPlan({
             initialScope: this.state.scope,
             bookLabel: this.getActiveBookLabel(),
@@ -6758,7 +6768,9 @@ export class InquiryView extends ItemView {
             priorProgress: priorProgress ?? undefined,
             resumeAvailable: resumeCheck.available,
             resumeUnavailableReason: resumeCheck.reason,
-            costRange: this.buildOmnibusCostRangePlan(questions.length, providerPlan)
+            costRange: this.buildOmnibusCostRangePlan(questions.length, providerPlan, !!warmCacheExpiresAt),
+            recentResults,
+            warmCacheExpiresAt
         });
         if (!plan) return;
 
@@ -6800,6 +6812,17 @@ export class InquiryView extends ItemView {
             this.clearOmnibusProgress();
         }
 
+        // Drop questions the author chose to skip in the plan modal (already
+        // answered by this engine on the identical corpus).
+        const excludedIds = new Set(plan.excludedQuestionIds ?? []);
+        if (excludedIds.size) {
+            nextQuestions = nextQuestions.filter(q => !excludedIds.has(q.id));
+            if (!nextQuestions.length) {
+                new Notice(t('inquiry.notice.omnibusAllSkipped'));
+                return;
+            }
+        }
+
         const nextProviderPlan = this.buildOmnibusProviderPlan();
         if (!nextProviderPlan.choice) {
             const reason = nextProviderPlan.disabledReason || 'Provider unavailable'; // SAFE: UX default when the provider plan carries no specific reason
@@ -6809,13 +6832,16 @@ export class InquiryView extends ItemView {
 
         this.omnibusAbortRequested = false;
         const allQuestions = this.getOmnibusQuestions();
+        // Skipped questions leave the progress denominator too — "question 3
+        // of 22", not "of 27", when 5 rows were set to skip in the plan modal.
+        const plannedTotal = allQuestions.filter(q => !excludedIds.has(q.id)).length;
         const providerChoice = nextProviderPlan.choice;
         try {
             if (!providerChoice.useOmnibus) {
-                await this.runOmnibusSequential(nextQuestions, providerChoice, plan.createIndex, allQuestions.length);
+                await this.runOmnibusSequential(nextQuestions, providerChoice, plan.createIndex, plannedTotal);
                 return;
             }
-            await this.runOmnibusCombined(nextQuestions, providerChoice, plan.createIndex, allQuestions.length);
+            await this.runOmnibusCombined(nextQuestions, providerChoice, plan.createIndex, plannedTotal);
         } finally {
             this.activeOmnibusModal = undefined;
         }
@@ -7481,7 +7507,8 @@ export class InquiryView extends ItemView {
      */
     private buildOmnibusCostRangePlan(
         questionCount: number,
-        providerPlan: OmnibusProviderPlan
+        providerPlan: OmnibusProviderPlan,
+        cacheAlreadyWarm = false
     ): OmnibusCostRangePlan | undefined {
         const choice = providerPlan.choice;
         if (!choice) return undefined;
@@ -7490,23 +7517,97 @@ export class InquiryView extends ItemView {
         if (typeof corpusInputTokens !== 'number' || !Number.isFinite(corpusInputTokens) || corpusInputTokens <= 0) {
             return undefined;
         }
+        // Each question returns a bounded findings JSON; the input corpus,
+        // not the output, dominates the band, so a conservative fixed
+        // per-question output estimate is sufficient for a range.
+        const expectedOutputTokensPerQuestion = Math.min(INQUIRY_MAX_OUTPUT_TOKENS, 4000);
         const range = estimateOmnibusCostRange({
             provider: choice.provider,
             modelId: choice.modelId,
             corpusInputTokens,
-            // Each question returns a bounded findings JSON; the input corpus,
-            // not the output, dominates the band, so a conservative fixed
-            // per-question output estimate is sufficient for a range.
-            expectedOutputTokensPerQuestion: Math.min(INQUIRY_MAX_OUTPUT_TOKENS, 4000),
-            questionCount
+            expectedOutputTokensPerQuestion,
+            questionCount,
+            cacheAlreadyWarm
         });
         if (!range) return undefined;
         return {
             uncachedUSD: range.uncachedUSD,
             cachedUSD: range.cachedUSD,
             corpusInputTokens,
-            estimateMethod: snapshot?.estimate?.estimationMethod
+            estimateMethod: snapshot?.estimate?.estimationMethod,
+            provider: choice.provider,
+            modelId: choice.modelId,
+            expectedOutputTokensPerQuestion,
+            cacheAlreadyWarm
         };
+    }
+
+    /**
+     * Questions this omnibus run would merely re-answer: for each question,
+     * reconstruct the exact session key the run would persist (question id,
+     * resolved prompt form/signature, scope, targets, and the fingerprint that
+     * embeds the engine's model id plus every corpus file's mtime) and look for
+     * an existing non-error session under it. A match means the same engine
+     * already answered this question on the byte-identical corpus — the plan
+     * modal offers those rows as suggested skips.
+     *
+     * The fingerprint reconstruction mirrors buildCorpusManifest exactly, with
+     * the entry serialization cached per contextRequired flag (entries only
+     * vary on that flag) to avoid redundant corpus scans across ~27 questions.
+     * Force-rerun sessions carry a `::rerun-<ts>` key suffix, so matching is by
+     * canonical-key prefix over the store rather than one exact peek.
+     */
+    private buildOmnibusRecentResults(
+        questions: InquiryQuestion[],
+        choice: OmnibusProviderChoice
+    ): Record<string, OmnibusRecentQuestionResult> | undefined {
+        const scopeKey = this.getScopeKey();
+        const targetSceneIds = this.getActiveTargetSceneIds();
+        const selectionMode = this.getSelectionMode(targetSceneIds);
+        const allSessions = this.sessionStore.getRecentSessions(this.sessionStore.getSessionCount());
+        const fingerprintSourceByContext = new Map<boolean, string>();
+        const results: Record<string, OmnibusRecentQuestionResult> = {};
+
+        for (const question of questions) {
+            const contextRequired = this.isContextRequiredForQuestion(question.id, question.zone);
+            let fingerprintSource = fingerprintSourceByContext.get(contextRequired);
+            if (fingerprintSource === undefined) {
+                const manifest = this.buildCorpusManifest(question.id, {
+                    modelId: choice.modelId,
+                    questionZone: question.zone,
+                    contextRequired
+                });
+                fingerprintSource = manifest.entries
+                    .map(e => `${e.path}:${e.sceneId ?? ''}:${e.mtime}:${e.mode}:${e.isTarget ? 1 : 0}`) // SAFE: non-scene entries have no sceneId — empty segment keeps the fingerprint stable
+                    .sort()
+                    .join('|');
+                fingerprintSourceByContext.set(contextRequired, fingerprintSource);
+            }
+            const fingerprint = this.hashString(
+                `${INQUIRY_SCHEMA_VERSION}|${question.id}|${choice.modelId}|${fingerprintSource}`
+            );
+            // Omnibus resolves prompts without per-question overrides (see
+            // runOmnibusSequential) — mirror that so a match means THIS run
+            // would reproduce the session, not a differently-prompted cousin.
+            const questionText = this.resolveQuestionPromptForRun(question, selectionMode);
+            const questionPromptForm = this.resolveQuestionPromptFormForRun(question, selectionMode);
+            const baseKey = this.sessionStore.buildBaseKey({
+                questionId: question.id,
+                questionPromptForm,
+                questionSignature: this.buildQuestionSignature(questionText),
+                scope: this.state.scope,
+                scopeKey,
+                targetSceneIds
+            });
+            const canonicalKey = this.sessionStore.buildKey(baseKey, fingerprint);
+            const match = allSessions.find(session =>
+                (session.key === canonicalKey || session.key.startsWith(`${canonicalKey}::rerun-`))
+                && !this.isErrorResult(session.result)
+            );
+            if (!match) continue;
+            results[question.id] = { completedAt: match.createdAt || match.lastAccessed };
+        }
+        return Object.keys(results).length ? results : undefined;
     }
 
     private getOmnibusRunDisabledReason(questions: InquiryQuestion[], providerPlan: OmnibusProviderPlan): string | null {

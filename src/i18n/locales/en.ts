@@ -779,6 +779,7 @@ export interface TranslationKeys {
             omnibusViewFailed: string;
             omnibusMobileOnly: string;
             omnibusResumeNothing: string;
+            omnibusAllSkipped: string;
             omnibusUnavailable: string;
             omnibusFailed: string;
             running: string;
@@ -3038,6 +3039,7 @@ export const en: TranslationKeys = {
             omnibusViewFailed: 'Unable to open Inquiry view for omnibus pass.',
             omnibusMobileOnly: 'Inquiry omnibus pass is available on desktop only.',
             omnibusResumeNothing: 'All questions already completed. Nothing to resume.',
+            omnibusAllSkipped: 'Every question was set to skip — this engine already answered them on the current corpus. Nothing to run.',
             omnibusUnavailable: 'Omnibus unavailable: {{reason}}.',
             omnibusFailed: 'Inquiry omnibus failed: {{message}}',
             running: 'Inquiry running. Please wait.',

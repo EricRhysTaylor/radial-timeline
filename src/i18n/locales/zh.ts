@@ -211,6 +211,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             omnibusViewFailed: '无法打开用于 Omnibus pass 的 Inquiry 视图。',
             omnibusMobileOnly: 'Inquiry omnibus pass 仅在桌面端可用。',
             omnibusResumeNothing: '所有问题均已完成。没有可恢复的内容。',
+            omnibusAllSkipped: '所有问题均已设为跳过 — 此引擎已在当前语料库上回答过它们。没有可运行的内容。',
             running: 'Inquiry 运行中。请稍候。',
             noEnabledQuestions: '未找到已启用的 Inquiry 问题。',
             logNotFound: '此运行没有找到 Inquiry 日志。',

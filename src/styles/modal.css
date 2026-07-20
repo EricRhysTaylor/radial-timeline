@@ -2152,6 +2152,31 @@
   color: var(--text-normal);
 }
 
+/* Omnibus: already-answered suggestion note + warm-cache piggyback note */
+.ert-ui.ert-scope--modal .ert-omnibus-suggestion-note {
+  padding: var(--ert-gap-sm) var(--ert-gap-md);
+  background: color-mix(in srgb, var(--ert-accent) 8%, var(--background-secondary));
+  border: 1px solid color-mix(in srgb, var(--ert-accent) 30%, var(--background-modifier-border));
+  border-radius: var(--ert-radius-sm, 6px);
+  font-size: 12px;
+  color: var(--text-normal);
+}
+
+.ert-ui.ert-scope--modal .ert-omnibus-warm-note {
+  color: color-mix(in srgb, var(--ert-accent) 70%, var(--text-normal));
+}
+
+/* Omnibus: per-question Skip/Rerun toggle pill */
+.ert-ui.ert-scope--modal .ert-omnibus-skip-pill {
+  cursor: pointer;
+}
+
+.ert-ui.ert-scope--modal .ert-omnibus-skip-pill.is-skip {
+  --ert-badgePill-bg: color-mix(in srgb, var(--ert-accent) 18%, var(--background-secondary));
+  --ert-badgePill-border: color-mix(in srgb, var(--ert-accent) 60%, var(--background-modifier-border));
+  --ert-badgePill-color: var(--text-normal);
+}
+
 /* Omnibus: running progress panel */
 .ert-ui.ert-scope--modal .ert-omnibus-progress-panel {
   padding: var(--ert-gap-lg) var(--ert-gap-md);

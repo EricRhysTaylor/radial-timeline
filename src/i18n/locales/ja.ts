@@ -210,6 +210,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             omnibusViewFailed: 'オムニバスパス用の Inquiry ビューを開けません。',
             omnibusMobileOnly: 'Inquiry オムニバスパスはデスクトップでのみ利用可能です。',
             omnibusResumeNothing: 'すべての質問が完了済みです。再開するものがありません。',
+            omnibusAllSkipped: 'すべての質問がスキップに設定されました — このエンジンは現在のコーパスで既に回答済みです。実行するものがありません。',
             running: 'Inquiry 実行中。お待ちください。',
             noEnabledQuestions: '有効な Inquiry の質問が見つかりません。',
             logNotFound: 'この実行の Inquiry ログが見つかりません。',

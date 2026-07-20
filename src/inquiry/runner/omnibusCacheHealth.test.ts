@@ -188,4 +188,24 @@ describe('estimateOmnibusCostRange', () => {
             expect(range.cachedUSD).toBeLessThan(range.uncachedUSD);
         }
     });
+
+    it('prices question 1 as a cache read when the cache is already warm', () => {
+        const base = {
+            provider: 'anthropic' as const,
+            modelId: 'claude-opus-4-8',
+            corpusInputTokens: 100_000,
+            expectedOutputTokensPerQuestion: 2_000,
+            questionCount: 6
+        };
+        const cold = estimateOmnibusCostRange(base);
+        const warm = estimateOmnibusCostRange({ ...base, cacheAlreadyWarm: true });
+        expect(warm).not.toBeNull();
+        // Same uncached ceiling either way — warmth only changes the healthy band.
+        expect(warm?.uncachedUSD).toBe(cold?.uncachedUSD);
+        if (cold?.cachedUSD !== undefined && warm?.cachedUSD !== undefined) {
+            // Reading question 1 instead of writing it can only lower the band
+            // (cache-write rates are >= cache-read rates on every priced model).
+            expect(warm.cachedUSD).toBeLessThan(cold.cachedUSD);
+        }
+    });
 });

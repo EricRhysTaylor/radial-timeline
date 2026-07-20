@@ -209,6 +209,7 @@ export const de: DeepPartial<TranslationKeys> = {
             omnibusViewFailed: 'Inquiry-Ansicht für Omnibus-Pass kann nicht geöffnet werden.',
             omnibusMobileOnly: 'Inquiry Omnibus-Pass ist nur am Desktop verfügbar.',
             omnibusResumeNothing: 'Alle Fragen sind bereits abgeschlossen. Nichts zum Fortsetzen.',
+            omnibusAllSkipped: 'Alle Fragen wurden übersprungen — diese Engine hat sie auf dem aktuellen Korpus bereits beantwortet. Nichts auszuführen.',
             running: 'Inquiry läuft. Bitte warten.',
             noEnabledQuestions: 'Keine aktivierten Inquiry-Fragen gefunden.',
             logNotFound: 'Kein Inquiry-Log für diese Ausführung gefunden.',

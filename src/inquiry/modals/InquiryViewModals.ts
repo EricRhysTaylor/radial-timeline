@@ -8,7 +8,8 @@ import {
 import type { AIRunAdvancedContext } from '../../ai/types';
 import type { TokenUsage } from '../../ai/usage/providerUsage';
 import { formatExactUsdCost } from '../../ai/cost/estimateCorpusCost';
-import type { OmnibusCacheHealth, OmnibusCostAccumulator } from '../runner/omnibusCacheHealth';
+import { estimateOmnibusCostRange, type OmnibusCacheHealth, type OmnibusCostAccumulator } from '../runner/omnibusCacheHealth';
+import { formatOmnibusResultAge, shouldSuggestOmnibusSkip } from '../runner/omnibusRecentResults';
 import { redactSensitiveValue } from '../../ai/credentials/redactSensitive';
 import { SIGMA_CHAR } from '../constants/inquiryUi';
 import type {
@@ -200,6 +201,19 @@ export class InquiryOmnibusModal extends Modal {
     private cacheReadCumulative = 0;
     private cacheCreatedCumulative = 0;
     private cacheMissCount = 0;
+    /** Question ids the author has set to skip (seeded from recent-result suggestions). */
+    private excludedIds = new Set<string>();
+    /**
+     * Recent-result suggestions were computed for `initialScope` only; the
+     * moment the author flips scope in this modal they no longer apply.
+     */
+    private suggestionEligible = true;
+    private questionsCountPillEl?: HTMLSpanElement;
+    private volumeLineEl?: HTMLDivElement;
+    private costLineEl?: HTMLDivElement;
+    private suggestionNoteEl?: HTMLDivElement;
+    private skipControls = new Map<string, { btn: HTMLButtonElement; plain: HTMLSpanElement }>();
+    private runButton?: ButtonComponent;
 
     constructor(
         app: App,
@@ -209,6 +223,24 @@ export class InquiryOmnibusModal extends Modal {
         super(app);
         this.selectedScope = options.initialScope;
         this.runDisabledReason = options.runDisabledReason;
+        this.seedSuggestedSkips();
+    }
+
+    /** Default every recently-answered question to Skip (author can re-include per row). */
+    private seedSuggestedSkips(): void {
+        const recent = this.options.recentResults;
+        if (!recent) return;
+        const now = Date.now();
+        this.excludedIds.clear();
+        for (const [questionId, info] of Object.entries(recent)) {
+            if (shouldSuggestOmnibusSkip(info.completedAt, now)) {
+                this.excludedIds.add(questionId);
+            }
+        }
+    }
+
+    private getEffectiveQuestionCount(): number {
+        return this.options.questions.length - this.excludedIds.size;
     }
 
     onOpen(): void {
@@ -240,6 +272,7 @@ export class InquiryOmnibusModal extends Modal {
     private renderConfigPanel(): void {
         if (!this.configPanel) return;
         this.configPanel.empty();
+        this.skipControls.clear();
 
         const howSection = this.configPanel.createDiv({ cls: 'ert-omnibus-how-section' });
         howSection.createDiv({ cls: 'ert-omnibus-how-title', text: 'How this run works' });
@@ -257,6 +290,10 @@ export class InquiryOmnibusModal extends Modal {
                 const configNote = resumeNote.createDiv({ cls: 'ert-field-note' });
                 configNote.setText(`Resume unavailable: ${this.options.resumeUnavailableReason}`);
             }
+        }
+
+        if (this.options.recentResults && Object.keys(this.options.recentResults).length > 0) {
+            this.suggestionNoteEl = this.configPanel.createDiv({ cls: 'ert-omnibus-suggestion-note' });
         }
 
         const panel = this.configPanel.createDiv({ cls: 'ert-panel ert-panel--glass ert-stack' });
@@ -293,7 +330,7 @@ export class InquiryOmnibusModal extends Modal {
         });
 
         const totalCell = summaryRow.createDiv({ cls: 'ert-apr-status-cell' });
-        totalCell.createSpan({
+        this.questionsCountPillEl = totalCell.createSpan({
             cls: 'ert-badgePill ert-badgePill--sm ert-omnibus-table-pill',
             text: `${this.options.questions.length} questions`
         });
@@ -341,6 +378,16 @@ export class InquiryOmnibusModal extends Modal {
             sagaPill.classList.toggle('is-active', scope === 'saga');
             bookPill.setAttribute('aria-pressed', scope === 'book' ? 'true' : 'false');
             sagaPill.setAttribute('aria-pressed', scope === 'saga' ? 'true' : 'false');
+            const wasEligible = this.suggestionEligible;
+            this.suggestionEligible = scope === this.options.initialScope;
+            if (this.suggestionEligible && !wasEligible) {
+                // Returning to the scope the suggestions were computed for —
+                // restore the suggested-skip defaults.
+                this.seedSuggestedSkips();
+            } else if (!this.suggestionEligible) {
+                this.excludedIds.clear();
+            }
+            this.refreshSuggestionUI();
         };
 
         bookPill.addEventListener('click', () => updateScopeSelection('book'));
@@ -377,7 +424,28 @@ export class InquiryOmnibusModal extends Modal {
                 scopePills.push(scopePill);
 
                 const statusCell = dataRow.createDiv({ cls: 'ert-apr-status-cell' });
-                statusCell.createSpan({ cls: 'ert-badgePill ert-badgePill--sm ert-omnibus-table-pill', text: 'Brief + Log' });
+                const plainStatus = statusCell.createSpan({ cls: 'ert-badgePill ert-badgePill--sm ert-omnibus-table-pill', text: 'Brief + Log' });
+                const recent = this.options.recentResults?.[question.id];
+                if (recent) {
+                    const skipBtn = statusCell.createEl('button', {
+                        cls: 'ert-badgePill ert-badgePill--sm ert-omnibus-pill ert-omnibus-table-pill ert-omnibus-skip-pill',
+                        type: 'button'
+                    });
+                    setTooltip(
+                        skipBtn,
+                        `This engine already answered this question on the current corpus ${formatOmnibusResultAge(recent.completedAt, Date.now())}. Click to toggle between skipping it and rerunning it.`
+                    );
+                    skipBtn.addEventListener('click', () => {
+                        if (!this.suggestionEligible) return;
+                        if (this.excludedIds.has(question.id)) {
+                            this.excludedIds.delete(question.id);
+                        } else {
+                            this.excludedIds.add(question.id);
+                        }
+                        this.refreshSuggestionUI();
+                    });
+                    this.skipControls.set(question.id, { btn: skipBtn, plain: plainStatus });
+                }
             });
         });
 
@@ -386,31 +454,123 @@ export class InquiryOmnibusModal extends Modal {
             reason.setText(`Run disabled: ${this.runDisabledReason}`);
         }
 
-        const totalQuestions = this.options.questions.length;
-        const briefLabel = totalQuestions === 1 ? 'Brief' : 'Briefs';
-        const logLabel = totalQuestions === 1 ? 'Log' : 'Logs';
-        const logsDisabledNote = this.options.logsEnabled ? '' : ' Logs are disabled in settings.';
-        const volumeLine = this.configPanel.createDiv({ cls: 'ert-field-note' });
-        volumeLine.setText(`This will generate ${totalQuestions} Inquiry ${briefLabel} and ${totalQuestions} ${logLabel}.${logsDisabledNote}`);
+        if (this.options.warmCacheExpiresAt && this.options.warmCacheExpiresAt > Date.now()) {
+            const remainingMin = Math.max(1, Math.round((this.options.warmCacheExpiresAt - Date.now()) / 60_000));
+            const warmNote = this.configPanel.createDiv({ cls: 'ert-field-note ert-omnibus-warm-note' });
+            warmNote.setText(
+                `Provider cache is still warm from a recent run (~${remainingMin}m left) — this pass piggybacks on it: `
+                + `question 1 reads the cached corpus instead of re-priming it at write price.`
+            );
+        }
 
-        const costRange = this.options.costRange;
-        const costLine = this.configPanel.createDiv({ cls: 'ert-field-note ert-omnibus-cost-estimate' });
-        if (costRange) {
-            const corpusTokens = Math.max(0, Math.round(costRange.corpusInputTokens)).toLocaleString();
-            if (typeof costRange.cachedUSD === 'number') {
-                costLine.setText(
-                    `Estimated cost: ~${formatExactUsdCost(costRange.cachedUSD)} with cache reuse (healthy) vs ~${formatExactUsdCost(costRange.uncachedUSD)} uncached, `
-                    + `over ${totalQuestions} question${totalQuestions === 1 ? '' : 's'} against ~${corpusTokens} corpus input tokens. `
-                    + `The run aborts automatically if the cache is not reused after question 1.`
+        this.volumeLineEl = this.configPanel.createDiv({ cls: 'ert-field-note' });
+        this.costLineEl = this.configPanel.createDiv({ cls: 'ert-field-note ert-omnibus-cost-estimate' });
+        this.refreshSuggestionUI();
+    }
+
+    /**
+     * Re-derive every piece of the config panel that depends on the skip
+     * selection: per-row pills, the suggestion note, the question count, the
+     * volume line, the cost band, and the Run button's enabled state.
+     */
+    private refreshSuggestionUI(): void {
+        const totalQuestions = this.options.questions.length;
+        const effectiveQuestions = this.getEffectiveQuestionCount();
+        const now = Date.now();
+
+        this.skipControls.forEach(({ btn, plain }, questionId) => {
+            const recent = this.options.recentResults?.[questionId];
+            if (!recent || !this.suggestionEligible) {
+                btn.classList.add('is-hidden');
+                plain.classList.remove('is-hidden');
+                return;
+            }
+            btn.classList.remove('is-hidden');
+            plain.classList.add('is-hidden');
+            const excluded = this.excludedIds.has(questionId);
+            const age = formatOmnibusResultAge(recent.completedAt, now);
+            btn.setText(excluded ? `Skip · answered ${age}` : `Rerun · answered ${age}`);
+            btn.classList.toggle('is-skip', excluded);
+            btn.setAttribute('aria-pressed', excluded ? 'true' : 'false');
+        });
+
+        if (this.suggestionNoteEl) {
+            if (this.suggestionEligible) {
+                this.suggestionNoteEl.classList.remove('is-hidden');
+                const answeredCount = Object.keys(this.options.recentResults ?? {}).length;
+                const skipCount = this.excludedIds.size;
+                const lead = skipCount > 0
+                    ? `${skipCount} of ${answeredCount} already-answered question${answeredCount === 1 ? '' : 's'} ${skipCount === 1 ? 'is' : 'are'} set to skip`
+                    : `${answeredCount} question${answeredCount === 1 ? ' was' : 's were'} already answered by this engine, but every row is set to rerun`;
+                this.suggestionNoteEl.setText(
+                    `${lead} — this engine already produced a brief for ${answeredCount === 1 ? 'it' : 'them'} on the current corpus. `
+                    + `Click a status pill to toggle a row between Skip and Rerun.`
                 );
             } else {
-                costLine.setText(
-                    `Estimated cost: ~${formatExactUsdCost(costRange.uncachedUSD)} (this model has no cache-read price to model reuse), `
-                    + `over ${totalQuestions} question${totalQuestions === 1 ? '' : 's'} against ~${corpusTokens} corpus input tokens.`
-                );
+                this.suggestionNoteEl.classList.add('is-hidden');
             }
+        }
+
+        if (this.questionsCountPillEl) {
+            this.questionsCountPillEl.setText(
+                effectiveQuestions === totalQuestions
+                    ? `${totalQuestions} questions`
+                    : `${effectiveQuestions} of ${totalQuestions} questions`
+            );
+        }
+
+        if (this.volumeLineEl) {
+            const briefLabel = effectiveQuestions === 1 ? 'Brief' : 'Briefs';
+            const logLabel = effectiveQuestions === 1 ? 'Log' : 'Logs';
+            const logsDisabledNote = this.options.logsEnabled ? '' : ' Logs are disabled in settings.';
+            const skippedNote = effectiveQuestions === totalQuestions
+                ? ''
+                : ` (${totalQuestions - effectiveQuestions} skipped as already answered.)`;
+            this.volumeLineEl.setText(
+                effectiveQuestions === 0
+                    ? 'Every question is set to skip — nothing to run.'
+                    : `This will generate ${effectiveQuestions} Inquiry ${briefLabel} and ${effectiveQuestions} ${logLabel}.${logsDisabledNote}${skippedNote}`
+            );
+        }
+
+        this.renderCostLine(effectiveQuestions);
+        this.runButton?.setDisabled(!!this.runDisabledReason || effectiveQuestions === 0);
+    }
+
+    private renderCostLine(effectiveQuestions: number): void {
+        if (!this.costLineEl) return;
+        const costRange = this.options.costRange;
+        if (!costRange) {
+            this.costLineEl.setText('Estimated cost: unavailable (no corpus token estimate or model pricing yet).');
+            return;
+        }
+        if (effectiveQuestions === 0) {
+            this.costLineEl.setText('Estimated cost: $0 — every question is set to skip.');
+            return;
+        }
+        // Recompute the band for the effective question count through the same
+        // estimator that produced the pre-run band (single computation path).
+        const range = estimateOmnibusCostRange({
+            provider: costRange.provider,
+            modelId: costRange.modelId,
+            corpusInputTokens: costRange.corpusInputTokens,
+            expectedOutputTokensPerQuestion: costRange.expectedOutputTokensPerQuestion,
+            questionCount: effectiveQuestions,
+            cacheAlreadyWarm: costRange.cacheAlreadyWarm
+        }) ?? { uncachedUSD: costRange.uncachedUSD, cachedUSD: costRange.cachedUSD };
+        const corpusTokens = Math.max(0, Math.round(costRange.corpusInputTokens)).toLocaleString();
+        const reuseLabel = costRange.cacheAlreadyWarm ? 'warm — piggybacking on your recent run' : 'healthy';
+        if (typeof range.cachedUSD === 'number') {
+            this.costLineEl.setText(
+                `Estimated cost: ~${formatExactUsdCost(range.cachedUSD)} with cache reuse (${reuseLabel}) vs ~${formatExactUsdCost(range.uncachedUSD)} uncached, `
+                + `over ${effectiveQuestions} question${effectiveQuestions === 1 ? '' : 's'} against ~${corpusTokens} corpus input tokens. `
+                + `The run aborts automatically if the cache is not reused after question 1.`
+            );
         } else {
-            costLine.setText('Estimated cost: unavailable (no corpus token estimate or model pricing yet).');
+            this.costLineEl.setText(
+                `Estimated cost: ~${formatExactUsdCost(range.uncachedUSD)} (this model has no cache-read price to model reuse), `
+                + `over ${effectiveQuestions} question${effectiveQuestions === 1 ? '' : 's'} against ~${corpusTokens} corpus input tokens.`
+            );
         }
     }
 
@@ -428,7 +588,12 @@ export class InquiryOmnibusModal extends Modal {
             }
             resumeBtn.onClick(() => {
                 if (this.runDisabledReason) return;
-                this.resolveOnce({ scope: this.selectedScope, createIndex: this.createIndex, resume: true });
+                this.resolveOnce({
+                    scope: this.selectedScope,
+                    createIndex: this.createIndex,
+                    resume: true,
+                    excludedQuestionIds: [...this.excludedIds]
+                });
                 this.switchToRunning();
             });
             setTooltip(resumeBtn.buttonEl, 'Resends corpus and runs remaining questions.');
@@ -437,12 +602,17 @@ export class InquiryOmnibusModal extends Modal {
         const runButton = new ButtonComponent(this.actionsEl)
             .setButtonText(prior && this.options.resumeAvailable ? 'Restart Omnibus' : 'Run Omnibus')
             .setCta();
-        if (this.runDisabledReason) {
+        this.runButton = runButton;
+        if (this.runDisabledReason || this.getEffectiveQuestionCount() === 0) {
             runButton.setDisabled(true);
         }
         runButton.onClick(() => {
-            if (this.runDisabledReason) return;
-            this.resolveOnce({ scope: this.selectedScope, createIndex: this.createIndex });
+            if (this.runDisabledReason || this.getEffectiveQuestionCount() === 0) return;
+            this.resolveOnce({
+                scope: this.selectedScope,
+                createIndex: this.createIndex,
+                excludedQuestionIds: [...this.excludedIds]
+            });
             this.switchToRunning();
         });
 

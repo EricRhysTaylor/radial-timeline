@@ -209,6 +209,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             omnibusViewFailed: 'Omnibus pass용 Inquiry 보기를 열 수 없습니다.',
             omnibusMobileOnly: 'Inquiry omnibus pass는 데스크톱에서만 사용할 수 있습니다.',
             omnibusResumeNothing: '모든 질문이 이미 완료되었습니다. 재개할 항목이 없습니다.',
+            omnibusAllSkipped: '모든 질문이 건너뛰기로 설정되었습니다 — 이 엔진은 현재 코퍼스에서 이미 답변했습니다. 실행할 항목이 없습니다.',
             running: 'Inquiry 실행 중. 잠시 기다려 주세요.',
             noEnabledQuestions: '활성화된 Inquiry 질문이 없습니다.',
             logNotFound: '이 실행에 대한 Inquiry 로그를 찾을 수 없습니다.',

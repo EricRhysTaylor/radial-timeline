@@ -162,7 +162,11 @@ export function accumulateOmnibusPassCost(
 export interface OmnibusCostRange {
     /** Every question re-sends the corpus at full input price (the miss case). */
     uncachedUSD: number;
-    /** Question 1 writes the cache, questions 2..N read it (the healthy case). */
+    /**
+     * Question 1 writes the cache, questions 2..N read it (the healthy case) —
+     * or, with `cacheAlreadyWarm`, all N questions read a cache primed by a
+     * prior run inside its still-open TTL window.
+     */
     cachedUSD?: number;
 }
 
@@ -171,6 +175,8 @@ export interface OmnibusCostRange {
  * costly (uncached) total for running `questionCount` questions against a
  * corpus of `corpusInputTokens`. Returns null when the model has no usable
  * input pricing; `cachedUSD` is omitted when the model has no cache-read rate.
+ * `cacheAlreadyWarm` prices question 1 as a cache READ instead of a write —
+ * the piggyback case where a recent run's provider cache window is still open.
  */
 export function estimateOmnibusCostRange(params: {
     provider: AIProviderId;
@@ -178,6 +184,7 @@ export function estimateOmnibusCostRange(params: {
     corpusInputTokens: number;
     expectedOutputTokensPerQuestion: number;
     questionCount: number;
+    cacheAlreadyWarm?: boolean;
 }): OmnibusCostRange | null {
     const inputTokens = Math.max(0, Math.floor(params.corpusInputTokens));
     const outputTokens = Math.max(0, Math.floor(params.expectedOutputTokensPerQuestion));
@@ -198,9 +205,13 @@ export function estimateOmnibusCostRange(params: {
     const cacheWriteRate = pricing.cacheWrite1hPer1M ?? pricing.cacheWrite5mPer1M;
     let cachedUSD: number | undefined;
     if (typeof cacheReadRate === 'number' && Number.isFinite(cacheReadRate)) {
-        const writeInput = perMillion(inputTokens, cacheWriteRate ?? inputRate);
-        const readInput = perMillion(inputTokens, cacheReadRate) * (n - 1);
-        cachedUSD = writeInput + readInput + outputCost;
+        if (params.cacheAlreadyWarm) {
+            cachedUSD = perMillion(inputTokens, cacheReadRate) * n + outputCost;
+        } else {
+            const writeInput = perMillion(inputTokens, cacheWriteRate ?? inputRate);
+            const readInput = perMillion(inputTokens, cacheReadRate) * (n - 1);
+            cachedUSD = writeInput + readInput + outputCost;
+        }
     }
     return { uncachedUSD, cachedUSD };
 }

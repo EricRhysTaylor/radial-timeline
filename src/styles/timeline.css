@@ -312,9 +312,15 @@
 }
 
 
-/* Shift mode button - styled like mode pages */
+/* Shift mode button - styled like mode pages.
+   The in-view SVG keycaps (Shift / Alt / Runtime) are fully covered by the
+   header sub-nav, so they are hidden here — reversible, same approach as the
+   mode grid. Their keyboard handlers and active-class state (which the header
+   mirrors) keep running while hidden. Drop the display:none to restore the
+   canvas keycaps; the rules below are what they render with. */
 .rt-shift-mode-button {
   cursor: pointer;
+  display: none;
 }
 
 .rt-shift-mode-button .rt-shift-button-bg {
@@ -1124,8 +1130,75 @@
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent) 45%, transparent);
 }
 
+/* Chronologue sub-nav — compact segmented chip group attached to the
+   Chronologue mode button, shown only while Chronologue is active. Fits the
+   fixed header height; it is an additional trigger surface for the same
+   sub-modes the keyboard and in-view keycaps drive. */
+.ert-timeline-chronologue-subnav {
+  display: inline-flex;
+  align-items: center;
+  margin-inline-start: var(--size-2-3);
+  padding-inline-start: var(--size-2-3);
+  border-inline-start: thin solid var(--background-modifier-border);
+  gap: var(--size-2-1);
+}
+
+.ert-timeline-chronologue-subnav[hidden] {
+  display: none;
+}
+
+.ert-timeline-chronologue-subnav__btn {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 var(--size-2-3);
+  border: thin solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--interactive-normal);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.ert-timeline-chronologue-subnav__btn:hover {
+  color: var(--text-normal);
+  border-color: var(--background-modifier-border-hover);
+}
+
+.ert-timeline-chronologue-subnav__btn.is-active {
+  color: var(--text-on-accent);
+  background: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+}
+
+/* No-data Runtime hint (mirrors the in-view keycap's no-data state); stays
+   clickable, just muted. Uses the canonical Pro token for the Pro sub-mode. */
+.ert-timeline-chronologue-subnav__btn.is-no-data {
+  color: var(--text-faint);
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--rt-pro-color-base) 45%, var(--background-modifier-border));
+}
+
+.ert-timeline-chronologue-subnav__btn[hidden] {
+  display: none;
+}
+
+.ert-timeline-chronologue-subnav__btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent) 45%, transparent);
+}
+
+/* Glyph is the narrow-width fallback; the word label is the default. */
+.ert-timeline-chronologue-subnav__glyph {
+  display: none;
+}
+
 /* Narrow bars (small monitors, split panes): height is fixed, so let the
-   search input surrender width first, then collapse mode-nav padding. */
+   search input surrender width first, then collapse mode-nav padding and the
+   Chronologue sub-nav labels down to glyphs (⇧ / ⌥ / RT). */
 @media (max-width: 900px) {
   .ert-timeline-search .ert-timeline-search__input[type="search"] {
     width: clamp(72px, 10vw, 140px);
@@ -1133,6 +1206,12 @@
   }
   .ert-timeline-mode-nav__btn {
     padding: 0 var(--size-4-1);
+  }
+  .ert-timeline-chronologue-subnav__label {
+    display: none;
+  }
+  .ert-timeline-chronologue-subnav__glyph {
+    display: inline;
   }
 }
 

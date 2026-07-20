@@ -33,9 +33,9 @@ Manuscript export now includes **Word (DOCX)** — open the Exports Panel from t
 
 The Pandoc PDF pipeline got a matching polish pass: restored running headers on the Standard and Contemporary Literary layouts, widow/orphan control in all bundled fiction layouts, an opt-in **print binding gutter** for duplex paperbacks (KDP/IngramSpark), and Advanced Pandoc passthrough (Pro) for authors migrating an existing LaTeX setup.
 
-#### New Website with support docs
+#### New Website with supplemental docs
 
-[radialtimeline.com](https://radialtimeline.com) relaunched alongside the Community, with full support documentation for the plugin — settings, timeline modes, publishing, and workflows — so help is one click away instead of buried in a repo.
+[radialtimeline.com](https://radialtimeline.com) relaunched alongside the Community, with supplemental documentation for the plugin — highlights of settings, timeline modes, publishing, and workflows — so help is one click away instead of buried in a repo.
 
 #### Onboard an existing manuscript (Beta)
 

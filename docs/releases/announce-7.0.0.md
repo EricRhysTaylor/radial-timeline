@@ -121,7 +121,7 @@ editors, Timeline Scaffold and Audit for building and repairing scene dates,
 and a free Pride & Prejudice demo vault so you can explore every mode with real
 material from the first minute.
 
-There's a website with proper support docs now, and a Community you can connect
+There's a website with supplemental docs now, and a Community you can connect
 the plugin to — opt-in at the source, with a preview of every field before
 anything leaves your vault.
 

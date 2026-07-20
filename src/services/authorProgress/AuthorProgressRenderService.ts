@@ -12,6 +12,12 @@ import { buildDefaultEmbedPath, normalizeAprExportFormat, type AprExportFormat }
 import { resolveBookTitle, resolveProjectPath } from '../../renderer/apr/aprHelpers';
 import type { TimelineItem } from '../../types/timeline';
 import { writeManagedOutput } from '../../utils/logVaultOps';
+import {
+    buildFontFaceCss,
+    collectSelfContainedFontFaces,
+    parseFontFamilyList,
+    selectFontFacesForFamilies,
+} from '../export/exportFonts';
 
 export interface AuthorProgressReportBuildResult {
     settings: AuthorProgressDefaults;
@@ -75,8 +81,9 @@ export class AuthorProgressRenderService {
 
     public async saveAprOutput(path: string, format: AprExportFormat, svgString: string, width: number, height: number): Promise<void> {
         await this.ensureFolder(path);
+        const embedded = this.embedUsedFontFaces(svgString);
         if (format === 'svg') {
-            const result = await writeManagedOutput(this.app, path, svgString, {
+            const result = await writeManagedOutput(this.app, path, embedded, {
                 operation: 'author-progress-svg',
                 managedMarker: '<!-- Radial Timeline Managed Output: author-progress-svg -->',
                 unmanagedOverwritePrompt: (file) => `Overwrite existing author progress SVG "${file.path}"? RT will archive the current SVG to a log snapshot first. Manual edits may be replaced.`
@@ -87,8 +94,49 @@ export class AuthorProgressRenderService {
             return;
         }
 
-        const png = await this.svgToPngBuffer(svgString, width, height);
+        const png = await this.svgToPngBuffer(embedded, width, height);
         await this.app.vault.adapter.writeBinary(path, png);
+    }
+
+    /**
+     * Embed the @font-face data-URI rules for every custom family the APR SVG
+     * references, so glyphs render identically in external viewers and during
+     * PNG rasterization. The APR renderer emits font-family both as
+     * presentation attributes and inside style attributes; families without a
+     * self-contained rule in the live CSSOM (system and interface fonts)
+     * resolve from the viewer's fallback stack.
+     */
+    private embedUsedFontFaces(svgString: string): string {
+        if (typeof DOMParser === 'undefined' || typeof XMLSerializer === 'undefined') {
+            return svgString;
+        }
+        const parsed = new DOMParser().parseFromString(svgString, 'image/svg+xml');
+        const root = parsed.documentElement;
+        if (!root || root.localName !== 'svg') return svgString;
+
+        const usedFontFamilies = new Set<string>();
+        for (const el of [root, ...Array.from(root.querySelectorAll('*'))]) {
+            const attrValue = el.getAttribute('font-family');
+            if (attrValue) {
+                for (const family of parseFontFamilyList(attrValue)) {
+                    usedFontFamilies.add(family);
+                }
+            }
+            const styleMatch = (el.getAttribute('style') ?? '').match(/font-family\s*:\s*([^;]+)/i);
+            if (styleMatch) {
+                for (const family of parseFontFamilyList(styleMatch[1])) {
+                    usedFontFamilies.add(family);
+                }
+            }
+        }
+
+        const fontFaces = selectFontFacesForFamilies(collectSelfContainedFontFaces(activeDocument), usedFontFamilies);
+        if (fontFaces.length === 0) return svgString;
+
+        const styleEl = parsed.createElementNS('http://www.w3.org/2000/svg', 'style');
+        styleEl.textContent = buildFontFaceCss(fontFaces);
+        root.insertBefore(styleEl, root.firstChild);
+        return new XMLSerializer().serializeToString(root);
     }
 
     public buildSnapshotPath(exportPath: string, fallbackBase = 'apr'): string {
@@ -456,6 +504,12 @@ export class AuthorProgressRenderService {
                 img.onerror = () => reject(new Error('Failed to load SVG for PNG rendering.'));
                 img.src = objectUrl;
             });
+            // decode() blocks until the SVG image document is fully ready to
+            // paint — including its embedded @font-face data-URI fonts, which
+            // load inside the isolated image context and are not observable
+            // via this document's FontFaceSet. Without it, drawImage can race
+            // the font load and rasterize fallback glyphs.
+            await image.decode();
 
             const targetWidth = Math.max(1, Math.round(width));
             const targetHeight = Math.max(1, Math.round(height));

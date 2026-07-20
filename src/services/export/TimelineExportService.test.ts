@@ -1,15 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import {
-    buildFontFaceCss,
     buildTimelineDataExport,
-    isDataUriOnlySrc,
-    parseFontFamilyList,
-    selectFontFacesForFamilies,
     snapshotRenderConfig,
     TIMELINE_DATA_EXPORT_SCHEMA_VERSION,
     type BuildTimelineDataExportParams,
-    type ExportFontFaceRule,
 } from './TimelineExportService';
+import {
+    buildFontFaceCss,
+    isDataUriOnlySrc,
+    parseFontFamilyList,
+    selectFontFacesForFamilies,
+    type ExportFontFaceRule,
+} from './exportFonts';
 import type { BookMeta, RadialTimelineSettings, TimelineItem } from '../../types';
 
 /**

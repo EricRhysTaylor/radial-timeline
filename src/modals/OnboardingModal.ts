@@ -62,17 +62,29 @@ const FLOW_LABELS: Record<ImportFlow, string> = {
   folder: 'Folder of notes',
 };
 
-/** Open plugin settings scrolled to the Book Manager (same landing as the Welcome screen link). */
-function openSettingsAtBookManager(plugin: RadialTimelinePlugin): void {
-  plugin.settingsTab?.setActiveTab('core');
+/**
+ * Open plugin settings on a specific tab. The tab is forced AFTER the pane
+ * opens — setting it before let the pane restore its last-active tab instead
+ * (observed landing on AI when the author expected the Book Manager).
+ */
+function openPluginSettings(plugin: RadialTimelinePlugin, tab: 'core' | 'ai', scrollSelector?: string): void {
   const setting = (plugin.app as unknown as { setting?: { open: () => void; openTabById: (id: string) => void } }).setting; // SAFE: undocumented settings surface (established WelcomeScreen pattern)
   if (!setting) return;
   setting.open();
   setting.openTabById('radial-timeline');
-  // Settings render async after the tab opens; scroll once the heading exists.
   window.setTimeout(() => {
-    activeDocument.querySelector('.ert-books-heading')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 200);
+    plugin.settingsTab?.setActiveTab(tab);
+    if (scrollSelector) {
+      window.setTimeout(() => {
+        activeDocument.querySelector(scrollSelector)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 150);
+    }
+  }, 80);
+}
+
+/** Open plugin settings scrolled to the Book Manager (same landing as the Welcome screen link). */
+function openSettingsAtBookManager(plugin: RadialTimelinePlugin): void {
+  openPluginSettings(plugin, 'core', '.ert-books-heading');
 }
 
 /** Local model ids can be full filesystem paths — show just the leaf name in the header pill. */
@@ -86,6 +98,36 @@ function truncateText(text: string, max: number): string {
   const collapsed = text.replace(/\s+/g, ' ').trim();
   return collapsed.length > max ? `${collapsed.slice(0, max).trimEnd()}…` : collapsed;
 }
+
+/**
+ * In-flight onboarding state that survives the modal being dismissed (a stray
+ * click outside an Obsidian modal closes it). Module-scoped: reopening the
+ * command on the same book folder resumes — including partially extracted
+ * scenes, which are reused instead of re-run. Cleared on Apply, on an explicit
+ * Cancel, or when a different book folder is onboarded. In-memory only: an
+ * app relaunch starts fresh.
+ */
+interface OnboardingSession {
+  folder: string;
+  stage: 'confirm' | 'review';
+  aiAvailable: boolean;
+  modelLabel: string;
+  flowOverride: ImportFlow | null;
+  publishStage: Stage;
+  createCharacters: boolean;
+  createPlaces: boolean;
+  generateSummaries: boolean;
+  metadataMapping: Record<string, ScrivenerFieldTarget> | null;
+  model: ManuscriptModel | null;
+  extractModel: ManuscriptModel | null;
+  splitPlans: Map<string, ScenePlan>;
+  splitOutcomes: Map<string, 'split' | 'failed' | 'fallback'> | null;
+  survey: SurveyResult | null;
+  proposals: SceneProposal[];
+  entityProposals: EntityProposal[];
+}
+
+let activeSession: OnboardingSession | null = null;
 
 export class OnboardingModal extends Modal {
   private readonly plugin: RadialTimelinePlugin;
@@ -117,6 +159,8 @@ export class OnboardingModal extends Modal {
    * acts) — with every AI stage skipped and its controls hidden.
    */
   private aiAvailable = false;
+  /** The split+mapping-applied model extraction actually ran against (for resume). */
+  private extractModel: ManuscriptModel | null = null;
   private abortController: AbortController | null = null;
 
   constructor(app: App, plugin: RadialTimelinePlugin) {
@@ -125,11 +169,66 @@ export class OnboardingModal extends Modal {
     this.service = new OnboardingService(plugin);
   }
 
+  /** Snapshot the run into the module-scoped session so dismissal loses nothing. */
+  private persistSession(stage: 'confirm' | 'review'): void {
+    activeSession = {
+      folder: this.book?.sourceFolder ?? '',
+      stage,
+      aiAvailable: this.aiAvailable,
+      modelLabel: this.modelLabel,
+      flowOverride: this.flowOverride,
+      publishStage: this.publishStage,
+      createCharacters: this.createCharacters,
+      createPlaces: this.createPlaces,
+      generateSummaries: this.generateSummaries,
+      metadataMapping: this.metadataMapping,
+      model: this.model,
+      extractModel: this.extractModel,
+      splitPlans: this.splitPlans,
+      splitOutcomes: this.splitOutcomes,
+      survey: this.survey,
+      proposals: this.proposals,
+      entityProposals: this.entityProposals,
+    };
+  }
+
+  private restoreSession(session: OnboardingSession): void {
+    this.aiAvailable = session.aiAvailable;
+    this.modelLabel = session.modelLabel;
+    this.flowOverride = session.flowOverride;
+    this.publishStage = session.publishStage;
+    this.createCharacters = session.createCharacters;
+    this.createPlaces = session.createPlaces;
+    this.generateSummaries = session.generateSummaries;
+    this.metadataMapping = session.metadataMapping;
+    this.model = session.model;
+    this.extractModel = session.extractModel;
+    this.splitPlans = session.splitPlans;
+    this.splitOutcomes = session.splitOutcomes;
+    this.survey = session.survey;
+    this.proposals = session.proposals;
+    this.entityProposals = session.entityProposals;
+  }
+
   onOpen(): void {
     const { modalEl, contentEl } = this;
     modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell');
     modalEl.setCssStyles({ width: '832px', maxWidth: '94vw' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
     contentEl.addClass('ert-modal-container', 'ert-stack');
+
+    // Resume: a dismissed modal (stray outside click, Escape) loses nothing —
+    // reopening on the same book folder picks up exactly where it left off.
+    const book = getActiveBook(this.plugin.settings);
+    if (activeSession && book?.sourceFolder === activeSession.folder && activeSession.model) {
+      this.book = book;
+      this.restoreSession(activeSession);
+      if (activeSession.stage === 'review' && this.proposals.length > 0) {
+        this.showReviewCheckpoint();
+      } else {
+        this.showSplitCheckpoint();
+      }
+      return;
+    }
     void this.showPreflight();
   }
 
@@ -263,6 +362,16 @@ export class OnboardingModal extends Modal {
       .setCta()
       .setDisabled(!canStart)
       .onClick(() => this.showSplitCheckpoint());
+    // No model? Lead with the fix — a red shortcut straight to the AI settings.
+    if (!preflightOk) {
+      new ButtonComponent(actions)
+        .setButtonText('Set up Local AI')
+        .setWarning()
+        .onClick(() => {
+          this.close();
+          openPluginSettings(this.plugin, 'ai');
+        });
+    }
     // Set/reset the active book project without hunting through settings.
     new ButtonComponent(actions)
       .setButtonText('Book Manager')
@@ -291,6 +400,7 @@ export class OnboardingModal extends Modal {
     if (this.splitPlans.size === 0) {
       for (const scene of scenes) this.splitPlans.set(scene.sourceRef, planSceneSplit(scene));
     }
+    this.persistSession('confirm');
 
     const totalLine = contentEl.createDiv({ cls: 'ert-muted' });
     const updateTotal = (): void => {
@@ -385,11 +495,15 @@ export class OnboardingModal extends Modal {
         .setCta()
         .onClick(() => void this.runSplitProposal());
     }
+    const doneCount = this.proposals.filter((proposal) => proposal.frontmatter).length;
     const continueBtn = new ButtonComponent(actions)
-      .setButtonText('Continue')
+      .setButtonText(doneCount > 0 ? `Resume extraction (${doneCount} done)` : 'Continue')
       .onClick(() => void this.runExtraction());
     if (!offerAutoSplit) continueBtn.setCta();
-    new ButtonComponent(actions).setButtonText('Cancel').onClick(() => this.close());
+    new ButtonComponent(actions).setButtonText('Cancel').onClick(() => {
+      activeSession = null; // explicit cancel discards the run
+      this.close();
+    });
   }
 
   /**
@@ -646,6 +760,8 @@ export class OnboardingModal extends Modal {
       model = applyMetadataMappingToModel(model, this.metadataMapping);
     }
 
+    this.extractModel = model;
+
     // Structure-only path (no local model): everything is deterministic and
     // instant — no survey, no per-scene calls, no entity summaries.
     if (!this.aiAvailable) {
@@ -657,6 +773,7 @@ export class OnboardingModal extends Modal {
       this.entityProposals = kinds.length > 0
         ? await this.service.enrichEntities(this.proposals, { kinds, generateSummaries: false })
         : [];
+      this.persistSession('review');
       this.showReviewCheckpoint();
       return;
     }
@@ -677,11 +794,19 @@ export class OnboardingModal extends Modal {
     new ButtonComponent(actions).setButtonText('Abort').setWarning().onClick(() => this.abortController?.abort());
     // (setWarning is the Obsidian ButtonComponent API for the muted-danger style.)
 
-    this.survey = await this.service.survey(model);
+    // Survey is skipped on resume when one already exists.
+    this.survey = this.survey ?? await this.service.survey(model);
 
+    // Resume: scenes already extracted in an interrupted run are reused.
+    const reuse = new Map(
+      this.proposals
+        .filter((proposal) => proposal.frontmatter)
+        .map((proposal) => [proposal.sourceRef, proposal] as const)
+    );
     this.proposals = await this.service.extractScenes(model, this.survey, {
       signal: this.abortController.signal,
       publishStage: this.publishStage,
+      reuse,
       onProgress: (current, total, title) => {
         statusEl.setText(`Extracting ${current} / ${total} — ${title}`);
         barFill.setCssStyles({ width: `${total > 0 ? Math.round((current / total) * 100) : 0}%` }); // SAFE: progress width
@@ -689,7 +814,13 @@ export class OnboardingModal extends Modal {
     });
 
     if (this.abortController.signal.aborted) {
-      this.renderMessage('Onboarding cancelled', 'No files were written.', true);
+      // Keep the partial work — reopening the command resumes from here.
+      this.persistSession('confirm');
+      this.renderMessage(
+        'Extraction paused',
+        'Progress is kept — run the onboarding command again to resume where you left off.',
+        true
+      );
       return;
     }
 
@@ -697,6 +828,7 @@ export class OnboardingModal extends Modal {
     // at apply time — this stage stays about the narrative only.
     this.entityProposals = [];
 
+    this.persistSession('review');
     this.showReviewCheckpoint();
   }
 
@@ -797,7 +929,10 @@ export class OnboardingModal extends Modal {
       .setCta()
       .setDisabled(okCount === 0)
       .onClick(() => void this.applyProposals());
-    new ButtonComponent(actions).setButtonText('Cancel').onClick(() => this.close());
+    new ButtonComponent(actions).setButtonText('Cancel').onClick(() => {
+      activeSession = null; // explicit cancel discards the run
+      this.close();
+    });
   }
 
   /** One accordion row: headline metadata always visible, detail lazily built on open. */
@@ -969,6 +1104,7 @@ export class OnboardingModal extends Modal {
   }
 
   private showReport(report: MaterializeReport): void {
+    activeSession = null; // the run is written — nothing left to resume
     const { contentEl } = this;
     contentEl.empty();
     this.renderStageHeader(4, 'Complete', report.bookFolder);

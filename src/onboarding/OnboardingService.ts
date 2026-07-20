@@ -138,6 +138,12 @@ export interface ExtractOptions {
   onProgress?: (current: number, total: number, title: string) => void;
   /** Book-wide publish stage chosen at Checkpoint 1 (defaults to Zero). */
   publishStage?: Stage;
+  /**
+   * Proposals from an interrupted run, keyed by sourceRef. Scenes with a
+   * successful prior proposal are reused instead of re-extracted, so resuming
+   * after the modal was dismissed doesn't repeat finished AI work.
+   */
+  reuse?: Map<string, SceneProposal>;
 }
 
 export interface SplitOptions {
@@ -410,6 +416,13 @@ export class OnboardingService {
       // fall back to the filename when the source didn't provide one.
       const title = scene.title ?? titleFromFileName(basename(scene.sourceRef));
       options.onProgress?.(i + 1, scenes.length, title);
+
+      // Resume: a successful proposal from an interrupted run stands as-is.
+      const prior = options.reuse?.get(scene.sourceRef);
+      if (prior?.frontmatter) {
+        proposals.push(prior);
+        continue;
+      }
 
       try {
         const result = await aiClient.run({

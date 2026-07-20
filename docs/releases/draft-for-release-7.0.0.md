@@ -73,32 +73,34 @@ Two companion panels for building and repairing your story's dates. **Timeline S
 
 ### Screenshots
 
-<!-- TODO: capture, add to wiki/images/, commit, then pin URLs to that commit hash (see 6.2.6 pattern). -->
+**The new website — radialtimeline.com**
 
-**Community Feed**
+<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/2f6825e8/wiki/images/website.webp" alt="The new Radial Timeline website" width="720"></p>
 
-<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/COMMIT/wiki/images/release-7-0-0-community-feed-rounded.png" alt="Radial Timeline Community feed at community.radialtimeline.com" width="720"></p>
+**A project on the Community — stage progress, feed, and genre lineage**
 
-**Com settings tab — Complete Preview**
+<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/2f6825e8/wiki/images/community-project.webp" alt="A shared project page on the Radial Timeline Community" width="720"></p>
 
-<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/COMMIT/wiki/images/release-7-0-0-settings-com-rounded.png" alt="Community settings tab with complete share preview" width="720"></p>
+**Word (DOCX) in the Exports Panel**
 
-**APR direct to Community**
+<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/2f6825e8/wiki/images/export-word.webp" alt="Manuscript export output formats: Markdown, PDF, Word" width="720"></p>
 
-<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/COMMIT/wiki/images/release-7-0-0-apr-community-rounded.png" alt="Author Progress Report campaign controls with send-to-Community" width="720"></p>
+**Timeline Scaffold**
 
-**Word (DOCX) export in the Exports Panel**
+<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/2f6825e8/wiki/images/panel-timeline-scaffold.webp" alt="Timeline Scaffold panel with anchor date and spacing patterns" width="720"></p>
 
-<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/COMMIT/wiki/images/release-7-0-0-word-export-rounded.png" alt="Manuscript export panel with Word output format" width="720"></p>
+**Review scaffolded dates before applying**
 
-**Timeline Scaffold & Audit**
+<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/2f6825e8/wiki/images/panel-timeline-scaffold-2.webp" alt="Review scaffolded dates with authored anchors and time-of-day cues" width="720"></p>
 
-<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/COMMIT/wiki/images/release-7-0-0-timeline-scaffold-rounded.png" alt="Timeline Scaffold review triage and Timeline Audit panel" width="720"></p>
+**Timeline Audit — shown here on the Pride & Prejudice Demo Vault**
 
-**Manuscript onboarding (Beta)**
+<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/2f6825e8/wiki/images/panel-timeline-audit.webp" alt="Timeline Audit panel finding date contradictions in Pride and Prejudice" width="720"></p>
 
-<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/COMMIT/wiki/images/release-7-0-0-onboarding-rounded.png" alt="Onboard existing manuscript checkpoint review" width="720"></p>
+**Local AI — Qwen3-30B-A3B-2507 connected and validated**
 
-**Pride & Prejudice Demo Vault**
+<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/2f6825e8/wiki/images/panel-local.webp" alt="AI settings with local LLM connected and validated via LM Studio" width="720"></p>
 
-<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/COMMIT/wiki/images/release-7-0-0-demo-vault-rounded.png" alt="Pride and Prejudice demo vault in Radial Timeline" width="720"></p>
+**Subplot ring key**
+
+<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/2f6825e8/wiki/images/subplots-key.webp" alt="Subplot ring key overlay listing subplots outer to inner" width="300"></p>

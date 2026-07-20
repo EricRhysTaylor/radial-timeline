@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+    buildBakedStyleDeclaration,
     buildTimelineDataExport,
+    ExportStyleClasses,
+    generateExportId,
+    isRuntimeChromeElement,
     snapshotRenderConfig,
     TIMELINE_DATA_EXPORT_SCHEMA_VERSION,
     type BuildTimelineDataExportParams,
@@ -52,6 +56,7 @@ function makeParams(overrides: Partial<BuildTimelineDataExportParams> = {}): Bui
         activeBookId: 'book-1',
         bookTitle: 'Test Book',
         now: new Date('2026-07-19T12:00:00Z'),
+        exportId: '00000000-0000-4000-8000-000000000000',
         ...overrides,
     };
 }
@@ -60,10 +65,18 @@ describe('buildTimelineDataExport', () => {
     it('stamps the schema version, timestamp, generator, and plugin version', () => {
         const doc = buildTimelineDataExport(makeParams());
         expect(doc.schemaVersion).toBe(TIMELINE_DATA_EXPORT_SCHEMA_VERSION);
-        expect(doc.schemaVersion).toBe('1.0.0');
+        expect(doc.schemaVersion).toBe('1.1.0');
         expect(doc.exportedAt).toBe('2026-07-19T12:00:00.000Z');
         expect(doc.generator).toBe('Radial Timeline');
         expect(doc.pluginVersion).toBe('6.2.6');
+    });
+
+    it('stamps the injected provenance exportId and generates one when absent', () => {
+        const doc = buildTimelineDataExport(makeParams());
+        expect(doc.exportId).toBe('00000000-0000-4000-8000-000000000000');
+        const generated = buildTimelineDataExport(makeParams({ exportId: undefined }));
+        expect(generated.exportId).toMatch(/[0-9a-f-]{8,}/i);
+        expect(generated.exportId).not.toBe(doc.exportId);
     });
 
     it('includes the full item array as fed to the renderer', () => {
@@ -119,6 +132,158 @@ describe('snapshotRenderConfig', () => {
         const settings = makeSettings({ pandocPath: '/usr/local/bin/pandoc' } as Partial<RadialTimelineSettings>);
         const config = snapshotRenderConfig(settings);
         expect(config as Record<string, unknown>).not.toHaveProperty('pandocPath');
+    });
+});
+
+/** Build a getComputedStyle-shaped getter from a plain property map. */
+function styleGetter(map: Record<string, string>): (prop: string) => string {
+    return (prop) => map[prop] ?? '';
+}
+
+describe('buildBakedStyleDeclaration', () => {
+    it('always emits fill but drops inert paint defaults', () => {
+        const decl = buildBakedStyleDeclaration(
+            styleGetter({
+                fill: 'rgb(10, 20, 30)',
+                'fill-opacity': '1',
+                'fill-rule': 'nonzero',
+                opacity: '1',
+                stroke: 'none',
+            }),
+            false
+        );
+        expect(decl).toBe('fill:rgb(10, 20, 30)');
+    });
+
+    it('drops all stroke-* longhands when there is no stroke', () => {
+        const decl = buildBakedStyleDeclaration(
+            styleGetter({
+                fill: 'none',
+                stroke: 'none',
+                'stroke-width': '2px',
+                'stroke-miterlimit': '4',
+                'stroke-dashoffset': '0px',
+            }),
+            false
+        );
+        expect(decl).toBe('fill:none');
+        expect(decl).not.toContain('stroke');
+    });
+
+    it('emits stroke and its non-default longhands when a stroke is present', () => {
+        const decl = buildBakedStyleDeclaration(
+            styleGetter({
+                fill: 'none',
+                stroke: 'rgb(255, 0, 0)',
+                'stroke-width': '3px',
+                'stroke-miterlimit': '4', // default -> dropped
+                'stroke-linecap': 'round', // non-default -> kept
+            }),
+            false
+        );
+        expect(decl).toContain('stroke:rgb(255, 0, 0)');
+        expect(decl).toContain('stroke-width:3px');
+        expect(decl).toContain('stroke-linecap:round');
+        expect(decl).not.toContain('stroke-miterlimit');
+    });
+
+    it('omits font/text props for non-text elements', () => {
+        const decl = buildBakedStyleDeclaration(
+            styleGetter({
+                fill: 'rgb(0, 0, 0)',
+                'font-family': '"Asimovian", Impact, sans-serif',
+                'font-size': '18px',
+                'font-weight': '700',
+                'text-anchor': 'middle',
+            }),
+            false
+        );
+        expect(decl).toBe('fill:rgb(0, 0, 0)');
+        expect(decl).not.toContain('font');
+        expect(decl).not.toContain('text-anchor');
+    });
+
+    it('emits font/text props for text-bearing elements, dropping their defaults', () => {
+        const decl = buildBakedStyleDeclaration(
+            styleGetter({
+                fill: 'rgb(0, 0, 0)',
+                'font-family': '"Asimovian", sans-serif',
+                'font-size': '18px',
+                'font-weight': '400', // default -> dropped
+                'font-style': 'normal', // default -> dropped
+                'text-anchor': 'middle',
+                'text-decoration': 'none solid rgb(0, 0, 0)', // inert -> dropped
+            }),
+            true
+        );
+        expect(decl).toContain('font-family:"Asimovian", sans-serif');
+        expect(decl).toContain('font-size:18px');
+        expect(decl).toContain('text-anchor:middle');
+        expect(decl).not.toContain('font-weight');
+        expect(decl).not.toContain('font-style');
+        expect(decl).not.toContain('text-decoration');
+    });
+
+    it('preserves display:none and non-visible visibility so hidden nodes stay hidden', () => {
+        const decl = buildBakedStyleDeclaration(
+            styleGetter({ display: 'none', visibility: 'hidden', fill: 'rgb(1, 2, 3)' }),
+            false
+        );
+        expect(decl).toContain('display:none');
+        expect(decl).toContain('visibility:hidden');
+    });
+});
+
+describe('ExportStyleClasses', () => {
+    it('interns identical declarations to a single shared class', () => {
+        const classes = new ExportStyleClasses();
+        const a = classes.intern('fill:rgb(1, 2, 3)');
+        const b = classes.intern('fill:rgb(1, 2, 3)');
+        const c = classes.intern('fill:rgb(9, 9, 9)');
+        expect(a).toBe(b);
+        expect(a).not.toBe(c);
+        expect(classes.size).toBe(2);
+    });
+
+    it('emits one CSS rule per distinct declaration', () => {
+        const classes = new ExportStyleClasses();
+        classes.intern('fill:rgb(1, 2, 3)');
+        classes.intern('fill:rgb(1, 2, 3)');
+        classes.intern('fill:none;stroke:rgb(0, 0, 0)');
+        const css = classes.toCss();
+        expect(css).toBe('.rtx0{fill:rgb(1, 2, 3)}\n.rtx1{fill:none;stroke:rgb(0, 0, 0)}');
+        expect(css.match(/\{/g)).toHaveLength(2);
+    });
+});
+
+describe('isRuntimeChromeElement', () => {
+    const target = (localName: string, classes: string[]) =>
+        ({ localName, classList: { contains: (c: string) => classes.includes(c) } }) as unknown as {
+            localName: string;
+            classList: DOMTokenList;
+        };
+
+    it('flags every foreignObject (canvas-tainting embedded XHTML chrome)', () => {
+        expect(isRuntimeChromeElement(target('foreignObject', ['rt-runtime-icon-container']))).toBe(true);
+        expect(isRuntimeChromeElement(target('foreignObject', ['ert-recent-moves-fo']))).toBe(true);
+        expect(isRuntimeChromeElement(target('foreignObject', ['rt-gossamer-runs-fo']))).toBe(true);
+    });
+
+    it('flags the hidden text-measurement scaffold', () => {
+        expect(isRuntimeChromeElement(target('text', ['rt-measure-text']))).toBe(true);
+    });
+
+    it('keeps still artwork (paths, real text, groups, the svg root)', () => {
+        expect(isRuntimeChromeElement(target('path', ['rt-scene-path']))).toBe(false);
+        expect(isRuntimeChromeElement(target('text', ['rt-scene-title']))).toBe(false);
+        expect(isRuntimeChromeElement(target('g', []))).toBe(false);
+        expect(isRuntimeChromeElement(target('svg', ['radial-timeline-svg']))).toBe(false);
+    });
+});
+
+describe('generateExportId', () => {
+    it('produces a distinct id on each call', () => {
+        expect(generateExportId()).not.toBe(generateExportId());
     });
 });
 

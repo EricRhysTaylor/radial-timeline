@@ -365,7 +365,7 @@ export class OnboardingModal extends Modal {
     // No model? Lead with the fix — a red shortcut straight to the AI settings.
     if (!preflightOk) {
       new ButtonComponent(actions)
-        .setButtonText('Set up Local AI')
+        .setButtonText('Set up local AI')
         .setWarning()
         .onClick(() => {
           this.close();

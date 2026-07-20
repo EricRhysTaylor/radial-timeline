@@ -144,7 +144,12 @@ export function buildDefaultCommunityShareSettings(): CommunityShareSettings {
 }
 
 function coerceTier(value: unknown): CommunityShareTier {
-    return value === 1 || value === 2 || value === 3 || value === 4 || value === 5 ? value : 0;
+    // Nothing produces tier 5, and publish requires tier <= 4 — a persisted 5
+    // would silently lock publishing (publish_locked) with no author-visible
+    // cause. Clamp it to the highest publishable tier instead of leaving it
+    // stuck.
+    if (value === 5) return 4;
+    return value === 1 || value === 2 || value === 3 || value === 4 ? value : 0;
 }
 
 function coerceAudience(value: unknown): CommunityShareAudience {

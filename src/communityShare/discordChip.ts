@@ -41,6 +41,16 @@ function isPresenceAnswer(value: unknown): value is PresenceAnswer {
     return typeof v.online === 'boolean' && typeof v.url === 'string';
 }
 
+/** The server URL is untrusted input — only accept http(s) as a link target. */
+function isHttpUrl(value: string): boolean {
+    try {
+        const protocol = new URL(value).protocol;
+        return protocol === 'http:' || protocol === 'https:';
+    } catch {
+        return false;
+    }
+}
+
 export class DiscordChip {
     private data: PresenceAnswer | null = null;
     private lastSuccessAt = 0; // last successful refresh — the freshness clock
@@ -154,7 +164,13 @@ export class DiscordChip {
         el.setText(online ? 'Discord · online' : 'Discord');
         el.classList.toggle('is-live', online);
         el.classList.remove('ert-hidden');
-        el.href = data.url;
+        // Never assign a URL with an unexpected scheme (javascript:, data:, …).
+        // A bad URL renders the chip without a destination rather than a link.
+        if (isHttpUrl(data.url)) {
+            el.href = data.url;
+        } else {
+            el.removeAttribute('href');
+        }
         applyTooltip(
             el,
             online

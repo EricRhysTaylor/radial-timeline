@@ -525,8 +525,21 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         if (activityFieldLabels.length) {
             const fieldPills = previewFrame.createDiv({ cls: 'ert-communityPreview__pills' });
             activityFieldLabels.forEach(label => addChip(fieldPills, label));
+            // At the progress level (public, tier 4) the daily sync also sends
+            // the per-start-hour/mode rollup (hour_mode_mix) for the community
+            // activity dial. It travels on the daily-sync endpoint, not in the
+            // signed preview payload/hash — so it must be disclosed here in
+            // words, or it would leave the vault without appearing on this card.
+            // note: folding it into the preview payload+hash was considered and
+            // rejected — it would break the payload/preview-hash separation from
+            // the report publish and the daily-sync tests; disclosure only.
             if (mode === 'progress' && settings.tier === 4) {
                 addChip(fieldPills, 'Per-day totals');
+                addChip(fieldPills, 'Writing-time pattern');
+                previewFrame.createDiv({
+                    cls: 'ert-communityPreview__note',
+                    text: 'Writing-time pattern: which hours of the day you tend to write, rounded and grouped by mode — never exact times or dates.'
+                });
             }
         } else {
             previewFrame.createDiv({

@@ -207,9 +207,18 @@ export async function confirmCommunityShareActivation(
     }
 
     const secretId = connectionSecretId();
+    // The connection secret lives under a fixed key, so a reconnect/replace
+    // overwrites whatever is already stored. Capture the prior value first and,
+    // if the new write fails to verify, restore it (best effort) before we
+    // clean up the new server-side connection — otherwise a failed replace
+    // would destroy the still-referenced working secret of the old connection.
+    const priorSecret = await getSecret(plugin.app, secretId);
     const storedSecret = await setSecret(plugin.app, secretId, parsed.connection_secret);
     const verifiedSecret = storedSecret ? await getSecret(plugin.app, secretId) : null;
     if (verifiedSecret !== parsed.connection_secret) {
+        if (priorSecret && priorSecret !== parsed.connection_secret) {
+            await setSecret(plugin.app, secretId, priorSecret);
+        }
         await cleanupUnstoredConnection(parsed.connection_id, parsed.connection_secret);
         throw new CommunityShareError(
             'secret_storage_failed',
@@ -247,6 +256,13 @@ export async function publishCommunityShareReport(
     mode: 'manual' | 'scheduled' = 'manual'
 ): Promise<PublishSuccess> {
     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
+    // Re-read the paused flag at the moment of publish: a Pause clicked after a
+    // sync path passed its own paused-check but before reaching this call must
+    // still stop the payload from leaving. Resume clears the flag before it
+    // syncs, so the explicit resume path is unaffected.
+    if (current.sharingPaused) {
+        throw new CommunityShareError('sharing_paused', 'Sharing is paused. Resume sharing before publishing.');
+    }
     if (!current.enabled || current.connection.status !== 'connected' || !current.connection.connectionId || !current.connection.secretId) {
         throw new CommunityShareError('connection_required', 'Connect Community Share before sharing.');
     }
@@ -880,18 +896,40 @@ export async function revokeCommunityShareReport(plugin: RadialTimelinePlugin): 
 
 export async function disconnectCommunityShare(plugin: RadialTimelinePlugin): Promise<ReportActionSuccess> {
     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
-    const secret = await getConnectedSecret(plugin, current);
+    // Read the local secret directly instead of via getConnectedSecret: a vault
+    // that lost its secret must still be able to escape "Connected" rather than
+    // being stranded forever. A missing secret skips the server call; an
+    // existing secret keeps the normal disconnect_only behavior.
+    const secret = current.connection.secretId
+        ? await getSecret(plugin.app, current.connection.secretId)
+        : null;
     // disconnect_only: stop updates and drop the local connection key, but
     // leave already-published content live. This matches the website's own
-    // disconnect behavior — content management lives on the website.
-    const result = await callReportAction(plugin, 'community-share-disconnect', {
-        connection_id: current.connection.connectionId,
-        current_secret: secret,
-        mode: 'disconnect_only'
-    });
-    const at = result.disconnected_at || new Date().toISOString();
+    // disconnect behavior — content management lives on the website. The server
+    // call is best-effort: a missing secret, a network error, or a malformed
+    // 2xx body must never strand local "Connected" state.
+    let result: ReportActionSuccess | null = null;
+    if (secret && current.connection.connectionId) {
+        try {
+            result = await callReportAction(plugin, 'community-share-disconnect', {
+                connection_id: current.connection.connectionId,
+                current_secret: secret,
+                mode: 'disconnect_only'
+            });
+        } catch (error) {
+            // Never log the secret — only the failure reason.
+            console.warn(
+                'Community Share disconnect server call failed; clearing local state anyway:',
+                error instanceof Error ? error.message : error
+            );
+        }
+    }
+    const at = result?.disconnected_at || new Date().toISOString();
     if (current.connection.secretId) {
-        await deleteSecret(plugin.app, current.connection.secretId);
+        const deleted = await deleteSecret(plugin.app, current.connection.secretId);
+        if (!deleted) {
+            console.warn('Community Share disconnect: local connection secret could not be deleted.');
+        }
     }
     plugin.settings.communityShare = normalizeCommunityShareSettings({
         ...current,
@@ -918,7 +956,15 @@ export async function disconnectCommunityShare(plugin: RadialTimelinePlugin): Pr
         lastError: undefined
     });
     await plugin.saveSettings();
-    return result;
+    // If the server call was skipped or failed, synthesize a local success so
+    // callers still see a clean disconnect — local state is already cleared.
+    return result ?? {
+        ok: true,
+        connection_id: current.connection.connectionId,
+        status: 'disconnected',
+        mode: 'disconnect_only',
+        disconnected_at: at
+    };
 }
 
 // -- Session feed posts (author-composed, per-save opt-in) --------------------

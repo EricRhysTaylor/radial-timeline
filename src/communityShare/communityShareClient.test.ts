@@ -18,7 +18,10 @@ import {
     uploadAprToCommunity
 } from './communityShareClient';
 
-function createPluginHarness(options: { failConnectionSecretStorage?: boolean } = {}) {
+function createPluginHarness(options: {
+    failConnectionSecretStorage?: boolean;
+    poisonConnectionSecretValue?: string;
+} = {}) {
     const secrets = new Map<string, string>();
     const plugin = {
         app: {
@@ -30,6 +33,15 @@ function createPluginHarness(options: { failConnectionSecretStorage?: boolean } 
                     }
                     if (options.failConnectionSecretStorage && id === 'rt-community-share-connection-secret') {
                         throw new Error('Secret storage unavailable for connection');
+                    }
+                    if (options.poisonConnectionSecretValue !== undefined
+                        && id === 'rt-community-share-connection-secret'
+                        && value === options.poisonConnectionSecretValue) {
+                        // Model a replace that clobbers the existing secret and
+                        // THEN fails to persist the new value (keychain rejected
+                        // the write after clearing the slot).
+                        secrets.delete(id);
+                        throw new Error('Secret storage rejected the connection secret write');
                     }
                     secrets.set(id, value);
                 },
@@ -149,6 +161,53 @@ describe('Community Share activation client', () => {
         expect(cleanupBody.mode).toBe('disconnect_only');
     });
 
+    it('restores the prior connection secret when a replace fails to store the new one', async () => {
+        // A reconnect over a working connection returns a new secret. If the
+        // replace clobbers the old secret and then fails to verify, the old
+        // still-referenced connection must not be left without its secret.
+        const { plugin, secrets } = createPluginHarness({ poisonConnectionSecretValue: 'rtcs_new-secret' });
+        vi.clearAllMocks();
+        secrets.set('rt-community-share-connection-secret', 'rtcs_old-secret');
+        plugin.settings.communityShare = buildDefaultCommunityShareSettings();
+        plugin.settings.communityShare.enabled = true;
+        plugin.settings.communityShare.connection = {
+            status: 'connected',
+            connectionId: 'conn-old',
+            profileId: 'profile-old',
+            projectId: 'project-old',
+            secretId: 'rt.community-share.connection-secret'
+        };
+
+        const mockedRequestUrl = vi.spyOn(obsidian, 'requestUrl')
+            .mockResolvedValueOnce({
+                status: 201,
+                text: JSON.stringify({
+                    connection_id: 'conn-new',
+                    connection_secret: 'rtcs_new-secret',
+                    secret_expires_at: null,
+                    profile_id: 'profile-new',
+                    project_id: 'project-new'
+                })
+            } as never)
+            .mockResolvedValueOnce({
+                status: 200,
+                text: JSON.stringify({ ok: true })
+            } as never);
+
+        await expect(confirmCommunityShareActivation(plugin as never, 'activation-token-from-website'))
+            .rejects
+            .toMatchObject({ code: 'secret_storage_failed' });
+
+        // The prior working secret is restored, not destroyed.
+        expect(secrets.get('rt-community-share-connection-secret')).toBe('rtcs_old-secret');
+        // The unstored NEW server-side connection is cleaned up, and settings
+        // still reference the old, still-valid connection.
+        expect(mockedRequestUrl).toHaveBeenCalledTimes(2);
+        expect((mockedRequestUrl.mock.calls[1]?.[0] as { url: string }).url).toContain('/community-share-disconnect');
+        expect(plugin.settings.communityShare.connection.connectionId).toBe('conn-old');
+        expect(plugin.saveSettings).not.toHaveBeenCalled();
+    });
+
     it('publishes only after a ready preview and records the returned public slug', async () => {
         const { plugin, secrets } = createPluginHarness();
         vi.clearAllMocks();
@@ -203,6 +262,47 @@ describe('Community Share activation client', () => {
         expect(plugin.settings.communityShare.preview.status).toBe('stale');
         expect(plugin.settings.communityShare.publishHistory[0]?.versionId).toBe('version-1');
         expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
+    });
+
+    it('refuses to publish while sharing is paused, even with a ready preview', async () => {
+        // Guards the Pause/sync race: a Pause landing after a sync path cleared
+        // its own paused-check but before publish runs must still stop the
+        // payload from leaving the vault.
+        const { plugin, secrets } = createPluginHarness();
+        vi.clearAllMocks();
+        const settings = plugin.settings.communityShare;
+        settings.enabled = true;
+        settings.tier = 4;
+        settings.audience = 'public';
+        settings.sharingPaused = true;
+        settings.connection = {
+            status: 'connected',
+            connectionId: 'conn-1',
+            profileId: 'profile-1',
+            projectId: 'project-1',
+            secretId: 'rt.community-share.connection-secret'
+        };
+        settings.fieldPolicy['project.title'] = true;
+        settings.fieldPolicy['activity.words_added'] = true;
+        secrets.set('rt-community-share-connection-secret', 'rtcs_current-secret');
+
+        const preview = await buildCommunitySharePreview(plugin as never);
+        settings.preview = {
+            status: 'ready',
+            generatedAt: '2026-06-27T12:00:00.000Z',
+            previewHash: preview.previewHash,
+            payloadHash: preview.payloadHash,
+            reportPeriod: 'weekly',
+            summary: preview.summary
+        };
+
+        const mockedRequestUrl = vi.spyOn(obsidian, 'requestUrl');
+
+        await expect(publishCommunityShareReport(plugin as never))
+            .rejects
+            .toMatchObject({ code: 'sharing_paused' });
+        expect(mockedRequestUrl).not.toHaveBeenCalled();
+        expect(plugin.saveSettings).not.toHaveBeenCalled();
     });
 
     it('revokes the latest published report using the private connection secret', async () => {
@@ -279,6 +379,63 @@ describe('Community Share activation client', () => {
         expect(body.mode).toBe('disconnect_only');
         expect(secrets.has('rt-community-share-connection-secret')).toBe(false);
         expect(plugin.settings.communityShare.enabled).toBe(false);
+        expect(plugin.settings.communityShare.connection.status).toBe('disconnected');
+        expect(plugin.settings.communityShare.connection.secretId).toBeUndefined();
+        expect(plugin.settings.communityShare.publishHistory.at(-1)?.action).toBe('disconnect');
+        expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
+    });
+
+    it('clears local connection state when the local secret is missing, without calling the server', async () => {
+        // A vault that lost its secret must still be able to escape "Connected".
+        const { plugin } = createPluginHarness();
+        vi.clearAllMocks();
+        const settings = plugin.settings.communityShare;
+        settings.enabled = true;
+        settings.connection = {
+            status: 'connected',
+            connectionId: 'conn-1',
+            profileId: 'profile-1',
+            projectId: 'project-1',
+            secretId: 'rt.community-share.connection-secret'
+        };
+        // Intentionally do NOT seed the connection secret — it is missing.
+        const mockedRequestUrl = vi.spyOn(obsidian, 'requestUrl');
+
+        const result = await disconnectCommunityShare(plugin as never);
+
+        expect(mockedRequestUrl).not.toHaveBeenCalled();
+        expect(result.ok).toBe(true);
+        expect(plugin.settings.communityShare.enabled).toBe(false);
+        expect(plugin.settings.communityShare.connection.status).toBe('disconnected');
+        expect(plugin.settings.communityShare.connection.secretId).toBeUndefined();
+        expect(plugin.settings.communityShare.publishHistory.at(-1)?.action).toBe('disconnect');
+        expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
+    });
+
+    it('clears local connection state even when the disconnect server call returns a malformed body', async () => {
+        // Best-effort server call: an unexpected 2xx body must not strand the
+        // vault in a permanent "Connected" state.
+        const { plugin, secrets } = createPluginHarness();
+        vi.clearAllMocks();
+        const settings = plugin.settings.communityShare;
+        settings.enabled = true;
+        settings.connection = {
+            status: 'connected',
+            connectionId: 'conn-1',
+            profileId: 'profile-1',
+            projectId: 'project-1',
+            secretId: 'rt.community-share.connection-secret'
+        };
+        secrets.set('rt-community-share-connection-secret', 'rtcs_current-secret');
+        vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
+            status: 200,
+            text: JSON.stringify({ unexpected: 'shape' })
+        } as never);
+
+        const result = await disconnectCommunityShare(plugin as never);
+
+        expect(result.ok).toBe(true);
+        expect(secrets.has('rt-community-share-connection-secret')).toBe(false);
         expect(plugin.settings.communityShare.connection.status).toBe('disconnected');
         expect(plugin.settings.communityShare.connection.secretId).toBeUndefined();
         expect(plugin.settings.communityShare.publishHistory.at(-1)?.action).toBe('disconnect');

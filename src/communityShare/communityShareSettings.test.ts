@@ -38,7 +38,9 @@ describe('Community Share settings', () => {
         });
 
         expect(settings.enabled).toBe(true);
-        expect(settings.tier).toBe(5);
+        // Persisted tier 5 clamps to the highest publishable tier (4) so it can
+        // never silently lock publishing; see the dedicated clamp test below.
+        expect(settings.tier).toBe(4);
         expect(settings.audience).toBe('followers');
         // Standing share (contract amendment 2026-07-03): scheduledPublishEnabled
         // is the persisted sharing-on state and must round-trip.
@@ -46,6 +48,21 @@ describe('Community Share settings', () => {
         expect(settings.workingNowEnabled).toBe(false);
         expect(settings.fieldPolicy['project.title']).toBe(true);
         expect(settings.fieldPolicy['activity.exact_session_timestamps']).toBe(true);
+    });
+
+    it('clamps a persisted tier 5 to 4 so publishing is never silently locked', () => {
+        // Nothing produces tier 5 and publish requires tier <= 4, so a stray 5
+        // must not strand the vault in a permanent publish_locked state.
+        const clamped = normalizeCommunityShareSettings({ enabled: true, tier: 5 });
+        expect(clamped.tier).toBe(4);
+        // Still maps to the progress mode (tier >= 3) rather than falling back
+        // to private, so the author keeps the sharing level they chose.
+        expect(deriveCommunityShareMode(clamped)).toBe('progress');
+    });
+
+    it('coerces an out-of-range tier back to private', () => {
+        expect(normalizeCommunityShareSettings({ enabled: true, tier: 9 as never }).tier).toBe(0);
+        expect(normalizeCommunityShareSettings({ enabled: true, tier: -1 as never }).tier).toBe(0);
     });
 
     it('defaults the standing share state off when absent', () => {

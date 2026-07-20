@@ -88,10 +88,9 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
             onSave: async (normalized) => {
                 const nextFolder = normalized || exportFolderDefault;
                 plugin.settings.manuscriptOutputFolder = nextFolder;
-                // Outline exports share the destination; keep the legacy
-                // field in sync so a stale value can't diverge.
-                // eslint-disable-next-line @typescript-eslint/no-deprecated -- intentional legacy-sync write, mirrors main.ts migration
-                plugin.settings.outlineOutputFolder = nextFolder;
+                // The deprecated outlineOutputFolder field is re-synced from
+                // manuscriptOutputFolder on load (see main.ts migration) and is
+                // never read at runtime, so no write is needed here.
                 await plugin.saveSettings();
                 refreshExportChip(resolveExportOutputFolder(plugin));
             }

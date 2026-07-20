@@ -66,6 +66,11 @@ import { buildSpreadValidationContext } from '../../publishing/spreadValidationC
 import { BUNDLED_FICTION_SPECS, isBundledFictionId } from '../../publishing/bundledStyleSpecs';
 import { replayTransientClass } from '../../utils/domClassEffects';
 
+// Example shown in the Custom Pandoc metadata field. This is literal Pandoc
+// metadata syntax (case-sensitive keys), not sentence-case UI copy, so it must
+// stay verbatim and lowercase.
+const PANDOC_METADATA_PLACEHOLDER = 'lang: en-US\nsubtitle: A Novel';
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // SYSTEM PATH SCANNING
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1818,8 +1823,9 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         .addTextArea(text => {
             text.inputEl.rows = 4;
             text.inputEl.addClass('ert-input--lg');
-            // eslint-disable-next-line obsidianmd/ui/sentence-case -- literal Pandoc metadata syntax; keys are case-sensitive and must stay lowercase
-            text.setPlaceholder('lang: en-US\nsubtitle: A Novel');
+            // Literal Pandoc metadata syntax; keys are case-sensitive and must
+            // stay lowercase, so this example is not sentence-cased UI copy.
+            text.setPlaceholder(PANDOC_METADATA_PLACEHOLDER);
             text.setValue(plugin.settings.customPandocMetadata || '');
             text.setDisabled(!isActive);
             plugin.registerDomEvent(text.inputEl, 'blur', async () => {

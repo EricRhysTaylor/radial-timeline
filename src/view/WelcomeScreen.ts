@@ -41,12 +41,12 @@ const WELCOME_COPY = {
         },
         sampleChecking: {
             title: 'Explore a sample vault',
-            desc: 'Checking this vault for packaged Radial Timeline sample data before opening the download page.',
+            desc: 'Checking this vault for packaged Radial Timeline sample data before opening the signup page.',
             cta: 'Checking vault...'
         },
         sampleGet: {
             title: 'Explore a sample vault',
-            desc: 'Download a finished novel, Pride & Prejudice, fully mapped in the timeline with AI analysis already run. No API key needed to explore it.',
+            desc: 'Sign up with your email and the download link arrives in your inbox: Pride & Prejudice, a finished novel fully mapped in the timeline with AI analysis already run. No API key needed to explore it.',
             cta: 'Get the sample vault'
         },
         sampleOpen: {

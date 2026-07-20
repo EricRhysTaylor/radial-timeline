@@ -4,7 +4,7 @@ You get two workspaces: the **[Radial Timeline View](Radial-Timeline-View)** for
 
 <div style="display: flex; justify-content: center; margin: 20px 0;">
   <div style="text-align: center;">
-    <img src="images/ui-welcome.png" alt="Radial Timeline welcome screen with quick-start guide" style="width: 640px; max-width: 100%; border-radius: 10px; box-shadow: 0 6px 14px rgba(0,0,0,0.12);" />
+    <img src="images/welcome.webp" alt="Radial Timeline welcome screen with quick-start guide" style="width: 640px; max-width: 100%; border-radius: 10px; box-shadow: 0 6px 14px rgba(0,0,0,0.12);" />
     <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Welcome screen — quick-start guide for new vaults</div>
   </div>
 </div>

@@ -42,7 +42,7 @@ The Pandoc PDF pipeline got a matching polish pass: restored running headers on 
 A new guided **onboarding workflow** brings a finished or in-progress manuscript into Radial Timeline. Three import lanes:
 
 - **Scrivener exports** — outline and manuscript tree, with acts, subplots, and metadata mapped into RT.
-- **Word (.docx)** — a full manuscript document, split into scenes.
+- **Word (.docx)** — the whole manuscript in one document; Word's built-in Heading 1–3 / Title styles become the chapter structure, and scenes are split inside each chapter.
 - **One conglomerate file** — a whole book in a single text/Markdown/HTML file (a Project Gutenberg classic, for example), broken into scenes automatically.
 
 Every lane works **with or without AI assistance**: an optional **local LLM** splits unmarked prose into scenes and generates grounded Character/Place summaries — entirely on your machine — or run structure-only mode with no AI at all. A checkpoint-based review flow keeps you in control of every scene before anything is written.

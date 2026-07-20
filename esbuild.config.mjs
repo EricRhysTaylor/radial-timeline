@@ -71,7 +71,10 @@ if (isReleaseBuild) {
 		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/Test Vaults/Obsidian Vault Sherlock Holmes/.obsidian/plugins/radial-timeline", name: "Sherlock Holmes" },
 		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/Test Vaults/Obsidian Vault Pride & Prejudice Demo/.obsidian/plugins/radial-timeline", name: "P&P" },
 		{ path: "/Users/ericrhystaylor/Documents/Author Eric Rhys Taylor/Obsidian Vault Author timelapse/.obsidian/plugins/radial-timeline", name: "Timelapse" },
-		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Odyssey Vault/.obsidian/plugins/radial-timeline", name: "Odyssey" },
+		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Obsidian Vault Pride & Prejudice/.obsidian/plugins/radial-timeline", name: "P&P Demo" },
+		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Obsidian Vault Sherlock Holmes Demo/.obsidian/plugins/radial-timeline", name: "Sherlock Demo" },
+		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Obsidian Vault The Faerie Queene Demo/.obsidian/plugins/radial-timeline", name: "Faerie Queene Demo" },
+		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Obsidian Vault Odyssey Demo/.obsidian/plugins/radial-timeline", name: "Odyssey Demo" },
 		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Scrivener Onboarding Test/.obsidian/plugins/radial-timeline", name: "Scrivener" },
 		{ path: "./release", name: "release" }
 	];

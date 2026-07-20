@@ -9,7 +9,14 @@ You get two workspaces: the **[Radial Timeline View](Radial-Timeline-View)** for
   </div>
 </div>
 
-> **Coming from Scrivener, Ulysses, or another tool?** Use [Obsidian's Importer plugin](https://help.obsidian.md/plugins/importer) or export your work to Markdown and drop it into your vault. Scene order is controlled by the leading number in each scene's filename plus its `Act` field — not by File Explorer sort order. See [Scene Properties (Core + Advanced)](YAML-Frontmatter) for the full schema.
+The Welcome screen offers four starting points:
+
+1.  **Set Book Project** — choose the manuscript folder that drives the timeline, exports, Inquiry scope, and Book Manager. The right first step for a fresh vault.
+2.  **Onboard existing manuscript** — bring an existing draft in from a [Scrivener export, a Word document, or one big file](Onboard-Existing-Manuscript), with or without AI assistance.
+3.  **Explore a sample vault** — get the free, fully analyzed [Pride & Prejudice sample vault](Sample-Vault) (sign up with your email and the download link arrives in your inbox). No API key needed to explore it.
+4.  **Visit the website** — [radialtimeline.com](https://radialtimeline.com) for support docs and the [Community](Settings-Community), where you can share your writing journey at your own comfort level.
+
+> **Coming from Scrivener, Word, or another tool?** Use **[Onboard existing manuscript](Onboard-Existing-Manuscript)** — it splits your draft into scene notes, fills the YAML across acts, and previews everything before anything is written. Scene order is controlled by the leading number in each scene's filename plus its `Act` field — not by File Explorer sort order. See [Scene Properties (Core + Advanced)](YAML-Frontmatter) for the full schema.
 
 ---
 

@@ -13,7 +13,7 @@ The Radial Timeline Community is live at [community.radialtimeline.com](https://
 - **Locales** — a world map of where the community is writing.
 - **My Share** — your private control room: see exactly what you're sharing and manage it in one place.
 
-Also shipping with the launch: the **free Pride & Prejudice Demo Vault** — a complete, fully tagged classic manuscript so you can explore every Radial Timeline mode with real material from your first minute. Grab it from the plugin's Welcome screen ("Get the sample vault").
+Also shipping with the launch: the **free Pride & Prejudice Demo Vault** — a complete, fully tagged classic manuscript so you can explore every Radial Timeline mode with real material from your first minute. Sign up with your email from the plugin's Welcome screen ("Get the sample vault") or at [radialtimeline.com](https://radialtimeline.com), and the download link arrives in your inbox.
 
 ### Highlights
 

@@ -242,3 +242,15 @@ Configure sources in [Inquiry sources](Settings-Inquiry#sources).
 *   Review the **token estimate** indicator before running — amber and red tiers indicate high token consumption.
 *   Combine Inquiry findings with [AI Pulse Triplet Analysis](AI-Pulse-Analysis) for both macro and micro-level feedback.
 *   Inquiry works best when you calibrate scope, corpus, and prompt count before running larger passes.
+
+---
+
+## Troubleshooting
+
+If the Inquiry view looks disabled or won't run, work down this list:
+
+*   **AI is off.** New installs ship with AI disabled. Turn it on under **Settings → AI → Enable AI LLM features** — Inquiry cannot run without it.
+*   **No API key.** Without a provider key, Inquiry is deliberately **read-only, not broken**: saved briefings and session history stay browsable (this is how the [Pride & Prejudice sample vault](Sample-Vault) works out of the box), but run controls stay disabled. Add a provider key under **Settings → AI** to run new inquiries.
+*   **The selected model isn't Inquiry-eligible.** Not every provider/model can run Inquiry — it needs structured output and a large context. Open the [AI Engine popover](#ai-engine-popover) and check the readiness strip; if it shows blocked, it names the reason. Local models can qualify (the validation card in Settings → AI shows an "Inquiry eligible" badge), but smaller local models may not.
+*   **Empty corpus.** If the scanned corpus finds no scenes, check [Scan Folders & Class Scope](#scan-folders-and-class-scope) and the Corpus Manager — the scan folder must contain your scene notes, and the class scope must include them.
+*   **Costs look wrong mid-run.** The Omnibus panel shows live cost and includes a cache-health kill-switch; if cached-input pricing misbehaves, disable caching there and re-run.

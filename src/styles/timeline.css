@@ -1081,7 +1081,7 @@
 .ert-timeline-mode-nav__btn {
   display: inline-flex;
   align-items: center;
-  gap: var(--size-2-1);
+  gap: var(--size-2-2);
   height: 24px;
   padding: 0 var(--size-4-2);
   border: thin solid transparent;
@@ -1097,8 +1097,12 @@
 
 /* Keyboard-hint numeral: mono + fainter than the name so it reads as a hint.
    Center-aligned with the label (not baseline) so its smaller size never lifts
-   the label or the content off the button's vertical center. */
+   the label or the content off the button's vertical center. A hair of downward
+   nudge optically levels the lining digit (cap-aligned, no descender) against
+   the lowercase label text. */
 .ert-timeline-mode-nav__num {
+  position: relative;
+  top: 0.1em;
   font-family: var(--font-monospace);
   font-size: 0.85em;
   line-height: 1;

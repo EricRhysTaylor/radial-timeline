@@ -63,7 +63,7 @@ const MODE_LABELS: Record<CommunityShareMode, string> = {
 };
 
 const MODE_NOTES: Record<CommunityShareMode, string> = {
-    private: 'Nothing is shared. Your connection stays in place for when you are ready.',
+    private: 'Your writing-activity share is taken offline. Your profile, books, and posts on the website stay as they are — manage those on My Share. Your connection stays in place.',
     profile_books: 'Shows your profile and selected books. APR campaigns can add a controlled visual progress report without sharing writing activity.',
     progress: 'Includes your profile, books, and APR, plus rounded writing activity: writing days, words, minutes, streak, and mode mix.'
 };
@@ -248,7 +248,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     const featuresList = heroFeatures.createEl('ul', { cls: ERT_CLASSES.STACK });
     [
         { icon: 'lock', text: 'Private by default. You choose exactly when and what to share.' },
-        { icon: 'eye', text: 'The complete preview shows you the full report before you publish.' },
+        { icon: 'eye', text: 'The complete preview shows you exactly what you share before you publish.' },
         { icon: 'file-check', text: 'You share aggregate progress only. Your manuscript, paths, and raw sessions stay in this vault.' }
     ].forEach(item => {
         const li = featuresList.createEl('li', { cls: `${ERT_CLASSES.INLINE} ert-feature-item` });
@@ -373,7 +373,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
                 const update = buildCommunityShareModeUpdate(nextMode);
                 if (nextMode === 'private' && hasLiveReport) {
                     const confirmed = window.confirm(
-                        'Make this vault private and take its current Community report offline? Your website account, profile, books, posts, and report history stay in place.'
+                        'Make this vault private and take its current shared data offline? Your website account, profile, books, posts, and sharing history stay in place.'
                     );
                     if (!confirmed) {
                         dropdown.setValue(mode);
@@ -384,7 +384,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
                     try {
                         await revokeCommunityShareReport(plugin);
                     } catch (error) {
-                        const message = error instanceof CommunityShareError ? error.message : 'Could not take the current report offline.';
+                        const message = error instanceof CommunityShareError ? error.message : 'Could not take the current shared data offline.';
                         new Notice(message);
                         dropdown.setValue(mode);
                         dropdown.setDisabled(false);
@@ -396,7 +396,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
                 if (settings.scheduledPublishEnabled && nextMode !== mode) {
                     update.scheduledPublishEnabled = false;
                     new Notice(nextMode === 'private'
-                        ? 'This vault is private and its current report is offline.'
+                        ? 'This vault is private and its current shared data is offline.'
                         : 'Sharing level changed. Review the preview, then begin sharing again.');
                 }
                 await save(update);
@@ -439,7 +439,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         if (!isConnected) {
             previewFrame.createDiv({
                 cls: 'ert-communityPreview__note',
-                text: 'Connect this vault to load the public profile and project details your reports attach to.'
+                text: 'Connect this vault to load the public profile and project details your shared data attaches to.'
             });
         } else if (cachedWebsiteContext?.error) {
             previewFrame.createDiv({

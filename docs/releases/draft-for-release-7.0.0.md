@@ -29,7 +29,7 @@ APR now publishes straight to your Community profile. Send a progress report to 
 
 #### Word (DOCX) export and better PDFs via Pandoc
 
-Professional manuscript export now includes **Word (DOCX)** — open the Exports Panel from the **Print icon in the Radial Timeline view** and generate a standard manuscript format document (Times New Roman 12 pt, double-spaced, first-line indents, centered chapter headings, page-number running header). No LaTeX engine or font setup required — ready for agents, editors, and submission workflows.
+Manuscript export now includes **Word (DOCX)** — open the Exports Panel from the **Print icon in the Radial Timeline view** and generate a standard manuscript format document (Times New Roman 12 pt, double-spaced, first-line indents, centered chapter headings, page-number running header). No LaTeX engine or font setup required — ready for agents, editors, and submission workflows.
 
 The Pandoc PDF pipeline got a matching polish pass: restored running headers on the Standard and Contemporary Literary layouts, widow/orphan control in all bundled fiction layouts, an opt-in **print binding gutter** for duplex paperbacks (KDP/IngramSpark), and Advanced Pandoc passthrough (Pro) for authors migrating an existing LaTeX setup.
 

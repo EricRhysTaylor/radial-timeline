@@ -249,6 +249,7 @@ Configure sources in [Inquiry sources](Settings-Inquiry#sources).
 
 If the Inquiry view looks disabled or won't run, work down this list:
 
+*   **No book selected yet.** Inquiry scopes to the active book, so opening it in a fresh vault — before the plugin knows where your manuscript lives — leaves it with nothing to scan. Step 1 is always: point the plugin at your book in **Settings → Core → Books** (Book Manager). In the [sample vault](Sample-Vault), skip the settings trip entirely: open the **Welcome screen** and click **Open the sample vault** — it detects the packaged book and drops you straight into the timeline.
 *   **AI is off.** New installs ship with AI disabled. Turn it on under **Settings → AI → Enable AI LLM features** — Inquiry cannot run without it.
 *   **No API key.** Without a provider key, Inquiry is deliberately **read-only, not broken**: saved briefings and session history stay browsable (this is how the [Pride & Prejudice sample vault](Sample-Vault) works out of the box), but run controls stay disabled. Add a provider key under **Settings → AI** to run new inquiries.
 *   **The selected model isn't Inquiry-eligible.** Not every provider/model can run Inquiry — it needs structured output and a large context. Open the [AI Engine popover](#ai-engine-popover) and check the readiness strip; if it shows blocked, it names the reason. Local models can qualify (the validation card in Settings → AI shows an "Inquiry eligible" badge), but smaller local models may not.

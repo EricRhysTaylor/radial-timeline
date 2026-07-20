@@ -15,7 +15,7 @@ The sample vault is delivered by email:
 1.  Download the `.zip` from the link in your email and unzip it. You'll get a folder named **Obsidian Vault Pride & Prejudice Demo**.
 2.  In Obsidian, choose **Open another vault → Open folder as vault** and select that folder.
 3.  When Obsidian asks, enable community plugins for the vault, then install **Radial Timeline** from **Settings → Community plugins → Browse**.
-4.  Open the Radial Timeline view from the ribbon icon or the Command Palette (**Radial timeline: Open**).
+4.  The **Welcome screen** opens with the plugin — it detects the packaged book and shows **Open the sample vault**. Click it to drop straight into the finished story on the timeline. (If you skip the Welcome screen, point the plugin at the book yourself under **Settings → Core → Books**, then open the view with **Radial timeline: Open**.)
 
 ## What's inside
 

@@ -143,6 +143,18 @@ ensure(telemetryHits.length === 0,
   `Telemetry/analytics markers should not appear in package/runtime code. Found: ${telemetryHits.join(', ') || 'none'}`,
   failures);
 
+// Obsidian's community directory scan treats eslint-disable directives that
+// suppress its review rules as BLOCKING errors — release 7.0.0 failed review
+// on two such comments, and Obsidian has warned that failing releases will be
+// pulled from the directory automatically. Shipped src is currently clean, so
+// this is zero-tolerance: no eslint-disable of ANY kind in non-test source.
+// Fix the underlying finding instead of suppressing it.
+const shippedFiles = srcFiles.filter(file => !file.endsWith('.test.ts'));
+const eslintDisableHits = collectMatches(shippedFiles, /eslint-disable/);
+ensure(eslintDisableHits.length === 0,
+  `No eslint-disable directives in shipped source (Obsidian's community scan blocks on them). Found: ${eslintDisableHits.map(hit => `${hit.file}:${hit.line}`).join(', ') || 'none'}`,
+  failures);
+
 if (failures.length > 0) {
   console.error('[obsidian-review] FAIL');
   failures.forEach(item => console.error(`- ${item}`));
@@ -154,4 +166,5 @@ console.log('- Desktop-only manifests are aligned.');
 console.log(`- versions.json maps ${rootManifest.version} to minAppVersion ${rootManifest.minAppVersion}.`);
 console.log('- README and privacy/security disclosures are present.');
 console.log('- Runtime network/platform/filesystem checks passed.');
+console.log('- No eslint-disable directives in shipped source.');
 console.log('- Release eyeball checklist is present.');

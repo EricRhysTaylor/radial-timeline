@@ -9,7 +9,7 @@
 		"prebackup": "node scripts/check-control-tower-reminders.mjs && node scripts/echo-branch.mjs backup --quiet",
 		"build": "node build-with-backup-check.mjs",
 		"build-only": "node show-scripts.mjs --quiet && node scripts/check-social-ert-lock.mjs --quiet && node scripts/check-inquiry-ert-lock.mjs --quiet && node scripts/check-modal-settings-ert-lock.mjs --quiet && node scripts/check-timeline-chrome-ert-lock.mjs --quiet && npx tsc --noEmit && node code-quality-check.mjs src/main.ts src/styles/settings.css --quiet && node check-css-duplicates.mjs --quiet && node esbuild.config.mjs production && node check-css-duplicates.mjs --quiet",
-		"prerelease": "node scripts/echo-branch.mjs release --quiet",
+		"prerelease": "node scripts/echo-branch.mjs release --quiet && npm run review:obsidian && npm run lint:obsidian -- --quiet",
 		"release": "node release-script.mjs",
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
 		"prepare": "husky",

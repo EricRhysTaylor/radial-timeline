@@ -114,7 +114,7 @@ Opens the timeline audit panel.
 > Currently undergoing beta testing. Public release builds show this command as release-pending; development/testing builds can open the workflow.
 
 <div style="text-align: center; margin: 20px 0;">
-  <img src="images/panel-timeline-audit.png" alt="Timeline audit panel" style="width: 560px; max-width: 100%; border-radius: 8px;" />
+  <img src="images/panel-timeline-audit.webp" alt="Timeline audit panel" style="width: 560px; max-width: 100%; border-radius: 8px;" />
 </div>
 
 Surfaces contradictions, missing `When` values, summary/body disagreement, continuity problems, and unresolved findings. The panel shows overview stats, finding filters, and finding cards with evidence and suggested actions.

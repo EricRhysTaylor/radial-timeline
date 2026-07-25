@@ -405,6 +405,9 @@ async function ensurePublishingEnvironment(plugin: RadialTimelinePlugin): Promis
         if (result.failed.length > 0) {
             issues.push(`Failed to install templates: ${result.failed.join(', ')}`);
         }
+        if (result.fontsFailed.length > 0) {
+            issues.push(`Failed to install bundled fonts: ${result.fontsFailed.join(', ')}. PDF export will fall back to system fonts where available.`);
+        }
         for (const layout of getBundledPandocLayouts()) {
             const refresh = await ensureBundledLayoutInstalledForExport(plugin, layout);
             if (refresh.failed) {
@@ -1577,6 +1580,9 @@ async function generateSampleTemplates(
     }
 
     const bundledInstall = await installBundledPandocLayouts(plugin);
+    if (bundledInstall.fontsFailed.length > 0) {
+        console.warn(`[Radial Timeline] Bundled font install failed for: ${bundledInstall.fontsFailed.join(', ')}. PDF export will fall back to system fonts where available.`);
+    }
     const installedBundledFilenames = getBundledPandocLayouts()
         .filter(layout => bundledInstall.installed.includes(layout.name))
         .map(layout => layout.path);
@@ -2611,8 +2617,11 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                             if (ensureBundledPandocLayoutsRegistered(plugin)) {
                                 await plugin.saveSettings();
                             }
+                            const fontsFailed = result.fontsFailed.length > 0 || refresh.fontsFailed;
                             if (result.failed.length > 0 || refresh.failed) {
                                 new Notice(`Failed to install bundled layout: ${getLayoutDisplayName(layout)}`);
+                            } else if (fontsFailed) {
+                                new Notice(`Installed layout template for ${getLayoutDisplayName(layout)}, but required fonts failed to copy. PDF export will fall back to system fonts where available.`);
                             } else if (result.installed.length > 0) {
                                 new Notice(`Installed bundled layout and required fonts: ${getLayoutDisplayName(layout)}`);
                             } else {
@@ -2988,7 +2997,8 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     await plugin.saveSettings();
                 }
                 const refreshFailures = refreshResults.filter(item => item.failed).length;
-                if (refreshFailures > 0 || result.failed.length > 0) {
+                const fontsFailed = result.fontsFailed.length > 0 || refreshResults.some(item => item.fontsFailed);
+                if (refreshFailures > 0 || result.failed.length > 0 || fontsFailed) {
                     new Notice('Some bundled layouts or required fonts failed to install.');
                 } else {
                     // Templates and fonts are now current on disk, so clear the

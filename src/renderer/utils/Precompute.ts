@@ -150,7 +150,11 @@ export function computeCacheableValues(
             const act = isSagaScope
                 ? (typeof scene.bookIndex === 'number' ? scene.bookIndex : 0)
                 : (scene.actNumber !== undefined ? scene.actNumber - 1 : 0);
-            const validAct = (act >= 0 && act < numActs) ? act : 0;
+            // Clamp to the nearest valid quadrant instead of resetting to 0 — an
+            // out-of-range act (e.g. stale actNumber cached from a since-lowered
+            // actCount) must not collapse into Act 1's quadrant. Mirrors the
+            // clamping already used for the same case in AprRenderer.ts.
+            const validAct = Math.min(Math.max(act, 0), numActs - 1);
             const subplot = scene.subplot && scene.subplot.trim().length > 0 ? scene.subplot : 'Main Plot';
             if (!scenesByActAndSubplot[validAct][subplot]) {
                 scenesByActAndSubplot[validAct][subplot] = [];

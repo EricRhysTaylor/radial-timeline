@@ -528,7 +528,7 @@ export function isBundledPandocLayoutInstalled(plugin: RadialTimelinePlugin, lay
 export async function installBundledPandocLayouts(
     plugin: RadialTimelinePlugin,
     layoutIds?: string[]
-): Promise<{ installed: string[]; alreadyPresent: string[]; failed: string[] }> {
+): Promise<{ installed: string[]; alreadyPresent: string[]; failed: string[]; fontsFailed: string[] }> {
     const vault = plugin.app.vault;
     const selected = BUNDLED_PANDOC_LAYOUT_TEMPLATES.filter(layout => !layoutIds || layoutIds.includes(layout.id));
     const pandocFolder = getPandocFolder(plugin);
@@ -536,7 +536,7 @@ export async function installBundledPandocLayouts(
     if (!vault.getAbstractFileByPath(pandocFolder)) {
         await ensureFolderPath(plugin, pandocFolder);
     }
-    await installBundledPandocFonts(plugin);
+    const fontsResult = await installBundledPandocFonts(plugin);
     setPandocFontPathsForVault(plugin);
 
     const installed: string[] = [];
@@ -583,7 +583,7 @@ export async function installBundledPandocLayouts(
         }
     }
 
-    return { installed, alreadyPresent, failed };
+    return { installed, alreadyPresent, failed, fontsFailed: fontsResult.failed };
 }
 
 export async function ensureSpecDrivenBundledFictionTemplatesCurrent(
@@ -694,13 +694,14 @@ export function acknowledgeHotfixHistory(
 export async function ensureBundledLayoutInstalledForExport(
     plugin: RadialTimelinePlugin,
     layout: PandocLayoutTemplate
-): Promise<{ installed: boolean; failed: boolean }> {
-    if (!layout.bundled) return { installed: false, failed: false };
+): Promise<{ installed: boolean; failed: boolean; fontsFailed: boolean }> {
+    if (!layout.bundled) return { installed: false, failed: false, fontsFailed: false };
 
     // Export can be reached long after a bundled .tex template was installed.
     // Refresh the vault-local font assets every time so newly bundled fonts
     // self-heal without asking users to delete or move files by hand.
-    await installBundledPandocFonts(plugin);
+    const fontsResult = await installBundledPandocFonts(plugin);
+    const fontsFailed = fontsResult.failed.length > 0;
     setPandocFontPathsForVault(plugin);
 
     // For spec-driven bundled fiction layouts, the .tex on disk is a derived
@@ -739,11 +740,12 @@ export async function ensureBundledLayoutInstalledForExport(
         }
     }
 
-    if (isBundledPandocLayoutInstalled(plugin, layout)) return { installed: false, failed: false };
+    if (isBundledPandocLayoutInstalled(plugin, layout)) return { installed: false, failed: false, fontsFailed };
 
     const result = await installBundledPandocLayouts(plugin, [layout.id]);
     return {
         installed: result.installed.length > 0,
-        failed: result.failed.length > 0
+        failed: result.failed.length > 0,
+        fontsFailed: fontsFailed || result.fontsFailed.length > 0
     };
 }

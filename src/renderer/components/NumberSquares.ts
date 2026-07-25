@@ -94,9 +94,13 @@ export function renderNumberSquaresUnified(params: {
 
       const sceneActNumber = scene.actNumber !== undefined ? scene.actNumber : 1;
       // When using When date sorting, all scenes are in act 0
-      const actIndex = sortByWhen
+      const rawActIndex = sortByWhen
         ? 0
         : (isSagaScope ? (typeof scene.bookIndex === 'number' ? scene.bookIndex : 0) : (sceneActNumber - 1));
+      // Clamp to the nearest valid quadrant so this lookup agrees with how
+      // Precompute.ts bucketed the scene — an unclamped index here would
+      // miss the scene (empty lookup) and re-derive a wrapped-around angle.
+      const actIndex = Math.min(Math.max(rawActIndex, 0), totalActs - 1);
 
       const scenesInActAndSubplot = (scenesByActAndSubplot[actIndex] && scenesByActAndSubplot[actIndex][subplot]) || [];
       const filteredScenes = scenesInActAndSubplot.filter(s => !isBeatNote(s));
@@ -257,9 +261,11 @@ export function renderInnerRingsNumberSquaresAllScenes(params: {
     // When using When date sorting, all scenes are in act 0
     // When using manuscript order, use the scene's actual act
     const sceneActNumber = scene.actNumber !== undefined ? scene.actNumber : 1;
-    const actIndex = sortByWhen
+    const rawActIndex = sortByWhen
       ? 0
       : (isSagaScope ? (typeof scene.bookIndex === 'number' ? scene.bookIndex : 0) : (sceneActNumber - 1));
+    // Clamp to the nearest valid quadrant — see renderNumberSquaresUnified above.
+    const actIndex = Math.min(Math.max(rawActIndex, 0), totalActs - 1);
 
     const scenesInActAndSubplot = (scenesByActAndSubplot[actIndex] && scenesByActAndSubplot[actIndex][subplot]) || [];
     const filteredScenesForIndex = scenesInActAndSubplot.filter(s => !isBeatNote(s));

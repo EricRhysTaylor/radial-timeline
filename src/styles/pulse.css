@@ -3313,16 +3313,19 @@ body > .tooltip {
 .ert-font-pill-row {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--ert-gap-tight, 6px);
-  margin-top: var(--ert-gap-tight, 6px);
+  /* Notices are body-portaled (no .ert-ui ancestor), so --ert-gap-* tokens
+     are unreachable here — use Obsidian's global --size-* scale. */
+  gap: var(--size-2-3);
+  margin-top: var(--size-2-3);
 }
 
 .ert-font-pill {
   display: inline-flex;
   align-items: baseline;
-  gap: var(--ert-gap-2xs, 4px);
+  gap: var(--size-2-2);
   max-width: 100%;
-  padding: 2px 10px;
+  /* 2px 10px, composed from tokens (no 10px token exists). */
+  padding: var(--size-2-1) calc(var(--size-4-2) + var(--size-2-1));
   background: var(--background-modifier-form-field, var(--background-secondary));
   border: 1px solid var(--background-modifier-border);
   border-radius: 999px;

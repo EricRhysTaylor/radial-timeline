@@ -4,16 +4,17 @@
       "version": "7.0.2",
       "title": "7.0.2",
       "body": "## Radial Timeline 7.0.2\n\nA quick fix release for two bugs reported on GitHub — thank you both for the clear, reproducible reports.\n\n### Fixes\n\n- **Narrative Mode act placement** — scenes whose `Act` exceeded the book's act count wrapped around into the wrong act quadrant. Thanks to **@billie-anderson** ([#31](https://github.com/EricRhysTaylor/Radial-Timeline/issues/31)).\n- **Bundled font install for Publish** — \"Install bundled fonts\" reported success without actually writing the fonts to the folder, and already-installed fonts moved there by hand weren't recognized. Thanks to **@therisingtithes** ([#29](https://github.com/EricRhysTaylor/Radial-Timeline/issues/29)).",
-      "url": "https://github.com/EricRhysTaylor/Radial-Timeline/releases/tag/7.0.2",
-      "publishedAt": "2026-07-25T20:05:18.206Z"
+      "url": "https://github.com/EricRhysTaylor/radial-timeline/releases/tag/untagged-b03a1aa30463c4f7ace8",
+      "publishedAt": "2026-07-25T20:05:55.620Z",
+      "isDraft": true
     },
     {
       "version": "7.0.1",
       "title": "7.0.1",
       "body": "## Radial Timeline 7.0.1\n\nA small compliance release. Obsidian's community directory now scans every plugin release automatically, and 7.0.1 brings Radial Timeline fully in line with its current review ruleset. No new features.\n\n### Changes\n\n- Fixed every actionable finding from the directory scanner, and removed the lint-suppression comments it blocks — shipped code now carries none.\n- Aligned our local review tooling with the exact scanner version the directory uses, so what passes here passes there.\n- Community settings confirmations now use Radial Timeline's own styled dialogs instead of the browser's built-in popup.\n- Destructive buttons in manuscript onboarding use Obsidian's standard destructive styling.\n- Removed the plugin's last use of browser storage (a one-shot Book Manager highlight) — Radial Timeline now stores nothing in Local Storage.\n- Small internal cleanups flagged by the scanner: safer mode comparisons, modern DOM helpers, dead code removed.\n- The release pipeline now runs the community-scan checks before any release can ship.",
-      "url": "https://github.com/EricRhysTaylor/radial-timeline/releases/tag/untagged-4176641385be86c09fff",
-      "publishedAt": "2026-07-25T17:01:31.817Z",
-      "isDraft": true
+      "url": "https://github.com/EricRhysTaylor/radial-timeline/releases/tag/7.0.1",
+      "publishedAt": "2026-07-25T17:03:23Z",
+      "isDraft": false
     },
     {
       "version": "7.0.0",
@@ -37,24 +38,18 @@
     "version": "7.0.2",
     "title": "7.0.2",
     "body": "## Radial Timeline 7.0.2\n\nA quick fix release for two bugs reported on GitHub — thank you both for the clear, reproducible reports.\n\n### Fixes\n\n- **Narrative Mode act placement** — scenes whose `Act` exceeded the book's act count wrapped around into the wrong act quadrant. Thanks to **@billie-anderson** ([#31](https://github.com/EricRhysTaylor/Radial-Timeline/issues/31)).\n- **Bundled font install for Publish** — \"Install bundled fonts\" reported success without actually writing the fonts to the folder, and already-installed fonts moved there by hand weren't recognized. Thanks to **@therisingtithes** ([#29](https://github.com/EricRhysTaylor/Radial-Timeline/issues/29)).",
-    "url": "https://github.com/EricRhysTaylor/Radial-Timeline/releases/tag/7.0.2",
-    "publishedAt": "2026-07-25T20:05:18.206Z"
+    "url": "https://github.com/EricRhysTaylor/radial-timeline/releases/tag/untagged-b03a1aa30463c4f7ace8",
+    "publishedAt": "2026-07-25T20:05:55.620Z",
+    "isDraft": true
   },
   "patches": [
-    {
-      "version": "7.0.2",
-      "title": "7.0.2",
-      "body": "## Radial Timeline 7.0.2\n\nA quick fix release for two bugs reported on GitHub — thank you both for the clear, reproducible reports.\n\n### Fixes\n\n- **Narrative Mode act placement** — scenes whose `Act` exceeded the book's act count wrapped around into the wrong act quadrant. Thanks to **@billie-anderson** ([#31](https://github.com/EricRhysTaylor/Radial-Timeline/issues/31)).\n- **Bundled font install for Publish** — \"Install bundled fonts\" reported success without actually writing the fonts to the folder, and already-installed fonts moved there by hand weren't recognized. Thanks to **@therisingtithes** ([#29](https://github.com/EricRhysTaylor/Radial-Timeline/issues/29)).",
-      "url": "https://github.com/EricRhysTaylor/Radial-Timeline/releases/tag/7.0.2",
-      "publishedAt": "2026-07-25T20:05:18.206Z"
-    },
     {
       "version": "7.0.1",
       "title": "7.0.1",
       "body": "## Radial Timeline 7.0.1\n\nA small compliance release. Obsidian's community directory now scans every plugin release automatically, and 7.0.1 brings Radial Timeline fully in line with its current review ruleset. No new features.\n\n### Changes\n\n- Fixed every actionable finding from the directory scanner, and removed the lint-suppression comments it blocks — shipped code now carries none.\n- Aligned our local review tooling with the exact scanner version the directory uses, so what passes here passes there.\n- Community settings confirmations now use Radial Timeline's own styled dialogs instead of the browser's built-in popup.\n- Destructive buttons in manuscript onboarding use Obsidian's standard destructive styling.\n- Removed the plugin's last use of browser storage (a one-shot Book Manager highlight) — Radial Timeline now stores nothing in Local Storage.\n- Small internal cleanups flagged by the scanner: safer mode comparisons, modern DOM helpers, dead code removed.\n- The release pipeline now runs the community-scan checks before any release can ship.",
-      "url": "https://github.com/EricRhysTaylor/radial-timeline/releases/tag/untagged-4176641385be86c09fff",
-      "publishedAt": "2026-07-25T17:01:31.817Z",
-      "isDraft": true
+      "url": "https://github.com/EricRhysTaylor/radial-timeline/releases/tag/7.0.1",
+      "publishedAt": "2026-07-25T17:03:23Z",
+      "isDraft": false
     }
   ]
 }

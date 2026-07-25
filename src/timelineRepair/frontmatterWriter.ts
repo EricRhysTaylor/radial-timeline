@@ -7,7 +7,7 @@
  * Batch updates YAML frontmatter with When dates and provenance metadata.
  */
 
-import type { App, TFile } from 'obsidian';
+import type { App } from 'obsidian';
 import type {
     SessionDiffModel,
     FrontmatterUpdate,

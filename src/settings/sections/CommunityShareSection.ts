@@ -23,6 +23,7 @@ import {
 import { buildCommunitySharePreview } from '../../communityShare/communitySharePreview';
 import type { CommunityShareFieldKey, CommunityShareSettings } from '../../types/settings';
 import { ERT_CLASSES } from '../../ui/classes';
+import { confirmWithErtModal } from '../../modals/ErtConfirmModal';
 import { addHeadingIcon, applyErtHeaderLayout } from '../wikiLink';
 import { fitSelectToSelectedLabel } from '../selectSizing';
 
@@ -372,9 +373,11 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
                 const nextMode = value as CommunityShareMode;
                 const update = buildCommunityShareModeUpdate(nextMode);
                 if (nextMode === 'private' && hasLiveReport) {
-                    const confirmed = window.confirm(
-                        'Make this vault private and take its current shared data offline? Your website account, profile, books, posts, and sharing history stay in place.'
-                    );
+                    const confirmed = await confirmWithErtModal(plugin.app, {
+                        title: 'Make this vault private?',
+                        message: 'Take its current shared data offline? Your website account, profile, books, posts, and sharing history stay in place.',
+                        confirmText: 'Make private',
+                    });
                     if (!confirmed) {
                         dropdown.setValue(mode);
                         fitSelectToSelectedLabel(dropdown.selectEl, { minPx: 112, maxPx: 360, extraPx: 18 });
@@ -779,7 +782,12 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
             .setButtonText('Disconnect')
             .setDisabled(!isConnected)
             .onClick(async () => {
-                if (!window.confirm('Disconnect this vault? Updates will stop and the saved connection key will be removed. Everything on your Community account stays as it is. Reconnecting requires a new one-time linking key.')) return;
+                const confirmed = await confirmWithErtModal(plugin.app, {
+                    title: 'Disconnect this vault?',
+                    message: 'Updates will stop and the saved connection key will be removed. Everything on your Community account stays as it is. Reconnecting requires a new one-time linking key.',
+                    confirmText: 'Disconnect',
+                });
+                if (!confirmed) return;
                 button.setDisabled(true);
                 button.setButtonText('Disconnecting...');
                 try {

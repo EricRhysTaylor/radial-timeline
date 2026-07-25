@@ -613,7 +613,7 @@ export class TimelineExportService {
 
             const targetWidth = Math.max(1, Math.round(width * scale));
             const targetHeight = Math.max(1, Math.round(height * scale));
-            const canvas = document.createElement('canvas');
+            const canvas = createEl('canvas');
             canvas.width = targetWidth;
             canvas.height = targetHeight;
             const ctx = canvas.getContext('2d');

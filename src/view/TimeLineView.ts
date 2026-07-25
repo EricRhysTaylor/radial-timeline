@@ -609,7 +609,7 @@ export class RadialTimelineView extends ItemView {
                 });
                 modeNav.appendChild(btn);
                 modeButtons.set(mode.id, btn);
-                if (mode.id === 'chronologue') chronologueModeBtn = btn;
+                if (mode.id === TimelineMode.CHRONOLOGUE) chronologueModeBtn = btn;
             });
             headerEl.insertBefore(modeNav, wrapper);
             this.modeNavButtons = modeButtons;

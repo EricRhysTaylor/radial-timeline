@@ -366,7 +366,7 @@ export class OnboardingModal extends Modal {
     if (!preflightOk) {
       new ButtonComponent(actions)
         .setButtonText('Set up local AI')
-        .setWarning()
+        .setDestructive()
         .onClick(() => {
           this.close();
           openPluginSettings(this.plugin, 'ai');
@@ -738,7 +738,7 @@ export class OnboardingModal extends Modal {
     barFill.setCssStyles({ height: '100%', width: '0%', background: 'var(--interactive-accent)', borderRadius: '3px' }); // SAFE: progress fill
 
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
-    new ButtonComponent(actions).setButtonText('Abort').setWarning().onClick(() => this.abortController?.abort());
+    new ButtonComponent(actions).setButtonText('Abort').setDestructive().onClick(() => this.abortController?.abort());
 
     this.splitOutcomes = await this.service.proposeSplits(plans, {
       signal: this.abortController.signal,
@@ -791,8 +791,8 @@ export class OnboardingModal extends Modal {
     barFill.setCssStyles({ height: '100%', width: '0%', background: 'var(--interactive-accent)', borderRadius: '3px' }); // SAFE: progress fill
 
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
-    new ButtonComponent(actions).setButtonText('Abort').setWarning().onClick(() => this.abortController?.abort());
-    // (setWarning is the Obsidian ButtonComponent API for the muted-danger style.)
+    new ButtonComponent(actions).setButtonText('Abort').setDestructive().onClick(() => this.abortController?.abort());
+    // (setDestructive is the Obsidian ButtonComponent API for the muted-danger style.)
 
     // Survey is skipped on resume when one already exists.
     this.survey = this.survey ?? await this.service.survey(model);
@@ -1069,7 +1069,7 @@ export class OnboardingModal extends Modal {
       const barFill = barTrack.createDiv();
       barFill.setCssStyles({ height: '100%', width: '0%', background: 'var(--interactive-accent)', borderRadius: '3px' }); // SAFE: progress fill
       const abortRow = contentEl.createDiv({ cls: 'ert-modal-actions' });
-      new ButtonComponent(abortRow).setButtonText('Abort').setWarning().onClick(() => this.abortController?.abort());
+      new ButtonComponent(abortRow).setButtonText('Abort').setDestructive().onClick(() => this.abortController?.abort());
 
       this.entityProposals = await this.service.enrichEntities(this.proposals, {
         kinds,

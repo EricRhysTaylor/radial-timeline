@@ -3308,6 +3308,47 @@ body > .tooltip {
   background: var(--background-modifier-hover);
 }
 
+/* Clickable font pills in the "Install" Notice — one per verified font file,
+   abbreviated name/folder/size, click to reveal in Finder/Explorer. */
+.ert-font-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ert-gap-tight, 6px);
+  margin-top: var(--ert-gap-tight, 6px);
+}
+
+.ert-font-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--ert-gap-2xs, 4px);
+  max-width: 100%;
+  padding: 2px 10px;
+  background: var(--background-modifier-form-field, var(--background-secondary));
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  color: var(--text-normal);
+  cursor: pointer;
+}
+
+.ert-font-pill:hover {
+  background: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
+}
+
+.ert-font-pill-name {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 180px;
+}
+
+.ert-font-pill-meta {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
 .ert-style-wizard__toggle {
   display: inline-flex;
   align-items: center;

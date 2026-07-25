@@ -421,6 +421,8 @@ function isFontBinaryFile(fileName: string): boolean {
 export interface BundledFontFileStatus {
     file: string;
     sizeBytes: number;
+    /** Absolute filesystem path to this exact file, for "reveal in Finder/Explorer" actions. */
+    absolutePath: string;
 }
 
 export interface BundledFontFamilyStatus {
@@ -480,7 +482,7 @@ export async function installBundledPandocFonts(
                     throw new Error(`Font file verification failed after copy: ${targetFile} (expected ${sourceSize} bytes, found ${finalSize})`);
                 }
                 if (isFontBinaryFile(file)) {
-                    verifiedFiles.push({ file, sizeBytes: finalSize });
+                    verifiedFiles.push({ file, sizeBytes: finalSize, absolutePath: targetFile });
                 }
             }
             if (changed) installed.push({ family, files: verifiedFiles });
@@ -792,7 +794,7 @@ export async function ensureBundledLayoutInstalledForExport(
     };
 }
 
-function formatFontFileSize(bytes: number): string {
+export function formatFontFileSize(bytes: number): string {
     if (bytes >= 1024) return `${(bytes / 1024).toFixed(0)} KB`;
     return `${bytes} B`;
 }

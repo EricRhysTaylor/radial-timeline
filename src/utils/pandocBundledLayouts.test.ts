@@ -508,6 +508,13 @@ describe('bundled pandoc layout export auto-install', () => {
         const regular = sourceSerif!.files.find(f => f.file === 'SourceSerif4-Regular.otf');
         expect(regular).toBeTruthy();
         expect(regular!.sizeBytes).toBeGreaterThan(0);
+        // absolutePath must point at the exact file whose size we just
+        // verified — this is what the Settings pill's "reveal in Finder"
+        // click action opens, so it must resolve to a real file, not just
+        // the family folder.
+        expect(regular!.absolutePath).toBe(path.join(result.targetRoot!, 'source-serif-4', 'SourceSerif4-Regular.otf'));
+        expect(fs.existsSync(regular!.absolutePath)).toBe(true);
+        expect(fs.statSync(regular!.absolutePath).size).toBe(regular!.sizeBytes);
         // LICENSE.md/README.md are copied alongside this family but must
         // never be listed as if they were font files.
         expect(sourceSerif!.files.some(f => f.file === 'LICENSE.md' || f.file === 'README.md')).toBe(false);

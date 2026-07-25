@@ -47,9 +47,11 @@ import {
     ensureBundledLayoutInstalledForExport,
     ensureBundledPandocLayoutsRegistered,
     formatBundledFontInstallSummary,
+    formatFontFileSize,
     getBundledPandocLayouts,
     installBundledPandocLayouts,
-    isBundledPandocLayoutInstalled
+    isBundledPandocLayoutInstalled,
+    type BundledFontInstallResult
 } from '../../utils/pandocBundledLayouts';
 import { getPandocLayoutTier } from '../../publishing/templateTiering';
 import {
@@ -92,6 +94,55 @@ function fileExistsSync(absPath: string): boolean {
     } catch {
         return false;
     }
+}
+
+/**
+ * Reveal a file in the OS file manager (Finder on macOS, Explorer on
+ * Windows, default file manager on Linux), highlighting it in its
+ * containing folder. Desktop-only (electron.shell); shows a Notice instead
+ * of failing silently if unavailable.
+ */
+function revealAbsolutePathInFileManager(absolutePath: string): void {
+    try {
+        // electron.shell is available in the desktop renderer process
+        const electron = (window as unknown as { require?: (name: string) => { shell?: { showItemInFolder: (p: string) => void } } }).require?.('electron'); // SAFE: Electron shell reveal is the standard desktop-only way to open Finder/Explorer at a file.
+        const shell = electron?.shell;
+        if (!shell) {
+            new Notice(`Could not open file manager. Path: ${absolutePath}`);
+            return;
+        }
+        shell.showItemInFolder(absolutePath);
+    } catch {
+        new Notice(`Could not open file manager. Path: ${absolutePath}`);
+    }
+}
+
+/**
+ * Build a rich Notice fragment: a headline plus one clickable pill per
+ * installed/verified font file (abbreviated name, folder, size). Clicking a
+ * pill reveals that exact file in the OS file manager so the user can
+ * verify it themselves rather than take the Notice's word for it. Returns
+ * null when there is nothing to show (e.g. install failed before any font
+ * was touched).
+ */
+function buildFontPillsNotice(ownerDoc: Document, headline: string, fonts: BundledFontInstallResult): DocumentFragment | string {
+    const families = [...fonts.installed, ...fonts.alreadyPresent].filter(f => f.files.length > 0);
+    if (families.length === 0) return headline;
+
+    const fragment = ownerDoc.createDocumentFragment();
+    const wrapper = fragment.createDiv();
+    wrapper.createDiv({ text: headline });
+    const row = wrapper.createDiv({ cls: 'ert-font-pill-row' });
+    for (const { family, files } of families) {
+        for (const file of files) {
+            const pill = row.createEl('button', { cls: 'ert-font-pill', attr: { type: 'button' } });
+            pill.createSpan({ cls: 'ert-font-pill-name', text: file.file });
+            pill.createSpan({ cls: 'ert-font-pill-meta', text: `fonts/${family} · ${formatFontFileSize(file.sizeBytes)}` });
+            pill.setAttribute('title', `${file.absolutePath}\nClick to reveal in file manager.`);
+            pill.addEventListener('click', () => revealAbsolutePathInFileManager(file.absolutePath));
+        }
+    }
+    return fragment;
 }
 
 /**
@@ -2622,15 +2673,14 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                                 await plugin.saveSettings();
                             }
                             const failedFontFamilies = [...new Set([...result.fonts.failed, ...refresh.fonts.failed])];
-                            const fontSummary = formatBundledFontInstallSummary(result.fonts);
                             if (result.failed.length > 0 || refresh.failed) {
                                 new Notice(`Failed to install bundled layout: ${getLayoutDisplayName(layout)}`);
                             } else if (failedFontFamilies.length > 0) {
                                 new Notice(`Installed layout template for ${getLayoutDisplayName(layout)}, but required fonts failed to copy (${failedFontFamilies.join(', ')}). PDF export will fall back to system fonts where available.`);
                             } else if (result.installed.length > 0) {
-                                new Notice(`Installed bundled layout and required fonts: ${getLayoutDisplayName(layout)}${fontSummary ? `\n\n${fontSummary}` : ''}`, 12000);
+                                new Notice(buildFontPillsNotice(btn.buttonEl.ownerDocument, `Installed bundled layout and required fonts: ${getLayoutDisplayName(layout)}`, result.fonts), 12000);
                             } else {
-                                new Notice(`Bundled layout and required fonts are already installed: ${getLayoutDisplayName(layout)}${fontSummary ? `\n\n${fontSummary}` : ''}`, 12000);
+                                new Notice(buildFontPillsNotice(btn.buttonEl.ownerDocument, `Bundled layout and required fonts are already installed: ${getLayoutDisplayName(layout)}`, result.fonts), 12000);
                             }
                             renderLayoutRows();
                             refreshPublishingStatusCard();
@@ -3017,11 +3067,10 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                         plugin.settings.templateHotfixHistory
                     );
                     await plugin.saveSettings();
-                    const fontSummary = formatBundledFontInstallSummary(result.fonts);
                     if (result.installed.length > 0) {
-                        new Notice(`Installed ${result.installed.length} bundled layout template(s) and required fonts in ${getConfiguredPandocFolder(plugin)}/.${fontSummary ? `\n\n${fontSummary}` : ''}`, 12000);
+                        new Notice(buildFontPillsNotice(button.buttonEl.ownerDocument, `Installed ${result.installed.length} bundled layout template(s) and required fonts in ${getConfiguredPandocFolder(plugin)}/.`, result.fonts), 12000);
                     } else {
-                        new Notice(`Bundled layouts and required fonts are installed and refreshed.${fontSummary ? `\n\n${fontSummary}` : ''}`, 12000);
+                        new Notice(buildFontPillsNotice(button.buttonEl.ownerDocument, 'Bundled layouts and required fonts are installed and refreshed.', result.fonts), 12000);
                     }
                 }
                 renderLayoutRows();

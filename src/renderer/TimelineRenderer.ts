@@ -536,9 +536,14 @@ export function createTimelineSVG(
         const sortByWhen = isChronologueMode ? true : (settings.sortByWhenDate ?? false);
 
         const sceneActNumber = scene.actNumber !== undefined ? scene.actNumber : 1;
-        const actIndex = sortByWhen
+        const rawActIndex = sortByWhen
             ? 0
             : (isSagaScope ? (typeof scene.bookIndex === 'number' ? scene.bookIndex : 0) : (sceneActNumber - 1));
+        // Clamp to the nearest valid quadrant so this lookup agrees with how
+        // Precompute.ts bucketed the scene — an unclamped index here would
+        // miss the scene (empty lookup, sceneIndex -1) and re-derive a
+        // wrapped-around angle instead of reusing the clamped bucket.
+        const actIndex = Math.min(Math.max(rawActIndex, 0), numActs - 1);
         const scenesInActAndSubplot = (scenesByActAndSubplot[actIndex] && scenesByActAndSubplot[actIndex][subplot]) || [];
 
         // Never generate inner-ring synopses for Plot notes here

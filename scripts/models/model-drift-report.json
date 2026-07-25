@@ -1,8 +1,8 @@
 {
-  "checkedAt": "2026-07-25T16:47:45.106Z",
+  "checkedAt": "2026-07-25T16:55:38.612Z",
   "mode": "report",
   "snapshotBefore": {
-    "generatedAt": "2026-07-20T00:47:01.669Z"
+    "generatedAt": "2026-07-25T16:47:45.075Z"
   },
   "snapshotAfter": {
     "generatedAt": "2026-07-25T16:47:45.075Z"
@@ -13,9 +13,7 @@
       "removed": []
     },
     "anthropic": {
-      "added": [
-        "claude-opus-5"
-      ],
+      "added": [],
       "removed": []
     },
     "google": {
@@ -24,24 +22,9 @@
     }
   },
   "aliasChanges": [],
-  "anthropicNewestChanged": {
-    "from": {
-      "id": "claude-sonnet-5",
-      "displayName": "Claude Sonnet 5",
-      "createdAt": "2026-06-29T00:00:00Z"
-    },
-    "to": {
-      "id": "claude-opus-5",
-      "displayName": "Claude Opus 5",
-      "createdAt": "2026-07-24T00:00:00Z"
-    }
-  },
+  "anthropicNewestChanged": null,
   "tokenLimitChanges": [],
   "releaseAlerts": [],
-  "hasActionableChanges": true,
-  "recommendedFollowUps": [
-    "Review scripts/models/latest-models.json and scripts/models/model-drift-report.json for provider catalog drift.",
-    "If a new provider model should ship in RT, update scripts/models/registry.json and src/ai/registry/builtinModels.ts.",
-    "If RT surfaces cost or positioning for the model, update src/ai/cost/providerPricing.ts."
-  ]
+  "hasActionableChanges": false,
+  "recommendedFollowUps": []
 }

@@ -411,18 +411,44 @@ export function setPandocFontPathsForVault(plugin: RadialTimelinePlugin): void {
     setVaultFontDir(getPandocFontAbsoluteRoot(plugin));
 }
 
+/** Actual font binaries only — excludes bundled LICENSE/README text files from user-facing reporting. */
+const FONT_BINARY_EXTENSIONS = new Set(['.otf', '.ttf']);
+function isFontBinaryFile(fileName: string): boolean {
+    const ext = fileName.slice(fileName.lastIndexOf('.')).toLowerCase();
+    return FONT_BINARY_EXTENSIONS.has(ext);
+}
+
+export interface BundledFontFileStatus {
+    file: string;
+    sizeBytes: number;
+}
+
+export interface BundledFontFamilyStatus {
+    family: string;
+    /** Font binaries only (LICENSE/README are copied but not reported here). */
+    files: BundledFontFileStatus[];
+}
+
+export interface BundledFontInstallResult {
+    installed: BundledFontFamilyStatus[];
+    alreadyPresent: BundledFontFamilyStatus[];
+    failed: string[];
+    /** Absolute filesystem folder these fonts were installed under, e.g. ".../Radial Timeline/Pandoc/fonts". */
+    targetRoot?: string;
+}
+
 export async function installBundledPandocFonts(
     plugin: RadialTimelinePlugin
-): Promise<{ installed: string[]; alreadyPresent: string[]; failed: string[] }> {
+): Promise<BundledFontInstallResult> {
     const sourceRoot = MODULE_BUNDLED_FONT_SOURCE_PATH;
     const targetRoot = getPandocFontAbsoluteRoot(plugin);
-    const installed: string[] = [];
-    const alreadyPresent: string[] = [];
+    const installed: BundledFontFamilyStatus[] = [];
+    const alreadyPresent: BundledFontFamilyStatus[] = [];
     const failed: string[] = [];
 
     if (!sourceRoot || !targetRoot) {
         for (const family of Object.keys(BUNDLED_PANDOC_FONT_FILES)) failed.push(family);
-        return { installed, alreadyPresent, failed };
+        return { installed, alreadyPresent, failed, targetRoot };
     }
 
     for (const [family, files] of Object.entries(BUNDLED_PANDOC_FONT_FILES)) {
@@ -431,27 +457,40 @@ export async function installBundledPandocFonts(
         try {
             fs.mkdirSync(targetDir, { recursive: true });
             let changed = false;
+            const verifiedFiles: BundledFontFileStatus[] = [];
             for (const file of files) {
                 const sourceFile = path.join(sourceDir, file);
                 const targetFile = path.join(targetDir, file);
                 if (!fs.existsSync(sourceFile)) {
                     throw new Error(`Missing bundled font asset: ${sourceFile}`);
                 }
+                const sourceSize = fs.statSync(sourceFile).size;
                 const needsCopy = !fs.existsSync(targetFile)
-                    || fs.statSync(sourceFile).size !== fs.statSync(targetFile).size;
+                    || fs.statSync(targetFile).size !== sourceSize;
                 if (needsCopy) {
                     fs.copyFileSync(sourceFile, targetFile);
                     changed = true;
                 }
+                // Verify the file on disk after copying (or after finding it
+                // already present) actually matches the source byte-for-byte
+                // in size. A short write or zero-byte file must never be
+                // reported as a successful install (GH #29).
+                const finalSize = fs.existsSync(targetFile) ? fs.statSync(targetFile).size : 0;
+                if (finalSize === 0 || finalSize !== sourceSize) {
+                    throw new Error(`Font file verification failed after copy: ${targetFile} (expected ${sourceSize} bytes, found ${finalSize})`);
+                }
+                if (isFontBinaryFile(file)) {
+                    verifiedFiles.push({ file, sizeBytes: finalSize });
+                }
             }
-            if (changed) installed.push(family);
-            else alreadyPresent.push(family);
+            if (changed) installed.push({ family, files: verifiedFiles });
+            else alreadyPresent.push({ family, files: verifiedFiles });
         } catch {
             failed.push(family);
         }
     }
 
-    return { installed, alreadyPresent, failed };
+    return { installed, alreadyPresent, failed, targetRoot };
 }
 
 /**
@@ -528,7 +567,7 @@ export function isBundledPandocLayoutInstalled(plugin: RadialTimelinePlugin, lay
 export async function installBundledPandocLayouts(
     plugin: RadialTimelinePlugin,
     layoutIds?: string[]
-): Promise<{ installed: string[]; alreadyPresent: string[]; failed: string[]; fontsFailed: string[] }> {
+): Promise<{ installed: string[]; alreadyPresent: string[]; failed: string[]; fonts: BundledFontInstallResult }> {
     const vault = plugin.app.vault;
     const selected = BUNDLED_PANDOC_LAYOUT_TEMPLATES.filter(layout => !layoutIds || layoutIds.includes(layout.id));
     const pandocFolder = getPandocFolder(plugin);
@@ -583,7 +622,7 @@ export async function installBundledPandocLayouts(
         }
     }
 
-    return { installed, alreadyPresent, failed, fontsFailed: fontsResult.failed };
+    return { installed, alreadyPresent, failed, fonts: fontsResult };
 }
 
 export async function ensureSpecDrivenBundledFictionTemplatesCurrent(
@@ -694,14 +733,17 @@ export function acknowledgeHotfixHistory(
 export async function ensureBundledLayoutInstalledForExport(
     plugin: RadialTimelinePlugin,
     layout: PandocLayoutTemplate
-): Promise<{ installed: boolean; failed: boolean; fontsFailed: boolean }> {
-    if (!layout.bundled) return { installed: false, failed: false, fontsFailed: false };
+): Promise<{ installed: boolean; failed: boolean; fonts: BundledFontInstallResult }> {
+    const emptyFonts: BundledFontInstallResult = { installed: [], alreadyPresent: [], failed: [] };
+    if (!layout.bundled) return { installed: false, failed: false, fonts: emptyFonts };
 
     // Export can be reached long after a bundled .tex template was installed.
     // Refresh the vault-local font assets every time so newly bundled fonts
-    // self-heal without asking users to delete or move files by hand.
-    const fontsResult = await installBundledPandocFonts(plugin);
-    const fontsFailed = fontsResult.failed.length > 0;
+    // self-heal without asking users to delete or move files by hand. This
+    // call is authoritative for font install/verification status — the
+    // installBundledPandocLayouts call below also touches fonts, but only
+    // redundantly (idempotent copy), so its result isn't re-merged here.
+    const fonts = await installBundledPandocFonts(plugin);
     setPandocFontPathsForVault(plugin);
 
     // For spec-driven bundled fiction layouts, the .tex on disk is a derived
@@ -740,12 +782,34 @@ export async function ensureBundledLayoutInstalledForExport(
         }
     }
 
-    if (isBundledPandocLayoutInstalled(plugin, layout)) return { installed: false, failed: false, fontsFailed };
+    if (isBundledPandocLayoutInstalled(plugin, layout)) return { installed: false, failed: false, fonts };
 
     const result = await installBundledPandocLayouts(plugin, [layout.id]);
     return {
         installed: result.installed.length > 0,
         failed: result.failed.length > 0,
-        fontsFailed: fontsFailed || result.fontsFailed.length > 0
+        fonts
     };
+}
+
+function formatFontFileSize(bytes: number): string {
+    if (bytes >= 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${bytes} B`;
+}
+
+/**
+ * Human-readable breakdown of exactly which font files are on disk and
+ * where — not just "fonts installed". Each size comes from a post-copy
+ * `fs.statSync` read (see `installBundledPandocFonts`), so a zero-byte or
+ * truncated file is never reported here as present (GH #29).
+ */
+export function formatBundledFontInstallSummary(fonts: BundledFontInstallResult): string {
+    const families = [...fonts.installed, ...fonts.alreadyPresent].filter(f => f.files.length > 0);
+    if (families.length === 0) return '';
+    const lines = families.map(({ family, files }) => {
+        const fileList = files.map(f => `${f.file} (${formatFontFileSize(f.sizeBytes)})`).join(', ');
+        return `${family}/: ${fileList}`;
+    });
+    const location = fonts.targetRoot ? `Location: ${fonts.targetRoot}` : '';
+    return [...lines, location].filter(Boolean).join('\n');
 }

@@ -46,6 +46,7 @@ import {
     acknowledgeHotfixHistory,
     ensureBundledLayoutInstalledForExport,
     ensureBundledPandocLayoutsRegistered,
+    formatBundledFontInstallSummary,
     getBundledPandocLayouts,
     installBundledPandocLayouts,
     isBundledPandocLayoutInstalled
@@ -405,8 +406,8 @@ async function ensurePublishingEnvironment(plugin: RadialTimelinePlugin): Promis
         if (result.failed.length > 0) {
             issues.push(`Failed to install templates: ${result.failed.join(', ')}`);
         }
-        if (result.fontsFailed.length > 0) {
-            issues.push(`Failed to install bundled fonts: ${result.fontsFailed.join(', ')}. PDF export will fall back to system fonts where available.`);
+        if (result.fonts.failed.length > 0) {
+            issues.push(`Failed to install bundled fonts: ${result.fonts.failed.join(', ')}. PDF export will fall back to system fonts where available.`);
         }
         for (const layout of getBundledPandocLayouts()) {
             const refresh = await ensureBundledLayoutInstalledForExport(plugin, layout);
@@ -1580,8 +1581,11 @@ async function generateSampleTemplates(
     }
 
     const bundledInstall = await installBundledPandocLayouts(plugin);
-    if (bundledInstall.fontsFailed.length > 0) {
-        console.warn(`[Radial Timeline] Bundled font install failed for: ${bundledInstall.fontsFailed.join(', ')}. PDF export will fall back to system fonts where available.`);
+    if (bundledInstall.fonts.failed.length > 0) {
+        console.warn(`[Radial Timeline] Bundled font install failed for: ${bundledInstall.fonts.failed.join(', ')}. PDF export will fall back to system fonts where available.`);
+    } else {
+        const fontSummary = formatBundledFontInstallSummary(bundledInstall.fonts);
+        if (fontSummary) console.info(`[Radial Timeline] Bundled fonts verified on disk —\n${fontSummary}`);
     }
     const installedBundledFilenames = getBundledPandocLayouts()
         .filter(layout => bundledInstall.installed.includes(layout.name))
@@ -2617,15 +2621,16 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                             if (ensureBundledPandocLayoutsRegistered(plugin)) {
                                 await plugin.saveSettings();
                             }
-                            const fontsFailed = result.fontsFailed.length > 0 || refresh.fontsFailed;
+                            const failedFontFamilies = [...new Set([...result.fonts.failed, ...refresh.fonts.failed])];
+                            const fontSummary = formatBundledFontInstallSummary(result.fonts);
                             if (result.failed.length > 0 || refresh.failed) {
                                 new Notice(`Failed to install bundled layout: ${getLayoutDisplayName(layout)}`);
-                            } else if (fontsFailed) {
-                                new Notice(`Installed layout template for ${getLayoutDisplayName(layout)}, but required fonts failed to copy. PDF export will fall back to system fonts where available.`);
+                            } else if (failedFontFamilies.length > 0) {
+                                new Notice(`Installed layout template for ${getLayoutDisplayName(layout)}, but required fonts failed to copy (${failedFontFamilies.join(', ')}). PDF export will fall back to system fonts where available.`);
                             } else if (result.installed.length > 0) {
-                                new Notice(`Installed bundled layout and required fonts: ${getLayoutDisplayName(layout)}`);
+                                new Notice(`Installed bundled layout and required fonts: ${getLayoutDisplayName(layout)}${fontSummary ? `\n\n${fontSummary}` : ''}`, 12000);
                             } else {
-                                new Notice(`Bundled layout and required fonts are already installed: ${getLayoutDisplayName(layout)}`);
+                                new Notice(`Bundled layout and required fonts are already installed: ${getLayoutDisplayName(layout)}${fontSummary ? `\n\n${fontSummary}` : ''}`, 12000);
                             }
                             renderLayoutRows();
                             refreshPublishingStatusCard();
@@ -2997,9 +3002,12 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     await plugin.saveSettings();
                 }
                 const refreshFailures = refreshResults.filter(item => item.failed).length;
-                const fontsFailed = result.fontsFailed.length > 0 || refreshResults.some(item => item.fontsFailed);
-                if (refreshFailures > 0 || result.failed.length > 0 || fontsFailed) {
-                    new Notice('Some bundled layouts or required fonts failed to install.');
+                const failedFontFamilies = [...new Set([
+                    ...result.fonts.failed,
+                    ...refreshResults.flatMap(item => item.fonts.failed)
+                ])];
+                if (refreshFailures > 0 || result.failed.length > 0 || failedFontFamilies.length > 0) {
+                    new Notice(`Some bundled layouts or required fonts failed to install${failedFontFamilies.length > 0 ? ` (fonts: ${failedFontFamilies.join(', ')})` : ''}.`);
                 } else {
                     // Templates and fonts are now current on disk, so clear the
                     // "Update templates" nudge by acknowledging the hotfix
@@ -3009,10 +3017,11 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                         plugin.settings.templateHotfixHistory
                     );
                     await plugin.saveSettings();
+                    const fontSummary = formatBundledFontInstallSummary(result.fonts);
                     if (result.installed.length > 0) {
-                        new Notice(`Installed ${result.installed.length} bundled layout template(s) and required fonts in ${getConfiguredPandocFolder(plugin)}/.`);
+                        new Notice(`Installed ${result.installed.length} bundled layout template(s) and required fonts in ${getConfiguredPandocFolder(plugin)}/.${fontSummary ? `\n\n${fontSummary}` : ''}`, 12000);
                     } else {
-                        new Notice('Bundled layouts and required fonts are installed and refreshed.');
+                        new Notice(`Bundled layouts and required fonts are installed and refreshed.${fontSummary ? `\n\n${fontSummary}` : ''}`, 12000);
                     }
                 }
                 renderLayoutRows();

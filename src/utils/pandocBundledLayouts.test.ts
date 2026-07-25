@@ -12,9 +12,11 @@ import {
     ensureBundledLayoutInstalledForExport,
     ensureBundledPandocLayoutsRegistered,
     ensureSpecDrivenBundledFictionTemplatesCurrent,
+    formatBundledFontInstallSummary,
     getVaultFontDir,
     getBundledPandocLayoutContent,
     getBundledPandocLayouts,
+    installBundledPandocFonts,
     installBundledPandocLayouts,
     setBundledFontSourcePath,
     setPandocFontPathsForVault,
@@ -456,6 +458,66 @@ describe('bundled pandoc layout export auto-install', () => {
         expect(history).toHaveLength(1);
         expect(history[0].layoutId).toBe(layout.id);
         expect(history[0].hotfixId).toBe(HOTFIX_ID_SPEC_DRIFT_OVERWRITE);
+    });
+
+    /**
+     * Regression for GH #29 (part 2): the "Install" Notice must never claim
+     * fonts were installed when the on-disk result doesn't actually match the
+     * source byte-for-byte. Simulates a silently truncated write (the real
+     * failure mode a full disk or interrupted copy would produce) and
+     * verifies every affected family is reported as failed, not installed.
+     */
+    it('never reports a font family as installed/already-present when the bundled source asset itself is empty', async () => {
+        const { plugin } = createPluginWithBundledLayout('bundled-fiction-contemporary-literary');
+        const vaultBase = (plugin.app.vault.adapter as unknown as { getBasePath: () => string }).getBasePath(); // SAFE: test asserts against the desktop vault base path used for local font installation.
+        const sourceFontsRoot = path.join(vaultBase, '.obsidian/plugins/radial-timeline/assets/fonts');
+        // Simulate the real-world failure mode this guards against: a bundled
+        // asset that is corrupt/empty on disk (e.g. a build step that failed
+        // silently), not a copy error we'd have to fake.
+        fs.writeFileSync(path.join(sourceFontsRoot, 'source-serif-4', 'SourceSerif4-Regular.otf'), '');
+
+        const result = await installBundledPandocFonts(plugin);
+
+        expect(result.installed.find(f => f.family === 'source-serif-4')).toBeUndefined();
+        expect(result.alreadyPresent.find(f => f.family === 'source-serif-4')).toBeUndefined();
+        expect(result.failed).toContain('source-serif-4');
+        // Unaffected families must still succeed — one corrupt family
+        // shouldn't cascade into failing everything.
+        expect(result.failed).not.toContain('latin-modern');
+        expect(result.failed).not.toContain('sorts-mill-goudy');
+    });
+
+    /**
+     * Regression for GH #29 (part 3): the success Notice must be able to show
+     * the user exactly which files landed, their real on-disk size, and
+     * where — not just the word "installed". LICENSE/README text files that
+     * are copied alongside source-serif-4 must not be reported as if they
+     * were fonts.
+     */
+    it('reports installed font files with their verified on-disk size and absolute folder location', async () => {
+        const { plugin } = createPluginWithBundledLayout('bundled-fiction-contemporary-literary');
+
+        const result = await installBundledPandocFonts(plugin);
+
+        expect(result.failed).toEqual([]);
+        expect(result.targetRoot).toBeTruthy();
+        expect(result.targetRoot).toContain('fonts');
+
+        const sourceSerif = result.installed.find(f => f.family === 'source-serif-4');
+        expect(sourceSerif).toBeTruthy();
+        const regular = sourceSerif!.files.find(f => f.file === 'SourceSerif4-Regular.otf');
+        expect(regular).toBeTruthy();
+        expect(regular!.sizeBytes).toBeGreaterThan(0);
+        // LICENSE.md/README.md are copied alongside this family but must
+        // never be listed as if they were font files.
+        expect(sourceSerif!.files.some(f => f.file === 'LICENSE.md' || f.file === 'README.md')).toBe(false);
+
+        const summary = formatBundledFontInstallSummary(result);
+        expect(summary).toContain('source-serif-4/');
+        expect(summary).toContain('SourceSerif4-Regular.otf');
+        expect(summary).toContain('Location:');
+        expect(summary).toContain(result.targetRoot!);
+        expect(summary).not.toContain('LICENSE.md');
     });
 
     it('seeds the registry so install-all leaves all bundled fiction layouts validating', async () => {

@@ -55,15 +55,17 @@ export interface ResolvedProviderModelPricing {
 
 export const BUILTIN_PRICING: ProviderPricingTable = {
     anthropic: {
-        'claude-opus-4-8': {
+        // Drop-in upgrade at Opus 4.8 pricing: $5/$25 per MTok; cache write
+        // 1.25× (5m) / 2× (1h), cache read 0.1× — multipliers unchanged.
+        'claude-opus-5': {
             inputPer1M: 5.0,
             outputPer1M: 25.0,
             cacheWrite5mPer1M: 6.25,
             cacheWrite1hPer1M: 10.0,
             cacheReadPer1M: 0.5
         },
-        // Continuity model (one generation back). Same pricing as 4.8.
-        'claude-opus-4-7': {
+        // Continuity model (one generation back). Same pricing as Opus 5.
+        'claude-opus-4-8': {
             inputPer1M: 5.0,
             outputPer1M: 25.0,
             cacheWrite5mPer1M: 6.25,

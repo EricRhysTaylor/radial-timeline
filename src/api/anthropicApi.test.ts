@@ -63,14 +63,14 @@ describe('anthropic token counting', () => {
 
         const result = await countAnthropicTokens(
             'test-key',
-            'claude-opus-4-7',
+            'claude-opus-4-8',
             'System rules',
             'User prompt body'
         );
 
         expect(result).toEqual({
             provider: 'anthropic',
-            modelId: 'claude-opus-4-7',
+            modelId: 'claude-opus-4-8',
             inputTokens: 4321,
             source: 'provider_count'
         });
@@ -84,7 +84,7 @@ describe('anthropic token counting', () => {
 
         expect(request.url).toBe('https://api.anthropic.com/v1/messages/count_tokens');
         expect(request.headers?.['anthropic-version']).toBe('2023-06-01');
-        expect(body.model).toBe('claude-opus-4-7');
+        expect(body.model).toBe('claude-opus-4-8');
         expect(body.system).toEqual([{ type: 'text', text: 'System rules' }]);
         expect(body.messages?.[0]?.role).toBe('user');
         expect(body.messages?.[0]?.content?.[0]).toEqual({ type: 'text', text: 'User prompt body' });
@@ -101,7 +101,7 @@ describe('anthropic token counting', () => {
 
         await countAnthropicTokens(
             'test-key',
-            'claude-opus-4-7',
+            'claude-opus-4-8',
             'System rules',
             'Return {"answer":"ACK"}.',
             false,
@@ -154,7 +154,7 @@ describe('anthropic token counting', () => {
 
         await countAnthropicTokens(
             'test-key',
-            'claude-opus-4-7',
+            'claude-opus-4-8',
             'System rules',
             'Return JSON per the schema in the prompt.',
             true,
@@ -186,7 +186,7 @@ describe('anthropic token counting', () => {
     it('rejects token count responses that omit input_tokens', () => {
         expect(normalizeAnthropicTokenCountResponse({
             total_tokens: 987
-        }, 'claude-opus-4-7')).toBeNull();
+        }, 'claude-opus-4-8')).toBeNull();
     });
 });
 
@@ -332,6 +332,90 @@ describe('Claude Fable 5 always-on-thinking request shape', () => {
 
         const result = await callAnthropicApi('test-key', 'claude-fable-5', null, 'Hi', 4000, true);
         expect(result.error).not.toContain('zero data retention');
+    });
+});
+
+describe('Claude Opus 5 thinking-defaults-on request shape', () => {
+    const SCHEMA = {
+        type: 'object',
+        properties: { answer: { type: 'string' } },
+        required: ['answer'],
+        additionalProperties: false
+    };
+
+    beforeEach(() => {
+        mockedRequestUrl.mockReset();
+    });
+
+    it('keeps the forced tool + tool_choice structured path but explicitly disables thinking', async () => {
+        // Opus 5 runs adaptive thinking when the `thinking` field is omitted —
+        // the opposite of 4.8. The forced-tool structured path depends on
+        // thinking being off, so the adapter must emit thinking:{type:'disabled'}
+        // (accepted at the default effort `high`) instead of omitting the field.
+        mockedRequestUrl.mockResolvedValue({
+            status: 200,
+            text: '',
+            json: {
+                content: [{ type: 'tool_use', name: 'record_structured_response', input: { answer: 'ACK' } }],
+                stop_reason: 'tool_use'
+            }
+        } as never);
+
+        await callAnthropicApi(
+            'test-key',
+            'claude-opus-5',
+            'System rules',
+            'Return JSON.',
+            4000,
+            true,
+            undefined,
+            undefined,
+            8192,
+            false,
+            undefined,
+            SCHEMA
+        );
+
+        const body = lastRequestBody();
+        expect(body.tool_choice).toEqual({ type: 'tool', name: 'record_structured_response' });
+        expect(body.output_config).toBeUndefined();
+        expect(body.thinking).toEqual({ type: 'disabled' });
+        // No thinking headroom on the structured path — thinking is off.
+        expect(body.max_tokens).toBe(4000);
+    });
+
+    it('explicitly disables thinking on budget-less prose requests', async () => {
+        mockTextResponse('done', { stop_reason: 'end_turn' });
+
+        await callAnthropicApi('test-key', 'claude-opus-5', null, 'Hi', 4000, true);
+
+        const body = lastRequestBody();
+        expect(body.thinking).toEqual({ type: 'disabled' });
+        expect(body.output_config).toBeUndefined();
+        expect(body.max_tokens).toBe(4000);
+    });
+
+    it('uses adaptive thinking + effort when a thinking budget is requested', async () => {
+        mockTextResponse('done', { stop_reason: 'end_turn' });
+
+        await callAnthropicApi(
+            'test-key',
+            'claude-opus-5',
+            'System rules',
+            'Think it through.',
+            4000,
+            true,
+            undefined,
+            undefined,
+            8192
+        );
+
+        const body = lastRequestBody();
+        expect(body.thinking).toEqual({ type: 'adaptive' });
+        expect(body.output_config?.effort).toBe('high');
+        expect(body.max_tokens).toBe(4000 + 8192);
+        expect(body.temperature).toBeUndefined();
+        expect(body.top_p).toBeUndefined();
     });
 });
 

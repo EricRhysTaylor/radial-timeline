@@ -27,16 +27,16 @@ describe('release channel curation', () => {
     it('returns the current Anthropic model, the premium pro entry, and the one-back continuity model', () => {
         const picker = getPickerModelsForProvider(BUILTIN_MODELS, 'anthropic').map(model => model.alias);
         // Curated order is [newest-stable, newest-pro], then remainder:
-        //   - 4.8: newest stable, the auto-selected default, offered first.
+        //   - Opus 5: newest stable, the auto-selected default, offered first.
         //   - Fable 5: the 'pro'-channel premium model — visible and pinnable
         //     but never the silent default (it is 2× Opus cost).
-        //   - 4.7: continuity opt-in so in-flight authors aren't force-migrated.
-        expect(picker).toEqual(['claude-opus-4.8', 'claude-fable-5', 'claude-opus-4.7']);
+        //   - 4.8: continuity opt-in so in-flight authors aren't force-migrated.
+        expect(picker).toEqual(['claude-opus-5', 'claude-fable-5', 'claude-opus-4.8']);
     });
 
-    it('keeps Claude Fable 5 off the stable channel so latest-stable stays Opus 4.8', () => {
+    it('keeps Claude Fable 5 off the stable channel so latest-stable stays Opus 5', () => {
         const stable = selectLatestModelByReleaseChannel(BUILTIN_MODELS, 'anthropic', 'stable');
-        expect(stable?.alias).toBe('claude-opus-4.8');
+        expect(stable?.alias).toBe('claude-opus-5');
         const fable = BUILTIN_MODELS.find(model => model.id === 'claude-fable-5');
         expect(fable?.rollout?.channel).toBe('pro');
     });
@@ -49,8 +49,8 @@ describe('release channel curation', () => {
         expect(stable?.alias).toBe('gpt-5.5');
     });
 
-    it('selectLatestModelByReleaseChannel returns the only stable Anthropic model', () => {
+    it('selectLatestModelByReleaseChannel returns the newest stable Anthropic model', () => {
         const stable = selectLatestModelByReleaseChannel(BUILTIN_MODELS, 'anthropic', 'stable');
-        expect(stable?.alias).toBe('claude-opus-4.8');
+        expect(stable?.alias).toBe('claude-opus-5');
     });
 });

@@ -44,7 +44,33 @@ describe('BUILTIN_MODELS — OpenAI GPT-5.5', () => {
     });
 });
 
-describe('BUILTIN_MODELS — Anthropic Claude Opus 4.8', () => {
+describe('BUILTIN_MODELS — Anthropic Claude Opus 5', () => {
+    it('exposes a 1M context / 128k output window on the stable channel', () => {
+        const model = byAlias('claude-opus-5');
+        expect(model.id).toBe('claude-opus-5');
+        expect(model.line).toBe('claude-opus');
+        expect(model.contextWindow).toBe(1000000);
+        expect(model.maxOutput).toBe(128000);
+        expect(model.status).toBe('stable');
+        expect(model.tier).toBe('DEEP');
+        expect(model.rollout?.channel).toBe('stable');
+    });
+
+    it('captures the Opus 5 request-shape constraints (managed sampling, adaptive-only, thinking on by default)', () => {
+        const model = byAlias('claude-opus-5');
+        expect(model.constraints).toMatchObject({
+            supportsTemperature: false,
+            supportsTopP: false,
+            supportsAdaptiveThinking: true,
+            thinkingDefaultsOn: true
+        });
+        // Opus 5 is configurable-thinking, NOT always-on: the forced-tool
+        // structured path stays valid (with an explicit disabled shape).
+        expect(model.constraints?.thinkingAlwaysOn).toBeUndefined();
+    });
+});
+
+describe('BUILTIN_MODELS — Anthropic Claude Opus 4.8 (continuity)', () => {
     it('exposes a 1M context / 128k output window', () => {
         const model = byAlias('claude-opus-4.8');
         expect(model.id).toBe('claude-opus-4-8');
@@ -102,7 +128,7 @@ describe('BUILTIN_MODELS — Google Gemini', () => {
 describe('BUILTIN_MODELS — catalog policy invariants', () => {
     it('keeps the catalog small enough to be deliberately curated (one top model per provider, plus deliberate splits)', () => {
         const cloud = BUILTIN_MODELS.filter(m => m.provider !== 'none' && m.provider !== 'ollama');
-        // Anthropic 3 (Opus 4.8 + 4.7 continuity + Fable 5 premium pro lane)
+        // Anthropic 3 (Opus 5 + 4.8 continuity + Fable 5 premium pro lane)
         // + OpenAI 2 (5.5 + 5.4 economy) + Google 2 (3.1 Pro depth / 3.5 Flash
         // speed) = 7 cloud models. Fable 5 was promoted under the deliberate
         // process in docs/engineering/standards/model-promotion.md as an

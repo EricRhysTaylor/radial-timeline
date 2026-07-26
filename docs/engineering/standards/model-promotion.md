@@ -11,9 +11,11 @@ This policy was adopted on **2026-05-22** after the audit found that every model
 One top model per provider line, plus a Google fast/deep split where the speed/depth tradeoff is a genuine quality dimension (not a cost dimension), plus an optional **one-back continuity model** on the Anthropic depth lane (see [Continuity models](#continuity-models-one-back)).
 
 ```
-Anthropic: Claude Opus 4.8              (depth, current — auto-selected)
-           Claude Opus 4.7              (depth, one-back continuity)
+Anthropic: Claude Opus 5                (depth, current — auto-selected)
+           Claude Opus 4.8              (depth, one-back continuity)
+           Claude Fable 5               (depth, premium 'pro' channel — explicit choice only)
 OpenAI:    GPT-5.5                       (depth)
+           GPT-5.4                       (economy second on the gpt-5 line)
 Google:    Gemini 3.1 Pro Preview        (depth)
            Gemini 3.5 Flash              (speed — different reasoning style, not just faster)
 Ollama:    llama3, local-model           (local)

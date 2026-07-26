@@ -91,6 +91,18 @@ export interface ModelInfo {
          * `thinking:{type:'adaptive'}` field); an always-on model emits none.
          */
         thinkingAlwaysOn?: boolean;
+        /**
+         * Thinking runs by default when the `thinking` field is omitted
+         * (Claude Opus 5). Unlike `thinkingAlwaysOn`, thinking IS
+         * configurable: `thinking:{type:'disabled'}` is accepted at effort
+         * `high` or below (400 at xhigh/max). The adapter must therefore emit
+         * an explicit `thinking:{type:'disabled'}` on every path where RT
+         * relies on thinking being off (structured output via forced tool,
+         * plain prose without a thinking budget) — silently omitting the
+         * field would run adaptive thinking inside max_tokens and change the
+         * request contract vs Opus 4.8.
+         */
+        thinkingDefaultsOn?: boolean;
         /** Provider endpoint/lane RT should use for this model. */
         preferredOpenAiEndpoint?: 'responses' | 'chat_completions';
     };

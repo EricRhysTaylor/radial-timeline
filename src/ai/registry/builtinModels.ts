@@ -19,6 +19,62 @@ const LOCAL_CAPS: Capability[] = ['jsonStrict'];
  */
 export const BUILTIN_MODELS: ModelInfo[] = [
     {
+        // Current Anthropic depth model. Same pricing and feature set as
+        // Opus 4.8 ($5/$25 per MTok, 1M context, 128K output) with two
+        // request-contract deltas, both encoded in constraints:
+        //   - Thinking is ON BY DEFAULT when the `thinking` field is omitted
+        //     (opposite of 4.8, where omission meant no thinking). RT's
+        //     non-thinking paths therefore send an explicit
+        //     thinking:{type:'disabled'} — see thinkingDefaultsOn and the
+        //     adapter note in anthropicApi.ts. Disabled is accepted only at
+        //     effort `high` or below (400 at xhigh/max); RT never emits
+        //     effort above 'high'.
+        //   - temperature/top_p remain rejected (same as 4.7/4.8); adaptive
+        //     thinking is the only on-mode (thinking:{type:'enabled'} → 400).
+        // Cache: 5m/1h TTLs and write/read multipliers unchanged from 4.8;
+        // minimum cacheable prefix drops to 512 tokens (4.8: 1024), so
+        // existing cache_control plumbing carries over and shorter prefixes
+        // now cache. Opus 5 draws from its own rate-limit bucket, separate
+        // from the combined Opus 4.x pool.
+        // PENDING VERIFICATION: contract transcribed from Anthropic's
+        // migration guide (2026-07); run
+        //   npm run smoke-model -- --provider anthropic --model claude-opus-5
+        // before first release with this catalog (needs ANTHROPIC_API_KEY).
+        provider: 'anthropic',
+        id: 'claude-opus-5',
+        alias: 'claude-opus-5',
+        label: 'Claude Opus 5',
+        line: 'claude-opus',
+        tier: 'DEEP',
+        capabilities: [...DEEP_CAPS],
+        personality: { reasoning: 10, writing: 10, determinism: 9 },
+        contextWindow: 1000000,
+        maxOutput: 128000,
+        releasedAt: '2026-07-24',
+        status: 'stable',
+        rollout: {
+            channel: 'stable',
+            status: 'stable',
+            lane: 'default'
+        },
+        constraints: {
+            supportsTemperature: false,
+            supportsTopP: false,
+            supportsAdaptiveThinking: true,
+            thinkingDefaultsOn: true
+        }
+    },
+    {
+        // Continuity model: the immediately-prior Opus, kept one generation
+        // back so authors mid-project aren't force-migrated off 4.8 when
+        // Opus 5 ships. Auto-selection (latest-stable) resolves to Opus 5 —
+        // 4.8 is an explicit opt-in in the picker. Same pricing as Opus 5.
+        // Retire when a newer Opus promotes Opus 5 to N-1.
+        // Opus 4.7+ (incl. 4.8) reject request-level temperature/top_p
+        // (provider-managed sampling) and use adaptive thinking only — the
+        // legacy thinking:{type:'enabled'} shape returns 400. Verified via
+        // smoke probe against Opus 4.7 (2026-05-23); 4.8 keeps the contract
+        // per the migration guide (no breaking changes from 4.7).
         provider: 'anthropic',
         id: 'claude-opus-4-8',
         alias: 'claude-opus-4.8',
@@ -30,40 +86,6 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         contextWindow: 1000000,
         maxOutput: 128000,
         releasedAt: '2026-05-28',
-        status: 'stable',
-        rollout: {
-            channel: 'stable',
-            status: 'stable',
-            lane: 'default'
-        },
-        // Opus 4.7+ (incl. 4.8) reject request-level temperature/top_p
-        // (provider-managed sampling) and use adaptive thinking only — the
-        // legacy thinking:{type:'enabled'} shape returns 400. Verified via
-        // smoke probe against Opus 4.7 (2026-05-23); 4.8 keeps the contract
-        // per the migration guide (no breaking changes from 4.7).
-        constraints: {
-            supportsTemperature: false,
-            supportsTopP: false,
-            supportsAdaptiveThinking: true
-        }
-    },
-    {
-        // Continuity model: the immediately-prior Opus, kept one generation
-        // back so authors mid-project aren't force-migrated off 4.7 when 4.8
-        // ships. Auto-selection (latest-stable) still resolves to 4.8 — 4.7
-        // is an explicit opt-in in the picker. Same request contract and
-        // pricing as 4.8. Retire when a newer Opus promotes 4.8 to N-1.
-        provider: 'anthropic',
-        id: 'claude-opus-4-7',
-        alias: 'claude-opus-4.7',
-        label: 'Claude Opus 4.7',
-        line: 'claude-opus',
-        tier: 'DEEP',
-        capabilities: [...DEEP_CAPS],
-        personality: { reasoning: 10, writing: 10, determinism: 9 },
-        contextWindow: 1000000,
-        maxOutput: 128000,
-        releasedAt: '2026-04-16',
         status: 'stable',
         rollout: {
             channel: 'stable',

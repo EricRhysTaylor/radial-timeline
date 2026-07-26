@@ -7,7 +7,7 @@
 import { requestUrl } from 'obsidian';
 import { warnLegacyAccess } from './legacyAccessGuard';
 import { CACHE_BREAK_DELIMITER } from '../ai/prompts/composeEnvelope';
-import { modelSupportsAdaptiveThinking, modelUsesAlwaysOnThinking } from '../ai/registry/modelRequestProfiles';
+import { modelSupportsAdaptiveThinking, modelThinkingDefaultsOn, modelUsesAlwaysOnThinking } from '../ai/registry/modelRequestProfiles';
 import type { AnthropicCacheTtl, EvidenceDocument, TokenCountResult } from '../ai/types';
 
 export type AnthropicTextBlock = {
@@ -140,7 +140,8 @@ type AnthropicMessageRequestBody = {
   top_p?: number;
   thinking?:
     | { type: 'enabled'; budget_tokens: number }
-    | { type: 'adaptive' };
+    | { type: 'adaptive' }
+    | { type: 'disabled' };
   output_config?: {
     effort?: 'low' | 'medium' | 'high';
     format?: { type: 'json_schema'; schema: Record<string, unknown> };
@@ -465,6 +466,20 @@ function buildAnthropicMessageRequestBody(
     } else {
       requestBody.thinking = { type: 'enabled', budget_tokens: thinkingBudget };
     }
+  } else if (modelThinkingDefaultsOn('anthropic', input.modelId)) {
+    // Claude Opus 5: omitting `thinking` runs ADAPTIVE thinking by default —
+    // the opposite of Opus 4.8/4.7, where omission meant no thinking. RT's
+    // non-thinking paths (forced-tool structured output, budget-less prose)
+    // depend on thinking being off: thinking spends inside max_tokens (we add
+    // no headroom here), and the forced tool_choice structured path was only
+    // ever validated against non-thinking requests. Emit the explicit
+    // disabled shape to preserve the Opus 4.8 contract. Per Anthropic docs,
+    // thinking:{type:'disabled'} is accepted at effort `high` or below and
+    // 400s at xhigh/max — safe here because these paths never emit
+    // output_config.effort (the API default is `high`). mapBudgetToEffort
+    // caps at 'high', so the thinking-enabled branch can never collide with
+    // that constraint either.
+    requestBody.thinking = { type: 'disabled' };
   }
   return requestBody;
 }

@@ -860,7 +860,7 @@ export default class RadialTimelinePlugin extends Plugin {
      */
     private async readPersistedSettings(): Promise<PersistedSettingsRead> {
         const path = this.getSettingsFilePath();
-        const adapter = this.app.vault.adapter;
+        const adapter = this.app.vault.adapter; // SAFE: data.json lives under .obsidian/, outside the Vault file index — the adapter is the only API that can reach it
         let raw: string;
         try {
             if (!(await adapter.exists(path))) return { kind: 'absent' };

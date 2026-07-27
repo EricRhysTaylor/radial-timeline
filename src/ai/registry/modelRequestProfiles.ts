@@ -19,6 +19,14 @@ export interface ModelRequestProfile {
      * structured output uses output_config.format instead of a forced tool.
      */
     thinkingAlwaysOn?: boolean;
+    /**
+     * Thinking defaults ON when the `thinking` field is omitted (Claude
+     * Opus 5) but remains configurable — the adapter emits an explicit
+     * thinking:{type:'disabled'} on non-thinking paths to preserve the
+     * Opus 4.8 request contract (thinking off for structured output and
+     * budget-less prose).
+     */
+    thinkingDefaultsOn?: boolean;
 }
 
 const PROVIDER_DEFAULTS: Record<Exclude<AIProviderId, 'none'>, ModelRequestProfile> = {
@@ -80,6 +88,7 @@ function constraintsToProfileOverride(constraints: ModelInfo['constraints']): Pa
     if (constraints.preferredOpenAiEndpoint !== undefined) override.preferredOpenAiEndpoint = constraints.preferredOpenAiEndpoint;
     if (constraints.supportsAdaptiveThinking !== undefined) override.supportsAdaptiveThinking = constraints.supportsAdaptiveThinking;
     if (constraints.thinkingAlwaysOn !== undefined) override.thinkingAlwaysOn = constraints.thinkingAlwaysOn;
+    if (constraints.thinkingDefaultsOn !== undefined) override.thinkingDefaultsOn = constraints.thinkingDefaultsOn;
     return override;
 }
 
@@ -154,4 +163,17 @@ export function modelUsesAlwaysOnThinking(
     modelId?: string
 ): boolean {
     return getModelRequestProfile(provider, modelId).thinkingAlwaysOn === true;
+}
+
+/**
+ * Whether thinking runs by default when the `thinking` field is omitted
+ * (Claude Opus 5). On such models the adapter must send an explicit
+ * thinking:{type:'disabled'} wherever RT expects a non-thinking request.
+ * Declared per-model via ModelInfo.constraints.thinkingDefaultsOn.
+ */
+export function modelThinkingDefaultsOn(
+    provider: Exclude<AIProviderId, 'none'>,
+    modelId?: string
+): boolean {
+    return getModelRequestProfile(provider, modelId).thinkingDefaultsOn === true;
 }

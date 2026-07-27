@@ -3,4 +3,4 @@
 
 export const DEFAULT_GOOGLE_MODEL_ID = 'gemini-3.5-flash';
 export const DEFAULT_OPENAI_MODEL_ID = 'gpt-5.5';
-export const DEFAULT_ANTHROPIC_MODEL_ID = 'claude-opus-4-8';
+export const DEFAULT_ANTHROPIC_MODEL_ID = 'claude-opus-5';

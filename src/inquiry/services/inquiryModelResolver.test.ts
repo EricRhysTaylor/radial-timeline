@@ -4,7 +4,7 @@ import { buildDefaultAiSettings } from '../../ai/settings/aiSettings';
 import { resolveInquiryEngine } from './inquiryModelResolver';
 
 describe('resolveInquiryEngine', () => {
-    it('keeps Anthropic Auto on Sonnet 4.6 when the provider uses latestStable', () => {
+    it('resolves Anthropic latestStable to the current Opus', () => {
         const plugin = {
             settings: {
                 aiSettings: {
@@ -24,11 +24,11 @@ describe('resolveInquiryEngine', () => {
 
         expect(resolved.provider).toBe('anthropic');
         expect(resolved.blocked).toBeUndefined();
-        expect(resolved.modelId).toBe('claude-opus-4-8');
-        expect(resolved.modelAlias).toBe('claude-opus-4.8');
+        expect(resolved.modelId).toBe('claude-opus-5');
+        expect(resolved.modelAlias).toBe('claude-opus-5');
     });
 
-    it('resolves pinned Anthropic Opus 4.7 when explicitly selected', () => {
+    it('resolves pinned Anthropic Opus 4.8 (continuity) when explicitly selected', () => {
         const plugin = {
             settings: {
                 aiSettings: {

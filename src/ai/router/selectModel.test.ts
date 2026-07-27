@@ -29,13 +29,13 @@ describe('selectModel', () => {
             policy: { type: 'latestStable' },
             requiredCapabilities: ['longContext', 'jsonStrict', 'reasoningStrong']
         });
-        expect(result.model.alias).toBe('claude-opus-4.8');
+        expect(result.model.alias).toBe('claude-opus-5');
     });
 
-    it('does NOT auto-default to Claude Fable 5 despite its newer releasedAt (2× Opus cost — explicit choice only)', () => {
-        // Fable 5 is newer than Opus 4.8 but sits on the 'pro' rollout channel,
-        // so latest-stable resolution (which reads channel === 'stable') must
-        // keep resolving to Opus 4.8 for every capability-based feature
+    it('does NOT auto-default to Claude Fable 5 (2× Opus cost — explicit choice only)', () => {
+        // Fable 5 sits on the 'pro' rollout channel, so latest-stable
+        // resolution (which reads channel === 'stable') must keep resolving
+        // to Opus 5 for every capability-based feature
         // (Pulse/Gossamer/Inquiry). This is the cost guard: Fable costs 2× Opus.
         const fable = BUILTIN_MODELS.find(m => m.id === 'claude-fable-5');
         expect(fable, 'Claude Fable 5 must be in the registry').toBeTruthy();
@@ -47,7 +47,7 @@ describe('selectModel', () => {
             policy: { type: 'latestStable' },
             requiredCapabilities: [...deepCaps]
         });
-        expect(result.model.alias).toBe('claude-opus-4.8');
+        expect(result.model.alias).toBe('claude-opus-5');
         expect(result.model.id).not.toBe('claude-fable-5');
     });
 

@@ -32,8 +32,12 @@ type CertificationReport = {
     cases: CertificationCaseResult[];
 };
 
-const PINNED_ANTHROPIC_POLICY = { type: 'pinned', pinnedAlias: 'claude-opus-4.7' } as const;
-const MODEL_ID = 'claude-opus-4-7';
+// Certification targets the current Anthropic depth model. Re-run live
+// (RT_ANTHROPIC_API_KEY + RT_USE_LIVE_OBSIDIAN_REQUEST=1) after any Opus
+// promotion — the recorded report in docs/audits/ still reflects the last
+// live run's model until then.
+const PINNED_ANTHROPIC_POLICY = { type: 'pinned', pinnedAlias: 'claude-opus-5' } as const;
+const MODEL_ID = 'claude-opus-5';
 const UNIQUE_CODE = 'AURORA-LATTICE';
 const REPORT_JSON_PATH = resolve(process.cwd(), 'docs', 'audits', 'anthropic-certification.json');
 const REPORT_MD_PATH = resolve(process.cwd(), 'docs', 'audits', 'anthropic-certification.md');

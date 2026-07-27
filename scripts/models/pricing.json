@@ -3,7 +3,7 @@
   "models": [
     {
       "provider": "anthropic",
-      "modelId": "claude-opus-4-8",
+      "modelId": "claude-opus-5",
       "inputPer1M": 5,
       "outputPer1M": 25,
       "cacheWrite5mPer1M": 6.25,
@@ -12,7 +12,7 @@
     },
     {
       "provider": "anthropic",
-      "modelId": "claude-opus-4-7",
+      "modelId": "claude-opus-4-8",
       "inputPer1M": 5,
       "outputPer1M": 25,
       "cacheWrite5mPer1M": 6.25,

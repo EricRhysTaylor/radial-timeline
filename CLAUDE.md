@@ -31,6 +31,20 @@ The primary branch is `main`.
   (force-push, hard reset of pushed commits, branch deletion of shared
   refs) or when the user explicitly says "show me first."
 
+## Remote Session Deploys
+
+- Remote (cloud) Claude Code sessions run in an isolated container with a
+  COPY of this file tree. Builds and file writes there NEVER reach the Mac
+  Studio's disk or the Obsidian vault plugin folders. A remote agent must
+  never claim the local plugin is updated — its job ends at pushed/merged
+  commits on origin/main.
+- The Mac Studio picks up remote merges automatically via the deploy
+  watcher: a launchd agent runs `scripts/deploy-watch.sh` every 2 minutes,
+  fast-forwards a clean `main` checkout, and rebuilds into all vault
+  folders. One-time install on the Mac: `bash scripts/install-deploy-watch.sh`.
+  After any remote merge, the new build is local within ~2 minutes; reload
+  Obsidian (toggle the plugin) to load it.
+
 ## Audit Ownership
 
 - Recurring engineering audits are agent-owned tasks, not manual user tasks.

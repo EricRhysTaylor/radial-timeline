@@ -465,7 +465,7 @@ export interface TranslationKeys {
         analyzing: { badge: string; title: string; statusApplying: string; preparing: string; abortButton: string; abortedNotice: string; phasePattern: string; phaseCues: string; phaseComplete: string; };
         review: { badge: string; title: string; subtitle: string; filterNeedsReview: string; filterTextCues: string; rippleMode: string; rippleModeHelp: string; rippleAnchoredToggle: string; rippleAnchoredHelp: string; undoTooltip: string; redoTooltip: string; historyTooltip: string; historyEmpty: string; historyItem: string; snapshotAssurance: string; overwriteAuthorDates: string; overwriteAuthorDatesHelp: string; backButton: string; applyButton: string; openAuditButton: string; openAuditButtonAll: string; auditToggleOn: string; auditToggleOff: string; narrativePlacement: string; chronoPosition: string; emptyFilter: string; untitled: string; warningBackwardTime: string; warningLargeGap: string; warningMissingWhen: string; warningDuplicateWhen: string; openInWorkspace: string; shiftDayBack: string; shiftDayForward: string; shiftHourBack: string; shiftHourForward: string; summaryChanged: string; summaryNeedReview: string; summarySelected: string; summaryAuthored: string; };
         apply: { noChangesNotice: string; partialNotice: string; successWithSnapshotNotice: string; snapshotFailedNotice: string; };
-        restore: { successNotice: string; partialNotice: string; noSnapshotNotice: string; menuItem: string; toolScaffold: string; toolAudit: string; };
+        restore: { successNotice: string; partialOfTotalNotice: string; partialNotice: string; noFrontmatterNotice: string; noSnapshotNotice: string; menuItem: string; toolScaffold: string; toolAudit: string; };
         reset: { button: string; tooltip: string; title: string; body: string; note: string; confirmButton: string; successNotice: string; };
         confirm: { title: string; warning: string; applyButton: string; cancelButton: string; description: string; };
     };
@@ -2604,7 +2604,9 @@ export const en: TranslationKeys = {
         },
         restore: {
             successNotice: 'Restored {{restored}} scenes from snapshot ({{label}}).',
+            partialOfTotalNotice: 'Restored {{restored}} of {{total}} scenes from snapshot ({{label}}).',
             partialNotice: 'Restored {{restored}} scenes from snapshot ({{label}}). {{failed}} failed.',
+            noFrontmatterNotice: '{{count}} scenes have no frontmatter block and were left unchanged: {{paths}}',
             noSnapshotNotice: 'No timeline snapshot found.',
             menuItem: '{{label}} · {{count}} scenes · {{tool}}',
             toolScaffold: 'Scaffold',

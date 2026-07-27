@@ -15,7 +15,8 @@ import {
     saveTimelineSnapshot,
     getLatestTimelineSnapshot,
     restoreTimelineSnapshot,
-    TIMELINE_SNAPSHOT_FOLDER
+    TIMELINE_SNAPSHOT_FOLDER,
+    type SnapshotMeta
 } from './timelineSnapshot';
 import { buildScaffoldPreview } from './scaffoldPreview';
 
@@ -786,5 +787,69 @@ describe('timeline repair normalizer', () => {
 
         // Resetting again is a no-op, not an error.
         expect(await clearWhenChangeLog(app as never)).toBe(false);
+    });
+});
+
+describe('snapshot restore accounting', () => {
+    it('does not count a scene without frontmatter as restored', async () => {
+        const app = createInMemoryApp({
+            'Book/01 Scene.md': '---\nWhen: 2026-01-01 08:00\nClass: Scene\n---\nBody.',
+            'Book/02 No Frontmatter.md': 'Body only — no YAML block at all.',
+            'Book/03 Missing.md': '---\nWhen: 2026-01-03 08:00\n---\nBody.'
+        });
+
+        // Snapshot claims three scenes; only one of them can actually be
+        // written back, one has no frontmatter, one is gone from the vault.
+        const meta: SnapshotMeta = {
+            file: makeFile(`${TIMELINE_SNAPSHOT_FOLDER}/timeline-snapshot-test.json`),
+            snapshot: {
+                schema: 2,
+                createdAt: '2026-07-27T12:00:00.000Z',
+                displayLabel: 'Jul 27, 12:00 PM',
+                tool: 'scaffold',
+                entries: [
+                    { path: 'Book/01 Scene.md', title: '01', previousWhenRaw: '2085-04-01 08:00' },
+                    { path: 'Book/02 No Frontmatter.md', title: '02', previousWhenRaw: '2085-04-02 08:00' },
+                    { path: 'Book/04 Deleted.md', title: '04', previousWhenRaw: '2085-04-04 08:00' }
+                ]
+            }
+        };
+
+        const result = await restoreTimelineSnapshot(app as never, meta);
+
+        expect(result.total).toBe(3);
+        expect(result.restored).toBe(1);
+        expect(result.skipped).toBe(1);
+        expect(result.failed).toBe(0);
+        expect(result.noFrontmatterPaths).toEqual(['Book/02 No Frontmatter.md']);
+
+        // The real restore landed; the frontmatter-less note is untouched.
+        expect(await readFile(app, 'Book/01 Scene.md')).toContain('When: 2085-04-01 08:00');
+        expect(await readFile(app, 'Book/02 No Frontmatter.md')).toBe('Body only — no YAML block at all.');
+    });
+
+    it('counts a scene whose When was already absent as restored', async () => {
+        const app = createInMemoryApp({
+            'Book/01 Scene.md': '---\nClass: Scene\n---\nBody.'
+        });
+
+        const meta: SnapshotMeta = {
+            file: makeFile(`${TIMELINE_SNAPSHOT_FOLDER}/timeline-snapshot-test.json`),
+            snapshot: {
+                schema: 2,
+                createdAt: '2026-07-27T12:00:00.000Z',
+                displayLabel: 'Jul 27, 12:00 PM',
+                tool: 'scaffold',
+                entries: [
+                    { path: 'Book/01 Scene.md', title: '01', previousWhenRaw: null }
+                ]
+            }
+        };
+
+        // The scene is already in the snapshot's target state (no When), so
+        // this is a completed restore, not a silent no-op.
+        const result = await restoreTimelineSnapshot(app as never, meta);
+        expect(result.restored).toBe(1);
+        expect(result.noFrontmatterPaths).toEqual([]);
     });
 });

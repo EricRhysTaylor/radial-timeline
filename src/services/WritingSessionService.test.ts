@@ -4,8 +4,10 @@ import type { WritingSessionRecord } from '../types/settings';
 import {
     buildDailyWritingStats,
     buildDailyWritingSessionProgress,
+    buildCorruptSessionLogPath,
     buildWritingRangeStats,
     collectSceneCompletionEvents,
+    parsePortableSessionLog,
     normalizeWritingSessionsSettings,
     WritingSessionService
 } from './WritingSessionService';
@@ -998,5 +1000,64 @@ describe('WritingSessionService per-scene activity', () => {
         } finally {
             vi.useRealTimers();
         }
+    });
+});
+
+describe('portable session log corruption handling', () => {
+    it('reports a damaged archive as unreadable rather than as empty history', () => {
+        expect(parsePortableSessionLog('{ not json')).toMatchObject({ kind: 'unreadable' });
+        expect(parsePortableSessionLog('{"records":"nope"}')).toMatchObject({ kind: 'unreadable' });
+        expect(parsePortableSessionLog('{"records":[]}')).toEqual({ kind: 'ok', records: [] });
+    });
+
+    it('dates the quarantine filename', () => {
+        expect(buildCorruptSessionLogPath(new Date(2026, 6, 27)))
+            .toBe('Radial Timeline/Writing Sessions.corrupt-2026-07-27.json');
+    });
+
+    it('renames an unparseable archive instead of overwriting it', async () => {
+        const existingFile = { path: 'Radial Timeline/Writing Sessions.json' };
+        const calls: string[] = [];
+        let created = '';
+        const plugin = {
+            settings: {
+                writingSessions: {
+                    defaults: { defaultMode: 'drafting' },
+                    records: [],
+                    active: {
+                        id: 'active-session',
+                        mode: 'drafting',
+                        stage: 'Zero',
+                        stagePreference: 'Zero',
+                        startedAt: '2026-07-27T10:00:00.000Z',
+                        lastResumedAt: '2026-07-27T10:00:00.000Z',
+                        lastSeenAt: '2026-07-27T10:30:00.000Z',
+                        elapsedMsBeforePause: 0,
+                    },
+                },
+            },
+            saveSettings: async () => undefined,
+            app: {
+                vault: {
+                    getAbstractFileByPath: (path: string) =>
+                        (path === 'Radial Timeline/Writing Sessions.json' ? existingFile
+                            : path === 'Radial Timeline' ? { path } : null),
+                    read: async () => 'these are not the JSON records you are looking for',
+                    rename: async (_file: unknown, path: string) => { calls.push(`rename:${path}`); },
+                    modify: async () => { calls.push('modify'); },
+                    create: async (path: string, data: string) => { calls.push(`create:${path}`); created = data; },
+                },
+            },
+        };
+        const service = new WritingSessionService(plugin as any);
+
+        await service.stop({ elapsedMs: 1800000, wordsAdded: 500, scenesCompletedPaths: [] });
+
+        // The damaged archive is preserved under a dated name and a fresh log
+        // is created; the original file is never modified in place.
+        expect(calls.some(c => c.startsWith('rename:Radial Timeline/Writing Sessions.corrupt-'))).toBe(true);
+        expect(calls).toContain('create:Radial Timeline/Writing Sessions.json');
+        expect(calls).not.toContain('modify');
+        expect(JSON.parse(created).records).toHaveLength(1);
     });
 });

@@ -130,6 +130,15 @@ export interface GetSceneDataOptions {
     sourcePath?: string;  // Override the default source path (used for Social APR project targeting)
 }
 
+/**
+ * The three genuinely different states of the plugin's data.json, kept apart
+ * so "the file is damaged" can never be mistaken for "the file is not there".
+ */
+type PersistedSettingsRead =
+    | { kind: 'absent' }
+    | { kind: 'loaded'; data: Record<string, unknown> }
+    | { kind: 'unreadable'; error: unknown };
+
 export default class RadialTimelinePlugin extends Plugin {
     settings: RadialTimelineSettings;
     public inquiryFreshLaunchPending = true;
@@ -192,6 +201,11 @@ export default class RadialTimelinePlugin extends Plugin {
     // mutation is guaranteed to be covered by a save that starts after its call.
     private saveInFlight: Promise<void> | null = null;
     private saveRequested = false;
+    // Set when data.json exists but could not be parsed. While true every save
+    // path is suppressed: the in-memory settings are DEFAULT_SETTINGS, and
+    // writing them would destroy the user's only copy of their real settings.
+    private settingsPersistenceBlocked = false;
+    private settingsBlockedNoticeShown = false;
 
     // Services
     private timelineService!: TimelineService;
@@ -826,12 +840,69 @@ export default class RadialTimelinePlugin extends Plugin {
         }
     }
 
+    /** Absolute vault-relative path of this plugin's data.json. */
+    private getSettingsFilePath(): string {
+        // manifest.dir is optional in the Obsidian API surface; the config-dir
+        // plugin folder is the only location Obsidian ever loads a plugin from,
+        // so it is the correct reconstruction rather than a guess.
+        const dir = this.manifest.dir ?? `${this.app.vault.configDir}/plugins/${this.manifest.id}`; // SAFE: manifest.dir is typed optional; this is the canonical plugin folder Obsidian loaded us from
+        return `${dir}/data.json`;
+    }
+
+    /**
+     * Read data.json explicitly instead of via loadData().
+     *
+     * Obsidian's loadData() → vault.readJson() returns null for a missing file
+     * and undefined for a file it could not JSON.parse — a distinction that a
+     * loose `== null` check erases, turning "your settings are damaged" into
+     * "brand-new vault" and then overwriting the damaged file with defaults.
+     * This reader keeps the three states apart.
+     */
+    private async readPersistedSettings(): Promise<PersistedSettingsRead> {
+        const path = this.getSettingsFilePath();
+        const adapter = this.app.vault.adapter;
+        let raw: string;
+        try {
+            if (!(await adapter.exists(path))) return { kind: 'absent' };
+            raw = await adapter.read(path);
+        } catch (error) {
+            return { kind: 'unreadable', error };
+        }
+        // A zero-byte or whitespace-only file carries no settings to lose, so
+        // it is treated as a fresh install rather than a blocked state.
+        if (raw.trim().length === 0) return { kind: 'absent' };
+        let parsed: unknown;
+        try {
+            parsed = JSON.parse(raw);
+        } catch (error) {
+            return { kind: 'unreadable', error };
+        }
+        if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            return { kind: 'unreadable', error: new Error('data.json does not contain a JSON object.') };
+        }
+        return { kind: 'loaded', data: parsed as Record<string, unknown> };
+    }
+
     async loadSettings() {
-        const rawLoaded = await this.loadData();
-        // A brand-new vault has no data.json yet (loadData → null/empty). Used
-        // below to suppress the backlog of upgrade alerts for fresh installs.
-        const isFreshInstall = rawLoaded == null || Object.keys(rawLoaded as object).length === 0;
-        const loadedSettings = rawLoaded ?? {};
+        const read = await this.readPersistedSettings();
+        if (read.kind === 'unreadable') {
+            // Blocked state: run on defaults so the UI is usable, but never
+            // persist them. saveSettings() is latched off for this session so
+            // the damaged file keeps the user's only copy of their settings.
+            this.settingsPersistenceBlocked = true;
+            this.settings = Object.assign({}, DEFAULT_SETTINGS);
+            console.error('[Radial Timeline] Could not parse settings file:', read.error);
+            new Notice(
+                'Radial Timeline could not read its settings file (data.json). Your settings have NOT been loaded '
+                + `and nothing has been overwritten. Rename or repair ${this.getSettingsFilePath()}, then reload Obsidian.`,
+                0
+            );
+            return;
+        }
+        // isFreshInstall means exactly "no data.json on disk" — used below to
+        // suppress the backlog of upgrade alerts for brand-new vaults.
+        const isFreshInstall = read.kind === 'absent';
+        const loadedSettings = read.kind === 'loaded' ? read.data : {};
         this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedSettings);
         await this.hydrateInquirySessionsFromVault();
         if (this.settings.publishStageColors?.House === '#DA7847') {
@@ -1199,7 +1270,27 @@ export default class RadialTimelinePlugin extends Plugin {
         }
     }
 
+    /** True when data.json was unreadable at load and no save may touch it. */
+    isSettingsPersistenceBlocked(): boolean {
+        return this.settingsPersistenceBlocked;
+    }
+
     async saveSettings(): Promise<void> {
+        // Single chokepoint for the blocked state. Every save path in the
+        // plugin — including the fire-and-forget `void plugin.saveSettings()`
+        // sites — funnels through here, so latching it off here is what makes
+        // "we did not overwrite your damaged settings file" actually true.
+        if (this.settingsPersistenceBlocked) {
+            if (!this.settingsBlockedNoticeShown) {
+                this.settingsBlockedNoticeShown = true;
+                new Notice(
+                    'Radial Timeline is not saving settings this session: its settings file (data.json) could not be read. '
+                    + 'Repair or rename the file and reload Obsidian — any changes you make now will be lost.',
+                    0
+                );
+            }
+            return;
+        }
         this.saveRequested = true;
         if (!this.saveInFlight) {
             this.saveInFlight = (async () => {

@@ -729,7 +729,9 @@ export const de: DeepPartial<TranslationKeys> = {
         },
         restore: {
             successNotice: '{{restored}} Szenen aus Snapshot ({{label}}) wiederhergestellt.',
+            partialOfTotalNotice: '{{restored}} von {{total}} Szenen aus Snapshot ({{label}}) wiederhergestellt.',
             partialNotice: '{{restored}} Szenen aus Snapshot ({{label}}) wiederhergestellt. {{failed}} fehlgeschlagen.',
+            noFrontmatterNotice: '{{count}} Szenen haben keinen Frontmatter-Block und blieben unverändert: {{paths}}',
             noSnapshotNotice: 'Kein Timeline-Snapshot gefunden.',
             menuItem: '{{label}} · {{count}} Szenen · {{tool}}',
             toolScaffold: 'Scaffold',

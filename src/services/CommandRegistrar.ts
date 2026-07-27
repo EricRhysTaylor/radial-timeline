@@ -7,7 +7,7 @@
 import { App, Notice } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { BookLayoutOptions, BookMeta, ManuscriptExportCleanupOptions, PublishingValidationSnapshot } from '../types';
-import { assembleManuscript, getSceneFilesByOrder, ManuscriptSceneSelection, type ManuscriptSceneHeadingMode, updateSceneWordCounts } from '../utils/manuscript';
+import { assembleManuscript, getSceneFilesByOrder, ManuscriptSceneSelection, type AssembledManuscript, type ManuscriptSceneHeadingMode, updateSceneWordCounts } from '../utils/manuscript';
 import { openGossamerScoreEntry, runGossamerAiAnalysis } from '../GossamerCommands';
 import { summarizePerfMeasurements, resetPerfMeasurements } from '../renderer/utils/Performance';
 import { registerRuntimeCommands } from '../RuntimeCommands';
@@ -299,6 +299,22 @@ export class CommandRegistrar {
         };
     }
 
+    /**
+     * Block an export whose assembly lost content. A note that failed to read
+     * is missing from `assembled.text` entirely, so any artifact written from
+     * here would be an incomplete manuscript presented as a finished one.
+     * Called before word-count writes and before any output is produced.
+     */
+    private assertNoSceneReadFailures(assembled: AssembledManuscript): void {
+        if (assembled.readFailures.length === 0) return;
+        const paths = assembled.readFailures.map(failure => failure.path);
+        throw new ExportFailure({
+            category: 'missing_files',
+            message: `Export blocked: ${paths.length} scene file(s) could not be read.`,
+            detail: paths.join('\n'),
+        });
+    }
+
     private async handleManuscriptExport(result: ManuscriptModalResult): Promise<ManuscriptExportOutcome> {
         if (this.isUnsupportedExportConfig(result)) {
             new Notice('This export configuration is not available.');
@@ -565,6 +581,7 @@ export class CommandRegistrar {
                             includeMatterPages: includeMatter,
                         }
                     );
+                    this.assertNoSceneReadFailures(assembled);
 
                     if (result.updateWordCounts) {
                         await updateSceneWordCounts(this.app, partSelection.files, assembled.scenes);
@@ -648,6 +665,7 @@ export class CommandRegistrar {
                             includeMatterPages: includeMatter,
                         }
                     );
+                    this.assertNoSceneReadFailures(assembled);
 
                     if (result.updateWordCounts) {
                         await updateSceneWordCounts(this.app, partSelection.files, assembled.scenes);
@@ -830,6 +848,7 @@ export class CommandRegistrar {
                         includeMatterPages: includeMatter,
                     }
                 );
+                this.assertNoSceneReadFailures(assembled);
 
                 if (result.updateWordCounts) {
                     await updateSceneWordCounts(this.app, partSelection.files, assembled.scenes);

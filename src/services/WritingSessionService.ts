@@ -1,4 +1,4 @@
-import { TFile } from 'obsidian';
+import { Notice, TFile } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { TimelineItem } from '../types';
 import type {
@@ -53,6 +53,40 @@ const HEARTBEAT_PERSIST_MS = 30 * 1000;
  */
 const PORTABLE_LOG_FOLDER = 'Radial Timeline';
 const PORTABLE_LOG_PATH = `${PORTABLE_LOG_FOLDER}/Writing Sessions.json`;
+
+export type PortableSessionLogRead =
+    | { kind: 'ok'; records: WritingSessionRecord[] }
+    | { kind: 'unreadable'; reason: string };
+
+/**
+ * Parse the author-owned session archive. Returns `unreadable` rather than an
+ * empty record set so the caller can tell "no history yet" apart from "the
+ * history is there but damaged" — the two need opposite write behaviour.
+ */
+export function parsePortableSessionLog(text: string): PortableSessionLogRead {
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(text);
+    } catch (error) {
+        return { kind: 'unreadable', reason: error instanceof Error ? error.message : 'invalid JSON' };
+    }
+    const records = (parsed as { records?: unknown } | null)?.records;
+    if (!Array.isArray(records)) {
+        return { kind: 'unreadable', reason: 'no "records" array' };
+    }
+    const valid: WritingSessionRecord[] = [];
+    for (const raw of records) {
+        const rec = raw as WritingSessionRecord;
+        if (rec?.id && rec.startedAt && rec.endedAt) valid.push(rec);
+    }
+    return { kind: 'ok', records: valid };
+}
+
+/** Dated quarantine path for an archive that could not be parsed. */
+export function buildCorruptSessionLogPath(when: Date): string {
+    const stamp = `${when.getFullYear()}-${String(when.getMonth() + 1).padStart(2, '0')}-${String(when.getDate()).padStart(2, '0')}`;
+    return `${PORTABLE_LOG_FOLDER}/Writing Sessions.corrupt-${stamp}.json`;
+}
 
 type Stage = typeof STAGE_ORDER[number];
 
@@ -1159,6 +1193,10 @@ export class WritingSessionService {
      * id with any existing file so the complete history survives the in-settings
      * MAX_SESSION_RECORDS cap and a plugin uninstall. Best-effort: a failure
      * here must never break stopping a session.
+     *
+     * An archive that cannot be parsed is never written over — it is renamed
+     * aside and a fresh log started, so the only copy of the pre-cap history
+     * survives even when this function cannot merge it.
      */
     private async flushPortableSessionLog(currentRecords: WritingSessionRecord[]): Promise<void> {
         try {
@@ -1166,18 +1204,22 @@ export class WritingSessionService {
             if (!vault) return;
 
             const byId = new Map<string, WritingSessionRecord>();
-            const existing = vault.getAbstractFileByPath(PORTABLE_LOG_PATH) as TFile | null;
+            let existing = vault.getAbstractFileByPath(PORTABLE_LOG_PATH) as TFile | null;
             if (existing) {
-                try {
-                    const parsed = JSON.parse(await vault.read(existing)) as { records?: unknown };
-                    if (Array.isArray(parsed?.records)) {
-                        for (const raw of parsed.records) {
-                            const rec = raw as WritingSessionRecord;
-                            if (rec?.id && rec.startedAt && rec.endedAt) byId.set(rec.id, rec);
-                        }
-                    }
-                } catch {
-                    // Corrupt/hand-edited file — fall back to current records only.
+                const read = parsePortableSessionLog(await vault.read(existing));
+                if (read.kind === 'unreadable') {
+                    // Preserve the damaged archive under a dated name rather
+                    // than merging into nothing and overwriting the original.
+                    const quarantinePath = buildCorruptSessionLogPath(new Date());
+                    await vault.rename(existing, quarantinePath);
+                    existing = null;
+                    new Notice(
+                        `Could not read ${PORTABLE_LOG_PATH} (${read.reason}). Your history was NOT overwritten — `
+                        + `the damaged file is now ${quarantinePath} and a fresh log has been started.`,
+                        0
+                    );
+                } else {
+                    for (const rec of read.records) byId.set(rec.id, rec);
                 }
             }
             for (const rec of currentRecords) byId.set(rec.id, rec);

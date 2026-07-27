@@ -27,12 +27,25 @@ export interface SceneContent {
   sourcePath?: string;
 }
 
+/** One note the assembler could not read. Carried out so callers can block. */
+export interface ManuscriptReadFailure {
+  path: string;
+  error: unknown;
+}
+
 export interface AssembledManuscript {
   text: string;
   totalWords: number;
   totalScenes: number;
   scenes: SceneContent[];
   sortOrder?: string;
+  /**
+   * Notes that failed to read. Non-empty means `text` is missing content:
+   * export runners must block before writing any deliverable. Never empty
+   * a failure into the manuscript body — a reader cannot tell it apart from
+   * the author's own prose.
+   */
+  readFailures: ManuscriptReadFailure[];
 }
 
 export type ManuscriptOrder = 'narrative' | 'chronological' | 'reverse-narrative' | 'reverse-chronological';
@@ -1062,6 +1075,7 @@ export async function assembleManuscript(
 ): Promise<AssembledManuscript> {
   const scenes: SceneContent[] = [];
   const textParts: string[] = [];
+  const readFailures: ManuscriptReadFailure[] = [];
   let totalWords = 0;
   const sceneHeadingMode = options?.sceneHeadingMode || 'scene-number-title';
   const sceneHeadingRenderMode = options?.sceneHeadingRenderMode || 'markdown-h2';
@@ -1189,12 +1203,11 @@ export async function assembleManuscript(
       const c = classifiedByPath.get(page.path);
       if (!c) return;
       const file = c.file;
-      const title = file.basename;
       if (c.readError !== null && c.content === null) {
-        console.error(`Error reading scene file ${file.path}:`, c.readError);
-        textParts.push(`## ${title}\n\n[Error reading scene]\n\n`);
+        readFailures.push({ path: file.path, error: c.readError });
         return;
       }
+      const title = file.basename;
       const content = c.content || '';
       const meta = c.matterMeta!;
       beginMatterPage();
@@ -1278,8 +1291,7 @@ export async function assembleManuscript(
     }
 
     if (c.readError !== null && c.content === null) {
-      console.error(`Error reading scene file ${file.path}:`, c.readError);
-      textParts.push(`## ${title}\n\n[Error reading scene]\n\n`);
+      readFailures.push({ path: file.path, error: c.readError });
       continue;
     }
 
@@ -1389,7 +1401,8 @@ export async function assembleManuscript(
     totalWords,
     totalScenes: sceneFiles.length,
     scenes,
-    sortOrder
+    sortOrder,
+    readFailures
   };
 }
 

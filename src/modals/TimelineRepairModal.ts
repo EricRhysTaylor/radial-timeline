@@ -1749,11 +1749,23 @@ export class TimelineRepairModal extends Modal {
                     failed: result.failed,
                     label: result.snapshotLabel
                 }));
+            } else if (result.restored < result.total) {
+                new Notice(t('timelineRepairModal.restore.partialOfTotalNotice', {
+                    restored: result.restored,
+                    total: result.total,
+                    label: result.snapshotLabel
+                }));
             } else {
                 new Notice(t('timelineRepairModal.restore.successNotice', {
                     restored: result.restored,
                     label: result.snapshotLabel
                 }));
+            }
+            if (result.noFrontmatterPaths.length > 0) {
+                new Notice(t('timelineRepairModal.restore.noFrontmatterNotice', {
+                    count: result.noFrontmatterPaths.length,
+                    paths: result.noFrontmatterPaths.join(', ')
+                }), 0);
             }
             this.close();
         } catch (error) {

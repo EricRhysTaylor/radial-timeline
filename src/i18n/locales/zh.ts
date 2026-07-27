@@ -731,7 +731,9 @@ export const zh: DeepPartial<TranslationKeys> = {
         },
         restore: {
             successNotice: '已从快照 ({{label}}) 恢复 {{restored}} 个场景。',
+            partialOfTotalNotice: '已从快照 ({{label}}) 恢复 {{total}} 个场景中的 {{restored}} 个。',
             partialNotice: '已从快照 ({{label}}) 恢复 {{restored}} 个场景。{{failed}} 项失败。',
+            noFrontmatterNotice: '{{count}} 个场景没有 frontmatter 块，未做更改：{{paths}}',
             noSnapshotNotice: '未找到时间轴快照。',
             menuItem: '{{label}} · {{count}} 个场景 · {{tool}}',
             toolScaffold: '脚手架',

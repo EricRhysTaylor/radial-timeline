@@ -186,6 +186,10 @@ export interface RestoreResult {
     restored: number;
     skipped: number;
     failed: number;
+    /** Total entries in the snapshot — the denominator for "X of Y restored". */
+    total: number;
+    /** Scenes with no frontmatter block; the restore could not be applied. */
+    noFrontmatterPaths: string[];
     snapshotLabel: string;
 }
 
@@ -194,6 +198,11 @@ export interface RestoreResult {
  * frontmatter, replacing the current `When` line. Scenes that had no
  * previous `When` are stripped of the field. Missing scene files are
  * skipped (counted, not errored).
+ *
+ * `restored` counts only scenes whose frontmatter was actually reached.
+ * vault.process() resolving is not evidence of a restore — a transform that
+ * returns its input unchanged succeeds just as loudly as one that rewrites
+ * the file, and this is the one feature whose job is to undo a bulk write.
  */
 export async function restoreTimelineSnapshot(
     app: App,
@@ -202,6 +211,7 @@ export async function restoreTimelineSnapshot(
     let restored = 0;
     let skipped = 0;
     let failed = 0;
+    const noFrontmatterPaths: string[] = [];
 
     for (const entry of meta.snapshot.entries) {
         const file = app.vault.getAbstractFileByPath(entry.path);
@@ -210,13 +220,22 @@ export async function restoreTimelineSnapshot(
             continue;
         }
         try {
+            // Collected rather than assigned to a captured `let` so the
+            // outcome survives TypeScript's closure narrowing intact.
+            const outcomes: FrontmatterApplyResult[] = [];
             // Atomic read-modify-write: process() guarantees the file is not
             // changed by another process between reading the current `When`
             // line and writing the restored value.
-            await app.vault.process(file, (content) =>
-                applyFieldToFrontmatter(content, 'When', entry.previousWhenRaw)
-            );
-            restored++;
+            await app.vault.process(file, (content) => {
+                const outcome = applyFieldToFrontmatter(content, 'When', entry.previousWhenRaw);
+                outcomes.push(outcome);
+                return outcome.kind === 'applied' ? outcome.content : content;
+            });
+            if (outcomes.some(outcome => outcome.kind === 'applied')) {
+                restored++;
+            } else {
+                noFrontmatterPaths.push(entry.path);
+            }
         } catch {
             failed++;
         }
@@ -226,6 +245,8 @@ export async function restoreTimelineSnapshot(
         restored,
         skipped,
         failed,
+        total: meta.snapshot.entries.length,
+        noFrontmatterPaths,
         snapshotLabel: meta.snapshot.displayLabel
     };
 }
@@ -243,12 +264,21 @@ function extractFieldRaw(content: string, field: string): string | null {
 }
 
 /**
+ * Result of a frontmatter field write. `no-frontmatter` is a distinct outcome
+ * rather than "the input, unchanged" so callers cannot count a no-op as a
+ * successful write.
+ */
+type FrontmatterApplyResult =
+    | { kind: 'applied'; content: string }
+    | { kind: 'no-frontmatter' };
+
+/**
  * Set, replace, or (raw === null) remove one top-level frontmatter field,
  * leaving everything else in the file byte-identical.
  */
-function applyFieldToFrontmatter(content: string, field: string, raw: string | null): string {
+function applyFieldToFrontmatter(content: string, field: string, raw: string | null): FrontmatterApplyResult {
     const match = content.match(FRONTMATTER_RE);
-    if (!match) return content;
+    if (!match) return { kind: 'no-frontmatter' };
 
     const [, openFence, body, closeFence] = match;
     const lines = body.length > 0 ? body.split('\n') : [];
@@ -256,7 +286,9 @@ function applyFieldToFrontmatter(content: string, field: string, raw: string | n
     const idx = lines.findIndex(l => l.startsWith(prefix));
 
     if (raw === null) {
-        if (idx === -1) return content;
+        // Field already absent: the file is in the restored state, so this is
+        // an applied restore that happens to need no byte change.
+        if (idx === -1) return { kind: 'applied', content };
         lines.splice(idx, 1);
     } else {
         const newLine = `${prefix} ${raw}`;
@@ -267,5 +299,8 @@ function applyFieldToFrontmatter(content: string, field: string, raw: string | n
         }
     }
 
-    return `${openFence}${lines.join('\n')}${closeFence}${content.slice(match[0].length)}`;
+    return {
+        kind: 'applied',
+        content: `${openFence}${lines.join('\n')}${closeFence}${content.slice(match[0].length)}`
+    };
 }

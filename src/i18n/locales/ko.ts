@@ -729,7 +729,9 @@ export const ko: DeepPartial<TranslationKeys> = {
         },
         restore: {
             successNotice: '스냅샷 ({{label}})에서 {{restored}}개 장면을 복원했습니다.',
+            partialOfTotalNotice: '스냅샷 ({{label}})에서 {{total}}개 중 {{restored}}개 장면을 복원했습니다.',
             partialNotice: '스냅샷 ({{label}})에서 {{restored}}개 장면을 복원했습니다. {{failed}}개 실패.',
+            noFrontmatterNotice: '{{count}}개 장면에 프론트매터 블록이 없어 변경되지 않았습니다: {{paths}}',
             noSnapshotNotice: '타임라인 스냅샷을 찾을 수 없습니다.',
             menuItem: '{{label}} · {{count}}개 장면 · {{tool}}',
             toolScaffold: '스캐폴드',

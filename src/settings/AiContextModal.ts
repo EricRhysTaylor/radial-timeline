@@ -239,12 +239,12 @@ export class AiContextModal extends Modal {
         this.saveButton = new ButtonComponent(actionRow)
             .setButtonText('Save changes')
             .setCta()
-            .onClick(() => this.saveChanges());
+            .onClick(() => { void this.saveChanges(); });
         
         // Set Active button
         new ButtonComponent(actionRow)
             .setButtonText('Set as active & close')
-            .onClick(() => this.setActiveAndClose());
+            .onClick(() => { void this.setActiveAndClose(); });
         
         // Close button
         new ButtonComponent(actionRow)
@@ -356,7 +356,7 @@ export class AiContextModal extends Modal {
                 this.currentTemplateId = id;
                 this.updateEditorSection();
                 
-                new Notice(`Created template: ${name}`);
+                void this.persistTemplates(`Created template: ${name}`);
             }
         );
         modal.open();
@@ -374,7 +374,7 @@ export class AiContextModal extends Modal {
                 currentTemplate.name = newName;
                 this.updateDropdownOptions();
                 this.dropdownComponent?.setValue(this.currentTemplateId);
-                new Notice(`Renamed to: ${newName}`);
+                void this.persistTemplates(`Renamed to: ${newName}`);
             }
         );
         modal.open();
@@ -405,7 +405,7 @@ export class AiContextModal extends Modal {
                 this.currentTemplateId = id;
                 this.updateEditorSection();
                 
-                new Notice(`Created copy: ${name}`);
+                void this.persistTemplates(`Created copy: ${name}`);
             }
         );
         modal.open();
@@ -437,10 +437,33 @@ export class AiContextModal extends Modal {
         this.dropdownComponent?.setValue(this.currentTemplateId);
         this.updateEditorSection();
         
-        new Notice(`Deleted template: ${currentTemplate.name}`);
+        await this.persistTemplates(`Deleted template: ${currentTemplate.name}`);
     }
 
-    private saveChanges(): void {
+    /**
+     * Write the local template array through to plugin settings and disk.
+     * Every template mutation goes through here so the success Notice is a
+     * report of a completed write, not of an intention. `activeTemplateId` is
+     * only set when the caller is also switching the active template.
+     */
+    private async persistTemplates(successMessage: string, activeTemplateId?: string): Promise<boolean> {
+        const aiSettings = validateAiSettings(this.plugin.settings.aiSettings ?? buildDefaultAiSettings()).value;
+        aiSettings.roleTemplates = JSON.parse(JSON.stringify(this.templates)) as AiContextTemplate[];
+        if (activeTemplateId !== undefined) {
+            aiSettings.roleTemplateId = activeTemplateId;
+        }
+        this.plugin.settings.aiSettings = aiSettings;
+        try {
+            await this.plugin.saveSettings();
+        } catch (error) {
+            new Notice(`Could not save AI context templates: ${error instanceof Error ? error.message : String(error)}`, 0);
+            return false;
+        }
+        new Notice(successMessage);
+        return true;
+    }
+
+    private async saveChanges(): Promise<void> {
         const currentTemplate = this.getCurrentTemplate();
         if (!currentTemplate || currentTemplate.isBuiltIn) return;
         
@@ -448,25 +471,24 @@ export class AiContextModal extends Modal {
             currentTemplate.prompt = this.textareaEl.value;
         }
         
+        // isDirty stays true when the write failed, so the discard guard keeps
+        // warning about work that is still only in this modal.
+        if (!await this.persistTemplates('Template saved')) return;
+        
         this.isDirty = false;
         this.updateButtonStates();
-        
-        new Notice('Template saved');
     }
 
     private async setActiveAndClose(): Promise<void> {
         if (this.isDirty) {
-            this.saveChanges();
+            await this.saveChanges();
         }
 
-        const aiSettings = validateAiSettings(this.plugin.settings.aiSettings ?? buildDefaultAiSettings()).value;
-        aiSettings.roleTemplates = JSON.parse(JSON.stringify(this.templates));
-        aiSettings.roleTemplateId = this.currentTemplateId;
-        this.plugin.settings.aiSettings = aiSettings;
-        await this.plugin.saveSettings();
-        
         const currentTemplate = this.getCurrentTemplate();
-        new Notice(`Active template: ${currentTemplate?.name || 'Unknown'}`);
+        if (!await this.persistTemplates(
+            `Active template: ${currentTemplate?.name || 'Unknown'}`, // SAFE: UX default — placeholder label when the active template was just deleted
+            this.currentTemplateId
+        )) return;
         
         this.onSave();
         this.close();

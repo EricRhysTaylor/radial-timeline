@@ -730,7 +730,9 @@ export const ja: DeepPartial<TranslationKeys> = {
         },
         restore: {
             successNotice: 'スナップショット ({{label}}) から {{restored}} シーンを復元しました。',
+            partialOfTotalNotice: 'スナップショット ({{label}}) から {{total}} シーン中 {{restored}} シーンを復元しました。',
             partialNotice: 'スナップショット ({{label}}) から {{restored}} シーンを復元しました。{{failed}} 件失敗しました。',
+            noFrontmatterNotice: '{{count}} 件のシーンにフロントマターがないため変更されませんでした: {{paths}}',
             noSnapshotNotice: 'タイムラインスナップショットが見つかりません。',
             menuItem: '{{label}} · {{count}} 件のシーン · {{tool}}',
             toolScaffold: 'スキャフォールド',

@@ -10,7 +10,8 @@
 # Session Deploys).
 set -euo pipefail
 
-REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+# Repo dir: optional first arg (for testing) or resolved from script location.
+REPO_DIR="${1:-$(cd "$(dirname "$0")/.." && pwd)}"
 LOG_FILE="$REPO_DIR/.deploy-watch.log"
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 
@@ -33,8 +34,10 @@ if [ "$LOCAL" = "$REMOTE" ]; then
     exit 0  # up to date — stay silent
 fi
 
-# Never clobber in-progress local work.
-if [ -n "$(git status --porcelain)" ]; then
+# Never clobber in-progress local work. Tracked modifications only —
+# stray untracked files are normal on a dev machine and can't be harmed
+# by an ff-only merge, so they must not wedge the deploy pipeline.
+if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
     log "skip: origin/main moved to ${REMOTE:0:9} but working tree is dirty"
     exit 0
 fi

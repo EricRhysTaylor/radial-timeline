@@ -206,6 +206,11 @@ export default class RadialTimelinePlugin extends Plugin {
     // writing them would destroy the user's only copy of their real settings.
     private settingsPersistenceBlocked = false;
     private settingsBlockedNoticeShown = false;
+    // Rate limiter for the centralized save-failure Notice. A burst of failing
+    // saves (rapid toggling against a read-only vault or a full disk) must
+    // produce one Notice, not one per attempt.
+    private static readonly SAVE_FAILURE_NOTICE_WINDOW_MS = 60_000;
+    private lastSaveFailureNoticeAt = 0;
 
     // Services
     private timelineService!: TimelineService;
@@ -1304,7 +1309,43 @@ export default class RadialTimelinePlugin extends Plugin {
                 }
             })();
         }
-        await this.saveInFlight;
+        try {
+            await this.saveInFlight;
+        } catch (error) {
+            this.notifySaveFailure(error);
+            throw error;
+        }
+    }
+
+    /**
+     * Surface a settings-write failure once, centrally.
+     *
+     * ~150 call sites either fire `void plugin.saveSettings()` or sit inside an
+     * `onChange` handler whose returned promise Obsidian discards, so without
+     * this a disk-full / read-only-vault / sync-lock write failure is invisible:
+     * the toggle stays flipped, the section re-renders from the in-memory
+     * object, and the user's only symptom is that settings "randomly reset" on
+     * the next launch. saveSettings() is the single chokepoint, so one catch
+     * here covers every one of those sites.
+     *
+     * Rate-limited to one Notice per window so a burst of failing saves cannot
+     * stack dozens of dialogs; suppressed attempts still reach the console.
+     */
+    private notifySaveFailure(error: unknown): void {
+        const now = Date.now();
+        const withinWindow = now - this.lastSaveFailureNoticeAt < RadialTimelinePlugin.SAVE_FAILURE_NOTICE_WINDOW_MS;
+        if (withinWindow && this.lastSaveFailureNoticeAt !== 0) {
+            console.error('[Radial Timeline] Settings save failed (Notice suppressed — repeat within rate-limit window):', error);
+            return;
+        }
+        this.lastSaveFailureNoticeAt = now;
+        console.error('[Radial Timeline] Settings save failed:', error);
+        const reason = error instanceof Error ? error.message : String(error);
+        new Notice(
+            `Radial Timeline could not save settings: ${reason}. Your last change was NOT written to disk. `
+            + 'Check that the vault is writable and has free space, then make the change again.',
+            0
+        );
     }
 
     private async performSave(): Promise<void> {

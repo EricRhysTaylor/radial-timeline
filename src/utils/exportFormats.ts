@@ -584,6 +584,25 @@ function isLikelyBundledLatexFont(fontName: string): boolean {
         || normalized.startsWith('computer modern');
 }
 
+/**
+ * Whether a `\setmainfont{...}` argument names a font FILE rather than a
+ * family — e.g. `lmroman10-regular.otf`.
+ *
+ * fontspec resolves a file name through kpathsea (the texmf tree) or through
+ * an accompanying `Path =` directive. It never consults the OS font catalog,
+ * so asking the OS whether "lmroman10-regular.otf" is installed is a category
+ * error: the answer is always no, and the font compiles regardless.
+ *
+ * Templates started emitting this form when Latin Modern moved to TeX-tree
+ * resolution — `\setmainfont{Latin Modern Roman}` does not resolve on a stock
+ * TeX install, while the file name does. Without this guard the scanner
+ * reported "Missing required system font(s): lmroman10-regular.otf" on an
+ * export that then succeeded.
+ */
+function isFontFileReference(fontName: string): boolean {
+    return /\.(otf|ttf|ttc|woff2?)$/i.test(fontName.trim());
+}
+
 export function getTemplateFontDiagnostics(templatePath?: string): TemplateFontDiagnostics {
     const tex = readTemplateText(templatePath);
     const usesFontspec = /\\usepackage\s*\{fontspec\}|\\setmainfont|\\newfontface|\\defaultfontfeatures/i.test(tex);
@@ -603,14 +622,17 @@ export function getTemplateFontDiagnostics(templatePath?: string): TemplateFontD
     const canVerifySystemFonts = Array.isArray(catalog) || missingExplicitPathFonts.length > 0;
 
     const catalogMissingRequiredFonts = Array.isArray(catalog)
-        ? requiredFonts.filter(font => !isLikelyBundledLatexFont(font) && !isFontInstalled(font, catalog))
+        ? requiredFonts.filter(font =>
+            !isLikelyBundledLatexFont(font)
+            && !isFontFileReference(font)
+            && !isFontInstalled(font, catalog))
         : [];
     const missingRequiredFonts = Array.from(new Set([
         ...catalogMissingRequiredFonts,
         ...requiredFonts.filter(font => missingExplicitPathSet.has(font.toLowerCase())),
     ]));
     const missingOptionalFonts = Array.isArray(catalog)
-        ? optionalFonts.filter(font => !isFontInstalled(font, catalog))
+        ? optionalFonts.filter(font => !isFontFileReference(font) && !isFontInstalled(font, catalog))
         : [];
 
     return {

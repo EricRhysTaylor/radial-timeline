@@ -162,6 +162,36 @@ describe('getStructuredFontDiagnostic — Latin Modern', () => {
         fs.rmSync(tempRoot, { recursive: true, force: true });
     });
 
+    /**
+     * A `\setmainfont{...}` argument that is a font FILE name is resolved by
+     * kpathsea from the texmf tree, never by the OS font catalog. Checking it
+     * against installed system fonts always fails, producing a "Missing
+     * required system font(s): lmroman10-regular.otf" Notice on an export that
+     * then succeeds — observed live after Latin Modern moved to TeX-tree
+     * resolution.
+     */
+    it('never reports a bare TeX font FILE name as a missing system font', () => {
+        const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-texfile-'));
+        const templatePath = path.join(tempRoot, 'rt_tex_tree_font.tex');
+        fs.writeFileSync(templatePath, [
+            '\\usepackage{fontspec}',
+            // No Path= — kpathsea resolves these from the TeX distribution.
+            '\\setmainfont{lmroman10-regular.otf}[',
+            '  ItalicFont = lmroman10-italic.otf ,',
+            '  BoldFont = lmroman10-bold.otf ,',
+            '  BoldItalicFont = lmroman10-bolditalic.otf',
+            ']',
+        ].join('\n'));
+
+        try {
+            const diag = getTemplateFontDiagnostics(templatePath);
+            expect(diag.missingRequiredFonts).toEqual([]);
+            expect(diag.missingOptionalFonts).toEqual([]);
+        } finally {
+            fs.rmSync(tempRoot, { recursive: true, force: true });
+        }
+    });
+
     it('raw template diagnostics treat IfFontExistsTF plus errmessage as a required exact font', () => {
         const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-font-required-'));
         const templatePath = path.join(tempRoot, 'rt_exact_font.tex');

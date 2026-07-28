@@ -665,4 +665,49 @@ describe('getFontDiagnosticForFontKey — vault-then-system resolver', () => {
             else process.env.RT_FONT_CATALOG = priorFontCatalog;
         }
     });
+
+    it('custom: resolves ok/missing-system against the system catalog, keyed on the user-supplied name', () => {
+        const priorFontCatalog = process.env.RT_FONT_CATALOG;
+        try {
+            process.env.RT_FONT_CATALOG = 'Arial';
+            const missingDiag = getFontDiagnosticForFontKey('custom', 'linux', 'Palatino Linotype');
+            expect(missingDiag.state).toBe('missing-system');
+            expect(missingDiag.primaryFontName).toBe('Palatino Linotype');
+            expect(missingDiag.installHint?.source).toBe('ctan');
+
+            process.env.RT_FONT_CATALOG = 'Palatino Linotype';
+            const okDiag = getFontDiagnosticForFontKey('custom', 'linux', 'Palatino Linotype');
+            expect(okDiag.state).toBe('ok');
+            expect(okDiag.primaryFontName).toBe('Palatino Linotype');
+            expect(okDiag.resolvedFontName).toBe('Palatino Linotype');
+        } finally {
+            if (priorFontCatalog === undefined) delete process.env.RT_FONT_CATALOG;
+            else process.env.RT_FONT_CATALOG = priorFontCatalog;
+        }
+    });
+
+    it('custom: reports missing-system with an instructive hint when no font name has been entered yet', () => {
+        const diag = getFontDiagnosticForFontKey('custom');
+        expect(diag.state).toBe('missing-system');
+        expect(diag.primaryFontName).toBe('Custom font');
+        expect(diag.installHint?.message).toMatch(/exact font family name/i);
+    });
+
+    it('custom: never checks vault-bundled files, even with a vault font dir set', () => {
+        const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-custom-vault-'));
+        setVaultFontDir(tempRoot);
+        try {
+            const priorFontCatalog = process.env.RT_FONT_CATALOG;
+            process.env.RT_FONT_CATALOG = '';
+            try {
+                const diag = getFontDiagnosticForFontKey('custom', 'linux', 'Some Font');
+                expect(diag.state).toBe('missing-system');
+            } finally {
+                if (priorFontCatalog === undefined) delete process.env.RT_FONT_CATALOG;
+                else process.env.RT_FONT_CATALOG = priorFontCatalog;
+            }
+        } finally {
+            fs.rmSync(tempRoot, { recursive: true, force: true });
+        }
+    });
 });

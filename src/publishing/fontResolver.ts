@@ -123,8 +123,14 @@ export const FONT_REGISTRY: Record<string, { displayName: string; files: FontFil
 };
 
 export interface BuildFontspecOptions {
-    /** Spec font key (e.g. `'sorts-mill-goudy'`). Looked up in FONT_REGISTRY. */
+    /** Spec font key (e.g. `'sorts-mill-goudy'`). Looked up in FONT_REGISTRY, unless `'custom'`. */
     fontKey: string;
+    /**
+     * Exact system font family name to use when `fontKey === 'custom'`.
+     * Bypasses FONT_REGISTRY entirely — always resolved via `\setmainfont{name}`
+     * and the OS's own font activation, never a vault-bundled Path block.
+     */
+    customFontName?: string;
     /**
      * Absolute filesystem path to the vault's Pandoc font root
      * (`<vault>/Radial Timeline/Pandoc/fonts`). When omitted, the resolver
@@ -147,6 +153,17 @@ export interface BuildFontspecOptions {
  * caller's discretion.
  */
 export function buildFontspecBlock(opts: BuildFontspecOptions): string {
+    // Custom: a user-supplied system font name, never vault-bundled. Skips
+    // the registry entirely — same emit as any other system font, just with
+    // a name that isn't one of RT's fixed presets.
+    if (opts.fontKey === 'custom') {
+        const name = opts.customFontName?.trim();
+        if (!name) {
+            throw new Error('Custom font selected but no font name was provided.');
+        }
+        return renderSystemBlock(name, opts.letterSpacing);
+    }
+
     const entry = FONT_REGISTRY[opts.fontKey];
     if (!entry) {
         throw new Error(`Unknown font key: ${opts.fontKey}`);

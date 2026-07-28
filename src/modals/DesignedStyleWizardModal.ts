@@ -255,6 +255,7 @@ const FONT_OPTIONS: Array<{ value: DesignedStyleSpec['body']['font']; label: str
     { value: 'crimson',          label: 'Crimson Text' },
     { value: 'system-serif',     label: 'TeX Gyre Pagella' },
     { value: 'system-sans',      label: 'Arial' },
+    { value: 'custom',           label: 'Custom (system font)' },
 ];
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -411,7 +412,7 @@ export function validateDesignedStyleSpec(
     // banner so the user sees the issue alongside other spec problems. The
     // wizard's font-row inline status renders the precise install affordance.
     try {
-        const fontDiag = getFontDiagnosticForFontKey(spec.body.font);
+        const fontDiag = getFontDiagnosticForFontKey(spec.body.font, undefined, spec.body.customFontName);
         if (fontDiag.state !== 'ok') {
             warnings.push(`${fontDiag.primaryFontName} is not installed. Click Install next to the Font row, or select a different font — the export will fail until this is resolved.`);
         }
@@ -1355,7 +1356,7 @@ export class DesignedStyleWizardModal extends Modal {
             // surface the missing case; an installed font shows nothing
             // (silence = healthy state, less visual noise).
             try {
-                const diag = getFontDiagnosticForFontKey(this.spec.body.font);
+                const diag = getFontDiagnosticForFontKey(this.spec.body.font, undefined, this.spec.body.customFontName);
                 if (diag.state === 'ok') {
                     return;
                 }
@@ -1403,11 +1404,32 @@ export class DesignedStyleWizardModal extends Modal {
         refreshFontStatus();
         fontSelect.addEventListener('change', () => {
             this.mutateSpec((s) => { s.body.font = fontSelect.value as DesignedStyleSpec['body']['font']; });
-            // Remove any prior Install button before re-rendering — refreshFontStatus
-            // re-creates the affordance when the new selection is missing.
-            fontRow.querySelectorAll('.ert-style-wizard__font-install').forEach(el => el.remove());
-            refreshFontStatus();
+            // Custom reveals a name input below the row — needs a full panel
+            // re-render (same pattern as the custom paper-size toggle), not
+            // just the in-place status refresh other font choices use.
+            this.refreshConfigOnly();
         });
+
+        // Custom font name — only shown when 'custom' is selected. Free-text
+        // exact system font family name; resolved purely via OS font
+        // activation (fontResolver's system path), no vault bundling.
+        if (this.spec.body.font === 'custom') {
+            const customNameRow = this.fieldRow(body, 'Font name');
+            const nameInput = customNameRow.createEl('input', {
+                cls: 'ert-input ert-input--md',
+                attr: { type: 'text', placeholder: 'e.g. Palatino Linotype' },
+            });
+            nameInput.value = this.spec.body.customFontName ?? '';
+            nameInput.addEventListener('change', () => {
+                const value = nameInput.value.trim();
+                this.mutateSpec((s) => {
+                    if (value) s.body.customFontName = value;
+                    else delete s.body.customFontName;
+                });
+                fontRow.querySelectorAll('.ert-style-wizard__font-install').forEach(el => el.remove());
+                refreshFontStatus();
+            });
+        }
 
         // Line-spacing visual presets (Tight / Standard / Airy / Custom). The
         // Custom card is interactive — clicking it puts the spec in custom mode

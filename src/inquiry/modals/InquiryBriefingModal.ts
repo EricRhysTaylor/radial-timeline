@@ -1,8 +1,9 @@
-import { App, Modal, normalizePath, TFile } from 'obsidian';
+import { App, Modal, TFile } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import type { InquiryBriefModel } from '../types/inquiryViewTypes';
 import type { InquiryStaleDiagnosis } from '../state';
 import { openOrRevealFile, openOrRevealFileAtSubpath, openOrRevealFileByPath } from '../../utils/fileUtils';
+import { getEmbeddedAssetDataUri } from '../../utils/embeddedAssets';
 
 type InquiryBriefingModalOptions = {
     brief: InquiryBriefModel;
@@ -367,11 +368,11 @@ export class InquiryBriefingModal extends Modal {
     }
 
     private resolveLogoHref(): string | null {
-        const configDir = this.app.vault.configDir;
-        const pluginId = this.plugin.manifest.id;
-        const assetPath = normalizePath(`${configDir}/plugins/${pluginId}/assets/rt-logo.png`);
-        const adapter = this.app.vault.adapter as unknown as { getResourcePath?: (path: string) => string };
-        return adapter.getResourcePath ? adapter.getResourcePath(assetPath) : null;
+        // Embedded in main.js, not read from the plugin folder: Obsidian
+        // installs only manifest.json/main.js/styles.css from a release, so a
+        // plugin-folder path resolves to nothing for anyone who installed
+        // through the Community Plugins browser.
+        return getEmbeddedAssetDataUri('images/rt-logo.png');
     }
 
     private installThemeObserver(): void {

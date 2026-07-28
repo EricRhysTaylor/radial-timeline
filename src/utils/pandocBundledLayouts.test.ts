@@ -18,7 +18,7 @@ import {
     getBundledPandocLayouts,
     installBundledPandocFonts,
     installBundledPandocLayouts,
-    setBundledFontSourcePath,
+    ensureManuscriptReferenceDocxInstalled,
     setPandocFontPathsForVault,
 } from './pandocBundledLayouts';
 
@@ -28,20 +28,10 @@ function createPluginWithBundledLayout(layoutId: string): { plugin: RadialTimeli
 
     const files = new Map<string, { file: TFile; content: string }>();
     const folders = new Set<string>();
+    // No font fixtures on disk: the font bytes are embedded in the bundle
+    // (src/generated/embeddedAssets.ts), because Obsidian never installs a
+    // plugin-folder asset tree. Install reads the embedded payload directly.
     const vaultBase = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-pandoc-vault-'));
-    const assetFonts = path.join(vaultBase, '.obsidian/plugins/radial-timeline/assets/fonts');
-    const fontFixtures: Record<string, string[]> = {
-        'sorts-mill-goudy': ['SortsMillGoudy-Regular.ttf', 'SortsMillGoudy-Italic.ttf'],
-        'latin-modern': ['lmroman10-regular.otf', 'lmroman10-italic.otf', 'lmroman10-bold.otf', 'lmroman10-bolditalic.otf'],
-        'source-serif-4': ['SourceSerif4-Regular.otf', 'SourceSerif4-It.otf', 'SourceSerif4-Bold.otf', 'SourceSerif4-BoldIt.otf', 'LICENSE.md', 'README.md'],
-    };
-    for (const [family, fontFiles] of Object.entries(fontFixtures)) {
-        const dir = path.join(assetFonts, family);
-        fs.mkdirSync(dir, { recursive: true });
-        for (const file of fontFiles) {
-            fs.writeFileSync(path.join(dir, file), `${family}/${file}`);
-        }
-    }
 
     const vault = {
         adapter: {
@@ -92,7 +82,6 @@ function createPluginWithBundledLayout(layoutId: string): { plugin: RadialTimeli
         saveSettings: async () => {}
     } as unknown as RadialTimelinePlugin;
 
-    setBundledFontSourcePath(assetFonts);
     setPandocFontPathsForVault(plugin);
 
     return { plugin, layout };
@@ -451,8 +440,11 @@ describe('bundled pandoc layout export auto-install', () => {
         const modernClassicTarget = normalizePath(`${plugin.settings.pandocFolder}/${modernClassic.path}`);
         expect(plugin.app.vault.getAbstractFileByPath(modernClassicTarget)).toBeInstanceOf(TFile);
         const vaultBase = (plugin.app.vault.adapter as unknown as { getBasePath: () => string }).getBasePath(); // SAFE: test asserts the desktop vault base path used for local font installation.
-        expect(fs.existsSync(path.join(vaultBase, plugin.settings.pandocFolder, 'fonts/latin-modern/lmroman10-regular.otf'))).toBe(true);
+        expect(fs.existsSync(path.join(vaultBase, plugin.settings.pandocFolder, 'fonts/source-serif-4/SourceSerif4-Regular.otf'))).toBe(true);
         expect(fs.existsSync(path.join(vaultBase, plugin.settings.pandocFolder, 'fonts/sorts-mill-goudy/SortsMillGoudy-Regular.ttf'))).toBe(true);
+        // Latin Modern is deliberately not bundled — it comes from the TeX
+        // distribution, so nothing should be written into the vault for it.
+        expect(fs.existsSync(path.join(vaultBase, plugin.settings.pandocFolder, 'fonts/latin-modern'))).toBe(false);
 
         const history = plugin.settings.templateHotfixHistory ?? [];
         expect(history).toHaveLength(1);
@@ -467,24 +459,72 @@ describe('bundled pandoc layout export auto-install', () => {
      * failure mode a full disk or interrupted copy would produce) and
      * verifies every affected family is reported as failed, not installed.
      */
-    it('never reports a font family as installed/already-present when the bundled source asset itself is empty', async () => {
+    it('never reports a font family as installed/already-present when its files cannot be written', async () => {
         const { plugin } = createPluginWithBundledLayout('bundled-fiction-contemporary-literary');
         const vaultBase = (plugin.app.vault.adapter as unknown as { getBasePath: () => string }).getBasePath(); // SAFE: test asserts against the desktop vault base path used for local font installation.
-        const sourceFontsRoot = path.join(vaultBase, '.obsidian/plugins/radial-timeline/assets/fonts');
-        // Simulate the real-world failure mode this guards against: a bundled
-        // asset that is corrupt/empty on disk (e.g. a build step that failed
-        // silently), not a copy error we'd have to fake.
-        fs.writeFileSync(path.join(sourceFontsRoot, 'source-serif-4', 'SourceSerif4-Regular.otf'), '');
+        // Simulate the real-world failure mode this guards against: the
+        // family's destination cannot be created because a plain file already
+        // occupies the path. mkdirSync throws, so nothing is written — and
+        // the family must be reported failed rather than silently succeeding.
+        const fontRoot = path.join(vaultBase, plugin.settings.pandocFolder, 'fonts');
+        fs.mkdirSync(fontRoot, { recursive: true });
+        fs.writeFileSync(path.join(fontRoot, 'source-serif-4'), 'not a directory');
 
         const result = await installBundledPandocFonts(plugin);
 
         expect(result.installed.find(f => f.family === 'source-serif-4')).toBeUndefined();
         expect(result.alreadyPresent.find(f => f.family === 'source-serif-4')).toBeUndefined();
         expect(result.failed).toContain('source-serif-4');
-        // Unaffected families must still succeed — one corrupt family
+        // Unaffected families must still succeed — one broken family
         // shouldn't cascade into failing everything.
-        expect(result.failed).not.toContain('latin-modern');
         expect(result.failed).not.toContain('sorts-mill-goudy');
+        expect(result.installed.some(f => f.family === 'sorts-mill-goudy')).toBe(true);
+    });
+
+    /**
+     * Regression for GH #34: the font bytes must come from the bundle, not
+     * from a plugin-folder asset tree. Obsidian installs only manifest.json /
+     * main.js / styles.css from a release, so an install path that reads
+     * `<plugin>/assets/fonts` works on a dev machine and fails for every
+     * Community-Plugins user. Nothing may be read from the plugin folder.
+     */
+    it('installs fonts with no plugin-folder asset tree present', async () => {
+        const { plugin } = createPluginWithBundledLayout('bundled-fiction-contemporary-literary');
+        const vaultBase = (plugin.app.vault.adapter as unknown as { getBasePath: () => string }).getBasePath(); // SAFE: test asserts against the desktop vault base path used for local font installation.
+        // Exactly the state of a real install: the plugin folder holds no
+        // assets directory at all.
+        expect(fs.existsSync(path.join(vaultBase, '.obsidian/plugins/radial-timeline/assets'))).toBe(false);
+
+        const result = await installBundledPandocFonts(plugin);
+
+        expect(result.failed).toEqual([]);
+        const regular = path.join(vaultBase, plugin.settings.pandocFolder, 'fonts/source-serif-4/SourceSerif4-Regular.otf');
+        expect(fs.existsSync(regular)).toBe(true);
+        expect(fs.statSync(regular).size).toBeGreaterThan(1000);
+        // The OFL requires the licence to travel with a redistributed font.
+        expect(fs.existsSync(path.join(vaultBase, plugin.settings.pandocFolder, 'fonts/source-serif-4/LICENSE.md'))).toBe(true);
+        expect(fs.existsSync(path.join(vaultBase, plugin.settings.pandocFolder, 'fonts/sorts-mill-goudy/OFL.txt'))).toBe(true);
+    });
+
+    /**
+     * Regression for GH #34 (Word half): the reference document must also
+     * come from the bundle. This previously failed with "Missing bundled
+     * asset: …/assets/pandoc/reference-manuscript.docx" for every user who
+     * installed through the Community Plugins browser.
+     */
+    it('writes the Word reference document with no plugin-folder asset tree present', () => {
+        const { plugin } = createPluginWithBundledLayout('bundled-fiction-contemporary-literary');
+
+        const result = ensureManuscriptReferenceDocxInstalled(plugin);
+
+        expect(result.error).toBeUndefined();
+        expect(result.path).toBeTruthy();
+        expect(fs.existsSync(result.path!)).toBe(true);
+        // A real .docx is a ZIP container — verify we wrote the actual
+        // binary, not a truncated or text-decoded copy.
+        const header = fs.readFileSync(result.path!).subarray(0, 2).toString('latin1');
+        expect(header).toBe('PK');
+        expect(fs.statSync(result.path!).size).toBeGreaterThan(1000);
     });
 
     /**

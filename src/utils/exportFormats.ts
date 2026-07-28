@@ -811,7 +811,7 @@ export function getFontDiagnosticForFontKey(
 }
 
 /**
- * Single resolution path: vault → system → missing.
+ * Single resolution path: vault → TeX tree → system → missing.
  *
  * Mirrors the LaTeX emit logic in `fontResolver.buildFontspecBlock` so the
  * Export Checks panel and the actual export agree on what counts as
@@ -819,9 +819,13 @@ export function getFontDiagnosticForFontKey(
  *
  *   1. Vault: `Radial Timeline/Pandoc/fonts/<slug>/` has the required files
  *      → 'ok' (export will use a `\setmainfont{...}[Path = ...]` block).
- *   2. System: font is in the system catalog → 'ok' (export will use plain
+ *   2. TeX tree: the registry lists `texUpright` file names → 'ok' (export
+ *      will use the filename form and let kpathsea resolve it). Checked
+ *      before the system catalog because texmf fonts are not registered
+ *      with the OS and would otherwise read as missing.
+ *   3. System: font is in the system catalog → 'ok' (export will use plain
  *      `\setmainfont{Name}` and let XeLaTeX resolve via the OS).
- *   3. Neither → 'missing-bundled' if the registry advertises bundled files
+ *   4. Neither → 'missing-bundled' if the registry advertises bundled files
  *      (instructive: tell the user to run Install fonts), otherwise
  *      'missing-system' (instructive: link to Google Fonts / CTAN).
  */
@@ -840,7 +844,15 @@ function resolveFontDiagnosticForKey(
         return { state: 'ok', primaryFontName, resolvedFontName: primaryFontName };
     }
 
-    // 2. System install present → ready (system-name emit).
+    // 2. TeX-distribution font → ready (filename emit, resolved by kpathsea).
+    //    These live in the texmf tree and are invisible to the OS font
+    //    catalog, so the system check below would wrongly report them
+    //    missing and hard-block export on a machine that compiles them fine.
+    if (FONT_REGISTRY[fontKey]?.files.texUpright) {
+        return { state: 'ok', primaryFontName, resolvedFontName: primaryFontName };
+    }
+
+    // 3. System install present → ready (system-name emit).
     const catalog = loadSystemFontCatalog();
     const canVerify = Array.isArray(catalog);
     const installed = (canVerify && isFontInstalled(primaryFontName, catalog))
@@ -849,7 +861,7 @@ function resolveFontDiagnosticForKey(
         return { state: 'ok', primaryFontName, resolvedFontName: primaryFontName };
     }
 
-    // 3. Missing. If the registry knows about bundled files for this font,
+    // 4. Missing. If the registry knows about bundled files for this font,
     //    prompt the user to install them; otherwise prompt for a system install.
     const entry = FONT_REGISTRY[fontKey];
     const hasBundledFiles = !!entry?.files.upright;

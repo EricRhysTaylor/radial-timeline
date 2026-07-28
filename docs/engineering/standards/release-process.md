@@ -44,8 +44,41 @@ still runs in two phases:
      fonts ship as data URIs in `src/styles/font.css`),
    - signs a build-provenance attestation for `main.js`, `manifest.json`,
      and `styles.css`,
+   - runs `scripts/check-shipped-assets.mjs` and spot-checks that the
+     embedded asset keys are present in the built `main.js`,
    - uploads the three assets to the release with `--clobber`.
 4. Prompts to publish the draft.
+
+## Three files ship. Nothing else.
+
+Obsidian's plugin installer downloads exactly `manifest.json`, `main.js` and
+`styles.css` from a release. Extra files attached to the release are ignored,
+and files the build copies into `./release/` are not uploaded at all.
+
+This is easy to get wrong, because the dev build also copies into local test
+vaults — so a feature that reads a loose file from the plugin folder works on
+this machine and is broken for every user who installed through the Community
+Plugins browser. That shipped for months: bundled Pandoc fonts and the Word
+reference document (GH #29, #34), plus the Inquiry logo and background
+texture.
+
+A binary that a feature needs at runtime has exactly two routes:
+
+| Route | Script | Lands in |
+|---|---|---|
+| Base64 into the JS bundle | `scripts/embed-plugin-assets.mjs` | `main.js` |
+| Base64 data URI into the stylesheet | `scripts/bundle-css.mjs` | `styles.css` |
+
+`scripts/check-shipped-assets.mjs` (gate: **Shipped assets**, and inside
+`build-only`) fails the build if any binary under `src/` is in neither route,
+if a manifest entry points at a deleted file, or if `directoriesToCopy`
+reappears in `esbuild.config.mjs`.
+
+Fonts that a TeX distribution already provides (Latin Modern) are deliberately
+**not** bundled — `fontResolver.ts` emits the TeX filename form so kpathsea
+resolves them from the texmf tree. Note that the family-name form
+(`\setmainfont{Latin Modern Roman}`) does *not* resolve on a stock TeX
+install; only the filename form does.
 
 ## Verifying an attestation
 

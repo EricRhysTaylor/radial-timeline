@@ -34,8 +34,36 @@ describe('buildFontspecBlock — vault → system resolution', () => {
     it('emits a plain \\setmainfont when vaultFontDir is supplied but the font subdirectory is empty', () => {
         const root = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-resolver-empty-'));
         try {
+            const block = buildFontspecBlock({ fontKey: 'eb-garamond', vaultFontDir: root });
+            expect(block).toBe('\\setmainfont{EB Garamond}');
+            expect(block).not.toContain('Path =');
+        } finally {
+            fs.rmSync(root, { recursive: true, force: true });
+        }
+    });
+
+    /**
+     * Latin Modern lives in the texmf tree and is NOT registered with the OS
+     * font catalog, so the family-name form fails even on a complete TeX
+     * install. Verified against macOS + TeX Live 2026:
+     *
+     *   \setmainfont{Latin Modern Roman}      → fontspec: "cannot be found"
+     *   \setmainfont{lmroman10-regular.otf}   → compiles
+     *
+     * Emitting the name form was the PDF half of GH #34: every user without
+     * the bundled files got an opaque "Pandoc could not compile the PDF".
+     */
+    it('emits the TeX filename form for Latin Modern, never the family name', () => {
+        const root = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-resolver-tex-'));
+        try {
             const block = buildFontspecBlock({ fontKey: 'latin-modern', vaultFontDir: root });
-            expect(block).toBe('\\setmainfont{Latin Modern Roman}');
+            expect(block).toContain('\\setmainfont{lmroman10-regular.otf}');
+            expect(block).toContain('ItalicFont = lmroman10-italic.otf');
+            expect(block).toContain('BoldFont = lmroman10-bold.otf');
+            expect(block).toContain('BoldItalicFont = lmroman10-bolditalic.otf');
+            // The family-name form does not resolve — it must never be emitted.
+            expect(block).not.toContain('\\setmainfont{Latin Modern Roman}');
+            // Resolved by kpathsea from the texmf tree, so no Path= directive.
             expect(block).not.toContain('Path =');
         } finally {
             fs.rmSync(root, { recursive: true, force: true });

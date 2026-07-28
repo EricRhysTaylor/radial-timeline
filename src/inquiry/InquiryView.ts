@@ -76,6 +76,7 @@ import { anchorPanelNearTrigger } from './dom/panelAnchoring';
 import { deriveBriefingArtifactClassFlags } from './briefing/briefingArtifactStatus';
 import { DisposableRegistry, clearTrackedTimer } from '../core/disposable';
 import { SceneDossierController } from './render/sceneDossierController';
+import { getEmbeddedAssetDataUri, type EmbeddedAssetKey } from '../utils/embeddedAssets';
 import {
     isInquiryResultError,
     isInquiryResultDegraded,
@@ -900,7 +901,7 @@ export class InquiryView extends ItemView {
                 this.buildSceneDossierResources(defs);
             },
             createIconButton: this.createIconButton.bind(this),
-            getBackgroundHref: () => this.getInquiryAssetHref('radial_texture.png'),
+            getBackgroundHref: () => this.getInquiryAssetHref('images/radial_texture.png'),
             buildDebugOverlay: this.buildDebugOverlay.bind(this)
         });
         this.rootSvg = shell.rootSvg;
@@ -2296,13 +2297,12 @@ export class InquiryView extends ItemView {
         return true;
     }
 
-    private getInquiryAssetHref(fileName: string): string {
-        const configDir = this.app.vault.configDir;
-        const pluginId = this.plugin.manifest.id;
-        const assetPath = normalizePath(`${configDir}/plugins/${pluginId}/inquiry/assets/${fileName}`);
-        // SAFE: vault.adapter.getResourcePath is required for converting vault paths to asset URLs (no Vault API alternative)
-        const adapter = this.app.vault.adapter as unknown as { getResourcePath?: (path: string) => string };
-        return adapter.getResourcePath ? adapter.getResourcePath(assetPath) : assetPath;
+    private getInquiryAssetHref(key: EmbeddedAssetKey): string {
+        // Embedded in main.js, not read from the plugin folder: Obsidian
+        // installs only manifest.json/main.js/styles.css from a release, so a
+        // plugin-folder path resolves to nothing for anyone who installed
+        // through the Community Plugins browser.
+        return getEmbeddedAssetDataUri(key);
     }
 
     private loadTargetCache(options?: { adoptPersistedSelection?: boolean }): void {

@@ -489,12 +489,35 @@ describe('getFontDiagnosticForFontKey — vault-then-system resolver', () => {
         expect(diag.installHint).toBeUndefined();
     });
 
-    it('handles Latin Modern: ok if system has it, missing-bundled otherwise', () => {
-        const diag = getFontDiagnosticForFontKey('latin-modern');
-        expect(['ok', 'missing-bundled']).toContain(diag.state);
-        expect(diag.primaryFontName).toBe('Latin Modern Roman');
-        if (diag.state === 'missing-bundled') {
-            expect(diag.installHint?.source).toBe('bundled');
+    // Latin Modern comes from the TeX distribution, resolved by kpathsea from
+    // the texmf tree. It is never bundled and never registered with the OS
+    // font catalog, so it must read as resolvable unconditionally — otherwise
+    // export is hard-blocked behind an "Install fonts" prompt that can never
+    // satisfy it (GH #34).
+    it('always reports Latin Modern as resolvable — it comes from the TeX tree', () => {
+        const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-lm-'));
+        setVaultFontDir(tempRoot);
+        try {
+            const diag = getFontDiagnosticForFontKey('latin-modern');
+            expect(diag.state).toBe('ok');
+            expect(diag.primaryFontName).toBe('Latin Modern Roman');
+            expect(diag.installHint).toBeUndefined();
+        } finally {
+            fs.rmSync(tempRoot, { recursive: true, force: true });
+        }
+    });
+
+    /**
+     * `state: 'ok'` is ambiguous on its own — it also means "no spec, nothing
+     * checked". Callers use `specDriven` to decide whether the legacy
+     * template-scan probe may speak. That probe only asks whether a font is
+     * installed system-wide, so for a vault-installed bundled font it says
+     * "not installed" and contradicts this verdict in the same panel.
+     */
+    it('marks verdicts from a real font key as specDriven, and the no-key placeholder as not', () => {
+        expect(getFontDiagnosticForFontKey(undefined).specDriven).toBe(false);
+        for (const key of ['latin-modern', 'source-serif', 'sorts-mill-goudy', 'eb-garamond'] as const) {
+            expect(getFontDiagnosticForFontKey(key).specDriven).toBe(true);
         }
     });
 

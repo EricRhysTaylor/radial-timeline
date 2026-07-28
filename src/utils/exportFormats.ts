@@ -736,6 +736,19 @@ export interface FontDiagnostic {
     /** Font XeLaTeX is expected to use. Missing fonts fail instead of falling back. */
     resolvedFontName: string;
     installHint?: FontDiagnosticInstallHint;
+    /**
+     * Whether this verdict came from a layout spec (bundled fiction or a
+     * Designed Style), meaning an actual font key was resolved through the
+     * vault → TeX tree → system chain.
+     *
+     * `state: 'ok'` alone is ambiguous: it also means "no spec, so there was
+     * nothing to check." Callers that would otherwise fall back to the legacy
+     * template-scan probe must gate on this flag. That probe only asks whether
+     * a font is installed *system-wide*, so for a vault-installed bundled font
+     * it reports "not installed" and contradicts this diagnostic in the same
+     * panel — which is what users saw after a successful font install.
+     */
+    specDriven: boolean;
 }
 
 const FONT_KEY_TO_DISPLAY: Record<DesignedStyleSpec['body']['font'], string> = {
@@ -835,13 +848,15 @@ function resolveFontDiagnosticForKey(
 ): FontDiagnostic {
     const platform = overridePlatform ?? getCurrentPlatform();
     if (!fontKey) {
-        return { state: 'ok', primaryFontName: 'Default serif', resolvedFontName: 'Default serif' };
+        // No spec on this layout — nothing was resolved, so callers must not
+        // read this 'ok' as a font verdict.
+        return { state: 'ok', primaryFontName: 'Default serif', resolvedFontName: 'Default serif', specDriven: false };
     }
     const primaryFontName = FONT_KEY_TO_DISPLAY[fontKey];
 
     // 1. Vault-bundled files present → ready (Path-based emit).
     if (vaultHasFontFiles(fontKey)) {
-        return { state: 'ok', primaryFontName, resolvedFontName: primaryFontName };
+        return { state: 'ok', primaryFontName, resolvedFontName: primaryFontName, specDriven: true };
     }
 
     // 2. TeX-distribution font → ready (filename emit, resolved by kpathsea).
@@ -849,7 +864,7 @@ function resolveFontDiagnosticForKey(
     //    catalog, so the system check below would wrongly report them
     //    missing and hard-block export on a machine that compiles them fine.
     if (FONT_REGISTRY[fontKey]?.files.texUpright) {
-        return { state: 'ok', primaryFontName, resolvedFontName: primaryFontName };
+        return { state: 'ok', primaryFontName, resolvedFontName: primaryFontName, specDriven: true };
     }
 
     // 3. System install present → ready (system-name emit).
@@ -858,7 +873,7 @@ function resolveFontDiagnosticForKey(
     const installed = (canVerify && isFontInstalled(primaryFontName, catalog))
         || requiredSystemFontFileExists(primaryFontName, platform);
     if (installed) {
-        return { state: 'ok', primaryFontName, resolvedFontName: primaryFontName };
+        return { state: 'ok', primaryFontName, resolvedFontName: primaryFontName, specDriven: true };
     }
 
     // 4. Missing. If the registry knows about bundled files for this font,
@@ -870,6 +885,7 @@ function resolveFontDiagnosticForKey(
             state: 'missing-bundled',
             primaryFontName,
             resolvedFontName: primaryFontName,
+            specDriven: true,
             installHint: {
                 source: 'bundled',
                 message: `${primaryFontName} files are missing from Radial Timeline/Pandoc/fonts/${entry.files.slug}. Click Install fonts in Settings → Publish.`,
@@ -880,7 +896,7 @@ function resolveFontDiagnosticForKey(
     const installHint: FontDiagnosticInstallHint = url
         ? buildGoogleFontsHint(primaryFontName, url, platform)
         : buildCtanHint(primaryFontName);
-    return { state: 'missing-system', primaryFontName, resolvedFontName: primaryFontName, installHint };
+    return { state: 'missing-system', primaryFontName, resolvedFontName: primaryFontName, installHint, specDriven: true };
 }
 
 export function getStructuredFontDiagnostic(

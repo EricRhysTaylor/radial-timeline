@@ -149,7 +149,7 @@ function coerceTier(value: unknown): CommunityShareTier {
     // cause. Clamp it to the highest publishable tier instead of leaving it
     // stuck.
     if (value === 5) return 4;
-    return value === 1 || value === 2 || value === 3 || value === 4 ? value : 0;
+    return value === 1 || value === 2 || value === 3 || value === 4 ? value : 0; // SAFE: sharing-tier allowlist — anything unrecognized normalizes to 0 (share nothing), the fail-closed privacy default
 }
 
 function coerceAudience(value: unknown): CommunityShareAudience {

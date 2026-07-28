@@ -1377,7 +1377,7 @@ export class TimelineRepairModal extends Modal {
             menu.addItem(item => {
                 item.setTitle(t('timelineRepairModal.review.historyItem', {
                     stamp,
-                    prev: record.prev ?? '—',
+                    prev: record.prev ?? '—', // SAFE: change-log display — the em dash marks "no previous value" in the before column
                     next: record.next,
                     tool: record.tool
                 }));

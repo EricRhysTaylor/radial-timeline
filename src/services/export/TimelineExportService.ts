@@ -570,10 +570,21 @@ export class TimelineExportService {
 
         // Resolve concrete pixel dimensions from the viewBox so the standalone
         // file and any raster have a real intrinsic size (live SVG is 100%/100%).
-        const viewBox = liveSvg.getAttribute('viewBox') || '-800 -800 1600 1600';
+        // The viewBox is the only description of what the artwork actually
+        // covers. Substituting a guess would write a file that silently crops
+        // or letterboxes the author's timeline, so an absent or unparseable
+        // viewBox fails the export instead — the caller renders
+        // "Timeline image export failed: <reason>".
+        const viewBox = liveSvg.getAttribute('viewBox');
+        if (!viewBox) {
+            throw new Error('The timeline SVG has no viewBox, so its export dimensions cannot be determined. Re-render the timeline and try again.');
+        }
         const vbParts = viewBox.split(/[\s,]+/).map(Number);
-        const width = Number.isFinite(vbParts[2]) && vbParts[2] > 0 ? vbParts[2] : 1600;
-        const height = Number.isFinite(vbParts[3]) && vbParts[3] > 0 ? vbParts[3] : 1600;
+        const width = vbParts[2];
+        const height = vbParts[3];
+        if (!Number.isFinite(width) || width <= 0 || !Number.isFinite(height) || height <= 0) {
+            throw new Error(`The timeline SVG viewBox ("${viewBox}") does not describe a positive width and height, so the export size cannot be determined.`);
+        }
 
         clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
         clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
@@ -648,12 +659,12 @@ export class TimelineExportService {
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/-+/g, '-')
-            .replace(/^-|-$/g, '') || 'timeline';
+            .replace(/^-|-$/g, '') || 'timeline'; // SAFE: a title made only of punctuation slugifies to empty, and filenames must be non-empty
     }
 
     private buildFileName(mode: string, extension: string): string {
-        const bookSlug = this.slugify(this.plugin.getActiveBookTitle() || 'timeline');
-        const modeSlug = this.slugify(mode || 'timeline');
+        const bookSlug = this.slugify(this.plugin.getActiveBookTitle() || 'timeline'); // SAFE: filename slug for an untitled book; the timestamp still makes the name unique
+        const modeSlug = this.slugify(mode || 'timeline'); // SAFE: filename slug only; guards an empty mode string from collapsing the name
         const stamp = new Date().toISOString().replace(/[:.]/g, '-');
         return `timeline-${bookSlug}-${modeSlug}-${stamp}.${extension}`;
     }
@@ -718,7 +729,7 @@ export class TimelineExportService {
             });
 
             await this.ensureExportFolder();
-            const mode = doc.context.mode ?? 'timeline';
+            const mode = doc.context.mode ?? 'timeline'; // SAFE: filename slug only; 'timeline' names an export whose document recorded no mode
             const path = `${TIMELINE_EXPORT_FOLDER}/${this.buildFileName(mode, 'json')}`;
             await this.app.vault.create(path, JSON.stringify(doc, null, 2));
             new Notice(`Timeline data exported to ${path}`);

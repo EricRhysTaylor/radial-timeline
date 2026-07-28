@@ -103,7 +103,7 @@ function getConnectedWebsiteProject(settings: CommunityShareSettings, context?: 
 // Only `public` projects count — project sync creates an initially-private
 // shell for every local book, and those must not inflate the tally.
 function formatPreviewTitle(baseTitle: string, context?: CommunityShareContext): string {
-    const sharedCount = context?.projects.filter(project => project.visibility === 'public').length ?? 0;
+    const sharedCount = context?.projects.filter(project => project.visibility === 'public').length ?? 0; // SAFE: no share context loaded yet, so nothing is known to be public
     return sharedCount > 1 ? `${baseTitle} & others (${sharedCount})` : baseTitle;
 }
 
@@ -183,7 +183,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     const isConnected = settings.connection.status === 'connected';
     const mode = deriveCommunityShareMode(settings);
     const selectedFields = getSelectedFieldLabels(settings);
-    const communityAprCampaigns = (plugin.settings.authorProgress?.campaigns ?? [])
+    const communityAprCampaigns = (plugin.settings.authorProgress?.campaigns ?? []) // SAFE: no campaigns configured means none of them are community-bound
         .filter(campaign => campaign.sendToCommunity);
     const reportState = latestReportState(settings);
     const hasLiveReport = reportState === 'live';
@@ -457,17 +457,17 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
             const authorLabel = profile?.display_name && profile.handle
                 ? `${profile.display_name} @${profile.handle}`
                 : profile?.display_name || (profile?.handle ? `@${profile.handle}` : undefined);
-            addChip(websitePills, 'Author', authorLabel || 'Not set');
+            addChip(websitePills, 'Author', authorLabel || 'Not set'); // SAFE: chip label — tells the author the website author name is still empty
             if (websiteProject) {
-                addChip(websitePills, 'Title', websiteProject.title || 'Not set');
+                addChip(websitePills, 'Title', websiteProject.title || 'Not set'); // SAFE: chip label — tells the author the website project title is still empty
                 addChip(websitePills, 'Status', websiteProject.status
                     ? PROJECT_STATUS_LABELS[websiteProject.status] ?? websiteProject.status
                     : 'Not set');
-                addChip(websitePills, 'Genre', formatWebsiteGenre(websiteProject) || 'Not set');
+                addChip(websitePills, 'Genre', formatWebsiteGenre(websiteProject) || 'Not set'); // SAFE: chip label — tells the author no website genre has been chosen
                 if (websiteProject.custom_genre_label) {
                     addChip(websitePills, 'Custom genre', websiteProject.custom_genre_label);
                 }
-                addChip(websitePills, 'Description', websiteProject.logline || 'Not set');
+                addChip(websitePills, 'Description', websiteProject.logline || 'Not set'); // SAFE: chip label — tells the author the website logline is still empty
             } else {
                 previewFrame.createDiv({
                     cls: 'ert-communityPreview__note',
@@ -497,8 +497,8 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
                 const targetBook = campaign.targetBookId
                     ? plugin.settings.books.find(book => book.id === campaign.targetBookId)
                     : activeBook;
-                const frequency = campaign.updateFrequency ?? 'manual';
-                addChip(aprPills, 'APR', `${campaign.name} · ${targetBook?.title ?? 'No book'} · ${frequency}`);
+                const frequency = campaign.updateFrequency ?? 'manual'; // SAFE: mirrors the fail-closed cadence default in AuthorProgressCampaignService
+                addChip(aprPills, 'APR', `${campaign.name} · ${targetBook?.title ?? 'No book'} · ${frequency}`); // SAFE: chip label — states plainly that the campaign has no book attached
             });
             previewFrame.createDiv({
                 cls: 'ert-communityPreview__note',

@@ -520,7 +520,7 @@ export class InquiryOmnibusModal extends Modal {
         if (this.suggestionNoteEl) {
             if (this.suggestionEligible) {
                 this.suggestionNoteEl.classList.remove('is-hidden');
-                const answeredCount = Object.keys(this.options.recentResults ?? {}).length;
+                const answeredCount = Object.keys(this.options.recentResults ?? {}).length; // SAFE: no prior results yet means zero questions answered
                 const skipCount = this.excludedIds.size;
                 const lead = skipCount > 0
                     ? `${skipCount} of ${answeredCount} already-answered question${answeredCount === 1 ? '' : 's'} ${skipCount === 1 ? 'is' : 'are'} set to skip`
@@ -865,7 +865,7 @@ export class InquiryOmnibusModal extends Modal {
         this.indexToggle?.setDisabled(true);
 
         const priorCompleted = new Set(
-            this.resumedFromPrior ? this.options.priorProgress?.completedQuestionIds ?? [] : []
+            this.resumedFromPrior ? this.options.priorProgress?.completedQuestionIds ?? [] : [] // SAFE: resuming a run that recorded no completions starts from an empty set
         );
         this.statusPills.forEach((pill, questionId) => {
             this.skipControls.get(questionId)?.btn.classList.add('is-hidden');

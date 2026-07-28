@@ -222,7 +222,7 @@ export function projectCommunityDaily(
     let totalWords = 0;
 
     for (const record of records) {
-        const minutes = Math.max(0, Math.round((record.elapsedMs ?? 0) / 60000));
+        const minutes = Math.max(0, Math.round((record.elapsedMs ?? 0) / 60000)); // SAFE: elapsedMs is optional on a session record; an unmeasured session contributes 0 minutes
         totalMinutes += minutes;
         modeMinutes[record.mode] += minutes;
         totalWords += Math.max(0, record.wordsAdded ?? 0);
@@ -285,9 +285,9 @@ const FEED_MODE_LABELS: Record<WritingSessionMode, string> = {
  * the PUBLIC project title), scene paths, scene titles, and exact timestamps.
  */
 export function projectSessionFeedPost(record: WritingSessionRecord): SessionFeedPost {
-    const minutes = Math.max(1, Math.round((record.elapsedMs ?? 0) / 60000));
-    const words = record.mode === 'drafting' || (record.wordsAdded ?? 0) > 0
-        ? Math.max(0, record.wordsAdded ?? 0) || undefined
+    const minutes = Math.max(1, Math.round((record.elapsedMs ?? 0) / 60000)); // SAFE: elapsedMs is optional; the Math.max(1) floor keeps a logged session from reading as zero-length
+    const words = record.mode === 'drafting' || (record.wordsAdded ?? 0) > 0 // SAFE: wordsAdded is optional; no recorded delta reads as no words added
+        ? Math.max(0, record.wordsAdded ?? 0) || undefined // SAFE: wordsAdded is optional, and a zero delta is omitted from the log line entirely
         : undefined;
     const headline = [
         FEED_MODE_LABELS[record.mode],
@@ -449,7 +449,7 @@ export function buildCommunityHourModeMix(params: {
     for (const record of filtered) {
         const started = new Date(record.startedAt);
         if (Number.isNaN(started.getTime())) continue;
-        const minutes = Math.max(0, Math.round((record.elapsedMs ?? 0) / 60000));
+        const minutes = Math.max(0, Math.round((record.elapsedMs ?? 0) / 60000)); // SAFE: elapsedMs is optional on a session record; an unmeasured session contributes 0 minutes
         if (minutes <= 0) continue;
         const modeKey = foldHourMode(record.mode);
         if (!modeKey) continue;

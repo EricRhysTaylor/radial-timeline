@@ -228,7 +228,7 @@ export class AuthorProgressCampaignService {
         options?: { silent?: boolean }
     ): Promise<'private' | 'active'> {
         const authorProgress = this.plugin.settings.authorProgress;
-        const campaignIndex = authorProgress?.campaigns?.findIndex(campaign => campaign.id === result.campaign.id) ?? -1;
+        const campaignIndex = authorProgress?.campaigns?.findIndex(campaign => campaign.id === result.campaign.id) ?? -1; // SAFE: -1 is findIndex's own "not found" value, so an absent campaign list takes the same not-found branch
         if (!authorProgress?.campaigns || campaignIndex < 0) {
             throw new Error('Campaign not found.');
         }
@@ -249,7 +249,7 @@ export class AuthorProgressCampaignService {
             const revealLevel = teaser?.enabled
                 ? getTeaserRevealLevel(
                     result.meta.percent,
-                    getTeaserThresholds(teaser.preset ?? 'standard', teaser.customThresholds),
+                    getTeaserThresholds(teaser.preset ?? 'standard', teaser.customThresholds), // SAFE: 'standard' is the shipped teaser preset for a campaign that never picked one
                     teaser.disabledStages
                 )
                 : 'full';
@@ -258,7 +258,7 @@ export class AuthorProgressCampaignService {
                 width: result.width,
                 height: result.height,
                 teaserLevel: revealLevel,
-                updateFrequency: campaign.updateFrequency ?? 'manual',
+                updateFrequency: campaign.updateFrequency ?? 'manual', // SAFE: fail-closed cadence — a campaign with no schedule never auto-posts; the author triggers it
                 bookKey,
                 campaignLabel: campaign.name
             });

@@ -25,7 +25,7 @@ export function dirname(path: string): string {
  */
 export function suggestOnboardingFolderName(sourceFolder: string): string {
   const parent = dirname(sourceFolder);
-  const base = basename(sourceFolder) || 'Book';
+  const base = basename(sourceFolder) || 'Book'; // SAFE: a source folder at the vault root has no basename; 'Book' is the stem for the suggested name
   const name = `${base} RT`;
   return parent ? `${parent}/${name}` : name;
 }

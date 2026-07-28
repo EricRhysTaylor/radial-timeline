@@ -997,10 +997,10 @@ function renderCampaignDetails(
             ? `Adds this APR to campaign publishes and scheduled updates. It lands privately on My Share until you activate it there. ${communityStatus}`
             : 'Choose Level 2 (Profile, books + APR) or Level 3 (Writing activity) in Community settings before sending an APR.')
         .addToggle((toggle) => toggle
-            .setValue(campaign.sendToCommunity ?? false)
+            .setValue(campaign.sendToCommunity ?? false) // SAFE: fail-closed privacy default — the toggle renders off until the author opts in
             // A lower sharing level blocks enabling this destination, but an
             // already-enabled campaign must remain switchable off.
-            .setDisabled(!canSendToCommunity && !(campaign.sendToCommunity ?? false))
+            .setDisabled(!canSendToCommunity && !(campaign.sendToCommunity ?? false)) // SAFE: fail-closed privacy default — a campaign that never opted in counts as not sharing
             .onChange(async (value) => {
                 if (!plugin.settings.authorProgress?.campaigns) return;
                 if (value && !canSendToCommunity) return;
@@ -1010,7 +1010,7 @@ function renderCampaignDetails(
             }))
         .addButton(button => button
             .setButtonText('Send now')
-            .setDisabled(!canSendToCommunity || !(campaign.sendToCommunity ?? false))
+            .setDisabled(!canSendToCommunity || !(campaign.sendToCommunity ?? false)) // SAFE: fail-closed privacy default — a campaign that never opted in counts as not sharing
             .onClick(async () => {
                 button.setDisabled(true);
                 button.setButtonText('Sending...');

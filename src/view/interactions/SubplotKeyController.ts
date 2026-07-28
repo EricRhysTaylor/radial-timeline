@@ -226,7 +226,7 @@ export function setupSubplotKeyController(
         const active = doc.activeElement as HTMLElement | null;
         if (!active) return false;
         const tag = active.tagName.toUpperCase();
-        return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || active.isContentEditable;
+        return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || active.isContentEditable; // SAFE: "is the user typing in a field" disjunction over element kinds, not a value fallback
     };
     const handleKeyDown = (e: KeyboardEvent) => {
         if (!shiftEligible || e.key !== 'Shift' || e.repeat) return;

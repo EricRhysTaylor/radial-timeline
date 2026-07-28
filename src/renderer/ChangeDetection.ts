@@ -189,7 +189,7 @@ export function createSnapshot(
     const activeStageTargets = getActiveBook(settings)?.stageTargetDates;
     const stageTargetDatesHash = activeStageTargets
         ? (['Zero', 'Author', 'House', 'Press'] as const)
-            .map(stage => `${stage}:${activeStageTargets[stage] ?? ''}`)
+            .map(stage => `${stage}:${activeStageTargets[stage] ?? ''}`) // SAFE: render-fingerprint key — an unset stage target contributes an empty slot that still changes the key once it is set
             .join('|')
         : '';
     

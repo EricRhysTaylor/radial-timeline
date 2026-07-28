@@ -348,7 +348,7 @@ export interface SplitProposalInput {
 }
 
 export function buildOnboardingSplitPrompt(input: SplitProposalInput): string {
-  const cap = input.perParagraphChars ?? 600;
+  const cap = input.perParagraphChars ?? 600; // SAFE: prompt-size cap in characters; 600 is the tuned default when the caller does not pin one
   const numbered = input.paragraphs
     .map((paragraph, i) => {
       const text = paragraph.length > cap ? `${paragraph.slice(0, cap)}…` : paragraph;

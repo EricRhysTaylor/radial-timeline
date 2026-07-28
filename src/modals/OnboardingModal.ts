@@ -89,7 +89,7 @@ function openSettingsAtBookManager(plugin: RadialTimelinePlugin): void {
 
 /** Local model ids can be full filesystem paths — show just the leaf name in the header pill. */
 function abbreviateModelId(id: string): string {
-  const leaf = (id || '').trim().split(/[\\/]/).pop() ?? '';
+  const leaf = (id || '').trim().split(/[\\/]/).pop() ?? ''; // SAFE: display-only leaf of a model id; an empty id renders as an empty label
   return leaf.replace(/\.(gguf|safetensors|bin)$/i, '');
 }
 
@@ -172,7 +172,7 @@ export class OnboardingModal extends Modal {
   /** Snapshot the run into the module-scoped session so dismissal loses nothing. */
   private persistSession(stage: 'confirm' | 'review'): void {
     activeSession = {
-      folder: this.book?.sourceFolder ?? '',
+      folder: this.book?.sourceFolder ?? '', // SAFE: no book selected yet; the empty path is the "nothing chosen" state the form renders
       stage,
       aiAvailable: this.aiAvailable,
       modelLabel: this.modelLabel,
@@ -866,7 +866,7 @@ export class OnboardingModal extends Modal {
       this.renderReviewScene(list, proposal, i + 1, openByDefault);
     });
 
-    const destName = suggestOnboardingFolderName(this.book?.sourceFolder ?? 'Book');
+    const destName = suggestOnboardingFolderName(this.book?.sourceFolder ?? 'Book'); // SAFE: no source folder chosen yet, so the suggested destination name starts from the generic stem
     contentEl.createDiv({
       cls: 'ert-muted',
       text: `Will write to a new folder: ${destName} (source left untouched) · Publish Stage: ${this.publishStage}.`,
@@ -951,7 +951,7 @@ export class OnboardingModal extends Modal {
     head.createSpan({ cls: 'ert-onb-scene__title', text: proposal.title || proposal.sourceRef });
     const meta = head.createDiv({ cls: 'ert-onb-scene__meta' });
     if (fm) {
-      this.pill(meta, `Act ${String(fm.Act ?? '?')}`, 'ert-onb-pill--act');
+      this.pill(meta, `Act ${String(fm.Act ?? '?')}`, 'ert-onb-pill--act'); // SAFE: pill label — the question mark marks an unknown Act instead of asserting one
       const chars = Array.isArray(fm.Character) ? fm.Character.length : 0;
       const places = Array.isArray(fm.Place) ? fm.Place.length : 0;
       this.pill(meta, `${chars} chars`, 'ert-onb-pill--count', true);
@@ -996,17 +996,17 @@ export class OnboardingModal extends Modal {
     }
 
     const grid = body.createDiv({ cls: 'ert-onb-fm' });
-    this.fmScalar(grid, 'Class', String(fm.Class ?? 'Scene'));
-    this.fmScalar(grid, 'Act', String(fm.Act ?? ''));
-    this.fmScalar(grid, 'Status', String(fm.Status ?? ''));
-    this.fmScalar(grid, 'Publish Stage', String(fm['Publish Stage'] ?? ''));
+    this.fmScalar(grid, 'Class', String(fm.Class ?? 'Scene')); // SAFE: onboarding only ever proposes Scene notes, so that is the Class being previewed
+    this.fmScalar(grid, 'Act', String(fm.Act ?? '')); // SAFE: frontmatter preview — an unset Act renders as a blank field rather than a guess
+    this.fmScalar(grid, 'Status', String(fm.Status ?? '')); // SAFE: frontmatter preview — an unset Status renders blank rather than implying one
+    this.fmScalar(grid, 'Publish Stage', String(fm['Publish Stage'] ?? '')); // SAFE: frontmatter preview — an unset Publish Stage renders blank rather than implying one
     if (fm.When) this.fmScalar(grid, 'When', String(fm.When));
     if (fm.Duration) this.fmScalar(grid, 'Duration', String(fm.Duration));
     this.fmPills(grid, 'Subplot', asStringList(fm.Subplot), 'ert-onb-pill--subplot');
     this.fmPills(grid, 'Character', asStringList(fm.Character).map(stripWikiLink), 'ert-onb-pill--char');
     this.fmPills(grid, 'Place', asStringList(fm.Place).map(stripWikiLink), 'ert-onb-pill--place');
 
-    const synopsis = String(fm.Synopsis ?? '').trim();
+    const synopsis = String(fm.Synopsis ?? '').trim(); // SAFE: preview of extracted frontmatter — a scene with no Synopsis previews an empty one
     if (synopsis) {
       const syn = body.createDiv({ cls: 'ert-onb-synopsis' });
       syn.createDiv({ cls: 'ert-onb-synopsis__label', text: 'Synopsis' });
@@ -1120,7 +1120,7 @@ export class OnboardingModal extends Modal {
     if (flagged.length > 0) {
       const counts = new Map<string, number>();
       for (const proposal of flagged) {
-        for (const flag of proposal.flags) counts.set(flag, (counts.get(flag) ?? 0) + 1);
+        for (const flag of proposal.flags) counts.set(flag, (counts.get(flag) ?? 0) + 1); // SAFE: first sighting of a flag starts its tally at 0
       }
       const rollup = [...counts.entries()]
         .sort((a, b) => b[1] - a[1])
@@ -1138,7 +1138,7 @@ export class OnboardingModal extends Modal {
       for (const proposal of failures) {
         const item = reviewList.createDiv({ cls: 'ert-onb-review-item' });
         item.createSpan({ cls: 'ert-onb-review-item__name', text: proposal.title || proposal.sourceRef });
-        item.createSpan({ cls: 'ert-onb-review-item__reason', text: proposal.error ?? 'failed' });
+        item.createSpan({ cls: 'ert-onb-review-item__reason', text: proposal.error ?? 'failed' }); // SAFE: the proposal already failed; this labels it when the extractor recorded no reason
       }
     }
     for (const err of report.errors) {

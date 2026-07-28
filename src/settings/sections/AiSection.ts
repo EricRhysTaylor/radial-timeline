@@ -436,7 +436,7 @@ export function renderAiSection(params: {
     // (…/Qwen3-30B-A3B-Instruct-2507-MLX-4bit). Show just the leaf name in the UI;
     // the full id is still the stored value used for API calls.
     const abbreviateLocalModelId = (id: string): string => {
-        const trimmed = (id || '').trim();
+        const trimmed = (id || '').trim(); // SAFE: an empty model id is the "nothing selected" state the caller checks for
         if (!trimmed) return trimmed;
         return trimmed.split(/[\\/]/).pop() || trimmed;
     };
@@ -1567,7 +1567,7 @@ export function renderAiSection(params: {
         const capability = getLocalCapabilityAssessment(selectedModelId, liveEntry);
 
         resolvedPreviewKicker.setText(t('settings.ai.preview.kicker'));
-        resolvedPreviewModel.setText(abbreviateLocalModelId(selectedModelId) || 'Local model');
+        resolvedPreviewModel.setText(abbreviateLocalModelId(selectedModelId) || 'Local model'); // SAFE: preview caption only — a model id that abbreviates to nothing still needs a readable label
         resolvedPreviewProvider.setText(`${LOCAL_LLM_BACKEND_LABELS[localLlm.backend]} · ${getOllamaBaseUrl()}`);
 
         const statusValue = buildLocalStatusValue();
@@ -3045,7 +3045,7 @@ export function renderAiSection(params: {
         return models.slice().sort((a, b) => {
             const tierDelta = getLocalCapabilityAssessment(b.id, b).tier - getLocalCapabilityAssessment(a.id, a).tier;
             if (tierDelta !== 0) return tierDelta;
-            return (b.contextWindow ?? 0) - (a.contextWindow ?? 0);
+            return (b.contextWindow ?? 0) - (a.contextWindow ?? 0); // SAFE: sort comparator — models with no published context window sort last
         })[0];
     };
 

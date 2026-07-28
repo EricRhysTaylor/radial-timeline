@@ -1750,7 +1750,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                         // install that was removed). Auto locate is the
                         // explicit fix-it button, so replacing a dead value
                         // here is its job, not a silent fallback.
-                        const configured = (plugin.settings.pandocPath || '').trim();
+                        const configured = (plugin.settings.pandocPath || '').trim(); // SAFE: an empty path is the "not configured" state this function goes on to report
                         const configuredIsStale = configured.length > 0
                             && configured.includes('/')
                             && !existsSync(configured);
@@ -1887,7 +1887,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             // Literal Pandoc metadata syntax; keys are case-sensitive and must
             // stay lowercase, so this example is not sentence-cased UI copy.
             text.setPlaceholder(PANDOC_METADATA_PLACEHOLDER);
-            text.setValue(plugin.settings.customPandocMetadata || '');
+            text.setValue(plugin.settings.customPandocMetadata || ''); // SAFE: no custom metadata saved yet, so the textarea opens empty
             text.setDisabled(!isActive);
             plugin.registerDomEvent(text.inputEl, 'blur', async () => {
                 const raw = text.getValue();
@@ -1914,7 +1914,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             text.inputEl.rows = 6;
             text.inputEl.addClass('ert-input--lg');
             text.setPlaceholder('% e.g.\n% \\usepackage{lettrine}\n% \\newcommand{\\mymacro}{...}');
-            text.setValue(plugin.settings.customLatexPreamble || '');
+            text.setValue(plugin.settings.customLatexPreamble || ''); // SAFE: no custom preamble saved yet, so the textarea opens empty
             text.setDisabled(!isActive);
             plugin.registerDomEvent(text.inputEl, 'blur', async () => {
                 plugin.settings.customLatexPreamble = text.getValue();

@@ -158,7 +158,7 @@ export function parseOutlineSidecar(content: string): OutlineSidecar | null {
     const record: Record<string, string> = {};
     headers.forEach((header, index) => {
       if (header.length === 0) return;
-      record[header] = (cells[index] ?? '').trim();
+      record[header] = (cells[index] ?? '').trim(); // SAFE: a short CSV row leaves its trailing columns empty rather than shifting values left
     });
     return record;
   });

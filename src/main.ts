@@ -1259,7 +1259,7 @@ export default class RadialTimelinePlugin extends Plugin {
         let stageTargetsMigrated = false;
         const legacyStageTargets = this.settings.stageTargetDates;
         if (legacyStageTargets !== undefined) {
-            const hasLegacyValues = Object.values(legacyStageTargets ?? {}).some(v => typeof v === 'string' && v);
+            const hasLegacyValues = Object.values(legacyStageTargets ?? {}).some(v => typeof v === 'string' && v); // SAFE: migration probe — an absent legacy object simply has no values to carry forward
             if (hasLegacyValues) {
                 const activeBook = getActiveBook(this.settings);
                 if (activeBook && !activeBook.stageTargetDates) {

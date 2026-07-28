@@ -53,10 +53,10 @@ export interface OmnibusCacheProbe {
  * provider gives us no cache signal to enforce on.
  */
 export function readOmnibusCacheProbe(usage: TokenUsage | null | undefined): OmnibusCacheProbe {
-    const cacheReadTokens = usage?.cacheReadInputTokens ?? 0;
-    const cacheCreatedTokens = (usage?.cacheCreationInputTokens ?? 0)
-        + (usage?.cacheCreation5mInputTokens ?? 0)
-        + (usage?.cacheCreation1hInputTokens ?? 0);
+    const cacheReadTokens = usage?.cacheReadInputTokens ?? 0; // SAFE: an absent cache-read counter means nothing was served from cache
+    const cacheCreatedTokens = (usage?.cacheCreationInputTokens ?? 0) // SAFE: providers omit cache counters when nothing was cached, so 0 is the true count
+        + (usage?.cacheCreation5mInputTokens ?? 0) // SAFE: a usage block without the 5m tier means zero 5m-cached tokens
+        + (usage?.cacheCreation1hInputTokens ?? 0); // SAFE: a usage block without the 1h tier means zero 1h-cached tokens
     const hasCacheSignals = !!usage && (
         typeof usage.cacheReadInputTokens === 'number'
         || typeof usage.cacheCreationInputTokens === 'number'

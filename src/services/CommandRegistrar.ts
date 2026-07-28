@@ -136,7 +136,7 @@ export class CommandRegistrar {
                     const lines: string[] = ['# Radial Timeline performance report', `- generated: ${new Date().toISOString()}`];
                     if (view) {
                         lines.push(`- mode: ${view.currentMode}`);
-                        lines.push(`- timeline items: ${view.sceneData?.length ?? 0}`);
+                        lines.push(`- timeline items: ${view.sceneData?.length ?? 0}`); // SAFE: diagnostic report line — no scene data loaded reads as 0 items
                     }
                     lines.push('', '## Timings (ms) — *.js = handler cost, *.frame = through the paint after the mutation');
                     if (rows.length === 0) {
@@ -632,7 +632,7 @@ export class CommandRegistrar {
                 }
                 const referenceDoc = ensureManuscriptReferenceDocxInstalled(this.plugin);
                 if (!referenceDoc.path) {
-                    const message = `Cannot export DOCX: Word reference document unavailable. ${referenceDoc.error ?? ''}`.trim();
+                    const message = `Cannot export DOCX: Word reference document unavailable. ${referenceDoc.error ?? ''}`.trim(); // SAFE: the failure is already stated; the trailing detail is appended only when there is one
                     new Notice(message, 8000);
                     throw new Error(message);
                 }
@@ -1273,7 +1273,7 @@ export class CommandRegistrar {
             for (let i = 2; this.app.vault.getAbstractFileByPath(path); i++) {
                 path = `${folderPath}/New ${label} ${i}.md`;
             }
-            const content = buildEntityNoteContent(kind, { book: book.title ?? '', sceneCount: 0 });
+            const content = buildEntityNoteContent(kind, { book: book.title ?? '', sceneCount: 0 }); // SAFE: entity-note header field; an untitled book leaves the header blank rather than inventing a name
             const newFile = await this.app.vault.create(path, content);
             const leaf = this.app.workspace.getLeaf(true);
             await leaf.openFile(newFile);

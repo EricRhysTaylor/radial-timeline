@@ -217,7 +217,7 @@ export async function buildCommunityDailyEntries(
             session_count: stats.sessionsCompleted,
             words_added: roundTo(stats.wordsDrafted, 50),
             scenes_completed_by_stage: stats.scenesCompletedByStage,
-            mode_mix: percentMix(Object.fromEntries(modeKeys.map(mode => [mode, stats.minutesByMode[mode] ?? 0])))
+            mode_mix: percentMix(Object.fromEntries(modeKeys.map(mode => [mode, stats.minutesByMode[mode] ?? 0]))) // SAFE: a mode with no recorded minutes contributes 0 to the percentage mix
         });
     }
     return entries;

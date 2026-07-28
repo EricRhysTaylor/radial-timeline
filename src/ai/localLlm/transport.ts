@@ -298,7 +298,7 @@ async function fetchModelListAbortable(request: LocalLlmTransportRequest): Promi
             throw new Error('Local LLM backend returned an unexpected model list response.');
         }
         if (response.status >= 400) {
-            throw new Error(responseData?.error?.message || `HTTP ${response.status}`);
+            throw new Error(responseData?.error?.message || `HTTP ${response.status}`); // SAFE: the throw is the failure signal; the bare status line stands in only when the local server sends no message
         }
         return normalizeModelList(responseData);
     } finally {
@@ -316,7 +316,7 @@ async function fetchModelListViaRequestUrl(request: LocalLlmTransportRequest): P
     }), request.timeoutMs, 'Local LLM model list request timed out.');
     const responseData = response.json as ModelListResponse;
     if (response.status >= 400) {
-        throw new Error(responseData?.error?.message || `HTTP ${response.status}`);
+        throw new Error(responseData?.error?.message || `HTTP ${response.status}`); // SAFE: the throw is the failure signal; the bare status line stands in only when the local server sends no message
     }
     return normalizeModelList(responseData);
 }

@@ -6814,7 +6814,7 @@ export class InquiryView extends ItemView {
 
         // Drop questions the author chose to skip in the plan modal (already
         // answered by this engine on the identical corpus).
-        const excludedIds = new Set(plan.excludedQuestionIds ?? []);
+        const excludedIds = new Set(plan.excludedQuestionIds ?? []); // SAFE: a plan with no exclusion list excludes nothing
         if (excludedIds.size) {
             nextQuestions = nextQuestions.filter(q => !excludedIds.has(q.id));
             if (!nextQuestions.length) {

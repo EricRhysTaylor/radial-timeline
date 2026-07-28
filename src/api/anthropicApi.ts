@@ -377,7 +377,7 @@ function buildAnthropicMessageRequestBody(
     // working replacement for the forced-tool path (incompatible with the
     // always-on thinking Fable can't turn off).
     requestBody.output_config = {
-      ...(requestBody.output_config ?? {}),
+      ...(requestBody.output_config ?? {}), // SAFE: spread of an optional request field; absent means no output_config has been set yet
       format: {
         type: 'json_schema',
         schema: sanitizeAnthropicOutputSchema(input.jsonSchema as Record<string, unknown>)
@@ -410,7 +410,7 @@ function buildAnthropicMessageRequestBody(
     //     "`temperature` is deprecated for this model." Both match the registry
     //     constraint flags (thinkingAlwaysOn / supportsTemperature:false).
     const effort = thinkingBudget >= 1024 ? mapBudgetToEffort(thinkingBudget) : 'medium';
-    requestBody.output_config = { ...(requestBody.output_config ?? {}), effort };
+    requestBody.output_config = { ...(requestBody.output_config ?? {}), effort }; // SAFE: spread of an optional request field; absent means no output_config has been set yet
     // Thinking spends tokens inside max_tokens for these models, so apply
     // headroom on ALL paths (schema included). Floor the reasoning headroom so
     // a small base (e.g. 4000) isn't starved by the thinking spend, and clamp
@@ -615,7 +615,7 @@ export async function callAnthropicApi(
     responseData = response.json;
     if (response.status >= 400) {
       const err = responseData as AnthropicErrorResponse;
-      const rawMsg = err?.error?.message ?? response.text ?? `Anthropic error (${response.status})`;
+      const rawMsg = err?.error?.message ?? response.text ?? `Anthropic error (${response.status})`; // SAFE: error-message composition — the request already failed; this only picks the most specific text available
       const msg = annotateAnthropic400(modelId, response.status, rawMsg);
       return {
         success: false,

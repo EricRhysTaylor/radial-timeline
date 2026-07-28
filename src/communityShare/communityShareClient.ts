@@ -198,8 +198,8 @@ export async function confirmCommunityShareActivation(
     if (response.status < 200 || response.status >= 300) {
         const body = parsed as ActivationConfirmError;
         throw new CommunityShareError(
-            body.error?.code || 'activation_failed',
-            body.error?.message || 'Community connection failed. Generate a new code and try again.'
+            body.error?.code || 'activation_failed', // SAFE: non-2xx activation response carrying no structured code; this names the call that failed
+            body.error?.message || 'Community connection failed. Generate a new code and try again.' // SAFE: user-facing text used only when the activation error body carries no message
         );
     }
     if (!isActivationConfirmSuccess(parsed)) {
@@ -307,8 +307,8 @@ export async function publishCommunityShareReport(
     if (response.status < 200 || response.status >= 300) {
         const body = parsed as ActivationConfirmError;
         throw new CommunityShareError(
-            body.error?.code || 'publish_failed',
-            body.error?.message || 'Community sharing failed. Review the preview and try again.'
+            body.error?.code || 'publish_failed', // SAFE: non-2xx publish response carrying no structured code; this names the call that failed
+            body.error?.message || 'Community sharing failed. Review the preview and try again.' // SAFE: user-facing text used only when the publish error body carries no message
         );
     }
     if (!isPublishSuccess(parsed)) {
@@ -409,7 +409,7 @@ async function requireActiveConnection(plugin: RadialTimelinePlugin): Promise<{
     currentSecret: string;
 }> {
     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
-    if (!current.enabled || current.connection.status !== 'connected' || !current.connection.connectionId || !current.connection.secretId || !current.connection.projectId) {
+    if (!current.enabled || current.connection.status !== 'connected' || !current.connection.connectionId || !current.connection.secretId || !current.connection.projectId) { // SAFE: connection precondition — any missing piece throws connection_required below, no silent default
         throw new CommunityShareError('connection_required', 'Connect Community Share before syncing with the website.');
     }
     const currentSecret = await getSecret(plugin.app, current.connection.secretId);
@@ -475,8 +475,8 @@ export async function uploadAprToCommunity(
     if (response.status < 200 || response.status >= 300) {
         const body = parsed as ActivationConfirmError;
         throw new CommunityShareError(
-            body.error?.code || 'apr_upload_failed',
-            body.error?.message || 'Could not send the progress report to the community site.'
+            body.error?.code || 'apr_upload_failed', // SAFE: non-2xx APR upload response carrying no structured code; this names the call that failed
+            body.error?.message || 'Could not send the progress report to the community site.' // SAFE: user-facing text used only when the APR upload error body carries no message
         );
     }
     if (!isAprUploadSuccess(parsed)) {
@@ -510,8 +510,8 @@ export async function fetchCommunityShareContext(plugin: RadialTimelinePlugin): 
     if (response.status < 200 || response.status >= 300) {
         const body = parsed as ActivationConfirmError;
         throw new CommunityShareError(
-            body.error?.code || 'share_context_failed',
-            body.error?.message || 'Could not load your public profile from the website.'
+            body.error?.code || 'share_context_failed', // SAFE: non-2xx share-context response carrying no structured code; this names the call that failed
+            body.error?.message || 'Could not load your public profile from the website.' // SAFE: user-facing text used only when the share-context error body carries no message
         );
     }
     if (!isCommunityShareContext(parsed)) {
@@ -528,7 +528,7 @@ export async function fetchCommunityShareContext(plugin: RadialTimelinePlugin): 
 export async function syncCommunityProjects(plugin: RadialTimelinePlugin): Promise<ProjectSyncSuccess> {
     const { connectionId, currentSecret } = await requireActiveConnection(plugin);
 
-    const books = (plugin.settings.books ?? []).slice(0, 50);
+    const books = (plugin.settings.books ?? []).slice(0, 50); // SAFE: no books configured means nothing to sync; the empty-list branch below returns early
     if (!books.length) {
         return { ok: true, created: 0, updated: 0, projects: [] };
     }
@@ -551,7 +551,7 @@ export async function syncCommunityProjects(plugin: RadialTimelinePlugin): Promi
             current_secret: currentSecret,
             projects: books.map((book, index) => ({
                 book_key: book.id,
-                title: (book.publicLabel || book.title || 'Untitled book').slice(0, 140),
+                title: (book.publicLabel || book.title || 'Untitled book').slice(0, 140), // SAFE: the author's public label wins over the private title; the literal is the last-resort label for an unnamed book
                 logline: book.publicDescription ? book.publicDescription.slice(0, 240) : undefined,
                 // Book Manager array order — the website renders books in this order.
                 order_index: index,
@@ -571,8 +571,8 @@ export async function syncCommunityProjects(plugin: RadialTimelinePlugin): Promi
     if (response.status < 200 || response.status >= 300) {
         const body = parsed as ActivationConfirmError;
         throw new CommunityShareError(
-            body.error?.code || 'project_sync_failed',
-            body.error?.message || 'Could not sync books to the community site.'
+            body.error?.code || 'project_sync_failed', // SAFE: non-2xx project-sync response carrying no structured code; this names the call that failed
+            body.error?.message || 'Could not sync books to the community site.' // SAFE: user-facing text used only when the project-sync error body carries no message
         );
     }
     if (!isProjectSyncSuccess(parsed)) {
@@ -587,7 +587,7 @@ export async function syncCommunityProjects(plugin: RadialTimelinePlugin): Promi
  */
 export async function syncCommunityProjectsIfConnected(plugin: RadialTimelinePlugin): Promise<void> {
     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
-    if (!current.enabled || current.sharingPaused || current.connection.status !== 'connected' || !current.connection.connectionId) return;
+    if (!current.enabled || current.sharingPaused || current.connection.status !== 'connected' || !current.connection.connectionId) return; // SAFE: load-time sync precondition — disabled, paused, or disconnected is the documented no-op for this fire-and-forget path
     try {
         await syncCommunityProjects(plugin);
     } catch (error) {
@@ -747,8 +747,8 @@ export async function syncCommunityDailyIfEligible(plugin: RadialTimelinePlugin)
         if (response.status < 200 || response.status >= 300) {
             const body = parsed as ActivationConfirmError;
             throw new CommunityShareError(
-                body.error?.code || 'daily_sync_failed',
-                body.error?.message || 'Daily activity sync failed.'
+                body.error?.code || 'daily_sync_failed', // SAFE: non-2xx daily-sync response carrying no structured code; this names the call that failed
+                body.error?.message || 'Daily activity sync failed.' // SAFE: user-facing text used only when the daily-sync error body carries no message
             );
         }
         if (!isDailySyncSuccess(parsed)) {
@@ -1014,8 +1014,8 @@ export async function postSessionToCommunityFeed(
     const parsed = parseResponseJson(response.text) as ActivationConfirmError & { ok?: boolean };
     if (response.status < 200 || response.status >= 300 || parsed.ok !== true) {
         throw new CommunityShareError(
-            parsed.error?.code || 'post_failed',
-            parsed.error?.message || 'Could not post this session to the community feed.'
+            parsed.error?.code || 'post_failed', // SAFE: non-2xx session-post response carrying no structured code; this names the call that failed
+            parsed.error?.message || 'Could not post this session to the community feed.' // SAFE: user-facing text used only when the session-post error body carries no message
         );
     }
 }

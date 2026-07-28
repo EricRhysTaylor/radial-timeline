@@ -860,7 +860,7 @@ export function renderProgressSection(params: {
                     if (validationError) {
                         new Notice(validationError);
                         text.inputEl.addClass('ert-setting-input-error');
-                        text.setValue(activeBook.stageTargetDates[stage] || '');
+                        text.setValue(activeBook.stageTargetDates[stage] || ''); // SAFE: an unset target date renders as an empty date field, which is also how the author clears it
                         return;
                     }
 

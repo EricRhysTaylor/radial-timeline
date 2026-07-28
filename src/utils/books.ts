@@ -122,7 +122,7 @@ export function getBookSequenceNumber(
 }
 
 export function getActiveBook(settings: RadialTimelineSettings): BookProfile | null {
-  const books = settings.books || [];
+  const books = settings.books || []; // SAFE: pre-Book-Manager vaults have no books array; callers read empty as "no books yet"
   if (!books.length) return null;
   const active = settings.activeBookId
     ? books.find(b => b.id === settings.activeBookId)
@@ -153,9 +153,9 @@ export function isSceneInBook(scene: TimelineItem, book: BookProfile | null | un
 export function getActiveStageTargetDates(
   settings: { books?: BookProfile[]; activeBookId?: string }
 ): NonNullable<BookProfile['stageTargetDates']> {
-  const books = settings.books || [];
+  const books = settings.books || []; // SAFE: pre-Book-Manager vaults have no books array; callers read empty as "no books yet"
   const active = (settings.activeBookId ? books.find(b => b.id === settings.activeBookId) : undefined) || books[0];
-  return active?.stageTargetDates ?? {};
+  return active?.stageTargetDates ?? {}; // SAFE: a book with no target dates set yet has none to report
 }
 
 export function getActiveBookTitle(settings: RadialTimelineSettings, fallback = DEFAULT_BOOK_TITLE): string {

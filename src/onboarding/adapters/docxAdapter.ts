@@ -126,7 +126,7 @@ export function documentXmlToText(xml: string): string {
     if (inner === undefined) continue; // self-closing <w:p/> — empty paragraph
     const text = paragraphText(inner).trim();
     if (text.length === 0) continue;
-    const level = headingLevel(inner.match(PPR_RE)?.[0] ?? '');
+    const level = headingLevel(inner.match(PPR_RE)?.[0] ?? ''); // SAFE: a paragraph with no pPr block declares no heading style, and headingLevel('') reports body text
     paragraphs.push(level === null ? text : `${'#'.repeat(level)} ${text}`);
   }
   return paragraphs.join('\n\n');

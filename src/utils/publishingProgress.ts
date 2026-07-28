@@ -142,7 +142,7 @@ export function buildPublishingProgressStages(inputs: PublishingProgressInputs):
                     ? 'One-time setup: install export tools for PDF.'
                     : inputs.layoutSummary.validCount === 0
                         ? 'Pick a working PDF style first.'
-                        : inputs.layoutSummary.topMessage || 'Finish the remaining setup.',
+                        : inputs.layoutSummary.topMessage || 'Finish the remaining setup.', // SAFE: generic next-step prompt for when the layout summary has no specific message to show
             actionLabel: exportCheckReady ? 'Review export' : !inputs.pandocPathValid ? 'Set up tools' : 'Review export',
         },
     ];

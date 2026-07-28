@@ -127,7 +127,7 @@ export function buildEntityNoteContent(kind: EntityKind, context: EntityNoteCont
  * `Place` (singular, matching the author-vault convention).
  */
 export function entityFolderFor(bookFolder: string, kind: EntityKind): string {
-    const normalized = normalizePath((bookFolder || '').trim());
+    const normalized = normalizePath((bookFolder || '').trim()); // SAFE: a book folder at the vault root has no parent, so its entity folders sit at the root too
     const idx = normalized.lastIndexOf('/');
     const parent = idx === -1 ? '' : normalized.slice(0, idx);
     const name = kind === 'character' ? 'Character' : 'Place';

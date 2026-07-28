@@ -156,7 +156,7 @@ export function mergeShortSegments(paragraphs: string[], breaks: number[], minCh
   }
   // A short tail merges backward into the previous scene.
   while (kept.length > 0 && sizeBetween(kept[kept.length - 1], paragraphs.length) < minChars) {
-    segStart = kept.pop() ?? 0;
+    segStart = kept.pop() ?? 0; // SAFE: an empty boundary stack means the segment starts at the top of the document
   }
   return kept;
 }

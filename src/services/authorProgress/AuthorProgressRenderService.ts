@@ -122,7 +122,7 @@ export class AuthorProgressRenderService {
                     usedFontFamilies.add(family);
                 }
             }
-            const styleMatch = (el.getAttribute('style') ?? '').match(/font-family\s*:\s*([^;]+)/i);
+            const styleMatch = (el.getAttribute('style') ?? '').match(/font-family\s*:\s*([^;]+)/i); // SAFE: an element with no style attribute declares no font-family, and the regex finds none in the empty string
             if (styleMatch) {
                 for (const family of parseFontFamilyList(styleMatch[1])) {
                     usedFontFamilies.add(family);

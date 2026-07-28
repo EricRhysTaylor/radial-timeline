@@ -683,7 +683,7 @@ export class TimelineAuditModal extends Modal {
         });
 
         const qaGrid = card.createDiv({ cls: 'ert-timeline-audit-qa-grid' });
-        const totalScenes = this.getDisplayedResult()?.stats.totalScenes ?? 0;
+        const totalScenes = this.getDisplayedResult()?.stats.totalScenes ?? 0; // SAFE: no audit result on screen yet means there are no scenes to count
         this.createQuestionBlock(qaGrid, t('timelineAuditModal.detail.whatYamlSays'), [
             this.describeCurrentWhen(finding),
             finding.expectedChronologyPosition !== null

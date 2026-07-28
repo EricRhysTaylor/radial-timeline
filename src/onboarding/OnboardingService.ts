@@ -198,7 +198,7 @@ export class OnboardingService {
       return {
         ok: false,
         tier: 0,
-        reason: diagnostics.structuredJson.message || 'The local model could not produce strict JSON.',
+        reason: diagnostics.structuredJson.message || 'The local model could not produce strict JSON.', // SAFE: names the diagnostic when the validator reported a failure without a message
       };
     }
     const capability = inferLocalLlmCapability({ modelId: diagnostics.modelId, diagnostics });
@@ -264,7 +264,7 @@ export class OnboardingService {
    */
   async ingest(folderPath: string, flowOverride?: ImportFlow): Promise<MarkdownIngestResult> {
     const detection = this.detectImportFlow(folderPath);
-    const flow = flowOverride ?? detection?.flow ?? 'folder';
+    const flow = flowOverride ?? detection?.flow ?? 'folder'; // SAFE: detectImportFlow already returns 'folder' as its terminal case, so this keeps the same answer when detection returns nothing
 
     if (flow === 'docx' || flow === 'single') {
       const proseFiles = this.listProseFiles(folderPath);
@@ -362,7 +362,7 @@ export class OnboardingService {
    * the author or a later AI pass. Instant; used when preflight finds no model.
    */
   buildStructureOnlyProposals(model: ManuscriptModel, options: { publishStage?: Stage } = {}): SceneProposal[] {
-    const actCount = Math.max(3, this.plugin.settings.actCount ?? 3);
+    const actCount = Math.max(3, this.plugin.settings.actCount ?? 3); // SAFE: three acts is the plugin's structural minimum and its shipped default
     const scenes = this.candidateScenes(model);
     const proposals: SceneProposal[] = scenes.map((scene) => {
       const extraction = deterministicExtraction(scene);
@@ -402,9 +402,9 @@ export class OnboardingService {
     survey: SurveyResult | null,
     options: ExtractOptions = {}
   ): Promise<SceneProposal[]> {
-    const actCount = Math.max(3, this.plugin.settings.actCount ?? 3);
+    const actCount = Math.max(3, this.plugin.settings.actCount ?? 3); // SAFE: three acts is the plugin's structural minimum and its shipped default
     const scenes = this.candidateScenes(model);
-    const subplotVocabulary = survey?.subplots ?? [];
+    const subplotVocabulary = survey?.subplots ?? []; // SAFE: no survey answers yet means an empty vocabulary, which enforceSubplotVocabulary handles explicitly
     const aiClient = getAIClient(this.plugin);
     const proposals: SceneProposal[] = [];
 
@@ -441,7 +441,7 @@ export class OnboardingService {
           overrides: { ...OVERRIDES },
         });
         if (result.aiStatus !== 'success' || !result.content) {
-          proposals.push(this.failed(scene, title, result.error || 'No response from the local model.'));
+          proposals.push(this.failed(scene, title, result.error || 'No response from the local model.')); // SAFE: the proposal is marked failed either way; this text covers a transport failure that carried no message
           continue;
         }
         const parsed = parseSceneExtraction(result.content);
@@ -491,7 +491,7 @@ export class OnboardingService {
     };
     for (const proposal of written) {
       const name = subplotOf(proposal);
-      subplotCounts.set(name, (subplotCounts.get(name) ?? 0) + 1);
+      subplotCounts.set(name, (subplotCounts.get(name) ?? 0) + 1); // SAFE: first sighting of a subplot starts its tally at 0
     }
     for (const proposal of written) {
       const name = subplotOf(proposal);
@@ -633,7 +633,7 @@ export class OnboardingService {
         summary: '',
       }));
     }
-    const targetWords = Math.max(50, this.plugin.settings.synopsisTargetWords ?? 200);
+    const targetWords = Math.max(50, this.plugin.settings.synopsisTargetWords ?? 200); // SAFE: 200 words is the shipped synopsis target; the Math.max floor is the hard minimum
     const aiClient = getAIClient(this.plugin);
     const results: EntityProposal[] = [];
 
@@ -697,7 +697,7 @@ export class OnboardingService {
   ): Promise<MaterializeReport> {
     const vault = this.plugin.app.vault;
     const destFolder = normalizePath(
-      options?.folderName ?? suggestOnboardingFolderName(sourceBook?.sourceFolder ?? 'Book')
+      options?.folderName ?? suggestOnboardingFolderName(sourceBook?.sourceFolder ?? 'Book') // SAFE: caller did not name the destination, so it is derived; 'Book' is the stem when there is no source folder
     );
     if (!(vault.getAbstractFileByPath(destFolder) instanceof TFolder)) {
       await vault.createFolder(destFolder);
@@ -710,7 +710,7 @@ export class OnboardingService {
     for (const proposal of proposals) {
       if (!proposal.frontmatter) continue;
       index += 1;
-      const noteName = sanitizeFileName(`${String(index).padStart(2, '0')} ${proposal.title || 'Scene'}`);
+      const noteName = sanitizeFileName(`${String(index).padStart(2, '0')} ${proposal.title || 'Scene'}`); // SAFE: filenames must be non-empty; the index prefix still disambiguates an untitled scene
       const path = normalizePath(`${destFolder}/${noteName}.md`);
       try {
         const file = await vault.create(path, proposal.body ? `\n${proposal.body}\n` : '\n');
@@ -823,7 +823,7 @@ export class OnboardingService {
       genre: sourceBook?.genre,
       projectStage: sourceBook?.projectStage,
     });
-    this.plugin.settings.books = [...(this.plugin.settings.books ?? []), newBook];
+    this.plugin.settings.books = [...(this.plugin.settings.books ?? []), newBook]; // SAFE: the first onboarded book seeds an empty list
     this.plugin.settings.activeBookId = newBook.id;
     await this.plugin.persistBookSettings();
   }

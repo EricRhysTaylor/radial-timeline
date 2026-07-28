@@ -943,7 +943,7 @@ export class RadialTimelineView extends ItemView {
         const remainingMs = goalMs ? Math.max(0, goalMs - countdownElapsedMs) : undefined;
         const clockDisplay = this.formatSessionClockDisplay(remainingMs ?? elapsedMs, goalMs ? 'countdown' : 'elapsed');
         const wordsSuffix = this.sessionHasWordGoal(active)
-            ? ` · ${Math.max(0, Math.round(active.typedWords || 0))}/${Math.max(1, Math.round(active.goalWords || 1))} words typed`
+            ? ` · ${Math.max(0, Math.round(active.typedWords || 0))}/${Math.max(1, Math.round(active.goalWords || 1))} words typed` // SAFE: live session readout — an unstarted session shows 0 typed, and the 1-word floor keeps the denominator non-zero
             : '';
         if (goalMs && remainingMs === 0) {
             return {

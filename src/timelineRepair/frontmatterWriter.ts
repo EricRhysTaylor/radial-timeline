@@ -166,7 +166,7 @@ export async function writeFrontmatterUpdates(
                 prev: previousWhen,
                 next: formatWhenForYaml(update.when),
                 source: update.whenSource,
-                tool: opts.logTool ?? 'scaffold'
+                tool: opts.logTool ?? 'scaffold' // SAFE: only the audit modal passes 'audit'; every other caller is the scaffold path, so the change log records it accurately
             });
         } catch (error) {
             result.failed++;

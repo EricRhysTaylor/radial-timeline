@@ -195,19 +195,19 @@ export function deterministicExtraction(source: {
   knownSynopsis: string | null;
   knownMetadata: Record<string, string>;
 }): SceneExtraction {
-  const carriedSubplot = sanitizeName(source.knownMetadata['Subplot'] ?? '');
+  const carriedSubplot = sanitizeName(source.knownMetadata['Subplot'] ?? ''); // SAFE: a source note with no Subplot carries nothing forward
   // Mapped Character/Place columns (e.g. Scrivener "Characters", "Location")
   // carry real per-scene lists — split on ;/, so they become proper wiki-linked
   // arrays instead of being silently blocked by the pre-filled empty fields.
   const splitList = (value: string | undefined): string[] =>
-    (value ?? '')
+    (value ?? '') // SAFE: an absent source column yields no names, and the filter drops the empty split result
       .split(/[;,]/)
       .map((name) => name.trim())
       .filter((name) => name.length > 0);
   return {
     act: 1, // recomputed positionally downstream
     title: '',
-    synopsis: source.knownSynopsis?.trim() ?? '',
+    synopsis: source.knownSynopsis?.trim() ?? '', // SAFE: no pre-existing synopsis on the source note; empty means "extract one"
     subplot: carriedSubplot ? [carriedSubplot] : [],
     character: splitList(source.knownMetadata['Character']),
     place: splitList(source.knownMetadata['Place']),
@@ -281,16 +281,16 @@ export function buildSceneFrontmatter(
     Class: 'Scene',
     Act: clampActNumber(extraction.act, Math.max(3, options.actCount)),
     Synopsis: extraction.synopsis,
-    Subplot: enforceSubplotVocabulary(extraction.subplot, options.subplotVocabulary ?? []),
+    Subplot: enforceSubplotVocabulary(extraction.subplot, options.subplotVocabulary ?? []), // SAFE: no vocabulary supplied means nothing to match against, a case enforceSubplotVocabulary documents
     Character: dedupe(extraction.character.map(toWikiLink)).slice(0, MAX_CHARACTERS),
     Place: dedupe(extraction.place.map(toWikiLink)).slice(0, MAX_PLACES),
     Status: 'Complete',
-    'Publish Stage': options.publishStage ?? 'Zero',
+    'Publish Stage': options.publishStage ?? 'Zero', // SAFE: newly imported scenes start at the Zero stage
   };
   if (extraction.when) fm.When = extraction.when;
   if (extraction.duration) fm.Duration = extraction.duration;
   // Carried non-canonical metadata never overwrites a canonical key.
-  for (const [key, value] of Object.entries(options.carriedMetadata ?? {})) {
+  for (const [key, value] of Object.entries(options.carriedMetadata ?? {})) { // SAFE: nothing carried from a previous scene means an empty iteration
     if (!(key in fm)) fm[key] = value;
   }
   return fm;
@@ -332,7 +332,7 @@ export function enforceSubplotVocabulary(subplots: string[], vocabulary: string[
   const first = subplots
     .map((name) => canonical.get(subplotKey(name)))
     .find((name): name is string => typeof name === 'string');
-  return [first ?? 'Main Plot'];
+  return [first ?? 'Main Plot']; // SAFE: documented contract of this function — no vocabulary match places the scene on the main plot
 }
 
 /**

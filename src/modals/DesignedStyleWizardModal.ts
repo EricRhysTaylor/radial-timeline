@@ -242,14 +242,19 @@ const CATEGORY_PUBLISHING_NOTES: Record<WizardCategory, string> = {
     'epigraph': 'Epigraphs frame the emotional or thematic lens of a section before the prose begins. Some novels use them sparingly for emphasis, while literary and structural fiction may use recurring epigraphs to create resonance across acts, chapters, or character arcs.',
 };
 
-const FONT_OPTIONS: Array<{ value: DesignedStyleSpec['body']['font']; label: string; familyHint: string }> = [
-    { value: 'sorts-mill-goudy', label: 'Sorts Mill Goudy', familyHint: 'Sorts Mill Goudy' },
-    { value: 'latin-modern',     label: 'Latin Modern',     familyHint: 'Latin Modern Roman' },
-    { value: 'source-serif',     label: 'Source Serif',     familyHint: 'Source Serif 4' },
-    { value: 'eb-garamond',      label: 'EB Garamond',      familyHint: 'EB Garamond' },
-    { value: 'crimson',          label: 'Crimson Text',     familyHint: 'Crimson Text' },
-    { value: 'system-serif',     label: 'System serif',     familyHint: 'Times' },
-    { value: 'system-sans',      label: 'System sans',      familyHint: 'Helvetica' },
+// Labels name the font the option actually produces. "System serif" and
+// "System sans" were opaque — and in the serif case wrong, since that option
+// resolves to TeX Gyre Pagella from the TeX distribution, not an OS font.
+// The `familyHint` column was removed: nothing ever read it, and its values
+// ('Times', 'Helvetica') had drifted from what the resolver emits.
+const FONT_OPTIONS: Array<{ value: DesignedStyleSpec['body']['font']; label: string }> = [
+    { value: 'sorts-mill-goudy', label: 'Sorts Mill Goudy' },
+    { value: 'latin-modern',     label: 'Latin Modern' },
+    { value: 'source-serif',     label: 'Source Serif 4' },
+    { value: 'eb-garamond',      label: 'EB Garamond' },
+    { value: 'crimson',          label: 'Crimson Text' },
+    { value: 'system-serif',     label: 'TeX Gyre Pagella' },
+    { value: 'system-sans',      label: 'Arial' },
 ];
 
 // ──────────────────────────────────────────────────────────────────────────

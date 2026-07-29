@@ -186,8 +186,8 @@ function describeFont(spec: DesignedStyleSpec): string {
         case 'source-serif':     return 'Source Serif 4 (serif)';
         case 'eb-garamond':      return 'EB Garamond (serif)';
         case 'crimson':          return 'Crimson Text (serif)';
-        case 'system-serif':     return 'System serif';
-        case 'system-sans':      return 'System sans';
+        case 'system-serif':     return 'TeX Gyre Pagella (serif)';
+        case 'system-sans':      return 'Arial (sans)';
         default:                 return 'Serif';
     }
 }
@@ -325,7 +325,7 @@ export function getLayoutFeatures(variant: FictionLayoutVariant): LayoutFeatureR
             return [
                 { label: 'Headers', value: 'Title centered (both pages)' },
                 { label: 'Folios', value: 'Bottom center' },
-                { label: 'Font', value: 'System sans' },
+                { label: 'Font', value: 'Arial (sans)' },
                 { label: 'Spacing', value: '1.5 lines' },
                 { label: 'Scenes', value: 'New page — centered scene number only' },
             ];

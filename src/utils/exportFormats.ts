@@ -1009,6 +1009,7 @@ function resolveFontDiagnosticForKey(
                     source: 'ctan',
                     message: 'Enter the exact font family name as installed on your system (e.g. via Font Book, Windows Fonts, or fontconfig).',
                 },
+                specDriven: true,
             };
         }
         const catalog = loadSystemFontCatalog();
@@ -1016,13 +1017,14 @@ function resolveFontDiagnosticForKey(
         const installed = (canVerify && isFontInstalled(name, catalog))
             || requiredSystemFontFileExists(name, platform);
         if (installed) {
-            return { state: 'ok', primaryFontName: name, resolvedFontName: name };
+            return { state: 'ok', primaryFontName: name, resolvedFontName: name, specDriven: true };
         }
         return {
             state: 'missing-system',
             primaryFontName: name,
             resolvedFontName: name,
             installHint: buildCtanHint(name),
+            specDriven: true,
         };
     }
 

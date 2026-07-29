@@ -3,10 +3,10 @@
     {
       "version": "7.0.3",
       "title": "7.0.3",
-      "body": "## Radial Timeline 7.0.3\n\nManuscript export was broken for anyone who installed from the Community Plugins browser. This fixes it.\n\n### Fixes\n\n- **PDF and Word export** — the bundled fonts and the Word reference document now ship inside the plugin, so export works on a fresh install with nothing to set up. Thanks to **@therisingtithes** ([#34](https://github.com/EricRhysTaylor/Radial-Timeline/issues/34)).\n- **Font status** — Publish and Export now report what XeLaTeX can actually load, so a font no longer reads as missing when it's there, or as ready when it isn't. A failed export names the font that caused it.",
-      "url": "https://github.com/EricRhysTaylor/radial-timeline/releases/tag/untagged-f77440f7cb67a9adb44c",
-      "publishedAt": "2026-07-29T16:42:16.743Z",
-      "isDraft": true
+      "body": "## Radial Timeline 7.0.3\n\nExporting a manuscript to PDF or Word could fail with a missing font error. This release fixes that.\n\n### Fixes\n\n- **PDF and Word export** — the fonts and the Word reference document now come with the plugin, so export works without any setup. Thanks to **@therisingtithes** ([#34](https://github.com/EricRhysTaylor/Radial-Timeline/issues/34)).\n- **Font status** — Publish and Export now show which fonts are actually available, and a failed export tells you which font caused it.\n",
+      "url": "https://github.com/EricRhysTaylor/radial-timeline/releases/tag/7.0.3",
+      "publishedAt": "2026-07-29T16:43:46Z",
+      "isDraft": false
     },
     {
       "version": "7.0.2",
@@ -45,10 +45,10 @@
   "latest": {
     "version": "7.0.3",
     "title": "7.0.3",
-    "body": "## Radial Timeline 7.0.3\n\nManuscript export was broken for anyone who installed from the Community Plugins browser. This fixes it.\n\n### Fixes\n\n- **PDF and Word export** — the bundled fonts and the Word reference document now ship inside the plugin, so export works on a fresh install with nothing to set up. Thanks to **@therisingtithes** ([#34](https://github.com/EricRhysTaylor/Radial-Timeline/issues/34)).\n- **Font status** — Publish and Export now report what XeLaTeX can actually load, so a font no longer reads as missing when it's there, or as ready when it isn't. A failed export names the font that caused it.",
-    "url": "https://github.com/EricRhysTaylor/radial-timeline/releases/tag/untagged-f77440f7cb67a9adb44c",
-    "publishedAt": "2026-07-29T16:42:16.743Z",
-    "isDraft": true
+    "body": "## Radial Timeline 7.0.3\n\nExporting a manuscript to PDF or Word could fail with a missing font error. This release fixes that.\n\n### Fixes\n\n- **PDF and Word export** — the fonts and the Word reference document now come with the plugin, so export works without any setup. Thanks to **@therisingtithes** ([#34](https://github.com/EricRhysTaylor/Radial-Timeline/issues/34)).\n- **Font status** — Publish and Export now show which fonts are actually available, and a failed export tells you which font caused it.\n",
+    "url": "https://github.com/EricRhysTaylor/radial-timeline/releases/tag/7.0.3",
+    "publishedAt": "2026-07-29T16:43:46Z",
+    "isDraft": false
   },
   "patches": [
     {

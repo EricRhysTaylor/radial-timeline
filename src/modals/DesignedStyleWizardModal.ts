@@ -1308,19 +1308,36 @@ export class DesignedStyleWizardModal extends Modal {
         const body = this.createPanelBody(parent);
 
         const fontRow = this.fieldRow(body, 'Font');
-        // Pull the label sibling so the missing-font warning can sit next to
-        // "Font" rather than wrapping below the dropdown.
-        const fontLabelEl = fontRow.parentElement?.querySelector('.ert-style-wizard__field-label') as HTMLElement | null;
-        const fontStatus = fontLabelEl
-            ? fontLabelEl.createSpan({ cls: 'ert-style-wizard__font-status' })
-            : fontRow.createSpan({ cls: 'ert-style-wizard__font-status' });
+        // The missing-font warning replaces the label text rather than
+        // appending to it. "Font — Missing: EB Garamond" is long enough to
+        // wrap the label onto two lines, which in turn pushes the Install
+        // button below the dropdown; "Missing — EB Garamond" fits on one.
+        const fontRowEl = fontRow.parentElement;
+        fontRowEl?.addClass('ert-style-wizard__field-row--font');
+        const fontLabelEl = fontRowEl?.querySelector('.ert-style-wizard__field-label') as HTMLElement | null;
         const fontSelect = fontRow.createEl('select', { cls: 'ert-input ert-input--md' });
         FONT_OPTIONS.forEach((option) => {
             const opt = fontSelect.createEl('option', { value: option.value, text: option.label });
             if (option.value === this.spec.body.font) opt.selected = true;
         });
+        /** Restore the row's resting label. */
+        const setLabelDefault = () => {
+            if (!fontLabelEl) return;
+            fontLabelEl.empty();
+            fontLabelEl.removeClass('is-missing');
+            fontLabelEl.setText('Font');
+        };
+        const setLabelMissing = (fontName: string) => {
+            if (!fontLabelEl) return;
+            fontLabelEl.empty();
+            fontLabelEl.addClass('is-missing');
+            fontLabelEl.createSpan({
+                cls: 'ert-style-wizard__font-status is-missing',
+                text: `Missing — ${fontName}`,
+            });
+        };
         const refreshFontStatus = () => {
-            fontStatus.empty();
+            setLabelDefault();
             const selected = FONT_OPTIONS.find(o => o.value === this.spec.body.font);
             if (!selected) return;
             // Strict font policy (Phase 1): per-font precise status. There is
@@ -1330,11 +1347,9 @@ export class DesignedStyleWizardModal extends Modal {
             try {
                 const diag = getFontDiagnosticForFontKey(this.spec.body.font);
                 if (diag.state === 'ok') {
-                    fontStatus.removeClass('is-missing');
                     return;
                 }
-                fontStatus.addClass('is-missing');
-                fontStatus.setText(` — Missing: ${diag.primaryFontName}`);
+                setLabelMissing(diag.primaryFontName);
                 // Inline "Install" affordance — Phase 1 opens a Notice with
                 // platform-specific instructions and a clickable URL when one
                 // is available. Phase 2 will perform an actual download.
@@ -1369,7 +1384,10 @@ export class DesignedStyleWizardModal extends Modal {
                     new Notice(fragment, 12000);
                 });
             } catch {
-                fontStatus.setText('');
+                // Probing the font catalog can fail in sandboxed environments.
+                // Fall back to the resting label rather than claiming a font is
+                // missing on the strength of a failed probe.
+                setLabelDefault();
             }
         };
         refreshFontStatus();

@@ -7,7 +7,7 @@ import type { TimelineItem, BookMeta, MatterMeta, LegacyMatterOrder } from '../t
 import { getScenePrefixNumber } from './text';
 import { getActiveBookExportContext } from './exportContext';
 import { normalizeMatterBodyMode, parseMatterMetaFromFrontmatter, type MatterBodyMode } from './matterMeta';
-import { normalizeFrontmatterKeys } from './frontmatter';
+import { extractFrontmatterObject } from './frontmatter';
 import { groupTimelineChapterMarkersByScenePath, resolveTimelineChapterMarkers, type TimelineChapterMarker } from './timelineChapters';
 import { cleanEvidenceBody } from '../inquiry/utils/evidenceCleaning';
 import { readSceneId } from './sceneIds';
@@ -909,18 +909,9 @@ function buildRawLatexBlock(command: string): string {
   return `\`\`\`{=latex}\n${command}\n\`\`\`\n\n`;
 }
 
-function extractFrontmatterObject(content: string): Record<string, unknown> | null {
-  try {
-    const fmInfo = getFrontMatterInfo(content);
-    const fmText = (fmInfo as { frontmatter?: string }).frontmatter;
-    if (!fmText) return null;
-    const yaml = parseYaml(fmText);
-    if (!yaml || typeof yaml !== 'object' || Array.isArray(yaml)) return null;
-    return normalizeFrontmatterKeys(yaml as Record<string, unknown>);
-  } catch {
-    return null;
-  }
-}
+// `extractFrontmatterObject` now lives in utils/frontmatter.ts so the Part
+// marker migration can read frontmatter exactly the way this exporter does —
+// file text, no user key mappings. One implementation, or the two drift.
 
 function getFirstFrontmatterString(frontmatter: Record<string, unknown>, keys: string[]): string | undefined {
   const normalizedAliases = new Set(

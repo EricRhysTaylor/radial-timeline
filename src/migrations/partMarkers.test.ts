@@ -287,6 +287,42 @@ describe('planBookMigration', () => {
             expect(plan.scenes[0].detail).toMatch(/Act 3 where part 2 is expected/);
         });
 
+        it('reports every offending boundary when a book is both re-entrant and gapped', () => {
+            // Acts 1, 3, 1. Naming only the repeat would send the author to fix
+            // one thing and get blocked again next run on a problem that was
+            // already knowable.
+            const plan = planBookMigration({ bookId: 'b', scenes: scenes(1, 3, 1) });
+
+            expect(plan.status).toBe('blocked');
+            if (plan.status !== 'blocked') return;
+            expect(plan.reason).toBe('re-entrant-acts');
+            expect(plan.scenes).toEqual([
+                { path: 'Scenes/2.md', detail: 'Opens Act 3 where part 2 is expected.' },
+                { path: 'Scenes/3.md', detail: 'Re-opens Act 1, which already opened earlier.' },
+            ]);
+            // The headline names the primary reason but admits the other exists.
+            expect(plan.detail).toMatch(/fall out of sequence/);
+        });
+
+        it('does not claim a sequence problem when re-entry is the only fault', () => {
+            const plan = planBookMigration({ bookId: 'b', scenes: scenes(1, 2, 1) });
+            expect(plan.status).toBe('blocked');
+            if (plan.status !== 'blocked') return;
+            expect(plan.detail).not.toMatch(/fall out of sequence/);
+        });
+
+        it('labels each offending boundary by its own position', () => {
+            // Position is carried on the entry rather than recovered with
+            // indexOf, which finds the first structurally equal element.
+            const plan = planBookMigration({ bookId: 'b', scenes: scenes(1, 5, 6) });
+            expect(plan.status).toBe('blocked');
+            if (plan.status !== 'blocked') return;
+            expect(plan.scenes.map(s => s.detail)).toEqual([
+                'Opens Act 5 where part 2 is expected.',
+                'Opens Act 6 where part 3 is expected.',
+            ]);
+        });
+
         it('blocks a gap in the act sequence, which would renumber the parts', () => {
             // Pre-migration this prints Part I then Part III; sequential numbering
             // would print I then II. Silently renumbering a book is not acceptable.

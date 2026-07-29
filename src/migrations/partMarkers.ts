@@ -294,35 +294,50 @@ export function planBookMigration(input: BookMigrationInput): BookMigrationPlan 
 
     const boundaryActs = boundaries.map(boundary => boundary.actNumber);
     if (!isSequentialFromOne(boundaryActs)) {
-        // Report only the boundaries that actually break the rule. The repair
-        // path asks the author to go and look at specific scenes, so listing
-        // every boundary in a five-part book blocked by one late re-entry buries
-        // the one that matters.
+        // Report only the boundaries that actually break the rule — the repair
+        // path sends the author to look at specific scenes, so listing every
+        // boundary in a five-part book blocked by one late re-entry buries the
+        // one that matters.
+        //
+        // But report ALL of them. A book can be both re-entrant and gapped
+        // (`1,3,1`); naming only the repeat would send the author to fix one
+        // thing and get blocked again on the next run for a reason that was
+        // already knowable. `position` is carried explicitly rather than
+        // recovered with indexOf, which finds the first structurally equal
+        // element and would mislabel entries the moment boundaries stop being
+        // unique by construction.
         const seenActs = new Set<number>();
-        const reEnteredBoundaries = boundaries.filter(boundary => {
-            const repeat = seenActs.has(boundary.actNumber);
+        const annotated = boundaries.map((boundary, position) => {
+            const reEnters = seenActs.has(boundary.actNumber);
             seenActs.add(boundary.actNumber);
-            return repeat;
+            return {
+                ...boundary,
+                position,
+                reEnters,
+                outOfSequence: boundary.actNumber !== position + 1,
+            };
         });
-        const reEntered = reEnteredBoundaries.length > 0;
 
-        const offending = reEntered
-            ? reEnteredBoundaries
-            : boundaries.filter((boundary, index) => boundary.actNumber !== index + 1);
+        const reEntered = annotated.some(entry => entry.reEnters);
+        const gapped = annotated.some(entry => entry.outOfSequence && !entry.reEnters);
+        const offending = annotated.filter(entry => entry.reEnters || entry.outOfSequence);
+
+        const detailFor = (entry: typeof annotated[number]): string => entry.reEnters
+            ? `Re-opens Act ${entry.actNumber}, which already opened earlier.`
+            : `Opens Act ${entry.actNumber} where part ${entry.position + 1} is expected.`;
 
         return {
             bookId,
             status: 'blocked',
             reason: reEntered ? 're-entrant-acts' : 'non-sequential-acts',
-            scenes: offending.map(boundary => ({
-                path: boundary.path,
-                detail: reEntered
-                    ? `Re-opens Act ${boundary.actNumber}, which already opened earlier.`
-                    : `Opens Act ${boundary.actNumber} where part ${boundaries.indexOf(boundary) + 1} is expected.`,
+            scenes: offending.map(entry => ({
+                path: entry.path,
+                detail: detailFor(entry),
             })),
             detail: reEntered
-                ? `Acts re-enter (${boundaryActs.join(', ')}), so a part numeral repeats. `
-                    + 'Place Part markers explicitly to say what the structure should be; '
+                ? `Act boundaries run ${boundaryActs.join(', ')}. Acts re-enter, so a part numeral repeats`
+                    + (gapped ? ', and others fall out of sequence' : '')
+                    + '. Place Part markers explicitly to say what the structure should be; '
                     + 'the migration will not renumber the book for you.'
                 : `Act boundaries run ${boundaryActs.join(', ')} rather than 1 upward, `
                     + 'so migrating would renumber the parts. Place Part markers explicitly instead.',

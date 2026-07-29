@@ -45,6 +45,15 @@ export interface BookMigrationInput {
      * looks exactly like a book the author marked up by hand, and the next run
      * would classify it as author-owned and skip derivation — freezing a
      * half-migrated book into a structure that looks deliberate.
+     *
+     * **Trusted input — the planner does not validate it.** Deciding whether a
+     * journal is still resumable is the executor's responsibility: only it holds
+     * both artifacts (the journal's recorded plan and a freshly computed one)
+     * and only it can act on the answer. A book whose Act values changed between
+     * runs will produce a plan that disagrees with the journal; the executor
+     * must detect that and restore rather than resume, because resuming would
+     * apply half of one plan and half of another. The planner is pure
+     * classification and has no notion of a previous run beyond this set.
      */
     migrationWrittenPaths?: ReadonlySet<string>;
 }
@@ -67,6 +76,13 @@ export interface BlockedScene {
 /** One Part marker the migration would write. */
 export interface PartMarkerWrite {
     path: string;
+    /**
+     * The literal value to write as `Part:`, per D1: `true` for an untitled
+     * marker, a non-empty string for a titled one. Stated explicitly rather than
+     * left implicit so the executor has no shape to infer — a derived marker is
+     * always `true`, because the Act it came from had no name to carry.
+     */
+    title: string | true;
     /** Act that opened at this boundary — also the printed numeral, pre-migration. */
     actNumber: number;
     /** 1-based position among markers — the numeral after migration. */
@@ -165,6 +181,16 @@ function resolveEpigraphs(
     return allIdentical ? { layoutId: populated[0][0], stored: first } : 'conflict';
 }
 
+/**
+ * Epigraph text stored for one act.
+ *
+ * The two fields are independent. A slot holding only an attribution is carried
+ * forward rather than dropped, because that is already what the act-derived
+ * export prints: `\rtPart` guards `#3` and `#4` separately, so an attribution
+ * with no quote typesets the attribution alone today. Dropping it would make the
+ * migration lossy, and dropping it in one path but not the other would make the
+ * two disagree — so the rule is stated once here and used by both.
+ */
 function epigraphFor(
     stored: StoredEpigraphs | undefined,
     actNumber: number
@@ -176,6 +202,11 @@ function epigraphFor(
         ...(quote ? { quote } : {}),
         ...(attribution ? { attribution } : {}),
     };
+}
+
+/** True when a slot carries anything worth migrating — either field alone counts. */
+function hasEpigraphContent(entry: { quote?: string; attribution?: string }): boolean {
+    return Boolean(entry.quote || entry.attribution);
 }
 
 /**
@@ -221,12 +252,20 @@ export function planBookMigration(input: BookMigrationInput): BookMigrationPlan 
             epigraphProposal: epigraphSource
                 ? {
                     layoutId: epigraphSource.layoutId,
-                    entries: epigraphSource.stored.quotes
-                        .map((_, index) => ({
+                    // Walk both arrays: an attribution can outlive its quote, and
+                    // quotes.length alone would miss a trailing attribution-only slot.
+                    entries: Array.from(
+                        {
+                            length: Math.max(
+                                epigraphSource.stored.quotes.length,
+                                epigraphSource.stored.attributions.length
+                            ),
+                        },
+                        (_, index) => ({
                             actNumber: index + 1,
                             ...epigraphFor(epigraphSource.stored, index + 1),
-                        }))
-                        .filter(entry => entry.quote || entry.attribution),
+                        })
+                    ).filter(hasEpigraphContent),
                 }
                 : null,
         };
@@ -255,20 +294,31 @@ export function planBookMigration(input: BookMigrationInput): BookMigrationPlan 
 
     const boundaryActs = boundaries.map(boundary => boundary.actNumber);
     if (!isSequentialFromOne(boundaryActs)) {
-        const seen = new Set<number>();
-        const reEntered = boundaryActs.some(act => {
-            if (seen.has(act)) return true;
-            seen.add(act);
-            return false;
+        // Report only the boundaries that actually break the rule. The repair
+        // path asks the author to go and look at specific scenes, so listing
+        // every boundary in a five-part book blocked by one late re-entry buries
+        // the one that matters.
+        const seenActs = new Set<number>();
+        const reEnteredBoundaries = boundaries.filter(boundary => {
+            const repeat = seenActs.has(boundary.actNumber);
+            seenActs.add(boundary.actNumber);
+            return repeat;
         });
+        const reEntered = reEnteredBoundaries.length > 0;
+
+        const offending = reEntered
+            ? reEnteredBoundaries
+            : boundaries.filter((boundary, index) => boundary.actNumber !== index + 1);
 
         return {
             bookId,
             status: 'blocked',
             reason: reEntered ? 're-entrant-acts' : 'non-sequential-acts',
-            scenes: boundaries.map(boundary => ({
+            scenes: offending.map(boundary => ({
                 path: boundary.path,
-                detail: `Opens Act ${boundary.actNumber}.`,
+                detail: reEntered
+                    ? `Re-opens Act ${boundary.actNumber}, which already opened earlier.`
+                    : `Opens Act ${boundary.actNumber} where part ${boundaries.indexOf(boundary) + 1} is expected.`,
             })),
             detail: reEntered
                 ? `Acts re-enter (${boundaryActs.join(', ')}), so a part numeral repeats. `
@@ -284,6 +334,8 @@ export function planBookMigration(input: BookMigrationInput): BookMigrationPlan 
         status: 'derive',
         writes: boundaries.map((boundary, index) => ({
             path: boundary.path,
+            // Always untitled: the Act this boundary came from had no name.
+            title: true as const,
             actNumber: boundary.actNumber,
             partNumber: index + 1,
             ...epigraphFor(epigraphSource?.stored, boundary.actNumber),

@@ -40,10 +40,20 @@ describe('planBookMigration', () => {
             expect(plan.status).toBe('derive');
             if (plan.status !== 'derive') return;
             expect(plan.writes).toEqual([
-                { path: 'Scenes/1.md', actNumber: 1, partNumber: 1 },
-                { path: 'Scenes/3.md', actNumber: 2, partNumber: 2 },
-                { path: 'Scenes/4.md', actNumber: 3, partNumber: 3 },
+                { path: 'Scenes/1.md', title: true, actNumber: 1, partNumber: 1 },
+                { path: 'Scenes/3.md', title: true, actNumber: 2, partNumber: 2 },
+                { path: 'Scenes/4.md', title: true, actNumber: 3, partNumber: 3 },
             ]);
+        });
+
+        it('writes every derived marker as untitled, per the D1 sentinel', () => {
+            // `Part: true` is the untitled form. Derived markers are always
+            // untitled because the Act they came from had no name to carry, and
+            // the executor must not have to infer the value to write.
+            const plan = planBookMigration({ bookId: 'b', scenes: scenes(1, 2) });
+            expect(plan.status).toBe('derive');
+            if (plan.status !== 'derive') return;
+            expect(plan.writes.every(write => write.title === true)).toBe(true);
         });
 
         it('carries stored epigraphs onto the marker for their act', () => {
@@ -63,6 +73,50 @@ describe('planBookMigration', () => {
             expect(plan.writes[0].quote).toBe('The absurd does not liberate.');
             expect(plan.writes[0].attribution).toBe('Albert Camus');
             expect(plan.writes[1].quote).toBe('Who draws back?');
+        });
+
+        it('carries an attribution that has no quote, in both paths', () => {
+            // The export already prints this: \rtPart guards the quote and the
+            // attribution separately, so an attribution alone typesets alone.
+            // Dropping it would make the migration lossy.
+            const storedEpigraphs = {
+                layout: { quotes: [''], attributions: ['Anonymous'] },
+            };
+
+            const derived = planBookMigration({ bookId: 'b', scenes: scenes(1), storedEpigraphs });
+            expect(derived.status).toBe('derive');
+            if (derived.status !== 'derive') return;
+            expect(derived.writes[0]).not.toHaveProperty('quote');
+            expect(derived.writes[0].attribution).toBe('Anonymous');
+
+            const authored = planBookMigration({
+                bookId: 'b',
+                scenes: [{ path: 'Scenes/1.md', act: 1, part: true }],
+                storedEpigraphs,
+            });
+            expect(authored.status).toBe('author-owned');
+            if (authored.status !== 'author-owned') return;
+            expect(authored.epigraphProposal?.entries).toEqual([
+                { actNumber: 1, attribution: 'Anonymous' },
+            ]);
+        });
+
+        it('proposes an attribution-only slot that outlives the quotes array', () => {
+            // quotes.length alone would miss this; the proposal walks both arrays.
+            const plan = planBookMigration({
+                bookId: 'b',
+                scenes: [{ path: 'Scenes/1.md', act: 1, part: true }],
+                storedEpigraphs: {
+                    layout: { quotes: ['First.'], attributions: ['One', 'Two'] },
+                },
+            });
+
+            expect(plan.status).toBe('author-owned');
+            if (plan.status !== 'author-owned') return;
+            expect(plan.epigraphProposal?.entries).toEqual([
+                { actNumber: 1, quote: 'First.', attribution: 'One' },
+                { actNumber: 2, attribution: 'Two' },
+            ]);
         });
 
         it('omits epigraph fields when the stored slot is blank', () => {
@@ -205,6 +259,32 @@ describe('planBookMigration', () => {
             if (plan.status !== 'blocked') return;
             expect(plan.reason).toBe('re-entrant-acts');
             expect(plan.detail).toMatch(/Part markers explicitly/);
+        });
+
+        it('names only the re-entering boundary, not every boundary', () => {
+            // A long book blocked by one late re-entry: the author is being sent
+            // to look at scenes, so listing all five buries the one that matters.
+            const plan = planBookMigration({
+                bookId: 'b',
+                scenes: scenes(1, 2, 3, 4, 2),
+            });
+
+            expect(plan.status).toBe('blocked');
+            if (plan.status !== 'blocked') return;
+            expect(plan.reason).toBe('re-entrant-acts');
+            expect(plan.scenes).toEqual([
+                { path: 'Scenes/5.md', detail: 'Re-opens Act 2, which already opened earlier.' },
+            ]);
+        });
+
+        it('names only the boundaries that fall out of sequence', () => {
+            // Acts 1, 3: the first boundary is fine, the second is not.
+            const plan = planBookMigration({ bookId: 'b', scenes: scenes(1, 3) });
+
+            expect(plan.status).toBe('blocked');
+            if (plan.status !== 'blocked') return;
+            expect(plan.scenes.map(s => s.path)).toEqual(['Scenes/2.md']);
+            expect(plan.scenes[0].detail).toMatch(/Act 3 where part 2 is expected/);
         });
 
         it('blocks a gap in the act sequence, which would renumber the parts', () => {

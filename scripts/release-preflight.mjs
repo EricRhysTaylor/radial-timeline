@@ -22,6 +22,14 @@ function isBiweeklyDeepAuditDue(reference = new Date()) {
 const now = new Date();
 const primaryAudit = isFriday(now) ? 'auditFriday' : 'auditDaily';
 
+// First, and fail-closed: this is the only check that hands our generated
+// LaTeX to XeLaTeX and confirms a PDF comes out, using the fonts the plugin
+// actually ships. Everything else in the suite asserts on strings, which is
+// how GH #34 reached a user — the emitted .tex looked right and would not
+// compile. Requires Pandoc/XeLaTeX/Poppler; a missing toolchain stops the
+// release rather than skipping.
+run('npm run publish:pdf-smoke', 'Compiling bundled PDF layouts against packaged fonts');
+
 run(`npm run ${primaryAudit}`, `Running ${primaryAudit}`);
 run('npm run release:i18n', 'Checking i18n release alignment');
 run('npm run review:obsidian', 'Running Obsidian review readiness');

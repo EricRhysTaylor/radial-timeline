@@ -4,9 +4,10 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import pixelmatch from 'pixelmatch';
 import { PNG } from 'pngjs';
-import { BUNDLED_FICTION_SPECS } from '../src/publishing/bundledStyleSpecs.ts';
-import { generateDesignedStyleTex } from '../src/publishing/designedStyle.ts';
+import { BUNDLED_FICTION_SPECS, type BundledFictionId } from '../src/publishing/bundledStyleSpecs.ts';
+import { generateDesignedStyleTex, type DesignedStyleSpec } from '../src/publishing/designedStyle.ts';
 import { WIZARD_FIXTURES } from './wizard-pdf-fixtures.mjs';
+import { EMBEDDED_ASSET_MANIFEST } from './embed-plugin-assets.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, '..');
@@ -22,12 +23,73 @@ const outputRoot = outputArgIndex >= 0 && process.argv[outputArgIndex + 1]
     : join(repoRoot, 'tmp', 'publishing-pdf-qa');
 
 const baselineRoot = join(repoRoot, 'tests', 'fixtures', 'publishing-pdf-baselines');
-const fontRoot = join(repoRoot, 'src', 'assets', 'fonts');
+/**
+ * Vault font root for the QA run, materialised from the assets the plugin
+ * actually ships — the base64 payloads embedded in `main.js` — into an
+ * isolated directory under the QA output root.
+ *
+ * It deliberately does NOT point at `src/assets/fonts`. Pointing at the source
+ * tree tests files that exist in the repo, which is precisely the assumption
+ * that produced GH #34: the fonts were present in `src/` and absent from every
+ * user's install. Nor does it use the developer's own vault, whose Pandoc
+ * folder accumulates fonts from earlier builds and would mask a packaging
+ * regression, or the system font catalog.
+ *
+ * Reading from the embed manifest also means removing an asset from
+ * `EMBEDDED_ASSET_MANIFEST` fails this harness, rather than silently shipping
+ * a template that references a font nobody has.
+ */
+function materialisePackagedFonts(): string {
+    const root = join(outputRoot, '__packaged-fonts');
+    rmSync(root, { recursive: true, force: true });
+    mkdirSync(root, { recursive: true });
+
+    let written = 0;
+    for (const asset of EMBEDDED_ASSET_MANIFEST) {
+        // Font assets are keyed `fonts/<slug>/<file>`; everything else in the
+        // manifest (the Word reference doc, images) is not a Pandoc font.
+        const match = asset.key.match(/^fonts\/([^/]+)\/(.+)$/);
+        if (!match) continue;
+        const [, slug, fileName] = match;
+        const dir = join(root, slug);
+        mkdirSync(dir, { recursive: true });
+        writeFileSync(join(dir, fileName), readFileSync(join(repoRoot, 'src', asset.src)));
+        written += 1;
+    }
+    if (written === 0) {
+        throw new Error('No packaged font assets found in EMBEDDED_ASSET_MANIFEST — the PDF harness would test nothing.');
+    }
+    return root;
+}
+
+let fontRoot = '';
 const contemporaryLongScene = Array.from({ length: 20 }, () => (
     'The first scene continues across pages so the PDF text audit can verify the right-page running header. The prose itself avoids the scene title, which means an extracted title hit must come from the header or opener chrome.'
 )).join('\n\n');
 
-const layouts = [
+/**
+ * Fixture bodies must match what the exporter actually emits. `\rtPart` takes
+ * four arguments — {numeral}{title}{quote}{attribution}, see manuscript.ts —
+ * and these fixtures were still passing the old three-argument form, so the
+ * attribution landed in the quote slot and #4 swallowed following tokens. The
+ * PDF still built, which is why nothing noticed while this harness went unrun.
+ *
+ * `id` is BundledFictionId, not string: it indexes BUNDLED_FICTION_SPECS, so a
+ * layout whose id stops matching a real spec is a compile error here rather
+ * than an undefined spec at runtime.
+ */
+interface QaLayout {
+    id: BundledFictionId;
+    slug: string;
+    expectedPages: number;
+    body: string;
+    expectedLatexText?: string[];
+    forbiddenLatexText?: string[];
+    expectedPageText?: Array<{ page: number; text: string }>;
+    forbiddenPageText?: Array<{ page: number; text: string }>;
+}
+
+const layouts: QaLayout[] = [
     {
         id: 'bundled-fiction-classic-manuscript',
         slug: 'standard-manuscript',
@@ -107,7 +169,7 @@ Second scene body text follows the opener.
             { page: 3, text: 'Audit Book' },
             { page: 3, text: 'Audit Author' },
         ],
-        body: String.raw`\rtPart{I}{A precise line.}{Author A}
+        body: String.raw`\rtPart{I}{}{A precise line.}{Author A}
 
 \rtChapter{1}{Boy with a Skull}
 
@@ -119,7 +181,7 @@ First paragraph of chapter one.
 
 Second scene body text follows an inline roman separator.
 
-\rtPart{II}{When we are strongest — who draws back?\\
+\rtPart{II}{}{When we are strongest — who draws back?\\
 Most merry — who falls down laughing?\\
 When we are very bad, what can they do to us?}{Arthur Rimbaud}
 
@@ -132,12 +194,14 @@ Third scene body text starts the second act.
     },
 ];
 
-function commandPath(name) {
+function commandPath(name: string): string {
     const result = spawnSync('which', [name], { encoding: 'utf8' });
     return result.status === 0 ? result.stdout.trim() : '';
 }
 
-function run(command, argv, options = {}) {
+interface RunOptions { cwd?: string; encoding?: BufferEncoding; stdio?: 'pipe' | 'inherit' | 'ignore' }
+
+function run(command: string, argv: string[], options: RunOptions = {}) {
     const result = spawnSync(command, argv, {
         cwd: options.cwd ?? repoRoot,
         encoding: options.encoding ?? 'utf8',
@@ -151,7 +215,7 @@ function run(command, argv, options = {}) {
     return result;
 }
 
-function requireCommand(name, installHint) {
+function requireCommand(name: string, installHint: string): string {
     const found = commandPath(name);
     if (!found) {
         throw new Error(`Missing required command "${name}". ${installHint}`);
@@ -159,19 +223,19 @@ function requireCommand(name, installHint) {
     return found;
 }
 
-function pdfInfo(pdfPath) {
+function pdfInfo(pdfPath: string) {
     const result = run('pdfinfo', [pdfPath]);
     const pages = Number((result.stdout.match(/^Pages:\s+(\d+)/m) ?? [])[1]);
     const pageSize = (result.stdout.match(/^Page size:\s+(.+)$/m) ?? [])[1] ?? '';
     return { pages, pageSize };
 }
 
-function pdfText(pdfPath, page) {
+function pdfText(pdfPath: string, page?: number) {
     const pageArgs = page ? ['-f', String(page), '-l', String(page)] : [];
     return run('pdftotext', ['-layout', ...pageArgs, pdfPath, '-']).stdout;
 }
 
-function rasterize(pdfPath, outDir) {
+function rasterize(pdfPath: string, outDir: string): string[] {
     rmSync(outDir, { recursive: true, force: true });
     mkdirSync(outDir, { recursive: true });
     const prefix = join(outDir, 'page');
@@ -182,11 +246,11 @@ function rasterize(pdfPath, outDir) {
         .map(name => join(outDir, name));
 }
 
-function readPng(path) {
+function readPng(path: string) {
     return PNG.sync.read(readFileSync(path));
 }
 
-function comparePng(actualPath, expectedPath, diffPath) {
+function comparePng(actualPath: string, expectedPath: string, diffPath: string): number {
     const actual = readPng(actualPath);
     const expected = readPng(expectedPath);
     if (actual.width !== expected.width || actual.height !== expected.height) {
@@ -207,16 +271,16 @@ function comparePng(actualPath, expectedPath, diffPath) {
     return diffPixels;
 }
 
-function updateBaseline(slug, actualPages) {
+function updateBaseline(slug: string, actualPages: string[]): void {
     const targetDir = join(baselineRoot, slug);
     rmSync(targetDir, { recursive: true, force: true });
     mkdirSync(targetDir, { recursive: true });
-    actualPages.forEach((page, index) => {
+    actualPages.forEach((page: string, index: number) => {
         copyFileSync(page, join(targetDir, `page-${String(index + 1).padStart(2, '0')}.png`));
     });
 }
 
-function compareBaseline(slug, actualPages, diffDir) {
+function compareBaseline(slug: string, actualPages: string[], diffDir: string): number {
     const targetDir = join(baselineRoot, slug);
     if (!existsSync(targetDir)) {
         throw new Error(`Missing PDF visual baseline for ${slug}. Run npm run publish:pdf-baseline.`);
@@ -230,7 +294,7 @@ function compareBaseline(slug, actualPages, diffDir) {
     }
     mkdirSync(diffDir, { recursive: true });
     let totalDiffPixels = 0;
-    actualPages.forEach((actual, index) => {
+    actualPages.forEach((actual: string, index: number) => {
         const diffPath = join(diffDir, `page-${String(index + 1).padStart(2, '0')}.diff.png`);
         totalDiffPixels += comparePng(actual, expectedPages[index], diffPath);
     });
@@ -249,7 +313,7 @@ function compareBaseline(slug, actualPages, diffDir) {
  * emitted form is the one that actually compiles, and then compiles it with
  * no vault font directory at all — the state of a real user's machine.
  */
-function assertModernClassicResolvesLatinModernFromTexTree(spec, layoutDir) {
+function assertModernClassicResolvesLatinModernFromTexTree(spec: DesignedStyleSpec, layoutDir: string): void {
     // No vaultFontDir: exactly what a user has, since Latin Modern is never
     // written into the vault.
     const tex = generateDesignedStyleTex(spec, {
@@ -269,15 +333,22 @@ function assertModernClassicResolvesLatinModernFromTexTree(spec, layoutDir) {
     const mdPath = join(layoutDir, 'modern-classic-tex-tree.md');
     const pdfPath = join(layoutDir, 'modern-classic-tex-tree.pdf');
     writeFileSync(texPath, tex);
+    // Blank lines between the raw-TeX macros are load-bearing: without them
+    // Pandoc merges consecutive macro lines into one paragraph and the
+    // expl3 title expansion fails with "extra }" — a defect in the fixture,
+    // not the template. Every real layout body below follows the same rule.
     writeFileSync(mdPath, [
         '---',
         'title: Audit Book',
         'author: E. R. Taylor',
         '---',
         '',
-        '\\rtPart{I}{A quote}{J. Name}',
+        '\\rtPart{I}{}{A quote}{J. Name}',
+        '',
         '\\rtChapter{1}{Chapter One}',
+        '',
         '\\rtSceneSep{ii}',
+        '',
         'Modern Classic font smoke.',
     ].join('\n'));
     // Must compile with no bundled fonts anywhere — that is the whole point.
@@ -324,7 +395,7 @@ Do not edit baseline PNGs by hand.
  * baselines in `tests/fixtures/publishing-pdf-baselines/<slug>/`. When
  * `--update-baselines` is set, regenerates them.
  */
-function runWizardFixtures(failures) {
+function runWizardFixtures(failures: string[]): void {
     for (const fixture of WIZARD_FIXTURES) {
         const layoutDir = join(outputRoot, fixture.slug);
         mkdirSync(layoutDir, { recursive: true });
@@ -372,7 +443,7 @@ function runWizardFixtures(failures) {
 }
 
 /** Shared exit handling — used by both main() and the wizard branch. */
-function finalize(failures) {
+function finalize(failures: string[]): void {
     if (failures.length > 0) {
         if (!keepOutput) console.error(`Artifacts preserved for debugging: ${outputRoot}`);
         process.exitCode = 1;
@@ -395,7 +466,9 @@ function main() {
 
     rmSync(outputRoot, { recursive: true, force: true });
     mkdirSync(outputRoot, { recursive: true });
-    const failures = [];
+    // Isolated copy of the shipped font payload — see materialisePackagedFonts.
+    fontRoot = materialisePackagedFonts();
+    const failures: string[] = [];
 
     // --wizard-fixtures swaps in the wizard-shaped spec set instead of the
     // bundled-template QA. The wizard set is a compile-gate floor: each spec
@@ -515,4 +588,17 @@ function main() {
         : `Publishing PDF QA passed.${keepOutput ? ` Artifacts: ${outputRoot}` : ''}`);
 }
 
-main();
+// Fail closed, and legibly. This runs as a release gate, so a missing
+// toolchain must stop the release with an actionable message — never a raw
+// stack trace, and never a silent skip that would let a broken LaTeX layout
+// ship because the machine cutting the release lacked Pandoc.
+try {
+    main();
+} catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`\n\x1b[31mPublishing PDF QA failed.\x1b[0m\n${message}\n`);
+    console.error('This gate compiles every bundled PDF layout with the fonts the plugin ships.');
+    console.error('It requires Pandoc, XeLaTeX and Poppler locally. On macOS:');
+    console.error('  brew install pandoc poppler   and a TeX distribution providing xelatex (MacTeX).');
+    process.exitCode = 1;
+}

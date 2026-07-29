@@ -17,6 +17,7 @@ import {
     validateDesignedStyleSpec,
 } from './DesignedStyleWizardModal';
 import type { DesignedStyleSpec } from '../publishing/designedStyle';
+import { DESIGNED_STYLE_SPEC_VERSION } from '../publishing/designedStyle';
 import { BUNDLED_FICTION_SPECS } from '../publishing/bundledStyleSpecs';
 
 function freshSubmissionSpec(): DesignedStyleSpec {
@@ -40,7 +41,9 @@ describe('cloneArchetypeSpec', () => {
 
     it('always sets specVersion to the current constant', () => {
         const cloned = cloneArchetypeSpec('structured');
-        expect(cloned.specVersion).toBe(2);
+        // Bound to the constant, not a literal: the assertion is "the wizard
+        // stamps the current version", which stays true across version bumps.
+        expect(cloned.specVersion).toBe(DESIGNED_STYLE_SPEC_VERSION);
     });
 });
 

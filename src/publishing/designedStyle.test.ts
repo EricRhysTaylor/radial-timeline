@@ -82,6 +82,24 @@ describe('generateDesignedStyleTex', () => {
         expect(tex).not.toContain('\\newcommand{\\rtEpigraph}[2]');
     });
 
+    it('prints the part title only when parts.title is on, but always takes the argument', () => {
+        const titled = generateDesignedStyleTex(buildSpec({
+            parts: { mode: 'roman', pageBreak: true, epigraph: true, title: true },
+        }));
+        const untitled = generateDesignedStyleTex(buildSpec({
+            parts: { mode: 'roman', pageBreak: true, epigraph: true, title: false },
+        }));
+
+        // Arity is the call contract — the export always emits four arguments,
+        // so both layouts must accept four regardless of what they print.
+        expect(titled).toContain('\\newcommand{\\rtPart}[4]');
+        expect(untitled).toContain('\\newcommand{\\rtPart}[4]');
+
+        // Only the title-printing layout typesets #2.
+        expect(titled).toContain('{\\normalfont\\itshape\\large #2}');
+        expect(untitled).not.toContain('{\\normalfont\\itshape\\large #2}');
+    });
+
     it('does not define \\rtPart when parts.mode is off', () => {
         const tex = generateDesignedStyleTex(buildSpec({
             parts: { mode: 'off', pageBreak: false, epigraph: false },

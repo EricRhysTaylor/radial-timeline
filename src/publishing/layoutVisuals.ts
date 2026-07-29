@@ -235,6 +235,9 @@ function describeParts(spec: DesignedStyleSpec): string | null {
         : spec.parts.mode === 'word' ? 'Word'
         : 'Numbered';
     const flags: string[] = [];
+    // Stated either way: "numeral only" is the answer to "why isn't my part
+    // title printing?", so silence on the negative case is the unhelpful choice.
+    flags.push(spec.parts.title ? 'with title' : 'numeral only');
     if (spec.parts.epigraph) {
         flags.push(spec.parts.epigraphPlacement === 'own-page'
             ? 'epigraph on own page'

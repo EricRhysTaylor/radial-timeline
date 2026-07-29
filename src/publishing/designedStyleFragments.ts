@@ -372,10 +372,15 @@ export function renderPartTitle(spec: DesignedStyleSpec): string {
     lines.push('    {\\normalfont\\bfseries\\Large #1}\\par');
     // Title sits between the numeral and the rule, so an untitled part closes
     // the gap and reproduces the original numeral-then-rule spacing exactly.
-    lines.push('    \\ifstrempty{#2}{}{%%');
-    lines.push('      \\vspace{0.20in}%');
-    lines.push('      {\\normalfont\\itshape\\large #2}\\par');
-    lines.push('    }%');
+    // Layouts that don't print titles omit the block entirely — but the macro
+    // still takes #2, because the export always emits it. Arity is the call
+    // contract; printing is the layout's choice.
+    if (spec.parts.title) {
+        lines.push('    \\ifstrempty{#2}{}{%%');
+        lines.push('      \\vspace{0.20in}%');
+        lines.push('      {\\normalfont\\itshape\\large #2}\\par');
+        lines.push('    }%');
+    }
     lines.push('    \\vspace{0.16in}%');
     lines.push('    \\rule{0.46in}{0.4pt}\\par');
 

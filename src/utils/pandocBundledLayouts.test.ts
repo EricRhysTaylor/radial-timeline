@@ -192,7 +192,7 @@ describe('bundled pandoc layout export auto-install', () => {
         const modernClassic = getBundledPandocLayoutContent('bundled-fiction-modern-classic')!;
         expect(modernClassic).toContain('  left=0.98in,');
         expect(modernClassic).toContain('  right=0.98in');
-        expect(modernClassic).toContain('\\newcommand{\\rtPart}[3]');
+        expect(modernClassic).toContain('\\newcommand{\\rtPart}[4]');
         expect(modernClassic).not.toContain('\\newcommand{\\rtEpigraph}[2]');
         expect(modernClassic).toContain('\\rule{0.46in}{0.4pt}');
         expect(modernClassic).toContain('\\begin{minipage}{\\textwidth}');

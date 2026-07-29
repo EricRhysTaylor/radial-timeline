@@ -87,6 +87,56 @@ describe('BUNDLED_FICTION_SPECS', () => {
         });
     }
 
+    // Golden fixture: Signature's \rtPart, pinned verbatim.
+    //
+    // This is the macro that prints PART pages in the only bundled layout that
+    // has them, so any change to it changes real books. Pinning the exact text
+    // forces such a change to arrive as a deliberate, reviewable diff rather
+    // than as a side effect.
+    //
+    // The untitled-output guarantee lives here too: #2 is \ifstrempty-guarded and
+    // sits between the numeral and the rule, so a call with an empty title emits
+    // nothing at all in that slot and the numeral → \vspace{0.16in} → \rule
+    // sequence is exactly what the previous 3-argument macro produced. Untitled
+    // parts typeset identically; that is why the arity change is safe for books
+    // that already exist.
+    it('bundled-fiction-modern-classic: \\rtPart matches the golden fixture', () => {
+        const tex = generateDesignedStyleTex(
+            BUNDLED_FICTION_SPECS['bundled-fiction-modern-classic'],
+            { bundledLayoutId: 'bundled-fiction-modern-classic' }
+        );
+        const macro = tex.match(/\\newcommand\{\\rtPart\}\[\d+\]\{[\s\S]+?\n\}/)?.[0];
+
+        expect(macro).toBe(String.raw`\newcommand{\rtPart}[4]{%
+  \ifrtMainStarted\else\rtBeginMainArabic\fi%
+  \clearpage
+  \null%
+  \thispagestyle{rtEmpty}%
+  \vspace*{1.55in}%
+  \begin{center}
+    {\normalfont\bfseries\Large #1}\par
+    \ifstrempty{#2}{}{%%
+      \vspace{0.20in}%
+      {\normalfont\itshape\large #2}\par
+    }%
+    \vspace{0.16in}%
+    \rule{0.46in}{0.4pt}\par
+    \ifstrempty{#3}{}{%%
+      \vspace{0.28in}%
+      \begin{minipage}{\textwidth}
+        \centering
+        {\itshape #3}\par
+      \end{minipage}\par
+    }%
+    \ifstrempty{#4}{}{%%
+      \vspace{0.18in}{\small\MakeUppercase{---#4}}\par
+    }%
+  \end{center}
+  \vspace*{1.2in}%
+  \clearpage
+}`);
+    });
+
     // Page numbering hierarchy — every spec defines \rtBeginMainArabic and
     // \ifrtMainStarted so arabic numbering starts at the first opener
     // (Part > Chapter > Scene). The flag-guard pattern is present in
@@ -102,7 +152,7 @@ describe('BUNDLED_FICTION_SPECS', () => {
             const guard = /\\ifrtMainStarted\\else\\rtBeginMainArabic\\fi/;
             if (spec.parts.mode !== 'off') {
                 // \rtPart body should contain the flag-guard.
-                expect(tex).toMatch(/\\newcommand\{\\rtPart\}\[3\]\{%[\s\S]*?\\ifrtMainStarted\\else\\rtBeginMainArabic\\fi/);
+                expect(tex).toMatch(/\\newcommand\{\\rtPart\}\[4\]\{%[\s\S]*?\\ifrtMainStarted\\else\\rtBeginMainArabic\\fi/);
             }
             if (spec.chapters.mode !== 'off') {
                 expect(tex).toMatch(/\\newcommand\{\\rtChapter\}\[2\]\{%[\s\S]*?\\ifrtMainStarted\\else\\rtBeginMainArabic\\fi/);

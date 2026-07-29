@@ -302,11 +302,13 @@ describe('one spec, three echoes — contract alignment', () => {
             }
         );
 
-        // Two acts → exactly two grouped \rtPart{roman}{quote}{attribution} calls.
+        // Two acts → exactly two grouped \rtPart{roman}{title}{quote}{attribution} calls.
         expect((assembled.text.match(/\\rtPart\{/g) || []).length).toBe(2);
-        // Roman-numeral act labels (parts.mode === 'roman').
-        expect(assembled.text).toContain('\\rtPart{I}{Quote one.}{Author A}');
-        expect(assembled.text).toContain('\\rtPart{II}{Quote two.}{Author B}');
+        // Roman-numeral act labels (parts.mode === 'roman'). The title slot is
+        // empty while Parts remain Act-derived — an Act has no name to print —
+        // and the macro \ifstrempty-guards it, so the typeset result is unchanged.
+        expect(assembled.text).toContain('\\rtPart{I}{}{Quote one.}{Author A}');
+        expect(assembled.text).toContain('\\rtPart{II}{}{Quote two.}{Author B}');
         // Three chapter markers in the fixture → three \rtChapter calls.
         expect((assembled.text.match(/\\rtChapter\{/g) || []).length).toBe(3);
         // Chapters carry their titles (numbered-titled mode).

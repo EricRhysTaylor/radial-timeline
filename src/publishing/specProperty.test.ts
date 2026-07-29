@@ -329,7 +329,7 @@ describe('generateDesignedStyleTex — property tests', () => {
         const tex = generateDesignedStyleTex(spec);
         // The whole .tex contains many \cleardoublepage calls (parts/chapters use them),
         // so scope the check to the \rtPart macro definition specifically.
-        const partMatch = tex.match(/\\newcommand\{\\rtPart\}\[3\]\{[\s\S]+?\n\}/);
+        const partMatch = tex.match(/\\newcommand\{\\rtPart\}\[\d+\]\{[\s\S]+?\n\}/);
         expect(partMatch).toBeTruthy();
         expect(partMatch![0]).toContain('\\cleardoublepage');
     });
@@ -420,7 +420,7 @@ describe('generateDesignedStyleTex — property tests', () => {
             epigraph: { enabled: true, italic: true, attributionStyle: 'em-dash-caps' },
         });
         const tex = generateDesignedStyleTex(inlineSpec);
-        const partMatch = tex.match(/\\newcommand\{\\rtPart\}\[3\]\{[\s\S]+?\n\}/);
+        const partMatch = tex.match(/\\newcommand\{\\rtPart\}\[\d+\]\{[\s\S]+?\n\}/);
         const partTex = partMatch![0];
         const count = (partTex.match(/\\cleardoublepage/g) || []).length;
         expect(count).toBeLessThanOrEqual(2);

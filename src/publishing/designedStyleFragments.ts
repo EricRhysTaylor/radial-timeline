@@ -347,7 +347,19 @@ export function renderPartTitle(spec: DesignedStyleSpec): string {
     const breakCommand = structuralPageBreak(spec);
     // \rtEmpty pagestyle is now defined unconditionally in renderFancyhdr
     // (chapters and scene separators reference it too, regardless of parts mode).
-    lines.push('\\newcommand{\\rtPart}[3]{%');
+    // Arity contract: \rtPart{numeral}{title}{quote}{attribution}.
+    //
+    // #2 (title) was added when Parts became explicit author-placed markers —
+    // before that a Part could only ever be a numeral, because it was derived
+    // from the scene's Act value and had nothing to carry a name. Every argument
+    // after #1 is optional and \ifstrempty-guarded, so a call passing an empty
+    // title typesets exactly as the previous 3-argument macro did.
+    //
+    // Any template defining a 3-argument \rtPart is now incompatible: the call
+    // site emits four, so LaTeX would swallow following content as the missing
+    // argument. `validateRttsTemplateContent` blocks export on that rather than
+    // letting it render wrong. See parts-first-class-markers-implementation.md §4.
+    lines.push('\\newcommand{\\rtPart}[4]{%');
     lines.push('  \\ifrtMainStarted\\else\\rtBeginMainArabic\\fi%');
     if (spec.parts.pageBreak) lines.push(`  ${breakCommand}`);
     // \null primes the freshly cleared page so \thispagestyle and \vspace*
@@ -358,6 +370,12 @@ export function renderPartTitle(spec: DesignedStyleSpec): string {
     lines.push('  \\vspace*{1.55in}%');
     lines.push('  \\begin{center}');
     lines.push('    {\\normalfont\\bfseries\\Large #1}\\par');
+    // Title sits between the numeral and the rule, so an untitled part closes
+    // the gap and reproduces the original numeral-then-rule spacing exactly.
+    lines.push('    \\ifstrempty{#2}{}{%%');
+    lines.push('      \\vspace{0.20in}%');
+    lines.push('      {\\normalfont\\itshape\\large #2}\\par');
+    lines.push('    }%');
     lines.push('    \\vspace{0.16in}%');
     lines.push('    \\rule{0.46in}{0.4pt}\\par');
 
@@ -366,18 +384,18 @@ export function renderPartTitle(spec: DesignedStyleSpec): string {
 
     if (wantsEpigraph && !ownPage) {
         // Inline placement — quote sits under the rule on the same page.
-        lines.push('    \\ifstrempty{#2}{}{%%');
+        lines.push('    \\ifstrempty{#3}{}{%%');
         lines.push('      \\vspace{0.28in}%');
         lines.push('      \\begin{minipage}{\\textwidth}');
         lines.push('        \\centering');
-        lines.push(spec.epigraph.italic ? '        {\\itshape #2}\\par' : '        {#2}\\par');
+        lines.push(spec.epigraph.italic ? '        {\\itshape #3}\\par' : '        {#3}\\par');
         lines.push('      \\end{minipage}\\par');
         lines.push('    }%');
-        lines.push('    \\ifstrempty{#3}{}{%%');
+        lines.push('    \\ifstrempty{#4}{}{%%');
         if (spec.epigraph.attributionStyle === 'em-dash-caps') {
-            lines.push('      \\vspace{0.18in}{\\small\\MakeUppercase{---#3}}\\par');
+            lines.push('      \\vspace{0.18in}{\\small\\MakeUppercase{---#4}}\\par');
         } else {
-            lines.push('      \\vspace{0.18in}{\\small #3}\\par');
+            lines.push('      \\vspace{0.18in}{\\small #4}\\par');
         }
         lines.push('    }%');
     }
@@ -389,7 +407,7 @@ export function renderPartTitle(spec: DesignedStyleSpec): string {
         // Own-page placement — the part heading lives on the recto, then a
         // \cleardoublepage flips to a fresh page where the epigraph stands
         // alone, centered vertically. Headers/folios are suppressed on both.
-        lines.push('  \\ifstrempty{#2}{}{%%');
+        lines.push('  \\ifstrempty{#3}{}{%%');
         lines.push('    \\cleardoublepage%');
         lines.push('    \\null%');
         lines.push('    \\thispagestyle{rtEmpty}%');
@@ -397,12 +415,12 @@ export function renderPartTitle(spec: DesignedStyleSpec): string {
         lines.push('    \\begin{center}%');
         lines.push('      \\begin{minipage}{0.7\\textwidth}%');
         lines.push('        \\centering');
-        lines.push(spec.epigraph.italic ? '        {\\itshape #2}\\par' : '        {#2}\\par');
-        lines.push('        \\ifstrempty{#3}{}{%%');
+        lines.push(spec.epigraph.italic ? '        {\\itshape #3}\\par' : '        {#3}\\par');
+        lines.push('        \\ifstrempty{#4}{}{%%');
         if (spec.epigraph.attributionStyle === 'em-dash-caps') {
-            lines.push('          \\vspace{0.22in}{\\small\\MakeUppercase{---#3}}\\par');
+            lines.push('          \\vspace{0.22in}{\\small\\MakeUppercase{---#4}}\\par');
         } else {
-            lines.push('          \\vspace{0.22in}{\\small #3}\\par');
+            lines.push('          \\vspace{0.22in}{\\small #4}\\par');
         }
         lines.push('        }%');
         lines.push('      \\end{minipage}%');

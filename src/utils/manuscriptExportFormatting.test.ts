@@ -265,8 +265,9 @@ describe('assembleManuscript scene heading formatting', () => {
             }
         );
 
-        expect(assembled.text).toContain('\\rtPart{I}{The beginning of all things.}{Anonymous}');
-        const expectedActTwoEpigraph = String.raw`\rtPart{II}{When we are strongest — who draws back?\\
+        expect(assembled.text).toContain('\\rtPart{I}{}{The beginning of all things.}{Anonymous}');
+        // Empty title slot — Parts are Act-derived here, and an Act has no name.
+        const expectedActTwoEpigraph = String.raw`\rtPart{II}{}{When we are strongest — who draws back?\\
 Most merry — who falls down laughing?\\
 When we are very bad, what can they do to us?}{The Narrator}`;
         expect(assembled.text).toContain(expectedActTwoEpigraph);
@@ -278,7 +279,7 @@ When we are very bad, what can they do to us?}{The Narrator}`;
         const sceneSepArgs = Array.from(assembled.text.matchAll(/\\rtSceneSep\{([^}]+)\}/g)).map(match => match[1]);
         expect(sceneSepArgs).toEqual(['i', 'ii', 'i']);
 
-        const partOneIndex = assembled.text.indexOf('\\rtPart{I}{The beginning of all things.}{Anonymous}');
+        const partOneIndex = assembled.text.indexOf('\\rtPart{I}{}{The beginning of all things.}{Anonymous}');
         const partTwoIndex = assembled.text.indexOf(expectedActTwoEpigraph);
         const chapterTwoIndex = assembled.text.indexOf('\\rtChapter{2}{Everything of Possibility.}');
         expect(partOneIndex).toBeGreaterThanOrEqual(0);

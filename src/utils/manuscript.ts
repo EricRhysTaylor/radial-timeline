@@ -1315,7 +1315,11 @@ export async function assembleManuscript(
         if (actRoman) {
           const epigraphQuote = sanitizeModernClassicEpigraphArg(modernClassicState.actEpigraphs[nextActIndex - 1] || '');
           const epigraphAttribution = sanitizeModernClassicAttributionArg(modernClassicState.actEpigraphAttributions[nextActIndex - 1] || '');
-          textParts.push(buildRawLatexBlock(`\\rtPart{${actRoman}}{${epigraphQuote}}{${epigraphAttribution}}`));
+          // Empty title slot: Parts are still Act-derived here, and an Act has no
+          // name to print. The macro \ifstrempty-guards the title, so this emits
+          // byte-for-byte what the 3-argument form did. The slot is filled once
+          // explicit Part markers land and carry an author-supplied title.
+          textParts.push(buildRawLatexBlock(`\\rtPart{${actRoman}}{}{${epigraphQuote}}{${epigraphAttribution}}`));
           modernClassicState.currentActIndex = nextActIndex;
           modernClassicState.sceneIndexInAct = 0;
         }

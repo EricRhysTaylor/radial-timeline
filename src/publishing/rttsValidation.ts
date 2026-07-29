@@ -40,6 +40,45 @@ function hasPandocVariable(content: string, variable: string): boolean {
     return new RegExp(`\\$${escaped}\\$|\\$if\\(${escaped}\\)\\$`, 'i').test(content);
 }
 
+/** Argument count the export pipeline emits for `\rtPart`. */
+export const RT_PART_REQUIRED_ARITY = 4;
+
+const RT_PART_DEFINITION = /\\(?:new|renew|provide)command\s*\{?\s*\\rtPart\s*\}?\s*\[(\d+)\]/;
+
+/**
+ * Arity of a template's own `\rtPart` definition, or `null` when it defines none.
+ *
+ * A template that never defines `\rtPart` is not broken — layouts with
+ * `parts.mode: 'off'` legitimately omit it, and the export simply never calls it.
+ * Only a *mismatched* definition is a problem.
+ */
+export function detectRtPartArity(content: string): number | null {
+    const match = RT_PART_DEFINITION.exec(content);
+    if (!match) return null;
+    const arity = Number(match[1]);
+    return Number.isFinite(arity) ? arity : null;
+}
+
+/**
+ * Blocking issue when a template's `\rtPart` cannot accept the arguments the
+ * export emits, or `null` when it is compatible.
+ *
+ * Shared by import (reject on the way in) and export (block before compiling), so
+ * a template that predates the title argument cannot silently mis-render: LaTeX
+ * would consume whatever followed the call as the missing argument, swallowing
+ * the opening of the part.
+ */
+export function describeRtPartArityIssue(content: string): { arity: number; message: string } | null {
+    const arity = detectRtPartArity(content);
+    if (arity === null || arity === RT_PART_REQUIRED_ARITY) return null;
+    return {
+        arity,
+        message: `This template defines \\rtPart with ${arity} arguments, but the export emits ${RT_PART_REQUIRED_ARITY} `
+            + `(numeral, title, quote, attribution). Re-import the bundled layout, or update the macro to take `
+            + `${RT_PART_REQUIRED_ARITY} arguments.`,
+    };
+}
+
 function pushIssue(
     target: ValidationIssue[],
     level: ValidationIssue['level'],
@@ -112,11 +151,23 @@ export function validateRttsTemplateContent(
         );
     }
 
+    // Fail loudly rather than rendering wrong: a legacy 3-argument \rtPart would
+    // absorb the text following the call as its missing argument.
+    const partArityIssue = describeRtPartArityIssue(source);
+    if (partArityIssue) {
+        pushIssue(
+            issues,
+            'error',
+            'rtts_part_arity_mismatch',
+            partArityIssue.message
+        );
+    }
+
     const hasAnyHook = Object.values(variables.hooks).some(Boolean);
 
     const requiredHooks = getRequiredHooksForCapabilities(declaredCapabilities);
     const declaredHooksPresent = requiredHooks.every(hook => variables.hooks[hook]);
-    const level: RttsValidationLevel = !variables.hasBody || !!options.readError
+    const level: RttsValidationLevel = !variables.hasBody || !!options.readError || !!partArityIssue
         ? 'invalid'
         : variables.hasTitle && variables.hasAuthor && declaredHooksPresent && hasAnyHook
             ? 'compatible'

@@ -543,6 +543,92 @@ function loadFontCatalogFromFcList(): string[] | null {
     return null;
 }
 
+/**
+ * Ground-truth font availability: ask XeLaTeX whether it can actually load
+ * the family, by compiling a one-line document that requests it.
+ *
+ * WHY NOT JUST fc-list
+ * --------------------
+ * fontconfig scans font *directories*. XeTeX on macOS resolves families
+ * through Core Text, which honours Font Book activation. Deactivate a font
+ * and the file stays on disk, so `fc-list` keeps reporting it while XeLaTeX
+ * refuses to load it. Verified on this machine with EB Garamond deactivated:
+ * fc-list listed four EB Garamond entries and XeLaTeX still failed with
+ * "The font \"EB Garamond\" cannot be found".
+ *
+ * Every font bug in this module has had the same shape — the plugin asking a
+ * different question than the engine answers. This asks the engine.
+ *
+ * Returns true/false, or null when XeLaTeX is unavailable (caller falls back
+ * to the fontconfig catalog, which is better than nothing).
+ *
+ * Costs ~0.25s on first call per family and is cached for the session;
+ * `clearFontAvailabilityCache()` drops it so a user who just installed or
+ * deactivated a font gets a truthful answer on the next check.
+ */
+const fontProbeCache = new Map<string, boolean>();
+
+export function clearFontAvailabilityCache(): void {
+    fontProbeCache.clear();
+    systemFontCatalogCache = null;
+    systemFontCatalogLoaded = false;
+}
+
+function probeFontWithXelatex(fontName: string): boolean | null {
+    // Honour the RT_FONT_CATALOG test seam: when a catalog is pinned, that is
+    // the declared source of truth and the probe must not answer over it, or
+    // results would vary with whatever fonts the dev machine has active.
+    if (process.env.RT_FONT_CATALOG !== undefined) return null;
+
+    const key = normalizeFontFamilyName(fontName);
+    if (!key) return null;
+    const cached = fontProbeCache.get(key);
+    if (cached !== undefined) return cached;
+
+    // A font name reaching LaTeX must not be able to close the argument group
+    // or start a new control sequence. Anything odd → decline to probe rather
+    // than build a document we cannot reason about.
+    if (/[\\{}$%#&~^_]/.test(fontName)) return null;
+
+    let dir: string | undefined;
+    try {
+        dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-fontprobe-'));
+        const texPath = path.join(dir, 'probe.tex');
+        fs.writeFileSync(texPath, [
+            '\\documentclass{article}',
+            '\\usepackage{fontspec}',
+            `\\setmainfont{${fontName}}`,
+            '\\begin{document}x\\end{document}',
+            '',
+        ].join('\n'));
+
+        const engine = getEngineCandidatePaths('xelatex').find(candidate => fs.existsSync(candidate));
+        if (!engine) return null;
+
+        let available = true;
+        try {
+            execFileSync(engine, ['-interaction=nonstopmode', '-halt-on-error', 'probe.tex'], {
+                cwd: dir,
+                encoding: 'utf8',
+                stdio: ['ignore', 'pipe', 'pipe'],
+                timeout: 20000,
+                env: buildMinimalSubprocessEnv(),
+                maxBuffer: 1024 * 1024 * 4,
+            });
+        } catch {
+            available = false;
+        }
+        fontProbeCache.set(key, available);
+        return available;
+    } catch {
+        return null;
+    } finally {
+        if (dir) {
+            try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* temp dir cleanup is best-effort */ }
+        }
+    }
+}
+
 function loadSystemFontCatalog(): string[] | null {
     // Test/CI seam: RT_FONT_CATALOG forces a deterministic catalog (comma-
     // separated font names) so font diagnostics do not depend on which fonts
@@ -917,10 +1003,21 @@ function resolveFontDiagnosticForKey(
     }
 
     // 3. System install present → ready (system-name emit).
+    //
+    // XeLaTeX is the authority: it is the process that has to load the font,
+    // and on macOS it resolves through Core Text while fontconfig scans
+    // directories. A font deactivated in Font Book stays on disk and keeps
+    // appearing in `fc-list` long after XeLaTeX stops being able to load it.
+    // Only fall back to the catalog when XeLaTeX is unavailable to ask.
+    const probed = probeFontWithXelatex(primaryFontName);
+    if (probed === true) {
+        return { state: 'ok', primaryFontName, resolvedFontName: primaryFontName, specDriven: true };
+    }
     const catalog = loadSystemFontCatalog();
     const canVerify = Array.isArray(catalog);
-    const installed = (canVerify && isFontInstalled(primaryFontName, catalog))
-        || requiredSystemFontFileExists(primaryFontName, platform);
+    const installed = probed === null
+        && ((canVerify && isFontInstalled(primaryFontName, catalog))
+            || requiredSystemFontFileExists(primaryFontName, platform));
     if (installed) {
         return { state: 'ok', primaryFontName, resolvedFontName: primaryFontName, specDriven: true };
     }

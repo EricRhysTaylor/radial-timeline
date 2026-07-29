@@ -6,7 +6,7 @@ import * as path from 'path'; // SAFE: Node path needed to build absolute paths 
 import type RadialTimelinePlugin from '../main';
 import { getSceneFilesByOrder, ManuscriptOrder, TocMode, type ManuscriptSceneHeadingMode } from '../utils/manuscript';
 import { t } from '../i18n';
-import { ExportFormat, ExportType, ManuscriptPreset, OutlinePreset, getAutoPdfEngineSelection, resolveTemplatePath, validatePandocLayout, getTemplateFontDiagnostics, getStructuredFontDiagnostic } from '../utils/exportFormats';
+import { clearFontAvailabilityCache, ExportFormat, ExportType, ManuscriptPreset, OutlinePreset, getAutoPdfEngineSelection, resolveTemplatePath, validatePandocLayout, getTemplateFontDiagnostics, getStructuredFontDiagnostic } from '../utils/exportFormats';
 import { ensureBundledLayoutInstalledForExport } from '../utils/pandocBundledLayouts';
 import { getActiveBook, getActiveBookTitle, getActiveBookSourceFolder, DEFAULT_BOOK_TITLE } from '../utils/books';
 import { chunkScenesIntoParts } from '../utils/splitOutput';
@@ -424,6 +424,10 @@ export class ManuscriptOptionsModal extends Modal {
     }
 
     async onOpen(): Promise<void> {
+        // Re-ask about font availability on every open: fonts can be installed
+        // or deactivated between exports, and a stale "Ready" here means the
+        // export fails after the user has already committed to it.
+        clearFontAvailabilityCache();
         const { contentEl, modalEl } = this;
         contentEl.empty();
         const sourceFolder = getActiveBookSourceFolder(this.plugin.settings);

@@ -45,7 +45,7 @@ import {
 } from '../publishing/layoutVisuals';
 import type { ManuscriptSceneHeadingMode, PandocLayoutTemplate } from '../types';
 import { compactTemplatePathForStorage } from '../utils/templateImport';
-import { getFontDiagnosticForFontKey, getPandocFolder, slugifyToFileStem } from '../utils/exportFormats';
+import { clearFontAvailabilityCache, getFontDiagnosticForFontKey, getPandocFolder, slugifyToFileStem } from '../utils/exportFormats';
 import { assertNever } from '../utils/assertNever';
 import { LatexPreviewModal } from './LatexPreviewModal';
 
@@ -476,6 +476,11 @@ export class DesignedStyleWizardModal extends Modal {
     private originalSpec: DesignedStyleSpec;
 
     onOpen(): void {
+        // Font availability is cached for the session. The Install notice tells
+        // the user to re-open the wizard to refresh status, so honour that
+        // literally — otherwise a font installed (or deactivated) since the
+        // last check keeps reporting its stale verdict.
+        clearFontAvailabilityCache();
         const { contentEl, modalEl, titleEl } = this;
         contentEl.empty();
         titleEl.setText('');

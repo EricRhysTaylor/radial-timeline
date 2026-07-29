@@ -48,6 +48,20 @@ function looksLikeWriteFailure(message: string): boolean {
     return /eacces|eperm|readonly|read-only|permission denied|failed to write|unable to write|write failed/i.test(message);
 }
 
+/**
+ * Pull the font name out of a fontspec "cannot be found" error.
+ *
+ * The engine states the cause precisely; the generic category message threw
+ * it away and left the user with "Pandoc export failed during PDF
+ * compilation." for a problem as specific and fixable as a deactivated font.
+ * fontspec wraps its errors across lines with a `(fontspec)` gutter, so the
+ * quoted name is matched directly rather than assuming it stays on one line.
+ */
+function extractMissingFontName(rawMessage: string): string | null {
+    const match = rawMessage.match(/The font "([^"]+)" cannot be found/i);
+    return match ? match[1].trim() || null : null;
+}
+
 function getCategoryMessage(category: ExportFailureCategory, rawMessage: string): string {
     switch (category) {
         case 'missing_dependency':
@@ -61,11 +75,18 @@ function getCategoryMessage(category: ExportFailureCategory, rawMessage: string)
         case 'write_failure':
             return 'Export could not write the output files.';
         case 'pandoc_compile_failure':
-        default:
+        default: {
+            const missingFont = extractMissingFontName(rawMessage);
+            if (missingFont) {
+                return `${missingFont} could not be loaded by XeLaTeX, so the PDF could not be compiled. `
+                    + `If you installed it, check it is still active (macOS: Font Book — a deactivated font stays on disk `
+                    + `but XeLaTeX cannot use it). Otherwise install it, or pick a different font.`;
+            }
             if (/latex/i.test(rawMessage)) {
                 return 'Pandoc could not compile the PDF with the current LaTeX template.';
             }
             return 'Pandoc export failed during PDF compilation.';
+        }
     }
 }
 

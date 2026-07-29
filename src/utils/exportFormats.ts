@@ -1012,10 +1012,20 @@ function resolveFontDiagnosticForKey(
                 specDriven: true,
             };
         }
+        // XeLaTeX decides, exactly as for the preset system fonts. This matters
+        // most here: the name is arbitrary user text, so a typo, a font that
+        // fontconfig can see but Core Text cannot, or one deactivated in Font
+        // Book after it was typed would otherwise read as available right up
+        // until the export failed on it.
+        const probed = probeFontWithXelatex(name);
+        if (probed === true) {
+            return { state: 'ok', primaryFontName: name, resolvedFontName: name, specDriven: true };
+        }
         const catalog = loadSystemFontCatalog();
         const canVerify = Array.isArray(catalog);
-        const installed = (canVerify && isFontInstalled(name, catalog))
-            || requiredSystemFontFileExists(name, platform);
+        const installed = probed === null
+            && ((canVerify && isFontInstalled(name, catalog))
+                || requiredSystemFontFileExists(name, platform));
         if (installed) {
             return { state: 'ok', primaryFontName: name, resolvedFontName: name, specDriven: true };
         }

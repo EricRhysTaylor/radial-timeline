@@ -192,6 +192,41 @@ describe('getStructuredFontDiagnostic — Latin Modern', () => {
         }
     });
 
+    /**
+     * A font whose `Path =` files are all present is loaded straight off disk
+     * by fontspec, with no reference to the OS font catalog. Reporting it as a
+     * missing *system* font produced "Missing required system font(s): Source
+     * Serif 4" at export time — immediately after that font had been installed
+     * successfully into the vault Pandoc folder, on an export that succeeded.
+     */
+    it('never reports a font as missing when its Path= files are all present', () => {
+        const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-pathok-'));
+        const fontDir = path.join(tempRoot, 'source-serif-4');
+        fs.mkdirSync(fontDir, { recursive: true });
+        for (const f of ['SourceSerif4-Regular.otf', 'SourceSerif4-It.otf', 'SourceSerif4-Bold.otf', 'SourceSerif4-BoldIt.otf']) {
+            fs.writeFileSync(path.join(fontDir, f), 'x');
+        }
+        const templatePath = path.join(tempRoot, 'rt_contemporary_literary.tex');
+        fs.writeFileSync(templatePath, [
+            '\\usepackage{fontspec}',
+            '\\setmainfont{Source Serif 4}[',
+            `  Path = ${fontDir}/ ,`,
+            '  UprightFont = SourceSerif4-Regular.otf ,',
+            '  ItalicFont = SourceSerif4-It.otf ,',
+            '  BoldFont = SourceSerif4-Bold.otf ,',
+            '  BoldItalicFont = SourceSerif4-BoldIt.otf',
+            ']',
+        ].join('\n'));
+
+        try {
+            const diag = getTemplateFontDiagnostics(templatePath);
+            expect(diag.requiredFonts).toContain('Source Serif 4');
+            expect(diag.missingRequiredFonts).toEqual([]);
+        } finally {
+            fs.rmSync(tempRoot, { recursive: true, force: true });
+        }
+    });
+
     it('raw template diagnostics treat IfFontExistsTF plus errmessage as a required exact font', () => {
         const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-font-required-'));
         const templatePath = path.join(tempRoot, 'rt_exact_font.tex');

@@ -466,7 +466,24 @@ function extractHardRequiredConditionalFontsFromTemplate(tex: string): string[] 
     return Array.from(fonts);
 }
 
-function extractFontsWithMissingExplicitPathFiles(tex: string, templatePath?: string): string[] {
+/**
+ * Classify every font declared with an explicit `Path =` block.
+ *
+ * `satisfied` — the block's font files all exist on disk. fontspec loads them
+ * directly and never consults the OS font catalog, so such a font is available
+ * whether or not it is installed system-wide. Asking the OS about it produces
+ * a false "Missing required system font(s): Source Serif 4" warning on an
+ * export that succeeds — exactly what a bundled font looks like after a
+ * successful install into the vault Pandoc folder.
+ *
+ * `missing` — a `Path =` was declared but at least one file is absent. That is
+ * a real failure and must still be reported.
+ */
+function extractExplicitPathFontStatus(
+    tex: string,
+    templatePath?: string
+): { satisfied: string[]; missing: string[] } {
+    const satisfied = new Set<string>();
     const missing = new Set<string>();
     const templateDir = templatePath && path.isAbsolute(templatePath) ? path.dirname(templatePath) : process.cwd();
     const commandPattern = /\\(?:setmainfont|newfontface\\[A-Za-z@]+)(?:\[[^\]]*])?\{([^}]+)\}\s*\[([\s\S]*?)\]/g;
@@ -489,8 +506,9 @@ function extractFontsWithMissingExplicitPathFiles(tex: string, templatePath?: st
             return !fs.existsSync(path.resolve(root, fileName));
         });
         if (anyMissing) missing.add(fontName);
+        else satisfied.add(fontName);
     }
-    return Array.from(missing);
+    return { satisfied: Array.from(satisfied), missing: Array.from(missing) };
 }
 
 function parseFcListFamilies(output: string): string[] {
@@ -616,8 +634,13 @@ export function getTemplateFontDiagnostics(templatePath?: string): TemplateFontD
         ...allFonts.filter(font => !optionalSet.has(font.toLowerCase())),
         ...hardRequiredConditionalFonts,
     ]));
-    const missingExplicitPathFonts = extractFontsWithMissingExplicitPathFiles(tex, templatePath);
+    const explicitPathStatus = extractExplicitPathFontStatus(tex, templatePath);
+    const missingExplicitPathFonts = explicitPathStatus.missing;
     const missingExplicitPathSet = new Set(missingExplicitPathFonts.map(font => font.toLowerCase()));
+    // A font whose `Path =` files are all present is loaded straight off disk
+    // by fontspec. It is available regardless of what the OS has installed, so
+    // it must be exempt from the system-catalog check below.
+    const satisfiedExplicitPathSet = new Set(explicitPathStatus.satisfied.map(font => font.toLowerCase()));
     const catalog = loadSystemFontCatalog();
     const canVerifySystemFonts = Array.isArray(catalog) || missingExplicitPathFonts.length > 0;
 
@@ -625,6 +648,7 @@ export function getTemplateFontDiagnostics(templatePath?: string): TemplateFontD
         ? requiredFonts.filter(font =>
             !isLikelyBundledLatexFont(font)
             && !isFontFileReference(font)
+            && !satisfiedExplicitPathSet.has(font.toLowerCase())
             && !isFontInstalled(font, catalog))
         : [];
     const missingRequiredFonts = Array.from(new Set([
@@ -632,7 +656,10 @@ export function getTemplateFontDiagnostics(templatePath?: string): TemplateFontD
         ...requiredFonts.filter(font => missingExplicitPathSet.has(font.toLowerCase())),
     ]));
     const missingOptionalFonts = Array.isArray(catalog)
-        ? optionalFonts.filter(font => !isFontFileReference(font) && !isFontInstalled(font, catalog))
+        ? optionalFonts.filter(font =>
+            !isFontFileReference(font)
+            && !satisfiedExplicitPathSet.has(font.toLowerCase())
+            && !isFontInstalled(font, catalog))
         : [];
 
     return {

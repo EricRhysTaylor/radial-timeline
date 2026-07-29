@@ -4,16 +4,17 @@
       "version": "7.0.3",
       "title": "7.0.3",
       "body": "## Radial Timeline 7.0.3\n\nManuscript export was broken for anyone who installed from the Community Plugins browser. This fixes it.\n\n### Fixes\n\n- **PDF and Word export** — the bundled fonts and the Word reference document now ship inside the plugin, so export works on a fresh install with nothing to set up. Thanks to **@therisingtithes** ([#34](https://github.com/EricRhysTaylor/Radial-Timeline/issues/34)).\n- **Font status** — Publish and Export now report what XeLaTeX can actually load, so a font no longer reads as missing when it's there, or as ready when it isn't. A failed export names the font that caused it.",
-      "url": "https://github.com/EricRhysTaylor/Radial-Timeline/releases/tag/7.0.3",
-      "publishedAt": "2026-07-29T16:19:09.448Z"
+      "url": "https://github.com/EricRhysTaylor/radial-timeline/releases/tag/untagged-f77440f7cb67a9adb44c",
+      "publishedAt": "2026-07-29T16:42:16.743Z",
+      "isDraft": true
     },
     {
       "version": "7.0.2",
       "title": "7.0.2",
       "body": "## Radial Timeline 7.0.2\n\nA quick fix release for two bugs reported on GitHub — thank you both for the clear, reproducible reports.\n\n### Fixes\n\n- **Narrative Mode act placement** — scenes whose `Act` exceeded the book's act count wrapped around into the wrong act quadrant. Thanks to **@billie-anderson** ([#31](https://github.com/EricRhysTaylor/Radial-Timeline/issues/31)).\n- **Bundled font install for Publish** — \"Install bundled fonts\" reported success without actually writing the fonts to the folder, and already-installed fonts moved there by hand weren't recognized. Thanks to **@therisingtithes** ([#29](https://github.com/EricRhysTaylor/Radial-Timeline/issues/29)).",
-      "url": "https://github.com/EricRhysTaylor/radial-timeline/releases/tag/untagged-b03a1aa30463c4f7ace8",
-      "publishedAt": "2026-07-25T20:05:55.620Z",
-      "isDraft": true
+      "url": "https://github.com/EricRhysTaylor/radial-timeline/releases/tag/7.0.2",
+      "publishedAt": "2026-07-25T20:08:05Z",
+      "isDraft": false
     },
     {
       "version": "7.0.1",
@@ -45,24 +46,18 @@
     "version": "7.0.3",
     "title": "7.0.3",
     "body": "## Radial Timeline 7.0.3\n\nManuscript export was broken for anyone who installed from the Community Plugins browser. This fixes it.\n\n### Fixes\n\n- **PDF and Word export** — the bundled fonts and the Word reference document now ship inside the plugin, so export works on a fresh install with nothing to set up. Thanks to **@therisingtithes** ([#34](https://github.com/EricRhysTaylor/Radial-Timeline/issues/34)).\n- **Font status** — Publish and Export now report what XeLaTeX can actually load, so a font no longer reads as missing when it's there, or as ready when it isn't. A failed export names the font that caused it.",
-    "url": "https://github.com/EricRhysTaylor/Radial-Timeline/releases/tag/7.0.3",
-    "publishedAt": "2026-07-29T16:19:09.448Z"
+    "url": "https://github.com/EricRhysTaylor/radial-timeline/releases/tag/untagged-f77440f7cb67a9adb44c",
+    "publishedAt": "2026-07-29T16:42:16.743Z",
+    "isDraft": true
   },
   "patches": [
-    {
-      "version": "7.0.3",
-      "title": "7.0.3",
-      "body": "## Radial Timeline 7.0.3\n\nManuscript export was broken for anyone who installed from the Community Plugins browser. This fixes it.\n\n### Fixes\n\n- **PDF and Word export** — the bundled fonts and the Word reference document now ship inside the plugin, so export works on a fresh install with nothing to set up. Thanks to **@therisingtithes** ([#34](https://github.com/EricRhysTaylor/Radial-Timeline/issues/34)).\n- **Font status** — Publish and Export now report what XeLaTeX can actually load, so a font no longer reads as missing when it's there, or as ready when it isn't. A failed export names the font that caused it.",
-      "url": "https://github.com/EricRhysTaylor/Radial-Timeline/releases/tag/7.0.3",
-      "publishedAt": "2026-07-29T16:19:09.448Z"
-    },
     {
       "version": "7.0.2",
       "title": "7.0.2",
       "body": "## Radial Timeline 7.0.2\n\nA quick fix release for two bugs reported on GitHub — thank you both for the clear, reproducible reports.\n\n### Fixes\n\n- **Narrative Mode act placement** — scenes whose `Act` exceeded the book's act count wrapped around into the wrong act quadrant. Thanks to **@billie-anderson** ([#31](https://github.com/EricRhysTaylor/Radial-Timeline/issues/31)).\n- **Bundled font install for Publish** — \"Install bundled fonts\" reported success without actually writing the fonts to the folder, and already-installed fonts moved there by hand weren't recognized. Thanks to **@therisingtithes** ([#29](https://github.com/EricRhysTaylor/Radial-Timeline/issues/29)).",
-      "url": "https://github.com/EricRhysTaylor/radial-timeline/releases/tag/untagged-b03a1aa30463c4f7ace8",
-      "publishedAt": "2026-07-25T20:05:55.620Z",
-      "isDraft": true
+      "url": "https://github.com/EricRhysTaylor/radial-timeline/releases/tag/7.0.2",
+      "publishedAt": "2026-07-25T20:08:05Z",
+      "isDraft": false
     },
     {
       "version": "7.0.1",

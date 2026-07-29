@@ -579,6 +579,25 @@ describe('getFontDiagnosticForFontKey — vault-then-system resolver', () => {
      * installed system-wide, so for a vault-installed bundled font it says
      * "not installed" and contradicts this verdict in the same panel.
      */
+    /**
+     * The wizard hard-blocks export on any non-ok font and renders a Missing
+     * label plus an Install button. TeX-distribution fonts must therefore
+     * never report missing: the Install affordance cannot resolve them, since
+     * they are already present in the texmf tree (GH #34 follow-up).
+     */
+    it('always reports TeX Gyre Pagella as resolvable — it comes from the TeX tree', () => {
+        const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-pagella-'));
+        setVaultFontDir(tempRoot);
+        try {
+            const diag = getFontDiagnosticForFontKey('system-serif');
+            expect(diag.state).toBe('ok');
+            expect(diag.primaryFontName).toBe('TeX Gyre Pagella');
+            expect(diag.installHint).toBeUndefined();
+        } finally {
+            fs.rmSync(tempRoot, { recursive: true, force: true });
+        }
+    });
+
     it('marks verdicts from a real font key as specDriven, and the no-key placeholder as not', () => {
         expect(getFontDiagnosticForFontKey(undefined).specDriven).toBe(false);
         for (const key of ['latin-modern', 'source-serif', 'sorts-mill-goudy', 'eb-garamond'] as const) {

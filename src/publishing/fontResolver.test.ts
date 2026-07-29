@@ -53,6 +53,33 @@ describe('buildFontspecBlock — vault → system resolution', () => {
      * Emitting the name form was the PDF half of GH #34: every user without
      * the bundled files got an opaque "Pandoc could not compile the PDF".
      */
+    /**
+     * TeX Gyre Pagella is the `system-serif` option's font. Despite the key's
+     * name it is not an OS font — it ships in the texmf tree like Latin
+     * Modern. Verified on macOS + TeX Live 2026:
+     *
+     *   \setmainfont{TeX Gyre Pagella}              → "cannot be found"
+     *   \setmainfont{texgyrepagella-regular.otf}    → compiles
+     *
+     * Treating it as a system font made the wizard label it Missing and offer
+     * an Install button that could only ever say "install it yourself" for a
+     * font already present.
+     */
+    it('emits the TeX filename form for TeX Gyre Pagella, never the family name', () => {
+        const root = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-resolver-pagella-'));
+        try {
+            const block = buildFontspecBlock({ fontKey: 'system-serif', vaultFontDir: root });
+            expect(block).toContain('\\setmainfont{texgyrepagella-regular.otf}');
+            expect(block).toContain('ItalicFont = texgyrepagella-italic.otf');
+            expect(block).toContain('BoldFont = texgyrepagella-bold.otf');
+            expect(block).toContain('BoldItalicFont = texgyrepagella-bolditalic.otf');
+            expect(block).not.toContain('\\setmainfont{TeX Gyre Pagella}');
+            expect(block).not.toContain('Path =');
+        } finally {
+            fs.rmSync(root, { recursive: true, force: true });
+        }
+    });
+
     it('emits the TeX filename form for Latin Modern, never the family name', () => {
         const root = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-resolver-tex-'));
         try {

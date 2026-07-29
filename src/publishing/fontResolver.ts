@@ -102,7 +102,19 @@ export const FONT_REGISTRY: Record<string, { displayName: string; files: FontFil
     },
     'system-serif': {
         displayName: 'TeX Gyre Pagella',
-        files: { slug: 'tex-gyre-pagella', upright: '' },
+        files: {
+            // Same situation as Latin Modern: TeX Gyre Pagella ships with every
+            // TeX distribution and lives in the texmf tree, so it is never
+            // registered with the OS font catalog. Verified on macOS + TeX Live
+            // 2026 — `\setmainfont{TeX Gyre Pagella}` fails with "cannot be
+            // found" while the file-name form compiles.
+            slug: 'tex-gyre-pagella',
+            upright: '',
+            texUpright: 'texgyrepagella-regular.otf',
+            texItalic: 'texgyrepagella-italic.otf',
+            texBold: 'texgyrepagella-bold.otf',
+            texBoldItalic: 'texgyrepagella-bolditalic.otf',
+        },
     },
     'system-sans': {
         displayName: 'Arial',

@@ -10,6 +10,7 @@ import { parseYaml } from 'obsidian';
 import type { RadialTimelineSettings } from '../types/settings';
 import { getBeatConfigForSystem, normalizeBeatBaseTemplateOrder, sanitizeBeatAdvancedForWrite } from './beatsTemplates';
 import { mergeTemplateParts } from './templateMerge';
+import { withOptionalManagedKeys } from './optionalManagedKeys';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
 
 // ─── Types ──────────────────────────────────────────────────────────────
@@ -294,7 +295,12 @@ export function computeCanonicalOrder(
             }
         }
     }
-    return result;
+    // Optional-managed keys are RT-owned schema that ships in no template, so the
+    // merged-template walk above cannot see them. They still need a canonical
+    // position: reorder places only keys a note actually carries, so this is
+    // inert for the notes that lack them and authoritative for the ones that
+    // don't. See `optionalManagedKeys.ts`.
+    return withOptionalManagedKeys(noteType, result);
 }
 
 /**

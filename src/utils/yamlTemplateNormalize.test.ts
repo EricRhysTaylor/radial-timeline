@@ -35,6 +35,24 @@ describe('yamlTemplateNormalize', () => {
         expect(order[0]).toBe('ID');
     });
 
+    it('gives optional-managed Part keys a canonical position without templating them', () => {
+        const order = computeCanonicalOrder('Scene', DEFAULT_SETTINGS);
+        const baseKeys = getBaseKeys('Scene', DEFAULT_SETTINGS);
+
+        // Ordered — so a scene that carries them keeps them in a stable place.
+        for (const key of ['Part', 'Part Epigraph', 'Part Epigraph By']) {
+            expect(order).toContain(key);
+            // ...but absent from the template, so the audit never demands them and
+            // note creation never seeds them. This pairing is the whole point of
+            // the optional-managed registry.
+            expect(baseKeys).not.toContain(key);
+        }
+
+        // Part → Chapter → Scene is the structural nesting; the order reflects it.
+        expect(order.indexOf('Part')).toBeLessThan(order.indexOf('Chapter'));
+        expect(order.indexOf('Part')).toBeGreaterThan(order.indexOf('Act'));
+    });
+
     it('does not exclude scene triplet analysis fields when AI is disabled', () => {
         const isExcluded = getExcludeKeyPredicate('Scene', { enableAiSceneAnalysis: false });
         expect(isExcluded('previousSceneAnalysis')).toBe(false);

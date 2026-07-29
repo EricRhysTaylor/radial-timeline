@@ -159,14 +159,6 @@ function requireCommand(name, installHint) {
     return found;
 }
 
-function latinModernPath() {
-    const kpsewhich = commandPath('kpsewhich');
-    if (!kpsewhich) return undefined;
-    const result = spawnSync(kpsewhich, ['lmroman10-regular.otf'], { encoding: 'utf8' });
-    if (result.status !== 0 || !result.stdout.trim()) return undefined;
-    return dirname(result.stdout.trim());
-}
-
 function pdfInfo(pdfPath) {
     const result = run('pdfinfo', [pdfPath]);
     const pages = Number((result.stdout.match(/^Pages:\s+(\d+)/m) ?? [])[1]);
@@ -245,21 +237,37 @@ function compareBaseline(slug, actualPages, diffDir) {
     return totalDiffPixels;
 }
 
-function assertModernClassicNoBadLatinModernFallback(spec, fontRoot, layoutDir) {
+/**
+ * Modern Classic uses Latin Modern, which is NOT bundled: it ships with every
+ * TeX distribution. The contract is that it resolves from the texmf tree by
+ * FILE NAME, never by family name — verified on macOS + TeX Live 2026:
+ *
+ *   \setmainfont{Latin Modern Roman}      → fontspec: "cannot be found"
+ *   \setmainfont{lmroman10-regular.otf}   → compiles
+ *
+ * Emitting the family-name form was the PDF half of GH #34. This asserts the
+ * emitted form is the one that actually compiles, and then compiles it with
+ * no vault font directory at all — the state of a real user's machine.
+ */
+function assertModernClassicResolvesLatinModernFromTexTree(spec, layoutDir) {
+    // No vaultFontDir: exactly what a user has, since Latin Modern is never
+    // written into the vault.
     const tex = generateDesignedStyleTex(spec, {
         bundledLayoutId: 'bundled-fiction-modern-classic',
-        bundledFontPath: fontRoot,
     });
-    if (/Path\s*=.*assets\/fonts\/latin-modern/.test(tex) || tex.includes('/latin-modern/')) {
-        throw new Error('Modern Classic generated a Latin Modern Path pointing at the plugin asset bundle.');
+    if (tex.includes('\\setmainfont{Latin Modern Roman}')) {
+        throw new Error('Modern Classic emitted the Latin Modern family-name form, which does not resolve on a stock TeX install (GH #34).');
     }
-    if (!tex.includes('\\errmessage{Radial Timeline Modern Classic requires a verified Latin Modern font path')) {
-        throw new Error('Modern Classic without a verified Latin Modern path must hard-fail instead of falling back.');
+    if (!tex.includes('\\setmainfont{lmroman10-regular.otf}')) {
+        throw new Error('Modern Classic must emit the Latin Modern TeX filename form so kpathsea resolves it from the texmf tree.');
+    }
+    if (/Path\s*=.*latin-modern/.test(tex)) {
+        throw new Error('Modern Classic generated a Latin Modern Path directive; it must resolve from the TeX tree, not a bundled copy.');
     }
 
-    const texPath = join(layoutDir, 'modern-classic-no-latin-path.tex');
-    const mdPath = join(layoutDir, 'modern-classic-no-latin-path.md');
-    const pdfPath = join(layoutDir, 'modern-classic-no-latin-path.pdf');
+    const texPath = join(layoutDir, 'modern-classic-tex-tree.tex');
+    const mdPath = join(layoutDir, 'modern-classic-tex-tree.md');
+    const pdfPath = join(layoutDir, 'modern-classic-tex-tree.pdf');
     writeFileSync(texPath, tex);
     writeFileSync(mdPath, [
         '---',
@@ -272,18 +280,17 @@ function assertModernClassicNoBadLatinModernFallback(spec, fontRoot, layoutDir) 
         '\\rtSceneSep{ii}',
         'Modern Classic font smoke.',
     ].join('\n'));
-    try {
-        run('pandoc', [
-            mdPath,
-            '--from', 'markdown+raw_tex',
-            '--pdf-engine', 'xelatex',
-            '--template', texPath,
-            '-o', pdfPath,
-        ]);
-    } catch {
-        return;
+    // Must compile with no bundled fonts anywhere — that is the whole point.
+    run('pandoc', [
+        mdPath,
+        '--from', 'markdown+raw_tex',
+        '--pdf-engine', 'xelatex',
+        '--template', texPath,
+        '-o', pdfPath,
+    ]);
+    if (!existsSync(pdfPath)) {
+        throw new Error('Modern Classic did not produce a PDF from the TeX-tree font path.');
     }
-    throw new Error('Modern Classic compiled without a verified Latin Modern path; expected hard failure.');
 }
 
 function writeReadme() {
@@ -317,7 +324,7 @@ Do not edit baseline PNGs by hand.
  * baselines in `tests/fixtures/publishing-pdf-baselines/<slug>/`. When
  * `--update-baselines` is set, regenerates them.
  */
-function runWizardFixtures(failures, lmPath) {
+function runWizardFixtures(failures) {
     for (const fixture of WIZARD_FIXTURES) {
         const layoutDir = join(outputRoot, fixture.slug);
         mkdirSync(layoutDir, { recursive: true });
@@ -326,8 +333,7 @@ function runWizardFixtures(failures, lmPath) {
         const pdfPath = join(layoutDir, `${fixture.slug}.pdf`);
         try {
             const tex = generateDesignedStyleTex(fixture.spec, {
-                bundledFontPath: fontRoot,
-                ...(lmPath ? { latinModernPath: lmPath } : {}),
+                vaultFontDir: fontRoot,
             });
             writeFileSync(texPath, tex);
             writeFileSync(mdPath, fixture.body);
@@ -389,7 +395,6 @@ function main() {
 
     rmSync(outputRoot, { recursive: true, force: true });
     mkdirSync(outputRoot, { recursive: true });
-    const lmPath = latinModernPath();
     const failures = [];
 
     // --wizard-fixtures swaps in the wizard-shaped spec set instead of the
@@ -397,7 +402,7 @@ function main() {
     // must produce a PDF with at least minExpectedPages. No text-content or
     // visual-baseline assertions — the property test + bundled QA cover those.
     if (wizardOnly) {
-        runWizardFixtures(failures, lmPath);
+        runWizardFixtures(failures);
         finalize(failures);
         return;
     }
@@ -412,14 +417,13 @@ function main() {
         const expandedTexPath = join(layoutDir, `${layout.slug}.expanded.tex`);
         writeFileSync(texPath, generateDesignedStyleTex(spec, {
             bundledLayoutId: layout.id,
-            bundledFontPath: fontRoot,
-            ...(lmPath ? { latinModernPath: lmPath } : {}),
+            vaultFontDir: fontRoot,
         }));
         writeFileSync(mdPath, layout.body);
 
         try {
             if (layout.id === 'bundled-fiction-modern-classic') {
-                assertModernClassicNoBadLatinModernFallback(spec, fontRoot, layoutDir);
+                assertModernClassicResolvesLatinModernFromTexTree(spec, layoutDir);
             }
             run('pandoc', [
                 mdPath,

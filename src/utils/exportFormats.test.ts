@@ -162,6 +162,71 @@ describe('getStructuredFontDiagnostic — Latin Modern', () => {
         fs.rmSync(tempRoot, { recursive: true, force: true });
     });
 
+    /**
+     * A `\setmainfont{...}` argument that is a font FILE name is resolved by
+     * kpathsea from the texmf tree, never by the OS font catalog. Checking it
+     * against installed system fonts always fails, producing a "Missing
+     * required system font(s): lmroman10-regular.otf" Notice on an export that
+     * then succeeds — observed live after Latin Modern moved to TeX-tree
+     * resolution.
+     */
+    it('never reports a bare TeX font FILE name as a missing system font', () => {
+        const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-texfile-'));
+        const templatePath = path.join(tempRoot, 'rt_tex_tree_font.tex');
+        fs.writeFileSync(templatePath, [
+            '\\usepackage{fontspec}',
+            // No Path= — kpathsea resolves these from the TeX distribution.
+            '\\setmainfont{lmroman10-regular.otf}[',
+            '  ItalicFont = lmroman10-italic.otf ,',
+            '  BoldFont = lmroman10-bold.otf ,',
+            '  BoldItalicFont = lmroman10-bolditalic.otf',
+            ']',
+        ].join('\n'));
+
+        try {
+            const diag = getTemplateFontDiagnostics(templatePath);
+            expect(diag.missingRequiredFonts).toEqual([]);
+            expect(diag.missingOptionalFonts).toEqual([]);
+        } finally {
+            fs.rmSync(tempRoot, { recursive: true, force: true });
+        }
+    });
+
+    /**
+     * A font whose `Path =` files are all present is loaded straight off disk
+     * by fontspec, with no reference to the OS font catalog. Reporting it as a
+     * missing *system* font produced "Missing required system font(s): Source
+     * Serif 4" at export time — immediately after that font had been installed
+     * successfully into the vault Pandoc folder, on an export that succeeded.
+     */
+    it('never reports a font as missing when its Path= files are all present', () => {
+        const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-pathok-'));
+        const fontDir = path.join(tempRoot, 'source-serif-4');
+        fs.mkdirSync(fontDir, { recursive: true });
+        for (const f of ['SourceSerif4-Regular.otf', 'SourceSerif4-It.otf', 'SourceSerif4-Bold.otf', 'SourceSerif4-BoldIt.otf']) {
+            fs.writeFileSync(path.join(fontDir, f), 'x');
+        }
+        const templatePath = path.join(tempRoot, 'rt_contemporary_literary.tex');
+        fs.writeFileSync(templatePath, [
+            '\\usepackage{fontspec}',
+            '\\setmainfont{Source Serif 4}[',
+            `  Path = ${fontDir}/ ,`,
+            '  UprightFont = SourceSerif4-Regular.otf ,',
+            '  ItalicFont = SourceSerif4-It.otf ,',
+            '  BoldFont = SourceSerif4-Bold.otf ,',
+            '  BoldItalicFont = SourceSerif4-BoldIt.otf',
+            ']',
+        ].join('\n'));
+
+        try {
+            const diag = getTemplateFontDiagnostics(templatePath);
+            expect(diag.requiredFonts).toContain('Source Serif 4');
+            expect(diag.missingRequiredFonts).toEqual([]);
+        } finally {
+            fs.rmSync(tempRoot, { recursive: true, force: true });
+        }
+    });
+
     it('raw template diagnostics treat IfFontExistsTF plus errmessage as a required exact font', () => {
         const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-font-required-'));
         const templatePath = path.join(tempRoot, 'rt_exact_font.tex');
@@ -489,12 +554,35 @@ describe('getFontDiagnosticForFontKey — vault-then-system resolver', () => {
         expect(diag.installHint).toBeUndefined();
     });
 
-    it('handles Latin Modern: ok if system has it, missing-bundled otherwise', () => {
-        const diag = getFontDiagnosticForFontKey('latin-modern');
-        expect(['ok', 'missing-bundled']).toContain(diag.state);
-        expect(diag.primaryFontName).toBe('Latin Modern Roman');
-        if (diag.state === 'missing-bundled') {
-            expect(diag.installHint?.source).toBe('bundled');
+    // Latin Modern comes from the TeX distribution, resolved by kpathsea from
+    // the texmf tree. It is never bundled and never registered with the OS
+    // font catalog, so it must read as resolvable unconditionally — otherwise
+    // export is hard-blocked behind an "Install fonts" prompt that can never
+    // satisfy it (GH #34).
+    it('always reports Latin Modern as resolvable — it comes from the TeX tree', () => {
+        const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-lm-'));
+        setVaultFontDir(tempRoot);
+        try {
+            const diag = getFontDiagnosticForFontKey('latin-modern');
+            expect(diag.state).toBe('ok');
+            expect(diag.primaryFontName).toBe('Latin Modern Roman');
+            expect(diag.installHint).toBeUndefined();
+        } finally {
+            fs.rmSync(tempRoot, { recursive: true, force: true });
+        }
+    });
+
+    /**
+     * `state: 'ok'` is ambiguous on its own — it also means "no spec, nothing
+     * checked". Callers use `specDriven` to decide whether the legacy
+     * template-scan probe may speak. That probe only asks whether a font is
+     * installed system-wide, so for a vault-installed bundled font it says
+     * "not installed" and contradicts this verdict in the same panel.
+     */
+    it('marks verdicts from a real font key as specDriven, and the no-key placeholder as not', () => {
+        expect(getFontDiagnosticForFontKey(undefined).specDriven).toBe(false);
+        for (const key of ['latin-modern', 'source-serif', 'sorts-mill-goudy', 'eb-garamond'] as const) {
+            expect(getFontDiagnosticForFontKey(key).specDriven).toBe(true);
         }
     });
 

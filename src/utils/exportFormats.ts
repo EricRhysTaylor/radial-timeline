@@ -466,7 +466,24 @@ function extractHardRequiredConditionalFontsFromTemplate(tex: string): string[] 
     return Array.from(fonts);
 }
 
-function extractFontsWithMissingExplicitPathFiles(tex: string, templatePath?: string): string[] {
+/**
+ * Classify every font declared with an explicit `Path =` block.
+ *
+ * `satisfied` — the block's font files all exist on disk. fontspec loads them
+ * directly and never consults the OS font catalog, so such a font is available
+ * whether or not it is installed system-wide. Asking the OS about it produces
+ * a false "Missing required system font(s): Source Serif 4" warning on an
+ * export that succeeds — exactly what a bundled font looks like after a
+ * successful install into the vault Pandoc folder.
+ *
+ * `missing` — a `Path =` was declared but at least one file is absent. That is
+ * a real failure and must still be reported.
+ */
+function extractExplicitPathFontStatus(
+    tex: string,
+    templatePath?: string
+): { satisfied: string[]; missing: string[] } {
+    const satisfied = new Set<string>();
     const missing = new Set<string>();
     const templateDir = templatePath && path.isAbsolute(templatePath) ? path.dirname(templatePath) : process.cwd();
     const commandPattern = /\\(?:setmainfont|newfontface\\[A-Za-z@]+)(?:\[[^\]]*])?\{([^}]+)\}\s*\[([\s\S]*?)\]/g;
@@ -489,8 +506,9 @@ function extractFontsWithMissingExplicitPathFiles(tex: string, templatePath?: st
             return !fs.existsSync(path.resolve(root, fileName));
         });
         if (anyMissing) missing.add(fontName);
+        else satisfied.add(fontName);
     }
-    return Array.from(missing);
+    return { satisfied: Array.from(satisfied), missing: Array.from(missing) };
 }
 
 function parseFcListFamilies(output: string): string[] {
@@ -584,6 +602,25 @@ function isLikelyBundledLatexFont(fontName: string): boolean {
         || normalized.startsWith('computer modern');
 }
 
+/**
+ * Whether a `\setmainfont{...}` argument names a font FILE rather than a
+ * family — e.g. `lmroman10-regular.otf`.
+ *
+ * fontspec resolves a file name through kpathsea (the texmf tree) or through
+ * an accompanying `Path =` directive. It never consults the OS font catalog,
+ * so asking the OS whether "lmroman10-regular.otf" is installed is a category
+ * error: the answer is always no, and the font compiles regardless.
+ *
+ * Templates started emitting this form when Latin Modern moved to TeX-tree
+ * resolution — `\setmainfont{Latin Modern Roman}` does not resolve on a stock
+ * TeX install, while the file name does. Without this guard the scanner
+ * reported "Missing required system font(s): lmroman10-regular.otf" on an
+ * export that then succeeded.
+ */
+function isFontFileReference(fontName: string): boolean {
+    return /\.(otf|ttf|ttc|woff2?)$/i.test(fontName.trim());
+}
+
 export function getTemplateFontDiagnostics(templatePath?: string): TemplateFontDiagnostics {
     const tex = readTemplateText(templatePath);
     const usesFontspec = /\\usepackage\s*\{fontspec\}|\\setmainfont|\\newfontface|\\defaultfontfeatures/i.test(tex);
@@ -597,20 +634,32 @@ export function getTemplateFontDiagnostics(templatePath?: string): TemplateFontD
         ...allFonts.filter(font => !optionalSet.has(font.toLowerCase())),
         ...hardRequiredConditionalFonts,
     ]));
-    const missingExplicitPathFonts = extractFontsWithMissingExplicitPathFiles(tex, templatePath);
+    const explicitPathStatus = extractExplicitPathFontStatus(tex, templatePath);
+    const missingExplicitPathFonts = explicitPathStatus.missing;
     const missingExplicitPathSet = new Set(missingExplicitPathFonts.map(font => font.toLowerCase()));
+    // A font whose `Path =` files are all present is loaded straight off disk
+    // by fontspec. It is available regardless of what the OS has installed, so
+    // it must be exempt from the system-catalog check below.
+    const satisfiedExplicitPathSet = new Set(explicitPathStatus.satisfied.map(font => font.toLowerCase()));
     const catalog = loadSystemFontCatalog();
     const canVerifySystemFonts = Array.isArray(catalog) || missingExplicitPathFonts.length > 0;
 
     const catalogMissingRequiredFonts = Array.isArray(catalog)
-        ? requiredFonts.filter(font => !isLikelyBundledLatexFont(font) && !isFontInstalled(font, catalog))
+        ? requiredFonts.filter(font =>
+            !isLikelyBundledLatexFont(font)
+            && !isFontFileReference(font)
+            && !satisfiedExplicitPathSet.has(font.toLowerCase())
+            && !isFontInstalled(font, catalog))
         : [];
     const missingRequiredFonts = Array.from(new Set([
         ...catalogMissingRequiredFonts,
         ...requiredFonts.filter(font => missingExplicitPathSet.has(font.toLowerCase())),
     ]));
     const missingOptionalFonts = Array.isArray(catalog)
-        ? optionalFonts.filter(font => !isFontInstalled(font, catalog))
+        ? optionalFonts.filter(font =>
+            !isFontFileReference(font)
+            && !satisfiedExplicitPathSet.has(font.toLowerCase())
+            && !isFontInstalled(font, catalog))
         : [];
 
     return {
@@ -736,6 +785,19 @@ export interface FontDiagnostic {
     /** Font XeLaTeX is expected to use. Missing fonts fail instead of falling back. */
     resolvedFontName: string;
     installHint?: FontDiagnosticInstallHint;
+    /**
+     * Whether this verdict came from a layout spec (bundled fiction or a
+     * Designed Style), meaning an actual font key was resolved through the
+     * vault → TeX tree → system chain.
+     *
+     * `state: 'ok'` alone is ambiguous: it also means "no spec, so there was
+     * nothing to check." Callers that would otherwise fall back to the legacy
+     * template-scan probe must gate on this flag. That probe only asks whether
+     * a font is installed *system-wide*, so for a vault-installed bundled font
+     * it reports "not installed" and contradicts this diagnostic in the same
+     * panel — which is what users saw after a successful font install.
+     */
+    specDriven: boolean;
 }
 
 const FONT_KEY_TO_DISPLAY: Record<DesignedStyleSpec['body']['font'], string> = {
@@ -811,7 +873,7 @@ export function getFontDiagnosticForFontKey(
 }
 
 /**
- * Single resolution path: vault → system → missing.
+ * Single resolution path: vault → TeX tree → system → missing.
  *
  * Mirrors the LaTeX emit logic in `fontResolver.buildFontspecBlock` so the
  * Export Checks panel and the actual export agree on what counts as
@@ -819,9 +881,13 @@ export function getFontDiagnosticForFontKey(
  *
  *   1. Vault: `Radial Timeline/Pandoc/fonts/<slug>/` has the required files
  *      → 'ok' (export will use a `\setmainfont{...}[Path = ...]` block).
- *   2. System: font is in the system catalog → 'ok' (export will use plain
+ *   2. TeX tree: the registry lists `texUpright` file names → 'ok' (export
+ *      will use the filename form and let kpathsea resolve it). Checked
+ *      before the system catalog because texmf fonts are not registered
+ *      with the OS and would otherwise read as missing.
+ *   3. System: font is in the system catalog → 'ok' (export will use plain
  *      `\setmainfont{Name}` and let XeLaTeX resolve via the OS).
- *   3. Neither → 'missing-bundled' if the registry advertises bundled files
+ *   4. Neither → 'missing-bundled' if the registry advertises bundled files
  *      (instructive: tell the user to run Install fonts), otherwise
  *      'missing-system' (instructive: link to Google Fonts / CTAN).
  */
@@ -831,25 +897,35 @@ function resolveFontDiagnosticForKey(
 ): FontDiagnostic {
     const platform = overridePlatform ?? getCurrentPlatform();
     if (!fontKey) {
-        return { state: 'ok', primaryFontName: 'Default serif', resolvedFontName: 'Default serif' };
+        // No spec on this layout — nothing was resolved, so callers must not
+        // read this 'ok' as a font verdict.
+        return { state: 'ok', primaryFontName: 'Default serif', resolvedFontName: 'Default serif', specDriven: false };
     }
     const primaryFontName = FONT_KEY_TO_DISPLAY[fontKey];
 
     // 1. Vault-bundled files present → ready (Path-based emit).
     if (vaultHasFontFiles(fontKey)) {
-        return { state: 'ok', primaryFontName, resolvedFontName: primaryFontName };
+        return { state: 'ok', primaryFontName, resolvedFontName: primaryFontName, specDriven: true };
     }
 
-    // 2. System install present → ready (system-name emit).
+    // 2. TeX-distribution font → ready (filename emit, resolved by kpathsea).
+    //    These live in the texmf tree and are invisible to the OS font
+    //    catalog, so the system check below would wrongly report them
+    //    missing and hard-block export on a machine that compiles them fine.
+    if (FONT_REGISTRY[fontKey]?.files.texUpright) {
+        return { state: 'ok', primaryFontName, resolvedFontName: primaryFontName, specDriven: true };
+    }
+
+    // 3. System install present → ready (system-name emit).
     const catalog = loadSystemFontCatalog();
     const canVerify = Array.isArray(catalog);
     const installed = (canVerify && isFontInstalled(primaryFontName, catalog))
         || requiredSystemFontFileExists(primaryFontName, platform);
     if (installed) {
-        return { state: 'ok', primaryFontName, resolvedFontName: primaryFontName };
+        return { state: 'ok', primaryFontName, resolvedFontName: primaryFontName, specDriven: true };
     }
 
-    // 3. Missing. If the registry knows about bundled files for this font,
+    // 4. Missing. If the registry knows about bundled files for this font,
     //    prompt the user to install them; otherwise prompt for a system install.
     const entry = FONT_REGISTRY[fontKey];
     const hasBundledFiles = !!entry?.files.upright;
@@ -858,6 +934,7 @@ function resolveFontDiagnosticForKey(
             state: 'missing-bundled',
             primaryFontName,
             resolvedFontName: primaryFontName,
+            specDriven: true,
             installHint: {
                 source: 'bundled',
                 message: `${primaryFontName} files are missing from Radial Timeline/Pandoc/fonts/${entry.files.slug}. Click Install fonts in Settings → Publish.`,
@@ -868,7 +945,7 @@ function resolveFontDiagnosticForKey(
     const installHint: FontDiagnosticInstallHint = url
         ? buildGoogleFontsHint(primaryFontName, url, platform)
         : buildCtanHint(primaryFontName);
-    return { state: 'missing-system', primaryFontName, resolvedFontName: primaryFontName, installHint };
+    return { state: 'missing-system', primaryFontName, resolvedFontName: primaryFontName, installHint, specDriven: true };
 }
 
 export function getStructuredFontDiagnostic(

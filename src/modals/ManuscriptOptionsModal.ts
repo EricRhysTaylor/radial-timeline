@@ -2217,15 +2217,25 @@ export class ManuscriptOptionsModal extends Modal {
         const fallbackFont = canVerifyFonts
             ? fontDiagnostics.requiredFonts.find(font => !fontDiagnostics.missingRequiredFonts.includes(font)) || null
             : null;
-        // Spec-driven `state !== 'ok'` is preferred when present — it knows
-        // about bundled font assets and hard-fail Latin Modern contracts. Fall
-        // back to the legacy probe for layouts without a spec.
+        // When the layout has a spec, the structured diagnostic is the ONLY
+        // voice. The legacy probe scans the .tex for font names and asks the OS
+        // whether each is installed system-wide — a question that stopped
+        // mattering once bundled fonts load from the vault via `Path =`. Left
+        // ungated it reports "Source Serif 4 is not installed" immediately
+        // after that font was installed successfully, contradicting the
+        // structured verdict in the same panel.
+        const useLegacyFontProbe = !structuredFontDiag.specDriven;
         const hasFontRisk = structuredFontDiag.state !== 'ok'
-            || (canVerifyFonts && (fontDiagnostics.missingRequiredFonts.length > 0 || hasPrimaryMissing));
+            || (useLegacyFontProbe && canVerifyFonts
+                && (fontDiagnostics.missingRequiredFonts.length > 0 || hasPrimaryMissing));
 
         // ── Build user-facing summary ────────────────────────────────
         const displayRequestedFont = primaryRequested || structuredFontDiag.primaryFontName || null;
-        const resolvedFont = structuredFontDiag.state !== 'ok' && structuredFontDiag.resolvedFontName
+        // A spec-driven verdict already names the font XeLaTeX will load, from
+        // whichever tier resolved it. Routing it through buildFontDisplayName
+        // would re-ask the system-font question and append "(not found)" to a
+        // font that resolves perfectly well from the vault or the TeX tree.
+        const resolvedFont = structuredFontDiag.specDriven && structuredFontDiag.resolvedFontName
             ? structuredFontDiag.resolvedFontName
             : this.buildFontDisplayName(displayRequestedFont, canVerifyFonts, hasPrimaryMissing, fallbackFont);
         const fontSummaryLine = `Font: ${displayRequestedFont || resolvedFont || 'Default serif'}`;
@@ -2238,7 +2248,7 @@ export class ManuscriptOptionsModal extends Modal {
             const requestedType = this.getFontFamilyType(displayRequestedFont);
             technicalLines.push(`Requested font: ${displayRequestedFont} (${requestedType})`);
         }
-        if (hasPrimaryMissing && fallbackFont && fallbackFont !== primaryRequested) {
+        if (useLegacyFontProbe && hasPrimaryMissing && fallbackFont && fallbackFont !== primaryRequested) {
             const fallbackType = this.getFontFamilyType(fallbackFont);
             technicalLines.push(`Fallback: ${fallbackFont} (${fallbackType})`);
         }
@@ -2392,14 +2402,14 @@ export class ManuscriptOptionsModal extends Modal {
                         }
                     }
                 }
-            } else if (hasPrimaryMissing && fallbackFont && fallbackFont !== primaryRequested) {
+            } else if (useLegacyFontProbe && hasPrimaryMissing && fallbackFont && fallbackFont !== primaryRequested) {
                 // Legacy fallback path — layout has no spec, so we lean on
                 // the template-scan diagnostic for the message text.
                 content.createDiv({
                     cls: 'ert-pdf-output-line',
                     text: `Font: Using ${fallbackFont} — install ${primaryRequested} for the intended look.`
                 });
-            } else if (hasPrimaryMissing && primaryRequested) {
+            } else if (useLegacyFontProbe && hasPrimaryMissing && primaryRequested) {
                 content.createDiv({
                     cls: 'ert-pdf-output-line',
                     text: `Font: ${primaryRequested} is not installed. Install it before exporting.`

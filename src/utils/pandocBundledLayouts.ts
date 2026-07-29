@@ -7,6 +7,7 @@ import { getPandocLayoutSortRank } from '../publishing/templateTiering';
 import { generateDesignedStyleTex } from '../publishing/designedStyle';
 import { BUNDLED_FICTION_SPECS, type BundledFictionId } from '../publishing/bundledStyleSpecs';
 import { getPandocFolder } from './exportFormats';
+import { getEmbeddedAssetBytes, getEmbeddedAssetByteLength, type EmbeddedAssetKey } from './embeddedAssets';
 
 interface BundledPandocLayoutTemplate extends PandocLayoutTemplate {
     bundled: true;
@@ -23,30 +24,8 @@ interface BundledPandocLayoutTemplate extends PandocLayoutTemplate {
  */
 let MODULE_VAULT_FONT_DIR: string | undefined;
 
-/**
- * Absolute filesystem path to the plugin asset font source, e.g.
- * `/Users/foo/Vault/.obsidian/plugins/radial-timeline/assets/fonts`. Install
- * copies these files into `Radial Timeline/Pandoc/fonts`.
- */
-let MODULE_BUNDLED_FONT_SOURCE_PATH: string | undefined;
-
 export function setVaultFontDir(path: string | undefined): void {
     MODULE_VAULT_FONT_DIR = path;
-}
-
-export function setBundledFontSourcePath(path: string | undefined): void {
-    MODULE_BUNDLED_FONT_SOURCE_PATH = path;
-}
-
-/**
- * Absolute filesystem path to the plugin's non-font Pandoc assets, e.g.
- * `…/plugins/radial-timeline/assets/pandoc`. Currently carries the bundled
- * Word reference document for DOCX submission export.
- */
-let MODULE_BUNDLED_PANDOC_ASSET_SOURCE_PATH: string | undefined;
-
-export function setBundledPandocAssetSourcePath(path: string | undefined): void {
-    MODULE_BUNDLED_PANDOC_ASSET_SOURCE_PATH = path;
 }
 
 /**
@@ -386,24 +365,32 @@ export function getPandocFontAbsoluteRoot(plugin: RadialTimelinePlugin): string 
     return path.join(basePath, getPandocFontVaultFolder(plugin));
 }
 
-const BUNDLED_PANDOC_FONT_FILES: Record<string, string[]> = {
+/**
+ * Font families the plugin carries and writes into the vault, mapped to the
+ * embedded asset keys their files come from.
+ *
+ * The bytes live inside `main.js` (see `src/utils/embeddedAssets.ts`) because
+ * Obsidian installs only `manifest.json`/`main.js`/`styles.css` from a release
+ * — loose files under the plugin folder never reach a user who installed
+ * through the Community Plugins browser (GH #29, #34).
+ *
+ * Latin Modern is deliberately absent: it ships with every TeX distribution
+ * and XeLaTeX resolves it from the texmf tree by filename, so bundling ~449KB
+ * of `lmroman*.otf` would be dead weight. `fontResolver.ts` emits the
+ * filename form for it instead.
+ */
+const BUNDLED_PANDOC_FONT_FILES: Record<string, EmbeddedAssetKey[]> = {
     'sorts-mill-goudy': [
-        'SortsMillGoudy-Regular.ttf',
-        'SortsMillGoudy-Italic.ttf',
-    ],
-    'latin-modern': [
-        'lmroman10-regular.otf',
-        'lmroman10-italic.otf',
-        'lmroman10-bold.otf',
-        'lmroman10-bolditalic.otf',
+        'fonts/sorts-mill-goudy/SortsMillGoudy-Regular.ttf',
+        'fonts/sorts-mill-goudy/SortsMillGoudy-Italic.ttf',
+        'fonts/sorts-mill-goudy/OFL.txt',
     ],
     'source-serif-4': [
-        'SourceSerif4-Regular.otf',
-        'SourceSerif4-It.otf',
-        'SourceSerif4-Bold.otf',
-        'SourceSerif4-BoldIt.otf',
-        'LICENSE.md',
-        'README.md',
+        'fonts/source-serif-4/SourceSerif4-Regular.otf',
+        'fonts/source-serif-4/SourceSerif4-It.otf',
+        'fonts/source-serif-4/SourceSerif4-Bold.otf',
+        'fonts/source-serif-4/SourceSerif4-BoldIt.otf',
+        'fonts/source-serif-4/LICENSE.md',
     ],
 };
 
@@ -442,44 +429,41 @@ export interface BundledFontInstallResult {
 export async function installBundledPandocFonts(
     plugin: RadialTimelinePlugin
 ): Promise<BundledFontInstallResult> {
-    const sourceRoot = MODULE_BUNDLED_FONT_SOURCE_PATH;
     const targetRoot = getPandocFontAbsoluteRoot(plugin);
     const installed: BundledFontFamilyStatus[] = [];
     const alreadyPresent: BundledFontFamilyStatus[] = [];
     const failed: string[] = [];
 
-    if (!sourceRoot || !targetRoot) {
+    if (!targetRoot) {
         for (const family of Object.keys(BUNDLED_PANDOC_FONT_FILES)) failed.push(family);
         return { installed, alreadyPresent, failed, targetRoot };
     }
 
-    for (const [family, files] of Object.entries(BUNDLED_PANDOC_FONT_FILES)) {
-        const sourceDir = path.join(sourceRoot, family);
+    for (const [family, assetKeys] of Object.entries(BUNDLED_PANDOC_FONT_FILES)) {
         const targetDir = path.join(targetRoot, family);
         try {
             fs.mkdirSync(targetDir, { recursive: true });
             let changed = false;
             const verifiedFiles: BundledFontFileStatus[] = [];
-            for (const file of files) {
-                const sourceFile = path.join(sourceDir, file);
+            for (const assetKey of assetKeys) {
+                const file = assetKey.slice(assetKey.lastIndexOf('/') + 1);
                 const targetFile = path.join(targetDir, file);
-                if (!fs.existsSync(sourceFile)) {
-                    throw new Error(`Missing bundled font asset: ${sourceFile}`);
-                }
-                const sourceSize = fs.statSync(sourceFile).size;
-                const needsCopy = !fs.existsSync(targetFile)
-                    || fs.statSync(targetFile).size !== sourceSize;
-                if (needsCopy) {
-                    fs.copyFileSync(sourceFile, targetFile);
+                // The authoritative size is the embedded asset's decoded
+                // length — no source file exists on disk to stat against.
+                const expectedSize = getEmbeddedAssetByteLength(assetKey);
+                const needsWrite = !fs.existsSync(targetFile)
+                    || fs.statSync(targetFile).size !== expectedSize;
+                if (needsWrite) {
+                    fs.writeFileSync(targetFile, getEmbeddedAssetBytes(assetKey));
                     changed = true;
                 }
-                // Verify the file on disk after copying (or after finding it
-                // already present) actually matches the source byte-for-byte
-                // in size. A short write or zero-byte file must never be
-                // reported as a successful install (GH #29).
+                // Verify the file on disk after writing (or after finding it
+                // already present) actually matches the embedded payload
+                // byte-for-byte in size. A short write or zero-byte file must
+                // never be reported as a successful install (GH #29).
                 const finalSize = fs.existsSync(targetFile) ? fs.statSync(targetFile).size : 0;
-                if (finalSize === 0 || finalSize !== sourceSize) {
-                    throw new Error(`Font file verification failed after copy: ${targetFile} (expected ${sourceSize} bytes, found ${finalSize})`);
+                if (finalSize === 0 || finalSize !== expectedSize) {
+                    throw new Error(`Font file verification failed after write: ${targetFile} (expected ${expectedSize} bytes, found ${finalSize})`);
                 }
                 if (isFontBinaryFile(file)) {
                     verifiedFiles.push({ file, sizeBytes: finalSize, absolutePath: targetFile });
@@ -502,6 +486,9 @@ export async function installBundledPandocFonts(
  */
 export const MANUSCRIPT_REFERENCE_DOCX = 'reference-manuscript.docx';
 
+/** Embedded payload the vault copy of {@link MANUSCRIPT_REFERENCE_DOCX} is written from. */
+const MANUSCRIPT_REFERENCE_DOCX_ASSET: EmbeddedAssetKey = 'pandoc/reference-manuscript.docx';
+
 export function getManuscriptReferenceDocxAbsolutePath(plugin: RadialTimelinePlugin): string | undefined {
     const basePath = getVaultBasePath(plugin);
     if (!basePath) return undefined;
@@ -509,29 +496,33 @@ export function getManuscriptReferenceDocxAbsolutePath(plugin: RadialTimelinePlu
 }
 
 /**
- * Copy the bundled reference.docx into the vault Pandoc folder. Same contract
+ * Write the bundled reference.docx into the vault Pandoc folder. Same contract
  * as installBundledPandocFonts: size-diff guard, overwrite on drift so shipped
  * style fixes propagate. Returns the absolute path Pandoc should use, or an
  * error string — DOCX export blocks (no silent fallback to Pandoc defaults).
+ *
+ * The document's bytes are embedded in `main.js`; before that it was read from
+ * `<plugin>/assets/pandoc/`, a folder Obsidian never installs, so every
+ * Community-Plugins user hit "Missing bundled asset" (GH #34).
  */
 export function ensureManuscriptReferenceDocxInstalled(
     plugin: RadialTimelinePlugin
 ): { path?: string; error?: string } {
-    const sourceRoot = MODULE_BUNDLED_PANDOC_ASSET_SOURCE_PATH;
     const target = getManuscriptReferenceDocxAbsolutePath(plugin);
-    if (!sourceRoot || !target) {
+    if (!target) {
         return { error: 'Pandoc asset paths are not available in this environment.' };
     }
-    const source = path.join(sourceRoot, MANUSCRIPT_REFERENCE_DOCX);
     try {
-        if (!fs.existsSync(source)) {
-            return { error: `Missing bundled asset: ${source}. Reinstall the plugin.` };
-        }
         fs.mkdirSync(path.dirname(target), { recursive: true });
-        const needsCopy = !fs.existsSync(target)
-            || fs.statSync(source).size !== fs.statSync(target).size;
-        if (needsCopy) {
-            fs.copyFileSync(source, target);
+        const expectedSize = getEmbeddedAssetByteLength(MANUSCRIPT_REFERENCE_DOCX_ASSET);
+        const needsWrite = !fs.existsSync(target)
+            || fs.statSync(target).size !== expectedSize;
+        if (needsWrite) {
+            fs.writeFileSync(target, getEmbeddedAssetBytes(MANUSCRIPT_REFERENCE_DOCX_ASSET));
+        }
+        const finalSize = fs.existsSync(target) ? fs.statSync(target).size : 0;
+        if (finalSize === 0 || finalSize !== expectedSize) {
+            return { error: `Reference document verification failed after write: ${target} (expected ${expectedSize} bytes, found ${finalSize})` };
         }
         return { path: target };
     } catch (e) {

@@ -38,6 +38,22 @@ export interface FontFiles {
     /** Synthetic-bold/slant tweaks (Sorts Mill Goudy ships regular+italic only). */
     autoFakeBold?: number;
     autoFakeSlant?: number;
+    /**
+     * Font file names as installed by a TeX distribution, resolved by
+     * kpathsea rather than by family name.
+     *
+     * Some fonts live in the texmf tree and are invisible to the OS font
+     * catalog, so `\setmainfont{Family Name}` fails even on a complete TeX
+     * install. Verified on macOS + TeX Live 2026: `\setmainfont{Latin Modern
+     * Roman}` errors with "the font cannot be found", while
+     * `\setmainfont{lmroman10-regular.otf}` compiles. When these are set the
+     * resolver emits the filename form, which needs neither a bundled copy
+     * nor an OS-registered font.
+     */
+    texUpright?: string;
+    texItalic?: string;
+    texBold?: string;
+    texBoldItalic?: string;
 }
 
 /** Spec font key → display name + file metadata. One row per supported font. */
@@ -55,11 +71,15 @@ export const FONT_REGISTRY: Record<string, { displayName: string; files: FontFil
     'latin-modern': {
         displayName: 'Latin Modern Roman',
         files: {
+            // Not bundled: Latin Modern ships with every TeX distribution, and
+            // a working TeX install is already a hard prerequisite for PDF
+            // export. Resolved from the texmf tree by filename.
             slug: 'latin-modern',
-            upright: 'lmroman10-regular.otf',
-            italic: 'lmroman10-italic.otf',
-            bold: 'lmroman10-bold.otf',
-            boldItalic: 'lmroman10-bolditalic.otf',
+            upright: '',
+            texUpright: 'lmroman10-regular.otf',
+            texItalic: 'lmroman10-italic.otf',
+            texBold: 'lmroman10-bold.otf',
+            texBoldItalic: 'lmroman10-bolditalic.otf',
         },
     },
     'source-serif': {
@@ -127,7 +147,14 @@ export function buildFontspecBlock(opts: BuildFontspecOptions): string {
         return renderPathBlock(displayName, opts.vaultFontDir, files, opts.letterSpacing);
     }
 
-    // 2. System: emit a plain \setmainfont. XeLaTeX resolves via OS fonts.
+    // 2. TeX distribution: emit the filename form so kpathsea resolves the
+    //    font from the texmf tree. Required for fonts that a TeX install
+    //    provides but never registers with the OS font catalog.
+    if (files.texUpright) {
+        return renderTexBlock(files, opts.letterSpacing);
+    }
+
+    // 3. System: emit a plain \setmainfont. XeLaTeX resolves via OS fonts.
     //    If missing, XeLaTeX fails at compile time with its own clear error.
     return renderSystemBlock(displayName, opts.letterSpacing);
 }
@@ -199,6 +226,36 @@ function needsTrailingComma(files: FontFiles): boolean {
             || files.autoFakeBold != null
             || files.autoFakeSlant != null,
     );
+}
+
+/**
+ * Emit the filename form for a TeX-distribution font: no `Path =`, so
+ * fontspec hands the name to kpathsea, which finds it in the texmf tree.
+ */
+function renderTexBlock(files: FontFiles, letterSpacing?: number): string {
+    const upright = files.texUpright;
+    if (!upright) {
+        throw new Error('renderTexBlock called without texUpright');
+    }
+    const companions = [
+        files.texItalic ? `  ItalicFont = ${files.texItalic}` : null,
+        files.texBold ? `  BoldFont = ${files.texBold}` : null,
+        files.texBoldItalic ? `  BoldItalicFont = ${files.texBoldItalic}` : null,
+    ].filter((line): line is string => line !== null);
+
+    const lines: string[] = [];
+    if (companions.length === 0) {
+        lines.push(`\\setmainfont{${upright}}`);
+    } else {
+        lines.push(`\\setmainfont{${upright}}[`);
+        lines.push(companions.join(' ,\n'));
+        lines.push(']');
+    }
+
+    if (typeof letterSpacing === 'number' && letterSpacing > 0) {
+        lines.push(`\\newfontface\\headerfont{${upright}}[LetterSpace=${letterSpacing.toFixed(1)}]`);
+    }
+    return lines.join('\n');
 }
 
 function renderSystemBlock(displayName: string, letterSpacing?: number): string {

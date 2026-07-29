@@ -23,6 +23,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # src/generated/embeddedAssets.ts is a gitignored build artifact, like
+      # styles.css below — main.js imports it, so tsc and eslint need it to
+      # exist. `npm ci` runs it via the prepare script; this step is the
+      # explicit, legible guarantee (and covers --ignore-scripts installs).
+      - name: Embed plugin assets (generate embeddedAssets.ts)
+        run: node scripts/embed-plugin-assets.mjs --quiet
+
       - name: Obsidian lint (enforced ratchet)
         run: npm run lint:obsidian
 

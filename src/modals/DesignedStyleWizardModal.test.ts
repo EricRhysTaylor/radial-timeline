@@ -151,19 +151,33 @@ describe('validateDesignedStyleSpec', () => {
     });
 
     // Strict font policy (Phase 1): the validation banner surfaces a warning
-    // when the body font isn't resolvable. We pick `latin-modern` because the
-    // wizard's font diagnostic for that key only reports `ok` when the bundled
-    // path has been registered AND the four lmroman OTF files exist on disk.
-    // In a fresh test runner with no `setLatinModernPath` call, the diagnostic
-    // returns `missing-bundled` deterministically.
+    // when the body font isn't resolvable. We pick `sorts-mill-goudy` because
+    // its diagnostic only reports `ok` once the bundled files have been
+    // written into the vault font folder. In a fresh test runner none exist
+    // and it is absent from the pinned catalog, so the diagnostic returns
+    // `missing-bundled` deterministically.
+    //
+    // NOT `latin-modern`: that key now resolves from the TeX distribution and
+    // is always `ok`, because the texmf tree provides it (GH #34).
     it('warns when the selected body font is not installed', () => {
+        const spec = freshSubmissionSpec();
+        spec.body.font = 'sorts-mill-goudy';
+        const result = validateDesignedStyleSpec(spec, 'Test');
+        const hasFontWarning = result.warnings.some(w =>
+            w.includes('Sorts Mill Goudy') && w.toLowerCase().includes('not installed')
+        );
+        expect(hasFontWarning).toBe(true);
+    });
+
+    // Complement to the above: a TeX-distribution font must NOT warn. Before
+    // the fix, dropping the bundled lmroman files would have left Latin Modern
+    // permanently reported as missing, hard-blocking PDF export with an
+    // "Install fonts" prompt that could never resolve it.
+    it('does not warn for a font provided by the TeX distribution', () => {
         const spec = freshSubmissionSpec();
         spec.body.font = 'latin-modern';
         const result = validateDesignedStyleSpec(spec, 'Test');
-        const hasFontWarning = result.warnings.some(w =>
-            w.includes('Latin Modern Roman') && w.toLowerCase().includes('not installed')
-        );
-        expect(hasFontWarning).toBe(true);
+        expect(result.warnings.some(w => w.includes('Latin Modern Roman'))).toBe(false);
     });
 });
 

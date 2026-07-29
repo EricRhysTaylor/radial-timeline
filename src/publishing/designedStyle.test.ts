@@ -249,7 +249,11 @@ describe('generateDesignedStyleTex', () => {
                 },
             }), { vaultFontDir: root });
 
-            expect(tex).toContain('\\setmainfont{Latin Modern Roman}');
+            // Latin Modern resolves from the TeX distribution by filename;
+            // the family-name form does not resolve on a stock TeX install
+            // (GH #34, PDF half).
+            expect(tex).toContain('\\setmainfont{lmroman10-regular.otf}');
+            expect(tex).not.toContain('\\setmainfont{Latin Modern Roman}');
             expect(tex).not.toContain('Path = ');
             expect(tex).not.toContain('\\PackageError{rt-font}');
         } finally {

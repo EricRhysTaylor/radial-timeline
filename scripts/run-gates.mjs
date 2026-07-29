@@ -59,6 +59,11 @@ const steps = [
         command: 'node check-css-duplicates.mjs --quiet',
     },
     {
+        id: 'shipped-assets',
+        label: 'Shipped assets',
+        command: 'node scripts/check-shipped-assets.mjs --quiet',
+    },
+    {
         id: 'build',
         label: 'Production build',
         command: 'npm run build-only',
@@ -141,8 +146,9 @@ const steps = [
 // release adds bundle-readiness checks; deep adds debt/drift/watch checks.
 const CORE = [
     'model-drift', 'api-features', 'model-coverage', 'css-duplicates-pre',
-    'build', 'quality', 'obsidian-review', 'lint-obsidian-enforced',
-    'lint-obsidian', 'css-drift', 'compliance', 'spec-coverage', 'tests',
+    'shipped-assets', 'build', 'quality', 'obsidian-review',
+    'lint-obsidian-enforced', 'lint-obsidian', 'css-drift', 'compliance',
+    'spec-coverage', 'tests',
 ];
 const RELEASE = [...CORE, 'i18n-release'];
 const PROFILES = {

@@ -8,11 +8,11 @@
 		"dev": "node scripts/check-social-ert-lock.mjs --quiet && node scripts/check-inquiry-ert-lock.mjs --quiet && node scripts/check-modal-settings-ert-lock.mjs --quiet && node scripts/check-timeline-chrome-ert-lock.mjs --quiet && node esbuild.config.mjs",
 		"prebackup": "node scripts/check-control-tower-reminders.mjs && node scripts/echo-branch.mjs backup --quiet",
 		"build": "node build-with-backup-check.mjs",
-		"build-only": "node show-scripts.mjs --quiet && node scripts/check-social-ert-lock.mjs --quiet && node scripts/check-inquiry-ert-lock.mjs --quiet && node scripts/check-modal-settings-ert-lock.mjs --quiet && node scripts/check-timeline-chrome-ert-lock.mjs --quiet && npx tsc --noEmit && node code-quality-check.mjs src/main.ts src/styles/settings.css --quiet && node check-css-duplicates.mjs --quiet && node esbuild.config.mjs production && node check-css-duplicates.mjs --quiet",
+		"build-only": "node show-scripts.mjs --quiet && node scripts/check-social-ert-lock.mjs --quiet && node scripts/check-inquiry-ert-lock.mjs --quiet && node scripts/check-modal-settings-ert-lock.mjs --quiet && node scripts/check-timeline-chrome-ert-lock.mjs --quiet && node scripts/embed-plugin-assets.mjs --quiet && node scripts/check-shipped-assets.mjs --quiet && npx tsc --noEmit && node code-quality-check.mjs src/main.ts src/styles/settings.css --quiet && node check-css-duplicates.mjs --quiet && node esbuild.config.mjs production && node check-css-duplicates.mjs --quiet",
 		"prerelease": "node scripts/echo-branch.mjs release --quiet && npm run review:obsidian && npm run lint:obsidian -- --quiet",
 		"release": "node release-script.mjs",
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
-		"prepare": "husky",
+		"prepare": "husky && node scripts/embed-plugin-assets.mjs --quiet",
 		"lint": "node code-quality-check.mjs --all",
 		"lint:obsidian": "node scripts/lint-obsidian-enforced.mjs",
 		"lint:obsidian:baseline": "node scripts/lint-obsidian-enforced.mjs --update-baseline",
@@ -67,7 +67,10 @@
 		"audit:codebase": "node -e \"console.log('Weekly Codebase Health Audit\\n  Prompt: docs/engineering/audits/prompts/weekly-codebase-health-audit.md\\n  Template: docs/engineering/audits/templates/codebase-health-report.md\\n  Save report to: docs/engineering/audits/reports/YYYY-MM-DD-codebase-health.md\\n\\nThis script does not run the audit automatically — paste the prompt into an IDE agent at the repo root.')\"",
 		"audit:architecture": "node -e \"console.log('Weekly Architecture Drift Audit\\n  Prompt: docs/engineering/audits/prompts/weekly-architecture-drift-audit.md\\n  Template: docs/engineering/audits/templates/architecture-drift-report.md\\n  Save report to: docs/engineering/audits/reports/YYYY-MM-DD-architecture-drift.md\\n\\nThis script does not run the audit automatically — paste the prompt into an IDE agent at the repo root.')\"",
 		"audit:obsidian": "node -e \"console.log('Biweekly Obsidian Ecosystem Audit\\n  Prompt: docs/engineering/audits/prompts/biweekly-obsidian-ecosystem-audit.md\\n  Template: docs/engineering/audits/templates/obsidian-ecosystem-report.md\\n  Save report to: docs/engineering/audits/reports/YYYY-MM-DD-obsidian-ecosystem.md\\n\\nThis script does not run the audit automatically — paste the prompt into an IDE agent at the repo root.')\"",
-		"audit:refactor-board": "node -e \"console.log('Monthly Refactor Recommendation Board\\n  Prompt: docs/engineering/audits/prompts/monthly-refactor-board.md\\n  Template: docs/engineering/audits/templates/refactor-board-report.md\\n  Save report to: docs/engineering/audits/reports/YYYY-MM-DD-refactor-board.md\\n\\nThis script does not run the board automatically — paste the prompt into an IDE agent at the repo root. The agent will synthesize the prior month of reports under docs/engineering/audits/reports/.')\""
+		"audit:refactor-board": "node -e \"console.log('Monthly Refactor Recommendation Board\\n  Prompt: docs/engineering/audits/prompts/monthly-refactor-board.md\\n  Template: docs/engineering/audits/templates/refactor-board-report.md\\n  Save report to: docs/engineering/audits/reports/YYYY-MM-DD-refactor-board.md\\n\\nThis script does not run the board automatically — paste the prompt into an IDE agent at the repo root. The agent will synthesize the prior month of reports under docs/engineering/audits/reports/.')\"",
+		"pretest": "node scripts/embed-plugin-assets.mjs --quiet",
+		"embed-assets": "node scripts/embed-plugin-assets.mjs",
+		"check-shipped-assets": "node scripts/check-shipped-assets.mjs"
 	},
 	"keywords": [
 		"obsidian",

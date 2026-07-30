@@ -21,8 +21,8 @@ import type { BookMigrationPlan, PartMarkerWrite } from './partMarkers';
  * and writing the sidecar belongs to the executor.
  */
 
-/** v3 added recorded write attempts and layout cleanup; no journal has shipped. */
-export const PART_MIGRATION_JOURNAL_SCHEMA = 3;
+/** v4 replaced the boolean attempt flag with a durable state; no journal has shipped. */
+export const PART_MIGRATION_JOURNAL_SCHEMA = 4;
 
 export const JOURNAL_FIELDS = [
     SHARED_PART_FIELD_KEY,
@@ -97,27 +97,62 @@ export function listSnapshotsEqual(a: JournalListSnapshot, b: JournalListSnapsho
         && a.values.every((value, index) => value === other.values[index]);
 }
 
-/** True when a snapshot holds author-authored text the migration must not displace. */
-function holdsAuthorText(snapshot: JournalSnapshot): boolean {
-    return snapshot.kind === 'string' && snapshot.value.trim().length > 0;
+/**
+ * True when a field holds something the author put there, which the migration
+ * must not displace.
+ *
+ * Any meaningful present scalar counts — not just text. A numeric or boolean
+ * `Part Epigraph` is malformed for its purpose, but it is still author-facing
+ * content someone typed, and silently replacing it with migrated text would
+ * destroy it just as surely as overwriting a sentence. Absent, null, and
+ * whitespace-only carry no intent and are free to fill.
+ */
+function holdsAuthorValue(snapshot: JournalSnapshot): boolean {
+    switch (snapshot.kind) {
+        case 'absent':
+        case 'null':
+            return false;
+        case 'string':
+            return snapshot.value.trim().length > 0;
+        case 'boolean':
+        case 'number':
+            return true;
+        case 'unsupported':
+            // Handled earlier by its own skip; never reached as an author check.
+            return true;
+    }
 }
 
 // ─── Scene records ──────────────────────────────────────────────────────
+
+/**
+ * How far a single mutation has got.
+ *
+ * A boolean cannot express the state that matters most. `applied: false`
+ * conflated "never attempted" with "attempted, then crashed before we could
+ * confirm" — and those demand opposite handling. In the crash window the author
+ * may have seen the write land and reverted it; re-applying because the flag
+ * still said false would overwrite that deliberate revert.
+ *
+ * `attempting` is persisted **before** the scene is touched, so the uncertain
+ * window is always visible afterwards. Only `planned` is automatically
+ * writable; `attempting` is unresolved and requires a recovery decision rather
+ * than a guess.
+ */
+export type WriteState = 'planned' | 'attempting' | 'confirmed';
 
 export interface JournalFieldChange {
     field: JournalFieldName;
     before: JournalSnapshot;
     after: JournalSnapshot;
     /**
-     * Set true only once the executor has confirmed this write landed.
-     *
      * Load-bearing for restore. Endpoint equality cannot establish provenance:
      * a field whose value matches `after` may have been written by the
      * migration, or typed independently by the author. Restoring on equality
      * alone would revert author content the migration never touched. Only a
-     * recorded attempt licenses undoing a write.
+     * `confirmed` attempt licenses undoing a write.
      */
-    applied: boolean;
+    state: WriteState;
 }
 
 export type SkipReason =
@@ -171,7 +206,8 @@ export interface JournalLayoutCleanupRecord {
         actEpigraphs: JournalListSnapshot;
         actEpigraphAttributions: JournalListSnapshot;
     };
-    applied: boolean;
+    /** Same three-state discipline as a scene write, and for the same reason. */
+    state: WriteState;
     /**
      * The author explicitly accepted that scene-side epigraphs which were
      * skipped or conflicting will not be migrated. Without acceptance the
@@ -322,7 +358,7 @@ export function changesForWrite(
             field: SHARED_PART_FIELD_KEY,
             before: markerCurrent,
             after: markerTarget,
-            applied: false,
+            state: 'planned',
         });
     }
 
@@ -336,13 +372,13 @@ export function changesForWrite(
             continue;
         }
         if (target === null) continue;
-        if (holdsAuthorText(current)) {
+        if (holdsAuthorValue(current)) {
             skipped.push({ field, reason: 'author-value-present' });
             continue;
         }
         if (snapshotsEqual(current, target)) continue;
 
-        changes.push({ field, before: current, after: target, applied: false });
+        changes.push({ field, before: current, after: target, state: 'planned' });
     }
 
     return { changes, skipped };
@@ -381,10 +417,28 @@ export function classifyFieldRecovery(
     return 'diverged';
 }
 
-/** True when the write still needs applying: never attempted, and untouched since. */
+/**
+ * True when the write may be applied automatically.
+ *
+ * Requires `planned` — never attempted — and a field still holding its recorded
+ * prior value. An `attempting` change is deliberately excluded: the write may
+ * have landed and been reverted by the author inside the crash window, and
+ * re-applying it would overwrite that deliberate revert.
+ */
 export function needsWrite(change: JournalFieldChange, current: JournalSnapshot): boolean {
-    if (change.applied) return false;
+    if (change.state !== 'planned') return false;
     return classifyFieldRecovery(change, current) === 'matches-origin';
+}
+
+/**
+ * True when this change cannot be resolved without asking.
+ *
+ * An interrupted attempt is genuinely unknown: whatever the disk now shows,
+ * nothing recorded distinguishes "never written" from "written then changed".
+ * The executor must surface it rather than pick.
+ */
+export function requiresRecoveryChoice(change: JournalFieldChange): boolean {
+    return change.state === 'attempting';
 }
 
 /**
@@ -396,7 +450,7 @@ export function needsWrite(change: JournalFieldChange, current: JournalSnapshot)
  * believing it was undoing its own work.
  */
 export function canRestore(change: JournalFieldChange, current: JournalSnapshot): boolean {
-    if (!change.applied) return false;
+    if (change.state !== 'confirmed') return false;
     return classifyFieldRecovery(change, current) === 'matches-target';
 }
 
@@ -430,27 +484,66 @@ export function classifySceneRecovery(
     return 'partial';
 }
 
+export type CleanupGateReason =
+    /** A change has not reached `confirmed`, or is stuck in an unresolved attempt. */
+    | 'scene-writes-outstanding'
+    /** A scene could not be re-read, so its current state is unknown. */
+    | 'scene-state-unknown'
+    /** A previously confirmed value is no longer on the scene. */
+    | 'scene-value-reverted'
+    /** Skipped epigraphs would be destroyed without the author agreeing. */
+    | 'skips-unaccepted';
+
 export type CleanupGate =
     | { allowed: true }
-    | { allowed: false; reason: 'scene-writes-outstanding' | 'skips-unaccepted' };
+    | { allowed: false; reason: CleanupGateReason; paths?: string[] };
 
 /**
  * Whether legacy epigraph storage may be cleared for a book.
  *
- * Cleanup destroys the last copy of anything the scenes did not take, so it
- * runs only after every corresponding scene change has actually landed, and
- * only when the author has accepted whatever was skipped. An unsupported or
- * unaccepted skipped epigraph keeps its legacy storage — the alternative is
- * deleting text that now exists nowhere.
+ * Cleanup destroys the last copy of anything the scenes did not take, so it is
+ * gated on the state of the vault **now**, not on what the journal remembers.
+ * A confirmation is a historical fact: the author can edit or delete a migrated
+ * value afterwards, and clearing the legacy source on the strength of a stale
+ * flag would erase the only remaining copy of an epigraph that is no longer on
+ * the scene either.
+ *
+ * Callers therefore pass current snapshots per scene path. A scene that could
+ * not be re-read blocks cleanup rather than being assumed intact — unknown is
+ * not the same as verified.
  */
 export function classifyCleanupGate(
-    book: Pick<JournalBookRecord, 'scenes' | 'epigraphCleanups'>
+    bookRecord: Pick<JournalBookRecord, 'scenes' | 'epigraphCleanups'>,
+    currentByPath: ReadonlyMap<string, Partial<Record<JournalFieldName, JournalSnapshot>>>
 ): CleanupGate {
-    const outstanding = book.scenes.some(scene => scene.changes.some(change => !change.applied));
-    if (outstanding) return { allowed: false, reason: 'scene-writes-outstanding' };
+    const outstanding = bookRecord.scenes
+        .filter(scene => scene.changes.some(change => change.state !== 'confirmed'))
+        .map(scene => scene.path);
+    if (outstanding.length > 0) {
+        return { allowed: false, reason: 'scene-writes-outstanding', paths: outstanding };
+    }
 
-    const hasSkips = book.scenes.some(scene => scene.skipped.length > 0);
-    const allAccepted = book.epigraphCleanups.every(cleanup => cleanup.accepted);
+    const unknown = bookRecord.scenes
+        .filter(scene => scene.changes.length > 0 && !currentByPath.has(scene.path))
+        .map(scene => scene.path);
+    if (unknown.length > 0) {
+        return { allowed: false, reason: 'scene-state-unknown', paths: unknown };
+    }
+
+    const reverted = bookRecord.scenes
+        .filter(scene => {
+            const current = currentByPath.get(scene.path) ?? {};
+            return scene.changes.some(change =>
+                classifyFieldRecovery(change, current[change.field] ?? ABSENT) !== 'matches-target'
+            );
+        })
+        .map(scene => scene.path);
+    if (reverted.length > 0) {
+        return { allowed: false, reason: 'scene-value-reverted', paths: reverted };
+    }
+
+    const hasSkips = bookRecord.scenes.some(scene => scene.skipped.length > 0);
+    const allAccepted = bookRecord.epigraphCleanups.every(entry => entry.accepted);
     if (hasSkips && !allAccepted) return { allowed: false, reason: 'skips-unaccepted' };
 
     return { allowed: true };
@@ -461,7 +554,7 @@ export function cleanupNeedsApply(
     cleanup: JournalLayoutCleanupRecord,
     current: { actEpigraphs: JournalListSnapshot; actEpigraphAttributions: JournalListSnapshot }
 ): boolean {
-    if (cleanup.applied) return false;
+    if (cleanup.state !== 'planned') return false;
     return listSnapshotsEqual(current.actEpigraphs, cleanup.before.actEpigraphs)
         && listSnapshotsEqual(current.actEpigraphAttributions, cleanup.before.actEpigraphAttributions);
 }
@@ -534,19 +627,25 @@ function parseListSnapshot(raw: unknown): JournalListSnapshot | null {
     return { kind: 'list', values: candidate.values as string[] };
 }
 
+function parseWriteState(raw: unknown): WriteState | null {
+    return raw === 'planned' || raw === 'attempting' || raw === 'confirmed' ? raw : null;
+}
+
 function parseChange(raw: unknown): JournalFieldChange | null {
     if (!raw || typeof raw !== 'object') return null;
     const candidate = raw as Record<string, unknown>;
     const field = candidate.field;
     if (typeof field !== 'string') return null;
     if (!(JOURNAL_FIELDS as readonly string[]).includes(field)) return null;
-    if (typeof candidate.applied !== 'boolean') return null;
+
+    const state = parseWriteState(candidate.state);
+    if (!state) return null;
 
     const before = parseSnapshot(candidate.before);
     const after = parseSnapshot(candidate.after);
     if (!before || !after) return null;
 
-    return { field: field as JournalFieldName, before, after, applied: candidate.applied };
+    return { field: field as JournalFieldName, before, after, state };
 }
 
 function parseSkip(raw: unknown): JournalFieldSkip | null {
@@ -584,8 +683,9 @@ function parseCleanup(raw: unknown): JournalLayoutCleanupRecord | null {
     if (!raw || typeof raw !== 'object') return null;
     const candidate = raw as Record<string, unknown>;
     if (typeof candidate.layoutId !== 'string') return null;
-    if (typeof candidate.applied !== 'boolean') return null;
     if (typeof candidate.accepted !== 'boolean') return null;
+    const state = parseWriteState(candidate.state);
+    if (!state) return null;
 
     const parseSide = (side: unknown) => {
         if (!side || typeof side !== 'object') return null;
@@ -604,7 +704,7 @@ function parseCleanup(raw: unknown): JournalLayoutCleanupRecord | null {
         layoutId: candidate.layoutId,
         before,
         after,
-        applied: candidate.applied,
+        state,
         accepted: candidate.accepted,
     };
 }

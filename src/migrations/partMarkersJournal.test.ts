@@ -14,6 +14,7 @@ import {
     getMigrationWrittenPaths,
     listSnapshotsEqual,
     needsWrite,
+    requiresRecoveryChoice,
     parseJournal,
     serializeJournal,
     snapshotList,
@@ -39,7 +40,7 @@ function derivePlan(writes: PartMarkerWrite[]): BookMigrationPlan {
 }
 
 function change(overrides: Partial<JournalFieldChange> = {}): JournalFieldChange {
-    return { field: 'Part', before: ABSENT, after: bool(true), applied: false, ...overrides };
+    return { field: 'Part', before: ABSENT, after: bool(true), state: 'planned', ...overrides };
 }
 
 function cleanup(overrides: Partial<JournalLayoutCleanupRecord> = {}): JournalLayoutCleanupRecord {
@@ -47,7 +48,7 @@ function cleanup(overrides: Partial<JournalLayoutCleanupRecord> = {}): JournalLa
         layoutId: 'layout',
         before: { actEpigraphs: snapshotList(['One.']), actEpigraphAttributions: LIST_ABSENT },
         after: { actEpigraphs: LIST_ABSENT, actEpigraphAttributions: LIST_ABSENT },
-        applied: false,
+        state: 'planned',
         accepted: false,
         ...overrides,
     };
@@ -99,14 +100,37 @@ describe('snapshots', () => {
 });
 
 describe('fingerprintPlan', () => {
-    it('is order-independent but sensitive to numbering and values', () => {
+    it('is stable and independent of the order writes arrive in', () => {
         const a = write({ path: 'Books/A/1.md' });
         const b = write({ path: 'Books/A/2.md', partNumber: 2, actNumber: 2 });
         expect(fingerprintPlan(derivePlan([a, b]))).toBe(fingerprintPlan(derivePlan([b, a])));
+    });
+
+    it('changes when the structural numbering changes', () => {
         expect(fingerprintPlan(derivePlan([write({ partNumber: 1 })])))
             .not.toBe(fingerprintPlan(derivePlan([write({ partNumber: 2 })])));
+    });
+
+    it('changes when the act a boundary opens changes', () => {
+        expect(fingerprintPlan(derivePlan([write({ actNumber: 1 })])))
+            .not.toBe(fingerprintPlan(derivePlan([write({ actNumber: 2 })])));
+    });
+
+    it('changes when a target path changes', () => {
+        expect(fingerprintPlan(derivePlan([write()])))
+            .not.toBe(fingerprintPlan(derivePlan([write({ path: 'Books/A/9.md' })])));
+    });
+
+    it('changes when epigraph text changes', () => {
         expect(fingerprintPlan(derivePlan([write({ quote: 'One.' })])))
             .not.toBe(fingerprintPlan(derivePlan([write({ quote: 'Two.' })])));
+        expect(fingerprintPlan(derivePlan([write({ attribution: 'A' })])))
+            .not.toBe(fingerprintPlan(derivePlan([write({ attribution: 'B' })])));
+    });
+
+    it('distinguishes an untitled marker from one titled "true"', () => {
+        expect(fingerprintPlan(derivePlan([write({ title: true })])))
+            .not.toBe(fingerprintPlan(derivePlan([write({ title: 'true' })])));
     });
 
     it('distinguishes two blocked plans that differ in reason or scenes', () => {
@@ -151,7 +175,7 @@ describe('changesForWrite — adds structure, never removes author content', () 
 
         expect(skipped).toEqual([]);
         expect(changes.map(entry => entry.field)).toEqual(['Part', 'Part Epigraph', 'Part Epigraph By']);
-        expect(changes.every(entry => entry.applied === false)).toBe(true);
+        expect(changes.every(entry => entry.state === 'planned')).toBe(true);
     });
 
     it('leaves an epigraph field alone when the migration has nothing for it', () => {
@@ -195,6 +219,26 @@ describe('changesForWrite — adds structure, never removes author content', () 
         expect(skipped).toEqual([{ field: 'Part', reason: 'unsupported-value' }]);
     });
 
+    it('does not overwrite a non-string value the author put in an epigraph field', () => {
+        // Malformed for its purpose, but still something someone typed.
+        // Replacing it silently destroys it as surely as overwriting a sentence.
+        for (const authored of [{ kind: 'number', value: 1 } as const, bool(false)]) {
+            const { changes, skipped } = changesForWrite(
+                write({ quote: 'From layout options' }),
+                { 'Part Epigraph': authored }
+            );
+            expect(changes.map(entry => entry.field)).toEqual(['Part']);
+            expect(skipped).toEqual([{ field: 'Part Epigraph', reason: 'author-value-present' }]);
+        }
+    });
+
+    it('still fills an epigraph field holding null or blank text', () => {
+        expect(changesForWrite(write({ quote: 'q' }), { 'Part Epigraph': { kind: 'null' } })
+            .changes.map(entry => entry.field)).toEqual(['Part', 'Part Epigraph']);
+        expect(changesForWrite(write({ quote: 'q' }), { 'Part Epigraph': str('  ') })
+            .changes.map(entry => entry.field)).toEqual(['Part', 'Part Epigraph']);
+    });
+
     it('overwrites a marker the author left blank, but not one already correct', () => {
         expect(changesForWrite(write(), { Part: str('') }).changes).toHaveLength(1);
         expect(changesForWrite(write(), { Part: bool(true) }).changes).toEqual([]);
@@ -209,22 +253,34 @@ describe('recovery decisions consult the recorded attempt', () => {
         expect(classifyFieldRecovery(change({ before: bool(true) }), bool(true))).toBe('indeterminate');
     });
 
-    it('needs a write only when never attempted and still untouched', () => {
-        expect(needsWrite(change({ applied: false }), ABSENT)).toBe(true);
-        expect(needsWrite(change({ applied: true }), ABSENT)).toBe(false);
-        expect(needsWrite(change({ applied: false }), str('edited'))).toBe(false);
+    it('writes only what was planned and is still untouched', () => {
+        expect(needsWrite(change({ state: 'planned' }), ABSENT)).toBe(true);
+        expect(needsWrite(change({ state: 'confirmed' }), ABSENT)).toBe(false);
+        expect(needsWrite(change({ state: 'planned' }), str('edited'))).toBe(false);
     });
 
-    it('refuses to restore a value the migration never wrote', () => {
-        // The decisive case: disk matches the target, but no attempt was
-        // recorded — the author typed it. Reverting would delete author content
-        // while believing it was undoing our own work.
-        expect(canRestore(change({ applied: false }), bool(true))).toBe(false);
-        expect(canRestore(change({ applied: true }), bool(true))).toBe(true);
+    it('never re-applies an interrupted attempt', () => {
+        // The crash window is the dangerous case: the author may have seen the
+        // write land and reverted it. A boolean flag could not tell that apart
+        // from "never written", so re-applying would overwrite a deliberate
+        // revert. `attempting` refuses to guess.
+        expect(needsWrite(change({ state: 'attempting' }), ABSENT)).toBe(false);
+        expect(requiresRecoveryChoice(change({ state: 'attempting' }))).toBe(true);
+        expect(requiresRecoveryChoice(change({ state: 'planned' }))).toBe(false);
+        expect(requiresRecoveryChoice(change({ state: 'confirmed' }))).toBe(false);
+    });
+
+    it('refuses to restore a value the migration never confirmed writing', () => {
+        // Disk matches the target, but no confirmed attempt — the author typed
+        // it. Reverting would delete author content while believing it was
+        // undoing our own work.
+        expect(canRestore(change({ state: 'planned' }), bool(true))).toBe(false);
+        expect(canRestore(change({ state: 'attempting' }), bool(true))).toBe(false);
+        expect(canRestore(change({ state: 'confirmed' }), bool(true))).toBe(true);
     });
 
     it('refuses to restore a field edited since the write landed', () => {
-        expect(canRestore(change({ applied: true }), str('author edited'))).toBe(false);
+        expect(canRestore(change({ state: 'confirmed' }), str('author edited'))).toBe(false);
     });
 });
 
@@ -249,48 +305,84 @@ describe('classifySceneRecovery', () => {
     });
 });
 
-describe('cleanup gating', () => {
-    it('refuses while any scene write is outstanding', () => {
-        // Cleanup destroys the last copy of anything the scenes did not take.
+describe('cleanup gating — verifies the vault now, not what the journal remembers', () => {
+    const confirmed = change({ state: 'confirmed' });
+    const onDisk = new Map([['p', { Part: bool(true) }]]);
+
+    it('refuses while any scene write is not confirmed', () => {
         const target = book({
-            scenes: [{ path: 'p', changes: [change({ applied: false })], skipped: [] }],
+            scenes: [{ path: 'p', changes: [change({ state: 'planned' })], skipped: [] }],
             epigraphCleanups: [cleanup({ accepted: true })],
         });
-        expect(classifyCleanupGate(target)).toEqual({
-            allowed: false, reason: 'scene-writes-outstanding',
+        expect(classifyCleanupGate(target, onDisk)).toEqual({
+            allowed: false, reason: 'scene-writes-outstanding', paths: ['p'],
+        });
+    });
+
+    it('refuses while an attempt is unresolved', () => {
+        const target = book({
+            scenes: [{ path: 'p', changes: [change({ state: 'attempting' })], skipped: [] }],
+            epigraphCleanups: [cleanup({ accepted: true })],
+        });
+        expect(classifyCleanupGate(target, onDisk).allowed).toBe(false);
+    });
+
+    it('refuses when a scene could not be re-read', () => {
+        // Unknown is not the same as verified.
+        const target = book({
+            scenes: [{ path: 'p', changes: [confirmed], skipped: [] }],
+            epigraphCleanups: [cleanup({ accepted: true })],
+        });
+        expect(classifyCleanupGate(target, new Map())).toEqual({
+            allowed: false, reason: 'scene-state-unknown', paths: ['p'],
+        });
+    });
+
+    it('refuses when a confirmed value is no longer on the scene', () => {
+        // The decisive case: confirmation is a historical fact, and the author
+        // can revert a migrated value afterwards. Clearing the legacy source on
+        // a stale flag would erase the only remaining copy.
+        const target = book({
+            scenes: [{ path: 'p', changes: [confirmed], skipped: [] }],
+            epigraphCleanups: [cleanup({ accepted: true })],
+        });
+        expect(classifyCleanupGate(target, new Map([['p', {}]]))).toEqual({
+            allowed: false, reason: 'scene-value-reverted', paths: ['p'],
         });
     });
 
     it('refuses while a skipped epigraph has not been accepted', () => {
-        // The legacy storage is the only surviving copy of a skipped epigraph.
         const target = book({
             scenes: [{
                 path: 'p',
-                changes: [change({ applied: true })],
+                changes: [confirmed],
                 skipped: [{ field: 'Part Epigraph', reason: 'author-value-present' }],
             }],
             epigraphCleanups: [cleanup({ accepted: false })],
         });
-        expect(classifyCleanupGate(target)).toEqual({ allowed: false, reason: 'skips-unaccepted' });
+        expect(classifyCleanupGate(target, onDisk)).toEqual({
+            allowed: false, reason: 'skips-unaccepted',
+        });
     });
 
-    it('allows once writes have landed and skips are accepted', () => {
+    it('allows once every write is confirmed, still present, and skips accepted', () => {
         const target = book({
             scenes: [{
                 path: 'p',
-                changes: [change({ applied: true })],
+                changes: [confirmed],
                 skipped: [{ field: 'Part Epigraph', reason: 'unsupported-value' }],
             }],
             epigraphCleanups: [cleanup({ accepted: true })],
         });
-        expect(classifyCleanupGate(target)).toEqual({ allowed: true });
+        expect(classifyCleanupGate(target, onDisk)).toEqual({ allowed: true });
     });
 
-    it('allows a book with no skips and no outstanding writes', () => {
-        expect(classifyCleanupGate(book({
-            scenes: [{ path: 'p', changes: [change({ applied: true })], skipped: [] }],
+    it('does not demand snapshots for scenes with nothing planned', () => {
+        const target = book({
+            scenes: [{ path: 'untouched', changes: [], skipped: [] }],
             epigraphCleanups: [cleanup()],
-        }))).toEqual({ allowed: true });
+        });
+        expect(classifyCleanupGate(target, new Map())).toEqual({ allowed: true });
     });
 });
 
@@ -302,7 +394,7 @@ describe('cleanupNeedsApply', () => {
     });
 
     it('does not re-apply a cleanup already recorded as done', () => {
-        expect(cleanupNeedsApply(cleanup({ applied: true }), {
+        expect(cleanupNeedsApply(cleanup({ state: 'confirmed' }), {
             actEpigraphs: snapshotList(['One.']), actEpigraphAttributions: LIST_ABSENT,
         })).toBe(false);
     });
@@ -339,10 +431,10 @@ describe('parseJournal — fails closed at every level', () => {
         preExistingMarkerPaths: ['Books/A/author.md'],
         scenes: [{
             path: 'Books/A/1.md',
-            changes: [change({ applied: true })],
+            changes: [change({ state: 'confirmed' })],
             skipped: [{ field: 'Part Epigraph', reason: 'author-value-present' }],
         }],
-        epigraphCleanups: [cleanup({ accepted: true, applied: true })],
+        epigraphCleanups: [cleanup({ accepted: true, state: 'confirmed' })],
     });
 
     it('round-trips through serialization', () => {
@@ -381,19 +473,28 @@ describe('parseJournal — fails closed at every level', () => {
                 skipped: [],
             }],
         };
+        const badState = {
+            ...goodBook,
+            scenes: [{
+                path: 'p',
+                changes: [{ field: 'Part', before: ABSENT, after: bool(true), state: 'done' }],
+                skipped: [],
+            }],
+        };
         expect(parseJournal(journal({ books: [missingApplied] } as never))).toBeNull();
+        expect(parseJournal(journal({ books: [badState] } as never))).toBeNull();
     });
 
     it('rejects a malformed change, skip, or cleanup record', () => {
         const badChange = {
             ...goodBook,
-            scenes: [{ path: 'p', changes: [{ field: 'Synopsis', before: ABSENT, after: bool(true), applied: false }], skipped: [] }],
+            scenes: [{ path: 'p', changes: [{ field: 'Synopsis', before: ABSENT, after: bool(true), state: 'planned' }], skipped: [] }],
         };
         const badSkip = {
             ...goodBook,
             scenes: [{ path: 'p', changes: [], skipped: [{ field: 'Part', reason: 'because' }] }],
         };
-        const badCleanup = { ...goodBook, epigraphCleanups: [{ layoutId: 'l', applied: false }] };
+        const badCleanup = { ...goodBook, epigraphCleanups: [{ layoutId: 'l', state: 'planned' }] };
 
         expect(parseJournal(journal({ books: [badChange] } as never))).toBeNull();
         expect(parseJournal(journal({ books: [badSkip] } as never))).toBeNull();
@@ -405,7 +506,7 @@ describe('parseJournal — fails closed at every level', () => {
             books: [book({
                 scenes: [{
                     path: 'p',
-                    changes: [change({ before: unsupported, applied: false })],
+                    changes: [change({ before: unsupported, state: 'planned' })],
                     skipped: [],
                 }],
             })],

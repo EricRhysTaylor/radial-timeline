@@ -145,6 +145,7 @@ describe('the ordering contract', () => {
             `write:${PATH}`,       // 2. mutate
             `read:${PATH}`,        // 3. verify against the vault, not the return value
             'save:confirmed',      // 4. only now claim success
+            'save:confirmed',      // book stamped applied — nothing outstanding
         ]);
     });
 
@@ -155,6 +156,33 @@ describe('the ordering contract', () => {
         expect(report.scenes).toEqual([{ path: PATH, status: 'written', fields: ['Part'] }]);
         expect(harness.bookRecord.scenes[0].changes[0].state).toBe('confirmed');
         expect(harness.disk.Part).toEqual(bool(true));
+    });
+
+    it('stamps the book applied once nothing is outstanding', async () => {
+        // Without the stamp the promised complete -> no-op state is unreachable
+        // and every later run re-reads a finished book.
+        const harness = makeHarness();
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.bookStatus).toBe('applied');
+        expect(harness.bookRecord.status).toBe('applied');
+    });
+
+    it('does no work at all for a book already stamped applied', async () => {
+        const harness = makeHarness({ bookRecord: { status: 'applied' } });
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.bookStatus).toBe('applied');
+        expect(report.scenes).toEqual([]);
+        expect(harness.ops).toEqual([]);
+    });
+
+    it('does not stamp a book whose work did not settle', async () => {
+        const harness = makeHarness({ swallowWrite: true });
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.scenes[0].status).toBe('failed');
+        expect(report.bookStatus).toBe('planned');
     });
 });
 
@@ -196,13 +224,62 @@ describe('refusing to act', () => {
         expect(harness.bookRecord.scenes[0].changes[0].state).toBe('planned');
     });
 
-    it('does nothing when the scene already holds the intended value', async () => {
+    it('will not claim a value it never wrote, even when it matches the target', async () => {
+        // No attempt was recorded, so this is most likely an author edit after
+        // preflight. Auto-confirming would fabricate provenance; staying silent
+        // would strand the book, since the cleanup gate rightly keeps treating
+        // it as outstanding.
         const harness = makeHarness({ disk: { Part: bool(true) } });
 
         const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
 
-        expect(report.scenes[0].status).toBe('already-current');
+        expect(report.scenes[0].status).toBe('unattributed');
         expect(harness.ops).toEqual([`read:${PATH}`]);
+        expect(harness.bookRecord.scenes[0].changes[0].state).toBe('planned');
+        expect(report.bookStatus).not.toBe('applied');
+    });
+
+    it('reports a confirmed, still-present field as current', async () => {
+        const harness = makeHarness({
+            disk: { Part: bool(true) },
+            bookRecord: {
+                scenes: [{ path: PATH, changes: [change({ state: 'confirmed' })], skipped: [] }],
+            },
+        });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.scenes[0].status).toBe('already-current');
+        expect(report.bookStatus).toBe('applied');
+    });
+
+    it('reports a confirmed field the author later edited', async () => {
+        // Divergence was only checked for `planned` changes, so this scene came
+        // back as "already-current" — simply false.
+        const harness = makeHarness({
+            disk: { Part: str('Author renamed this') },
+            bookRecord: {
+                scenes: [{ path: PATH, changes: [change({ state: 'confirmed' })], skipped: [] }],
+            },
+        });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.scenes[0].status).toBe('diverged');
+        expect(harness.ops).toEqual([`read:${PATH}`]);
+    });
+
+    it('reports a confirmed field the author reverted', async () => {
+        const harness = makeHarness({
+            disk: {},
+            bookRecord: {
+                scenes: [{ path: PATH, changes: [change({ state: 'confirmed' })], skipped: [] }],
+            },
+        });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.scenes[0].status).toBe('diverged');
     });
 });
 
@@ -243,6 +320,19 @@ describe('failure leaves an honest record', () => {
         expect(harness.bookRecord.scenes[0].changes[0].state).toBe('attempting');
     });
 
+    it('does not call a write successful when the confirmation was not recorded', async () => {
+        // The vault is correct but the durable journal still reads `attempting`,
+        // so the next run will need a recovery decision. Reporting success here
+        // would bury that.
+        const harness = makeHarness({ failSave: 2 });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.scenes[0].status).toBe('written-unconfirmed');
+        expect(harness.disk.Part).toEqual(bool(true));
+        expect(report.bookStatus).not.toBe('applied');
+    });
+
     it('reports an unreadable scene without touching it', async () => {
         const harness = makeHarness({ failRead: true });
 
@@ -276,8 +366,25 @@ describe('layout cleanup', () => {
             'layout-write:layout',        // 2. mutate
             'layout-read:layout',         // 3. verify
             'save:confirmed+confirmed',   // 4. confirm
+            'save:confirmed+confirmed',   // book stamped applied
         ]);
         expect(harness.layout().actEpigraphs).toEqual(LIST_ABSENT);
+    });
+
+    it('does not call cleanup successful when the confirmation was not recorded', async () => {
+        // Storage was cleared and verified, but the durable journal still reads
+        // `attempting`. The next run must resolve that, so this is not success.
+        const harness = makeHarness({
+            disk: { Part: bool(true) },
+            bookRecord: withCleanup(),
+            failSave: 2,
+        });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.cleanups[0].status).toBe('cleared-unconfirmed');
+        expect(harness.layout().actEpigraphs).toEqual(LIST_ABSENT);
+        expect(report.bookStatus).not.toBe('applied');
     });
 
     it('refuses when a migrated value is no longer on its scene', async () => {

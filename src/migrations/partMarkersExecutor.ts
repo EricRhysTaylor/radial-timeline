@@ -10,6 +10,7 @@ import {
     requiresRecoveryChoice,
     snapshotsEqual,
     type JournalBookRecord,
+    type JournalBookStatus,
     type JournalFieldName,
     type JournalLayoutCleanupRecord,
     type JournalListSnapshot,
@@ -68,13 +69,24 @@ export interface LayoutEpigraphPort {
 }
 
 export type SceneOutcomeStatus =
-    /** Every planned field was written and verified. */
+    /** Every planned field was written, verified, and durably confirmed. */
     | 'written'
-    /** Nothing needed doing; the scene already held the intended values. */
+    /**
+     * The write landed and verified, but the journal could not record the
+     * confirmation. The vault is correct; the record is not, and the next run
+     * will see an unresolved attempt.
+     */
+    | 'written-unconfirmed'
+    /** Nothing needed doing; every field is confirmed and still on the scene. */
     | 'already-current'
+    /**
+     * A field already holds its target value with no attempt recorded, so the
+     * migration cannot claim it. Most likely an author edit after preflight.
+     */
+    | 'unattributed'
     /** An unresolved earlier attempt: the executor must not decide this alone. */
     | 'needs-choice'
-    /** A journalled field was edited outside the migration. */
+    /** A journalled field no longer holds what the record says it should. */
     | 'diverged'
     /** The mutation threw, or the value did not survive verification. */
     | 'failed';
@@ -86,16 +98,30 @@ export interface SceneOutcome {
     detail?: string;
 }
 
+export type CleanupOutcomeStatus =
+    | 'cleared'
+    /** Storage was cleared and verified, but the confirmation was not recorded. */
+    | 'cleared-unconfirmed'
+    | 'already-clear'
+    | 'blocked'
+    | 'failed';
+
 export interface CleanupOutcome {
     layoutId: string;
-    status: 'cleared' | 'already-clear' | 'blocked' | 'failed';
+    status: CleanupOutcomeStatus;
     detail?: string;
 }
+
+/** Outcomes that leave nothing outstanding for this book. */
+const SETTLED_SCENE: ReadonlySet<SceneOutcomeStatus> = new Set(['written', 'already-current']);
+const SETTLED_CLEANUP: ReadonlySet<CleanupOutcomeStatus> = new Set(['cleared', 'already-clear']);
 
 export interface ExecutionReport {
     bookId: string;
     scenes: SceneOutcome[];
     cleanups: CleanupOutcome[];
+    /** The book's status after this run — `applied` only when everything settled. */
+    bookStatus: JournalBookStatus;
     /** Set when the run stopped before doing anything. */
     aborted?: { reason: 'plan-drift'; detail: string };
 }
@@ -128,7 +154,17 @@ export async function executeBookMigration(
     options: ExecuteBookOptions
 ): Promise<ExecutionReport> {
     const { journal, bookRecord, plan, store, scenes, layouts } = options;
-    const report: ExecutionReport = { bookId: bookRecord.bookId, scenes: [], cleanups: [] };
+    const report: ExecutionReport = {
+        bookId: bookRecord.bookId,
+        scenes: [],
+        cleanups: [],
+        bookStatus: bookRecord.status,
+    };
+
+    // A stamped book is done. Re-reading its scenes on every run would be
+    // wasted work and would risk reporting later author edits as migration
+    // business, which they are not.
+    if (bookRecord.status === 'applied') return report;
 
     const fresh = fingerprintPlan(plan);
     if (fresh !== bookRecord.planFingerprint) {
@@ -146,6 +182,23 @@ export async function executeBookMigration(
 
     report.cleanups.push(...await applyCleanups({ journal, bookRecord, store, scenes, layouts }));
 
+    // ── Stamp only when nothing is outstanding ────────────────────────
+    // `written-unconfirmed` deliberately fails this test: the vault is right
+    // but the journal is not, and stamping would bury an attempt the next run
+    // still has to resolve.
+    const settled = report.scenes.every(outcome => SETTLED_SCENE.has(outcome.status))
+        && report.cleanups.every(outcome => SETTLED_CLEANUP.has(outcome.status));
+
+    if (settled) {
+        bookRecord.status = 'applied';
+        if (!await trySave(store, journal)) {
+            // The work is done but the stamp is not durable; next run re-reads
+            // and settles again, which is harmless. Report what is true.
+            bookRecord.status = 'planned';
+        }
+    }
+
+    report.bookStatus = bookRecord.status;
     return report;
 }
 
@@ -178,17 +231,51 @@ async function applyScene(
         return { path: record.path, status: 'failed', fields, detail: describeError(error) };
     }
 
-    const diverged = record.changes.filter(change =>
-        change.state === 'planned'
-        && classifyFieldRecovery(change, current[change.field] ?? ABSENT) === 'diverged'
-    );
+    const verdictFor = (change: typeof record.changes[number]) =>
+        classifyFieldRecovery(change, current[change.field] ?? ABSENT);
+
+    // Divergence is checked for every state, not just `planned`. A confirmed
+    // field whose value the author later changed is not "current" — reporting
+    // it as such would be simply false, and it must never be silently rewritten.
+    const diverged = record.changes.filter(change => change.state === 'confirmed'
+        ? verdictFor(change) !== 'matches-target'
+        : verdictFor(change) === 'diverged');
     if (diverged.length > 0) {
         return {
             path: record.path,
             status: 'diverged',
             fields: diverged.map(change => change.field),
-            detail: 'These fields hold neither the value recorded before the migration nor the one '
-                + 'it meant to write, so someone else edited them.',
+            detail: 'These fields no longer hold what the record says they should, '
+                + 'so they were edited outside the migration.',
+        };
+    }
+
+    const undecidable = record.changes.filter(change => verdictFor(change) === 'indeterminate');
+    if (undecidable.length > 0) {
+        return {
+            path: record.path,
+            status: 'needs-choice',
+            fields: undecidable.map(change => change.field),
+            detail: 'The recorded before and after values are identical here, so no observation '
+                + 'can tell whether this was applied.',
+        };
+    }
+
+    // A planned field already holding its target has no recorded attempt behind
+    // it, so the migration cannot claim it — most likely the author edited the
+    // scene after preflight. Auto-confirming would fabricate provenance, and
+    // leaving it silent would strand the book: the cleanup gate rightly keeps
+    // treating it as outstanding.
+    const unattributed = record.changes.filter(change =>
+        change.state === 'planned' && verdictFor(change) === 'matches-target'
+    );
+    if (unattributed.length > 0) {
+        return {
+            path: record.path,
+            status: 'unattributed',
+            fields: unattributed.map(change => change.field),
+            detail: 'These fields already hold the intended value, but the migration never wrote '
+                + 'them. Accept them as-is or re-plan; they will not be claimed automatically.',
         };
     }
 
@@ -223,7 +310,7 @@ async function applyScene(
         );
     } catch (error) {
         // State stays `attempting`: the mutation may have partially landed.
-        await saveQuietly(store, journal);
+        await trySave(store, journal);
         return {
             path: record.path,
             status: 'failed',
@@ -237,7 +324,7 @@ async function applyScene(
     try {
         verified = await scenes.read(record.path);
     } catch (error) {
-        await saveQuietly(store, journal);
+        await trySave(store, journal);
         return {
             path: record.path,
             status: 'failed',
@@ -254,7 +341,7 @@ async function applyScene(
     for (const change of pending) {
         if (!unverified.includes(change)) change.state = 'confirmed';
     }
-    await saveQuietly(store, journal);
+    const recorded = await trySave(store, journal);
 
     if (unverified.length > 0) {
         return {
@@ -262,6 +349,19 @@ async function applyScene(
             status: 'failed',
             fields: unverified.map(change => change.field),
             detail: 'The write reported success but the value is not on disk.',
+        };
+    }
+
+    if (!recorded) {
+        // The vault is correct and the in-memory state says so, but the durable
+        // journal still reads `attempting`. Calling this success would bury an
+        // unresolved attempt that the next run must handle.
+        return {
+            path: record.path,
+            status: 'written-unconfirmed',
+            fields: pending.map(change => change.field),
+            detail: 'The values were written and verified, but the journal could not record the '
+                + 'confirmation. The next run will treat these as an interrupted attempt.',
         };
     }
 
@@ -354,7 +454,7 @@ async function applyCleanup(
     try {
         await layouts.write(cleanup.layoutId, cleanup.after);
     } catch (error) {
-        await saveQuietly(store, journal);
+        await trySave(store, journal);
         return { layoutId: cleanup.layoutId, status: 'failed', detail: describeError(error) };
     }
 
@@ -362,7 +462,7 @@ async function applyCleanup(
     try {
         verified = await layouts.read(cleanup.layoutId);
     } catch (error) {
-        await saveQuietly(store, journal);
+        await trySave(store, journal);
         return {
             layoutId: cleanup.layoutId,
             status: 'failed',
@@ -374,29 +474,41 @@ async function applyCleanup(
         && listSnapshotsEqual(verified.actEpigraphAttributions, cleanup.after.actEpigraphAttributions);
 
     if (matches) cleanup.state = 'confirmed';
-    await saveQuietly(store, journal);
+    const recorded = await trySave(store, journal);
 
-    return matches
-        ? { layoutId: cleanup.layoutId, status: 'cleared' }
-        : {
+    if (!matches) {
+        return {
             layoutId: cleanup.layoutId,
             status: 'failed',
             detail: 'The cleanup reported success but the stored epigraphs are still present.',
         };
+    }
+
+    return recorded
+        ? { layoutId: cleanup.layoutId, status: 'cleared' }
+        : {
+            layoutId: cleanup.layoutId,
+            status: 'cleared-unconfirmed',
+            detail: 'The stored epigraphs were cleared and verified, but the journal could not '
+                + 'record the confirmation. The next run will treat this as an interrupted attempt.',
+        };
 }
 
 /**
- * Save without letting a journal failure mask the vault outcome being reported.
+ * Save, reporting failure rather than throwing.
  *
- * The in-memory state is already correct; a failed save means the next run sees
- * an older journal, which the three-way check handles. Throwing here would hide
- * what actually happened to the author's files.
+ * A journal failure must not mask the vault outcome — the author's files did
+ * what they did, and hiding that behind a bookkeeping error helps nobody. But
+ * it must not be silently discarded either: an unrecorded confirmation leaves
+ * the durable journal reading `attempting`, which the next run has to resolve.
+ * Callers surface it as an `-unconfirmed` outcome and withhold completion.
  */
-async function saveQuietly(store: JournalStore, journal: PartMigrationJournal): Promise<void> {
+async function trySave(store: JournalStore, journal: PartMigrationJournal): Promise<boolean> {
     try {
         await store.save(journal);
+        return true;
     } catch {
-        // Intentionally swallowed — see above.
+        return false;
     }
 }
 

@@ -131,9 +131,30 @@ describe('assertScenesWithinBook', () => {
         expect(() => assertScenesWithinBook(book, [`${BOOK_FOLDER}/1 A.md`])).not.toThrow();
     });
 
-    it('imposes no constraint when the book has no source folder', () => {
+    it('rejects every scene when the book has no source folder', () => {
+        // Matches the export: resolveBookScopedMarkdownFiles yields ZERO files
+        // for a book with no source path, so such a book has nothing to export
+        // and nothing to migrate. Treating empty as "no constraint" would let
+        // the migration plan writes across a vault the export never touches.
         const book = makeBook({ sourceFolder: '' });
-        expect(() => assertScenesWithinBook(book, ['Anywhere/1 A.md'])).not.toThrow();
+        expect(() => assertScenesWithinBook(book, ['Anywhere/1 A.md']))
+            .toThrow(/outside its source folder \(none set\)/);
+    });
+
+    it('accepts an empty scene list for a book with no source folder', () => {
+        // Nothing in scope is not the same as an error; only supplied strays are.
+        expect(() => assertScenesWithinBook(makeBook({ sourceFolder: '' }), [])).not.toThrow();
+    });
+
+    it('rejects a vault-root scope, which is not an explicit folder', () => {
+        for (const folder of ['/', '.']) {
+            expect(() => assertScenesWithinBook(makeBook({ sourceFolder: folder }), ['1 A.md']))
+                .toThrow(/outside its source folder/);
+        }
+    });
+
+    it('accepts the folder note itself, matching the export predicate', () => {
+        expect(() => assertScenesWithinBook(makeBook(), [BOOK_FOLDER])).not.toThrow();
     });
 
     it('does not accept a sibling folder that merely shares a prefix', () => {

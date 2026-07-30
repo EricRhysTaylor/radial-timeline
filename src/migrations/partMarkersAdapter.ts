@@ -1,5 +1,6 @@
 import type { BookProfile } from '../types/settings';
 import type { TimelineItem } from '../types';
+import { isPathInExplicitFolderScope } from '../utils/pathScope';
 import { buildTimelineChapterResolverItems } from '../utils/timelineChapters';
 import { SHARED_PART_FIELD_KEY } from '../utils/timelineParts';
 import type { BookMigrationInput, MigrationSceneInput, StoredEpigraphs } from './partMarkers';
@@ -127,20 +128,27 @@ function collectStoredEpigraphs(book: BookProfile): Record<string, StoredEpigrap
  *
  * Scope is proved, not assumed, so the preview and the run cannot plan
  * different scene sets: a caller that scopes one and forgets the other would
- * otherwise show the author one migration and perform another. Books with no
- * source folder (single-book vaults) impose no constraint.
+ * otherwise show the author one migration and perform another.
+ *
+ * Uses the same predicate the export scopes with, rather than a local prefix
+ * test. That matters most for the empty case: `isPathInExplicitFolderScope`
+ * returns false for an empty, `/`, or `.` folder, and
+ * `resolveBookScopedMarkdownFiles` accordingly resolves a book with no source
+ * path to **zero files**. A book with no source folder therefore has no scenes
+ * to export and none to migrate — treating empty as "no constraint" would let
+ * the migration plan writes across a whole vault that the export would never
+ * have touched. The permissive variant (`isPathInFolderScopeOrVault`) is
+ * documented for read-only global contexts; this writes to author files.
  */
 export function assertScenesWithinBook(book: BookProfile, paths: string[]): void {
-    const folder = (book.sourceFolder || '').replace(/\/+$/, '');
-    if (!folder) return;
-
-    const prefix = `${folder}/`;
-    const strays = paths.filter(path => !path.startsWith(prefix));
+    const folder = book.sourceFolder || '';
+    const strays = paths.filter(path => !isPathInExplicitFolderScope(path, folder));
     if (strays.length === 0) return;
 
+    const scopeLabel = folder.trim() ? `"${folder}"` : '(none set)';
     throw new Error(
         `Book "${book.id}" was given ${strays.length} scene(s) outside its source folder `
-        + `"${folder}": ${strays.slice(0, 5).join(', ')}${strays.length > 5 ? ', …' : ''}. `
+        + `${scopeLabel}: ${strays.slice(0, 5).join(', ')}${strays.length > 5 ? ', …' : ''}. `
         + 'Scope scenes to the book before planning so preview and execution agree.'
     );
 }

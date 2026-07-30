@@ -177,6 +177,73 @@ describe('the ordering contract', () => {
         expect(harness.ops).toEqual([]);
     });
 
+    it('does not stamp a book that produced no outcomes at all', async () => {
+        // `every` is vacuously true over an empty list, so a book with no
+        // records would otherwise sail through as complete.
+        const blocked: BookMigrationPlan = {
+            bookId: 'book-1', status: 'blocked', reason: 're-entrant-acts',
+            scenes: [{ path: PATH, detail: 'Re-opens Act 1.' }], detail: '',
+        };
+        const harness = makeHarness({
+            bookRecord: { scenes: [], planFingerprint: fingerprintPlan(blocked) },
+        });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: blocked });
+
+        expect(report.bookStatus).toBe('planned');
+        expect(report.incomplete?.reason).toBe('plan-not-completable');
+    });
+
+    it('does not stamp a book with a field the migration could not write', async () => {
+        // A scene with zero changes reports `already-current`, so without the
+        // skip check a marker skipped for an unsupported value looked complete.
+        const harness = makeHarness({
+            bookRecord: {
+                scenes: [{
+                    path: PATH,
+                    changes: [],
+                    skipped: [{ field: 'Part', reason: 'unsupported-value' }],
+                }],
+            },
+        });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.scenes[0].status).toBe('already-current');
+        expect(report.bookStatus).toBe('planned');
+        expect(report.incomplete?.reason).toBe('unresolved-skips');
+    });
+
+    it('still stamps when the only skip was a deliberate deferral to the author', async () => {
+        const harness = makeHarness({
+            disk: { Part: bool(true) },
+            bookRecord: {
+                scenes: [{
+                    path: PATH,
+                    changes: [change({ state: 'confirmed' })],
+                    skipped: [{ field: 'Part Epigraph', reason: 'author-value-present' }],
+                }],
+            },
+        });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.bookStatus).toBe('applied');
+        expect(report.incomplete).toBeUndefined();
+    });
+
+    it('reports an unrecorded completion stamp rather than a silent unfinished book', async () => {
+        // Every outcome reads as success; without this the caller would show a
+        // page of green for a book that is correctly still unfinished.
+        const harness = makeHarness({ failSave: 3 });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.scenes[0].status).toBe('written');
+        expect(report.bookStatus).toBe('planned');
+        expect(report.incomplete?.reason).toBe('stamp-not-recorded');
+    });
+
     it('does not stamp a book whose work did not settle', async () => {
         const harness = makeHarness({ swallowWrite: true });
         const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
@@ -443,16 +510,37 @@ describe('layout cleanup', () => {
         expect(report.cleanups[0].detail).toMatch(/not been accepted/);
     });
 
-    it('does not repeat a cleanup already confirmed', async () => {
+    it('does not repeat a cleanup already confirmed and still clear', async () => {
         const harness = makeHarness({
             disk: { Part: bool(true) },
             bookRecord: withCleanup({ epigraphCleanups: [cleanupRecord({ state: 'confirmed' })] }),
+            layoutDisk: { actEpigraphs: LIST_ABSENT, actEpigraphAttributions: LIST_ABSENT },
         });
 
         const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
 
         expect(report.cleanups[0].status).toBe('already-clear');
         expect(harness.ops).not.toContain('layout-write:layout');
+    });
+
+    it('re-verifies a confirmed cleanup instead of trusting the flag', async () => {
+        // If one layout was cleared, another failed, and the author repopulated
+        // the first, trusting the flag would let a rerun clear the second and
+        // stamp the book applied while legacy epigraphs remain in the first.
+        const harness = makeHarness({
+            disk: { Part: bool(true) },
+            bookRecord: withCleanup({ epigraphCleanups: [cleanupRecord({ state: 'confirmed' })] }),
+            layoutDisk: {
+                actEpigraphs: snapshotList(['Author put these back.']),
+                actEpigraphAttributions: LIST_ABSENT,
+            },
+        });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.cleanups[0].status).toBe('blocked');
+        expect(report.cleanups[0].detail).toMatch(/repopulated/);
+        expect(report.bookStatus).toBe('planned');
     });
 
     it('refuses an interrupted cleanup attempt', async () => {

@@ -116,15 +116,39 @@ export interface CleanupOutcome {
 const SETTLED_SCENE: ReadonlySet<SceneOutcomeStatus> = new Set(['written', 'already-current']);
 const SETTLED_CLEANUP: ReadonlySet<CleanupOutcomeStatus> = new Set(['cleared', 'already-clear']);
 
+export type IncompleteReason =
+    /** The plan itself does not describe a migration that can finish. */
+    | 'plan-not-completable'
+    /** Fields the migration could not write, so the book is not fully migrated. */
+    | 'unresolved-skips'
+    /** Everything landed, but the completion stamp could not be recorded. */
+    | 'stamp-not-recorded';
+
 export interface ExecutionReport {
     bookId: string;
     scenes: SceneOutcome[];
     cleanups: CleanupOutcome[];
     /** The book's status after this run — `applied` only when everything settled. */
     bookStatus: JournalBookStatus;
+    /**
+     * Why the book is not finished, when every individual outcome looks fine.
+     * Without this a caller could show a page of successes and no explanation
+     * for a book that is still, correctly, unfinished.
+     */
+    incomplete?: { reason: IncompleteReason; detail: string };
     /** Set when the run stopped before doing anything. */
     aborted?: { reason: 'plan-drift'; detail: string };
 }
+
+/**
+ * Skip reasons that mean the migration failed to do something it intended.
+ *
+ * `author-value-present` is a deliberate deferral to the author and does not
+ * block completion on its own; the cleanup gate handles whether the legacy copy
+ * may then be cleared. The other two mean a field the plan called for was never
+ * written, so the book is not migrated.
+ */
+const BLOCKING_SKIPS: ReadonlySet<string> = new Set(['unsupported-value', 'marker-not-written']);
 
 export interface ExecuteBookOptions {
     journal: PartMigrationJournal;
@@ -186,16 +210,56 @@ export async function executeBookMigration(
     // `written-unconfirmed` deliberately fails this test: the vault is right
     // but the journal is not, and stamping would bury an attempt the next run
     // still has to resolve.
-    const settled = report.scenes.every(outcome => SETTLED_SCENE.has(outcome.status))
+    //
+    // Emitted outcomes alone are not enough to conclude completion. `every` is
+    // vacuously true over an empty list, so a book that produced no outcomes at
+    // all — a blocked plan, or one whose records were never written — would
+    // sail through. Completion is therefore also conditioned on the plan being
+    // one that can finish, and on nothing having been skipped that the plan
+    // called for.
+    const outcomesSettled = report.scenes.every(outcome => SETTLED_SCENE.has(outcome.status))
         && report.cleanups.every(outcome => SETTLED_CLEANUP.has(outcome.status));
 
-    if (settled) {
-        bookRecord.status = 'applied';
-        if (!await trySave(store, journal)) {
-            // The work is done but the stamp is not durable; next run re-reads
-            // and settles again, which is harmless. Report what is true.
-            bookRecord.status = 'planned';
-        }
+    if (!outcomesSettled) {
+        report.bookStatus = bookRecord.status;
+        return report;
+    }
+
+    if (plan.status === 'blocked') {
+        report.incomplete = {
+            reason: 'plan-not-completable',
+            detail: 'This book is blocked, so there is no migration to complete. '
+                + 'Resolve the blocking scenes and re-plan.',
+        };
+        report.bookStatus = bookRecord.status;
+        return report;
+    }
+
+    const blockingSkips = bookRecord.scenes
+        .filter(scene => scene.skipped.some(skip => BLOCKING_SKIPS.has(skip.reason)))
+        .map(scene => scene.path);
+    if (blockingSkips.length > 0) {
+        report.incomplete = {
+            reason: 'unresolved-skips',
+            detail: `The migration could not write every field it planned (${blockingSkips
+                .slice(0, 3).join(', ')}${blockingSkips.length > 3 ? ', …' : ''}), `
+                + 'so this book is not fully migrated.',
+        };
+        report.bookStatus = bookRecord.status;
+        return report;
+    }
+
+    bookRecord.status = 'applied';
+    if (!await trySave(store, journal)) {
+        // The work is done but the stamp is not durable. The next run re-reads
+        // and settles again, which is harmless — but the caller must not present
+        // a page of successes as a finished book.
+        bookRecord.status = 'planned';
+        report.incomplete = {
+            reason: 'stamp-not-recorded',
+            detail: 'Everything was written and verified, but the completion stamp could not be '
+                + 'saved. The book will be checked again on the next run.',
+        };
     }
 
     report.bookStatus = bookRecord.status;
@@ -419,15 +483,32 @@ async function applyCleanup(
             detail: 'An earlier cleanup attempt was interrupted here and needs a decision.',
         };
     }
-    if (cleanup.state === 'confirmed') {
-        return { layoutId: cleanup.layoutId, status: 'already-clear' };
-    }
-
     let current;
     try {
         current = await layouts.read(cleanup.layoutId);
     } catch (error) {
         return { layoutId: cleanup.layoutId, status: 'failed', detail: describeError(error) };
+    }
+
+    // A confirmed cleanup is re-verified rather than trusted, for the same
+    // reason confirmed scene fields are: confirmation is a fact about the past.
+    // If one layout was cleared, another failed, and the author then repopulated
+    // the first, trusting the flag would let a rerun clear the second and stamp
+    // the book applied while legacy epigraphs still sit in the first.
+    if (cleanup.state === 'confirmed') {
+        const stillClear = listSnapshotsEqual(current.actEpigraphs, cleanup.after.actEpigraphs)
+            && listSnapshotsEqual(
+                current.actEpigraphAttributions,
+                cleanup.after.actEpigraphAttributions
+            );
+        return stillClear
+            ? { layoutId: cleanup.layoutId, status: 'already-clear' }
+            : {
+                layoutId: cleanup.layoutId,
+                status: 'blocked',
+                detail: 'This storage was cleared earlier but holds epigraphs again, so it was '
+                    + 'repopulated after the migration ran.',
+            };
     }
 
     if (!cleanupNeedsApply(cleanup, current)) {

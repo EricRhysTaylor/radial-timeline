@@ -1,0 +1,362 @@
+import { describe, expect, it } from 'vitest';
+import type { BookMigrationPlan } from './partMarkers';
+import {
+    LIST_ABSENT,
+    PART_MIGRATION_JOURNAL_SCHEMA,
+    fingerprintPlan,
+    snapshotList,
+    type JournalBookRecord,
+    type JournalFieldChange,
+    type JournalFieldName,
+    type JournalLayoutCleanupRecord,
+    type JournalListSnapshot,
+    type JournalSnapshot,
+    type PartMigrationJournal,
+} from './partMarkersJournal';
+import { executeBookMigration, type ExecuteBookOptions } from './partMarkersExecutor';
+
+const ABSENT_SNAP: JournalSnapshot = { kind: 'absent' };
+const bool = (value: boolean): JournalSnapshot => ({ kind: 'boolean', value });
+const str = (value: string): JournalSnapshot => ({ kind: 'string', value });
+
+const PATH = 'Books/A/1.md';
+
+const PLAN: BookMigrationPlan = {
+    bookId: 'book-1',
+    status: 'derive',
+    writes: [{ path: PATH, title: true, actNumber: 1, partNumber: 1 }],
+};
+
+function change(overrides: Partial<JournalFieldChange> = {}): JournalFieldChange {
+    return { field: 'Part', before: ABSENT_SNAP, after: bool(true), state: 'planned', ...overrides };
+}
+
+function cleanupRecord(
+    overrides: Partial<JournalLayoutCleanupRecord> = {}
+): JournalLayoutCleanupRecord {
+    return {
+        layoutId: 'layout',
+        before: { actEpigraphs: snapshotList(['One.']), actEpigraphAttributions: LIST_ABSENT },
+        after: { actEpigraphs: LIST_ABSENT, actEpigraphAttributions: LIST_ABSENT },
+        state: 'planned',
+        accepted: true,
+        ...overrides,
+    };
+}
+
+interface HarnessOptions {
+    disk?: Partial<Record<JournalFieldName, JournalSnapshot>>;
+    layoutDisk?: { actEpigraphs: JournalListSnapshot; actEpigraphAttributions: JournalListSnapshot };
+    bookRecord?: Partial<JournalBookRecord>;
+    failSave?: number;
+    failWrite?: boolean;
+    /** Simulate a write that reports success but does not land. */
+    swallowWrite?: boolean;
+    failRead?: boolean;
+}
+
+function makeHarness(options: HarnessOptions = {}) {
+    const ops: string[] = [];
+    const disk: Partial<Record<JournalFieldName, JournalSnapshot>> = { ...(options.disk ?? {}) };
+    let layoutDisk = options.layoutDisk ?? {
+        actEpigraphs: snapshotList(['One.']),
+        actEpigraphAttributions: LIST_ABSENT,
+    };
+    let saveCount = 0;
+
+    const bookRecord: JournalBookRecord = {
+        bookId: 'book-1',
+        status: 'planned',
+        planFingerprint: fingerprintPlan(PLAN),
+        preExistingMarkerPaths: [],
+        scenes: [{ path: PATH, changes: [change()], skipped: [] }],
+        epigraphCleanups: [],
+        ...options.bookRecord,
+    };
+
+    const journal: PartMigrationJournal = {
+        schema: PART_MIGRATION_JOURNAL_SCHEMA,
+        startedAt: '2026-07-29T10:00:00.000Z',
+        books: [bookRecord],
+    };
+
+    const states = () => bookRecord.scenes
+        .flatMap(scene => scene.changes.map(entry => entry.state))
+        .concat(bookRecord.epigraphCleanups.map(entry => entry.state))
+        .join('+');
+
+    const deps: Omit<ExecuteBookOptions, 'plan'> = {
+        journal,
+        bookRecord,
+        store: {
+            save: async () => {
+                saveCount += 1;
+                if (options.failSave === saveCount) {
+                    ops.push('save:FAIL');
+                    throw new Error('disk full');
+                }
+                ops.push(`save:${states()}`);
+            },
+        },
+        scenes: {
+            read: async (path: string) => {
+                if (options.failRead) {
+                    ops.push('read:FAIL');
+                    throw new Error('unreadable');
+                }
+                ops.push(`read:${path}`);
+                return { ...disk };
+            },
+            write: async (path, values) => {
+                if (options.failWrite) {
+                    ops.push('write:FAIL');
+                    throw new Error('write failed');
+                }
+                ops.push(`write:${path}`);
+                if (options.swallowWrite) return;
+                for (const entry of values) disk[entry.field] = entry.value;
+            },
+        },
+        layouts: {
+            read: async (layoutId: string) => {
+                ops.push(`layout-read:${layoutId}`);
+                return layoutDisk;
+            },
+            write: async (layoutId, values) => {
+                ops.push(`layout-write:${layoutId}`);
+                layoutDisk = values;
+            },
+        },
+    };
+
+    return { ops, disk, bookRecord, journal, deps, layout: () => layoutDisk };
+}
+
+describe('the ordering contract', () => {
+    it('persists `attempting` before touching the vault, and `confirmed` only after verifying', async () => {
+        // The whole recovery model rests on this sequence. A crash at any point
+        // must leave a journal that describes reality.
+        const harness = makeHarness();
+        await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(harness.ops).toEqual([
+            `read:${PATH}`,        // what is there now
+            'save:attempting',     // 1. record the intent, durably
+            `write:${PATH}`,       // 2. mutate
+            `read:${PATH}`,        // 3. verify against the vault, not the return value
+            'save:confirmed',      // 4. only now claim success
+        ]);
+    });
+
+    it('reports the write and leaves the change confirmed', async () => {
+        const harness = makeHarness();
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.scenes).toEqual([{ path: PATH, status: 'written', fields: ['Part'] }]);
+        expect(harness.bookRecord.scenes[0].changes[0].state).toBe('confirmed');
+        expect(harness.disk.Part).toEqual(bool(true));
+    });
+});
+
+describe('refusing to act', () => {
+    it('aborts without writing when the plan no longer matches', async () => {
+        // Resuming across a changed plan would apply half of one and half of
+        // another. Only the executor holds both artifacts, so only it can tell.
+        const harness = makeHarness();
+        const drifted: BookMigrationPlan = {
+            ...PLAN,
+            writes: [{ path: PATH, title: true, actNumber: 2, partNumber: 2 }],
+        };
+
+        const report = await executeBookMigration({ ...harness.deps, plan: drifted });
+
+        expect(report.aborted?.reason).toBe('plan-drift');
+        expect(report.scenes).toEqual([]);
+        expect(harness.ops).toEqual([]);
+    });
+
+    it('refuses to decide an interrupted attempt', async () => {
+        const harness = makeHarness({
+            bookRecord: { scenes: [{ path: PATH, changes: [change({ state: 'attempting' })], skipped: [] }] },
+        });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.scenes[0].status).toBe('needs-choice');
+        expect(harness.ops).toEqual([]);
+    });
+
+    it('stops on a field edited outside the migration', async () => {
+        const harness = makeHarness({ disk: { Part: str('Author renamed this') } });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.scenes[0].status).toBe('diverged');
+        expect(harness.ops).toEqual([`read:${PATH}`]);
+        expect(harness.bookRecord.scenes[0].changes[0].state).toBe('planned');
+    });
+
+    it('does nothing when the scene already holds the intended value', async () => {
+        const harness = makeHarness({ disk: { Part: bool(true) } });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.scenes[0].status).toBe('already-current');
+        expect(harness.ops).toEqual([`read:${PATH}`]);
+    });
+});
+
+describe('failure leaves an honest record', () => {
+    it('writes nothing if the journal cannot be saved first', async () => {
+        // Without a durable record of intent, a write would be unattributable.
+        const harness = makeHarness({ failSave: 1 });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.scenes[0].status).toBe('failed');
+        expect(harness.ops).toEqual([`read:${PATH}`, 'save:FAIL']);
+        expect(harness.bookRecord.scenes[0].changes[0].state).toBe('planned');
+        expect(harness.disk.Part).toBeUndefined();
+    });
+
+    it('leaves a failed mutation as `attempting`, never back to planned', async () => {
+        // The mutation may have partially landed; claiming it never started
+        // would license re-applying over an author's revert.
+        const harness = makeHarness({ failWrite: true });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.scenes[0].status).toBe('failed');
+        expect(harness.bookRecord.scenes[0].changes[0].state).toBe('attempting');
+        expect(harness.ops).toContain('write:FAIL');
+    });
+
+    it('does not confirm a write the vault did not actually keep', async () => {
+        // Trusting the mutation's return value would record success the vault
+        // never granted. Verification reads back.
+        const harness = makeHarness({ swallowWrite: true });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.scenes[0].status).toBe('failed');
+        expect(report.scenes[0].detail).toMatch(/not on disk/);
+        expect(harness.bookRecord.scenes[0].changes[0].state).toBe('attempting');
+    });
+
+    it('reports an unreadable scene without touching it', async () => {
+        const harness = makeHarness({ failRead: true });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.scenes[0].status).toBe('failed');
+        expect(harness.ops).toEqual(['read:FAIL']);
+    });
+});
+
+describe('layout cleanup', () => {
+    const withCleanup = (extra: Partial<JournalBookRecord> = {}) => ({
+        scenes: [{ path: PATH, changes: [change({ state: 'confirmed' })], skipped: [] }],
+        epigraphCleanups: [cleanupRecord()],
+        ...extra,
+    });
+
+    it('follows the same four steps as a scene write', async () => {
+        const harness = makeHarness({
+            disk: { Part: bool(true) },
+            bookRecord: withCleanup(),
+        });
+
+        await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(harness.ops).toEqual([
+            `read:${PATH}`,               // scene already current
+            `read:${PATH}`,               // fresh state for the gate
+            'layout-read:layout',         // storage still as recorded?
+            'save:confirmed+attempting',  // 1. record intent
+            'layout-write:layout',        // 2. mutate
+            'layout-read:layout',         // 3. verify
+            'save:confirmed+confirmed',   // 4. confirm
+        ]);
+        expect(harness.layout().actEpigraphs).toEqual(LIST_ABSENT);
+    });
+
+    it('refuses when a migrated value is no longer on its scene', async () => {
+        // Confirmation is a fact about the past. Clearing the stored copy now
+        // would delete the last surviving one.
+        const harness = makeHarness({ disk: {}, bookRecord: withCleanup() });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.cleanups[0].status).toBe('blocked');
+        expect(report.cleanups[0].detail).toMatch(/no longer on its scene/);
+        expect(harness.layout().actEpigraphs).toEqual(snapshotList(['One.']));
+    });
+
+    it('refuses when a scene cannot be re-read', async () => {
+        const harness = makeHarness({ failRead: true, bookRecord: withCleanup() });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.cleanups[0].status).toBe('blocked');
+        expect(report.cleanups[0].detail).toMatch(/could not be re-read/);
+    });
+
+    it('refuses when stored epigraphs changed underneath', async () => {
+        const harness = makeHarness({
+            disk: { Part: bool(true) },
+            bookRecord: withCleanup(),
+            layoutDisk: {
+                actEpigraphs: snapshotList(['Someone edited this.']),
+                actEpigraphAttributions: LIST_ABSENT,
+            },
+        });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.cleanups[0].status).toBe('blocked');
+        expect(report.cleanups[0].detail).toMatch(/changed by someone else/);
+    });
+
+    it('refuses while a skipped epigraph is unaccepted', async () => {
+        const harness = makeHarness({
+            disk: { Part: bool(true) },
+            bookRecord: withCleanup({
+                scenes: [{
+                    path: PATH,
+                    changes: [change({ state: 'confirmed' })],
+                    skipped: [{ field: 'Part Epigraph', reason: 'author-value-present' }],
+                }],
+                epigraphCleanups: [cleanupRecord({ accepted: false })],
+            }),
+        });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.cleanups[0].status).toBe('blocked');
+        expect(report.cleanups[0].detail).toMatch(/not been accepted/);
+    });
+
+    it('does not repeat a cleanup already confirmed', async () => {
+        const harness = makeHarness({
+            disk: { Part: bool(true) },
+            bookRecord: withCleanup({ epigraphCleanups: [cleanupRecord({ state: 'confirmed' })] }),
+        });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.cleanups[0].status).toBe('already-clear');
+        expect(harness.ops).not.toContain('layout-write:layout');
+    });
+
+    it('refuses an interrupted cleanup attempt', async () => {
+        const harness = makeHarness({
+            disk: { Part: bool(true) },
+            bookRecord: withCleanup({ epigraphCleanups: [cleanupRecord({ state: 'attempting' })] }),
+        });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.cleanups[0].status).toBe('blocked');
+        expect(report.cleanups[0].detail).toMatch(/interrupted/);
+    });
+});

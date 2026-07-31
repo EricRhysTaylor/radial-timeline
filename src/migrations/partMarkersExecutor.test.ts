@@ -270,6 +270,111 @@ describe('refusing to act', () => {
         expect(harness.ops).toEqual([]);
     });
 
+    it('refuses a blocked plan carrying stray change records, before writing', async () => {
+        // The completability check runs after the loops, so without validation
+        // up front these writes would already have landed by the time it fired.
+        const blocked: BookMigrationPlan = {
+            bookId: 'book-1', status: 'blocked', reason: 're-entrant-acts',
+            scenes: [{ path: PATH, detail: 'Re-opens Act 1.' }], detail: '',
+        };
+        const harness = makeHarness({
+            bookRecord: { planFingerprint: fingerprintPlan(blocked) },
+        });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: blocked });
+
+        expect(report.aborted?.reason).toBe('journal-plan-mismatch');
+        expect(harness.ops).toEqual([]);
+        expect(harness.disk.Part).toBeUndefined();
+    });
+
+    it('refuses a noop plan carrying stray change records', async () => {
+        const noop: BookMigrationPlan = { bookId: 'book-1', status: 'noop', reason: 'no-boundaries' };
+        const harness = makeHarness({ bookRecord: { planFingerprint: fingerprintPlan(noop) } });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: noop });
+
+        expect(report.aborted?.reason).toBe('journal-plan-mismatch');
+        expect(harness.ops).toEqual([]);
+    });
+
+    it('refuses a derive plan whose journal is missing one of its writes', async () => {
+        // Executing the rest would migrate the book partially and stamp it
+        // applied — a half-migrated book recorded as finished.
+        const twoWrites: BookMigrationPlan = {
+            bookId: 'book-1',
+            status: 'derive',
+            writes: [
+                { path: PATH, title: true, actNumber: 1, partNumber: 1 },
+                { path: 'Books/A/2.md', title: true, actNumber: 2, partNumber: 2 },
+            ],
+        };
+        const harness = makeHarness({
+            bookRecord: { planFingerprint: fingerprintPlan(twoWrites) },
+        });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: twoWrites });
+
+        expect(report.aborted?.reason).toBe('journal-plan-mismatch');
+        expect(report.aborted?.detail).toMatch(/no record for 1 planned scene/);
+        expect(harness.ops).toEqual([]);
+    });
+
+    it('refuses a journal record the plan does not call for', async () => {
+        const harness = makeHarness({
+            bookRecord: {
+                scenes: [
+                    { path: PATH, changes: [change()], skipped: [] },
+                    { path: 'Books/A/stray.md', changes: [change()], skipped: [] },
+                ],
+            },
+        });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.aborted?.reason).toBe('journal-plan-mismatch');
+        expect(report.aborted?.detail).toMatch(/does not call for/);
+        expect(harness.ops).toEqual([]);
+    });
+
+    it('refuses a record whose target is not the value the plan calls for', async () => {
+        const harness = makeHarness({
+            bookRecord: {
+                scenes: [{
+                    path: PATH,
+                    changes: [change({ after: str('Something the plan never asked for') })],
+                    skipped: [],
+                }],
+            },
+        });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.aborted?.reason).toBe('journal-plan-mismatch');
+        expect(harness.ops).toEqual([]);
+    });
+
+    it('refuses a record writing a field the plan says nothing about', async () => {
+        // PLAN has no quote, so an epigraph write is not the plan's business.
+        const harness = makeHarness({
+            bookRecord: {
+                scenes: [{
+                    path: PATH,
+                    changes: [
+                        change(),
+                        change({ field: 'Part Epigraph', after: str('invented') }),
+                    ],
+                    skipped: [],
+                }],
+            },
+        });
+
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+
+        expect(report.aborted?.reason).toBe('journal-plan-mismatch');
+        expect(harness.ops).toEqual([]);
+    });
+
     it('refuses to decide an interrupted attempt', async () => {
         const harness = makeHarness({
             bookRecord: { scenes: [{ path: PATH, changes: [change({ state: 'attempting' })], skipped: [] }] },

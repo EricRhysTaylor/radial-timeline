@@ -1,4 +1,4 @@
-import type { BookMigrationPlan } from './partMarkers';
+import type { BookMigrationPlan, PartMarkerWrite } from './partMarkers';
 import {
     ABSENT,
     classifyCleanupGate,
@@ -137,7 +137,97 @@ export interface ExecutionReport {
      */
     incomplete?: { reason: IncompleteReason; detail: string };
     /** Set when the run stopped before doing anything. */
-    aborted?: { reason: 'plan-drift'; detail: string };
+    aborted?: { reason: 'plan-drift' | 'journal-plan-mismatch'; detail: string };
+}
+
+/**
+ * Check that the journal's records actually describe the plan.
+ *
+ * The fingerprint proves the plan itself has not changed; it says nothing about
+ * whether `scenes` and `epigraphCleanups` faithfully represent it. Two failures
+ * follow from trusting it alone, and both write to author files:
+ *
+ *   - A **blocked or noop** plan carrying stray change records would execute
+ *     them. The completability check happens after the loops, so by the time it
+ *     fires the writes have already landed.
+ *   - A **derive** plan whose journal is missing one of its writes would apply
+ *     the rest and stamp the book applied — a partially migrated book recorded
+ *     as finished.
+ *
+ * Returns a description of the mismatch, or null when the records agree.
+ */
+function findJournalPlanMismatch(
+    bookRecord: JournalBookRecord,
+    plan: BookMigrationPlan
+): string | null {
+    const scenesWithChanges = bookRecord.scenes.filter(scene => scene.changes.length > 0);
+
+    if (plan.status !== 'derive') {
+        if (scenesWithChanges.length > 0) {
+            return `The plan is "${plan.status}" and writes nothing, but the journal holds `
+                + `${scenesWithChanges.length} scene change record(s).`;
+        }
+        if (plan.status !== 'author-owned' && bookRecord.epigraphCleanups.length > 0) {
+            return `The plan is "${plan.status}" but the journal holds layout cleanup records.`;
+        }
+        return null;
+    }
+
+    const writeByPath = new Map(plan.writes.map(entry => [entry.path, entry]));
+    const recordPaths = new Set(bookRecord.scenes.map(scene => scene.path));
+
+    const missing = plan.writes.filter(entry => !recordPaths.has(entry.path)).map(entry => entry.path);
+    if (missing.length > 0) {
+        return `The journal has no record for ${missing.length} planned scene(s): `
+            + `${missing.slice(0, 3).join(', ')}${missing.length > 3 ? ', …' : ''}.`;
+    }
+
+    const extra = bookRecord.scenes
+        .filter(scene => !writeByPath.has(scene.path))
+        .map(scene => scene.path);
+    if (extra.length > 0) {
+        return `The journal holds records the plan does not call for: `
+            + `${extra.slice(0, 3).join(', ')}${extra.length > 3 ? ', …' : ''}.`;
+    }
+
+    for (const scene of bookRecord.scenes) {
+        const write = writeByPath.get(scene.path);
+        if (!write) continue;
+        for (const entry of scene.changes) {
+            const expected = expectedTargetFor(write, entry.field);
+            if (!expected) {
+                return `${scene.path}: the journal writes ${entry.field}, `
+                    + 'which the plan does not call for.';
+            }
+            if (!snapshotsEqual(entry.after, expected)) {
+                return `${scene.path}: the journal's target for ${entry.field} `
+                    + 'is not the value the plan calls for.';
+            }
+        }
+    }
+
+    return null;
+}
+
+/** The value the plan calls for in one field, or null when it says nothing about it. */
+function expectedTargetFor(
+    write: PartMarkerWrite,
+    field: JournalFieldName
+): JournalSnapshot | null {
+    switch (field) {
+        case 'Part':
+            return typeof write.title === 'string'
+                ? { kind: 'string', value: write.title }
+                : { kind: 'boolean', value: true };
+        case 'Part Epigraph':
+            return write.quote === undefined ? null : { kind: 'string', value: write.quote };
+        case 'Part Epigraph By':
+            return write.attribution === undefined
+                ? null
+                : { kind: 'string', value: write.attribution };
+        default:
+            return null;
+    }
 }
 
 /**
@@ -196,6 +286,17 @@ export async function executeBookMigration(
             reason: 'plan-drift',
             detail: 'The vault changed since this migration was planned. '
                 + 'Nothing was written. Re-plan, or restore the partial run, before continuing.',
+        };
+        return report;
+    }
+
+    // Records must describe the plan before anything is touched. Checking this
+    // after the loops would be checking after the damage.
+    const mismatch = findJournalPlanMismatch(bookRecord, plan);
+    if (mismatch) {
+        report.aborted = {
+            reason: 'journal-plan-mismatch',
+            detail: `${mismatch} Nothing was written. Re-plan this book before continuing.`,
         };
         return report;
     }

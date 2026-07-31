@@ -160,8 +160,8 @@ export function validateAiSettings(input?: AiSettingsV1 | null): AiSettingsValid
         const seen = new Set<DeclarableLocalCapability>();
         const unknown: string[] = [];
         for (const entry of value.localLlm.declaredCapabilities) {
-            if (DECLARABLE_LOCAL_CAPABILITIES.includes(entry as DeclarableLocalCapability)) {
-                seen.add(entry as DeclarableLocalCapability);
+            if (DECLARABLE_LOCAL_CAPABILITIES.includes(entry)) {
+                seen.add(entry);
             } else {
                 unknown.push(String(entry));
             }

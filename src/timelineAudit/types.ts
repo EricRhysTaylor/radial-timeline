@@ -34,6 +34,29 @@ export type TimelineAuditAction = TimelineAuditReviewAction;
 
 export type TimelineAuditTimeBucket = 'morning' | 'afternoon' | 'evening' | 'night';
 
+export type TimelineAuditAiScopeMode = 'manuscript' | 'range' | 'marked' | 'focused';
+
+export type TimelineAuditAiTimelineRole = 'mainline' | 'flashback' | 'flash_forward' | 'parallel' | 'unclear';
+
+/**
+ * Explicit scene queue for an AI chronology pass. Manuscript mode reads every
+ * scoped scene; every narrower mode carries the exact vault paths to read.
+ */
+export interface TimelineAuditAiScope {
+    mode: TimelineAuditAiScopeMode;
+    paths?: string[];
+    startScene?: number;
+    endScene?: number;
+}
+
+export interface TimelineAuditAiRunSummary {
+    scopeMode: TimelineAuditAiScopeMode;
+    requested: number;
+    checked: number;
+    suggestions: number;
+    failed: number;
+}
+
 export interface TimelineAuditCue {
     kind: 'time_of_day' | 'relative_offset' | 'absolute_date' | 'continuity';
     label: string;
@@ -117,6 +140,9 @@ export interface TimelineAuditFinding {
     reviewAction: TimelineAuditReviewAction;
     unresolved: boolean;
     aiSuggested: boolean;
+    /** True when this scene returned a valid response in the latest AI pass. */
+    aiChecked?: boolean;
+    aiTimelineRole?: TimelineAuditAiTimelineRole | null;
     safeApplyEligible: boolean;
 }
 
@@ -133,6 +159,7 @@ export interface TimelineAuditResult {
     stats: TimelineAuditStats;
     appliedSuggestionCount: number;
     unresolvedCount: number;
+    aiRunSummary?: TimelineAuditAiRunSummary;
 }
 
 export interface TimelineAuditPipelineConfig {
@@ -141,20 +168,23 @@ export interface TimelineAuditPipelineConfig {
     runAiInference: boolean;
     bodyExcerptChars?: number;
     chronologyWindow?: number;
+    aiScope?: TimelineAuditAiScope;
 }
 
 export interface TimelineAuditAiResponse {
     rationale: string;
     evidenceQuotes: string[];
     issueType?: TimelineAuditIssueType;
-    evidenceTier?: TimelineAuditEvidenceTier;
-    writtenTimelinePosition?: string;
-    suggestedWhen?: string;
-    confidence?: WhenConfidence;
+    evidenceTier: TimelineAuditEvidenceTier;
+    writtenTimelinePosition: string;
+    timelineRole: TimelineAuditAiTimelineRole;
+    suggestedWhen: string;
+    confidence: WhenConfidence;
 }
 
 export interface TimelineAuditCallbacks {
     onStageChange?: (stage: 'deterministic' | 'continuity' | 'ai' | 'complete') => void;
+    onAiQueue?: (total: number) => void;
     onAiProgress?: (current: number, total: number, sceneName: string) => void;
     abortSignal?: AbortSignal;
 }

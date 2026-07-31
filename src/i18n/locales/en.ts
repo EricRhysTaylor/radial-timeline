@@ -476,19 +476,21 @@ export interface TranslationKeys {
         empty: { noResults: string; noFindings: string; };
         scope: { entireVault: string; activeScope: string; };
         stats: { totalScenes: string; aligned: string; warnings: string; contradictions: string; missingWhen: string; };
-        filters: { all: string; contradictions: string; missingWhen: string; summaryBodyDisagreement: string; continuityProblems: string; aiSuggested: string; unresolved: string; };
+        filters: { all: string; contradictions: string; missingWhen: string; summaryBodyDisagreement: string; continuityProblems: string; aiChecked: string; aiSuggested: string; unresolved: string; };
         controls: { title: string; };
         bulk: { acceptSafe: string; keepAll: string; markAll: string; scopeNote: string; };
         instantCard: { title: string; description: string; status: string; continuityPassToggle: string; continuityPassDesc: string; };
+        aiScope: { title: string; manuscript: string; range: string; marked: string; focused: string; fromScene: string; toScene: string; manuscriptSummary: string; rangeSummary: string; markedSummary: string; focusedSummary: string; evidence: string; providerLocal: string; providerConfigured: string; };
         aiCard: { title: string; aiEnhancedBadge: string; description: string; actionRunning: string; actionReRun: string; actionStart: string; };
-        aiStatus: { inProgress: string; complete: string; failed: string; notStarted: string; runningBackground: string; failedRetry: string; notStartedHint: string; progressCount: string; progressCountWithScene: string; completedAgo: string; };
+        aiStatus: { inProgress: string; complete: string; failed: string; notStarted: string; runningBackground: string; failedRetry: string; notStartedHint: string; progressCount: string; progressCountWithScene: string; completedSummary: string; };
         relativeTime: { justNow: string; minutesAgo: string; hoursAgo: string; daysAgo: string; };
         overview: { title: string; legendClean: string; legendMissingWhen: string; legendWarning: string; legendContradiction: string; legendImpossible: string; };
-        detail: { whatYamlSays: string; chronologyNotPlaced: string; whatManuscriptImplies: string; noAlternatePosition: string; noSuggestedWhen: string; whyFlagged: string; whatAuthorCanDo: string; actionEligible: string; actionIneligible: string; noEvidence: string; applyButton: string; keepButton: string; markReviewButton: string; noRationale: string; whenMissing: string; formatWhenMissing: string; chronologyPosition: string; suggestedWhen: string; evidenceLabel: string; whenInvalid: string; whenCurrent: string; adjustRippleButton: string; adjustRippleHelp: string; };
+        detail: { whatYamlSays: string; chronologyNotPlaced: string; whatManuscriptImplies: string; noAlternatePosition: string; noSuggestedWhen: string; whyFlagged: string; whatAuthorCanDo: string; actionEligible: string; actionAiSuggestionAvailable: string; actionIneligible: string; noEvidence: string; applyButton: string; keepButton: string; markReviewButton: string; noRationale: string; whenMissing: string; formatWhenMissing: string; chronologyPosition: string; suggestedWhen: string; aiTimelineRole: string; evidenceLabel: string; whenInvalid: string; whenCurrent: string; adjustRippleButton: string; adjustRippleHelp: string; };
         evidenceSource: { summary: string; synopsis: string; body: string; neighbor: string; ai: string; };
         evidenceTier: { direct: string; strongInference: string; ambiguous: string; };
-        detectionSource: { deterministic: string; continuity: string; ai: string; };
-        notices: { applySuccess: string; applyPartial: string; snapshotFailed: string; };
+        detectionSource: { deterministic: string; continuity: string; ai: string; aiChecked: string; aiQueued: string; };
+        timelineRole: { mainline: string; flashback: string; flashForward: string; parallel: string; unclear: string; };
+        notices: { applySuccess: string; applyPartial: string; snapshotFailed: string; emptyAiScope: string; aiScanAlreadyRunning: string; };
     };
     timeline: {
         acts: {
@@ -2651,7 +2653,7 @@ export const en: TranslationKeys = {
         },
         loading: {
             title: 'Running instant audit\u2026',
-            description: 'Deterministic checks run first and continuity checks run next. AI audit only runs when you explicitly start it.',
+            description: 'Deterministic checks run first and continuity checks run next. The AI chronology scan runs only when you explicitly start it.',
         },
         actions: {
             abort: 'Abort',
@@ -2678,6 +2680,7 @@ export const en: TranslationKeys = {
             missingWhen: 'Missing When',
             summaryBodyDisagreement: 'Summary/body disagreement',
             continuityProblems: 'Continuity problems',
+            aiChecked: 'AI-checked',
             aiSuggested: 'AI-suggested',
             unresolved: 'Unresolved',
         },
@@ -2685,7 +2688,7 @@ export const en: TranslationKeys = {
         bulk: {
             acceptSafe: 'Accept safe suggestions ({{count}})',
             keepAll: 'Keep all as-is',
-            markAll: 'Mark all for review',
+            markAll: 'Mark all for AI scan',
             scopeNote: 'Bulk actions apply to the {{count}} findings currently listed — combine with the filters above.',
         },
         instantCard: {
@@ -2695,25 +2698,41 @@ export const en: TranslationKeys = {
             continuityPassToggle: 'Continuity pass',
             continuityPassDesc: 'Checks neighboring scenes for suspicious jumps or impossible order.',
         },
+        aiScope: {
+            title: 'Scenes AI will read',
+            manuscript: 'Entire manuscript',
+            range: 'Narrative range',
+            marked: 'Marked for AI scan ({{count}})',
+            focused: 'From Scaffold ({{count}})',
+            fromScene: 'From scene',
+            toScene: 'To scene',
+            manuscriptSummary: 'Entire manuscript · {{count}} scenes in narrative order',
+            rangeSummary: 'Narrative scenes {{start}}–{{end}} · {{count}} scenes',
+            markedSummary: '{{count}} scenes marked for AI scan',
+            focusedSummary: '{{count}} scenes sent from Timeline Scaffold',
+            evidence: 'Uses {{provider}} to read each selected scene’s summary, synopsis, full manuscript text, and adjacent narrative scenes. Existing dates are treated as provisional.',
+            providerLocal: 'Local LLM',
+            providerConfigured: 'your configured AI provider',
+        },
         aiCard: {
-            title: 'AI audit',
+            title: 'AI chronology scan',
             aiEnhancedBadge: 'AI-enhanced',
-            description: 'Uses AI to read scene evidence more deeply and surface subtler timeline inconsistencies. Runs in the background and never changes your files — you review every suggestion and apply only what you accept.',
-            actionRunning: 'Running AI audit\u2026',
-            actionReRun: 'Re-run AI Audit',
-            actionStart: 'Start AI Audit',
+            description: 'Reads the selected manuscript scope in narrative order to recover flashbacks, relative timing, and better date suggestions. Runs in the background and never changes your files — you review every suggestion.',
+            actionRunning: 'Running AI chronology scan\u2026',
+            actionReRun: 'Re-run AI scan ({{count}})',
+            actionStart: 'Run AI scan ({{count}})',
         },
         aiStatus: {
-            inProgress: 'AI audit in progress',
-            complete: 'AI audit complete',
-            failed: 'AI audit failed',
-            notStarted: 'AI audit not started',
-            runningBackground: 'AI audit is running in the background.',
-            failedRetry: 'Try starting the AI audit again.',
-            notStartedHint: 'Instant audit is done. Start AI Audit to look for subtler timeline problems.',
+            inProgress: 'AI chronology scan in progress',
+            complete: 'AI chronology scan complete',
+            failed: 'AI chronology scan failed',
+            notStarted: 'AI chronology scan not started',
+            runningBackground: 'AI chronology scan is running in the background.',
+            failedRetry: 'Try starting the AI chronology scan again.',
+            notStartedHint: 'Instant audit is done. Start the AI chronology scan to read the manuscript for subtler timeline problems.',
             progressCount: '{{current}}/{{total}}',
             progressCountWithScene: '{{current}}/{{total}} \u00b7 {{scene}}',
-            completedAgo: 'AI audit run {{time}}',
+            completedSummary: '{{scope}} · checked {{checked}}/{{requested}} · {{suggestions}} suggestions · {{failed}} failed · {{time}}',
         },
         relativeTime: { justNow: 'just now', minutesAgo: '{{minutes}} min ago', hoursAgo: '{{hours}}h ago', daysAgo: '{{days}}d ago' },
         overview: {
@@ -2733,16 +2752,18 @@ export const en: TranslationKeys = {
             whyFlagged: 'Why this was flagged',
             whatAuthorCanDo: 'What the author can do',
             actionEligible: 'Apply the suggested When, keep YAML as-is, or mark for review.',
+            actionAiSuggestionAvailable: 'AI suggested a replacement When. Review its evidence, then apply it individually or keep the current date.',
             actionIneligible: 'No replacement date can be safely inferred — the text evidence is ambiguous. Keep the current date, mark the scene for review, or set the date manually in the scene’s frontmatter.',
             noEvidence: 'No evidence snippets captured.',
             applyButton: 'Apply',
             keepButton: 'Keep',
-            markReviewButton: 'Mark review',
+            markReviewButton: 'Mark for AI scan',
             noRationale: 'No rationale recorded.',
             whenMissing: 'YAML When: missing from frontmatter.',
             formatWhenMissing: 'Missing',
             chronologyPosition: 'Chronological order: {{position}} of {{total}}',
             suggestedWhen: 'Suggested When: {{when}}',
+            aiTimelineRole: 'AI timeline role: {{role}}',
             evidenceLabel: '{{source}} \u00b7 {{tier}}',
             whenInvalid: 'YAML When: invalid in frontmatter ({{raw}}).',
             whenCurrent: 'YAML When: {{when}}.',
@@ -2751,8 +2772,9 @@ export const en: TranslationKeys = {
         },
         evidenceSource: { summary: 'Summary', synopsis: 'Synopsis', body: 'Body', neighbor: 'Neighbor', ai: 'AI' },
         evidenceTier: { direct: 'Direct text', strongInference: 'Strong inference', ambiguous: 'Ambiguous cue' },
-        detectionSource: { deterministic: 'Deterministic', continuity: 'Continuity', ai: 'AI' },
-        notices: { applySuccess: 'Applied timeline audit decisions.', applyPartial: 'Applied timeline audit decisions — {{failed}} failed.', snapshotFailed: 'Snapshot could not be saved — Apply aborted to protect your data. ({{message}})' },
+        detectionSource: { deterministic: 'Deterministic', continuity: 'Continuity', ai: 'AI', aiChecked: 'AI checked', aiQueued: 'AI scan queued' },
+        timelineRole: { mainline: 'Mainline', flashback: 'Flashback', flashForward: 'Flash-forward', parallel: 'Parallel action', unclear: 'Unclear' },
+        notices: { applySuccess: 'Applied timeline audit decisions.', applyPartial: 'Applied timeline audit decisions — {{failed}} failed.', snapshotFailed: 'Snapshot could not be saved — Apply aborted to protect your data. ({{message}})', emptyAiScope: 'No scenes are in the selected AI scan scope.', aiScanAlreadyRunning: 'An AI chronology scan is already running. Showing its progress instead.' },
     },
     timeline: {
         acts: {

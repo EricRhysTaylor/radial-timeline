@@ -26,12 +26,25 @@ import {
 } from '../timelineAudit/presentation';
 import {
     TIMELINE_AUDIT_AI_STATE_EVENT,
+    buildTimelineAuditAiContextKey,
     buildTimelineAuditAiScopeKey,
     createTimelineAuditAiJobState,
+    freezeTimelineAuditAiScope,
+    resolveTimelineAuditAiScopeKey,
     resolveTimelineAuditDisplayResult,
     type TimelineAuditAiJobState
 } from '../services/TimelineAuditAiService';
-import type { TimelineAuditFinding, TimelineAuditPipelineConfig, TimelineAuditResult } from '../timelineAudit/types';
+import type {
+    TimelineAuditAiScope,
+    TimelineAuditAiScopeMode,
+    TimelineAuditAiTimelineRole,
+    TimelineAuditDetectionSource,
+    TimelineAuditEvidenceSource,
+    TimelineAuditEvidenceTier,
+    TimelineAuditFinding,
+    TimelineAuditPipelineConfig,
+    TimelineAuditResult
+} from '../timelineAudit/types';
 
 type FindingFilter =
     | 'all'
@@ -39,6 +52,7 @@ type FindingFilter =
     | 'missing_when'
     | 'summary_body_disagreement'
     | 'continuity_problems'
+    | 'ai_checked'
     | 'ai_suggested'
     | 'unresolved';
 
@@ -56,12 +70,19 @@ export class TimelineAuditModal extends Modal {
     private hasAutoExpandedCurrentResult = false;
     private readonly findingCardEls = new Map<string, HTMLElement>();
     private focusedPaths: Set<string> | null = null;
+    private aiScopeMode: TimelineAuditAiScopeMode = 'manuscript';
+    private aiRangeStart = 1;
+    private aiRangeEnd = 0;
+    private activeAiScope: TimelineAuditAiScope | null = null;
+    private activeAiScopeKey: string | null = null;
+    private reviewActionsBeforeAi = new Map<string, TimelineAuditFinding['reviewAction']>();
 
     constructor(app: App, plugin: RadialTimelinePlugin, options: { focusedPaths?: Set<string> } = {}) {
         super(app);
         this.plugin = plugin;
         if (options.focusedPaths && options.focusedPaths.size > 0) {
             this.focusedPaths = new Set(options.focusedPaths);
+            this.aiScopeMode = 'focused';
         }
     }
 
@@ -75,13 +96,14 @@ export class TimelineAuditModal extends Modal {
         }
 
         contentEl.addClass('ert-modal-container', 'ert-stack', 'ert-timeline-audit-modal');
-        this.aiState = this.plugin.getTimelineAuditAiService().getState(this.getAiScopeKey());
+        this.restoreLatestAiState();
         this.unsubscribeAiState = this.plugin.subscribe<TimelineAuditAiJobState>(
             TIMELINE_AUDIT_AI_STATE_EVENT,
             () => {
                 const previousStatus = this.aiState.status;
-                this.aiState = this.plugin.getTimelineAuditAiService().getState(this.getAiScopeKey());
+                this.refreshAiState();
                 if (this.aiState.status === 'completed' && previousStatus !== 'completed') {
+                    this.restoreReviewActions(this.aiState.result);
                     this.expandedFindingPath = null;
                     this.hasAutoExpandedCurrentResult = false;
                 }
@@ -110,8 +132,124 @@ export class TimelineAuditModal extends Modal {
         };
     }
 
+    private getAiScopeSourceResult(): TimelineAuditResult | null {
+        return this.aiState.result ?? this.result;
+    }
+
+    private buildConfiguredAiScope(): TimelineAuditAiScope {
+        const ordered = (this.getAiScopeSourceResult()?.findings ?? []) // SAFE: no audit result means there are no selectable scenes yet
+            .slice()
+            .sort((a, b) => a.manuscriptOrderIndex - b.manuscriptOrderIndex);
+
+        if (this.aiScopeMode === 'manuscript') {
+            return { mode: 'manuscript' };
+        }
+
+        if (this.aiScopeMode === 'focused') {
+            if (!this.focusedPaths) {
+                throw new Error('Focused Timeline Audit scope requires focused scene paths.');
+            }
+            return { mode: 'focused', paths: Array.from(this.focusedPaths) };
+        }
+
+        if (this.aiScopeMode === 'marked') {
+            return {
+                mode: 'marked',
+                paths: ordered
+                    .filter(finding => finding.reviewAction === 'mark_review')
+                    .map(finding => finding.path)
+            };
+        }
+
+        const total = ordered.length;
+        const start = Math.min(Math.max(1, this.aiRangeStart), Math.max(total, 1));
+        const end = Math.min(Math.max(start, this.aiRangeEnd || total), Math.max(total, 1)); // SAFE: zero means the range has not been initialized, so it extends to the final scene
+        return {
+            mode: 'range',
+            startScene: start,
+            endScene: end,
+            paths: ordered
+                .filter(finding => {
+                    const sceneNumber = finding.manuscriptOrderIndex + 1;
+                    return sceneNumber >= start && sceneNumber <= end;
+                })
+                .map(finding => finding.path)
+        };
+    }
+
+    private getAiScope(): TimelineAuditAiScope {
+        return this.activeAiScope ?? this.buildConfiguredAiScope();
+    }
+
+    private getAiScopeCount(scope = this.getAiScope()): number {
+        if (scope.mode === 'manuscript') {
+            return this.getAiScopeSourceResult()?.stats.totalScenes ?? 0; // SAFE: no result means the current manuscript scan contains zero known scenes
+        }
+        return scope.paths?.length ?? 0; // SAFE: only manuscript scope may omit paths, and it is handled above
+    }
+
+    private getAiScopeLabel(scope = this.getAiScope()): string {
+        const count = this.getAiScopeCount(scope);
+        switch (scope.mode) {
+            case 'range':
+                return t('timelineAuditModal.aiScope.rangeSummary', {
+                    start: scope.startScene ?? 1, // SAFE: malformed legacy in-memory range state displays the first scene instead of an empty label
+                    end: scope.endScene ?? 1, // SAFE: malformed legacy in-memory range state displays the first scene instead of an empty label
+                    count
+                });
+            case 'marked':
+                return t('timelineAuditModal.aiScope.markedSummary', { count });
+            case 'focused':
+                return t('timelineAuditModal.aiScope.focusedSummary', { count });
+            case 'manuscript':
+                return t('timelineAuditModal.aiScope.manuscriptSummary', { count });
+        }
+    }
+
     private getAiScopeKey(): string {
-        return buildTimelineAuditAiScopeKey(this.plugin, this.runContinuityPass);
+        const configuredScopeKey = buildTimelineAuditAiScopeKey(
+            this.plugin,
+            this.runContinuityPass,
+            this.buildConfiguredAiScope()
+        );
+        return resolveTimelineAuditAiScopeKey(this.activeAiScopeKey, configuredScopeKey);
+    }
+
+    private clearActiveAiScope(): void {
+        this.activeAiScope = null;
+        this.activeAiScopeKey = null;
+    }
+
+    private restoreLatestAiState(): void {
+        const latest = this.plugin.getTimelineAuditAiService().getLatestState();
+        const contextKey = buildTimelineAuditAiContextKey(this.plugin, this.runContinuityPass);
+        const focusedEntryMatches = !this.focusedPaths || (
+            latest.scope?.mode === 'focused'
+            && latest.scope.paths?.length === this.focusedPaths.size
+            && latest.scope.paths.every(path => this.focusedPaths?.has(path))
+        );
+        if (latest.contextKey !== contextKey || !latest.scopeKey || !latest.scope || !focusedEntryMatches) {
+            this.clearActiveAiScope();
+            this.aiState = createTimelineAuditAiJobState();
+            return;
+        }
+
+        this.activeAiScope = freezeTimelineAuditAiScope(latest.scope);
+        this.activeAiScopeKey = latest.scopeKey;
+        this.aiScopeMode = latest.scope.mode;
+        if (latest.scope.mode === 'range') {
+            this.aiRangeStart = latest.scope.startScene ?? 1; // SAFE: legacy in-memory range state without a start begins at scene one
+            this.aiRangeEnd = latest.scope.endScene ?? this.aiRangeStart; // SAFE: legacy in-memory range state without an end collapses to its start
+        }
+        this.aiState = latest;
+    }
+
+    private refreshAiState(): void {
+        if (!this.activeAiScopeKey) {
+            this.restoreLatestAiState();
+            return;
+        }
+        this.aiState = this.plugin.getTimelineAuditAiService().getState(this.activeAiScopeKey);
     }
 
     private getDisplayedResult(): TimelineAuditResult | null {
@@ -121,6 +259,7 @@ export class TimelineAuditModal extends Modal {
     private async runAudit(options: { invalidateAi?: boolean } = {}): Promise<void> {
         if (options.invalidateAi) {
             this.plugin.getTimelineAuditAiService().invalidate(this.getAiScopeKey());
+            this.clearActiveAiScope();
         }
 
         this.aiState = this.plugin.getTimelineAuditAiService().getState(this.getAiScopeKey());
@@ -139,22 +278,68 @@ export class TimelineAuditModal extends Modal {
             }
         } finally {
             this.running = false;
+            if (this.result && this.aiRangeEnd === 0) {
+                this.aiRangeEnd = this.result.stats.totalScenes;
+            }
             this.expandedFindingPath = null;
             this.hasAutoExpandedCurrentResult = false;
-            this.aiState = this.plugin.getTimelineAuditAiService().getState(this.getAiScopeKey());
+            if (this.activeAiScopeKey) {
+                this.refreshAiState();
+            } else {
+                this.restoreLatestAiState();
+            }
             this.render();
         }
     }
 
     private startAiAudit(): void {
-        const scopeKey = this.getAiScopeKey();
-        void this.plugin.getTimelineAuditAiService().start(scopeKey, {
+        const aiService = this.plugin.getTimelineAuditAiService();
+        const latest = aiService.getLatestState();
+        if (latest.status === 'running') {
+            this.restoreLatestAiState();
+            new Notice(t('timelineAuditModal.notices.aiScanAlreadyRunning'));
+            this.render();
+            return;
+        }
+
+        const aiScope = freezeTimelineAuditAiScope(this.buildConfiguredAiScope());
+        const sceneCount = this.getAiScopeCount(aiScope);
+        if (sceneCount === 0) {
+            new Notice(t('timelineAuditModal.notices.emptyAiScope'));
+            return;
+        }
+
+        this.reviewActionsBeforeAi.clear();
+        for (const finding of this.getDisplayedResult()?.findings ?? []) { // SAFE: an absent result contains no review decisions to preserve
+            this.reviewActionsBeforeAi.set(finding.path, finding.reviewAction);
+        }
+
+        const scopeKey = buildTimelineAuditAiScopeKey(this.plugin, this.runContinuityPass, aiScope);
+        this.activeAiScope = aiScope;
+        this.activeAiScopeKey = scopeKey;
+        void aiService.start(scopeKey, {
             runContinuityPass: this.runContinuityPass,
             chronologyWindow: 2,
-            bodyExcerptChars: 2600
+            // AI chronology reads the full scene. Each scene is dispatched as
+            // its own request with compact narrative-neighbor context, which
+            // keeps Local LLM context bounded while avoiding a first-page-only
+            // blind spot.
+            bodyExcerptChars: 0,
+            aiScope,
+            aiScopeLabel: this.getAiScopeLabel(aiScope)
         });
-        this.aiState = this.plugin.getTimelineAuditAiService().getState(scopeKey);
+        this.aiState = aiService.getState(scopeKey);
         this.render();
+    }
+
+    private restoreReviewActions(result: TimelineAuditResult | null): void {
+        if (!result || this.reviewActionsBeforeAi.size === 0) return;
+        for (const finding of result.findings) {
+            const action = this.reviewActionsBeforeAi.get(finding.path);
+            if (!action) continue;
+            finding.reviewAction = action;
+            finding.unresolved = action === 'apply' ? false : finding.status !== 'aligned' || action === 'mark_review';
+        }
     }
 
     private syncExpandedFinding(findings: TimelineAuditFinding[]): void {
@@ -214,8 +399,15 @@ export class TimelineAuditModal extends Modal {
                 cls: 'ert-timeline-audit-focus-clear',
                 text: t('timelineAuditModal.header.focusedClear')
             });
+            clearBtn.disabled = this.aiState.status === 'running';
             clearBtn.addEventListener('click', () => {
+                if (this.aiState.status === 'running') return;
+                this.clearActiveAiScope();
                 this.focusedPaths = null;
+                if (this.aiScopeMode === 'focused') {
+                    this.aiScopeMode = 'manuscript';
+                }
+                this.aiState = this.plugin.getTimelineAuditAiService().getState(this.getAiScopeKey());
                 this.render();
             });
         }
@@ -278,6 +470,7 @@ export class TimelineAuditModal extends Modal {
         this.createFilterPill(filterRow, t('timelineAuditModal.filters.missingWhen'), 'missing_when');
         this.createFilterPill(filterRow, t('timelineAuditModal.filters.summaryBodyDisagreement'), 'summary_body_disagreement');
         this.createFilterPill(filterRow, t('timelineAuditModal.filters.continuityProblems'), 'continuity_problems');
+        this.createFilterPill(filterRow, t('timelineAuditModal.filters.aiChecked'), 'ai_checked');
         this.createFilterPill(filterRow, t('timelineAuditModal.filters.aiSuggested'), 'ai_suggested');
         this.createFilterPill(filterRow, t('timelineAuditModal.filters.unresolved'), 'unresolved');
 
@@ -355,6 +548,8 @@ export class TimelineAuditModal extends Modal {
             text: t('timelineAuditModal.aiCard.description')
         });
 
+        this.renderAiScopeControls(aiCard);
+
         const statusCol = aiCard.createDiv({ cls: 'ert-timeline-audit-ai-status' });
         statusCol.createDiv({
             cls: 'ert-timeline-audit-ai-status-title',
@@ -393,14 +588,114 @@ export class TimelineAuditModal extends Modal {
         }
     }
 
+    private setAiScopeMode(mode: TimelineAuditAiScopeMode): void {
+        if (this.aiState.status === 'running') return;
+        this.clearActiveAiScope();
+        this.aiScopeMode = mode;
+        this.aiState = this.plugin.getTimelineAuditAiService().getState(this.getAiScopeKey());
+        this.expandedFindingPath = null;
+        this.hasAutoExpandedCurrentResult = false;
+        this.render();
+    }
+
+    private renderAiScopeControls(container: HTMLElement): void {
+        const scopeWrap = container.createDiv({ cls: 'ert-timeline-audit-ai-scope' });
+        scopeWrap.createDiv({
+            cls: 'ert-timeline-audit-ai-scope-title',
+            text: t('timelineAuditModal.aiScope.title')
+        });
+
+        const choices = scopeWrap.createDiv({ cls: 'ert-timeline-audit-ai-scope-choices' });
+        const markedCount = (this.getAiScopeSourceResult()?.findings ?? []) // SAFE: no audit result means no scenes have been marked
+            .filter(finding => finding.reviewAction === 'mark_review').length;
+        const options: Array<{ mode: TimelineAuditAiScopeMode; label: string; disabled?: boolean }> = [
+            { mode: 'manuscript', label: t('timelineAuditModal.aiScope.manuscript') },
+            { mode: 'range', label: t('timelineAuditModal.aiScope.range') },
+            { mode: 'marked', label: t('timelineAuditModal.aiScope.marked', { count: markedCount }), disabled: markedCount === 0 }
+        ];
+        if (this.focusedPaths && this.focusedPaths.size > 0) {
+            options.push({
+                mode: 'focused',
+                label: t('timelineAuditModal.aiScope.focused', { count: this.focusedPaths.size })
+            });
+        }
+
+        for (const option of options) {
+            const button = choices.createEl('button', {
+                cls: 'ert-timeline-audit-ai-scope-choice',
+                text: option.label,
+                attr: {
+                    type: 'button',
+                    'aria-pressed': this.aiScopeMode === option.mode ? 'true' : 'false'
+                }
+            });
+            button.toggleClass('ert-is-active', this.aiScopeMode === option.mode);
+            button.disabled = Boolean(option.disabled) || this.aiState.status === 'running';
+            button.addEventListener('click', () => this.setAiScopeMode(option.mode));
+        }
+
+        if (this.aiScopeMode === 'range') {
+            const total = this.getAiScopeSourceResult()?.stats.totalScenes ?? 0; // SAFE: range controls use zero while the initial audit is still loading
+            const rangeRow = scopeWrap.createDiv({ cls: 'ert-timeline-audit-ai-range' });
+            const startLabel = rangeRow.createEl('label');
+            startLabel.createSpan({ text: t('timelineAuditModal.aiScope.fromScene') });
+            const startInput = startLabel.createEl('input', {
+                type: 'number',
+                attr: { min: '1', max: String(Math.max(total, 1)), value: String(this.aiRangeStart) }
+            });
+            startInput.disabled = this.aiState.status === 'running';
+            startInput.addEventListener('change', () => {
+                this.clearActiveAiScope();
+                this.aiRangeStart = Math.min(Math.max(1, startInput.valueAsNumber || 1), Math.max(total, 1)); // SAFE: an empty numeric field resets to scene one
+                if (this.aiRangeEnd < this.aiRangeStart) this.aiRangeEnd = this.aiRangeStart;
+                this.aiState = this.plugin.getTimelineAuditAiService().getState(this.getAiScopeKey());
+                this.render();
+            });
+
+            const endLabel = rangeRow.createEl('label');
+            endLabel.createSpan({ text: t('timelineAuditModal.aiScope.toScene') });
+            const endInput = endLabel.createEl('input', {
+                type: 'number',
+                attr: { min: '1', max: String(Math.max(total, 1)), value: String(this.aiRangeEnd || total || 1) } // SAFE: before initialization the range ends at the final scene, or scene one for an empty manuscript
+            });
+            endInput.disabled = this.aiState.status === 'running';
+            endInput.addEventListener('change', () => {
+                this.clearActiveAiScope();
+                this.aiRangeEnd = Math.min(Math.max(this.aiRangeStart, endInput.valueAsNumber || total || 1), Math.max(total, 1)); // SAFE: an empty numeric field extends to the final scene, or scene one when empty
+                this.aiState = this.plugin.getTimelineAuditAiService().getState(this.getAiScopeKey());
+                this.render();
+            });
+        }
+
+        scopeWrap.createDiv({
+            cls: 'ert-timeline-audit-ai-scope-summary',
+            text: this.getAiScopeLabel()
+        });
+        scopeWrap.createDiv({
+            cls: 'ert-timeline-audit-ai-scope-evidence',
+            text: t('timelineAuditModal.aiScope.evidence', { provider: this.getActiveAiProviderLabel() })
+        });
+    }
+
+    private getActiveAiProviderLabel(): string {
+        const provider = this.plugin.settings.aiSettings?.provider;
+        if (provider === 'ollama') return t('timelineAuditModal.aiScope.providerLocal');
+        if (provider === 'anthropic') return 'Anthropic';
+        if (provider === 'google') return 'Google';
+        if (provider === 'openai') return 'OpenAI';
+        return t('timelineAuditModal.aiScope.providerConfigured');
+    }
+
     private getAiActionLabel(): string {
+        const count = this.getAiScopeCount();
         switch (this.aiState.status) {
             case 'running':
                 return t('timelineAuditModal.aiCard.actionRunning');
             case 'completed':
-                return t('timelineAuditModal.aiCard.actionReRun');
-            default:
-                return t('timelineAuditModal.aiCard.actionStart');
+                return t('timelineAuditModal.aiCard.actionReRun', { count });
+            case 'failed':
+            case 'not_started':
+                return t('timelineAuditModal.aiCard.actionStart', { count });
         }
     }
 
@@ -413,7 +708,6 @@ export class TimelineAuditModal extends Modal {
             case 'failed':
                 return t('timelineAuditModal.aiStatus.failed');
             case 'not_started':
-            default:
                 return t('timelineAuditModal.aiStatus.notStarted');
         }
     }
@@ -430,7 +724,14 @@ export class TimelineAuditModal extends Modal {
         }
 
         if (this.aiState.status === 'completed' && this.aiState.completedAt) {
-            return t('timelineAuditModal.aiStatus.completedAgo', { time: this.formatRelativeAge(this.aiState.completedAt) });
+            return t('timelineAuditModal.aiStatus.completedSummary', {
+                scope: this.aiState.scopeLabel,
+                checked: this.aiState.checkedSceneCount,
+                requested: this.aiState.requestedSceneCount,
+                suggestions: this.aiState.suggestionCount,
+                failed: this.aiState.failedSceneCount,
+                time: this.formatRelativeAge(this.aiState.completedAt)
+            });
         }
 
         if (this.aiState.status === 'failed') {
@@ -534,12 +835,13 @@ export class TimelineAuditModal extends Modal {
                         || issue.type === 'relative_order_conflict'
                         || issue.type === 'impossible_sequence'
                     );
+                case 'ai_checked':
+                    return finding.aiChecked === true;
                 case 'ai_suggested':
                     return finding.aiSuggested;
                 case 'unresolved':
                     return finding.unresolved;
                 case 'all':
-                default:
                     return true;
             }
         });
@@ -625,10 +927,18 @@ export class TimelineAuditModal extends Modal {
         // the row itself, not just in the filter or the expanded detail.
         const hasAiSignal = finding.issues.some(i => i.detectionSource === 'ai')
             || finding.evidence.some(e => e.detectionSource === 'ai');
-        if (hasAiSignal) {
+        if (finding.aiChecked || hasAiSignal) {
             middle.createSpan({
                 cls: 'ert-timeline-audit-row-ai-badge',
-                text: t('timelineAuditModal.detectionSource.ai')
+                text: finding.aiChecked
+                    ? t('timelineAuditModal.detectionSource.aiChecked')
+                    : t('timelineAuditModal.detectionSource.ai')
+            });
+        }
+        if (finding.reviewAction === 'mark_review') {
+            middle.createSpan({
+                cls: 'ert-timeline-audit-row-ai-queued-badge',
+                text: t('timelineAuditModal.detectionSource.aiQueued')
             });
         }
 
@@ -675,6 +985,9 @@ export class TimelineAuditModal extends Modal {
             ...finding.issues.map((issue) => issue.detectionSource),
             ...finding.evidence.map((evidence) => evidence.detectionSource)
         ]));
+        if (finding.aiChecked && !detectionSources.includes('ai')) {
+            detectionSources.push('ai');
+        }
         detectionSources.forEach((source) => {
             sourceRow.createSpan({
                 cls: 'ert-timeline-audit-source-badge',
@@ -690,14 +1003,22 @@ export class TimelineAuditModal extends Modal {
                 ? t('timelineAuditModal.detail.chronologyPosition', { position: finding.expectedChronologyPosition, total: totalScenes })
                 : t('timelineAuditModal.detail.chronologyNotPlaced')
         ]);
-        this.createQuestionBlock(qaGrid, t('timelineAuditModal.detail.whatManuscriptImplies'), [
+        const manuscriptImplications = [
             finding.inferredWrittenTimelinePosition?.label ?? t('timelineAuditModal.detail.noAlternatePosition'),
             finding.suggestedWhen ? t('timelineAuditModal.detail.suggestedWhen', { when: this.formatWhen(finding.suggestedWhen) }) : t('timelineAuditModal.detail.noSuggestedWhen')
-        ]);
+        ];
+        if (finding.aiTimelineRole) {
+            manuscriptImplications.unshift(t('timelineAuditModal.detail.aiTimelineRole', {
+                role: this.formatAiTimelineRole(finding.aiTimelineRole)
+            }));
+        }
+        this.createQuestionBlock(qaGrid, t('timelineAuditModal.detail.whatManuscriptImplies'), manuscriptImplications);
         this.createQuestionBlock(qaGrid, t('timelineAuditModal.detail.whyFlagged'), this.getFlagExplanationLines(finding));
         this.createQuestionBlock(qaGrid, t('timelineAuditModal.detail.whatAuthorCanDo'), [
-            finding.safeApplyEligible
-                ? t('timelineAuditModal.detail.actionEligible')
+            finding.suggestedWhen && finding.suggestedProvenance
+                ? finding.safeApplyEligible
+                    ? t('timelineAuditModal.detail.actionEligible')
+                    : t('timelineAuditModal.detail.actionAiSuggestionAvailable')
                 : t('timelineAuditModal.detail.actionIneligible')
         ]);
 
@@ -719,9 +1040,10 @@ export class TimelineAuditModal extends Modal {
         }
 
         const actionRow = card.createDiv({ cls: 'ert-timeline-audit-card-actions' });
+        const canApplySuggestion = finding.suggestedWhen instanceof Date && Boolean(finding.suggestedProvenance);
         const applyButton = new ButtonComponent(actionRow)
             .setButtonText(t('timelineAuditModal.detail.applyButton'))
-            .setDisabled(!finding.safeApplyEligible)
+            .setDisabled(!canApplySuggestion)
             .onClick(() => {
                 finding.reviewAction = 'apply';
                 finding.unresolved = false;
@@ -802,32 +1124,39 @@ export class TimelineAuditModal extends Modal {
         return `${year}-${month}-${day} ${hour}:${minute}`;
     }
 
-    private formatEvidenceSource(source: string): string {
+    private formatEvidenceSource(source: TimelineAuditEvidenceSource): string {
         switch (source) {
             case 'summary': return t('timelineAuditModal.evidenceSource.summary');
             case 'synopsis': return t('timelineAuditModal.evidenceSource.synopsis');
             case 'body': return t('timelineAuditModal.evidenceSource.body');
             case 'neighbor': return t('timelineAuditModal.evidenceSource.neighbor');
             case 'ai': return t('timelineAuditModal.evidenceSource.ai');
-            default: return source;
         }
     }
 
-    private formatEvidenceTier(tier: string): string {
+    private formatEvidenceTier(tier: TimelineAuditEvidenceTier): string {
         switch (tier) {
             case 'direct': return t('timelineAuditModal.evidenceTier.direct');
             case 'strong_inference': return t('timelineAuditModal.evidenceTier.strongInference');
             case 'ambiguous': return t('timelineAuditModal.evidenceTier.ambiguous');
-            default: return tier;
         }
     }
 
-    private formatDetectionSource(source: string): string {
+    private formatDetectionSource(source: TimelineAuditDetectionSource): string {
         switch (source) {
             case 'deterministic': return t('timelineAuditModal.detectionSource.deterministic');
             case 'continuity': return t('timelineAuditModal.detectionSource.continuity');
             case 'ai': return t('timelineAuditModal.detectionSource.ai');
-            default: return source;
+        }
+    }
+
+    private formatAiTimelineRole(role: TimelineAuditAiTimelineRole): string {
+        switch (role) {
+            case 'mainline': return t('timelineAuditModal.timelineRole.mainline');
+            case 'flashback': return t('timelineAuditModal.timelineRole.flashback');
+            case 'flash_forward': return t('timelineAuditModal.timelineRole.flashForward');
+            case 'parallel': return t('timelineAuditModal.timelineRole.parallel');
+            case 'unclear': return t('timelineAuditModal.timelineRole.unclear');
         }
     }
 
@@ -862,6 +1191,8 @@ export class TimelineAuditModal extends Modal {
             } else {
                 new Notice(t('timelineAuditModal.notices.applySuccess'));
             }
+            this.plugin.getTimelineAuditAiService().invalidate(this.getAiScopeKey());
+            this.clearActiveAiScope();
             this.close();
         } catch (error) {
             new Notice(`Failed to apply timeline audit decisions: ${error instanceof Error ? error.message : String(error)}`);

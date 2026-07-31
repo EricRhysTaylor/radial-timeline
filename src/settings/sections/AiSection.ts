@@ -8,7 +8,7 @@ import { AiContextModal } from '../AiContextModal';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
 import { ERT_CLASSES } from '../../ui/classes';
 import { IMPACT_FULL } from '../SettingImpact';
-import { buildDefaultAiSettings } from '../../ai/settings/aiSettings';
+import { buildDefaultAiSettings, DECLARABLE_LOCAL_CAPABILITIES } from '../../ai/settings/aiSettings';
 import { formatProviderCacheWindowLabel } from '../../ai/settings/cacheWindows';
 import { formatGossamerCacheClock, formatGossamerCacheCostHint } from '../../gossamer/cacheWindow';
 import { validateAiSettings } from '../../ai/settings/validateAiSettings';
@@ -60,6 +60,7 @@ import {
     buildLocalLlmServerKey,
     getLocalLlmSettings,
     LOCAL_LLM_BACKEND_LABELS,
+    LOCAL_LLM_CAPABILITY_LABEL_KEYS,
     LOCAL_LLM_JSON_MODE_LABEL_KEYS,
     normalizeLocalLlmServerBaseUrl
 } from '../../ai/localLlm/settings';
@@ -3034,7 +3035,8 @@ export function renderAiSection(params: {
             modelId,
             contextWindow: liveEntry?.contextWindow ?? canonical?.contextWindow ?? null,
             maxOutput: liveEntry?.maxOutput ?? canonical?.maxOutput ?? null,
-            diagnostics
+            diagnostics,
+            declaredCapabilities: getLocalLlmSettings(ensureCanonicalAiSettings()).declaredCapabilities
         });
     };
 
@@ -3357,6 +3359,45 @@ export function renderAiSection(params: {
                 });
         });
     localLlmJsonModeSetting.settingEl.addClass(ERT_CLASSES.ROW);
+
+    // Model capabilities. Local backends publish no capability manifest, so RT
+    // treats every local model as `jsonStrict`-only until the author says
+    // otherwise. Features with a higher floor (Summary refresh, Pulse, Runtime,
+    // Timeline audit, Gossamer) refuse to dispatch to a local model that has not
+    // declared what they need — these toggles are how that declaration is made.
+    localLlmConfigSection.createDiv({
+        cls: 'ert-section-title',
+        text: t('settings.ai.localLlmConfig.capabilitiesTitle')
+    });
+    localLlmConfigSection.createDiv({
+        cls: 'ert-section-desc',
+        text: t('settings.ai.localLlmConfig.capabilitiesDesc')
+    });
+
+    for (const capability of DECLARABLE_LOCAL_CAPABILITIES) {
+        const capabilitySetting = new Settings(localLlmConfigSection)
+            .setName(t(LOCAL_LLM_CAPABILITY_LABEL_KEYS[capability].name))
+            .setDesc(t(LOCAL_LLM_CAPABILITY_LABEL_KEYS[capability].desc))
+            .addToggle(toggle => toggle
+                .setValue(getLocalLlmSettings(ensureCanonicalAiSettings()).declaredCapabilities.includes(capability))
+                .onChange(async (value) => {
+                    const aiSettings = ensureCanonicalAiSettings();
+                    const current = getLocalLlmSettings(aiSettings);
+                    const next = new Set(current.declaredCapabilities);
+                    if (value) next.add(capability); else next.delete(capability);
+                    aiSettings.localLlm = {
+                        ...current,
+                        declaredCapabilities: DECLARABLE_LOCAL_CAPABILITIES.filter(entry => next.has(entry))
+                    };
+                    await persistCanonical();
+                    // The tier pills and their feature tooltips report what RT
+                    // will actually run, so they have to re-read the declaration.
+                    renderLocalLlmModelList();
+                    renderLocalLlmStatus();
+                    void refreshRoutingUi();
+                }));
+        capabilitySetting.settingEl.addClass(ERT_CLASSES.ROW);
+    }
 
     const formatLocalTimestamp = (iso: string | null): string | null => {
         if (!iso) return null;

@@ -209,6 +209,18 @@ export type LocalLlmBackendId = 'ollama' | 'lmStudio' | 'openaiCompatible';
 export type LocalLlmJsonMode = 'response_format' | 'prompt_only';
 export type LocalLlmConfigurationMode = 'auto' | 'custom';
 
+/**
+ * Capabilities the operator can declare for their local model. `jsonStrict` is
+ * not listed: it is the unconditional baseline every local backend must meet,
+ * so it is never a user choice. Local backends expose no machine-readable
+ * capability manifest, which is why these are operator assertions rather than
+ * probe results.
+ */
+export type DeclarableLocalCapability = Extract<
+    Capability,
+    'reasoningStrong' | 'longContext' | 'highOutputCap'
+>;
+
 export interface LocalLlmSettings {
     enabled: boolean;
     configurationMode: LocalLlmConfigurationMode;
@@ -218,6 +230,12 @@ export interface LocalLlmSettings {
     timeoutMs: number;
     maxRetries: number;
     jsonMode: LocalLlmJsonMode;
+    /**
+     * Operator-declared capabilities, merged on top of the local baseline when
+     * the model is resolved. Empty by default: RT never assumes a local model
+     * can do more than emit strict JSON until the operator says so.
+     */
+    declaredCapabilities: DeclarableLocalCapability[];
 }
 
 export interface AIRoleTemplate {

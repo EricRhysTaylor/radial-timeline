@@ -141,7 +141,7 @@ export async function processEntireSubplotWithModal(
                 if (this.abortController && this.abortController.signal.aborted) {
                     this.showCompletionSummary(t('sceneAnalysis.pipeline.notices.abortedRateLimit'));
                 } else {
-                    this.showCompletionSummary(t('sceneAnalysis.processingModal.completion.successMessage'));
+                    this.showCompletionSummary(this.resolveCompletionStatusMessage());
                 }
             } catch (error) {
                 if (!this.abortController.signal.aborted) {
@@ -243,7 +243,7 @@ export async function processBySubplotNameWithModal(
                 if (this.abortController && this.abortController.signal.aborted) {
                     this.showCompletionSummary(t('sceneAnalysis.pipeline.notices.abortedRateLimit'));
                 } else {
-                    this.showCompletionSummary(t('sceneAnalysis.processingModal.completion.successMessage'));
+                    this.showCompletionSummary(this.resolveCompletionStatusMessage());
                 }
             } catch (error) {
                 if (!this.abortController.signal.aborted) {

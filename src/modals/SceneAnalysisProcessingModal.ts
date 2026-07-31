@@ -900,7 +900,7 @@ export class SceneAnalysisProcessingModal extends Modal {
             if (this.abortController && this.abortController.signal.aborted) {
                 this.showCompletionSummary(t('sceneAnalysis.processingModal.completion.aborted'));
             } else {
-                this.showCompletionSummary(t('sceneAnalysis.processingModal.completion.successMessage'));
+                this.showCompletionSummary(this.resolveCompletionStatusMessage());
             }
         } catch (error) {
             if (!this.abortController.signal.aborted) {
@@ -1419,6 +1419,21 @@ export class SceneAnalysisProcessingModal extends Modal {
 
         const warningItem = this.errorListEl.createDiv({ cls: 'ert-pulse-error-item ert-pulse-warning-item' });
         warningItem.setText(message);
+    }
+
+    /**
+     * The hero line for a run that reached its end without aborting or throwing.
+     * "Completed successfully" is only true when nothing failed; a run where
+     * every scene errored is a failure, and a mixed run is a partial — the
+     * header must not contradict the "N failed" count directly beneath it.
+     */
+    private resolveCompletionStatusMessage(): string {
+        if (this.errorCount === 0) {
+            return t('sceneAnalysis.processingModal.completion.successMessage');
+        }
+        return this.processedCount > 0
+            ? t('sceneAnalysis.processingModal.completion.partialMessage')
+            : t('sceneAnalysis.processingModal.completion.failedMessage');
     }
 
     private showCompletionSummary(statusMessage: string): void {

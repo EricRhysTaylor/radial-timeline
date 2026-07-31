@@ -19,6 +19,33 @@ describe('validateAiSettings', () => {
         expect(result.warnings.length).toBeGreaterThan(0);
     });
 
+    /*
+     * Local backends publish no capability manifest, so anything above the
+     * `jsonStrict` baseline is an operator assertion persisted here. It must
+     * default to empty (RT never assumes a local model can do more than it
+     * proved) and must reject junk rather than smuggling it to the capability
+     * floor in aiClient.
+     */
+    it('defaults declared Local LLM capabilities to none', () => {
+        const result = validateAiSettings(null);
+        expect(result.value.localLlm.declaredCapabilities).toEqual([]);
+    });
+
+    it('keeps known declared Local LLM capabilities and drops unknown ones', () => {
+        const result = validateAiSettings({
+            schemaVersion: 1,
+            provider: 'ollama',
+            modelPolicy: { type: 'latestStable' },
+            localLlm: { declaredCapabilities: ['highOutputCap', 'reasoningStrong', 'vision', 'reasoningStrong'] },
+            overrides: {},
+            aiAccessProfile: {},
+            privacy: { allowTelemetry: false, allowProviderSnapshot: false }
+        } as any);
+
+        expect(result.value.localLlm.declaredCapabilities).toEqual(['reasoningStrong', 'highOutputCap']);
+        expect(result.warnings.some(warning => warning.includes('vision'))).toBe(true);
+    });
+
     it('normalizes tiers and override bounds', () => {
         const result = validateAiSettings({
             schemaVersion: 1,

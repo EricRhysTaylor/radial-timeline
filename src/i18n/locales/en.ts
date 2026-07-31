@@ -156,7 +156,7 @@ export interface TranslationKeys {
             secureKey: { unavailableName: string; unavailableDesc: string; migrateName: string; migrateDesc: string; migrateButton: string; noLegacyKeysNotice: string; };
             credential: { statusReady: string; statusRejected: string; statusNetworkBlocked: string; statusChecking: string; statusNotConfigured: string; helperNotConfigured: string; helperRejected: string; helperNetworkBlocked: string; helperChecking: string; replaceKeyButton: string; copyKeyNameButton: string; keyNameCopiedNotice: string; keyNameCopyFailNotice: string; placeholderAnthropic: string; placeholderGoogle: string; placeholderOpenai: string; };
             localLlm: { configTitle: string; configDesc: string; statusTitle: string; statusDesc: string; serverName: string; serverDesc: string; modelsLoading: string; noModelsAuto: string; noModelsCustom: string; legendNotUsable: string; legendLimited: string; legendStrong: string; legendInquiryEligible: string; modelActive: string; actionsName: string; actionsDesc: string; loadServersButton: string; loadModelsButton: string; validateButton: string; loadModelsTooltip: string; };
-            localLlmConfig: { serverName: string; serverDesc: string; optionOllama: string; optionLmStudio: string; optionOpenaiCompat: string; baseUrlName: string; baseUrlDesc: string; manualModelName: string; manualModelDesc: string; jsonModeName: string; jsonModeDesc: string; optionJsonModeResponseFormat: string; optionJsonModePromptOnly: string; };
+            localLlmConfig: { serverName: string; serverDesc: string; optionOllama: string; optionLmStudio: string; optionOpenaiCompat: string; baseUrlName: string; baseUrlDesc: string; manualModelName: string; manualModelDesc: string; jsonModeName: string; jsonModeDesc: string; optionJsonModeResponseFormat: string; optionJsonModePromptOnly: string; capabilitiesTitle: string; capabilitiesDesc: string; capabilityReasoningStrongName: string; capabilityReasoningStrongDesc: string; capabilityLongContextName: string; capabilityLongContextDesc: string; capabilityHighOutputCapName: string; capabilityHighOutputCapDesc: string; };
             config: { inquiryTitle: string; citationsName: string; citationsDesc: string; timelineDisplayTitle: string; pulseContextName: string; pulseContextDesc: string; synopsisMaxWordsName: string; synopsisMaxWordsDesc: string; synopsisMaxWordsInvalid: string; summaryRefreshTitle: string; targetSummaryName: string; targetSummaryDesc: string; targetSummaryInvalid: string; weakThresholdName: string; weakThresholdDesc: string; weakThresholdInvalid: string; alsoUpdateSynopsisName: string; alsoUpdateSynopsisDesc: string; };
         };
         progress: {
@@ -1406,6 +1406,8 @@ export interface TranslationKeys {
             completion: {
                 aborted: string;
                 successMessage: string;
+                partialMessage: string;
+                failedMessage: string;
                 stoppedDueToError: string;
                 fatalError: string;
                 processingDetailsHeading: string;
@@ -1956,6 +1958,14 @@ export const en: TranslationKeys = {
                 jsonModeDesc: 'How structured JSON output is requested from the local server. "Response format" works with Ollama, LM Studio, and most OpenAI-compatible servers. Switch to "Prompt only" only if your server rejects response_format requests.',
                 optionJsonModeResponseFormat: 'Response format (recommended)',
                 optionJsonModePromptOnly: 'Prompt only (compatibility fallback)',
+                capabilitiesTitle: 'Model capabilities',
+                capabilitiesDesc: 'Local servers do not report what their models can do, so Radial Timeline assumes strict JSON output and nothing more. Declare what your model actually handles — features that need more than you declare will refuse to run locally rather than return unreliable results.',
+                capabilityReasoningStrongName: 'Extended reasoning',
+                capabilityReasoningStrongDesc: 'The model holds a multi-step chain of thought and reaches a judgement, rather than pattern-matching a short answer. Required by Summary refresh, Pulse analysis, Runtime estimates, and Timeline audit. Reasoning-tuned models in the 20B+ range typically qualify; small instruct models do not.',
+                capabilityLongContextName: 'Long context',
+                capabilityLongContextDesc: 'The model keeps a manuscript-sized prompt coherent across its full context window, not just accepting it without truncating. Required by Gossamer.',
+                capabilityHighOutputCapName: 'High output ceiling',
+                capabilityHighOutputCapDesc: 'The model can emit long structured responses without truncating mid-object. Required by Gossamer.',
             },
             config: {
                 inquiryTitle: 'Inquiry',
@@ -3668,6 +3678,8 @@ export const en: TranslationKeys = {
             completion: {
                 aborted: 'Processing aborted',
                 successMessage: 'Processing completed successfully!',
+                partialMessage: 'Processing finished with errors',
+                failedMessage: 'Processing failed',
                 stoppedDueToError: 'Processing stopped due to error',
                 fatalError: 'Fatal error: {{error}}',
                 processingDetailsHeading: 'Processing details',

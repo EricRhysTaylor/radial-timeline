@@ -824,13 +824,17 @@
     gap: var(--ert-gap-3xs);
     padding: var(--ert-gap-3xs);
     border-radius: var(--radius-s);
-    background: var(--background-primary);
-    border: 1px solid var(--background-modifier-border);
+    background: transparent;
+    border: 1px solid transparent;
 }
 
-.ert-timeline-repair-step-group .ert-timeline-repair-shift-btn {
-    border: none;
+/* Keep the four shift arrows flush with the scene row at rest. The modal's
+   shared icon-button rule is more specific, so this scoped override prevents
+   it from restoring the dark fill while leaving other icon buttons alone. */
+.ert-ui.ert-scope--modal .ert-timeline-repair-step-group .ert-timeline-repair-shift-btn {
+    border-color: transparent;
     background: transparent;
+    box-shadow: none;
 }
 
 .ert-timeline-repair-shift-btn {
@@ -849,7 +853,9 @@
     transition: all 0.15s ease;
 }
 
-.ert-timeline-repair-shift-btn:hover {
+.ert-ui.ert-scope--modal .ert-timeline-repair-step-group .ert-timeline-repair-shift-btn:hover,
+.ert-ui.ert-scope--modal .ert-timeline-repair-step-group .ert-timeline-repair-shift-btn:focus-visible {
+    background: var(--ert-iconBtn-hover-bg);
     color: var(--text-normal);
     border-color: var(--interactive-accent);
 }

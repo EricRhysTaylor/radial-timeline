@@ -93,8 +93,26 @@ export interface PartMarkerWrite {
 
 export type BookMigrationPlan =
     | { bookId: string; status: 'noop'; reason: 'no-scenes' | 'no-boundaries' }
-    | { bookId: string; status: 'author-owned'; markerPaths: string[]; epigraphProposal: EpigraphProposal | null }
-    | { bookId: string; status: 'derive'; writes: PartMarkerWrite[] }
+    | {
+        bookId: string;
+        status: 'author-owned';
+        markerPaths: string[];
+        epigraphProposal: EpigraphProposal | null;
+        /** Every layout whose stored epigraphs this migration would supersede. */
+        epigraphSourceLayoutIds: string[];
+    }
+    | {
+        bookId: string;
+        status: 'derive';
+        writes: PartMarkerWrite[];
+        /**
+         * Every layout whose stored epigraphs this migration would supersede —
+         * including identical copies, which are distinct storage locations.
+         * Leaving one behind would resurrect epigraphs the author believes were
+         * migrated, so cleanup needs all of them, not just the one read from.
+         */
+        epigraphSourceLayoutIds: string[];
+    }
     | { bookId: string; status: 'blocked'; reason: BlockedReason; scenes: BlockedScene[]; detail: string };
 
 /**
@@ -160,25 +178,30 @@ function isSequentialFromOne(boundaryActs: number[]): boolean {
 
 function resolveEpigraphs(
     storedEpigraphs: Record<string, StoredEpigraphs> | undefined
-): { layoutId: string; stored: StoredEpigraphs } | 'none' | 'conflict' {
+): { layoutIds: string[]; stored: StoredEpigraphs } | 'none' | 'conflict' {
     const populated = Object.entries(storedEpigraphs ?? {}).filter(([, stored]) =>
         stored.quotes.some(entry => entry.trim().length > 0)
         || stored.attributions.some(entry => entry.trim().length > 0)
     );
 
     if (populated.length === 0) return 'none';
-    if (populated.length === 1) return { layoutId: populated[0][0], stored: populated[0][1] };
+
+    const layoutIds = populated.map(([layoutId]) => layoutId).sort();
+    if (populated.length === 1) return { layoutIds, stored: populated[0][1] };
 
     // More than one layout carries text. Identical copies are the common case —
     // the author switched layouts and the text was duplicated forward — and can
-    // be treated as one source. Genuinely different text is unknowable.
+    // be treated as one source for READING. Every copy is still reported, because
+    // each is a distinct storage location and cleanup must clear all of them:
+    // leaving one behind resurrects epigraphs the author believes were migrated.
+    // Genuinely different text is unknowable.
     const [, first] = populated[0];
     const allIdentical = populated.every(([, stored]) =>
         JSON.stringify(stored.quotes) === JSON.stringify(first.quotes)
         && JSON.stringify(stored.attributions) === JSON.stringify(first.attributions)
     );
 
-    return allIdentical ? { layoutId: populated[0][0], stored: first } : 'conflict';
+    return allIdentical ? { layoutIds, stored: first } : 'conflict';
 }
 
 /**
@@ -249,9 +272,10 @@ export function planBookMigration(input: BookMigrationInput): BookMigrationPlan 
             bookId,
             status: 'author-owned',
             markerPaths: authorMarkerPaths,
+            epigraphSourceLayoutIds: epigraphSource?.layoutIds ?? [],
             epigraphProposal: epigraphSource
                 ? {
-                    layoutId: epigraphSource.layoutId,
+                    layoutId: epigraphSource.layoutIds[0],
                     // Walk both arrays: an attribution can outlive its quote, and
                     // quotes.length alone would miss a trailing attribution-only slot.
                     entries: Array.from(
@@ -347,6 +371,7 @@ export function planBookMigration(input: BookMigrationInput): BookMigrationPlan 
     return {
         bookId,
         status: 'derive',
+        epigraphSourceLayoutIds: epigraphSource?.layoutIds ?? [],
         writes: boundaries.map((boundary, index) => ({
             path: boundary.path,
             // Always untitled: the Act this boundary came from had no name.

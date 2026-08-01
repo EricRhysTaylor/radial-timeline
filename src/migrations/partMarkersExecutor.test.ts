@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { BookMigrationPlan } from './partMarkers';
+import { buildManifest, fingerprintManifest } from './partMarkersManifest';
 import {
     LIST_ABSENT,
     PART_MIGRATION_JOURNAL_SCHEMA,
-    fingerprintPlan,
     snapshotList,
     type JournalBookRecord,
     type JournalFieldChange,
@@ -24,6 +24,7 @@ const PATH = 'Books/A/1.md';
 const PLAN: BookMigrationPlan = {
     bookId: 'book-1',
     status: 'derive',
+    epigraphSourceLayoutIds: [],
     writes: [{ path: PATH, title: true, actNumber: 1, partNumber: 1 }],
 };
 
@@ -55,6 +56,12 @@ interface HarnessOptions {
     failRead?: boolean;
 }
 
+/** Fingerprint of the resolved manifest for a plan, as the journal stores it. */
+function manifestFingerprint(plan: BookMigrationPlan): string {
+    const manifest = buildManifest(plan);
+    return manifest ? fingerprintManifest(manifest) : 'not-executable';
+}
+
 function makeHarness(options: HarnessOptions = {}) {
     const ops: string[] = [];
     const disk: Partial<Record<JournalFieldName, JournalSnapshot>> = { ...(options.disk ?? {}) };
@@ -67,7 +74,7 @@ function makeHarness(options: HarnessOptions = {}) {
     const bookRecord: JournalBookRecord = {
         bookId: 'book-1',
         status: 'planned',
-        planFingerprint: fingerprintPlan(PLAN),
+        planFingerprint: manifestFingerprint(PLAN),
         preExistingMarkerPaths: [],
         scenes: [{ path: PATH, changes: [change()], skipped: [] }],
         epigraphCleanups: [],
@@ -185,7 +192,7 @@ describe('the ordering contract', () => {
             scenes: [{ path: PATH, detail: 'Re-opens Act 1.' }], detail: '',
         };
         const harness = makeHarness({
-            bookRecord: { scenes: [], planFingerprint: fingerprintPlan(blocked) },
+            bookRecord: { scenes: [], planFingerprint: manifestFingerprint(blocked) },
         });
 
         const report = await executeBookMigration({ ...harness.deps, plan: blocked });
@@ -278,7 +285,7 @@ describe('refusing to act', () => {
             scenes: [{ path: PATH, detail: 'Re-opens Act 1.' }], detail: '',
         };
         const harness = makeHarness({
-            bookRecord: { planFingerprint: fingerprintPlan(blocked) },
+            bookRecord: { planFingerprint: manifestFingerprint(blocked) },
         });
 
         const report = await executeBookMigration({ ...harness.deps, plan: blocked });
@@ -290,7 +297,7 @@ describe('refusing to act', () => {
 
     it('refuses a noop plan carrying stray change records', async () => {
         const noop: BookMigrationPlan = { bookId: 'book-1', status: 'noop', reason: 'no-boundaries' };
-        const harness = makeHarness({ bookRecord: { planFingerprint: fingerprintPlan(noop) } });
+        const harness = makeHarness({ bookRecord: { planFingerprint: manifestFingerprint(noop) } });
 
         const report = await executeBookMigration({ ...harness.deps, plan: noop });
 
@@ -304,13 +311,14 @@ describe('refusing to act', () => {
         const twoWrites: BookMigrationPlan = {
             bookId: 'book-1',
             status: 'derive',
+            epigraphSourceLayoutIds: [],
             writes: [
                 { path: PATH, title: true, actNumber: 1, partNumber: 1 },
                 { path: 'Books/A/2.md', title: true, actNumber: 2, partNumber: 2 },
             ],
         };
         const harness = makeHarness({
-            bookRecord: { planFingerprint: fingerprintPlan(twoWrites) },
+            bookRecord: { planFingerprint: manifestFingerprint(twoWrites) },
         });
 
         const report = await executeBookMigration({ ...harness.deps, plan: twoWrites });
@@ -516,7 +524,9 @@ describe('failure leaves an honest record', () => {
 });
 
 describe('layout cleanup', () => {
+    const PLAN_WITH_LAYOUT: BookMigrationPlan = { ...PLAN, epigraphSourceLayoutIds: ['layout'] } as BookMigrationPlan;
     const withCleanup = (extra: Partial<JournalBookRecord> = {}) => ({
+        planFingerprint: manifestFingerprint(PLAN_WITH_LAYOUT),
         scenes: [{ path: PATH, changes: [change({ state: 'confirmed' })], skipped: [] }],
         epigraphCleanups: [cleanupRecord()],
         ...extra,
@@ -528,7 +538,7 @@ describe('layout cleanup', () => {
             bookRecord: withCleanup(),
         });
 
-        await executeBookMigration({ ...harness.deps, plan: PLAN });
+        await executeBookMigration({ ...harness.deps, plan: PLAN_WITH_LAYOUT });
 
         expect(harness.ops).toEqual([
             `read:${PATH}`,               // scene already current
@@ -552,7 +562,7 @@ describe('layout cleanup', () => {
             failSave: 2,
         });
 
-        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN_WITH_LAYOUT });
 
         expect(report.cleanups[0].status).toBe('cleared-unconfirmed');
         expect(harness.layout().actEpigraphs).toEqual(LIST_ABSENT);
@@ -564,7 +574,7 @@ describe('layout cleanup', () => {
         // would delete the last surviving one.
         const harness = makeHarness({ disk: {}, bookRecord: withCleanup() });
 
-        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN_WITH_LAYOUT });
 
         expect(report.cleanups[0].status).toBe('blocked');
         expect(report.cleanups[0].detail).toMatch(/no longer on its scene/);
@@ -574,7 +584,7 @@ describe('layout cleanup', () => {
     it('refuses when a scene cannot be re-read', async () => {
         const harness = makeHarness({ failRead: true, bookRecord: withCleanup() });
 
-        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN_WITH_LAYOUT });
 
         expect(report.cleanups[0].status).toBe('blocked');
         expect(report.cleanups[0].detail).toMatch(/could not be re-read/);
@@ -590,7 +600,7 @@ describe('layout cleanup', () => {
             },
         });
 
-        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN_WITH_LAYOUT });
 
         expect(report.cleanups[0].status).toBe('blocked');
         expect(report.cleanups[0].detail).toMatch(/changed by someone else/);
@@ -609,7 +619,7 @@ describe('layout cleanup', () => {
             }),
         });
 
-        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN_WITH_LAYOUT });
 
         expect(report.cleanups[0].status).toBe('blocked');
         expect(report.cleanups[0].detail).toMatch(/not been accepted/);
@@ -622,7 +632,7 @@ describe('layout cleanup', () => {
             layoutDisk: { actEpigraphs: LIST_ABSENT, actEpigraphAttributions: LIST_ABSENT },
         });
 
-        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN_WITH_LAYOUT });
 
         expect(report.cleanups[0].status).toBe('already-clear');
         expect(harness.ops).not.toContain('layout-write:layout');
@@ -641,7 +651,7 @@ describe('layout cleanup', () => {
             },
         });
 
-        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN_WITH_LAYOUT });
 
         expect(report.cleanups[0].status).toBe('blocked');
         expect(report.cleanups[0].detail).toMatch(/repopulated/);
@@ -654,7 +664,7 @@ describe('layout cleanup', () => {
             bookRecord: withCleanup({ epigraphCleanups: [cleanupRecord({ state: 'attempting' })] }),
         });
 
-        const report = await executeBookMigration({ ...harness.deps, plan: PLAN });
+        const report = await executeBookMigration({ ...harness.deps, plan: PLAN_WITH_LAYOUT });
 
         expect(report.cleanups[0].status).toBe('blocked');
         expect(report.cleanups[0].detail).toMatch(/interrupted/);

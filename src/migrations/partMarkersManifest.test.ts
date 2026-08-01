@@ -6,21 +6,33 @@ import {
     buildManifest,
     findManifestJournalMismatch,
     fingerprintManifest,
+    isManifest,
+    type BuildManifestOptions,
+    type ExecutableManifest,
 } from './partMarkersManifest';
 
 const PATH = 'Books/A/1.md';
+const OTHER = 'Books/A/2.md';
 const bool = (value: boolean): JournalSnapshot => ({ kind: 'boolean', value });
 const str = (value: string): JournalSnapshot => ({ kind: 'string', value });
 const ABSENT_SNAP: JournalSnapshot = { kind: 'absent' };
 
-function derivePlan(overrides: Partial<Extract<BookMigrationPlan, { status: 'derive' }>> = {}) {
+function derivePlan(
+    overrides: Partial<Extract<BookMigrationPlan, { status: 'derive' }>> = {}
+): BookMigrationPlan {
     return {
         bookId: 'book-1',
-        status: 'derive' as const,
-        epigraphSourceLayoutIds: [],
-        writes: [{ path: PATH, title: true as const, actNumber: 1, partNumber: 1 }],
+        status: 'derive',
+        epigraphSources: [],
+        writes: [{ path: PATH, title: true, actNumber: 1, partNumber: 1 }],
         ...overrides,
     };
+}
+
+function manifestOf(plan: BookMigrationPlan, options: BuildManifestOptions = {}): ExecutableManifest {
+    const resolved = buildManifest(plan, options);
+    if (!isManifest(resolved)) throw new Error(`expected a manifest, got: ${resolved.detail}`);
+    return resolved;
 }
 
 function change(overrides: Partial<JournalFieldChange> = {}): JournalFieldChange {
@@ -39,10 +51,10 @@ function bookRecord(overrides: Partial<JournalBookRecord> = {}): JournalBookReco
     };
 }
 
-function cleanupFor(layoutId: string) {
+function cleanupFor(layoutId: string, quotes: string[] = ['A quote.']) {
     return {
         layoutId,
-        before: { actEpigraphs: snapshotList(['One.']), actEpigraphAttributions: LIST_ABSENT },
+        before: { actEpigraphs: snapshotList(quotes), actEpigraphAttributions: LIST_ABSENT },
         after: { actEpigraphs: LIST_ABSENT, actEpigraphAttributions: LIST_ABSENT },
         state: 'planned' as const,
         accepted: true,
@@ -51,93 +63,196 @@ function cleanupFor(layoutId: string) {
 
 describe('buildManifest', () => {
     it('enumerates every field a derive plan writes', () => {
-        const manifest = buildManifest(derivePlan({
+        const manifest = manifestOf(derivePlan({
             writes: [{ path: PATH, title: true, actNumber: 1, partNumber: 1, quote: 'q', attribution: 'a' }],
         }));
-
-        expect(manifest?.scenes[0].fields.map(field => field.field))
+        expect(manifest.scenes[0].fields.map(field => field.field))
             .toEqual(['Part', 'Part Epigraph', 'Part Epigraph By']);
     });
 
-    it('carries every source layout as a cleanup target, including identical copies', () => {
-        // Each is a distinct storage location; leaving one behind resurrects
-        // epigraphs the author believes were migrated.
-        const manifest = buildManifest(derivePlan({ epigraphSourceLayoutIds: ['b', 'a'] }));
-        expect(manifest?.cleanupLayoutIds).toEqual(['a', 'b']);
+    it('carries exact before and after values for every cleanup target', () => {
+        // Naming only the layout left the journal free to carry arbitrary
+        // snapshots, which the executor would apply and verify.
+        const manifest = manifestOf(derivePlan({
+            writes: [{ path: PATH, title: true, actNumber: 1, partNumber: 1, quote: 'One.' }],
+            epigraphSources: [{ layoutId: 'b', quotes: ['One.'], attributions: [] }],
+        }));
+
+        expect(manifest.cleanups).toEqual([{
+            layoutId: 'b',
+            before: { actEpigraphs: snapshotList(['One.']), actEpigraphAttributions: LIST_ABSENT },
+            after: { actEpigraphs: LIST_ABSENT, actEpigraphAttributions: LIST_ABSENT },
+        }]);
     });
 
-    it('treats blocked and noop plans as having no migration at all', () => {
-        expect(buildManifest({
+    it('refuses cleanup while a populated slot was never migrated', () => {
+        // An epigraph for an act the book no longer has would be destroyed by a
+        // cleanup approved for other reasons.
+        const manifest = manifestOf(derivePlan({
+            writes: [{ path: PATH, title: true, actNumber: 1, partNumber: 1, quote: 'One.' }],
+            epigraphSources: [{ layoutId: 'l', quotes: ['One.', 'Stranded.'], attributions: [] }],
+        }));
+        expect(manifest.cleanups).toEqual([]);
+    });
+
+    it('authorizes cleanup once a stranded slot is explicitly discarded', () => {
+        const manifest = manifestOf(
+            derivePlan({
+                writes: [{ path: PATH, title: true, actNumber: 1, partNumber: 1, quote: 'One.' }],
+                epigraphSources: [{ layoutId: 'l', quotes: ['One.', 'Stranded.'], attributions: [] }],
+            }),
+            { discardedActNumbers: [2] }
+        );
+        expect(manifest.cleanups.map(target => target.layoutId)).toEqual(['l']);
+    });
+
+    it('refuses blocked and noop plans with a reason', () => {
+        const blocked = buildManifest({
             bookId: 'b', status: 'blocked', reason: 're-entrant-acts', scenes: [], detail: '',
-        })).toBeNull();
-        expect(buildManifest({ bookId: 'b', status: 'noop', reason: 'no-scenes' })).toBeNull();
+        });
+        expect(isManifest(blocked)).toBe(false);
+        expect(isManifest(buildManifest({ bookId: 'b', status: 'noop', reason: 'no-scenes' }))).toBe(false);
     });
 
-    describe('author-owned books', () => {
+    describe('author-owned acceptance', () => {
         const plan: BookMigrationPlan = {
             bookId: 'book-1',
             status: 'author-owned',
-            markerPaths: [PATH],
-            epigraphProposal: null,
-            epigraphSourceLayoutIds: ['layout'],
+            markerPaths: [PATH, OTHER],
+            epigraphProposal: {
+                layoutId: 'layout',
+                entries: [
+                    { actNumber: 1, quote: 'One.' },
+                    { actNumber: 2, quote: 'Two.' },
+                ],
+            },
+            epigraphSources: [{ layoutId: 'layout', quotes: ['One.', 'Two.'], attributions: [] }],
         };
 
-        it('has nothing to execute until the author accepts a placement', () => {
-            // Clearing storage before acceptance would destroy the only copy.
-            const manifest = buildManifest(plan);
-            expect(manifest?.scenes).toEqual([]);
-            expect(manifest?.cleanupLayoutIds).toEqual([]);
+        it('refuses when only some proposals are answered', () => {
+            // Partial acceptance previously enabled cleanup of every source,
+            // deleting the unmapped remainder.
+            const resolved = buildManifest(plan, {
+                acceptedEpigraphs: [{ actNumber: 1, path: PATH, quote: 'One.' }],
+            });
+            expect(isManifest(resolved)).toBe(false);
+            if (isManifest(resolved)) return;
+            expect(resolved.detail).toMatch(/have not been accepted or discarded/);
         });
 
-        it('writes exactly what the author accepted, and then permits cleanup', () => {
-            // Previously these legitimate writes were rejected outright as
-            // "a non-derive plan that writes nothing".
-            const manifest = buildManifest(plan, {
-                acceptedEpigraphs: [{ path: PATH, quote: 'A quote.', attribution: 'Camus' }],
+        it('refuses a placement onto a scene with no marker', () => {
+            const resolved = buildManifest(plan, {
+                acceptedEpigraphs: [
+                    { actNumber: 1, path: 'Books/A/no-marker.md', quote: 'One.' },
+                    { actNumber: 2, path: OTHER, quote: 'Two.' },
+                ],
+            });
+            expect(isManifest(resolved)).toBe(false);
+            if (isManifest(resolved)) return;
+            expect(resolved.detail).toMatch(/carries no Part marker/);
+        });
+
+        it('refuses an accepted entry carrying no text', () => {
+            // One empty entry produced no fields yet still enabled cleanup.
+            const resolved = buildManifest(plan, {
+                acceptedEpigraphs: [
+                    { actNumber: 1, path: PATH },
+                    { actNumber: 2, path: OTHER, quote: 'Two.' },
+                ],
+            });
+            expect(isManifest(resolved)).toBe(false);
+            if (isManifest(resolved)) return;
+            expect(resolved.detail).toMatch(/carries no text/);
+        });
+
+        it('refuses an act both accepted and discarded, or accepted twice', () => {
+            const conflicting = buildManifest(plan, {
+                acceptedEpigraphs: [{ actNumber: 1, path: PATH, quote: 'One.' }],
+                discardedActNumbers: [1, 2],
+            });
+            expect(isManifest(conflicting)).toBe(false);
+
+            const twice = buildManifest(plan, {
+                acceptedEpigraphs: [
+                    { actNumber: 1, path: PATH, quote: 'One.' },
+                    { actNumber: 1, path: OTHER, quote: 'One.' },
+                ],
+                discardedActNumbers: [2],
+            });
+            expect(isManifest(twice)).toBe(false);
+        });
+
+        it('refuses two epigraphs aimed at one scene', () => {
+            const resolved = buildManifest(plan, {
+                acceptedEpigraphs: [
+                    { actNumber: 1, path: PATH, quote: 'One.' },
+                    { actNumber: 2, path: PATH, quote: 'Two.' },
+                ],
+            });
+            expect(isManifest(resolved)).toBe(false);
+            if (isManifest(resolved)) return;
+            expect(resolved.detail).toMatch(/a scene opens one part/);
+        });
+
+        it('authorizes writes and cleanup once every proposal is answered', () => {
+            const manifest = manifestOf(plan, {
+                acceptedEpigraphs: [{ actNumber: 1, path: PATH, quote: 'One.' }],
+                discardedActNumbers: [2],
             });
 
-            expect(manifest?.scenes).toEqual([{
+            expect(manifest.scenes).toEqual([{
                 path: PATH,
-                fields: [
-                    { field: 'Part Epigraph', after: str('A quote.') },
-                    { field: 'Part Epigraph By', after: str('Camus') },
-                ],
+                fields: [{
+                    field: 'Part Epigraph',
+                    after: str('One.'),
+                    allowedSkips: ['author-value-present', 'unsupported-value', 'marker-not-written'],
+                }],
             }]);
-            expect(manifest?.cleanupLayoutIds).toEqual(['layout']);
+            expect(manifest.cleanups.map(target => target.layoutId)).toEqual(['layout']);
+        });
+
+        it('authorizes nothing when there was no proposal at all', () => {
+            const manifest = manifestOf({ ...plan, epigraphProposal: null });
+            expect(manifest.scenes).toEqual([]);
+            expect(manifest.cleanups).toEqual([]);
         });
     });
 });
 
 describe('fingerprintManifest', () => {
     it('is order-independent', () => {
-        const a = { path: 'Books/A/1.md', title: true as const, actNumber: 1, partNumber: 1 };
-        const b = { path: 'Books/A/2.md', title: true as const, actNumber: 2, partNumber: 2 };
-        expect(fingerprintManifest(buildManifest(derivePlan({ writes: [a, b] }))!))
-            .toBe(fingerprintManifest(buildManifest(derivePlan({ writes: [b, a] }))!));
+        const a = { path: PATH, title: true as const, actNumber: 1, partNumber: 1 };
+        const b = { path: OTHER, title: true as const, actNumber: 2, partNumber: 2 };
+        expect(fingerprintManifest(manifestOf(derivePlan({ writes: [a, b] }))))
+            .toBe(fingerprintManifest(manifestOf(derivePlan({ writes: [b, a] }))));
     });
 
     it('still changes with the structural numbering', () => {
-        // The manifest replaced the plan fingerprint, so it has to keep this
-        // sensitivity: resuming across a renumbering would renumber the book.
-        expect(fingerprintManifest(buildManifest(derivePlan())!))
-            .not.toBe(fingerprintManifest(buildManifest(derivePlan({
+        expect(fingerprintManifest(manifestOf(derivePlan())))
+            .not.toBe(fingerprintManifest(manifestOf(derivePlan({
                 writes: [{ path: PATH, title: true, actNumber: 2, partNumber: 2 }],
-            }))!));
+            }))));
     });
 
-    it('changes with the cleanup targets', () => {
-        expect(fingerprintManifest(buildManifest(derivePlan())!))
-            .not.toBe(fingerprintManifest(buildManifest(derivePlan({
-                epigraphSourceLayoutIds: ['layout'],
-            }))!));
+    it('changes with the cleanup values, not just the layout', () => {
+        const base = derivePlan({
+            writes: [{ path: PATH, title: true, actNumber: 1, partNumber: 1, quote: 'One.' }],
+            epigraphSources: [{ layoutId: 'l', quotes: ['One.'], attributions: [] }],
+        });
+        const differentStored = derivePlan({
+            writes: [{ path: PATH, title: true, actNumber: 1, partNumber: 1, quote: 'One.' }],
+            epigraphSources: [{ layoutId: 'l', quotes: ['One.'], attributions: ['Camus'] }],
+        });
+        expect(fingerprintManifest(manifestOf(base)))
+            .not.toBe(fingerprintManifest(manifestOf(differentStored)));
     });
 });
 
 describe('findManifestJournalMismatch', () => {
-    const manifest = buildManifest(derivePlan({
+    const manifest = manifestOf(derivePlan({
         writes: [{ path: PATH, title: true, actNumber: 1, partNumber: 1, quote: 'A quote.' }],
-        epigraphSourceLayoutIds: ['layout'],
-    }))!;
+        epigraphSources: [{ layoutId: 'layout', quotes: ['A quote.'], attributions: [] }],
+    }));
 
     const complete = bookRecord({
         scenes: [{
@@ -152,7 +267,7 @@ describe('findManifestJournalMismatch', () => {
         expect(findManifestJournalMismatch(complete, manifest)).toBeNull();
     });
 
-    it('accepts a skip in place of a change', () => {
+    it('accepts a permitted skip in place of a change', () => {
         const withSkip = bookRecord({
             scenes: [{
                 path: PATH,
@@ -164,23 +279,41 @@ describe('findManifestJournalMismatch', () => {
         expect(findManifestJournalMismatch(withSkip, manifest)).toBeNull();
     });
 
-    it('rejects a planned field that simply vanished from the journal', () => {
-        // The silent-disappearance case: the book looked consistent, cleanup
-        // then cleared the legacy copy, and the epigraph existed nowhere.
+    it('rejects a marker skipped as author-value-present', () => {
+        // The marker is the migration's own structure, so "the author already
+        // wrote something" is not a reason to leave it. Accepting this let a
+        // markerless book satisfy validation and stamp applied.
+        const markerSkipped = bookRecord({
+            scenes: [{
+                path: PATH,
+                changes: [change({ field: 'Part Epigraph', after: str('A quote.') })],
+                skipped: [{ field: 'Part', reason: 'author-value-present' }],
+            }],
+            epigraphCleanups: [cleanupFor('layout')],
+        });
+        expect(findManifestJournalMismatch(markerSkipped, manifest))
+            .toMatch(/not a reason that field may be skipped for/);
+    });
+
+    it('accepts a marker skipped for an unsupported value', () => {
+        const markerSkipped = bookRecord({
+            scenes: [{
+                path: PATH,
+                changes: [change({ field: 'Part Epigraph', after: str('A quote.') })],
+                skipped: [{ field: 'Part', reason: 'unsupported-value' }],
+            }],
+            epigraphCleanups: [cleanupFor('layout')],
+        });
+        expect(findManifestJournalMismatch(markerSkipped, manifest)).toBeNull();
+    });
+
+    it('rejects a planned field that vanished from the journal', () => {
         const missingField = bookRecord({
             scenes: [{ path: PATH, changes: [change()], skipped: [] }],
             epigraphCleanups: [cleanupFor('layout')],
         });
         expect(findManifestJournalMismatch(missingField, manifest))
             .toMatch(/neither a change nor a skip/);
-    });
-
-    it('rejects a record with no changes at all when fields were planned', () => {
-        const empty = bookRecord({
-            scenes: [{ path: PATH, changes: [], skipped: [] }],
-            epigraphCleanups: [cleanupFor('layout')],
-        });
-        expect(findManifestJournalMismatch(empty, manifest)).toMatch(/neither a change nor a skip/);
     });
 
     it('rejects a field recorded as both written and skipped', () => {
@@ -196,47 +329,55 @@ describe('findManifestJournalMismatch', () => {
     });
 
     it('rejects duplicate scene records and duplicate field changes', () => {
-        const dupePath = bookRecord({
+        expect(findManifestJournalMismatch(bookRecord({
             scenes: [
                 { path: PATH, changes: [change()], skipped: [] },
                 { path: PATH, changes: [change()], skipped: [] },
             ],
-        });
-        expect(findManifestJournalMismatch(dupePath, manifest))
-            .toMatch(/more than one record/);
+        }), manifest)).toMatch(/more than one record/);
 
-        const dupeField = bookRecord({
+        expect(findManifestJournalMismatch(bookRecord({
             scenes: [{ path: PATH, changes: [change(), change()], skipped: [] }],
             epigraphCleanups: [cleanupFor('layout')],
-        });
-        expect(findManifestJournalMismatch(dupeField, manifest))
-            .toMatch(/more than one change/);
+        }), manifest)).toMatch(/more than one change/);
     });
 
-    it('rejects a missing cleanup record, which would strand a storage location', () => {
-        const noCleanup = bookRecord({
+    it('rejects a cleanup record whose recorded prior storage is not the plan’s', () => {
+        // The executor verifies against whatever the record carries, so a wrong
+        // before-value would authorize clearing storage it never inspected.
+        const wrongBefore = bookRecord({
             scenes: complete.scenes,
-            epigraphCleanups: [],
+            epigraphCleanups: [cleanupFor('layout', ['Something else entirely.'])],
         });
-        expect(findManifestJournalMismatch(noCleanup, manifest))
-            .toMatch(/no cleanup record/);
+        expect(findManifestJournalMismatch(wrongBefore, manifest))
+            .toMatch(/recorded prior storage is not what the plan resolved/);
     });
 
-    it('rejects cleanup records the plan does not call for', () => {
-        const strayCleanup = bookRecord({
+    it('rejects a cleanup record that would leave storage in an unplanned state', () => {
+        const wrongAfter = bookRecord({
+            scenes: complete.scenes,
+            epigraphCleanups: [{
+                ...cleanupFor('layout'),
+                after: { actEpigraphs: snapshotList(['left behind']), actEpigraphAttributions: LIST_ABSENT },
+            }],
+        });
+        expect(findManifestJournalMismatch(wrongAfter, manifest))
+            .toMatch(/leave storage in a state the plan does not call for/);
+    });
+
+    it('rejects missing, stray, and duplicate cleanup records', () => {
+        expect(findManifestJournalMismatch(
+            bookRecord({ scenes: complete.scenes, epigraphCleanups: [] }), manifest
+        )).toMatch(/no cleanup record/);
+
+        expect(findManifestJournalMismatch(bookRecord({
             scenes: complete.scenes,
             epigraphCleanups: [cleanupFor('layout'), cleanupFor('unexpected')],
-        });
-        expect(findManifestJournalMismatch(strayCleanup, manifest))
-            .toMatch(/does not call for/);
-    });
+        }), manifest)).toMatch(/does not call for/);
 
-    it('rejects duplicate cleanup records for one layout', () => {
-        const dupe = bookRecord({
+        expect(findManifestJournalMismatch(bookRecord({
             scenes: complete.scenes,
             epigraphCleanups: [cleanupFor('layout'), cleanupFor('layout')],
-        });
-        expect(findManifestJournalMismatch(dupe, manifest))
-            .toMatch(/more than one cleanup record/);
+        }), manifest)).toMatch(/more than one cleanup record/);
     });
 });

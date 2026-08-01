@@ -99,7 +99,7 @@ export type BookMigrationPlan =
         markerPaths: string[];
         epigraphProposal: EpigraphProposal | null;
         /** Every layout whose stored epigraphs this migration would supersede. */
-        epigraphSourceLayoutIds: string[];
+        epigraphSources: EpigraphSource[];
     }
     | {
         bookId: string;
@@ -110,10 +110,21 @@ export type BookMigrationPlan =
          * including identical copies, which are distinct storage locations.
          * Leaving one behind would resurrect epigraphs the author believes were
          * migrated, so cleanup needs all of them, not just the one read from.
+         *
+         * Carries the exact stored values, not just ids: cleanup deletes whole
+         * arrays, so the manifest has to know precisely what it is deleting and
+         * be able to prove every populated slot was migrated or discarded first.
          */
-        epigraphSourceLayoutIds: string[];
+        epigraphSources: EpigraphSource[];
     }
     | { bookId: string; status: 'blocked'; reason: BlockedReason; scenes: BlockedScene[]; detail: string };
+
+/** One layout's stored epigraph arrays, exactly as they sit in settings. */
+export interface EpigraphSource {
+    layoutId: string;
+    quotes: string[];
+    attributions: string[];
+}
 
 /**
  * Epigraphs the migration cannot place on its own.
@@ -214,6 +225,18 @@ function resolveEpigraphs(
  * migration lossy, and dropping it in one path but not the other would make the
  * two disagree — so the rule is stated once here and used by both.
  */
+/** Exact stored arrays for the layouts cleanup will clear. */
+function epigraphSourcesOf(
+    storedEpigraphs: Record<string, StoredEpigraphs> | undefined,
+    layoutIds: string[]
+): EpigraphSource[] {
+    return layoutIds.map(layoutId => ({
+        layoutId,
+        quotes: [...(storedEpigraphs?.[layoutId]?.quotes ?? [])],
+        attributions: [...(storedEpigraphs?.[layoutId]?.attributions ?? [])],
+    }));
+}
+
 function epigraphFor(
     stored: StoredEpigraphs | undefined,
     actNumber: number
@@ -272,7 +295,7 @@ export function planBookMigration(input: BookMigrationInput): BookMigrationPlan 
             bookId,
             status: 'author-owned',
             markerPaths: authorMarkerPaths,
-            epigraphSourceLayoutIds: epigraphSource?.layoutIds ?? [],
+            epigraphSources: epigraphSourcesOf(storedEpigraphs, epigraphSource?.layoutIds ?? []),
             epigraphProposal: epigraphSource
                 ? {
                     layoutId: epigraphSource.layoutIds[0],
@@ -371,7 +394,7 @@ export function planBookMigration(input: BookMigrationInput): BookMigrationPlan 
     return {
         bookId,
         status: 'derive',
-        epigraphSourceLayoutIds: epigraphSource?.layoutIds ?? [],
+        epigraphSources: epigraphSourcesOf(storedEpigraphs, epigraphSource?.layoutIds ?? []),
         writes: boundaries.map((boundary, index) => ({
             path: boundary.path,
             // Always untitled: the Act this boundary came from had no name.

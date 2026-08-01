@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { BookMigrationPlan } from './partMarkers';
-import { buildManifest, fingerprintManifest } from './partMarkersManifest';
+import { buildManifest, fingerprintManifest, isManifest } from './partMarkersManifest';
 import {
     LIST_ABSENT,
     PART_MIGRATION_JOURNAL_SCHEMA,
@@ -24,7 +24,7 @@ const PATH = 'Books/A/1.md';
 const PLAN: BookMigrationPlan = {
     bookId: 'book-1',
     status: 'derive',
-    epigraphSourceLayoutIds: [],
+    epigraphSources: [],
     writes: [{ path: PATH, title: true, actNumber: 1, partNumber: 1 }],
 };
 
@@ -58,8 +58,8 @@ interface HarnessOptions {
 
 /** Fingerprint of the resolved manifest for a plan, as the journal stores it. */
 function manifestFingerprint(plan: BookMigrationPlan): string {
-    const manifest = buildManifest(plan);
-    return manifest ? fingerprintManifest(manifest) : 'not-executable';
+    const resolved = buildManifest(plan);
+    return isManifest(resolved) ? fingerprintManifest(resolved) : 'not-executable';
 }
 
 function makeHarness(options: HarnessOptions = {}) {
@@ -311,7 +311,7 @@ describe('refusing to act', () => {
         const twoWrites: BookMigrationPlan = {
             bookId: 'book-1',
             status: 'derive',
-            epigraphSourceLayoutIds: [],
+            epigraphSources: [],
             writes: [
                 { path: PATH, title: true, actNumber: 1, partNumber: 1 },
                 { path: 'Books/A/2.md', title: true, actNumber: 2, partNumber: 2 },
@@ -524,17 +524,28 @@ describe('failure leaves an honest record', () => {
 });
 
 describe('layout cleanup', () => {
-    const PLAN_WITH_LAYOUT: BookMigrationPlan = { ...PLAN, epigraphSourceLayoutIds: ['layout'] } as BookMigrationPlan;
+    const PLAN_WITH_LAYOUT: BookMigrationPlan = {
+        ...PLAN,
+        writes: [{ path: PATH, title: true, actNumber: 1, partNumber: 1, quote: 'One.' }],
+        epigraphSources: [{ layoutId: 'layout', quotes: ['One.'], attributions: [] }],
+    } as BookMigrationPlan;
     const withCleanup = (extra: Partial<JournalBookRecord> = {}) => ({
         planFingerprint: manifestFingerprint(PLAN_WITH_LAYOUT),
-        scenes: [{ path: PATH, changes: [change({ state: 'confirmed' })], skipped: [] }],
+        scenes: [{
+            path: PATH,
+            changes: [
+                change({ state: 'confirmed' }),
+                change({ field: 'Part Epigraph', after: str('One.'), state: 'confirmed' }),
+            ],
+            skipped: [],
+        }],
         epigraphCleanups: [cleanupRecord()],
         ...extra,
     });
 
     it('follows the same four steps as a scene write', async () => {
         const harness = makeHarness({
-            disk: { Part: bool(true) },
+            disk: { Part: bool(true), 'Part Epigraph': str('One.') },
             bookRecord: withCleanup(),
         });
 
@@ -544,11 +555,11 @@ describe('layout cleanup', () => {
             `read:${PATH}`,               // scene already current
             `read:${PATH}`,               // fresh state for the gate
             'layout-read:layout',         // storage still as recorded?
-            'save:confirmed+attempting',  // 1. record intent
+            'save:confirmed+confirmed+attempting',  // 1. record intent
             'layout-write:layout',        // 2. mutate
             'layout-read:layout',         // 3. verify
-            'save:confirmed+confirmed',   // 4. confirm
-            'save:confirmed+confirmed',   // book stamped applied
+            'save:confirmed+confirmed+confirmed',   // 4. confirm
+            'save:confirmed+confirmed+confirmed',   // book stamped applied
         ]);
         expect(harness.layout().actEpigraphs).toEqual(LIST_ABSENT);
     });
@@ -557,7 +568,7 @@ describe('layout cleanup', () => {
         // Storage was cleared and verified, but the durable journal still reads
         // `attempting`. The next run must resolve that, so this is not success.
         const harness = makeHarness({
-            disk: { Part: bool(true) },
+            disk: { Part: bool(true), 'Part Epigraph': str('One.') },
             bookRecord: withCleanup(),
             failSave: 2,
         });
@@ -592,7 +603,7 @@ describe('layout cleanup', () => {
 
     it('refuses when stored epigraphs changed underneath', async () => {
         const harness = makeHarness({
-            disk: { Part: bool(true) },
+            disk: { Part: bool(true), 'Part Epigraph': str('One.') },
             bookRecord: withCleanup(),
             layoutDisk: {
                 actEpigraphs: snapshotList(['Someone edited this.']),
@@ -608,7 +619,7 @@ describe('layout cleanup', () => {
 
     it('refuses while a skipped epigraph is unaccepted', async () => {
         const harness = makeHarness({
-            disk: { Part: bool(true) },
+            disk: { Part: bool(true), 'Part Epigraph': str('One.') },
             bookRecord: withCleanup({
                 scenes: [{
                     path: PATH,
@@ -627,7 +638,7 @@ describe('layout cleanup', () => {
 
     it('does not repeat a cleanup already confirmed and still clear', async () => {
         const harness = makeHarness({
-            disk: { Part: bool(true) },
+            disk: { Part: bool(true), 'Part Epigraph': str('One.') },
             bookRecord: withCleanup({ epigraphCleanups: [cleanupRecord({ state: 'confirmed' })] }),
             layoutDisk: { actEpigraphs: LIST_ABSENT, actEpigraphAttributions: LIST_ABSENT },
         });
@@ -643,7 +654,7 @@ describe('layout cleanup', () => {
         // the first, trusting the flag would let a rerun clear the second and
         // stamp the book applied while legacy epigraphs remain in the first.
         const harness = makeHarness({
-            disk: { Part: bool(true) },
+            disk: { Part: bool(true), 'Part Epigraph': str('One.') },
             bookRecord: withCleanup({ epigraphCleanups: [cleanupRecord({ state: 'confirmed' })] }),
             layoutDisk: {
                 actEpigraphs: snapshotList(['Author put these back.']),
@@ -660,7 +671,7 @@ describe('layout cleanup', () => {
 
     it('refuses an interrupted cleanup attempt', async () => {
         const harness = makeHarness({
-            disk: { Part: bool(true) },
+            disk: { Part: bool(true), 'Part Epigraph': str('One.') },
             bookRecord: withCleanup({ epigraphCleanups: [cleanupRecord({ state: 'attempting' })] }),
         });
 

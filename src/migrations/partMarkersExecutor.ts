@@ -3,6 +3,7 @@ import {
     buildManifest,
     findManifestJournalMismatch,
     fingerprintManifest,
+    isManifest,
     type AcceptedEpigraph,
 } from './partMarkersManifest';
 import {
@@ -169,6 +170,8 @@ export interface ExecuteBookOptions {
      * book has anything to execute. Never inferred.
      */
     acceptedEpigraphs?: AcceptedEpigraph[];
+    /** Proposal entries the author chose not to migrate, knowing they are lost. */
+    discardedActNumbers?: number[];
 }
 
 function plannedFields(record: JournalSceneRecord): JournalFieldName[] {
@@ -204,23 +207,26 @@ export async function executeBookMigration(
     // scene field and every cleanup target, so drift and record-mismatch are
     // measured against the same object rather than against a plan that knows
     // nothing about cleanup.
-    const manifest = buildManifest(plan, { acceptedEpigraphs: options.acceptedEpigraphs });
-    if (!manifest) {
-        report.incomplete = {
-            reason: 'plan-not-completable',
-            detail: `This book is "${plan.status}", so there is no migration to perform.`,
-        };
+    const resolved = buildManifest(plan, {
+        acceptedEpigraphs: options.acceptedEpigraphs,
+        discardedActNumbers: options.discardedActNumbers,
+    });
+    if (!isManifest(resolved)) {
+        // A journal holding records for work that is not authorized is a
+        // mismatch, not merely an unfinished book — and it must never execute.
         if (bookRecord.scenes.some(scene => scene.changes.length > 0)
             || bookRecord.epigraphCleanups.length > 0) {
-            report.incomplete = undefined;
             report.aborted = {
                 reason: 'journal-plan-mismatch',
-                detail: `The plan is "${plan.status}" and performs nothing, but the journal holds `
-                    + 'records. Nothing was written. Re-plan this book before continuing.',
+                detail: `${resolved.detail} The journal holds records regardless. `
+                    + 'Nothing was written. Re-plan this book before continuing.',
             };
+            return report;
         }
+        report.incomplete = { reason: 'plan-not-completable', detail: resolved.detail };
         return report;
     }
+    const manifest = resolved;
 
     if (fingerprintManifest(manifest) !== bookRecord.planFingerprint) {
         report.aborted = {
@@ -242,11 +248,28 @@ export async function executeBookMigration(
         return report;
     }
 
+    // Cleanup is refused up front when the journal already records a field the
+    // migration could not write. Deciding this only at the completion check ran
+    // cleanup first, so accepted storage could be deleted for a book the very
+    // next lines then refused to call finished.
+    const blockingSkipPaths = bookRecord.scenes
+        .filter(scene => scene.skipped.some(skip => BLOCKING_SKIPS.has(skip.reason)))
+        .map(scene => scene.path);
+
     for (const sceneRecord of bookRecord.scenes) {
         report.scenes.push(await applyScene(sceneRecord, { journal, store, scenes }));
     }
 
-    report.cleanups.push(...await applyCleanups({ journal, bookRecord, store, scenes, layouts }));
+    if (blockingSkipPaths.length > 0) {
+        report.cleanups.push(...bookRecord.epigraphCleanups.map(cleanup => ({
+            layoutId: cleanup.layoutId,
+            status: 'blocked' as const,
+            detail: 'A field the plan called for was never written, so the stored epigraphs are '
+                + 'still the only copy of anything that did not move.',
+        })));
+    } else {
+        report.cleanups.push(...await applyCleanups({ journal, bookRecord, store, scenes, layouts }));
+    }
 
     // ── Stamp only when nothing is outstanding ────────────────────────
     // `written-unconfirmed` deliberately fails this test: the vault is right

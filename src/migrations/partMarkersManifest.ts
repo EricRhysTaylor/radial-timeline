@@ -1,33 +1,35 @@
-import type { BookMigrationPlan } from './partMarkers';
+import type { BookMigrationPlan, EpigraphSource } from './partMarkers';
 import {
     JOURNAL_FIELDS,
+    LIST_ABSENT,
+    listSnapshotsEqual,
+    snapshotList,
     snapshotsEqual,
     type JournalBookRecord,
     type JournalFieldName,
+    type JournalListSnapshot,
     type JournalSnapshot,
+    type SkipReason,
 } from './partMarkersJournal';
 
 /**
- * The resolved, executable manifest for one book.
+ * The resolved, executable manifest for one book — the complete authority for
+ * every mutation the migration may perform.
  *
  * A plan says what *should* happen; a manifest says exactly what will be
- * touched. The distinction matters because the plan alone is not enough
- * authority to validate a journal:
+ * touched, down to the value. Anything the manifest does not name, the executor
+ * must not do, and anything it names must appear in the journal exactly once.
  *
- *   - It enumerates no cleanup targets, so any set of cleanup records looked
- *     acceptable and stray ones would have been executed.
- *   - An author-owned book's epigraph writes exist only once the author accepts
- *     a mapping, so validating against the plan rejected legitimate work as
- *     "a non-derive plan that writes nothing".
- *
- * The manifest resolves both: every scene field target and every cleanup target,
- * in one object, fingerprinted and matched one-to-one against the journal before
- * any I/O.
+ * Authority has to reach values, not just targets. Naming only the layouts to
+ * clean left the journal free to carry arbitrary before/after snapshots for an
+ * expected layout, which the executor would then dutifully apply and verify.
  */
 
 export interface ManifestFieldTarget {
     field: JournalFieldName;
     after: JournalSnapshot;
+    /** Skip reasons that may legitimately stand in for this write. */
+    allowedSkips: SkipReason[];
 }
 
 export interface ManifestSceneTarget {
@@ -46,15 +48,30 @@ export interface ManifestSceneTarget {
     actNumber?: number;
 }
 
+export interface ManifestListPair {
+    actEpigraphs: JournalListSnapshot;
+    actEpigraphAttributions: JournalListSnapshot;
+}
+
+export interface ManifestCleanupTarget {
+    layoutId: string;
+    /** Exactly what must still be in storage for the clear to be authorized. */
+    before: ManifestListPair;
+    /** Exactly what must remain afterwards — both arrays absent. */
+    after: ManifestListPair;
+}
+
 export interface ExecutableManifest {
     bookId: string;
     scenes: ManifestSceneTarget[];
-    /** Every legacy storage location this migration will clear. */
-    cleanupLayoutIds: string[];
+    cleanups: ManifestCleanupTarget[];
 }
 
-/** An author-accepted epigraph placement for a book whose markers they wrote. */
+/** An author-confirmed placement for a book whose markers they wrote themselves. */
 export interface AcceptedEpigraph {
+    /** The proposal entry this answers. */
+    actNumber: number;
+    /** Destination scene — must be one of the book's existing markers. */
     path: string;
     quote?: string;
     attribution?: string;
@@ -62,78 +79,231 @@ export interface AcceptedEpigraph {
 
 export interface BuildManifestOptions {
     /**
-     * Required before an author-owned book has anything to execute. The stored
-     * act index has no reliable correspondence to an author-placed marker, so
-     * the mapping is the author's to confirm — never inferred.
+     * Author decisions about the proposed epigraph placements. Every proposal
+     * entry must be answered — accepted with a destination, or listed in
+     * `discardedActNumbers`. An unanswered entry leaves cleanup unauthorized,
+     * because clearing storage would delete text nobody decided about.
      */
     acceptedEpigraphs?: AcceptedEpigraph[];
+    /** Proposal entries the author chose not to migrate, knowing they will be lost. */
+    discardedActNumbers?: number[];
 }
 
-function epigraphFields(entry: { quote?: string; attribution?: string }): ManifestFieldTarget[] {
+export type ManifestRefusal =
+    /** The plan describes no migration at all. */
+    | { reason: 'not-executable'; detail: string }
+    /** The author's decisions do not answer the proposal one-to-one. */
+    | { reason: 'acceptance-incomplete'; detail: string };
+
+const EPIGRAPH_SKIPS: SkipReason[] = [
+    'author-value-present',
+    'unsupported-value',
+    'marker-not-written',
+];
+
+/**
+ * Skips the marker itself may legitimately carry.
+ *
+ * Never `author-value-present`: the marker is the migration's own structure, so
+ * "the author already wrote something here" is not a reason to leave it — and
+ * accepting it would let a markerless book satisfy validation and stamp applied.
+ */
+const MARKER_SKIPS: SkipReason[] = ['unsupported-value'];
+
+function epigraphFieldTargets(entry: { quote?: string; attribution?: string }): ManifestFieldTarget[] {
     const fields: ManifestFieldTarget[] = [];
     if (entry.quote !== undefined) {
-        fields.push({ field: 'Part Epigraph', after: { kind: 'string', value: entry.quote } });
+        fields.push({
+            field: 'Part Epigraph',
+            after: { kind: 'string', value: entry.quote },
+            allowedSkips: EPIGRAPH_SKIPS,
+        });
     }
     if (entry.attribution !== undefined) {
-        fields.push({ field: 'Part Epigraph By', after: { kind: 'string', value: entry.attribution } });
+        fields.push({
+            field: 'Part Epigraph By',
+            after: { kind: 'string', value: entry.attribution },
+            allowedSkips: EPIGRAPH_SKIPS,
+        });
     }
     return fields;
 }
 
+/** Act numbers whose stored slot holds text — the slots cleanup would destroy. */
+function populatedSlots(sources: EpigraphSource[]): number[] {
+    const slots = new Set<number>();
+    for (const source of sources) {
+        const length = Math.max(source.quotes.length, source.attributions.length);
+        for (let index = 0; index < length; index++) {
+            const quote = source.quotes[index]?.trim() ?? '';
+            const attribution = source.attributions[index]?.trim() ?? '';
+            if (quote || attribution) slots.add(index + 1);
+        }
+    }
+    return [...slots].sort((a, b) => a - b);
+}
+
+function cleanupTargets(sources: EpigraphSource[]): ManifestCleanupTarget[] {
+    return [...sources]
+        .sort((a, b) => a.layoutId.localeCompare(b.layoutId))
+        .map(source => ({
+            layoutId: source.layoutId,
+            before: {
+                // An empty array is not a stored value: normalizeBookProfile
+                // drops the key entirely, so absent is what the vault holds.
+                actEpigraphs: snapshotList(source.quotes.length > 0 ? source.quotes : undefined),
+                actEpigraphAttributions: snapshotList(
+                    source.attributions.length > 0 ? source.attributions : undefined
+                ),
+            },
+            // Cleanup removes the arrays outright. Unrelated settings on the same
+            // layout are not represented here and must be left untouched.
+            after: { actEpigraphs: LIST_ABSENT, actEpigraphAttributions: LIST_ABSENT },
+        }));
+}
+
 /**
- * Resolve a plan into the work that may actually be performed.
+ * Resolve a plan and the author's decisions into the work that may be performed.
  *
- * Returns null for plans that are not executable at all — a blocked book has
- * nothing to do, and a noop book has nothing to do by definition. Callers treat
- * null as "there is no migration here", which is different from "the migration
- * is empty".
+ * Returns a refusal rather than an empty manifest when the inputs do not
+ * authorize anything, so a caller cannot mistake "nothing was agreed" for
+ * "nothing to do".
  */
 export function buildManifest(
     plan: BookMigrationPlan,
     options: BuildManifestOptions = {}
-): ExecutableManifest | null {
-    switch (plan.status) {
-        case 'derive':
-            return {
-                bookId: plan.bookId,
-                scenes: plan.writes.map(write => ({
-                    path: write.path,
-                    partNumber: write.partNumber,
-                    actNumber: write.actNumber,
-                    fields: [
-                        {
-                            field: 'Part' as const,
-                            after: typeof write.title === 'string'
-                                ? { kind: 'string' as const, value: write.title }
-                                : { kind: 'boolean' as const, value: true },
-                        },
-                        ...epigraphFields(write),
-                    ],
-                })),
-                cleanupLayoutIds: [...plan.epigraphSourceLayoutIds].sort(),
-            };
+): ExecutableManifest | ManifestRefusal {
+    if (plan.status === 'noop' || plan.status === 'blocked') {
+        return {
+            reason: 'not-executable',
+            detail: `This book is "${plan.status}", so there is no migration to perform.`,
+        };
+    }
 
-        case 'author-owned': {
-            const accepted = options.acceptedEpigraphs ?? [];
+    if (plan.status === 'derive') {
+        const scenes = plan.writes.map(write => ({
+            path: write.path,
+            partNumber: write.partNumber,
+            actNumber: write.actNumber,
+            fields: [
+                {
+                    field: 'Part' as const,
+                    after: typeof write.title === 'string'
+                        ? { kind: 'string' as const, value: write.title }
+                        : { kind: 'boolean' as const, value: true },
+                    allowedSkips: MARKER_SKIPS,
+                },
+                ...epigraphFieldTargets(write),
+            ],
+        }));
+
+        // Cleanup deletes whole arrays, so every populated slot must have been
+        // migrated onto some scene first. A slot with no matching boundary —
+        // an epigraph for an act the book no longer has — would otherwise be
+        // silently destroyed by a cleanup the author approved for other reasons.
+        const migratedSlots = new Set(
+            plan.writes
+                .filter(write => write.quote !== undefined || write.attribution !== undefined)
+                .map(write => write.actNumber)
+        );
+        const discarded = new Set(options.discardedActNumbers ?? []);
+        const stranded = populatedSlots(plan.epigraphSources)
+            .filter(slot => !migratedSlots.has(slot) && !discarded.has(slot));
+
+        return {
+            bookId: plan.bookId,
+            scenes,
+            cleanups: stranded.length === 0 ? cleanupTargets(plan.epigraphSources) : [],
+        };
+    }
+
+    // ── author-owned ───────────────────────────────────────────────────
+    const proposal = plan.epigraphProposal;
+    const accepted = options.acceptedEpigraphs ?? [];
+    const discarded = new Set(options.discardedActNumbers ?? []);
+
+    if (!proposal) {
+        // Nothing was proposed, so nothing may be written or cleared.
+        return { bookId: plan.bookId, scenes: [], cleanups: [] };
+    }
+
+    const markerPaths = new Set(plan.markerPaths);
+    const answeredActs = new Set<number>();
+
+    for (const entry of accepted) {
+        if (discarded.has(entry.actNumber)) {
             return {
-                bookId: plan.bookId,
-                // The author already wrote the markers; the migration only ever
-                // places the epigraphs they accepted.
-                scenes: accepted
-                    .map(entry => ({ path: entry.path, fields: epigraphFields(entry) }))
-                    .filter(scene => scene.fields.length > 0),
-                // Nothing may be cleared until an accepted placement exists —
-                // otherwise the stored copy is the only surviving one.
-                cleanupLayoutIds: accepted.length > 0
-                    ? [...plan.epigraphSourceLayoutIds].sort()
-                    : [],
+                reason: 'acceptance-incomplete',
+                detail: `Act ${entry.actNumber} is both accepted and discarded.`,
             };
         }
-
-        case 'noop':
-        case 'blocked':
-            return null;
+        if (answeredActs.has(entry.actNumber)) {
+            return {
+                reason: 'acceptance-incomplete',
+                detail: `Act ${entry.actNumber} was accepted more than once.`,
+            };
+        }
+        if (!markerPaths.has(entry.path)) {
+            // Without this an accepted placement could write an epigraph onto a
+            // scene carrying no Part marker at all.
+            return {
+                reason: 'acceptance-incomplete',
+                detail: `${entry.path} carries no Part marker, so an epigraph cannot be placed there.`,
+            };
+        }
+        if (entry.quote === undefined && entry.attribution === undefined) {
+            return {
+                reason: 'acceptance-incomplete',
+                detail: `The placement for act ${entry.actNumber} carries no text.`,
+            };
+        }
+        answeredActs.add(entry.actNumber);
     }
+
+    const unanswered = proposal.entries
+        .map(entry => entry.actNumber)
+        .filter(actNumber => !answeredActs.has(actNumber) && !discarded.has(actNumber));
+
+    if (unanswered.length > 0) {
+        // Cleanup would delete every stored epigraph, including these. Partial
+        // acceptance must not authorize that.
+        return {
+            reason: 'acceptance-incomplete',
+            detail: `${unanswered.length} proposed epigraph(s) have not been accepted or `
+                + `discarded (act ${unanswered.slice(0, 3).join(', ')}). `
+                + 'Cleanup would delete them.',
+        };
+    }
+
+    const byPath = new Map<string, AcceptedEpigraph[]>();
+    for (const entry of accepted) {
+        byPath.set(entry.path, [...(byPath.get(entry.path) ?? []), entry]);
+    }
+
+    for (const [path, entries] of byPath) {
+        if (entries.length > 1) {
+            return {
+                reason: 'acceptance-incomplete',
+                detail: `${path} was given ${entries.length} epigraphs; a scene opens one part.`,
+            };
+        }
+    }
+
+    return {
+        bookId: plan.bookId,
+        scenes: [...byPath.entries()]
+            .map(([path, entries]) => ({ path, fields: epigraphFieldTargets(entries[0]) }))
+            .sort((a, b) => a.path.localeCompare(b.path)),
+        // Every proposal entry is now answered, so clearing storage destroys
+        // nothing undecided.
+        cleanups: cleanupTargets(plan.epigraphSources),
+    };
+}
+
+export function isManifest(
+    result: ExecutableManifest | ManifestRefusal
+): result is ExecutableManifest {
+    return !('reason' in result);
 }
 
 /** Deterministic fingerprint of everything the manifest will touch. */
@@ -149,7 +319,11 @@ export function fingerprintManifest(manifest: ExecutableManifest): string {
         ]))
         .sort();
 
-    return `manifest:${manifest.bookId}:${scenes.join('|')}::${manifest.cleanupLayoutIds.join(',')}`;
+    const cleanups = manifest.cleanups
+        .map(target => JSON.stringify([target.layoutId, target.before, target.after]))
+        .sort();
+
+    return `manifest:${manifest.bookId}:${scenes.join('|')}::${cleanups.join('|')}`;
 }
 
 function duplicates(values: string[]): string[] {
@@ -169,15 +343,13 @@ function summarize(values: string[]): string {
 /**
  * Match a journal's records one-to-one against the manifest.
  *
- * Every manifest field must be accounted for by **exactly one** change or
- * **exactly one** skip. Validating only the changes that happen to exist let a
- * planned epigraph vanish from the journal entirely: the book still looked
- * consistent, cleanup then cleared the legacy copy, and the epigraph existed
- * nowhere.
+ * Every manifest field must be accounted for by exactly one change or exactly
+ * one **permitted** skip. Accepting any skip regardless of reason let a `Part`
+ * marked `author-value-present` satisfy validation, count as non-blocking, and
+ * carry a markerless book through to `applied`.
  *
- * Duplicates are rejected outright. Two records for one path, or two changes for
- * one field, make "what is planned here" unanswerable, and an executor cannot
- * safely act on a question it cannot answer.
+ * Cleanup records are matched on their values, not just their layout, because
+ * the executor applies and verifies whatever snapshots the record carries.
  *
  * Returns a description of the mismatch, or null when the records agree.
  */
@@ -225,13 +397,14 @@ export function findManifestJournalMismatch(
             return `${target.path}: more than one skip recorded for ${summarize(repeatedSkips)}.`;
         }
 
-        const plannedFields = new Set(target.fields.map(field => field.field));
+        const targetByField = new Map(target.fields.map(field => [field.field, field]));
 
         for (const field of JOURNAL_FIELDS) {
             const change = record.changes.find(entry => entry.field === field);
             const skip = record.skipped.find(entry => entry.field === field);
+            const expected = targetByField.get(field);
 
-            if (!plannedFields.has(field)) {
+            if (!expected) {
                 if (change) {
                     return `${target.path}: the journal writes ${field}, which the plan does not call for.`;
                 }
@@ -242,34 +415,64 @@ export function findManifestJournalMismatch(
                 return `${target.path}: ${field} is recorded as both written and skipped.`;
             }
             if (!change && !skip) {
-                // The silent-disappearance case. Without this the field is simply
-                // gone, and cleanup would clear the last copy of its text.
                 return `${target.path}: the plan writes ${field}, but the journal records `
                     + 'neither a change nor a skip for it.';
             }
-            if (change) {
-                const expected = target.fields.find(entry => entry.field === field);
-                if (expected && !snapshotsEqual(change.after, expected.after)) {
-                    return `${target.path}: the journal's target for ${field} is not the value `
-                        + 'the plan calls for.';
-                }
+            if (change && !snapshotsEqual(change.after, expected.after)) {
+                return `${target.path}: the journal's target for ${field} is not the value `
+                    + 'the plan calls for.';
+            }
+            if (skip && !expected.allowedSkips.includes(skip.reason)) {
+                return `${target.path}: ${field} is skipped as "${skip.reason}", which is not a `
+                    + 'reason that field may be skipped for.';
             }
         }
     }
 
-    const expectedLayouts = new Set(manifest.cleanupLayoutIds);
-    const recordedLayouts = new Set(bookRecord.epigraphCleanups.map(entry => entry.layoutId));
+    const cleanupByLayout = new Map(manifest.cleanups.map(target => [target.layoutId, target]));
+    const recordedByLayout = new Map(
+        bookRecord.epigraphCleanups.map(record => [record.layoutId, record])
+    );
 
-    const missingLayouts = manifest.cleanupLayoutIds.filter(id => !recordedLayouts.has(id));
+    const missingLayouts = manifest.cleanups
+        .filter(target => !recordedByLayout.has(target.layoutId))
+        .map(target => target.layoutId);
     if (missingLayouts.length > 0) {
         return `The journal has no cleanup record for ${summarize(missingLayouts)}, so that `
             + 'storage would keep epigraphs the migration claims to have moved.';
     }
 
-    const extraLayouts = [...recordedLayouts].filter(id => !expectedLayouts.has(id));
+    const extraLayouts = bookRecord.epigraphCleanups
+        .filter(record => !cleanupByLayout.has(record.layoutId))
+        .map(record => record.layoutId);
     if (extraLayouts.length > 0) {
         return `The journal holds cleanup records the plan does not call for: `
             + `${summarize(extraLayouts)}.`;
+    }
+
+    for (const target of manifest.cleanups) {
+        const record = recordedByLayout.get(target.layoutId);
+        if (!record) continue;
+        const beforeMatches =
+            listSnapshotsEqual(record.before.actEpigraphs, target.before.actEpigraphs)
+            && listSnapshotsEqual(
+                record.before.actEpigraphAttributions,
+                target.before.actEpigraphAttributions
+            );
+        const afterMatches =
+            listSnapshotsEqual(record.after.actEpigraphs, target.after.actEpigraphs)
+            && listSnapshotsEqual(
+                record.after.actEpigraphAttributions,
+                target.after.actEpigraphAttributions
+            );
+        if (!beforeMatches) {
+            return `${target.layoutId}: the journal's recorded prior storage is not what the `
+                + 'plan resolved, so it would verify against the wrong values.';
+        }
+        if (!afterMatches) {
+            return `${target.layoutId}: the journal would leave storage in a state the plan `
+                + 'does not call for.';
+        }
     }
 
     return null;

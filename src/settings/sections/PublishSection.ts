@@ -2122,8 +2122,8 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     if (!options.layoutId) return;
                     const scoped = getLayoutOptionsForActiveBook(options.layoutId);
                     void saveLayoutOptionsForActiveBook(options.layoutId, {
-                        actEpigraphs: scoped.actEpigraphs,
-                        actEpigraphAttributions: scoped.actEpigraphAttributions,
+                        partEpigraphs: scoped.partEpigraphs,
+                        partEpigraphAttributions: scoped.partEpigraphAttributions,
                         sceneHeadingMode
                     });
                     renderLayoutRows();
@@ -2210,7 +2210,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         if (profile) {
             const capabilityKeys = new Set(profile.capabilities.map(capability => capability.key));
             const usesModernClassicStructure = capabilityKeys.has('modernClassicStructure');
-            const hasEpigraphs = capabilityKeys.has('actEpigraphs') || usesModernClassicStructure;
+            const hasEpigraphs = capabilityKeys.has('partEpigraphs') || usesModernClassicStructure;
             const hasSceneOpenerHeadingOptions = capabilityKeys.has('sceneHeadingMode');
             return { usesModernClassicStructure, hasEpigraphs, hasSceneOpenerHeadingOptions };
         }
@@ -2267,8 +2267,8 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             ? scoped.sceneHeadingMode
             : undefined;
         return {
-            actEpigraphs: normalizeLayoutOptionList(scoped.actEpigraphs),
-            actEpigraphAttributions: normalizeLayoutOptionList(scoped.actEpigraphAttributions),
+            partEpigraphs: normalizeLayoutOptionList(scoped.partEpigraphs),
+            partEpigraphAttributions: normalizeLayoutOptionList(scoped.partEpigraphAttributions),
             ...(sceneHeadingMode ? { sceneHeadingMode } : {})
         };
     };
@@ -2285,8 +2285,8 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             if (lastNonEmptyIndex < 0) return [];
             return normalized.slice(0, lastNonEmptyIndex + 1);
         };
-        const hasEpigraphText = (next.actEpigraphs || []).some(value => value.trim().length > 0);
-        const hasAttributionText = (next.actEpigraphAttributions || []).some(value => value.trim().length > 0);
+        const hasEpigraphText = (next.partEpigraphs || []).some(value => value.trim().length > 0);
+        const hasAttributionText = (next.partEpigraphAttributions || []).some(value => value.trim().length > 0);
         const sceneHeadingMode = next.sceneHeadingMode === 'scene-number'
             || next.sceneHeadingMode === 'scene-number-title'
             || next.sceneHeadingMode === 'title-only'
@@ -2299,11 +2299,11 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                 delete activeBook.layoutOptions;
             }
         } else {
-            const trimmedEpigraphs = trimTrailingEmpty(next.actEpigraphs || []);
-            const trimmedAttributions = trimTrailingEmpty(next.actEpigraphAttributions || []);
+            const trimmedEpigraphs = trimTrailingEmpty(next.partEpigraphs || []);
+            const trimmedAttributions = trimTrailingEmpty(next.partEpigraphAttributions || []);
             activeBook.layoutOptions[layoutId] = {
-                ...(trimmedEpigraphs.length > 0 ? { actEpigraphs: trimmedEpigraphs } : {}),
-                ...(trimmedAttributions.length > 0 ? { actEpigraphAttributions: trimmedAttributions } : {}),
+                ...(trimmedEpigraphs.length > 0 ? { partEpigraphs: trimmedEpigraphs } : {}),
+                ...(trimmedAttributions.length > 0 ? { partEpigraphAttributions: trimmedAttributions } : {}),
                 ...(hasSceneHeadingModeOverride ? { sceneHeadingMode } : {})
             };
         }
@@ -2781,7 +2781,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                 // Parts = Acts: determined by Act count in settings.
                 // Epigraphs are optional quotes printed after each PART page.
                 if (specialCapabilities.hasEpigraphs) {
-                    const epigraphTitle = panel.createDiv({ cls: 'ert-layout-special-title', text: 'Act epigraphs (optional)' });
+                    const epigraphTitle = panel.createDiv({ cls: 'ert-layout-special-title', text: 'Part epigraphs (optional)' });
                     epigraphTitle.setAttr('role', 'heading');
                     panel.createDiv({ cls: 'ert-layout-special-helper', text: 'Printed after PART pages.' });
 
@@ -2791,8 +2791,8 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     } else {
                         const actCount = getActCount();
                         const scopedOptions = getLayoutOptionsForActiveBook(layout.id);
-                        const actEpigraphs = scopedOptions.actEpigraphs || [];
-                        const actEpigraphAttributions = scopedOptions.actEpigraphAttributions || [];
+                        const partEpigraphs = scopedOptions.partEpigraphs || [];
+                        const partEpigraphAttributions = scopedOptions.partEpigraphAttributions || [];
                         const rows = panel.createDiv({ cls: 'ert-layout-epigraph-rows' });
 
                         for (let actIndex = 0; actIndex < actCount; actIndex++) {
@@ -2810,14 +2810,14 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                                 cls: 'ert-input ert-layout-epigraph-quote',
                                 attr: { rows: '2' }
                             });
-                            quoteInput.value = actEpigraphs[actIndex] || '';
+                            quoteInput.value = partEpigraphs[actIndex] || '';
                             plugin.registerDomEvent(quoteInput, 'change', () => {
-                                const nextQuotes = [...(getLayoutOptionsForActiveBook(layout.id).actEpigraphs || [])];
-                                const nextAttributions = [...(getLayoutOptionsForActiveBook(layout.id).actEpigraphAttributions || [])];
+                                const nextQuotes = [...(getLayoutOptionsForActiveBook(layout.id).partEpigraphs || [])];
+                                const nextAttributions = [...(getLayoutOptionsForActiveBook(layout.id).partEpigraphAttributions || [])];
                                 nextQuotes[actIndex] = quoteInput.value;
                                 void saveLayoutOptionsForActiveBook(layout.id, {
-                                    actEpigraphs: nextQuotes,
-                                    actEpigraphAttributions: nextAttributions
+                                    partEpigraphs: nextQuotes,
+                                    partEpigraphAttributions: nextAttributions
                                 });
                             });
 
@@ -2827,14 +2827,14 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                                 type: 'text',
                                 cls: 'ert-input ert-layout-epigraph-attribution'
                             });
-                            attributionInput.value = actEpigraphAttributions[actIndex] || '';
+                            attributionInput.value = partEpigraphAttributions[actIndex] || '';
                             plugin.registerDomEvent(attributionInput, 'change', () => {
-                                const nextQuotes = [...(getLayoutOptionsForActiveBook(layout.id).actEpigraphs || [])];
-                                const nextAttributions = [...(getLayoutOptionsForActiveBook(layout.id).actEpigraphAttributions || [])];
+                                const nextQuotes = [...(getLayoutOptionsForActiveBook(layout.id).partEpigraphs || [])];
+                                const nextAttributions = [...(getLayoutOptionsForActiveBook(layout.id).partEpigraphAttributions || [])];
                                 nextAttributions[actIndex] = attributionInput.value;
                                 void saveLayoutOptionsForActiveBook(layout.id, {
-                                    actEpigraphs: nextQuotes,
-                                    actEpigraphAttributions: nextAttributions
+                                    partEpigraphs: nextQuotes,
+                                    partEpigraphAttributions: nextAttributions
                                 });
                             });
                         }
@@ -2866,8 +2866,8 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                         const scoped = getLayoutOptionsForActiveBook(layout.id);
                         const nextMode = modeSelect.value as ManuscriptSceneHeadingMode;
                         void saveLayoutOptionsForActiveBook(layout.id, {
-                            actEpigraphs: scoped.actEpigraphs,
-                            actEpigraphAttributions: scoped.actEpigraphAttributions,
+                            partEpigraphs: scoped.partEpigraphs,
+                            partEpigraphAttributions: scoped.partEpigraphAttributions,
                             sceneHeadingMode: nextMode
                         });
                         // Re-render so pictogram highlight updates to match

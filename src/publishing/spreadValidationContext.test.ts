@@ -52,7 +52,7 @@ describe('buildSpreadValidationContext', () => {
         const book = makeBook({
             layoutOptions: {
                 [layout.id]: {
-                    actEpigraphs: ['', 'Quote two', 'Quote three'],
+                    partEpigraphs: ['', 'Quote two', 'Quote three'],
                 },
             },
         });
@@ -72,7 +72,7 @@ describe('buildSpreadValidationContext', () => {
 
         expect(ctx.actCount).toBe(2);
         expect(ctx.chapterFieldCount).toBe(3);
-        expect(ctx.actEpigraphPopulatedCount).toBe(2);
+        expect(ctx.partEpigraphPopulatedCount).toBe(2);
         expect(ctx.chapterTitlePopulatedCount).toBe(2);
         expect(ctx.sceneTitlePopulatedRatio).toBeCloseTo(2 / 3);
     });
@@ -85,7 +85,7 @@ describe('buildSpreadValidationContext', () => {
 
         expect(ctx.actCount).toBe(Number.POSITIVE_INFINITY);
         expect(ctx.chapterFieldCount).toBe(Number.POSITIVE_INFINITY);
-        expect(ctx.actEpigraphPopulatedCount).toBe(0);
+        expect(ctx.partEpigraphPopulatedCount).toBe(0);
         expect(ctx.sceneTitlePopulatedRatio).toBe(1);
         expect(ctx.chapterTitlePopulatedCount).toBeUndefined();
     });
@@ -93,7 +93,7 @@ describe('buildSpreadValidationContext', () => {
     it('returns 0 epigraphs when no active book / no layoutOptions', () => {
         const plugin = makePlugin([], undefined);
         const ctx = buildSpreadValidationContext(plugin, { layout: makeLayout() });
-        expect(ctx.actEpigraphPopulatedCount).toBe(0);
+        expect(ctx.partEpigraphPopulatedCount).toBe(0);
     });
 
     it('feeds the modal warning path: 1-Act selection trips PART warning', () => {
@@ -117,7 +117,7 @@ describe('buildSpreadValidationContext', () => {
         const layout = makeLayout();
         const plugin = makePlugin([makeBook({
             layoutOptions: {
-                [layout.id]: { actEpigraphs: ['Quote'] }, // epigraph populated → no warning
+                [layout.id]: { partEpigraphs: ['Quote'] }, // epigraph populated → no warning
             },
         })], 'book-1');
 
@@ -132,7 +132,7 @@ describe('buildSpreadValidationContext', () => {
     it('settings preview: PART-epigraph advisory still fires when book has no quotes (book-derived signal)', () => {
         // The epigraph check is BOOK-derived and surfaces in the settings panel.
         const layout = makeLayout();
-        const plugin = makePlugin([makeBook()], 'book-1'); // no actEpigraphs
+        const plugin = makePlugin([makeBook()], 'book-1'); // no partEpigraphs
 
         const ctx = buildSpreadValidationContext(plugin, { layout });
         const rows = applySpreadValidation(getLayoutPictogramRows('modernClassic'), ctx);
@@ -196,7 +196,7 @@ describe('collectSpreadWarningTooltips', () => {
         const rows = applySpreadValidation(getLayoutPictogramRows('modernClassic'), {
             actCount: 3,
             chapterFieldCount: 5,
-            actEpigraphPopulatedCount: 3,
+            partEpigraphPopulatedCount: 3,
             chapterTitlePopulatedCount: 5,
             sceneTitlePopulatedRatio: 1,
         });
@@ -251,7 +251,7 @@ describe('collectSpreadStatuses', () => {
         const ctx = {
             actCount: 3,
             chapterFieldCount: 5,
-            actEpigraphPopulatedCount: 3,
+            partEpigraphPopulatedCount: 3,
             chapterTitlePopulatedCount: 5,
             sceneTitlePopulatedRatio: 1,
         };
@@ -271,7 +271,7 @@ describe('collectSpreadStatuses', () => {
         const ctx = {
             actCount: 3,
             chapterFieldCount: 5,
-            actEpigraphPopulatedCount: 3,
+            partEpigraphPopulatedCount: 3,
             chapterTitlePopulatedCount: 5,
             sceneTitlePopulatedRatio: 1,
         };
@@ -292,7 +292,7 @@ describe('collectSpreadStatuses', () => {
         const ctx = {
             actCount: 3,
             chapterFieldCount: 5,
-            actEpigraphPopulatedCount: 2,  // partial → warning
+            partEpigraphPopulatedCount: 2,  // partial → warning
             chapterTitlePopulatedCount: 5, // full → success
             sceneTitlePopulatedRatio: 1,
         };
@@ -309,7 +309,7 @@ describe('collectSpreadStatuses', () => {
         const ctx = {
             actCount: 3,
             chapterFieldCount: 5,
-            actEpigraphPopulatedCount: 3,
+            partEpigraphPopulatedCount: 3,
             chapterTitlePopulatedCount: 5,
             sceneTitlePopulatedRatio: 1,
         };
@@ -333,7 +333,7 @@ describe('collectSpreadStatuses', () => {
         const ctx = {
             actCount: 4,
             chapterFieldCount: 5,
-            actEpigraphPopulatedCount: 0, // ignored — feature not advertised
+            partEpigraphPopulatedCount: 0, // ignored — feature not advertised
             chapterTitlePopulatedCount: 5,
             sceneTitlePopulatedRatio: 1,
         };
@@ -349,7 +349,7 @@ describe('collectSpreadStatuses', () => {
         const ctx = {
             actCount: 3,
             chapterFieldCount: 5,
-            actEpigraphPopulatedCount: 0,
+            partEpigraphPopulatedCount: 0,
             sceneTitlePopulatedRatio: 1,
         };
         const rows = applySpreadValidation(getLayoutPictogramRows('signature'), ctx);

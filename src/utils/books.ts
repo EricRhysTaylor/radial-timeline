@@ -58,13 +58,20 @@ export function normalizeBookProfile(profile: BookProfile): BookProfile {
       if (lastNonEmptyIndex < 0) return undefined;
       return normalized.slice(0, lastNonEmptyIndex + 1);
     };
-    const actEpigraphs = normalizeList(options?.actEpigraphs);
-    const actEpigraphAttributions = normalizeList(options?.actEpigraphAttributions);
+    // `actEpigraphs` was the stored name while Parts were derived from Acts.
+    // Read it as a fallback so an author's existing epigraph text survives the
+    // rename; the normalized profile is written back under the new name, so the
+    // legacy key disappears on first save without anything being lost.
+    const legacy = options as { actEpigraphs?: unknown; actEpigraphAttributions?: unknown };
+    const partEpigraphs = normalizeList(options?.partEpigraphs)
+      ?? normalizeList(legacy?.actEpigraphs);
+    const partEpigraphAttributions = normalizeList(options?.partEpigraphAttributions)
+      ?? normalizeList(legacy?.actEpigraphAttributions);
     const sceneHeadingMode = normalizeSceneHeadingMode(options?.sceneHeadingMode);
-    if (!actEpigraphs && !actEpigraphAttributions && !sceneHeadingMode) continue;
+    if (!partEpigraphs && !partEpigraphAttributions && !sceneHeadingMode) continue;
     normalizedLayoutOptions[layoutKey] = {
-      ...(actEpigraphs ? { actEpigraphs } : {}),
-      ...(actEpigraphAttributions ? { actEpigraphAttributions } : {}),
+      ...(partEpigraphs ? { partEpigraphs } : {}),
+      ...(partEpigraphAttributions ? { partEpigraphAttributions } : {}),
       ...(sceneHeadingMode ? { sceneHeadingMode } : {})
     };
   }

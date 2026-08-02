@@ -256,11 +256,11 @@ describe('assembleManuscript scene heading formatting', () => {
                 },
                 modernClassicStructure: {
                     enabled: true,
-                    actEpigraphs: [
+                    partEpigraphs: [
                         'The beginning of all things.',
                         'When we are strongest — who draws back?\nMost merry — who falls down laughing?\nWhen we are very bad, what can they do to us?',
                     ],
-                    actEpigraphAttributions: ['Anonymous', 'The Narrator'],
+                    partEpigraphAttributions: ['Anonymous', 'The Narrator'],
                 }
             }
         );

@@ -296,8 +296,8 @@ describe('one spec, three echoes — contract alignment', () => {
                 useRtChapterMacro: ctx.useRtChapterMacro,
                 modernClassicStructure: {
                     enabled: true,
-                    actEpigraphs: ['Quote one.', 'Quote two.'],
-                    actEpigraphAttributions: ['Author A', 'Author B'],
+                    partEpigraphs: ['Quote one.', 'Quote two.'],
+                    partEpigraphAttributions: ['Author A', 'Author B'],
                 },
             }
         );

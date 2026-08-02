@@ -348,7 +348,7 @@ describe('applySpreadValidation', () => {
             const rows = applySpreadValidation(getLayoutPictogramRows('modernClassic'), {
                 actCount: 3,
                 chapterFieldCount: 5,
-                actEpigraphPopulatedCount: 0,
+                partEpigraphPopulatedCount: 0,
             });
             const part = findSpread(rows, 'PART');
             expect(part?.warningLevel).toBe('warning');
@@ -360,7 +360,7 @@ describe('applySpreadValidation', () => {
             const rows = applySpreadValidation(getLayoutPictogramRows('modernClassic'), {
                 actCount: 3,
                 chapterFieldCount: 5,
-                actEpigraphPopulatedCount: 3,
+                partEpigraphPopulatedCount: 3,
             });
             const part = findSpread(rows, 'PART');
             expect(part?.warningLevel).toBeUndefined();
@@ -370,7 +370,7 @@ describe('applySpreadValidation', () => {
             const rows = applySpreadValidation(getLayoutPictogramRows('modernClassic'), {
                 actCount: 3,
                 chapterFieldCount: 5,
-                actEpigraphPopulatedCount: 2,
+                partEpigraphPopulatedCount: 2,
             });
             const part = findSpread(rows, 'PART');
             expect(part?.warningLevel).toBe('warning');
@@ -384,7 +384,7 @@ describe('applySpreadValidation', () => {
             const rows = applySpreadValidation(getLayoutPictogramRows('modernClassic'), {
                 actCount: 3,
                 chapterFieldCount: 5,
-                actEpigraphPopulatedCount: 0,
+                partEpigraphPopulatedCount: 0,
             });
             const part = findSpread(rows, 'PART');
             expect(part?.warningLevel).toBe('warning');
@@ -397,7 +397,7 @@ describe('applySpreadValidation', () => {
             const rows = applySpreadValidation(getLayoutPictogramRows('classic'), {
                 actCount: 3,
                 chapterFieldCount: 5,
-                actEpigraphPopulatedCount: 0,
+                partEpigraphPopulatedCount: 0,
             });
             // No PART spread — nothing to stamp, no warning surfaces.
             expect(findSpread(rows, 'PART')).toBeUndefined();
@@ -647,7 +647,7 @@ describe('collectSpreadStatuses — always-emit base counts', () => {
         const ctx = {
             actCount: Number.POSITIVE_INFINITY,
             chapterFieldCount: 5,
-            actEpigraphPopulatedCount: 0,
+            partEpigraphPopulatedCount: 0,
             sceneTitlePopulatedRatio: 1,
         };
         const rows = applySpreadValidation(getLayoutPictogramRows('contemporary'), ctx);
@@ -663,7 +663,7 @@ describe('collectSpreadStatuses — always-emit base counts', () => {
         const ctx = {
             actCount: 3,
             chapterFieldCount: 5,
-            actEpigraphPopulatedCount: 3,
+            partEpigraphPopulatedCount: 3,
             chapterTitlePopulatedCount: 5,
             sceneTitlePopulatedRatio: 1,
         };
@@ -683,7 +683,7 @@ describe('collectSpreadStatuses — always-emit base counts', () => {
         const ctx = {
             actCount: 3,
             chapterFieldCount: 5,
-            actEpigraphPopulatedCount: 3,
+            partEpigraphPopulatedCount: 3,
             chapterTitlePopulatedCount: 5,
             sceneTitlePopulatedRatio: 1,
         };
@@ -702,7 +702,7 @@ describe('collectSpreadStatuses — always-emit base counts', () => {
         const ctx = {
             actCount: 3,
             chapterFieldCount: 5,
-            actEpigraphPopulatedCount: 0,
+            partEpigraphPopulatedCount: 0,
             sceneTitlePopulatedRatio: 1,
         };
         const rows = applySpreadValidation(getLayoutPictogramRows('classic'), ctx);
@@ -716,7 +716,7 @@ describe('collectSpreadStatuses — always-emit base counts', () => {
         const ctx = {
             actCount: 3,
             chapterFieldCount: 0,
-            actEpigraphPopulatedCount: 0,
+            partEpigraphPopulatedCount: 0,
             sceneTitlePopulatedRatio: 1,
         };
         const rows = applySpreadValidation(getLayoutPictogramRows('contemporary'), ctx);
@@ -738,7 +738,7 @@ describe('collectSpreadStatuses — always-emit base counts', () => {
         const ctx = {
             actCount: 4,
             chapterFieldCount: 5,
-            actEpigraphPopulatedCount: 0,
+            partEpigraphPopulatedCount: 0,
             chapterTitlePopulatedCount: 5,
             sceneTitlePopulatedRatio: 1,
         };

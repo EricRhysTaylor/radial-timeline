@@ -178,8 +178,8 @@ function buildNarrativePartMarkers(params: {
 
     const activeBook = getActiveBook(settings);
     const layoutOptions = layout ? activeBook?.layoutOptions?.[layout.id] : undefined;
-    const epigraphs = Array.isArray(layoutOptions?.actEpigraphs) ? layoutOptions.actEpigraphs : [];
-    const attributions = Array.isArray(layoutOptions?.actEpigraphAttributions) ? layoutOptions.actEpigraphAttributions : [];
+    const epigraphs = Array.isArray(layoutOptions?.partEpigraphs) ? layoutOptions.partEpigraphs : [];
+    const attributions = Array.isArray(layoutOptions?.partEpigraphAttributions) ? layoutOptions.partEpigraphAttributions : [];
     const layoutName = layout?.name || 'Selected layout';
     const advertisesEpigraph = layout?.designedSpec?.parts?.epigraph === true
         || layout?.hasEpigraphs === true

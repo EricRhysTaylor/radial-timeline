@@ -25,7 +25,7 @@ const SUPPORTED_MATTER_ROLES = [
 
 const CAPABILITY_LABELS: Record<TemplateCapability['key'], string> = {
     sceneHeadingMode: 'Scene heading controls',
-    actEpigraphs: 'Act epigraphs',
+    partEpigraphs: 'Part epigraphs',
     modernClassicStructure: 'Modern classic structure',
     semanticMatter: 'Semantic matter support',
 };
@@ -99,7 +99,7 @@ function getCapabilities(layout: PandocLayoutTemplate): TemplateCapability[] {
     const specHasOpenerHeadingModes = layout.designedSpec?.scene.openerHeadingModes
         && layout.designedSpec.scene.openerHeadingModes.length > 0;
     if (layout.hasSceneOpenerHeadingOptions || specHasOpenerHeadingModes) add('sceneHeadingMode');
-    if (layout.hasEpigraphs) add('actEpigraphs');
+    if (layout.hasEpigraphs) add('partEpigraphs');
     if (layout.usesModernClassicStructure) add('modernClassicStructure');
     if (layout.preset === 'novel') add('semanticMatter');
 

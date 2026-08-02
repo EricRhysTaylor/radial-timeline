@@ -2019,8 +2019,8 @@ export class ManuscriptOptionsModal extends Modal {
             next.sceneHeadingMode = sceneHeadingMode;
         }
 
-        const hasEpigraphText = (next.actEpigraphs || []).some(value => value.trim().length > 0);
-        const hasAttributionText = (next.actEpigraphAttributions || []).some(value => value.trim().length > 0);
+        const hasEpigraphText = (next.partEpigraphs || []).some(value => value.trim().length > 0);
+        const hasAttributionText = (next.partEpigraphAttributions || []).some(value => value.trim().length > 0);
         if (!next.sceneHeadingMode && !hasEpigraphText && !hasAttributionText) {
             delete activeBook.layoutOptions[layout.id];
             if (Object.keys(activeBook.layoutOptions).length === 0) {

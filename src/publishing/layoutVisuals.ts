@@ -11,9 +11,13 @@
  * Render helpers are pure DOM builders — no plugin state, no settings access.
  *
  * RT terminology → export structure:
- *   Parts    = Acts (Act count → \rtPart{I}{quote}{attribution})
- *   Chapters = Timeline notes carrying a Chapter field
+ *   Parts    = Scene notes carrying a Part field (\rtPart{I}{title}{quote}{attr})
+ *   Chapters = Scene notes carrying a Chapter field
  *   Scenes   = Scene notes (primary unit; \rtSceneSep{roman} openers)
+ *
+ * Parts and Chapters are both author-placed markers on scenes. Part epigraph
+ * text is stored per book per layout and pairs with markers by position: the
+ * first marker takes the first entry.
  */
 import type { PandocLayoutTemplate } from '../types';
 import type { ManuscriptSceneHeadingMode } from '../utils/manuscript';
@@ -761,7 +765,7 @@ export type SpreadValidationContext = {
     actCount: number;
     chapterFieldCount: number;
     /** # of acts with a non-empty epigraph quote (used by Part-epigraph check). */
-    actEpigraphPopulatedCount?: number;
+    partEpigraphPopulatedCount?: number;
     /** # of chapter markers whose chapter title is non-empty. */
     chapterTitlePopulatedCount?: number;
     /** Fraction (0..1) of scenes-in-selection that carry a non-empty title. */
@@ -823,7 +827,7 @@ export function applySpreadValidation(
             }
             // Part-epigraph check fires only when the spread itself advertises
             // the feature (presence of epigraphText) AND the caller has opted
-            // in by supplying `actEpigraphPopulatedCount`. Callers that omit
+            // in by supplying `partEpigraphPopulatedCount`. Callers that omit
             // the field get the historical behavior (no extra warning).
             //
             // Two firing modes:
@@ -832,15 +836,15 @@ export function applySpreadValidation(
             //   • infinite actCount (data-less settings preview) → warn only
             //                       on zero population (back-compat phrasing).
             const advertisesEpigraph = !!spread.rightPage?.epigraphText || !!spread.leftPage?.epigraphText;
-            if (advertisesEpigraph && typeof ctx.actEpigraphPopulatedCount === 'number') {
-                if (Number.isFinite(ctx.actCount) && ctx.actEpigraphPopulatedCount < ctx.actCount) {
+            if (advertisesEpigraph && typeof ctx.partEpigraphPopulatedCount === 'number') {
+                if (Number.isFinite(ctx.actCount) && ctx.partEpigraphPopulatedCount < ctx.actCount) {
                     return {
                         ...spread,
                         warningLevel: 'warning',
-                        warningTooltip: partEpigraphTooltip(ctx.actEpigraphPopulatedCount, ctx.actCount),
+                        warningTooltip: partEpigraphTooltip(ctx.partEpigraphPopulatedCount, ctx.actCount),
                     };
                 }
-                if (!Number.isFinite(ctx.actCount) && ctx.actEpigraphPopulatedCount === 0) {
+                if (!Number.isFinite(ctx.actCount) && ctx.partEpigraphPopulatedCount === 0) {
                     return {
                         ...spread,
                         warningLevel: 'warning',
@@ -952,8 +956,8 @@ export function collectSpreadStatuses(
         const advertisesEpigraph = !!partSpread.rightPage?.epigraphText || !!partSpread.leftPage?.epigraphText;
         const allEpigraphsPopulated =
             advertisesEpigraph
-            && typeof ctx.actEpigraphPopulatedCount === 'number'
-            && ctx.actEpigraphPopulatedCount >= ctx.actCount;
+            && typeof ctx.partEpigraphPopulatedCount === 'number'
+            && ctx.partEpigraphPopulatedCount >= ctx.actCount;
         out.push({
             id: 'parts-count',
             tone: 'info',

@@ -119,7 +119,7 @@ export interface TemplateAsset {
 }
 
 export interface TemplateCapability {
-    key: 'sceneHeadingMode' | 'actEpigraphs' | 'modernClassicStructure' | 'semanticMatter';
+    key: 'sceneHeadingMode' | 'partEpigraphs' | 'modernClassicStructure' | 'semanticMatter';
     label: string;
 }
 
@@ -188,8 +188,8 @@ export interface BookPublishingPreferences {
     preferredTemplateProfileIdByContext?: Partial<Record<UsageContext, string>>;
     profileOverrides?: Record<string, {
         sceneHeadingMode?: ManuscriptSceneHeadingMode;
-        actEpigraphs?: string[];
-        actEpigraphAttributions?: string[];
+        partEpigraphs?: string[];
+        partEpigraphAttributions?: string[];
     }>;
 }
 
@@ -527,8 +527,8 @@ export interface BookProfile {
 }
 
 export interface BookLayoutOptions {
-    actEpigraphs?: string[];
-    actEpigraphAttributions?: string[];
+    partEpigraphs?: string[];
+    partEpigraphAttributions?: string[];
     sceneHeadingMode?: ManuscriptSceneHeadingMode;
 }
 

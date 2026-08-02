@@ -71,8 +71,8 @@ export type SceneHeadingRenderMode = 'markdown-h2' | 'latex-section-starred';
 
 export interface ModernClassicStructureOptions {
   enabled: boolean;
-  actEpigraphs?: string[];
-  actEpigraphAttributions?: string[];
+  partEpigraphs?: string[];
+  partEpigraphAttributions?: string[];
 }
 
 export interface AssembleManuscriptOptions {
@@ -826,8 +826,8 @@ interface ModernClassicState {
   currentActIndex: number | null;
   chapterIndex: number;
   sceneIndexInAct: number;
-  actEpigraphs: string[];
-  actEpigraphAttributions: string[];
+  partEpigraphs: string[];
+  partEpigraphAttributions: string[];
 }
 
 function toRomanNumeral(value: number): string {
@@ -971,8 +971,8 @@ function createModernClassicState(options?: ModernClassicStructureOptions): Mode
     currentActIndex: null,
     chapterIndex: 0,
     sceneIndexInAct: 0,
-    actEpigraphs: normalizeList(options?.actEpigraphs),
-    actEpigraphAttributions: normalizeList(options?.actEpigraphAttributions),
+    partEpigraphs: normalizeList(options?.partEpigraphs),
+    partEpigraphAttributions: normalizeList(options?.partEpigraphAttributions),
   };
 }
 
@@ -1304,8 +1304,8 @@ export async function assembleManuscript(
       if (typeof nextActIndex === 'number' && nextActIndex > 0 && nextActIndex !== modernClassicState.currentActIndex) {
         const actRoman = toRomanNumeral(nextActIndex);
         if (actRoman) {
-          const epigraphQuote = sanitizeModernClassicEpigraphArg(modernClassicState.actEpigraphs[nextActIndex - 1] || '');
-          const epigraphAttribution = sanitizeModernClassicAttributionArg(modernClassicState.actEpigraphAttributions[nextActIndex - 1] || '');
+          const epigraphQuote = sanitizeModernClassicEpigraphArg(modernClassicState.partEpigraphs[nextActIndex - 1] || '');
+          const epigraphAttribution = sanitizeModernClassicAttributionArg(modernClassicState.partEpigraphAttributions[nextActIndex - 1] || '');
           // Empty title slot: Parts are still Act-derived here, and an Act has no
           // name to print. The macro \ifstrempty-guards the title, so this emits
           // byte-for-byte what the 3-argument form did. The slot is filled once

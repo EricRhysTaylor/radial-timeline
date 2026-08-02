@@ -196,3 +196,50 @@ describe('saga timeline scope helpers', () => {
     expect(getTimelineScopeTitle(settings)).toBe('Only Book');
   });
 });
+
+describe('normalizeBookProfile — part epigraph storage', () => {
+  it('keeps epigraph text written under the legacy act-based key', () => {
+    // The stored name was `actEpigraphs` while Parts were derived from Acts.
+    // Renaming the field must not orphan an author's existing text.
+    const normalized = normalizeBookProfile({
+      id: 'book-1',
+      title: 'A Book',
+      sourceFolder: 'Books/A',
+      layoutOptions: {
+        layout: {
+          actEpigraphs: ['The absurd does not liberate.'],
+          actEpigraphAttributions: ['Albert Camus'],
+        },
+      },
+    } as never);
+
+    expect(normalized.layoutOptions?.layout).toEqual({
+      partEpigraphs: ['The absurd does not liberate.'],
+      partEpigraphAttributions: ['Albert Camus'],
+    });
+  });
+
+  it('prefers the current key when both are present', () => {
+    const normalized = normalizeBookProfile({
+      id: 'book-1',
+      title: 'A Book',
+      sourceFolder: 'Books/A',
+      layoutOptions: {
+        layout: { partEpigraphs: ['Current.'], actEpigraphs: ['Stale.'] },
+      },
+    } as never);
+
+    expect(normalized.layoutOptions?.layout?.partEpigraphs).toEqual(['Current.']);
+  });
+
+  it('still trims and drops trailing empties on legacy values', () => {
+    const normalized = normalizeBookProfile({
+      id: 'book-1',
+      title: 'A Book',
+      sourceFolder: 'Books/A',
+      layoutOptions: { layout: { actEpigraphs: ['  Trimmed.  ', '', ''] } },
+    } as never);
+
+    expect(normalized.layoutOptions?.layout?.partEpigraphs).toEqual(['Trimmed.']);
+  });
+});

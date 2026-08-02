@@ -38,7 +38,7 @@ export interface SpreadValidationInputs {
      * have already loaded scene data may pass these explicit counts; the
      * Settings panel today does not, and so still falls back to Infinity for
      * chapter/title checks (PART card flagging continues to work via the
-     * book-derived `actEpigraphPopulatedCount`).
+     * book-derived `partEpigraphPopulatedCount`).
      */
     bookActCount?: number;
     bookChapterFieldCount?: number;
@@ -55,8 +55,8 @@ export interface SpreadValidationInputs {
  *                              a high sentinel (Number.POSITIVE_INFINITY) so
  *                              the "no chapter pages" warning does not fire on
  *                              data-less surfaces (settings preview).
- *   - actEpigraphPopulatedCount → non-empty entries in
- *                              book.layoutOptions[layoutId].actEpigraphs[].
+ *   - partEpigraphPopulatedCount → non-empty entries in
+ *                              book.layoutOptions[layoutId].partEpigraphs[].
  *                              Always derivable from book settings — supplied
  *                              regardless of selection state.
  *   - chapterTitlePopulatedCount → markers across selection whose title is
@@ -134,13 +134,13 @@ export function buildSpreadValidationContext(
         ? 1
         : populatedTitles.length / selectedTitles.length;
 
-    // actEpigraphPopulatedCount — book-settings-derived; always available.
-    const actEpigraphPopulatedCount = countActEpigraphsForLayout(plugin, inputs.layout);
+    // partEpigraphPopulatedCount — book-settings-derived; always available.
+    const partEpigraphPopulatedCount = countPartEpigraphsForLayout(plugin, inputs.layout);
 
     const ctx: SpreadValidationContext = {
         actCount,
         chapterFieldCount: effectiveChapterFieldCount,
-        actEpigraphPopulatedCount,
+        partEpigraphPopulatedCount,
         sceneTitlePopulatedRatio,
     };
     // Only include chapterTitlePopulatedCount when we actually have selection
@@ -157,14 +157,14 @@ export function buildSpreadValidationContext(
     return ctx;
 }
 
-function countActEpigraphsForLayout(
+function countPartEpigraphsForLayout(
     plugin: RadialTimelinePlugin,
     layout: PandocLayoutTemplate | undefined,
 ): number {
     if (!layout) return 0;
     const book = getActiveBook(plugin.settings);
     if (!book) return 0;
-    const epigraphs = book.layoutOptions?.[layout.id]?.actEpigraphs;
+    const epigraphs = book.layoutOptions?.[layout.id]?.partEpigraphs;
     if (!Array.isArray(epigraphs)) return 0;
     return epigraphs.reduce<number>((sum, value) => {
         if (typeof value === 'string' && value.trim().length > 0) return sum + 1;

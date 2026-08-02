@@ -5,6 +5,7 @@ import { getScenePrefixNumber, getNumberSquareSize } from '../../utils/text';
 import { getReadabilityMultiplier } from '../../utils/readability';
 import { generateNumberSquareGroup, makeSceneId } from '../../utils/numberSquareHelpers';
 import { getTimelineScope } from '../../utils/books';
+import { getTimelineSegmentCount } from '../utils/TimelineSegments';
 import type { PositionInfo } from '../utils/SceneLayout';
 
 interface SubplotRingPlacement {
@@ -111,7 +112,6 @@ export function renderNumberSquaresUnified(params: {
   sceneNumbersMap?: Map<string, { number: string; x: number; y: number; width: number; height: number }>;
   enableSubplotColors?: boolean;
   resolveSubplotVisual?: (scene: TimelineItem) => { subplotIndex: number } | null;
-  numActs?: number;
 }): string {
   const {
     plugin,
@@ -128,15 +128,14 @@ export function renderNumberSquaresUnified(params: {
     scenesByActAndSubplot,
     sceneNumbersMap,
     enableSubplotColors = false,
-    resolveSubplotVisual,
-    numActs
+    resolveSubplotVisual
   } = params;
 
   let svg = '<g class="rt-number-squares">';
   const readabilityScale = getReadabilityMultiplier(plugin.settings);
   const squareScale = readabilityScale > 1 ? 1 + (readabilityScale - 1) * 0.75 : 1; // pad more aggressively when font grows
   const isSagaScope = getTimelineScope(plugin.settings) === 'saga';
-  const totalActs = isSagaScope ? Math.max(1, numActs ?? 1) : Math.max(3, numActs ?? 3);
+  const totalSegments = getTimelineSegmentCount(plugin.settings);
 
   scenes.forEach((scene, idx) => {
     if (isBeatNote(scene) || scene.itemType === 'Backdrop') return;
@@ -171,7 +170,7 @@ export function renderNumberSquaresUnified(params: {
         scenesByActAndSubplot,
         sortByWhen: usesWhenOrdering(plugin.settings),
         isSagaScope,
-        totalSegments: totalActs
+        totalSegments
       });
       if (!placement) return;
       sceneStartAngle = placement.startAngle;
@@ -282,14 +281,13 @@ export function renderInnerRingsNumberSquaresAllScenes(params: {
   sceneGrades: Map<string, string>;
   enableSubplotColors?: boolean;
   resolveSubplotVisual?: (scene: TimelineItem) => { subplotIndex: number } | null;
-  numActs?: number;
   outerPositionByKey?: Map<string, PositionInfo>;
 }): string {
-  const { plugin, NUM_RINGS, masterSubplotOrder, ringStartRadii, ringWidths, scenesByActAndSubplot, scenes, sceneGrades, enableSubplotColors = false, resolveSubplotVisual, numActs, outerPositionByKey } = params;
+  const { plugin, NUM_RINGS, masterSubplotOrder, ringStartRadii, ringWidths, scenesByActAndSubplot, scenes, sceneGrades, enableSubplotColors = false, resolveSubplotVisual, outerPositionByKey } = params;
   const readabilityScale = getReadabilityMultiplier(plugin.settings);
   const squareScale = readabilityScale > 1 ? 1 + (readabilityScale - 1) * 0.75 : 1;
   const isSagaScope = getTimelineScope(plugin.settings) === 'saga';
-  const totalActs = isSagaScope ? Math.max(1, numActs ?? 1) : Math.max(3, numActs ?? 3);
+  const totalSegments = getTimelineSegmentCount(plugin.settings);
 
   const sortByWhen = usesWhenOrdering(plugin.settings);
 
@@ -311,7 +309,7 @@ export function renderInnerRingsNumberSquaresAllScenes(params: {
       scenesByActAndSubplot,
       sortByWhen,
       isSagaScope,
-      totalSegments: totalActs,
+      totalSegments,
       outerPositionByKey
     });
     if (!placement) return;
@@ -361,7 +359,6 @@ export function renderNumberSquaresStandard(params: {
   sceneNumbersMap: Map<string, { number: string; x: number; y: number; width: number; height: number }>;
   enableSubplotColors?: boolean;
   resolveSubplotVisual?: (scene: TimelineItem) => { subplotIndex: number } | null;
-  numActs?: number;
 }): string {
   return renderNumberSquaresUnified({
     plugin: params.plugin,
@@ -374,7 +371,6 @@ export function renderNumberSquaresStandard(params: {
     scenesByActAndSubplot: params.scenesByActAndSubplot,
     sceneNumbersMap: params.sceneNumbersMap,
     enableSubplotColors: params.enableSubplotColors,
-    resolveSubplotVisual: params.resolveSubplotVisual,
-    numActs: params.numActs
+    resolveSubplotVisual: params.resolveSubplotVisual
   });
 }

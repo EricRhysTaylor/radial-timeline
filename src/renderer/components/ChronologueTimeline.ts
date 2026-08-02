@@ -8,6 +8,7 @@ import { formatNumber } from '../../utils/svg';
 import type { TimelineItem } from '../../types';
 import { parseWhenField, calculateTimeSpan, parseDuration, detectDiscontinuities, detectSceneOverlaps, prepareScenesForDiscontinuityDetection, calculateAutoDiscontinuityThreshold } from '../../utils/date';
 import { parseRuntimeField, formatRuntimeValue } from '../../utils/runtimeEstimator';
+import { sceneKey } from '../../utils/sceneHelpers';
 
 export interface ChronologueSceneEntry {
     scene: TimelineItem;
@@ -180,17 +181,17 @@ function renderDurationTickArcs(params: DurationTickArcParams): string | null {
         const durationInfo = parsedDurations[idx];
         const durationMs = durationInfo.durationMs;
         
-        // Get manuscript-order position for this scene using path or title as key
-        const sceneKey = entry.scene.path || `title:${entry.scene.title || ''}`;
-        const manuscriptPosition = scenePositions.get(sceneKey);
-        if (!manuscriptPosition) {
+        // Where this scene sits on the outer ring — same canonical key the
+        // renderer stored it under.
+        const outerRingPosition = scenePositions.get(sceneKey(entry.scene));
+        if (!outerRingPosition) {
             return;
         }
 
         // Add 2px margins on both sides of the duration arc
         const marginAngle = 2 / arcRadius; // Convert 2px to radians
-        const startAngle = manuscriptPosition.startAngle + marginAngle;
-        const endAngle = manuscriptPosition.endAngle - marginAngle;
+        const startAngle = outerRingPosition.startAngle + marginAngle;
+        const endAngle = outerRingPosition.endAngle - marginAngle;
         const availableAngle = endAngle - startAngle;
         
         if (availableAngle <= 0) return;
@@ -416,20 +417,20 @@ export function renderChronologicalBackboneArc(
         const sceneEntry = timestampToEntry.get(currScene.when.getTime());
         if (!sceneEntry) return;
         
-        // Get manuscript-order position for this scene
-        const sceneKey = sceneEntry.scene.path || `title:${sceneEntry.scene.title || ''}`;
-        const manuscriptPosition = scenePositions.get(sceneKey);
-        
-        if (!manuscriptPosition) return;
+        // Where this scene sits on the outer ring — same canonical key the
+        // renderer stored it under.
+        const outerRingPosition = scenePositions.get(sceneKey(sceneEntry.scene));
+
+        if (!outerRingPosition) return;
         
         // Position the "∞" at the MIDDLE of the scene arc (both angularly and radially)
-        const midAngle = (manuscriptPosition.startAngle + manuscriptPosition.endAngle) / 2;
+        const midAngle = (outerRingPosition.startAngle + outerRingPosition.endAngle) / 2;
         
         const x = formatNumber(markerRadius * Math.cos(midAngle));
         const y = formatNumber(markerRadius * Math.sin(midAngle));
         
         // Calculate dynamic font size based on angular width of the scene slice
-        const angularWidth = manuscriptPosition.endAngle - manuscriptPosition.startAngle;
+        const angularWidth = outerRingPosition.endAngle - outerRingPosition.startAngle;
         const arcLengthAtMarker = markerRadius * angularWidth; // Arc length in pixels
         
         // Scale font-size to fit within the slice: aim for 60% of arc length to prevent overflow

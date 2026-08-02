@@ -5,7 +5,7 @@
 
 import type { TimelineItem } from '../../types';
 import { shouldRenderStoryBeats } from '../modules/ModeRenderingHelpers';
-import { isBeatNote, isMatterNote, sortScenes, type PluginRendererFacade } from '../../utils/sceneHelpers';
+import { isBeatNote, isMatterNote, sortScenes, usesWhenOrdering, type PluginRendererFacade } from '../../utils/sceneHelpers';
 import {
     SVG_SIZE,
     INNER_RADIUS,
@@ -24,8 +24,8 @@ import { getMostAdvancedStageColor } from '../../utils/colour';
 import { startPerfSegment } from '../utils/Performance';
 import { computeSubplotDominanceStates, type SubplotDominanceState } from '../components/SubplotDominanceIndicators';
 import { getReadabilityScale } from '../../utils/readability';
-import { getConfiguredActCount } from '../../utils/acts';
-import { getSagaBooks, getTimelineScope } from '../../utils/books';
+import { getTimelineScope } from '../../utils/books';
+import { getTimelineSegmentCount } from './TimelineSegments';
 
 export interface PrecomputedRenderValues {
     scenesByActAndSubplot: { [act: number]: { [subplot: string]: TimelineItem[] } };
@@ -53,11 +53,9 @@ export function computeCacheableValues(
     const isChronologueMode = currentMode === 'chronologue';
     const isProgressMode = currentMode === 'progress';
     const isSagaScope = getTimelineScope(plugin.settings) === 'saga';
-    const segmentCount = isSagaScope
-        ? Math.max(1, getSagaBooks(plugin.settings).length)
-        : getConfiguredActCount(plugin.settings);
+    const segmentCount = getTimelineSegmentCount(plugin.settings);
     const readabilityScale = getReadabilityScale(plugin.settings);
-    const sortByWhen = isChronologueMode ? true : (plugin.settings.sortByWhenDate ?? false);
+    const sortByWhen = usesWhenOrdering(plugin.settings);
     const forceChronological = isChronologueMode;
 
     const allSubplotsSet = new Set<string>();

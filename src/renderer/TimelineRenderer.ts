@@ -21,9 +21,11 @@ import {
     extractGradeFromScene,
     isBeatNote,
     isSceneItem,
+    usesWhenOrdering,
     type PluginRendererFacade
 } from '../utils/sceneHelpers';
 import { makeSceneId } from '../utils/numberSquareHelpers';
+import type { PositionInfo } from './utils/SceneLayout';
 import { buildChronologueOuterLabels, renderChronologueOverlays, renderOuterLabelTexts, renderChronologueOuterTicks } from './utils/Chronologue';
 import { isRuntimeModeActive } from '../view/interactions/ChronologueShiftController';
 import { computeCacheableValues } from './utils/Precompute';
@@ -313,7 +315,7 @@ export function createTimelineSVG(
     const isChronologueMode = currentMode === 'chronologue';
     const isProgressMode = currentMode === 'progress';
     const isSagaScope = getTimelineScope(settings) === 'saga';
-    const sortByWhen = isChronologueMode ? true : (settings.sortByWhenDate ?? false);
+    const sortByWhen = usesWhenOrdering(settings);
     const forceChronological = isChronologueMode;
     const showChapterMarkers = isNarrativeMode && !sortByWhen && (settings.showChapterMarkers ?? false);
     const chronologueSceneEntries: ChronologueSceneEntry[] | undefined = isChronologueMode
@@ -511,7 +513,7 @@ export function createTimelineSVG(
         // When using manuscript order, use the scene's actual act
         const currentMode = settings.currentMode || 'narrative';
         const isChronologueMode = currentMode === 'chronologue';
-        const sortByWhen = isChronologueMode ? true : (settings.sortByWhenDate ?? false);
+        const sortByWhen = usesWhenOrdering(settings);
 
         const sceneActNumber = scene.actNumber !== undefined ? scene.actNumber : 1;
         const rawActIndex = sortByWhen
@@ -569,7 +571,10 @@ export function createTimelineSVG(
 
     // Store manuscript-order scene positions for Level 4 duration arcs (keyed by scene path or title)
     // Initialize map if in Chronologue mode so RingRenderer can populate it
-    const manuscriptOrderPositions: Map<string, { startAngle: number; endAngle: number }> | undefined = isChronologueMode ? new Map() : undefined;
+    // Where each scene sits on the all-scenes outer ring, keyed canonically.
+    // Chronologue's duration and backbone arcs draw from it; RingRenderer fills
+    // it from the sequence it already built.
+    const outerRingPositionByKey: Map<string, PositionInfo> | undefined = isChronologueMode ? new Map() : undefined;
 
     // Determine how many acts to render based on sorting method
     // When date sorting: Use full 360° circle (only "act 0")
@@ -593,10 +598,8 @@ export function createTimelineSVG(
         PUBLISH_STAGE_COLORS,
         maxTextWidth,
         synopsesElements,
-        sceneGrades,
-        manuscriptOrderPositions,
+        outerRingPositionByKey,
         outerRingChapterBoundaryGeometry: showChapterMarkers ? new Map<string, OuterRingChapterBoundaryGeometry>() : undefined,
-        numActs,
         maxStageColor // Pass for Gossamer mode beat strokes
     };
 
@@ -698,8 +701,7 @@ export function createTimelineSVG(
         sceneGrades,
         sceneNumbersMap,
         numberSquareVisualResolver: numberSquareVisualResolver || null,
-        shouldApplyNumberSquareColors,
-        numActs
+        shouldApplyNumberSquareColors
     };
 
     svg += renderNumberSquares(numberSquareContext);
@@ -746,7 +748,7 @@ export function createTimelineSVG(
             plugin,
             scenes,
             subplotOuterRadius,
-            manuscriptOrderPositions,
+            manuscriptOrderPositions: outerRingPositionByKey,
             ringStartRadii,
             ringWidths,
             masterSubplotOrder,

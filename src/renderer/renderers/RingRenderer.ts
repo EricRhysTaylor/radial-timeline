@@ -44,10 +44,12 @@ export interface RingRenderContext {
     PUBLISH_STAGE_COLORS: StageColorMap;
     maxTextWidth: number;
     synopsesElements: SVGGElement[];
-    sceneGrades: Map<string, string>;
-    manuscriptOrderPositions?: Map<string, { startAngle: number; endAngle: number }>;
+    /**
+     * Filled by this renderer: where each scene sits on the all-scenes outer
+     * ring. Chronologue's duration and backbone arcs read it afterwards.
+     */
+    outerRingPositionByKey?: Map<string, PositionInfo>;
     outerRingChapterBoundaryGeometry?: Map<string, OuterRingChapterBoundaryGeometry>;
-    numActs: number;
     maxStageColor?: string; // Shared project stage color for Gossamer beat strokes.
 }
 
@@ -67,9 +69,8 @@ export function renderRings(ctx: RingRenderContext): string {
         PUBLISH_STAGE_COLORS,
         maxTextWidth,
         synopsesElements,
-        manuscriptOrderPositions,
-        outerRingChapterBoundaryGeometry,
-        numActs
+        outerRingPositionByKey,
+        outerRingChapterBoundaryGeometry
     } = ctx;
 
     let svg = '';
@@ -133,9 +134,8 @@ export function renderRings(ctx: RingRenderContext): string {
                 endAngle = (3 * Math.PI) / 2;
             } else {
                 // Manuscript mode: divide full circle by configured acts
-                const totalActsDivisor = actsToRender || numActs;
-                startAngle = (act * 2 * Math.PI) / totalActsDivisor - Math.PI / 2;
-                endAngle = ((act + 1) * 2 * Math.PI) / totalActsDivisor - Math.PI / 2;
+                startAngle = (act * 2 * Math.PI) / actsToRender - Math.PI / 2;
+                endAngle = ((act + 1) * 2 * Math.PI) / actsToRender - Math.PI / 2;
             }
 
             const subplot = masterSubplotOrder[ringOffset];
@@ -168,16 +168,10 @@ export function renderRings(ctx: RingRenderContext): string {
                     sequence.staleDominantPaths.forEach(path => { delete dominantSubplots[path]; });
                 }
 
-                // Store positions for Level 4 duration arcs (chronologue mode only)
-                if (isChronologueMode && manuscriptOrderPositions) {
-                    sortedCombined.forEach((scene, idx) => {
-                        const position = positions.get(idx);
-                        if (position) {
-                            // Use path as primary key, fallback to title for scenes without paths
-                            const key = scene.path || `title:${scene.title || ''}`;
-                            manuscriptOrderPositions.set(key, position);
-                        }
-                    });
+                // Publish this act's outer-ring angles for later passes
+                // (Chronologue's duration and backbone arcs).
+                if (outerRingPositionByKey) {
+                    sequence.positionByKey.forEach((position, key) => outerRingPositionByKey.set(key, position));
                 }
 
                 // Render

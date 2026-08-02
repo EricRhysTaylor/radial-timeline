@@ -556,11 +556,11 @@ export async function getSortedSceneFiles(plugin: RadialTimelinePlugin): Promise
   // Check current mode and sorting settings
   const currentMode = plugin.settings.currentMode || 'narrative';
   const isChronologueMode = currentMode === 'chronologue';
-  const sortByWhen = isChronologueMode ? true : (plugin.settings.sortByWhenDate ?? false);
   const forceChronological = isChronologueMode;
 
   // Import and use the same sortScenes function that the timeline uses
-  const { sortScenes } = await import('./sceneHelpers');
+  const { sortScenes, usesWhenOrdering } = await import('./sceneHelpers');
+  const sortByWhen = usesWhenOrdering(plugin.settings);
   const sortedScenes = sortScenes(uniqueScenes, sortByWhen, forceChronological);
 
   // Convert to TFile objects

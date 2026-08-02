@@ -3,6 +3,7 @@ import {
     isBeatNote,
     type PluginRendererFacade,
     sceneKey,
+    usesWhenOrdering,
     extractGradeFromScene
 } from '../../utils/sceneHelpers';
 import { makeSceneId } from '../../utils/numberSquareHelpers';
@@ -15,8 +16,8 @@ import {
     renderNumberSquaresStandard
 } from '../components/NumberSquares';
 import type { SceneNumberInfo } from '../../utils/constants';
-import { getConfiguredActCount } from '../../utils/acts';
 import { getTimelineScope } from '../../utils/books';
+import { getTimelineSegmentCount } from '../utils/TimelineSegments';
 
 // Define the interface for the number square visual resolver logic
 export type NumberSquareVisualResolver = (scene: TimelineItem) => { subplotIndex: number };
@@ -32,7 +33,6 @@ export interface NumberSquareRenderContext {
     sceneNumbersMap: Map<string, SceneNumberInfo>;
     numberSquareVisualResolver: NumberSquareVisualResolver | null;
     shouldApplyNumberSquareColors: boolean;
-    numActs: number;
 }
 
 export function renderNumberSquares(ctx: NumberSquareRenderContext): string {
@@ -46,16 +46,13 @@ export function renderNumberSquares(ctx: NumberSquareRenderContext): string {
         sceneGrades,
         sceneNumbersMap,
         numberSquareVisualResolver,
-        shouldApplyNumberSquareColors,
-        numActs
+        shouldApplyNumberSquareColors
     } = ctx;
 
     let svg = '';
     const isSagaScope = getTimelineScope(plugin.settings) === 'saga';
     const NUM_RINGS = masterSubplotOrder.length;
-    const totalActs = isSagaScope
-        ? Math.max(1, numActs || 1)
-        : Math.max(3, numActs || getConfiguredActCount(plugin.settings));
+    const totalSegments = getTimelineSegmentCount(plugin.settings);
 
     if (shouldShowAllScenesInOuterRing(plugin)) {
         // In outer-ring-narrative mode, draw number squares for ALL rings
@@ -74,10 +71,9 @@ export function renderNumberSquares(ctx: NumberSquareRenderContext): string {
         const squareRadiusOuter = (innerROuter + outerROuter) / 2;
 
         // Determine number of acts to iterate based on sorting method
-        const currentMode = plugin.settings.currentMode || 'narrative';
-        const isChronologueMode = currentMode === 'chronologue';
-        const sortByWhen = isChronologueMode ? true : (plugin.settings.sortByWhenDate ?? false);
-        const actsToRender = sortByWhen ? 1 : totalActs;
+        const isChronologueMode = (plugin.settings.currentMode || 'narrative') === 'chronologue';
+        const sortByWhen = usesWhenOrdering(plugin.settings);
+        const actsToRender = sortByWhen ? 1 : totalSegments;
 
         for (let act = 0; act < actsToRender; act++) {
             let startAngle: number;
@@ -89,8 +85,8 @@ export function renderNumberSquares(ctx: NumberSquareRenderContext): string {
                 endAngle = (3 * Math.PI) / 2;
             } else {
                 // Manuscript mode: divide full circle by configured acts
-                startAngle = (act * 2 * Math.PI) / totalActs - Math.PI / 2;
-                endAngle = ((act + 1) * 2 * Math.PI) / totalActs - Math.PI / 2;
+                startAngle = (act * 2 * Math.PI) / totalSegments - Math.PI / 2;
+                endAngle = ((act + 1) * 2 * Math.PI) / totalSegments - Math.PI / 2;
             }
 
             // Same sequence the arcs were drawn from — see OuterRingSequence.
@@ -147,7 +143,6 @@ export function renderNumberSquares(ctx: NumberSquareRenderContext): string {
             sceneGrades,
             enableSubplotColors: shouldApplyNumberSquareColors,
             resolveSubplotVisual: numberSquareVisualResolver || undefined,
-            numActs,
             outerPositionByKey: isSequenceAlignment ? outerPositionByKey : undefined
         });
 
@@ -164,8 +159,7 @@ export function renderNumberSquares(ctx: NumberSquareRenderContext): string {
             sceneGrades,
             sceneNumbersMap,
             enableSubplotColors: shouldApplyNumberSquareColors,
-            resolveSubplotVisual: numberSquareVisualResolver || undefined,
-            numActs
+            resolveSubplotVisual: numberSquareVisualResolver || undefined
         });
     }
 

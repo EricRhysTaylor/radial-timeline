@@ -297,7 +297,8 @@ export function renderRings(ctx: RingRenderContext): string {
                                   d="M ${formatNumber(textPathRadius * Math.cos(sceneStartAngle + TEXTPATH_START_NUDGE_RAD))} ${formatNumber(textPathRadius * Math.sin(sceneStartAngle + TEXTPATH_START_NUDGE_RAD))} 
                                      A ${formatNumber(textPathRadius)} ${formatNumber(textPathRadius)} 0 ${textPathLargeArcFlag} 1 ${formatNumber(textPathRadius * Math.cos(sceneEndAngle))} ${formatNumber(textPathRadius * Math.sin(sceneEndAngle))}" 
                                   fill="none"/>
-                            <text class="rt-scene-title${scene.path && plugin.openScenePaths.has(scene.path) ? ' rt-scene-is-open' : ''}" dy="${dyOffset}" data-scene-id="${sceneId}">
+                            <clipPath id="clip-${sceneId}"><use href="#${sceneId}"/></clipPath>
+                            <text class="rt-scene-title${scene.path && plugin.openScenePaths.has(scene.path) ? ' rt-scene-is-open' : ''}" clip-path="url(#clip-${sceneId})" dy="${dyOffset}" data-scene-id="${sceneId}">
                                 <textPath href="#textPath-${act}-${ring}-outer-${idx}" startOffset="4">
                                     ${text}
                                 </textPath>
@@ -317,7 +318,9 @@ export function renderRings(ctx: RingRenderContext): string {
 
                 // Void cells are emitted before the ring's scenes so a scene that
                 // grows on hover (Sequence expands into its gap) is not buried
-                // under the void fill — SVG paints later siblings on top.
+                // under the void fill — SVG paints later siblings on top. Note
+                // this order is why scene titles carry an explicit clip: with
+                // voids on top they used to mask overflowing titles by accident.
                 computeVoidSpans(positions.values(), startAngle, endAngle).forEach(span => {
                     svg += renderVoidCellPath(innerR, outerR, span.startAngle, span.endAngle, {
                         act,
@@ -405,7 +408,8 @@ export function renderRings(ctx: RingRenderContext): string {
                                   d="M ${formatNumber(textPathRadius * Math.cos(sceneStartAngle + TEXTPATH_START_NUDGE_RAD))} ${formatNumber(textPathRadius * Math.sin(sceneStartAngle + TEXTPATH_START_NUDGE_RAD))} 
                                      A ${formatNumber(textPathRadius)} ${formatNumber(textPathRadius)} 0 ${textPathLargeArcFlag} 1 ${formatNumber(textPathRadius * Math.cos(sceneEndAngle))} ${formatNumber(textPathRadius * Math.sin(sceneEndAngle))}" 
                                   fill="none"/>
-                            <text class="rt-scene-title${scene.path && plugin.openScenePaths.has(scene.path) ? ' rt-scene-is-open' : ''}" data-scene-id="${sceneId}">
+                            <clipPath id="clip-${sceneId}"><use href="#${sceneId}"/></clipPath>
+                            <text class="rt-scene-title${scene.path && plugin.openScenePaths.has(scene.path) ? ' rt-scene-is-open' : ''}" clip-path="url(#clip-${sceneId})" data-scene-id="${sceneId}">
                                 <textPath href="#textPath-${act}-${ring}-${idx}" startOffset="4">
                                     ${text}
                                 </textPath>
@@ -415,7 +419,9 @@ export function renderRings(ctx: RingRenderContext): string {
 
                 // Void cells are emitted before the ring's scenes so a scene that
                 // grows on hover (Sequence expands into its gap) is not buried
-                // under the void fill — SVG paints later siblings on top.
+                // under the void fill — SVG paints later siblings on top. Note
+                // this order is why scene titles carry an explicit clip: with
+                // voids on top they used to mask overflowing titles by accident.
                 computeVoidSpans(scenePositions.values(), startAngle, endAngle).forEach(span => {
                     svg += renderVoidCellPath(innerR, outerR, span.startAngle, span.endAngle, {
                         act,

@@ -1160,6 +1160,15 @@
   display: none;
 }
 
+/* The alignment toggle leads the row instead of nesting under a mode button:
+   it is a saved layout preference that applies to every mode with an
+   all-scenes outer ring, not a sub-mode of one. Mirror the nested group's
+   margins so it sits clear of "1 Progress" rather than reading as part of it. */
+.ert-timeline-alignment-toggle {
+  margin-inline-start: 0;
+  margin-inline-end: var(--size-4-3);
+}
+
 /* Sub-modes read as tags/annotations, not buttons: shorter than the mode
    buttons, thin dashed outline with a little padding, transparent fill. Each
    sub-mode carries its own hue via --ert-subnav-color — Shift neutral, Runtime

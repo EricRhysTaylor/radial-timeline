@@ -129,6 +129,7 @@ export const de: DeepPartial<TranslationKeys> = {
             groupLabel: 'Nebenhandlungs-Ausrichtung',
             fill: { label: 'Füllen', tooltip: 'Füllen — Szenen der Nebenhandlung verteilen sich gleichmäßig über jeden Akt' },
             sequence: { label: 'Sequenz', tooltip: 'Sequenz — Szenen der Nebenhandlung stehen an ihrer Position im Gesamtmanuskript' },
+            switchTo: 'Klicken für {{name}}.',
         },
         subplotRing: {
             allScenes: 'ALLE SZENEN',

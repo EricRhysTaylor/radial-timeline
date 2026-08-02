@@ -518,6 +518,8 @@ export interface TranslationKeys {
             groupLabel: string;
             fill: { label: string; tooltip: string };
             sequence: { label: string; tooltip: string };
+            /** Action half of the toggle tooltip. {{name}} is the other alignment's label. */
+            switchTo: string;
         };
         subplotRing: {
             allScenes: string;
@@ -2805,6 +2807,7 @@ export const en: TranslationKeys = {
             groupLabel: 'Subplot alignment',
             fill: { label: 'Fill', tooltip: 'Fill — subplot scenes spread evenly across each act' },
             sequence: { label: 'Sequence', tooltip: 'Sequence — subplot scenes sit at their position in the full manuscript' },
+            switchTo: 'Click for {{name}}.',
         },
         subplotRing: {
             allScenes: 'ALL SCENES',

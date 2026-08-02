@@ -129,6 +129,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             groupLabel: '서브플롯 정렬',
             fill: { label: '채움', tooltip: '채움 — 서브플롯 장면을 각 막에 고르게 배치' },
             sequence: { label: '순서', tooltip: '순서 — 서브플롯 장면을 원고 전체에서의 위치에 배치' },
+            switchTo: '클릭하면 {{name}}(으)로 전환.',
         },
         subplotRing: {
             allScenes: '모든 장면',

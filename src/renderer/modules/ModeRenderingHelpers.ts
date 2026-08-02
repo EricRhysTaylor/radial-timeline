@@ -60,11 +60,21 @@ export function shouldShowSubplotRings(plugin: PluginFacade): boolean {
  */
 export function shouldShowAllScenesInOuterRing(plugin: PluginFacade): boolean {
     const currentMode = plugin.settings.currentMode || TimelineMode.NARRATIVE;
-    const modeDef = getModeDefinition(currentMode as TimelineMode);
-    
-    // Check outer ring content setting
-    // 'narrative' → true, 'chronologue' → true, 'subplot-only' → false
-    return modeDef.rendering.outerRingContent === 'narrative' || 
+    return modeHasAllScenesOuterRing(currentMode as TimelineMode);
+}
+
+/**
+ * Whether a mode's outer ring holds every scene rather than Main Plot only.
+ *
+ * Asked by the renderer through the plugin facade above, and by the header
+ * (which knows a mode id, not a plugin) to decide whether the subplot
+ * alignment toggle applies. One answer, two callers.
+ *
+ * 'narrative' → true, 'chronologue' → true, 'subplot-only' → false
+ */
+export function modeHasAllScenesOuterRing(mode: TimelineMode): boolean {
+    const modeDef = getModeDefinition(mode);
+    return modeDef.rendering.outerRingContent === 'narrative' ||
            modeDef.rendering.outerRingContent === 'chronologue';
 }
 
@@ -82,13 +92,7 @@ export function shouldShowAllScenesInOuterRing(plugin: PluginFacade): boolean {
  */
 export function usesSequenceAlignment(plugin: PluginFacade): boolean {
     if (plugin.settings.subplotAlignment !== 'sequence') return false;
-    if (!shouldShowAllScenesInOuterRing(plugin)) return false;
-    // Narrative only for now. Chronologue passes the structural test above and
-    // is the intended next step, but it has no toggle yet — applying a layout
-    // change the user cannot see or undo from that mode would be a surprise.
-    // Rolling it out is this one condition.
-    const currentMode = plugin.settings.currentMode || TimelineMode.NARRATIVE;
-    return currentMode === TimelineMode.NARRATIVE;
+    return shouldShowAllScenesInOuterRing(plugin);
 }
 
 /**

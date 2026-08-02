@@ -130,6 +130,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             groupLabel: 'サブプロットの配置',
             fill: { label: '均等', tooltip: '均等 — サブプロットのシーンを各幕に均等に配置' },
             sequence: { label: '順序', tooltip: '順序 — サブプロットのシーンを原稿全体での位置に配置' },
+            switchTo: 'クリックで{{name}}に切り替え。',
         },
         subplotRing: {
             allScenes: '全シーン',

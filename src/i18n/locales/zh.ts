@@ -131,6 +131,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             groupLabel: '支线对齐',
             fill: { label: '填充', tooltip: '填充 — 支线场景在每一幕中均匀分布' },
             sequence: { label: '顺序', tooltip: '顺序 — 支线场景位于其在整部书稿中的位置' },
+            switchTo: '点击切换为{{name}}。',
         },
         subplotRing: {
             allScenes: '全部场景',

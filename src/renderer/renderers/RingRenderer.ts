@@ -181,6 +181,7 @@ export function renderRings(ctx: RingRenderContext): string {
                 }
 
                 // Render
+                let ringScenesSvg = '';
                 sortedCombined.forEach((scene, idx) => {
                     const { text } = parseSceneTitle(scene.title || '', scene.number);
                     const position = positions.get(idx)!;
@@ -272,7 +273,7 @@ export function renderRings(ctx: RingRenderContext): string {
                         return '';
                     })();
 
-                    svg += `
+                    ringScenesSvg += `
                         ${renderSceneGroup({
                             scene,
                             act,
@@ -314,7 +315,9 @@ export function renderRings(ctx: RingRenderContext): string {
                         </g>`;
                 });
 
-                // Void cells
+                // Void cells are emitted before the ring's scenes so a scene that
+                // grows on hover (Sequence expands into its gap) is not buried
+                // under the void fill — SVG paints later siblings on top.
                 computeVoidSpans(positions.values(), startAngle, endAngle).forEach(span => {
                     svg += renderVoidCellPath(innerR, outerR, span.startAngle, span.endAngle, {
                         act,
@@ -322,6 +325,7 @@ export function renderRings(ctx: RingRenderContext): string {
                         isOuterRing: true
                     });
                 });
+                svg += ringScenesSvg;
 
                 continue; // Continue to next ring loop (which iterates rings for this act)
             }
@@ -337,10 +341,12 @@ export function renderRings(ctx: RingRenderContext): string {
 
                 // Sequence: each scene sits at its outer-ring angle, leaving real
                 // gaps where this subplot is absent. Fill: spread across the segment.
-                const scenePositions = (isSequenceAlignment && outerPositionByKey)
+                const isAlignedRing = isSequenceAlignment && outerPositionByKey !== undefined;
+                const scenePositions = (isAlignedRing && outerPositionByKey)
                     ? alignPositionsToOuterRing(effectiveScenes, outerPositionByKey)
                     : computePositions(innerR, outerR, startAngle, endAngle, effectiveScenes);
 
+                let ringScenesSvg = '';
                 effectiveScenes.forEach((scene, idx) => {
                     const { text } = parseSceneTitle(scene.title || '', scene.number);
                     const position = scenePositions.get(idx);
@@ -374,7 +380,7 @@ export function renderRings(ctx: RingRenderContext): string {
                     if (scene.path && plugin.openScenePaths.has(scene.path)) sceneClasses += " rt-scene-is-open";
 
 
-                    svg += `
+                    ringScenesSvg += `
                         ${renderSceneGroup({
                             scene,
                             act,
@@ -386,7 +392,8 @@ export function renderRings(ctx: RingRenderContext): string {
                             endAngle: sceneEndAngle,
                             subplotIdxAttr,
                             subplotColorIdxAttr,
-                            titleInset: sceneTitleInset
+                            titleInset: sceneTitleInset,
+                            aligned: isAlignedRing
                         })}
                             <path id="${sceneId}"
                                   d="${arcPathStr}" 
@@ -406,7 +413,9 @@ export function renderRings(ctx: RingRenderContext): string {
                         </g>`;
                 });
 
-                // Void cells for inner rings
+                // Void cells are emitted before the ring's scenes so a scene that
+                // grows on hover (Sequence expands into its gap) is not buried
+                // under the void fill — SVG paints later siblings on top.
                 computeVoidSpans(scenePositions.values(), startAngle, endAngle).forEach(span => {
                     svg += renderVoidCellPath(innerR, outerR, span.startAngle, span.endAngle, {
                         act,
@@ -414,6 +423,7 @@ export function renderRings(ctx: RingRenderContext): string {
                         isOuterRing: isOuterRing
                     });
                 });
+                svg += ringScenesSvg;
             } else {
                 // No scenes, render empty void ring
                 svg += renderVoidCellPath(innerR, outerR, startAngle, endAngle, {

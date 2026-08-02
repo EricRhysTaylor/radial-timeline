@@ -151,6 +151,47 @@ export function redistributeAngles(
 }
 
 /**
+ * Expand a Sequence-aligned scene into the empty arc that follows it.
+ *
+ * Aligned scenes cannot be repacked: each one's start angle IS its position in
+ * the manuscript, which is the whole point of the mode. So the hovered scene
+ * keeps its start angle, grows its end angle into the gap ahead, and no other
+ * scene moves. Repacking here is what made hover flicker — the scene jumped out
+ * from under the cursor, which un-hovered it, which restored it.
+ *
+ * Growth stops at the next scene (or the segment end). A scene with no gap
+ * ahead — one immediately followed by another of the same subplot — cannot
+ * expand, and returns no change rather than overlapping its neighbour.
+ */
+export function expandIntoGap(
+    elements: SceneAngleData[],
+    hoveredId: string,
+    targetSize: number,
+    segmentEndAngle: number
+): RedistributionResult[] {
+    const hovered = elements.find(e => e.id === hoveredId);
+    if (!hovered) return [];
+
+    const nextStartAngle = elements.reduce((nearest, element) => {
+        if (element.id === hoveredId) return nearest;
+        if (element.startAngle < hovered.endAngle) return nearest;
+        return Math.min(nearest, element.startAngle);
+    }, segmentEndAngle);
+
+    const available = nextStartAngle - hovered.startAngle;
+    const currentSize = hovered.endAngle - hovered.startAngle;
+    // Partial growth still reveals more of the title than the original slice.
+    const newSize = Math.min(targetSize, available);
+    if (newSize <= currentSize) return [];
+
+    return [{
+        id: hoveredId,
+        newStartAngle: hovered.startAngle,
+        newEndAngle: hovered.startAngle + newSize
+    }];
+}
+
+/**
  * Build SVG arc path for a scene cell
  */
 export function buildArcPath(

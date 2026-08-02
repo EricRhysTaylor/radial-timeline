@@ -125,6 +125,11 @@ export const de: DeepPartial<TranslationKeys> = {
             chronologue: { name: 'Chronologie', acronym: 'CHRO' },
             gossamer: { name: 'Gossamer', acronym: 'GOSS' },
         },
+        subplotAlignment: {
+            groupLabel: 'Nebenhandlungs-Ausrichtung',
+            fill: { label: 'Füllen', tooltip: 'Füllen — Szenen der Nebenhandlung verteilen sich gleichmäßig über jeden Akt' },
+            sequence: { label: 'Sequenz', tooltip: 'Sequenz — Szenen der Nebenhandlung stehen an ihrer Position im Gesamtmanuskript' },
+        },
         subplotRing: {
             allScenes: 'ALLE SZENEN',
             mainPlot: 'HAUPTHANDLUNG',

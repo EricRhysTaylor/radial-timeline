@@ -16,13 +16,13 @@ import {
     PADDING_RENDER_PX,
     SCENE_TITLE_INSET
 } from '../layout/LayoutConstants';
-import { computePositions } from '../utils/SceneLayout';
+import { alignPositionsToOuterRing, computePositions, computeVoidSpans, type PositionInfo } from '../utils/SceneLayout';
 import { buildOuterRingSequence } from '../utils/OuterRingSequence';
 import { getFillForScene } from '../utils/SceneFill';
 import { estimatePixelsFromTitle } from '../utils/LabelMetrics';
 import { sceneArcPath, renderVoidCellPath } from '../components/SceneArcs';
 import { renderSceneGroup } from '../components/Scenes';
-import { shouldRenderStoryBeats, shouldShowAllScenesInOuterRing } from '../modules/ModeRenderingHelpers';
+import { shouldRenderStoryBeats, shouldShowAllScenesInOuterRing, usesSequenceAlignment } from '../modules/ModeRenderingHelpers';
 import { appendSynopsisElementForScene } from '../utils/SynopsisBuilder';
 import type { StageColorMap } from '../utils/Gossamer';
 import { getReadabilityMultiplier } from '../../utils/readability';
@@ -105,9 +105,14 @@ export function renderRings(ctx: RingRenderContext): string {
     const currentMode = plugin.settings.currentMode || 'narrative';
     const forceSubplotFillColors = currentMode === 'narrative' || currentMode === 'chronologue';
     const isSagaScope = getTimelineScope(plugin.settings) === 'saga';
+    const isSequenceAlignment = usesSequenceAlignment(plugin);
 
     // Loop through Acts
     for (let act = 0; act < actsToRender; act++) {
+        // Populated by this act's outer ring (drawn first, at ringOffset 0) and
+        // read by its subplot rings. Stays undefined when there is no
+        // all-scenes outer ring to align against.
+        let outerPositionByKey: Map<string, PositionInfo> | undefined;
         const totalRings = NUM_RINGS;
         const subplotCount = masterSubplotOrder.length;
         const ringsToUse = Math.min(subplotCount, totalRings);
@@ -155,6 +160,7 @@ export function renderRings(ctx: RingRenderContext): string {
                     endAngle
                 });
                 const { items: sortedCombined, positions } = sequence;
+                outerPositionByKey = sequence.positionByKey;
 
                 // A stored preference that matches no candidate is stale — drop it.
                 const dominantSubplots = plugin.settings.dominantSubplots;
@@ -309,18 +315,13 @@ export function renderRings(ctx: RingRenderContext): string {
                 });
 
                 // Void cells
-                const totalUsedSpace = Array.from(positions.values()).reduce((sum, p) => sum + p.angularSize, 0);
-                const totalAngularSpace = endAngle - startAngle;
-                const remainingVoidSpace = totalAngularSpace - totalUsedSpace;
-                if (remainingVoidSpace > 0.001) {
-                    const voidStartAngle = startAngle + totalUsedSpace;
-                    const voidEndAngle = endAngle;
-                    svg += renderVoidCellPath(innerR, outerR, voidStartAngle, voidEndAngle, {
+                computeVoidSpans(positions.values(), startAngle, endAngle).forEach(span => {
+                    svg += renderVoidCellPath(innerR, outerR, span.startAngle, span.endAngle, {
                         act,
                         ring,
                         isOuterRing: true
                     });
-                }
+                });
 
                 continue; // Continue to next ring loop (which iterates rings for this act)
             }
@@ -334,7 +335,11 @@ export function renderRings(ctx: RingRenderContext): string {
                 const isAllScenesMode = shouldShowAllScenesInOuterRing(plugin);
                 const effectiveScenes = sortedCurrentScenes.filter(scene => !isBeatNote(scene));
 
-                const scenePositions = computePositions(innerR, outerR, startAngle, endAngle, effectiveScenes);
+                // Sequence: each scene sits at its outer-ring angle, leaving real
+                // gaps where this subplot is absent. Fill: spread across the segment.
+                const scenePositions = (isSequenceAlignment && outerPositionByKey)
+                    ? alignPositionsToOuterRing(effectiveScenes, outerPositionByKey)
+                    : computePositions(innerR, outerR, startAngle, endAngle, effectiveScenes);
 
                 effectiveScenes.forEach((scene, idx) => {
                     const { text } = parseSceneTitle(scene.title || '', scene.number);
@@ -402,19 +407,13 @@ export function renderRings(ctx: RingRenderContext): string {
                 });
 
                 // Void cells for inner rings
-                const totalUsedSpace = Array.from(scenePositions.values()).reduce((sum, p) => sum + p.angularSize, 0);
-                const totalAngularSpace = endAngle - startAngle;
-                const remainingVoidSpace = totalAngularSpace - totalUsedSpace;
-
-                if (remainingVoidSpace > 0.001) {
-                    const voidStartAngle = startAngle + totalUsedSpace;
-                    const voidEndAngle = endAngle;
-                    svg += renderVoidCellPath(innerR, outerR, voidStartAngle, voidEndAngle, {
+                computeVoidSpans(scenePositions.values(), startAngle, endAngle).forEach(span => {
+                    svg += renderVoidCellPath(innerR, outerR, span.startAngle, span.endAngle, {
                         act,
                         ring,
                         isOuterRing: isOuterRing
                     });
-                }
+                });
             } else {
                 // No scenes, render empty void ring
                 svg += renderVoidCellPath(innerR, outerR, startAngle, endAngle, {

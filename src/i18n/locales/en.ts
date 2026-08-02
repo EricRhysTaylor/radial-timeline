@@ -514,6 +514,11 @@ export interface TranslationKeys {
             chronologue: { name: string; acronym: string };
             gossamer: { name: string; acronym: string };
         };
+        subplotAlignment: {
+            groupLabel: string;
+            fill: { label: string; tooltip: string };
+            sequence: { label: string; tooltip: string };
+        };
         subplotRing: {
             allScenes: string;
             mainPlot: string;
@@ -2795,6 +2800,11 @@ export const en: TranslationKeys = {
             progress: { name: 'Progress', acronym: 'P' },
             chronologue: { name: 'Chronologue', acronym: 'C' },
             gossamer: { name: 'Gossamer', acronym: 'G' },
+        },
+        subplotAlignment: {
+            groupLabel: 'Subplot alignment',
+            fill: { label: 'Fill', tooltip: 'Fill — subplot scenes spread evenly across each act' },
+            sequence: { label: 'Sequence', tooltip: 'Sequence — subplot scenes sit at their position in the full manuscript' },
         },
         subplotRing: {
             allScenes: 'ALL SCENES',

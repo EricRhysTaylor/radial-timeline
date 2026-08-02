@@ -53,6 +53,7 @@ export interface TimelineSnapshot {
     
     // Settings that affect rendering
     sortByWhen: boolean;
+    subplotAlignment: string;
     aiEnabled: boolean;
     targetDate: string | undefined;
     stageTargetDatesHash: string;
@@ -238,6 +239,7 @@ export function createSnapshot(
         currentMonth: now.getMonth(),
         currentDate: now.toISOString().split('T')[0],
         sortByWhen: settings.sortByWhenDate ?? false,
+        subplotAlignment: settings.subplotAlignment ?? 'fill',
         aiEnabled: settings.enableAiSceneAnalysis ?? false,
         targetDate: settings.targetCompletionDate,
         stageTargetDatesHash,
@@ -319,6 +321,7 @@ export function detectChanges(
 
     // Detect settings changes (excluding dominant subplots and target ticks - handled separately)
     if (prev.sortByWhen !== current.sortByWhen || 
+        prev.subplotAlignment !== current.subplotAlignment ||
         prev.aiEnabled !== current.aiEnabled ||
         prev.chronologueDurationCap !== current.chronologueDurationCap ||
         prev.chronologueCalendarDefault !== current.chronologueCalendarDefault ||

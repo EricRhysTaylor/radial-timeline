@@ -126,6 +126,11 @@ export const ja: DeepPartial<TranslationKeys> = {
             chronologue: { name: '年代記', acronym: '年代' },
             gossamer: { name: 'ゴッサマー', acronym: 'ゴサ' },
         },
+        subplotAlignment: {
+            groupLabel: 'サブプロットの配置',
+            fill: { label: '均等', tooltip: '均等 — サブプロットのシーンを各幕に均等に配置' },
+            sequence: { label: '順序', tooltip: '順序 — サブプロットのシーンを原稿全体での位置に配置' },
+        },
         subplotRing: {
             allScenes: '全シーン',
             mainPlot: 'メインプロット',

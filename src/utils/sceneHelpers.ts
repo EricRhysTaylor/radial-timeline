@@ -159,6 +159,7 @@ export interface PluginRendererFacade {
         runtimeContentType?: 'novel' | 'screenplay';
         currentMode?: string;
         sortByWhenDate?: boolean;
+        subplotAlignment?: 'fill' | 'sequence';
         showChapterMarkers?: boolean;
         timelineScope?: 'book' | 'saga';
         books: BookProfile[];

@@ -69,8 +69,31 @@ export function shouldShowAllScenesInOuterRing(plugin: PluginFacade): boolean {
 }
 
 /**
+ * Check if subplot rings align each scene to its outer-ring angle (Sequence)
+ * rather than spreading to fill their segment (Fill).
+ *
+ * Alignment needs an all-scenes outer ring to align against, so the mode gate
+ * is structural, not a list of allowed modes: Progress mode's outer ring holds
+ * only Main Plot scenes, so there is nothing to align to and the setting has
+ * no effect there.
+ *
+ * @param plugin - Plugin facade with settings
+ * @returns true if subplot scenes should be drawn at their outer-ring angles
+ */
+export function usesSequenceAlignment(plugin: PluginFacade): boolean {
+    if (plugin.settings.subplotAlignment !== 'sequence') return false;
+    if (!shouldShowAllScenesInOuterRing(plugin)) return false;
+    // Narrative only for now. Chronologue passes the structural test above and
+    // is the intended next step, but it has no toggle yet — applying a layout
+    // change the user cannot see or undo from that mode would be a surprise.
+    // Rolling it out is this one condition.
+    const currentMode = plugin.settings.currentMode || TimelineMode.NARRATIVE;
+    return currentMode === TimelineMode.NARRATIVE;
+}
+
+/**
  * Check if the inner ring should show scene content
- * 
+ *
  * @param plugin - Plugin facade with settings
  * @returns true if inner rings show content, false if hidden/empty
  */

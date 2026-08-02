@@ -283,6 +283,13 @@ export interface BeatWorkspaceState {
 export type GlobalPovMode = 'off' | 'first' | 'second' | 'third' | 'omni' | 'objective';
 export type ReadabilityScale = 'normal' | 'large';
 export type RuntimeContentType = 'novel' | 'screenplay' | 'audiobook';
+/**
+ * Subplot ring layout against the all-scenes outer ring.
+ * 'fill' — a subplot's scenes spread evenly across the whole segment.
+ * 'sequence' — each scene sits at its outer-ring angle; gaps are real.
+ */
+export type SubplotAlignment = 'fill' | 'sequence';
+
 export type ChronologueCalendarDefault = 'earth' | 'planetary' | 'remember';
 export type ChronologueCalendarView = 'earth' | 'planetary';
 export type PlanetaryTimeConversionDirection = 'earth-to-planet' | 'planet-to-earth';
@@ -1072,6 +1079,15 @@ export interface RadialTimelineSettings {
     enableHoverDebugLogging?: boolean;
     showFullTripletAnalysis?: boolean;
     sortByWhenDate?: boolean;
+    /**
+     * How subplot rings lay their scenes out against the all-scenes outer ring.
+     * 'fill' spreads a subplot's scenes across the whole segment for
+     * readability; 'sequence' draws each scene at the same angle as its
+     * counterpart in the outer ring, so a subplot's scenes show where they
+     * actually fall in the manuscript. Only meaningful in modes that render an
+     * all-scenes outer ring to align against.
+     */
+    subplotAlignment?: SubplotAlignment;
     chronologueDurationCapSelection?: string;
     chronologueCalendarDefault?: ChronologueCalendarDefault;
     chronologueLastCalendarView?: ChronologueCalendarView;

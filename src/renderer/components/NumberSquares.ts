@@ -5,6 +5,7 @@ import { getScenePrefixNumber, getNumberSquareSize } from '../../utils/text';
 import { getReadabilityMultiplier } from '../../utils/readability';
 import { generateNumberSquareGroup, makeSceneId } from '../../utils/numberSquareHelpers';
 import { getTimelineScope } from '../../utils/books';
+import type { PositionInfo } from '../utils/SceneLayout';
 
 interface SubplotRingPlacement {
   ring: number;
@@ -32,10 +33,12 @@ function resolveSubplotRingPlacement(params: {
   sortByWhen: boolean;
   isSagaScope: boolean;
   totalSegments: number;
+  /** Sequence alignment: outer-ring angles keyed by scene. Absent in Fill. */
+  outerPositionByKey?: Map<string, PositionInfo>;
 }): SubplotRingPlacement | null {
   const {
     scene, masterSubplotOrder, NUM_RINGS, ringStartRadii, ringWidths,
-    scenesByActAndSubplot, sortByWhen, isSagaScope, totalSegments
+    scenesByActAndSubplot, sortByWhen, isSagaScope, totalSegments, outerPositionByKey
   } = params;
 
   const subplot = scene.subplot && scene.subplot.trim().length > 0 ? scene.subplot : 'Main Plot';
@@ -63,16 +66,25 @@ function resolveSubplotRingPlacement(params: {
   const sceneIndex = ringScenes.findIndex(s => sceneKey(s) === key);
   if (sceneIndex === -1) return null;
 
-  const segmentSpan = sortByWhen ? 2 * Math.PI : (2 * Math.PI) / totalSegments;
-  const segmentStart = sortByWhen ? -Math.PI / 2 : (segment * 2 * Math.PI) / totalSegments - Math.PI / 2;
-  const sceneAngularSize = segmentSpan / ringScenes.length;
-  const innerR = ringStartRadii[ring];
+  // Sequence alignment: the square follows its arc to the outer-ring angle.
+  // No counterpart means the arc was not drawn either, so neither is the square.
+  let startAngle: number;
+  if (outerPositionByKey) {
+    const aligned = outerPositionByKey.get(key);
+    if (!aligned) return null;
+    startAngle = aligned.startAngle;
+  } else {
+    const segmentSpan = sortByWhen ? 2 * Math.PI : (2 * Math.PI) / totalSegments;
+    const segmentStart = sortByWhen ? -Math.PI / 2 : (segment * 2 * Math.PI) / totalSegments - Math.PI / 2;
+    startAngle = segmentStart + (sceneIndex * (segmentSpan / ringScenes.length));
+  }
 
+  const innerR = ringStartRadii[ring];
   return {
     ring,
     segment,
     sceneIndex,
-    startAngle: segmentStart + (sceneIndex * sceneAngularSize),
+    startAngle,
     radius: innerR + (ringWidths[ring] / 2)
   };
 }
@@ -271,8 +283,9 @@ export function renderInnerRingsNumberSquaresAllScenes(params: {
   enableSubplotColors?: boolean;
   resolveSubplotVisual?: (scene: TimelineItem) => { subplotIndex: number } | null;
   numActs?: number;
+  outerPositionByKey?: Map<string, PositionInfo>;
 }): string {
-  const { plugin, NUM_RINGS, masterSubplotOrder, ringStartRadii, ringWidths, scenesByActAndSubplot, scenes, sceneGrades, enableSubplotColors = false, resolveSubplotVisual, numActs } = params;
+  const { plugin, NUM_RINGS, masterSubplotOrder, ringStartRadii, ringWidths, scenesByActAndSubplot, scenes, sceneGrades, enableSubplotColors = false, resolveSubplotVisual, numActs, outerPositionByKey } = params;
   const readabilityScale = getReadabilityMultiplier(plugin.settings);
   const squareScale = readabilityScale > 1 ? 1 + (readabilityScale - 1) * 0.75 : 1;
   const isSagaScope = getTimelineScope(plugin.settings) === 'saga';
@@ -298,7 +311,8 @@ export function renderInnerRingsNumberSquaresAllScenes(params: {
       scenesByActAndSubplot,
       sortByWhen,
       isSagaScope,
-      totalSegments: totalActs
+      totalSegments: totalActs,
+      outerPositionByKey
     });
     if (!placement) return;
     const { ring, segment: actIndex, sceneIndex, startAngle: sceneStartAngle, radius: textPathRadius } = placement;

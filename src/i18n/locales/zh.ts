@@ -127,6 +127,11 @@ export const zh: DeepPartial<TranslationKeys> = {
             chronologue: { name: '编年史', acronym: '编年' },
             gossamer: { name: 'Gossamer', acronym: '蛛丝' },
         },
+        subplotAlignment: {
+            groupLabel: '支线对齐',
+            fill: { label: '填充', tooltip: '填充 — 支线场景在每一幕中均匀分布' },
+            sequence: { label: '顺序', tooltip: '顺序 — 支线场景位于其在整部书稿中的位置' },
+        },
         subplotRing: {
             allScenes: '全部场景',
             mainPlot: '主情节',

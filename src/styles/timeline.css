@@ -1141,11 +1141,12 @@
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent) 45%, transparent);
 }
 
-/* Chronologue sub-nav — compact segmented chip group attached to the
-   Chronologue mode button, shown only while Chronologue is active. Fits the
-   fixed header height; it is an additional trigger surface for the same
-   sub-modes the keyboard and in-view keycaps drive. */
-.ert-timeline-chronologue-subnav {
+/* Mode sub-nav — compact segmented chip group attached to a mode button and
+   shown only while that mode is active. Used by Chronologue (Shift / Alt /
+   Runtime) and by Narrative (Fill / Sequence subplot alignment). Fits the
+   fixed header height; for Chronologue it is an additional trigger surface for
+   the same sub-modes the keyboard and in-view keycaps drive. */
+.ert-timeline-subnav {
   display: inline-flex;
   align-items: center;
   gap: var(--size-2-1);
@@ -1155,7 +1156,7 @@
   margin-inline-end: var(--size-4-3);
 }
 
-.ert-timeline-chronologue-subnav[hidden] {
+.ert-timeline-subnav[hidden] {
   display: none;
 }
 
@@ -1164,7 +1165,7 @@
    sub-mode carries its own hue via --ert-subnav-color — Shift neutral, Runtime
    blue, Alt/Alien red (tokens in variables.css). The glyph/label inherit that
    colour, so the narrow-width glyphs keep their per-sub-mode colour too. */
-.ert-timeline-chronologue-subnav__btn {
+.ert-timeline-subnav__btn {
   --ert-subnav-color: var(--text-muted);
   display: inline-flex;
   align-items: center;
@@ -1184,36 +1185,38 @@
   box-shadow: none;
 }
 
-.ert-timeline-chronologue-subnav__btn[data-submode="runtime"] {
+.ert-timeline-subnav__btn[data-submode="runtime"] {
   --ert-subnav-color: var(--rt-color-runtime);
 }
 
-.ert-timeline-chronologue-subnav__btn[data-submode="alt"] {
+.ert-timeline-subnav__btn[data-submode="alt"] {
   --ert-subnav-color: var(--rt-color-alt);
 }
 
 /* Center-align the label span so it never rides high in the chip. */
-.ert-timeline-chronologue-subnav__label {
+.ert-timeline-subnav__label {
   display: inline-flex;
   align-items: center;
   line-height: 1;
 }
 
-.ert-timeline-chronologue-subnav__btn:hover {
+.ert-timeline-subnav__btn:hover {
   border-color: var(--ert-subnav-color);
 }
 
 /* Active: intensify with the sub-mode's own colour — solid outline + fill. */
-.ert-timeline-chronologue-subnav__btn.is-active {
+.ert-timeline-subnav__btn.is-active {
   border-style: solid;
   border-color: var(--ert-subnav-color);
   background: color-mix(in srgb, var(--ert-subnav-color) 85%, transparent);
   color: var(--text-on-accent);
 }
 
-/* Shift is neutral, so a colour fill under white text would be low-contrast —
-   intensify with theme neutrals instead, still clearly on vs the dashed idle. */
-.ert-timeline-chronologue-subnav__btn[data-submode="shift"].is-active {
+/* Neutral sub-modes (Shift, and both subplot alignments) carry no hue, so a
+   colour fill under white text would be low-contrast — intensify with theme
+   neutrals instead, still clearly on vs the dashed idle. */
+.ert-timeline-subnav__btn[data-submode="shift"].is-active,
+.ert-timeline-subnav__btn[data-alignment].is-active {
   background: var(--background-modifier-hover);
   border-color: var(--text-normal);
   color: var(--text-normal);
@@ -1221,22 +1224,22 @@
 
 /* No-data Runtime: keep the blue association but dim it to read "unavailable"
    (mirrors the in-view keycap's no-data state); still clickable. */
-.ert-timeline-chronologue-subnav__btn.is-no-data {
+.ert-timeline-subnav__btn.is-no-data {
   opacity: 0.5;
 }
 
-.ert-timeline-chronologue-subnav__btn[hidden] {
+.ert-timeline-subnav__btn[hidden] {
   display: none;
 }
 
-.ert-timeline-chronologue-subnav__btn:focus-visible {
+.ert-timeline-subnav__btn:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--ert-subnav-color) 45%, transparent);
 }
 
 /* Glyph is the narrow-width fallback; the word label is the default. Carries
    the same centering so it sits optically centered when it takes over. */
-.ert-timeline-chronologue-subnav__glyph {
+.ert-timeline-subnav__glyph {
   display: none;
   align-items: center;
   line-height: 1;
@@ -1253,10 +1256,10 @@
   .ert-timeline-mode-nav__btn {
     padding: 0 var(--size-4-1);
   }
-  .ert-timeline-chronologue-subnav__label {
+  .ert-timeline-subnav__label {
     display: none;
   }
-  .ert-timeline-chronologue-subnav__glyph {
+  .ert-timeline-subnav__glyph {
     display: inline-flex;
   }
 }

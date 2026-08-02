@@ -7,7 +7,8 @@ import {
 } from '../../utils/sceneHelpers';
 import { makeSceneId } from '../../utils/numberSquareHelpers';
 import { buildOuterRingSequence } from '../utils/OuterRingSequence';
-import { shouldRenderStoryBeats, shouldShowAllScenesInOuterRing } from '../modules/ModeRenderingHelpers';
+import { shouldRenderStoryBeats, shouldShowAllScenesInOuterRing, usesSequenceAlignment } from '../modules/ModeRenderingHelpers';
+import type { PositionInfo } from '../utils/SceneLayout';
 import {
     renderOuterRingNumberSquares,
     renderInnerRingsNumberSquaresAllScenes,
@@ -61,6 +62,11 @@ export function renderNumberSquares(ctx: NumberSquareRenderContext): string {
 
         svg += `<g class="rt-number-squares">`;
 
+        // Sequence alignment: subplot squares follow their arcs to the outer
+        // ring, so collect every segment's angles as the outer pass builds them.
+        const isSequenceAlignment = usesSequenceAlignment(plugin);
+        const outerPositionByKey = new Map<string, PositionInfo>();
+
         // First, draw squares for the outer ring (all scenes combined)
         const ringOuter = NUM_RINGS - 1;
         const innerROuter = ringStartRadii[ringOuter];
@@ -88,7 +94,7 @@ export function renderNumberSquares(ctx: NumberSquareRenderContext): string {
             }
 
             // Same sequence the arcs were drawn from — see OuterRingSequence.
-            const { items: sortedCombined, positions } = buildOuterRingSequence({
+            const { items: sortedCombined, positions, positionByKey } = buildOuterRingSequence({
                 scenes,
                 segment: act,
                 isSagaScope,
@@ -102,6 +108,10 @@ export function renderNumberSquares(ctx: NumberSquareRenderContext): string {
                 startAngle,
                 endAngle
             });
+
+            if (isSequenceAlignment) {
+                positionByKey.forEach((position, key) => outerPositionByKey.set(key, position));
+            }
 
             if (plugin.settings.enableAiSceneAnalysis) {
                 sortedCombined.forEach((sceneItem, combinedIdx) => {
@@ -137,7 +147,8 @@ export function renderNumberSquares(ctx: NumberSquareRenderContext): string {
             sceneGrades,
             enableSubplotColors: shouldApplyNumberSquareColors,
             resolveSubplotVisual: numberSquareVisualResolver || undefined,
-            numActs
+            numActs,
+            outerPositionByKey: isSequenceAlignment ? outerPositionByKey : undefined
         });
 
         svg += `</g>`;

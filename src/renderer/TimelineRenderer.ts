@@ -79,6 +79,7 @@ import {
     collapseTimelineChapterMarkersByResolvedBoundary,
     resolveTimelineChapterMarkers
 } from '../utils/timelineChapters';
+import { resolveTimelinePartMarkers, type TimelinePartMarker } from '../utils/timelineParts';
 
 
 // STATUS_COLORS and SceneNumberInfo now imported from constants
@@ -167,45 +168,52 @@ function toRomanNumeral(value: number): string {
 function buildNarrativePartMarkers(params: {
     settings: RadialTimelineSettings;
     layout: PandocLayoutTemplate | null;
-    timelineSegments: ReturnType<typeof buildTimelineSegments>;
+    partMarkers: TimelinePartMarker[];
+    boundaryGeometryByScenePath: Map<string, OuterRingChapterBoundaryGeometry>;
 }): NarrativePartMarker[] {
-    const { settings, layout, timelineSegments } = params;
-    if (!layoutSupportsPartMarkers(layout)) return [];
+    const { settings, layout, partMarkers, boundaryGeometryByScenePath } = params;
     if (getTimelineScope(settings) !== 'book') return [];
-
-    const actSegments = timelineSegments.filter(segment => segment.kind === 'act');
-    if (actSegments.length < 2) return [];
+    if (partMarkers.length === 0) return [];
 
     const activeBook = getActiveBook(settings);
     const layoutOptions = layout ? activeBook?.layoutOptions?.[layout.id] : undefined;
     const epigraphs = Array.isArray(layoutOptions?.partEpigraphs) ? layoutOptions.partEpigraphs : [];
-    const attributions = Array.isArray(layoutOptions?.partEpigraphAttributions) ? layoutOptions.partEpigraphAttributions : [];
-    const layoutName = layout?.name || 'Selected layout';
+    const attributions = Array.isArray(layoutOptions?.partEpigraphAttributions)
+        ? layoutOptions.partEpigraphAttributions
+        : [];
+    const prints = layoutSupportsPartMarkers(layout);
+    const layoutName = layout?.name || 'No layout selected';
     const advertisesEpigraph = layout?.designedSpec?.parts?.epigraph === true
         || layout?.hasEpigraphs === true
         || layout?.usesModernClassicStructure === true;
 
-    return actSegments.map((segment) => {
-        const actNumber = segment.index + 1;
-        const partLabel = `Part ${toRomanNumeral(actNumber)}`;
-        const quote = typeof epigraphs[segment.index] === 'string' ? epigraphs[segment.index].trim() : '';
-        const attribution = typeof attributions[segment.index] === 'string' ? attributions[segment.index].trim() : '';
-        const tooltipLines = [`${layoutName} ${partLabel}`];
+    return partMarkers.flatMap((marker, index) => {
+        const geometry = boundaryGeometryByScenePath.get(marker.resolvedScenePath);
+        if (!geometry) return [];
 
-        if (advertisesEpigraph) {
-            tooltipLines.push(`Epigraph: ${quote || 'not configured'}`);
-            tooltipLines.push(`Attribution: ${attribution || 'not configured'}`);
-            if (!quote && !attribution) {
-                tooltipLines.push('Status: Part page will render without epigraph text.');
-            }
+        // Numbering is sequential by marker order, matching the export.
+        const label = `Part ${toRomanNumeral(index + 1)}`;
+        const title = marker.titled && marker.title ? ` · ${marker.title}` : '';
+        const quote = typeof epigraphs[index] === 'string' ? epigraphs[index].trim() : '';
+        const attribution = typeof attributions[index] === 'string' ? attributions[index].trim() : '';
+
+        // Structure first, print status second. The marker is the author's;
+        // whether it prints depends on a layout they can change at any time.
+        const tooltipLines = [`${label}${title}`];
+        if (quote) tooltipLines.push(`Epigraph: ${quote}`);
+        if (attribution) tooltipLines.push(`Attribution: ${attribution}`);
+
+        if (!layout) {
+            // No status line: nothing is selected, so nothing can be claimed.
+        } else if (!prints) {
+            tooltipLines.push(`${layoutName} does not print Parts.`);
+        } else if (advertisesEpigraph && !quote && !attribution) {
+            tooltipLines.push(`${layoutName} prints this Part without epigraph text.`);
         } else {
-            tooltipLines.push('Status: Part page enabled.');
+            tooltipLines.push(`${layoutName} prints this Part.`);
         }
 
-        return {
-            startAngle: segment.startAngle,
-            tooltip: tooltipLines.join('\n'),
-        };
+        return [{ startAngle: geometry.startAngle, tooltip: tooltipLines.join('\n') }];
     });
 }
 
@@ -735,7 +743,10 @@ export function createTimelineSVG(
         const partMarkers = buildNarrativePartMarkers({
             settings,
             layout: activeNovelLayout,
-            timelineSegments
+            // One `Part:` field per scene, so the resolver already yields at
+            // most one marker per boundary — no collapse pass needed.
+            partMarkers: resolveTimelinePartMarkers(chapterResolverItems),
+            boundaryGeometryByScenePath: ringRenderContext.outerRingChapterBoundaryGeometry,
         });
         svg += renderNarrativeChapterMarkers({
             markers: chapterMarkers,

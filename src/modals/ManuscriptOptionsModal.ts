@@ -2641,7 +2641,6 @@ Sarah stood at the window, watching the world wake up.`;
             layout,
             selectedScenePaths: slice(this.scenePaths),
             selectedSceneTitles: slice(this.sceneTitles),
-            selectedSceneActs: slice(this.sceneActs),
             chapterMarkersByScenePath: this.chapterMarkersByScenePath,
         });
     }

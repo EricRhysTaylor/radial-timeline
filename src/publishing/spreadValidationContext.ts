@@ -25,7 +25,6 @@ export interface SpreadValidationInputs {
     /** Selected scene titles (parallel array to selectedScenePaths). */
     selectedSceneTitles?: string[];
     /** Selected per-scene act numbers (parallel to selectedScenePaths). */
-    selectedSceneActs?: Array<number | null>;
     /**
      * Precomputed BOOK-wide counts for surfaces that have no scene selection
      * (Settings → Publish). When `selectedScenePaths` is undefined and these
@@ -40,7 +39,9 @@ export interface SpreadValidationInputs {
      * chapter/title checks (PART card flagging continues to work via the
      * book-derived `partEpigraphPopulatedCount`).
      */
-    bookActCount?: number;
+    /** Paths of scenes carrying a `Part:` marker, when a selection is supplied. */
+    partMarkerScenePaths?: string[];
+    bookPartMarkerCount?: number;
     bookChapterFieldCount?: number;
     bookChapterTitlePopulatedCount?: number;
 }
@@ -49,7 +50,7 @@ export interface SpreadValidationInputs {
  * Build a SpreadValidationContext from scene-selection inputs.
  *
  * Behavior matches the modal's per-method context-builder logic exactly:
- *   - actCount               → distinct numeric Acts in selectedSceneActs.
+ *   - partMarkerCount        → scenes in selection carrying a Part field.
  *   - chapterFieldCount      → total chapter markers across selectedScenePaths.
  *                              When selection is empty / not supplied, returns
  *                              a high sentinel (Number.POSITIVE_INFINITY) so
@@ -73,32 +74,20 @@ export function buildSpreadValidationContext(
     inputs: SpreadValidationInputs,
 ): SpreadValidationContext {
     const selectedPaths = inputs.selectedScenePaths ?? [];
-    const selectedActs = inputs.selectedSceneActs ?? [];
     const selectedTitles = inputs.selectedSceneTitles ?? [];
     const markersByPath = inputs.chapterMarkersByScenePath ?? {};
     const hasSelection = selectedPaths.length > 0;
 
-    // actCount — distinct finite numeric acts among the selection.
-    const seenActs = new Set<number>();
-    for (const act of selectedActs) {
-        if (typeof act === 'number' && Number.isFinite(act)) seenActs.add(act);
-    }
-    // Resolution order for actCount when no scene-selection data is supplied:
-    //   1. Caller-supplied `bookActCount` (precomputed book-wide scan)
-    //   2. `plugin.settings.actCount` — the canonical book-wide act count, sync
-    //      and always available. This is what the BookDesigner / progress UI
-    //      already use as the source of truth, so the Settings publish surface
-    //      can rely on it without doing its own async scan.
-    //   3. POSITIVE_INFINITY as a last-resort sentinel that disables the gate.
-    const settingsActCount = (() => {
-        const raw = (plugin?.settings as { actCount?: number } | undefined)?.actCount;
-        return typeof raw === 'number' && Number.isFinite(raw) && raw > 0 ? raw : undefined;
-    })();
-    const actCount = hasSelection
-        ? seenActs.size
-        : (typeof inputs.bookActCount === 'number'
-            ? inputs.bookActCount
-            : (settingsActCount ?? Number.POSITIVE_INFINITY));
+    // partMarkerCount — scenes in the selection carrying a `Part:` marker.
+    // Parts are author-placed, exactly like Chapters, so this counts markers
+    // rather than deriving anything. Data-less surfaces fall back to a
+    // precomputed book-wide count, then to Infinity, which disables the gate
+    // rather than reporting a number nobody measured.
+    const partMarkerCount = hasSelection
+        ? (inputs.partMarkerScenePaths ?? []).filter(path => selectedPaths.includes(path)).length
+        : (typeof inputs.bookPartMarkerCount === 'number'
+            ? inputs.bookPartMarkerCount
+            : Number.POSITIVE_INFINITY);
 
     // chapterFieldCount — total markers across selected scenes.
     let chapterFieldCount = 0;
@@ -138,7 +127,7 @@ export function buildSpreadValidationContext(
     const partEpigraphPopulatedCount = countPartEpigraphsForLayout(plugin, inputs.layout);
 
     const ctx: SpreadValidationContext = {
-        actCount,
+        partMarkerCount,
         chapterFieldCount: effectiveChapterFieldCount,
         partEpigraphPopulatedCount,
         sceneTitlePopulatedRatio,

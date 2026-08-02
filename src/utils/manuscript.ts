@@ -9,6 +9,7 @@ import { getActiveBookExportContext } from './exportContext';
 import { normalizeMatterBodyMode, parseMatterMetaFromFrontmatter, type MatterBodyMode } from './matterMeta';
 import { extractFrontmatterObject } from './frontmatter';
 import { groupTimelineChapterMarkersByScenePath, resolveTimelineChapterMarkers, type TimelineChapterMarker } from './timelineChapters';
+import { readPartMarker } from './timelineParts';
 import { cleanEvidenceBody } from '../inquiry/utils/evidenceCleaning';
 import { readSceneId } from './sceneIds';
 import {
@@ -823,9 +824,11 @@ function parseActNumber(value: unknown): number | null {
 
 interface ModernClassicState {
   enabled: boolean;
-  currentActIndex: number | null;
+  /** Parts opened so far — also the printed numeral. */
+  partIndex: number;
   chapterIndex: number;
-  sceneIndexInAct: number;
+  /** Scene separator counter, reset at each part opener. */
+  sceneIndexInPart: number;
   partEpigraphs: string[];
   partEpigraphAttributions: string[];
 }
@@ -927,40 +930,6 @@ function getFirstFrontmatterString(frontmatter: Record<string, unknown>, keys: s
   return undefined;
 }
 
-/**
- * Read a scene's canonical Act number from its frontmatter.
- *
- * Scene placement on the timeline ring (Narrative / Progress modes) is
- * driven by the scene's own `Act:` frontmatter field — see
- * `SceneDataService.parseScenes`. The publishing export uses the same
- * source so Part / Act dividers in the PDF match the structure the user
- * sees in the timeline. There is no beat indirection: scenes self-declare
- * which Act they belong to, and the export reads it directly.
- *
- * Returns null when the field is missing, empty, non-numeric, or <= 0.
- */
-function extractSceneActIndex(content: string): number | null {
-  const fm = extractFrontmatterObject(content);
-  if (!fm) return null;
-  const raw = getFirstFrontmatterString(fm, ['Act']);
-  if (!raw) {
-    // Numeric Act values (Act: 1) survive YAML parsing as numbers, not
-    // strings — getFirstFrontmatterString only matches strings, so we
-    // re-scan for the Act key with case-insensitive normalization.
-    for (const [rawKey, value] of Object.entries(fm)) {
-      const normalizedKey = rawKey.toLowerCase().replace(/[\s_-]/g, '');
-      if (normalizedKey !== 'act') continue;
-      const parsed = typeof value === 'number' ? value : Number(value);
-      if (Number.isFinite(parsed) && parsed > 0) return Math.floor(parsed);
-      return null;
-    }
-    return null;
-  }
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed) || parsed <= 0) return null;
-  return Math.floor(parsed);
-}
-
 function createModernClassicState(options?: ModernClassicStructureOptions): ModernClassicState {
   const normalizeList = (values: unknown): string[] => {
     if (!Array.isArray(values)) return [];
@@ -968,9 +937,9 @@ function createModernClassicState(options?: ModernClassicStructureOptions): Mode
   };
   return {
     enabled: options?.enabled === true,
-    currentActIndex: null,
+    partIndex: 0,
     chapterIndex: 0,
-    sceneIndexInAct: 0,
+    sceneIndexInPart: 0,
     partEpigraphs: normalizeList(options?.partEpigraphs),
     partEpigraphAttributions: normalizeList(options?.partEpigraphAttributions),
   };
@@ -1300,19 +1269,29 @@ export async function assembleManuscript(
       //                                    → \rtPart{Roman}{quote}{attr} — Part page
       //   Chapters (from Chapter fields)   → \rtChapter{n}{Title} — chapter opener
       //   Scenes (scene notes)             → \rtSceneSep{roman} — scene opener
-      const nextActIndex = extractSceneActIndex(content);
-      if (typeof nextActIndex === 'number' && nextActIndex > 0 && nextActIndex !== modernClassicState.currentActIndex) {
-        const actRoman = toRomanNumeral(nextActIndex);
-        if (actRoman) {
-          const epigraphQuote = sanitizeModernClassicEpigraphArg(modernClassicState.partEpigraphs[nextActIndex - 1] || '');
-          const epigraphAttribution = sanitizeModernClassicAttributionArg(modernClassicState.partEpigraphAttributions[nextActIndex - 1] || '');
-          // Empty title slot: Parts are still Act-derived here, and an Act has no
-          // name to print. The macro \ifstrempty-guards the title, so this emits
-          // byte-for-byte what the 3-argument form did. The slot is filled once
-          // explicit Part markers land and carry an author-supplied title.
-          textParts.push(buildRawLatexBlock(`\\rtPart{${actRoman}}{}{${epigraphQuote}}{${epigraphAttribution}}`));
-          modernClassicState.currentActIndex = nextActIndex;
-          modernClassicState.sceneIndexInAct = 0;
+      // A Part opens where the author put a `Part:` marker — the same way a
+      // Chapter opens on a `Chapter:` field. Numbering is sequential by marker
+      // order, and the epigraph pairs by position: the first marker takes the
+      // first stored entry.
+      const partMarker = readPartMarker(sceneFrontmatter ?? undefined);
+      if (partMarker) {
+        modernClassicState.partIndex += 1;
+        const partRoman = toRomanNumeral(modernClassicState.partIndex);
+        if (partRoman) {
+          const slot = modernClassicState.partIndex - 1;
+          const partTitle = partMarker.titled
+            ? sanitizeModernClassicMacroArg(partMarker.title ?? '')
+            : '';
+          const epigraphQuote = sanitizeModernClassicEpigraphArg(
+            modernClassicState.partEpigraphs[slot] || ''
+          );
+          const epigraphAttribution = sanitizeModernClassicAttributionArg(
+            modernClassicState.partEpigraphAttributions[slot] || ''
+          );
+          textParts.push(buildRawLatexBlock(
+            `\\rtPart{${partRoman}}{${partTitle}}{${epigraphQuote}}{${epigraphAttribution}}`
+          ));
+          modernClassicState.sceneIndexInPart = 0;
         }
       }
 
@@ -1326,8 +1305,8 @@ export async function assembleManuscript(
         }
       }
 
-      modernClassicState.sceneIndexInAct += 1;
-      const sceneRoman = toRomanNumeral(modernClassicState.sceneIndexInAct).toLowerCase();
+      modernClassicState.sceneIndexInPart += 1;
+      const sceneRoman = toRomanNumeral(modernClassicState.sceneIndexInPart).toLowerCase();
       textParts.push(buildRawLatexBlock(`\\rtSceneSep{${sceneRoman}}`));
 
       scenes.push({ title, bodyText, wordCount, sceneId, sourcePath: file.path });

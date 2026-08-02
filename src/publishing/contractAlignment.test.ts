@@ -60,37 +60,37 @@ function makeFile(path: string, basename: string): TFile {
 function buildSyntheticScenes(): SyntheticScene[] {
     // Scenes self-declare which Act they belong to via the canonical `Act:`
     // frontmatter field — the same source the timeline ring uses. The Modern
-    // Classic export emits \rtPart at every Act-boundary transition.
+    // A Part opens where the author placed a `Part:` marker.
     return [
         // Act I → Chapter 1 → Scenes 1 + 2
         {
             file: makeFile('Scenes/1 Arrival.md', '1 Arrival'),
-            body: '---\nClass: Scene\nAct: 1\n---\n\nFirst paragraph of scene one.',
+            body: '---\nClass: Scene\nPart: true\n---\n\nFirst paragraph of scene one.',
             chapterMarker: { title: 'Boy with a Skull' },
         },
         {
             file: makeFile('Scenes/2 The Garden.md', '2 The Garden'),
-            body: '---\nClass: Scene\nAct: 1\n---\n\nSecond paragraph.',
+            body: '---\nClass: Scene\n---\n\nSecond paragraph.',
         },
         // Act I → Chapter 2 → Scenes 3 + 4
         {
             file: makeFile('Scenes/3 Confrontation.md', '3 Confrontation'),
-            body: '---\nClass: Scene\nAct: 1\n---\n\nThird paragraph.',
+            body: '---\nClass: Scene\n---\n\nThird paragraph.',
             chapterMarker: { title: 'Everything of Possibility' },
         },
         {
             file: makeFile('Scenes/4 Aftermath.md', '4 Aftermath'),
-            body: '---\nClass: Scene\nAct: 1\n---\n\nFourth paragraph.',
+            body: '---\nClass: Scene\n---\n\nFourth paragraph.',
         },
         // Act II → Chapter 3 → Scenes 5 + 6
         {
             file: makeFile('Scenes/5 Departure.md', '5 Departure'),
-            body: '---\nClass: Scene\nAct: 2\n---\n\nFifth paragraph.',
+            body: '---\nClass: Scene\nPart: true\n---\n\nFifth paragraph.',
             chapterMarker: { title: 'New Horizons' },
         },
         {
             file: makeFile('Scenes/6 Resolution.md', '6 Resolution'),
-            body: '---\nClass: Scene\nAct: 2\n---\n\nSixth paragraph.',
+            body: '---\nClass: Scene\n---\n\nSixth paragraph.',
         },
     ];
 }
@@ -282,7 +282,7 @@ describe('one spec, three echoes — contract alignment', () => {
         const scenes = buildSyntheticScenes();
         const vault = buildVault(scenes);
 
-        // Modern Classic emits \rtPart at every Act-boundary transition. Acts
+        // Modern Classic emits \rtPart at every Part marker. Markers
         // come from each scene's own `Act:` frontmatter field (see
         // buildSyntheticScenes): scenes 1–4 are Act 1, scenes 5–6 are Act 2,
         // so we expect exactly two \rtPart calls.
@@ -302,7 +302,7 @@ describe('one spec, three echoes — contract alignment', () => {
             }
         );
 
-        // Two acts → exactly two grouped \rtPart{roman}{title}{quote}{attribution} calls.
+        // Two markers → exactly two grouped \rtPart{roman}{title}{quote}{attribution} calls.
         expect((assembled.text.match(/\\rtPart\{/g) || []).length).toBe(2);
         // Roman-numeral act labels (parts.mode === 'roman'). The title slot is
         // empty while Parts remain Act-derived — an Act has no name to print —

@@ -257,19 +257,19 @@ describe('applySpreadValidation', () => {
         return rows.special.find(spread => spread.label === label);
     }
 
-    it('stamps a warning on the PART spread when actCount < 2', () => {
+    it('stamps a warning on the PART spread when no scene carries a Part marker', () => {
         const rows = applySpreadValidation(getLayoutPictogramRows('modernClassic'), {
-            actCount: 1,
+            partMarkerCount: 0,
             chapterFieldCount: 5,
         });
         const part = findSpread(rows, 'PART');
         expect(part?.warningLevel).toBe('warning');
-        expect(part?.warningTooltip).toMatch(/fewer than two Acts/);
+        expect(part?.warningTooltip).toMatch(/no scenes have a Part field/);
     });
 
     it('does NOT stamp the PART spread when actCount >= 2', () => {
         const rows = applySpreadValidation(getLayoutPictogramRows('modernClassic'), {
-            actCount: 3,
+            partMarkerCount: 3,
             chapterFieldCount: 5,
         });
         const part = findSpread(rows, 'PART');
@@ -279,7 +279,7 @@ describe('applySpreadValidation', () => {
 
     it('stamps a warning on the CHAPTER spread when chapterFieldCount === 0', () => {
         const rows = applySpreadValidation(getLayoutPictogramRows('modernClassic'), {
-            actCount: 3,
+            partMarkerCount: 3,
             chapterFieldCount: 0,
         });
         const chapter = findSpread(rows, 'CHAPTER');
@@ -289,7 +289,7 @@ describe('applySpreadValidation', () => {
 
     it('does NOT stamp the CHAPTER spread when chapterFieldCount >= 1', () => {
         const rows = applySpreadValidation(getLayoutPictogramRows('modernClassic'), {
-            actCount: 3,
+            partMarkerCount: 3,
             chapterFieldCount: 1,
         });
         const chapter = findSpread(rows, 'CHAPTER');
@@ -297,7 +297,7 @@ describe('applySpreadValidation', () => {
     });
 
     it('never stamps a warning on SCENE / BODY / sceneMode-bearing spreads', () => {
-        const ctx = { actCount: 0, chapterFieldCount: 0 };
+        const ctx = { partMarkerCount: 0, chapterFieldCount: 0 };
 
         // Classic has top-row SCENE + BODY only — no special row entries.
         const classic = applySpreadValidation(getLayoutPictogramRows('classic'), ctx);
@@ -324,7 +324,7 @@ describe('applySpreadValidation', () => {
         const originalPartRef = original.special.find(s => s.label === 'PART');
         expect(originalPartRef?.warningLevel).toBeUndefined();
 
-        const next = applySpreadValidation(original, { actCount: 0, chapterFieldCount: 0 });
+        const next = applySpreadValidation(original, { partMarkerCount: 0, chapterFieldCount: 0 });
 
         // New top-level rows object.
         expect(next).not.toBe(original);
@@ -346,7 +346,7 @@ describe('applySpreadValidation', () => {
         it('stamps a warning on PART when the spread advertises epigraph but no act has a quote', () => {
             // Modern Classic: spec.parts.epigraph === true → spread carries epigraphText
             const rows = applySpreadValidation(getLayoutPictogramRows('modernClassic'), {
-                actCount: 3,
+                partMarkerCount: 3,
                 chapterFieldCount: 5,
                 partEpigraphPopulatedCount: 0,
             });
@@ -355,10 +355,10 @@ describe('applySpreadValidation', () => {
             expect(part?.warningTooltip).toMatch(/epigraph/i);
         });
 
-        it('does NOT stamp PART when every act has an epigraph quote', () => {
+        it('does NOT stamp PART when every marked Part has an epigraph quote', () => {
             // Partial-population gate: only N-of-N is fully clean.
             const rows = applySpreadValidation(getLayoutPictogramRows('modernClassic'), {
-                actCount: 3,
+                partMarkerCount: 3,
                 chapterFieldCount: 5,
                 partEpigraphPopulatedCount: 3,
             });
@@ -368,7 +368,7 @@ describe('applySpreadValidation', () => {
 
         it('stamps PART with a partial-population tooltip when some but not all acts have a quote', () => {
             const rows = applySpreadValidation(getLayoutPictogramRows('modernClassic'), {
-                actCount: 3,
+                partMarkerCount: 3,
                 chapterFieldCount: 5,
                 partEpigraphPopulatedCount: 2,
             });
@@ -380,22 +380,46 @@ describe('applySpreadValidation', () => {
             expect(part?.warningTooltip).toMatch(/partial/i);
         });
 
-        it('stamps PART with the zero-population tooltip when no act has a quote (back-compat)', () => {
+        it('stamps PART with the zero-population tooltip when nothing has been written', () => {
             const rows = applySpreadValidation(getLayoutPictogramRows('modernClassic'), {
-                actCount: 3,
+                partMarkerCount: 3,
                 chapterFieldCount: 5,
                 partEpigraphPopulatedCount: 0,
             });
             const part = findSpread(rows, 'PART');
             expect(part?.warningLevel).toBe('warning');
-            // Zero phrasing — no act has an epigraph quote.
-            expect(part?.warningTooltip).toMatch(/no act has an epigraph quote/i);
+            // Zero phrasing — nothing has been written.
+            expect(part?.warningTooltip).toMatch(/none has been written/i);
+        });
+
+        it('warns when there is more epigraph text than marked Parts', () => {
+            // Entries pair with markers by position, so anything past the last
+            // marker is text the export will never emit. Staying silent would
+            // read as "your epigraphs are fine".
+            const rows = applySpreadValidation(getLayoutPictogramRows('modernClassic'), {
+                partMarkerCount: 2,
+                chapterFieldCount: 5,
+                partEpigraphPopulatedCount: 4,
+            });
+            const part = findSpread(rows, 'PART');
+            expect(part?.warningLevel).toBe('warning');
+            expect(part?.warningTooltip).toMatch(/2 Part epigraphs will not print/);
+            expect(part?.warningTooltip).toMatch(/only 2 scenes carry a Part field/);
+        });
+
+        it('does not warn when epigraph text matches the marked Parts exactly', () => {
+            const rows = applySpreadValidation(getLayoutPictogramRows('modernClassic'), {
+                partMarkerCount: 3,
+                chapterFieldCount: 5,
+                partEpigraphPopulatedCount: 3,
+            });
+            expect(findSpread(rows, 'PART')?.warningLevel).toBeUndefined();
         });
 
         it('does NOT fire on templates that do not advertise epigraphs', () => {
             // Standard Manuscript: spec.parts.mode === 'off' → no PART spread at all.
             const rows = applySpreadValidation(getLayoutPictogramRows('classic'), {
-                actCount: 3,
+                partMarkerCount: 3,
                 chapterFieldCount: 5,
                 partEpigraphPopulatedCount: 0,
             });
@@ -410,7 +434,7 @@ describe('applySpreadValidation', () => {
         it('stamps a warning on CHAPTER when titled-mode advertised but no chapter has a title', () => {
             // Modern Classic: spec.chapters.mode === 'numbered-titled' → spread has specialSubtext
             const rows = applySpreadValidation(getLayoutPictogramRows('modernClassic'), {
-                actCount: 3,
+                partMarkerCount: 3,
                 chapterFieldCount: 5,           // markers exist (skips first check)
                 chapterTitlePopulatedCount: 0,  // but none have titles
             });
@@ -422,7 +446,7 @@ describe('applySpreadValidation', () => {
         it('does NOT stamp CHAPTER when every chapter has a title', () => {
             // Partial-population gate: only N-of-N is fully clean.
             const rows = applySpreadValidation(getLayoutPictogramRows('modernClassic'), {
-                actCount: 3,
+                partMarkerCount: 3,
                 chapterFieldCount: 5,
                 chapterTitlePopulatedCount: 5,
             });
@@ -432,7 +456,7 @@ describe('applySpreadValidation', () => {
 
         it('stamps CHAPTER with a partial-population tooltip when some but not all chapters have a title', () => {
             const rows = applySpreadValidation(getLayoutPictogramRows('modernClassic'), {
-                actCount: 3,
+                partMarkerCount: 3,
                 chapterFieldCount: 5,
                 chapterTitlePopulatedCount: 3,
             });
@@ -449,7 +473,7 @@ describe('applySpreadValidation', () => {
             // gated on specialSubtext presence, so this template never warns
             // about missing chapter titles.
             const rows = applySpreadValidation(getLayoutPictogramRows('contemporary'), {
-                actCount: 3,
+                partMarkerCount: 3,
                 chapterFieldCount: 5,
                 chapterTitlePopulatedCount: 0,
             });
@@ -462,7 +486,7 @@ describe('applySpreadValidation', () => {
         it('stamps a warning on the title-only sceneMode spread when no scenes have titles', () => {
             // Signature Literary exposes a 'title-only' scene-mode spread.
             const rows = applySpreadValidation(getLayoutPictogramRows('signature'), {
-                actCount: 3,
+                partMarkerCount: 3,
                 chapterFieldCount: 5,
                 sceneTitlePopulatedRatio: 0,
             });
@@ -476,7 +500,7 @@ describe('applySpreadValidation', () => {
 
         it('does NOT stamp the title-only spread when most scenes have titles', () => {
             const rows = applySpreadValidation(getLayoutPictogramRows('signature'), {
-                actCount: 3,
+                partMarkerCount: 3,
                 chapterFieldCount: 5,
                 sceneTitlePopulatedRatio: 0.9,
             });
@@ -487,7 +511,7 @@ describe('applySpreadValidation', () => {
         it('does NOT fire on templates without a title-only scene-mode spread', () => {
             // Modern Classic uses 'roman-with-rule' scene opener — no sceneMode spreads.
             const rows = applySpreadValidation(getLayoutPictogramRows('modernClassic'), {
-                actCount: 3,
+                partMarkerCount: 3,
                 chapterFieldCount: 5,
                 sceneTitlePopulatedRatio: 0,
             });
@@ -503,7 +527,7 @@ describe('applySpreadValidation', () => {
         // Backward-compat: callers that don't supply the new fields get the
         // historical behavior (PART/CHAPTER warnings driven only by act/marker counts).
         const rows = applySpreadValidation(getLayoutPictogramRows('modernClassic'), {
-            actCount: 3,
+            partMarkerCount: 3,
             chapterFieldCount: 5,
         });
         // No new warnings (epigraph/title fields are undefined → checks bail out).
@@ -645,7 +669,7 @@ describe('collectSpreadStatuses — always-emit base counts', () => {
         // Contemporary advertises chapter pages without titles — the spread
         // has no specialSubtext, so the success qualifier never triggers.
         const ctx = {
-            actCount: Number.POSITIVE_INFINITY,
+            partMarkerCount: Number.POSITIVE_INFINITY,
             chapterFieldCount: 5,
             partEpigraphPopulatedCount: 0,
             sceneTitlePopulatedRatio: 1,
@@ -661,7 +685,7 @@ describe('collectSpreadStatuses — always-emit base counts', () => {
 
     it('emits separate chapter count and title-populated statuses for a titled layout with full population', () => {
         const ctx = {
-            actCount: 3,
+            partMarkerCount: 3,
             chapterFieldCount: 5,
             partEpigraphPopulatedCount: 3,
             chapterTitlePopulatedCount: 5,
@@ -681,7 +705,7 @@ describe('collectSpreadStatuses — always-emit base counts', () => {
 
     it('orders Modern Classic readiness facts as separate export-check lines', () => {
         const ctx = {
-            actCount: 3,
+            partMarkerCount: 3,
             chapterFieldCount: 5,
             partEpigraphPopulatedCount: 3,
             chapterTitlePopulatedCount: 5,
@@ -690,7 +714,7 @@ describe('collectSpreadStatuses — always-emit base counts', () => {
         const rows = applySpreadValidation(getLayoutPictogramRows('modernClassic'), ctx);
         const statuses = collectSpreadStatuses(rows, ctx);
         expect(statuses.map(s => s.text)).toEqual([
-            '3 Acts configured.',
+            '3 Parts marked.',
             'Epigraphs populated.',
             '5 Chapters configured.',
             'Chapter titles populated.',
@@ -700,7 +724,7 @@ describe('collectSpreadStatuses — always-emit base counts', () => {
     it('emits NO chapter status when the layout has no CHAPTER spread (chapters mode off)', () => {
         // Standard Manuscript: spec.chapters.mode === 'off' → no CHAPTER spread.
         const ctx = {
-            actCount: 3,
+            partMarkerCount: 3,
             chapterFieldCount: 5,
             partEpigraphPopulatedCount: 0,
             sceneTitlePopulatedRatio: 1,
@@ -714,7 +738,7 @@ describe('collectSpreadStatuses — always-emit base counts', () => {
         // chapterFieldCount === 0 trips the missing-chapter warning. Status
         // line must defer to the warning (the warning carries the message).
         const ctx = {
-            actCount: 3,
+            partMarkerCount: 3,
             chapterFieldCount: 0,
             partEpigraphPopulatedCount: 0,
             sceneTitlePopulatedRatio: 1,
@@ -724,7 +748,7 @@ describe('collectSpreadStatuses — always-emit base counts', () => {
         expect(statuses.find(s => s.id === 'chapters-count')).toBeUndefined();
     });
 
-    it('emits a plain "N Acts configured" info when the layout has no PART epigraph feature', () => {
+    it('emits a plain "N Parts marked" info when the layout has no PART epigraph feature', () => {
         // Construct a synthetic PART spread without epigraphText (a layout
         // that advertises parts but not epigraphs). The base count line fires.
         const baseRows = getLayoutPictogramRows('modernClassic');
@@ -736,7 +760,7 @@ describe('collectSpreadStatuses — always-emit base counts', () => {
         });
         const rows = { ...baseRows, special: strippedSpecial };
         const ctx = {
-            actCount: 4,
+            partMarkerCount: 4,
             chapterFieldCount: 5,
             partEpigraphPopulatedCount: 0,
             chapterTitlePopulatedCount: 5,
@@ -747,7 +771,7 @@ describe('collectSpreadStatuses — always-emit base counts', () => {
         const parts = statuses.find(s => s.id === 'parts-count');
         expect(parts).toBeDefined();
         expect(parts?.tone).toBe('info');
-        expect(parts?.text).toMatch(/4 Acts configured/);
+        expect(parts?.text).toMatch(/4 Parts marked/);
         expect(parts?.text).not.toMatch(/all epigraphs/i);
     });
 });

@@ -215,15 +215,15 @@ describe('assembleManuscript scene heading formatting', () => {
     it('injects scene Chapter field headings before scene content and suppresses scene headings in Modern Classic mode', async () => {
         // Scenes self-declare their Act via the canonical `Act:` frontmatter
         // field — the same source the timeline ring uses. Modern Classic emits
-        // \rtPart at every Act-boundary transition, which here is scene1+scene2
+        // \rtPart at every Part marker, which here is scene1 and scene3
         // (Act 1) → scene3 (Act 2). No beat indirection.
         const scene1 = makeFile('Scenes/1 Opening.md', '1 Opening');
         const scene2 = makeFile('Scenes/2 Midpoint.md', '2 Midpoint');
         const scene3 = makeFile('Scenes/3 Turn.md', '3 Turn');
         const vault = makeVault({
-            [scene1.path]: '---\nClass: Scene\nAct: 1\n---\n\nFirst body.',
-            [scene2.path]: '---\nClass: Scene\nAct: 1\n---\n\nSecond body.',
-            [scene3.path]: '---\nClass: Scene\nAct: 2\n---\n\nThird body.'
+            [scene1.path]: '---\nClass: Scene\nPart: true\n---\n\nFirst body.',
+            [scene2.path]: '---\nClass: Scene\n---\n\nSecond body.',
+            [scene3.path]: '---\nClass: Scene\nPart: true\n---\n\nThird body.'
         });
 
         const assembled = await assembleManuscript(
@@ -325,8 +325,8 @@ When we are very bad, what can they do to us?}{The Narrator}`;
         const scene1 = makeFile('Scenes/1 Opening.md', '1 Opening');
         const scene2 = makeFile('Scenes/2 Midpoint.md', '2 Midpoint');
         const vault = makeVault({
-            [scene1.path]: '---\nClass: Scene\nAct: 1\n---\n\nFirst body.',
-            [scene2.path]: '---\nClass: Scene\nAct: 2\n---\n\nSecond body.'
+            [scene1.path]: '---\nClass: Scene\nPart: true\n---\n\nFirst body.',
+            [scene2.path]: '---\nClass: Scene\n---\n\nSecond body.'
         });
 
         // Mirror CommandRegistrar's wiring: when a layout suppresses chapter

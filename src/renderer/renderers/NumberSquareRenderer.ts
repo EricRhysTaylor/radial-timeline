@@ -2,12 +2,11 @@ import type { TimelineItem } from '../../types';
 import {
     isBeatNote,
     type PluginRendererFacade,
-    sortScenes,
+    sceneKey,
     extractGradeFromScene
 } from '../../utils/sceneHelpers';
 import { makeSceneId } from '../../utils/numberSquareHelpers';
-import { computePositions } from '../utils/SceneLayout';
-import { resolveDominantScene } from '../components/SubplotDominanceIndicators';
+import { buildOuterRingSequence } from '../utils/OuterRingSequence';
 import { shouldRenderStoryBeats, shouldShowAllScenesInOuterRing } from '../modules/ModeRenderingHelpers';
 import {
     renderOuterRingNumberSquares,
@@ -88,77 +87,26 @@ export function renderNumberSquares(ctx: NumberSquareRenderContext): string {
                 endAngle = ((act + 1) * 2 * Math.PI) / totalActs - Math.PI / 2;
             }
 
-            // Build combined list for this act (or all scenes if using When date)
-            const seenPaths = new Set<string>();
-            const seenPlotKeys = new Set<string>();
-            const combined: TimelineItem[] = [];
-
-            // Group scenes by path first to apply dominant subplot resolution
-            const scenesByPathForSquares = new Map<string, TimelineItem[]>();
-
-            scenes.forEach(s => {
-                if (s.itemType === 'Backdrop') return; // SKIP BACKDROP
-
-                // When using When date sorting, include all scenes (ignore Act)
-                // When using manuscript order, filter by Act
-                if (!sortByWhen) {
-                    const sAct = isSagaScope
-                        ? (typeof s.bookIndex === 'number' ? s.bookIndex : 0)
-                        : (s.actNumber !== undefined ? s.actNumber - 1 : 0);
-                    if (sAct !== act) return;
-                }
-
-                if (isBeatNote(s)) {
-                    // Skip beats entirely in Chronologue mode - beats should never appear
-                    if (isChronologueMode || !shouldRenderStoryBeats(plugin)) return;
-
-                    const pKey = `${String(s.title || '')}::${String(s.actNumber ?? '')}`;
-                    if (seenPlotKeys.has(pKey)) return;
-                    seenPlotKeys.add(pKey);
-                    combined.push(s);
-                } else {
-                    // Group scenes by path for dominant subplot resolution
-                    const key = s.path || `${s.title || ''}::${String(s.when || '')}`;
-                    if (!scenesByPathForSquares.has(key)) {
-                        scenesByPathForSquares.set(key, []);
-                    }
-                    scenesByPathForSquares.get(key)!.push(s);
-                }
+            // Same sequence the arcs were drawn from — see OuterRingSequence.
+            const { items: sortedCombined, positions } = buildOuterRingSequence({
+                scenes,
+                segment: act,
+                isSagaScope,
+                sortByWhen,
+                forceChronological: isChronologueMode,
+                includeBeats: !isChronologueMode && shouldRenderStoryBeats(plugin),
+                masterSubplotOrder,
+                dominantSubplots: plugin.settings.dominantSubplots,
+                innerR: innerROuter,
+                outerR: outerROuter,
+                startAngle,
+                endAngle
             });
-
-            // Now process grouped scenes, selecting the appropriate one for each path
-            // This matches the logic used in the main slice rendering
-            scenesByPathForSquares.forEach((scenesForPath, pathKey) => {
-                if (seenPaths.has(pathKey)) return;
-                seenPaths.add(pathKey);
-
-                // Select which Scene object to use based on dominant subplot preference
-                const scenePath = scenesForPath[0].path;
-                const resolution = resolveDominantScene({
-                    scenePath,
-                    candidateScenes: scenesForPath,
-                    masterSubplotOrder,
-                    dominantSubplots: plugin.settings.dominantSubplots
-                });
-
-                combined.push(resolution.scene);
-            });
-
-            // CRITICAL: Sort the combined array the same way as main rendering does
-            // Chronologue mode always uses chronological sorting
-            const forceChronological = isChronologueMode;
-            const sortedCombined = sortScenes(combined, sortByWhen, forceChronological);
-
-            // Positions derived from shared geometry using SORTED array
-            const positionsDetailed = computePositions(innerROuter, outerROuter, startAngle, endAngle, sortedCombined);
-            const positions = new Map<number, { startAngle: number; endAngle: number }>();
-            positionsDetailed.forEach((p, i) => positions.set(i, { startAngle: p.startAngle, endAngle: p.endAngle }));
 
             if (plugin.settings.enableAiSceneAnalysis) {
                 sortedCombined.forEach((sceneItem, combinedIdx) => {
                     if (isBeatNote(sceneItem)) return;
-                    const uniqueKey = sceneItem.path || `${sceneItem.title || ''}::${sceneItem.number ?? ''}::${String(sceneItem.when ?? '')}`;
-                    const combinedSceneId = makeSceneId(act, ringOuter, combinedIdx, true, true, uniqueKey);
+                    const combinedSceneId = makeSceneId(act, ringOuter, combinedIdx, true, true, sceneKey(sceneItem));
                     extractGradeFromScene(sceneItem, combinedSceneId, sceneGrades, plugin);
                 });
             }

@@ -4,8 +4,8 @@ import { parseSceneTitle } from '../../utils/text';
 import {
     isBeatNote,
     type PluginRendererFacade,
-    sortScenes,
-    extractGradeFromScene
+    sceneKey,
+    sortScenes
 } from '../../utils/sceneHelpers';
 import { makeSceneId } from '../../utils/numberSquareHelpers';
 import {
@@ -17,13 +17,13 @@ import {
     SCENE_TITLE_INSET
 } from '../layout/LayoutConstants';
 import { computePositions } from '../utils/SceneLayout';
+import { buildOuterRingSequence } from '../utils/OuterRingSequence';
 import { getFillForScene } from '../utils/SceneFill';
 import { estimatePixelsFromTitle } from '../utils/LabelMetrics';
 import { sceneArcPath, renderVoidCellPath } from '../components/SceneArcs';
 import { renderSceneGroup } from '../components/Scenes';
 import { shouldRenderStoryBeats, shouldShowAllScenesInOuterRing } from '../modules/ModeRenderingHelpers';
 import { appendSynopsisElementForScene } from '../utils/SynopsisBuilder';
-import { resolveDominantScene } from '../components/SubplotDominanceIndicators';
 import type { StageColorMap } from '../utils/Gossamer';
 import { getReadabilityMultiplier } from '../../utils/readability';
 import type { OuterRingChapterBoundaryGeometry } from '../components/ChapterMarkers';
@@ -67,7 +67,6 @@ export function renderRings(ctx: RingRenderContext): string {
         PUBLISH_STAGE_COLORS,
         maxTextWidth,
         synopsesElements,
-        sceneGrades,
         manuscriptOrderPositions,
         outerRingChapterBoundaryGeometry,
         numActs
@@ -141,65 +140,27 @@ export function renderRings(ctx: RingRenderContext): string {
 
             // --- Outer Ring Special Handling ---
             if (isOuterRing && shouldShowAllScenesInOuterRing(plugin)) {
-                // Build combined list for this Act
-                const seenPaths = new Set<string>();
-                const seenPlotKeys = new Set<string>();
-                const combined: TimelineItem[] = [];
-
-                const scenesByPath = new Map<string, TimelineItem[]>();
-                scenes.forEach(s => {
-                    if (s.itemType === 'Backdrop') return; // EXCLUDE BACKDROP
-
-                    if (!sortByWhen) {
-                        const sAct = isSagaScope
-                            ? (typeof s.bookIndex === 'number' ? s.bookIndex : 0)
-                            : (s.actNumber !== undefined ? s.actNumber - 1 : 0);
-                        if (sAct !== act) return;
-                    }
-
-                    if (isBeatNote(s)) {
-                        if (isChronologueMode || !shouldRenderStoryBeats(plugin)) return;
-                        const pKey = `${String(s.title || '')}::${String(s.actNumber ?? '')}`;
-                        if (!seenPlotKeys.has(pKey)) {
-                            seenPlotKeys.add(pKey);
-                            combined.push(s);
-                        }
-                    } else {
-                        const key = s.path || `${s.title || ''}::${String(s.when || '')}`;
-                        if (!scenesByPath.has(key)) {
-                            scenesByPath.set(key, []);
-                        }
-                        scenesByPath.get(key)!.push(s);
-                    }
+                const sequence = buildOuterRingSequence({
+                    scenes,
+                    segment: act,
+                    isSagaScope,
+                    sortByWhen,
+                    forceChronological,
+                    includeBeats: !isChronologueMode && shouldRenderStoryBeats(plugin),
+                    masterSubplotOrder,
+                    dominantSubplots: plugin.settings.dominantSubplots,
+                    innerR,
+                    outerR,
+                    startAngle,
+                    endAngle
                 });
+                const { items: sortedCombined, positions } = sequence;
 
-                scenesByPath.forEach((scenesForPath, pathKey) => {
-                    if (seenPaths.has(pathKey)) return;
-                    seenPaths.add(pathKey);
-
-                    const scenePath = scenesForPath[0].path;
-                    const resolution = resolveDominantScene({
-                        scenePath,
-                        candidateScenes: scenesForPath,
-                        masterSubplotOrder,
-                        dominantSubplots: plugin.settings.dominantSubplots
-                    });
-
-                    if (scenePath && resolution.storedPreference && !resolution.preferenceMatched && plugin.settings.dominantSubplots) {
-                        delete plugin.settings.dominantSubplots[scenePath];
-                    }
-
-                    combined.push(resolution.scene);
-
-                    // Extract grade
-                    const sceneIndex = combined.length - 1;
-                    const uniqueKey = resolution.scene?.path || `${resolution.scene?.title || ''}::${resolution.scene?.number ?? ''}::${String(resolution.scene?.when ?? '')}`;
-                    const allScenesSceneId = makeSceneId(act, NUM_RINGS - 1, sceneIndex, true, true, uniqueKey);
-                    extractGradeFromScene(resolution.scene, allScenesSceneId, sceneGrades, plugin);
-                });
-
-                const sortedCombined = sortScenes(combined, sortByWhen, forceChronological);
-                const positions = computePositions(innerR, outerR, startAngle, endAngle, sortedCombined);
+                // A stored preference that matches no candidate is stale — drop it.
+                const dominantSubplots = plugin.settings.dominantSubplots;
+                if (dominantSubplots) {
+                    sequence.staleDominantPaths.forEach(path => { delete dominantSubplots[path]; });
+                }
 
                 // Store positions for Level 4 duration arcs (chronologue mode only)
                 if (isChronologueMode && manuscriptOrderPositions) {
@@ -242,7 +203,7 @@ export function renderRings(ctx: RingRenderContext): string {
 
                     const color = getFillForScene(scene, PUBLISH_STAGE_COLORS, subplotColorFor, true, forceSubplotFillColors);
                     const arcPathStr = sceneArcPath(innerR, effectiveOuterR, sceneStartAngle, sceneEndAngle);
-                    const sceneUniqueKey = scene.path || `${scene.title || ''}::${scene.number ?? ''}::${String(scene.when ?? '')}`;
+                    const sceneUniqueKey = sceneKey(scene);
                     const sceneId = makeSceneId(act, ring, idx, true, true, sceneUniqueKey);
 
                     if (!isBeatNote(scene) && scene.path) {
@@ -395,7 +356,7 @@ export function renderRings(ctx: RingRenderContext): string {
                     );
 
                     const arcPathStr = sceneArcPath(innerR, outerR, sceneStartAngle, sceneEndAngle);
-                    const sceneUniqueKey = scene.path || `${scene.title || ''}::${scene.number ?? ''}::${String(scene.when ?? '')}`;
+                    const sceneUniqueKey = sceneKey(scene);
                     const sceneId = makeSceneId(act, ring, idx, false, false, sceneUniqueKey);
 
                     const subplotIdxAttr = (() => {

@@ -87,6 +87,33 @@ export function isNonSceneItem(item: TimelineItem | { itemType?: string }): bool
 }
 
 /**
+ * Canonical identity for a timeline item.
+ *
+ * The renderer identifies the same item across three surfaces — outer-ring
+ * dedupe, DOM scene ids, and subplot-ring lookups — and those surfaces MUST
+ * agree or an item silently splits into two. The vault path is the identity
+ * whenever there is one; the composite is only for items that never reached
+ * disk. Never inline a variant of this expression.
+ */
+export function sceneKey(item: Pick<TimelineItem, 'path' | 'title' | 'number' | 'when'>): string {
+    if (item.path) return item.path;
+    return `${item.title || ''}::${item.number ?? ''}::${String(item.when ?? '')}`;
+}
+
+/**
+ * Whether the timeline is ordered by When date rather than manuscript order.
+ *
+ * Chronologue is always chronological; every other mode follows the setting.
+ * This decides both the sort and the segmentation (When ordering collapses all
+ * acts into one full-circle segment), so it must be answered identically
+ * everywhere — it is the `sortByWhen` argument to sortScenes below.
+ */
+export function usesWhenOrdering(settings: { currentMode?: string; sortByWhenDate?: boolean }): boolean {
+    if (settings.currentMode === 'chronologue') return true;
+    return settings.sortByWhenDate ?? false;
+}
+
+/**
  * Sort scenes based on plugin settings
  * @param scenes - Scenes to sort
  * @param sortByWhen - If true, sort by When date; if false, sort by manuscript order

@@ -26,37 +26,3 @@ export function computePositions(innerR: number, outerR: number, startAngle: num
     });
     return positions;
 }
-
-export function getEffectiveScenesForRing(
-    allScenes: TimelineItem[],
-    actIndex: number,
-    subplot: string | undefined,
-    outerAllScenes: boolean,
-    isOuter: boolean,
-    grouped: { [act: number]: { [subplot: string]: TimelineItem[] } }
-): TimelineItem[] {
-    if (isOuter && outerAllScenes) {
-        const seenPaths = new Set<string>();
-        const seenPlotKeys = new Set<string>();
-        const result: TimelineItem[] = [];
-        allScenes.forEach(s => {
-            const a = s.actNumber !== undefined ? s.actNumber - 1 : 0;
-            if (a !== actIndex) return;
-            if (isBeatNote(s)) {
-                const key = `${String(s.title || '')}::${String(s.actNumber ?? '')}`;
-                if (seenPlotKeys.has(key)) return;
-                seenPlotKeys.add(key);
-                result.push(s);
-            } else {
-                const k = s.path || `${s.title || ''}::${String(s.when || '')}`;
-                if (seenPaths.has(k)) return;
-                seenPaths.add(k);
-                result.push(s);
-            }
-        });
-        return result;
-    }
-
-    const list = subplot ? (grouped[actIndex] && grouped[actIndex][subplot]) || [] : [];
-    return outerAllScenes ? list.filter(s => !isBeatNote(s)) : list.filter(s => !isBeatNote(s));
-}

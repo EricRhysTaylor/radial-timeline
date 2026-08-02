@@ -3002,3 +3002,66 @@
   color: var(--text-muted);
   font-size: var(--font-ui-smaller);
 }
+
+/* Set part… — mirrors the chapter modal; Parts are the same kind of
+   author-placed marker, so they get the same visual treatment. */
+.ert-set-part-modal__part-icon {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--interactive-accent);
+  flex: 0 0 auto;
+}
+
+.ert-set-part-modal__list-section,
+.ert-set-part-modal__layout-section {
+  display: grid;
+  gap: var(--ert-gap-sm);
+}
+
+.ert-set-part-modal__list-title,
+.ert-set-part-modal__layout-title {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ert-set-part-modal__list {
+  display: grid;
+  gap: var(--ert-gap-xs);
+  max-height: min(320px, 42vh);
+  overflow: auto;
+}
+
+.ert-set-part-modal__part-row {
+  display: flex;
+  gap: var(--ert-gap-sm);
+  align-items: center;
+  padding: var(--ert-pad-xs) var(--ert-pad-cozy);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--ert-control-radius);
+  background: var(--background-secondary);
+}
+
+.ert-set-part-modal__part-body {
+  min-width: 0;
+}
+
+.ert-set-part-modal__part-name {
+  color: var(--text-normal);
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ert-set-part-modal__part-range,
+.ert-set-part-modal__empty,
+.ert-set-part-modal__layout-note {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}

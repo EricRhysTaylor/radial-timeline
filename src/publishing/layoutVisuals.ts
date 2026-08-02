@@ -231,8 +231,15 @@ function describeMargins(spec: DesignedStyleSpec): string {
     return `${fmt(m.topIn)} / ${fmt(m.rightIn)} / ${fmt(m.bottomIn)} / ${fmt(m.leftIn)} in (T/R/B/L)`;
 }
 
-/** Parts row — derived from parts.mode + parts.epigraph + placement + flags. Returns null when off. */
-function describeParts(spec: DesignedStyleSpec): string | null {
+/**
+ * Parts row — derived from parts.mode + parts.title + epigraph + flags.
+ * Returns null when the layout prints no Parts at all.
+ *
+ * Exported so the Set part… modal can show what the selected layout will do
+ * with a marker without inventing its own phrasing. One description, two
+ * surfaces.
+ */
+export function describeParts(spec: DesignedStyleSpec): string | null {
     if (spec.parts.mode === 'off') return null;
     const numbering = spec.parts.mode === 'roman' ? 'Roman numeral'
         : spec.parts.mode === 'arabic' ? 'Arabic number'
@@ -250,7 +257,7 @@ function describeParts(spec: DesignedStyleSpec): string | null {
     if (spec.parts.openAny) flags.push('openany');
     if (!spec.parts.pageBreak) flags.push('no page break');
     const tail = flags.length ? ` — ${flags.join(', ')}` : '';
-    return `Act opener — ${numbering}${tail}`;
+    return `Part opener — ${numbering}${tail}`;
 }
 
 /** Chapters row — derived from chapters.mode. Returns null when off. */

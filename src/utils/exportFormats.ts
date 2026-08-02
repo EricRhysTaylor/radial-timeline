@@ -12,6 +12,8 @@ import * as fs from 'fs'; // SAFE: Node fs required for Pandoc temp files
 import * as os from 'os'; // SAFE: Node os required for temp directory resolution
 import * as path from 'path'; // SAFE: Node path required for temp/absolute paths
 import { formatRuntimeValue, RuntimeSettings } from './runtimeEstimator';
+import { getActiveBook } from './books';
+import type { BookPublishingPreferences, ExportProfile, RadialTimelineSettings } from '../types/settings';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
 import { getVaultFontDir } from './pandocBundledLayouts';
 import type { DesignedStyleSpec } from '../publishing/designedStyle';
@@ -1549,4 +1551,49 @@ export async function writeTextFile(
     const normalized = normalizePath(vaultPath);
     const adapter = vault.adapter; // SAFE: adapter write used to save generated export content
     await adapter.write(normalized, content);
+}
+
+
+/**
+ * The novel PDF layout the book will export with.
+ *
+ * Shared by the timeline renderer (Part/Chapter placards) and the Set part…
+ * modal, which both need to say what the selected layout will do. Resolution
+ * order is the book's own last-used layout, then the active export profile,
+ * then the book's preferred template, then the legacy global setting.
+ */
+export function resolveActiveNovelPandocLayout(
+    settings: RadialTimelineSettings
+): PandocLayoutTemplate | null {
+    const layouts = Array.isArray(settings.pandocLayouts) ? settings.pandocLayouts : [];
+    if (layouts.length === 0) return null;
+
+    const activeBook = getActiveBook(settings);
+    const publishingPreferences: BookPublishingPreferences | undefined =
+        Array.isArray(settings.bookPublishingPreferences)
+            ? settings.bookPublishingPreferences.find(entry => entry.bookId === activeBook?.id)
+            : undefined;
+    const exportProfiles: ExportProfile[] = Array.isArray(settings.exportProfiles)
+        ? settings.exportProfiles
+        : [];
+    const preferredExportProfileId = publishingPreferences?.lastUsedExportProfileId
+        || settings.lastUsedExportProfileId
+        || publishingPreferences?.defaultExportProfileId;
+    const exportProfileTemplateId = preferredExportProfileId
+        ? exportProfiles.find(profile => profile.id === preferredExportProfileId)?.templateProfileId
+        : undefined;
+
+    const candidateIds = [
+        activeBook?.lastUsedPandocLayoutByPreset?.novel,
+        exportProfileTemplateId,
+        publishingPreferences?.preferredTemplateProfileIdByContext?.novel,
+        (settings as LegacyPersistedSettings).lastUsedPandocLayoutByPreset?.novel,
+    ].filter((id): id is string => typeof id === 'string' && id.trim().length > 0);
+
+    for (const id of candidateIds) {
+        const layout = layouts.find(candidate => candidate.id === id);
+        if (layout) return layout;
+    }
+
+    return null;
 }

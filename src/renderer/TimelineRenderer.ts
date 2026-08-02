@@ -79,6 +79,7 @@ import {
     collapseTimelineChapterMarkersByResolvedBoundary,
     resolveTimelineChapterMarkers
 } from '../utils/timelineChapters';
+import { resolveActiveNovelPandocLayout } from '../utils/exportFormats';
 import { resolveTimelinePartMarkers, type TimelinePartMarker } from '../utils/timelineParts';
 
 
@@ -99,37 +100,6 @@ const STATUS_HEADER_TOOLTIPS: Record<string, string> = {
     Due: 'Due — tasks or scenes with a past-due date',
     Completed: 'Completed — tasks or scenes finished'
 };
-
-function resolveActiveNovelPandocLayout(settings: RadialTimelineSettings): PandocLayoutTemplate | null {
-    const layouts = Array.isArray(settings.pandocLayouts) ? settings.pandocLayouts : [];
-    if (layouts.length === 0) return null;
-
-    const activeBook = getActiveBook(settings);
-    const publishingPreferences: BookPublishingPreferences | undefined = Array.isArray(settings.bookPublishingPreferences)
-        ? settings.bookPublishingPreferences.find(entry => entry.bookId === activeBook?.id)
-        : undefined;
-    const exportProfiles: ExportProfile[] = Array.isArray(settings.exportProfiles) ? settings.exportProfiles : [];
-    const preferredExportProfileId = publishingPreferences?.lastUsedExportProfileId
-        || settings.lastUsedExportProfileId
-        || publishingPreferences?.defaultExportProfileId;
-    const exportProfileTemplateId = preferredExportProfileId
-        ? exportProfiles.find(profile => profile.id === preferredExportProfileId)?.templateProfileId
-        : undefined;
-
-    const candidateIds = [
-        activeBook?.lastUsedPandocLayoutByPreset?.novel,
-        exportProfileTemplateId,
-        publishingPreferences?.preferredTemplateProfileIdByContext?.novel,
-        (settings as LegacyPersistedSettings).lastUsedPandocLayoutByPreset?.novel,
-    ].filter((id): id is string => typeof id === 'string' && id.trim().length > 0);
-
-    for (const id of candidateIds) {
-        const layout = layouts.find(candidate => candidate.id === id);
-        if (layout) return layout;
-    }
-
-    return null;
-}
 
 function layoutSupportsPartMarkers(layout: PandocLayoutTemplate | null): boolean {
     if (!layout) return false;

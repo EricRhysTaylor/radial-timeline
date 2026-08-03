@@ -389,19 +389,24 @@
 }
 
 /* Shift mode scene selection */
-/* Shift mode: All scene groups fade to low opacity by default. Void cells
-   fade with them — an empty stretch of a subplot ring is a cell like any
-   other, and left at its own fill it would be the brightest thing on screen
-   in the mode whose whole point is to mute everything but the comparison. */
-.radial-timeline-svg[data-shift-mode="active"] .rt-scene-group[data-item-type="Scene"],
-.radial-timeline-svg[data-shift-mode="active"] .rt-void-cell {
+/* Shift mode: All scene groups fade to low opacity by default */
+.radial-timeline-svg[data-shift-mode="active"] .rt-scene-group[data-item-type="Scene"] {
   opacity: 0.15;
 }
 
 /* Shift mode: All scene fills are gray */
-.radial-timeline-svg[data-shift-mode="active"] .rt-scene-group[data-item-type="Scene"] .rt-scene-path,
+.radial-timeline-svg[data-shift-mode="active"] .rt-scene-group[data-item-type="Scene"] .rt-scene-path {
+  fill: var(--interactive-normal);
+}
+
+/* Void cells match those two: an empty stretch of a subplot ring is a cell
+   like any other, and left at its own fill it would be the brightest thing on
+   screen in the mode whose whole point is muting everything but the
+   comparison. Stated once here rather than joined to the selectors above,
+   which the scene splits across a group rule and a path rule. */
 .radial-timeline-svg[data-shift-mode="active"] .rt-void-cell {
   fill: var(--interactive-normal);
+  opacity: 0.15;
 }
 
 /* Shift mode: Style the number squares and text to match the grayed-out scenes */

@@ -17,6 +17,18 @@ Narrative Mode is your primary manuscript-order workspace. It displays all scene
 *   **Scene right-click menu**: Add a scene after the current one, set a chapter marker, change Status, change Publish Stage, or flag it for Pulse — see below.
 *   **Recent moves overlay**: Narrative Mode can show a top-left list of recent committed scene and beat moves. Toggle it in [Settings → Advanced → Configuration](Settings-Advanced#configuration).
 
+## Subplot Alignment: Fill vs Sequence
+
+The **alignment chip** at the left of the mode row switches how subplot rings lay out their scenes. It applies in Narrative, Chronologue, and Gossamer modes.
+
+*   **Fill** (default) — subplot scenes spread evenly across each act, so every ring uses its full arc. Best for reading each thread on its own.
+*   **Sequence** — every subplot scene sits at its true position in the full manuscript, aligned with the outer ring. Empty cells mark where a thread is dormant, so you can see at a glance where each subplot is active, where it disappears, and how the threads interleave across acts.
+
+<div style="text-align: center; margin: 20px 0;">
+  <img src="images/mode-sequence.webp" alt="Sequence alignment: subplot rings aligned to manuscript position with dormant stretches left empty" style="width: 640px; max-width: 100%; border-radius: 8px;" />
+  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Sequence alignment — each subplot ring aligned to manuscript position; empty cells show where a thread is dormant</div>
+</div>
+
 ## Scene Right-Click Menu
 
 Right-click any scene on the timeline to open a context menu that lets you add a scene or update scene frontmatter without opening the note. The current value in each group is marked with a checkmark.

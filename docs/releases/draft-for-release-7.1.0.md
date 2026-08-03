@@ -4,11 +4,11 @@ Two structural features for how a manuscript is organized and seen: first-class 
 
 ### Parts
 
-Parts are now explicit markers you place yourself — the same workflow as chapters. **Right-click a scene → Set part…** to open a part at that scene, give it a title, or clear it; or set the scene's `Part:` field directly. Parts carry optional titles and epigraphs into the PDF layouts that print them, **P** placards mark part boundaries on the Narrative ring, and `Act` returns to being purely narrative structure — publishing divisions and story analysis no longer share one field. Thanks to **@therisingtithes** for the request ([#30](https://github.com/EricRhysTaylor/Radial-Timeline/issues/30)).
+Parts are now explicit markers you place yourself — the same workflow as chapters. **Right-click a scene → Set part…** to open a part at that scene, give it an optional title, or clear it; or set the scene's `Part:` field directly. Parts carry optional titles and epigraphs into the PDF layouts that print them, **P** placards mark part boundaries on the Narrative ring, and `Act` returns to being purely narrative structure — publishing divisions and story analysis no longer share one field. Thanks to **@therisingtithes** for the request ([#30](https://github.com/EricRhysTaylor/Radial-Timeline/issues/30)).
 
 ### Sequence
 
-A new **alignment chip** leads the mode row in Narrative, Chronologue, and Gossamer modes:
+A new presentation mode for scenes in Narrative, Chronologue, and Gossamer modes. Switch with the **alignment chip** at the left of the mode row:
 
 - **Fill** (default) — subplot scenes spread evenly across each act, every ring using its full arc.
 - **Sequence** — every subplot scene sits at its true position in the full manuscript, aligned with the outer ring. Empty cells show where a thread goes dormant, so you can see at a glance where each subplot lives, where it disappears, and how the threads interleave.

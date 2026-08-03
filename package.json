@@ -1,6 +1,6 @@
 {
 	"name": "radial-timeline",
-	"version": "7.0.3",
+	"version": "7.1.0",
 	"description": "Map your manuscript across four modes — Progress, Narrative, Chronologue, and Gossamer — plus the Inquiry View for higher-level story analysis. Visualize scenes, subplots, structure, chronology, and story shape in one connected workspace.",
 	"main": "main.js",
 	"type": "module",

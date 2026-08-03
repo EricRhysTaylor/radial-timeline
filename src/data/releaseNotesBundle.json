@@ -1,6 +1,13 @@
 {
   "entries": [
     {
+      "version": "7.1.0",
+      "title": "7.1.0",
+      "body": "## Radial Timeline 7.1.0\n\nTwo structural features for how a manuscript is organized and seen: first-class **Parts**, and the **Sequence** subplot alignment.\n\n### Parts\n\nParts are now explicit markers you place yourself — the same workflow as chapters. **Right-click a scene → Set part…** to open a part at that scene, give it a title, or clear it; or set the scene's `Part:` field directly. Parts carry optional titles and epigraphs into the PDF layouts that print them, **P** placards mark part boundaries on the Narrative ring, and `Act` returns to being purely narrative structure — publishing divisions and story analysis no longer share one field. Thanks to **@therisingtithes** for the request ([#30](https://github.com/EricRhysTaylor/Radial-Timeline/issues/30)).\n\n### Sequence\n\nA new **alignment chip** leads the mode row in Narrative, Chronologue, and Gossamer modes:\n\n- **Fill** (default) — subplot scenes spread evenly across each act, every ring using its full arc.\n- **Sequence** — every subplot scene sits at its true position in the full manuscript, aligned with the outer ring. Empty cells show where a thread goes dormant, so you can see at a glance where each subplot lives, where it disappears, and how the threads interleave.\n\n<p align=\"center\"><img src=\"https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/65490e25/wiki/images/mode-sequence.webp\" alt=\"Sequence alignment in Narrative mode — subplot rings aligned to manuscript position\" width=\"720\"></p>\n\n### More Improvements\n\n- **Timeline Audit: scoped AI chronology scans** — run the AI deep read on a selected scope of scenes instead of the whole book. Hand-pick the stretch that's confusing and let it read those scenes in narrative order to recover flashbacks, relative timing, and better date suggestions.\n- **Local model capabilities** — declare what your local model can handle in Settings → AI, so AI features gate accurately against it.\n\n### Fixes\n\n- Closed the dead band at the backdrop ring edge in Chronologue.\n- Arcs spanning more than half the circle now draw the long way round instead of flipping.\n- Scene titles clip to their own arc, and hover expansion respects Sequence alignment.\n- Part placards redraw immediately when a Part is set, retitled, or cleared.",
+      "url": "https://github.com/EricRhysTaylor/Radial-Timeline/releases/tag/7.1.0",
+      "publishedAt": "2026-08-03T22:14:30.036Z"
+    },
+    {
       "version": "7.0.3",
       "title": "7.0.3",
       "body": "## Radial Timeline 7.0.3\n\nExporting a manuscript to PDF or Word could fail with a missing font error. This release fixes that.\n\n### Fixes\n\n- **PDF and Word export** — the fonts and the Word reference document now come with the plugin, so export works without any setup. Thanks to **@therisingtithes** ([#34](https://github.com/EricRhysTaylor/Radial-Timeline/issues/34)).\n- **Font status** — Publish and Export now show which fonts are actually available, and a failed export tells you which font caused it.\n",
@@ -43,14 +50,28 @@
     "isDraft": false
   },
   "latest": {
-    "version": "7.0.3",
-    "title": "7.0.3",
-    "body": "## Radial Timeline 7.0.3\n\nExporting a manuscript to PDF or Word could fail with a missing font error. This release fixes that.\n\n### Fixes\n\n- **PDF and Word export** — the fonts and the Word reference document now come with the plugin, so export works without any setup. Thanks to **@therisingtithes** ([#34](https://github.com/EricRhysTaylor/Radial-Timeline/issues/34)).\n- **Font status** — Publish and Export now show which fonts are actually available, and a failed export tells you which font caused it.\n",
-    "url": "https://github.com/EricRhysTaylor/radial-timeline/releases/tag/7.0.3",
-    "publishedAt": "2026-07-29T16:43:46Z",
-    "isDraft": false
+    "version": "7.1.0",
+    "title": "7.1.0",
+    "body": "## Radial Timeline 7.1.0\n\nTwo structural features for how a manuscript is organized and seen: first-class **Parts**, and the **Sequence** subplot alignment.\n\n### Parts\n\nParts are now explicit markers you place yourself — the same workflow as chapters. **Right-click a scene → Set part…** to open a part at that scene, give it a title, or clear it; or set the scene's `Part:` field directly. Parts carry optional titles and epigraphs into the PDF layouts that print them, **P** placards mark part boundaries on the Narrative ring, and `Act` returns to being purely narrative structure — publishing divisions and story analysis no longer share one field. Thanks to **@therisingtithes** for the request ([#30](https://github.com/EricRhysTaylor/Radial-Timeline/issues/30)).\n\n### Sequence\n\nA new **alignment chip** leads the mode row in Narrative, Chronologue, and Gossamer modes:\n\n- **Fill** (default) — subplot scenes spread evenly across each act, every ring using its full arc.\n- **Sequence** — every subplot scene sits at its true position in the full manuscript, aligned with the outer ring. Empty cells show where a thread goes dormant, so you can see at a glance where each subplot lives, where it disappears, and how the threads interleave.\n\n<p align=\"center\"><img src=\"https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/65490e25/wiki/images/mode-sequence.webp\" alt=\"Sequence alignment in Narrative mode — subplot rings aligned to manuscript position\" width=\"720\"></p>\n\n### More Improvements\n\n- **Timeline Audit: scoped AI chronology scans** — run the AI deep read on a selected scope of scenes instead of the whole book. Hand-pick the stretch that's confusing and let it read those scenes in narrative order to recover flashbacks, relative timing, and better date suggestions.\n- **Local model capabilities** — declare what your local model can handle in Settings → AI, so AI features gate accurately against it.\n\n### Fixes\n\n- Closed the dead band at the backdrop ring edge in Chronologue.\n- Arcs spanning more than half the circle now draw the long way round instead of flipping.\n- Scene titles clip to their own arc, and hover expansion respects Sequence alignment.\n- Part placards redraw immediately when a Part is set, retitled, or cleared.",
+    "url": "https://github.com/EricRhysTaylor/Radial-Timeline/releases/tag/7.1.0",
+    "publishedAt": "2026-08-03T22:14:30.036Z"
   },
   "patches": [
+    {
+      "version": "7.1.0",
+      "title": "7.1.0",
+      "body": "## Radial Timeline 7.1.0\n\nTwo structural features for how a manuscript is organized and seen: first-class **Parts**, and the **Sequence** subplot alignment.\n\n### Parts\n\nParts are now explicit markers you place yourself — the same workflow as chapters. **Right-click a scene → Set part…** to open a part at that scene, give it a title, or clear it; or set the scene's `Part:` field directly. Parts carry optional titles and epigraphs into the PDF layouts that print them, **P** placards mark part boundaries on the Narrative ring, and `Act` returns to being purely narrative structure — publishing divisions and story analysis no longer share one field. Thanks to **@therisingtithes** for the request ([#30](https://github.com/EricRhysTaylor/Radial-Timeline/issues/30)).\n\n### Sequence\n\nA new **alignment chip** leads the mode row in Narrative, Chronologue, and Gossamer modes:\n\n- **Fill** (default) — subplot scenes spread evenly across each act, every ring using its full arc.\n- **Sequence** — every subplot scene sits at its true position in the full manuscript, aligned with the outer ring. Empty cells show where a thread goes dormant, so you can see at a glance where each subplot lives, where it disappears, and how the threads interleave.\n\n<p align=\"center\"><img src=\"https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/65490e25/wiki/images/mode-sequence.webp\" alt=\"Sequence alignment in Narrative mode — subplot rings aligned to manuscript position\" width=\"720\"></p>\n\n### More Improvements\n\n- **Timeline Audit: scoped AI chronology scans** — run the AI deep read on a selected scope of scenes instead of the whole book. Hand-pick the stretch that's confusing and let it read those scenes in narrative order to recover flashbacks, relative timing, and better date suggestions.\n- **Local model capabilities** — declare what your local model can handle in Settings → AI, so AI features gate accurately against it.\n\n### Fixes\n\n- Closed the dead band at the backdrop ring edge in Chronologue.\n- Arcs spanning more than half the circle now draw the long way round instead of flipping.\n- Scene titles clip to their own arc, and hover expansion respects Sequence alignment.\n- Part placards redraw immediately when a Part is set, retitled, or cleared.",
+      "url": "https://github.com/EricRhysTaylor/Radial-Timeline/releases/tag/7.1.0",
+      "publishedAt": "2026-08-03T22:14:30.036Z"
+    },
+    {
+      "version": "7.0.3",
+      "title": "7.0.3",
+      "body": "## Radial Timeline 7.0.3\n\nExporting a manuscript to PDF or Word could fail with a missing font error. This release fixes that.\n\n### Fixes\n\n- **PDF and Word export** — the fonts and the Word reference document now come with the plugin, so export works without any setup. Thanks to **@therisingtithes** ([#34](https://github.com/EricRhysTaylor/Radial-Timeline/issues/34)).\n- **Font status** — Publish and Export now show which fonts are actually available, and a failed export tells you which font caused it.\n",
+      "url": "https://github.com/EricRhysTaylor/radial-timeline/releases/tag/7.0.3",
+      "publishedAt": "2026-07-29T16:43:46Z",
+      "isDraft": false
+    },
     {
       "version": "7.0.2",
       "title": "7.0.2",

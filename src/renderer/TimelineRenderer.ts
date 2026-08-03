@@ -60,7 +60,7 @@ import { renderTargetDateTick, type TargetTickEnhancedData } from './components/
 import { renderProgressRing, resolveProgressEstimate, resolveProgressRingDate } from './components/ProgressRing';
 import { serializeSynopsesToString } from './components/Synopses';
 import { renderCalendarSpokesLayer } from './utils/MonthSpokes';
-import { shouldShowSubplotRings, shouldShowAllScenesInOuterRing } from './modules/ModeRenderingHelpers';
+import { shouldShowSubplotRings, shouldShowAllScenesInOuterRing, usesSequenceAlignment } from './modules/ModeRenderingHelpers';
 import { collectChronologueSceneEntries, type ChronologueSceneEntry } from './components/ChronologueTimeline';
 import { appendSynopsisElementForScene } from './utils/SynopsisBuilder';
 import { renderGossamerOverlay, type StageColorMap } from './utils/Gossamer';
@@ -324,7 +324,7 @@ export function createTimelineSVG(
 
     // Create SVG root and expose the dominant publish-stage colour for CSS via a hidden <g> element
     let svg = `<svg width="${size}" height="${size}" viewBox="-${size / 2} -${size / 2} ${size} ${size}" 
-                       xmlns="http://www.w3.org/2000/svg" class="radial-timeline-svg ${readabilityClass}" data-font-scale="${readabilityScale}" data-num-acts="${numActs}" data-segment-count="${numActs}" data-segment-kind="${segmentKind}" data-line-inner-radius="${lineInnerRadius}"
+                       xmlns="http://www.w3.org/2000/svg" class="radial-timeline-svg ${readabilityClass}" data-font-scale="${readabilityScale}" data-num-acts="${numActs}" data-segment-count="${numActs}" data-segment-kind="${segmentKind}" data-subplot-alignment="${usesSequenceAlignment(plugin) ? 'sequence' : 'fill'}" data-line-inner-radius="${lineInnerRadius}"
                        preserveAspectRatio="xMidYMid meet">`;
 
 

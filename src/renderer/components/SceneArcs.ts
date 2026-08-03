@@ -31,12 +31,18 @@ export function sceneArcPath(innerR: number, outerR: number, startAngle: number,
   `;
   }
 
+  // An arc wider than a half turn has to say so, or SVG draws the short way
+  // round and the cell comes out as a crescent on the opposite side of the
+  // wheel. Scenes rarely get that wide, but a Sequence-aligned subplot ring
+  // voids every stretch it is absent from, and those routinely exceed 180°.
+  const largeArcFlag = span > Math.PI ? 1 : 0;
+
   return `
     M ${formatNumber(innerR * Math.cos(startAngle))} ${formatNumber(innerR * Math.sin(startAngle))}
     L ${formatNumber(outerR * Math.cos(startAngle))} ${formatNumber(outerR * Math.sin(startAngle))}
-    A ${formatNumber(outerR)} ${formatNumber(outerR)} 0 0 1 ${formatNumber(outerR * Math.cos(endAngle))} ${formatNumber(outerR * Math.sin(endAngle))}
+    A ${formatNumber(outerR)} ${formatNumber(outerR)} 0 ${largeArcFlag} 1 ${formatNumber(outerR * Math.cos(endAngle))} ${formatNumber(outerR * Math.sin(endAngle))}
     L ${formatNumber(innerR * Math.cos(endAngle))} ${formatNumber(innerR * Math.sin(endAngle))}
-    A ${formatNumber(innerR)} ${formatNumber(innerR)} 0 0 0 ${formatNumber(innerR * Math.cos(startAngle))} ${formatNumber(innerR * Math.sin(startAngle))}
+    A ${formatNumber(innerR)} ${formatNumber(innerR)} 0 ${largeArcFlag} 0 ${formatNumber(innerR * Math.cos(startAngle))} ${formatNumber(innerR * Math.sin(startAngle))}
   `;
 }
 

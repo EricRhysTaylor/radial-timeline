@@ -213,13 +213,18 @@ export function buildArcPath(
     const endCosInner = formatNumber(innerRadius * Math.cos(endAngle));
     const endSinInner = formatNumber(innerRadius * Math.sin(endAngle));
 
-    // Keep large-arc flag at 0 (matches renderer) so geometry remains identical pre/post hover.
+    // Large-arc flag is derived the same way the renderer derives it
+    // (SceneArcs.sceneArcPath), so geometry stays identical pre/post hover —
+    // including for an arc wider than a half turn, which drawn the short way
+    // round would come out as a crescent on the far side of the wheel.
+    const largeArcFlag = Math.abs(endAngle - startAngle) > Math.PI ? 1 : 0;
+
     return `
         M ${startCosInner} ${startSinInner}
         L ${startCosOuter} ${startSinOuter}
-        A ${outerRadiusFmt} ${outerRadiusFmt} 0 0 1 ${endCosOuter} ${endSinOuter}
+        A ${outerRadiusFmt} ${outerRadiusFmt} 0 ${largeArcFlag} 1 ${endCosOuter} ${endSinOuter}
         L ${endCosInner} ${endSinInner}
-        A ${innerRadiusFmt} ${innerRadiusFmt} 0 0 0 ${startCosInner} ${startSinInner}
+        A ${innerRadiusFmt} ${innerRadiusFmt} 0 ${largeArcFlag} 0 ${startCosInner} ${startSinInner}
     `;
 }
 

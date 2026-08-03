@@ -950,13 +950,14 @@ body.rt-modal-open .radial-timeline-container * {
   pointer-events: none;
 }
 
-/* Sequence alignment makes voids the majority of every subplot ring, where the
-   pale empty fill stops reading as absence and starts competing with the
-   scenes — and swallows the act spokes drawn over it, which are near-white on
-   a near-white cell. Recede the fill, and match the stroke to it so the empty
-   stretches merge into one quiet field instead of each gap being outlined.
-   Scenes keep their own white edge, so cell boundaries still read.
-   Chronologue's sub-mode palettes override this from timeline.css. */
+/* Sequence alignment makes voids the majority of every subplot ring, so they
+   step back a shade from the scenes rather than sitting level with them. The
+   stroke matches the fill: at this lightness a white hairline would outline
+   every gap, and the empty stretches should read as one quiet field. Scenes
+   keep their own white edge, so cell boundaries still read. Act spokes are
+   handled separately (timeline.css) — a shade this slight cannot carry a
+   near-white line. Chronologue's sub-mode palettes override this from
+   timeline.css. */
 .radial-timeline-svg[data-subplot-alignment="sequence"] .rt-void-cell {
   fill: var(--rt-color-empty-recessed);
   stroke: var(--rt-color-empty-recessed);

@@ -120,6 +120,15 @@
   opacity: 1;
 }
 
+/* Sequence alignment: the spoke crosses pale void far more often than it
+   crosses a scene, and a near-white line on a near-white cell disappears —
+   which is why the act boundaries looked absent in this mode. The band is
+   fully covered by cells across its whole depth, so a dark spoke reads
+   against both the empty stretches and the scene colours. */
+.radial-timeline-svg[data-subplot-alignment="sequence"] .act-border {
+  stroke: var(--background-primary);
+}
+
 /* All spokes: soften on hover and shift modes */
 .radial-timeline-svg.scene-hover .act-border,
 .radial-timeline-svg.scene-hover .rt-month-spoke-line {

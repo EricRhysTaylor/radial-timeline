@@ -42,9 +42,9 @@
   /* becomes gray when transparent added */
   --rt-color-empty-selected: #EFEFEF;
   /* Slightly darker gray for selected empty cells */
-  --rt-color-empty-recessed: #2E2E2E;
-  /* Sequence alignment: empty cells are most of a subplot ring, so they sit
-     back instead of forward — and a near-white act spoke reads across them */
+  --rt-color-empty-recessed: #E3E3E3;
+  /* Sequence alignment: empty cells are most of a subplot ring, so they step
+     back from the scenes — a shade, not a different colour */
 
   /* Chronologue sub-mode overlay hues — the same colours the in-view Runtime
      and Alt (planetary/alien) overlays and keycaps already use, promoted from

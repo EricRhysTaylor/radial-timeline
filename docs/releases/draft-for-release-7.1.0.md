@@ -4,7 +4,7 @@ Two structural features for how a manuscript is organized and seen: first-class 
 
 ### Parts
 
-Parts are now explicit markers you place yourself — the same workflow as chapters. **Right-click a scene → Set part…** to open a part at that scene, give it an optional title, or clear it; or set the scene's `Part:` field directly. Parts carry optional titles and epigraphs into the PDF layouts that print them, **P** placards mark part boundaries on the Narrative ring, and `Act` returns to being purely narrative structure — publishing divisions and story analysis no longer share one field. Thanks to **@therisingtithes** for the request ([#30](https://github.com/EricRhysTaylor/Radial-Timeline/issues/30)).
+Parts are now explicit markers you place yourself — the same workflow as chapters. **Right-click a scene → Set part**. Give it an optional title, or delete the Part via the same panel. Parts work with the PDF Template to carry optional titles and epigraphs. **P** placards mark part boundaries on the Narrative ring, and `Act` returns to being purely narrative structure. Thanks to **@therisingtithes** for the request ([#30](https://github.com/EricRhysTaylor/Radial-Timeline/issues/30)).
 
 ### Sequence
 

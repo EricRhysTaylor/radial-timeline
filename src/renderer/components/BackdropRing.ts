@@ -289,14 +289,12 @@ export function renderBackdropRing({
         </pattern>
     </defs>`;
 
-    // Background + borders per lane.
+    // Lane backgrounds sit behind the segments. The lane borders are drawn
+    // last instead (see below) so segments can fill their lane edge to edge
+    // without a dead band between them and the neighbouring ring.
     for (let lane = 0; lane < layout.laneCount; lane++) {
         const laneCenter = availableRadius - lane * BACKDROP_RING_HEIGHT;
         svg += `<circle cx="0" cy="0" r="${formatNumber(laneCenter)}" class="rt-backdrop-ring-background" stroke-width="${BACKDROP_RING_HEIGHT}" pointer-events="none" fill="none" />`;
-        const innerBorderR = laneCenter - (BACKDROP_RING_HEIGHT / 2);
-        const outerBorderR = laneCenter + (BACKDROP_RING_HEIGHT / 2);
-        svg += `<circle cx="0" cy="0" r="${formatNumber(innerBorderR)}" class="rt-backdrop-border" fill="none" />`;
-        svg += `<circle cx="0" cy="0" r="${formatNumber(outerBorderR)}" class="rt-backdrop-border" fill="none" />`;
     }
 
     // One segment per backdrop, drawn at its lane's radius.
@@ -332,8 +330,10 @@ export function renderBackdropRing({
         svg += `<defs><path id="${pathId}" d="${td}" /></defs>`;
 
         // Filled box geometry for the segment, centered on the lane radius.
-        const segmentHeight = BACKDROP_RING_HEIGHT - 2;
-        const halfHeight = segmentHeight / 2;
+        // Full lane height: an inset here left an unhittable band between the
+        // segment and the ring beside it, so crossing into the backdrop lost
+        // the hover for a frame and flickered.
+        const halfHeight = BACKDROP_RING_HEIGHT / 2;
         const boxInnerRadius = laneCenter - halfHeight;
         const boxOuterRadius = laneCenter + halfHeight;
         const boxLargeArcFlag = largeArcFlag;
@@ -385,6 +385,18 @@ export function renderBackdropRing({
     // a single overlay per region suffices — no stacking.
     svg += renderOverlapOverlays(layout, availableRadius);
 
+    // Lane borders on top of the segments, so they read as the ring's edge at
+    // full width rather than being half-covered. pointer-events none: a
+    // decorative hairline that can take the hover is the same flicker by
+    // another route.
+    for (let lane = 0; lane < layout.laneCount; lane++) {
+        const laneCenter = availableRadius - lane * BACKDROP_RING_HEIGHT;
+        const innerBorderR = laneCenter - (BACKDROP_RING_HEIGHT / 2);
+        const outerBorderR = laneCenter + (BACKDROP_RING_HEIGHT / 2);
+        svg += `<circle cx="0" cy="0" r="${formatNumber(innerBorderR)}" class="rt-backdrop-border" pointer-events="none" fill="none" />`;
+        svg += `<circle cx="0" cy="0" r="${formatNumber(outerBorderR)}" class="rt-backdrop-border" pointer-events="none" fill="none" />`;
+    }
+
     svg += `</g>`;
     return svg;
 }
@@ -419,8 +431,8 @@ function renderOverlapOverlays(
         events.sort((a, b) => a.angle - b.angle || a.delta - b.delta);
 
         const laneCenter = availableRadius - laneIndex * BACKDROP_RING_HEIGHT;
-        const segmentHeight = BACKDROP_RING_HEIGHT - 2;
-        const halfHeight = segmentHeight / 2;
+        // Matches the segment box it overlays.
+        const halfHeight = BACKDROP_RING_HEIGHT / 2;
         const innerR = laneCenter - halfHeight;
         const outerR = laneCenter + halfHeight;
 

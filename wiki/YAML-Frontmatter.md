@@ -8,6 +8,7 @@ Class: Scene              # Type: Scene
 Act: 1                    # Which act (1-3)
 When:                     # Story chronology date (YYYY-MM-DD 12:34pm)
 Duration:                 # How long the scene lasts (e.g., "45 seconds", "45s", "45sec", "2 hours", "3days")
+Part:                     # Optional part marker — `true` for numeral only, or a title
 Chapter:                  # Optional chapter marker for publishing and perimeter placards
 Synopsis:                 # Concise present-tense snapshot for hovers/outlines (1-3 sentences)
 Summary:                  # Extended scene expansion (events, emotional turns, subtext, outcome)

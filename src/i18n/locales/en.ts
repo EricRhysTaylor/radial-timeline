@@ -1802,8 +1802,8 @@ export const en: TranslationKeys = {
                 desc: 'When hovering over a scene, automatically expand it if the title text is clipped. Disable this if you prefer to quickly slide through scenes and read titles from the synopsis instead.',
             },
             chapterMarkers: {
-                name: 'Show chapter markers',
-                desc: 'Display chapter boundaries as small double ticks on the Narrative all-scenes ring.',
+                name: 'Show part and chapter markers',
+                desc: 'Display part and chapter boundaries as small badges on the Narrative all-scenes ring. A scene that opens both shows a combined marker.',
             },
             readability: {
                 name: 'Readability size',

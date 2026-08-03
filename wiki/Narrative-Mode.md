@@ -11,7 +11,7 @@ Narrative Mode is your primary manuscript-order workspace. It displays all scene
 *   **Structure**: Scenes are distributed across Act 1..Act N (based on your **Settings → Core → Acts → Act count**).
 *   **Book or Saga scope**: Switch between one active book and a combined Saga view.
 *   **Subplot Colors**: The outer ring segments are colored by their subplot. This lets you quickly visualize which plot threads are dominant in each section of the book.
-*   **Publishing markers**: Optional outer-ring placards can show chapter starts and part boundaries from your active novel PDF layout.
+*   **Publishing markers**: Optional outer-ring placards show the part and chapter markers you have placed on scenes.
 *   **Story Beats**: Displays story beats (like Save the Cat) along the timeline, helping you pace your narrative structure.
 *   **Interactive Reordering**: You can drag scenes on the outer ring to reorder them. See [Reorder Scenes](How-to#reorder-scenes) for details.
 *   **Scene right-click menu**: Add a scene after the current one, set a chapter marker, change Status, change Publish Stage, or flag it for Pulse — see below.
@@ -57,10 +57,14 @@ The title-bar book selector controls which manuscript the timeline shows.
 Narrative Mode can show publishing-aware placards on the outside of the scene ring:
 
 *   **C** — a `Chapter:` field starts a chapter at that scene.
-*   **P** — the selected PDF layout prints a Part opener at that act boundary.
-*   **P/C** — a Part and Chapter begin at the same boundary.
+*   **P** — a `Part:` field starts a part at that scene.
+*   **P/C** — a scene that opens both.
 
-These placards reflect the novel PDF layout selected in the Manuscript Export panel. For example, a layout that prints chapter openers can show **C** markers, while Signature can also show **P** markers for Parts. Changing the selected export layout updates the timeline markers after the layout is saved.
+Both are author-placed markers on scene notes, so a placard means *you* marked that scene, not that the plugin inferred something. Set them from the scene right-click menu (**Set part…**, **Set chapter…**) or by editing the field directly.
+
+Placards appear whether or not the selected PDF layout prints them — the marker is your structure, and the layout only decides what reaches the page. Hovering a **P** tells you what the current layout will do with it, including when that layout prints no Parts at all.
+
+Turn placards on with **Settings → Core → Show part and chapter markers**.
 
 <div style="text-align: center; margin: 20px 0;">
   <img src="images/feature-parts-chapters.png" alt="Narrative Mode chapter and part markers around the perimeter" style="width: 560px; max-width: 100%; border-radius: 8px;" />

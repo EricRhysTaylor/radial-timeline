@@ -11,6 +11,7 @@ import { isRuntimeModeActive } from '../view/interactions/ChronologueShiftContro
 import { DEFAULT_BOOK_TITLE, getActiveBook, getActiveBookTitle } from '../utils/books';
 import { getActiveRecentStructuralMoves } from '../utils/recentStructuralMoves';
 import { readSharedChapterTitle } from '../utils/timelineChapters';
+import { readPartMarker } from '../utils/timelineParts';
 
 /**
  * Types of changes that can trigger renders
@@ -135,6 +136,11 @@ export function createSnapshot(
                 s.Context || '',
                 (s as LegacyBeatDescription).Description || '', // legacy fallback
                 readSharedChapterTitle(s.rawFrontmatter) || s.Chapter || '',
+                // Part marker drives the P / P-C placards. Without it in the
+                // signature a `Part:` edit hashes identically and the renderer
+                // skips the redraw, so the badge never appears until some
+                // unrelated change forces one.
+                partMarkerSignature(s.rawFrontmatter),
                 stringifyPovForHash(s.pov),
                 // Range field (rendered in Gossamer mode)
                 s.Range || '',
@@ -411,6 +417,18 @@ function setsEqual<T>(a: Set<T>, b: Set<T>): boolean {
         if (!b.has(item)) return false;
     }
     return true;
+}
+
+/**
+ * Signature fragment for a scene's Part marker.
+ *
+ * Distinguishes absent, untitled, and each distinct title, so switching a
+ * marker between "numeral only" and a name is a change the renderer sees.
+ */
+function partMarkerSignature(frontmatter: Record<string, unknown> | undefined): string {
+    const marker = readPartMarker(frontmatter);
+    if (!marker) return '';
+    return marker.titled ? `part:${marker.title ?? ''}` : 'part:untitled';
 }
 
 function stringifyPovForHash(pov: TimelineItem['pov']): string {

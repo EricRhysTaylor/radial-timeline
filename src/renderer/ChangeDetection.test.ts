@@ -128,6 +128,63 @@ describe('detectChanges', () => {
     expect(result.updateStrategy).toBe('full');
   });
 
+  it('forces a full render when a scene Part marker changes', () => {
+    // Without Part in the signature the hash is identical, the renderer skips
+    // the redraw, and the badge never appears until something unrelated
+    // forces one — which reads as "setting a part did nothing".
+    const snapshot = (frontmatter: Record<string, unknown>) => createSnapshot(
+      [{ path: 'scene.md', title: 'Scene', rawFrontmatter: frontmatter } as never],
+      new Set(),
+      false,
+      new Set(),
+      'narrative',
+      {} as never,
+      null
+    );
+
+    const base = snapshot({});
+    const withPart = snapshot({ Part: true });
+
+    const result = detectChanges(base, withPart);
+
+    expect(base.sceneHash).not.toBe(withPart.sceneHash);
+    expect(result.changeTypes.has(ChangeType.SCENE_DATA)).toBe(true);
+    expect(result.updateStrategy).toBe('full');
+  });
+
+  it('distinguishes an untitled Part from a titled one, and from a retitle', () => {
+    const snapshot = (frontmatter: Record<string, unknown>) => createSnapshot(
+      [{ path: 'scene.md', title: 'Scene', rawFrontmatter: frontmatter } as never],
+      new Set(),
+      false,
+      new Set(),
+      'narrative',
+      {} as never,
+      null
+    );
+
+    const untitled = snapshot({ Part: true });
+    const titled = snapshot({ Part: 'The Crossing' });
+    const retitled = snapshot({ Part: 'The Gathering' });
+
+    expect(untitled.sceneHash).not.toBe(titled.sceneHash);
+    expect(titled.sceneHash).not.toBe(retitled.sceneHash);
+  });
+
+  it('does not redraw for an empty Part value, which is not a marker', () => {
+    const snapshot = (frontmatter: Record<string, unknown>) => createSnapshot(
+      [{ path: 'scene.md', title: 'Scene', rawFrontmatter: frontmatter } as never],
+      new Set(),
+      false,
+      new Set(),
+      'narrative',
+      {} as never,
+      null
+    );
+
+    expect(snapshot({}).sceneHash).toBe(snapshot({ Part: '' }).sceneHash);
+  });
+
   it('forces a full render when Gossamer run data changes so the run list refreshes', () => {
     const prev = makeSnapshot({
       currentMode: 'gossamer',

@@ -6,6 +6,7 @@
 
 import { TFile } from 'obsidian';
 import { setupChronologueShiftController, isShiftModeActive, isAlienModeActive, isRuntimeModeActive } from '../interactions/ChronologueShiftController';
+import { ChronologueDragController, wasRecentlyHandledByChronologueDrag } from '../interactions/ChronologueDragController';
 import { openOrRevealFile } from '../../utils/fileUtils';
 import { handleDominantSubplotSelection } from '../interactions/DominantSubplotHandler';
 import { SceneInteractionManager } from '../interactions/SceneInteractionManager';
@@ -27,6 +28,9 @@ export function setupChronologueMode(view: RadialTimelineView, svg: SVGSVGElemen
     // Setup shift mode controller - pass view directly like yesterday
     setupChronologueShiftController(view, svg);
 
+    // Drag-to-re-date on the outer ring. Writes only When — never renumbers.
+    setupChronologueDrag(view, svg);
+
     // Standard scene hover interactions (will check shift mode internally)
     setupSceneHoverInteractions(view, svg);
 
@@ -34,6 +38,21 @@ export function setupChronologueMode(view: RadialTimelineView, svg: SVGSVGElemen
     setupSceneClickInteractions(view, svg);
 
     setupSceneContextMenu(view, svg);
+}
+
+/**
+ * Setup drag-to-re-date on the Chronologue outer ring.
+ *
+ * Saga scope spans multiple books and has no single chronology to place into,
+ * so it is excluded — matching the narrative drag guard.
+ */
+function setupChronologueDrag(view: RadialTimelineView, svg: SVGSVGElement): void {
+    if (view.plugin.settings.timelineScope === 'saga') return;
+
+    const controller = new ChronologueDragController(view, svg, {
+        onRefresh: () => view.refreshTimeline()
+    });
+    controller.attach();
 }
 
 /**
@@ -359,6 +378,12 @@ function setupSceneClickInteractions(view: RadialTimelineView, svg: SVGSVGElemen
     view.registerDomEvent(svg as unknown as HTMLElement, 'click', (e: MouseEvent) => { void (async () => {
         const g = (e.target as Element).closest('.rt-scene-group[data-item-type="Scene"], .rt-scene-group[data-item-type="Backdrop"]');
         if (!g) return;
+
+        // A drag just ended on this scene — don't also open the file.
+        if (wasRecentlyHandledByChronologueDrag()) {
+            e.stopPropagation();
+            return;
+        }
 
         // When shift/alt/runtime mode is active, delegate to shift controller
         if (isShiftModeActive() || isAlienModeActive() || isRuntimeModeActive()) {

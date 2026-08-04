@@ -134,6 +134,29 @@ export function sortScenes(
     return sortScenesChronologically(scenes);
 }
 
+/**
+ * The scene sequence the Chronologue ring renders: beats and backdrops removed,
+ * one entry per scene file, sorted chronologically.
+ *
+ * SINGLE SOURCE OF TRUTH for the Chronologue outer-ring order. Both the label
+ * renderer and the drag controller read it, so a dropped scene resolves its
+ * neighbours from exactly the sequence the author is looking at.
+ */
+export function buildChronologueSceneSequence(scenes: TimelineItem[]): TimelineItem[] {
+    const seenKeys = new Set<string>();
+    const combined: TimelineItem[] = [];
+
+    scenes.forEach(scene => {
+        if (isBeatNote(scene) || scene.itemType === 'Backdrop') return;
+        const key = scene.path || `${scene.title || ''}::${String(scene.when || '')}`; // SAFE: pathless items are deduped on their rendered identity instead
+        if (seenKeys.has(key)) return;
+        seenKeys.add(key);
+        combined.push(scene);
+    });
+
+    return sortScenes(combined, true, true);
+}
+
 export interface PluginRendererFacade {
     settings: {
         publishStageColors: Record<string, string>;

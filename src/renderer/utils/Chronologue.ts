@@ -3,7 +3,7 @@
  */
 
 import type { TimelineItem } from '../../types';
-import { isBeatNote, sortScenes, type PluginRendererFacade } from '../../utils/sceneHelpers';
+import { buildChronologueSceneSequence, type PluginRendererFacade } from '../../utils/sceneHelpers';
 import { calculateTimeSpan, generateChronologicalTicks, durationSelectionToMs, parseDurationDetail } from '../../utils/date';
 import { escapeXml, formatNumber } from '../../utils/svg';
 import { startPerfSegment } from '../utils/Performance';
@@ -41,23 +41,7 @@ export function buildChronologueOuterLabels(
     const startAngle = -Math.PI / 2;
     const endAngle = (3 * Math.PI) / 2;
 
-    const seenPaths = new Set<string>();
-    const combined: TimelineItem[] = [];
-    scenes.forEach(s => {
-        if (isBeatNote(s) || s.itemType === 'Backdrop') {
-            return;
-        }
-
-        const key = s.path || `${s.title || ''}::${String(s.when || '')}`;
-        if (!seenPaths.has(key)) {
-            seenPaths.add(key);
-            combined.push(s);
-        }
-    });
-
-    const sortByWhen = true;
-    const forceChronological = true;
-    const sortedScenes = sortScenes(combined, sortByWhen, forceChronological);
+    const sortedScenes = buildChronologueSceneSequence(scenes);
 
     const validDates = sortedScenes
         .map(s => s.when)

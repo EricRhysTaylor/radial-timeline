@@ -16,24 +16,11 @@ import type {
 } from './types';
 import { getEffectiveWhen } from './types';
 import { appendWhenChanges, type WhenChangeRecord } from './whenChangeLog';
+import { formatWhenForYaml } from '../utils/date';
 
 // ============================================================================
 // Date Formatting
 // ============================================================================
-
-/**
- * Format a Date for YAML frontmatter.
- * Uses format: YYYY-MM-DD HH:MM
- */
-function formatWhenForYaml(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hour = String(date.getHours()).padStart(2, '0');
-    const minute = String(date.getMinutes()).padStart(2, '0');
-    
-    return `${year}-${month}-${day} ${hour}:${minute}`;
-}
 
 /**
  * Format duration in milliseconds to a human-readable string.
@@ -92,7 +79,7 @@ export function prepareUpdates(session: SessionDiffModel): FrontmatterUpdate[] {
 
 export interface WriteOptions {
     /** Tool attribution recorded in the When change log (default 'scaffold') */
-    logTool?: 'scaffold' | 'audit';
+    logTool?: WhenChangeRecord['tool'];
 
     /** Progress callback */
     onProgress?: (current: number, total: number, fileName: string) => void;
@@ -166,7 +153,7 @@ export async function writeFrontmatterUpdates(
                 prev: previousWhen,
                 next: formatWhenForYaml(update.when),
                 source: update.whenSource,
-                tool: opts.logTool ?? 'scaffold' // SAFE: only the audit modal passes 'audit'; every other caller is the scaffold path, so the change log records it accurately
+                tool: opts.logTool ?? 'scaffold' // SAFE: the audit modal and Chronologue drag pass their own tool; every other caller is the scaffold path, so the change log records it accurately
             });
         } catch (error) {
             result.failed++;

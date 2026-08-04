@@ -241,6 +241,25 @@ export function parseWhenField(when: string): Date | null {
     return null;
 }
 
+/**
+ * Format a Date into the canonical `When` frontmatter form.
+ * SINGLE SOURCE OF TRUTH for When serialization — the inverse of parseWhenField.
+ *
+ * Precision is MINUTES: seconds and milliseconds are discarded. Callers that
+ * compare a candidate date against ordering bounds must compare the round-tripped
+ * value (`parseWhenField(formatWhenForYaml(d))`), not the input Date — a value
+ * 30 seconds inside a bound formats to a value exactly ON it.
+ */
+export function formatWhenForYaml(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hour = String(date.getHours()).padStart(2, '0');
+    const minute = String(date.getMinutes()).padStart(2, '0');
+
+    return `${year}-${month}-${day} ${hour}:${minute}`;
+}
+
 export function parseDateRangeInput(value: string): { start: Date | null; end: Date | null } | null {
     if (!value || typeof value !== 'string') return null;
     const trimmed = value.trim();

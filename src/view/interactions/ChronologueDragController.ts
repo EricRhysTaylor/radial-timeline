@@ -302,11 +302,21 @@ export class ChronologueDragController {
         }
 
         try {
-            await writeFrontmatterUpdates(
+            // writeFrontmatterUpdates catches per-file errors and reports them in
+            // its result — it does not throw. Reporting success without reading
+            // that result would tell the author the scene moved when When is
+            // unchanged, and the timeline refresh below would silently disagree.
+            const writeResult = await writeFrontmatterUpdates(
                 this.view.plugin.app,
                 [{ file, when: placement.when, whenSource: 'manual' }],
                 { logTool: 'chronologue' }
             );
+            if (writeResult.success === 0) {
+                const detail = writeResult.errors[0]?.error ?? 'the note could not be updated'; // SAFE: a zero-success write with no recorded error still needs author-facing wording
+                console.error('Chronologue placement write failed:', writeResult.errors);
+                await modal.finishWithDismiss(`Could not write the When field: ${detail}`, true);
+                return;
+            }
             new Notice(`${draggedScene.title || file.basename} → ${placement.storedWhen}`, 2000); // SAFE: filename identity again, same rule as the modal title
             modal.updateProgress('Refreshing timeline...');
             // Let Obsidian's metadata cache catch up before the re-render reads it.

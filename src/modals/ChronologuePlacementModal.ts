@@ -140,14 +140,31 @@ export class ChronologuePlacementModal extends ErtModal {
         if (!body) return;
         body.empty();
 
-        if (this.options.length > 1) this.renderSeamChoice(body);
+        this.renderSeamSection(body);
         this.renderContextStrip(body);
         this.renderCandidates(body);
         this.renderCustomRow(body);
         this.syncPlaceButton();
     }
 
-    private renderSeamChoice(container: HTMLElement): void {
+    /**
+     * The seam is the top of the circle, where the closing scene's trailing edge
+     * and the opening scene's leading edge meet. A drop there is ambiguous, so
+     * the author picks. When only one reading is possible — dragging the opening
+     * scene itself, where "before the opening scene" is where it already sits —
+     * the single reading is stated rather than silently applied.
+     */
+    private renderSeamSection(container: HTMLElement): void {
+        const isSeam = this.options.some(option => option.id !== 'default');
+        if (!isSeam) return;
+
+        if (this.options.length === 1) {
+            container
+                .createDiv({ cls: 'ert-place-section' })
+                .createDiv({ cls: 'ert-place-seam-note', text: `Placing: ${this.options[0].label.toLowerCase()}.` });
+            return;
+        }
+
         const section = container.createDiv({ cls: 'ert-place-section' });
         section.createDiv({
             cls: 'ert-drag-confirm-section-title',

@@ -94,6 +94,24 @@ describe('placement sort stability', () => {
         expect(order).toEqual(['Delta', 'Charlie', 'Bravo', 'Echo', 'Alpha']);
     });
 
+    it('moves the opening scene to the very end', () => {
+        // Delta is chronologically first. Its only route to the seam is a drop
+        // on Bravo (the second scene); after-last is the one viable reading.
+        const sequence = buildChronologueSceneSequence(SCENES);
+        const dragged = SCENES.find(item => item.title === 'Delta')!;
+        const resolution = resolvePlacementNeighbors(sequence, dragged.path!, 'Scenes/02 Bravo.md', 'after-last');
+        expect(resolution.kind).toBe('ok');
+        if (resolution.kind !== 'ok') throw new Error('unreachable');
+
+        const candidates = generateCandidates(resolution.interval, dragged.when ?? null, null);
+        expect(candidates.length).toBeGreaterThan(0);
+        candidates.forEach(candidate => {
+            expect(sequenceAfterPlacement(dragged, candidate.storedWhen)).toEqual([
+                'Bravo', 'Echo', 'Alpha', 'Charlie', 'Delta'
+            ]);
+        });
+    });
+
     it('holds when the manuscript tie-break would otherwise win', () => {
         // Bravo (manuscript #2) placed before Delta (manuscript #4). If the
         // written value ever equalled Delta's, the sort would order them by

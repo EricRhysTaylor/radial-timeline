@@ -59,17 +59,26 @@ export function resolvePlacementNeighbors(
     const targetIndex = remaining.findIndex(scene => scene.path === targetPath);
     if (targetIndex === -1) return { kind: 'not_found' };
 
-    // Already sitting immediately before the target: nothing to place.
-    if (sequence[originalIndex + 1]?.path === targetPath) return { kind: 'noop' };
-
     const openSpanMs = medianGapMs(remaining);
 
+    // The seam is tested BEFORE the interior no-op. Dropping the first scene on
+    // the second one reads as an interior no-op, but it is the only gesture that
+    // can reach the seam for that scene — swallowing it as a no-op would leave
+    // the first scene with no way to reach the end of the chronology.
     if (targetIndex === 0) {
         if (seamChoice === null) return { kind: 'seam' };
-        return seamChoice === 'before-first'
-            ? buildInterval(null, remaining[0], openSpanMs)
-            : buildInterval(remaining[remaining.length - 1], null, openSpanMs);
+        if (seamChoice === 'before-first') {
+            // Already first: there is nothing in front of it to move ahead of.
+            if (originalIndex === 0) return { kind: 'noop' };
+            return buildInterval(null, remaining[0], openSpanMs);
+        }
+        // Already last: it is where "after the closing scene" would put it.
+        if (originalIndex === sequence.length - 1) return { kind: 'noop' };
+        return buildInterval(remaining[remaining.length - 1], null, openSpanMs);
     }
+
+    // Already sitting immediately before the target: nothing to place.
+    if (sequence[originalIndex + 1]?.path === targetPath) return { kind: 'noop' };
 
     return buildInterval(remaining[targetIndex - 1], remaining[targetIndex], openSpanMs);
 }

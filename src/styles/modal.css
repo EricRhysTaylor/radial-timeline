@@ -3219,3 +3219,9 @@
 .ert-place-modal .ert-modal-actions .is-hidden-action {
   display: none;
 }
+
+.ert-place-seam-note {
+  font-size: 0.86em;
+  color: var(--text-muted);
+  padding: 0 var(--ert-gap-2xs);
+}

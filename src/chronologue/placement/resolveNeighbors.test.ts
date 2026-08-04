@@ -51,7 +51,39 @@ describe('resolvePlacementNeighbors', () => {
     });
 
     it('reports a no-op when the scene is already immediately before the target', () => {
-        expect(resolvePlacementNeighbors(SEQUENCE, 'Scenes/A.md', 'Scenes/B.md')).toEqual({ kind: 'noop' });
+        expect(resolvePlacementNeighbors(SEQUENCE, 'Scenes/B.md', 'Scenes/C.md')).toEqual({ kind: 'noop' });
+    });
+
+    // The first scene's only route to the seam is a drop on the second scene.
+    // Reading that as an interior no-op would strand it at the start forever.
+    describe('the opening scene reaching the end', () => {
+        it('offers the seam when the first scene is dropped on the second', () => {
+            expect(resolvePlacementNeighbors(SEQUENCE, 'Scenes/A.md', 'Scenes/B.md')).toEqual({ kind: 'seam' });
+        });
+
+        it('resolves after-last for the first scene', () => {
+            const result = resolvePlacementNeighbors(SEQUENCE, 'Scenes/A.md', 'Scenes/B.md', 'after-last');
+            expect(result.kind).toBe('ok');
+            if (result.kind !== 'ok') return;
+            expect(result.interval.lowerNeighbor?.title).toBe('D');
+            expect(result.interval.upperNeighbor).toBeNull();
+        });
+
+        it('rejects before-first for the first scene as a no-op', () => {
+            expect(resolvePlacementNeighbors(SEQUENCE, 'Scenes/A.md', 'Scenes/B.md', 'before-first'))
+                .toEqual({ kind: 'noop' });
+        });
+
+        it('leaves the opening scene exactly one viable seam reading', () => {
+            const { beforeFirst, afterLast } = resolveSeamIntervals(SEQUENCE, 'Scenes/A.md');
+            expect(beforeFirst.kind).toBe('noop');
+            expect(afterLast.kind).toBe('ok');
+        });
+    });
+
+    it('rejects after-last for the closing scene as a no-op', () => {
+        expect(resolvePlacementNeighbors(SEQUENCE, 'Scenes/D.md', 'Scenes/A.md', 'after-last'))
+            .toEqual({ kind: 'noop' });
     });
 
     it('reports a no-op when dropped on itself', () => {

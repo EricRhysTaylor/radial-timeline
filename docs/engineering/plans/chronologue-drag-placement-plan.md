@@ -6,9 +6,9 @@ on scene **B** means *place immediately before B*. A modal offers candidate time
 resulting slot — deterministic always, AI-proposed later, custom entry any time — and writes the
 one the author picks.
 
-**Status:** Phase 1 in progress. Phase 2 (AI) not started.
+**Status:** Phase 1 shipped (`30cc83fa`, hardened in the follow-up below). Phase 2 (AI) not started.
 
-**Verified against** `00263afc`.
+**Verified against** `30cc83fa`.
 
 ---
 
@@ -117,6 +117,16 @@ old slot, and the bounds come out wrong.
 
 One-sided bounds (before-first / after-last) get their open end from the median inter-scene gap.
 
+**The seam is tested before the interior no-op.** Dropping the opening scene on
+the second scene reads as an interior no-op — it is already immediately before
+it — but that is the *only* gesture that can reach the seam for that scene.
+Swallowing it would strand the opening scene at the start of the chronology with
+no way to move it to the end. Each seam side is then no-op-checked on its own:
+"before the opening scene" is a no-op for the scene that already opens, and
+"after the closing scene" is a no-op for the scene that already closes. When only
+one reading survives, the modal states which one it took rather than applying it
+silently.
+
 ---
 
 ## 5. The validator
@@ -193,6 +203,11 @@ author confirms
 `whenSource: 'manual'` matters: `buildScaffoldStampMap` (`whenChangeLog.ts:94`) treats machine
 sources as ripple-movable, and a date the author read, compared and chose is authored.
 
+`writeFrontmatterUpdates` **catches per-file errors and reports them in its result rather than
+throwing** (`frontmatterWriter.ts:171`). The caller must read `success` / `errors` — a `try/catch`
+alone reports a failed write as a successful placement while `When` is unchanged, and the refresh
+that follows silently disagrees with the notice.
+
 Requires widening two closed unions: `WhenChangeRecord['tool']` (`whenChangeLog.ts:35`) and
 `WriteOptions.logTool` (`frontmatterWriter.ts:95`) to include `'chronologue'`.
 
@@ -240,6 +255,10 @@ rows when they arrive.
 - `generateCandidates`: wide (weeks), medium (days) and tight (minutes) intervals; keep-the-time
   when the current time-of-day does not fit; empty result when nothing fits.
 - `resolvePlacementNeighbors`: dragged scene excluded from the ordering; backward drag; seam;
-  undated neighbour; self-adjacent no-op.
+  undated neighbour; self-adjacent no-op; **the opening scene reaching the seam via a drop on the
+  second scene, with before-first rejected as a no-op**.
 - Sort stability: after a write, `sortScenesChronologically` puts the scene in the slot the modal
-  promised.
+  promised — including the opening scene moved to the very end.
+
+Not covered by tests: the pointer gesture itself and the write result branch, both of which need a
+running Obsidian instance.

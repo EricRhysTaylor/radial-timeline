@@ -15,6 +15,8 @@
  * Nothing outside SearchService mutates this. Readers treat it as immutable.
  */
 
+import type { PersistedTimelineSearchOptions } from '../types/settings';
+
 /**
  * Where a search looks.
  *
@@ -118,6 +120,54 @@ const SEARCH_OPTION_KEYS: Record<keyof TimelineSearchOptions, true> = {
 export function searchOptionsSignature(options: TimelineSearchOptions): string {
     const keys = Object.keys(SEARCH_OPTION_KEYS) as Array<keyof TimelineSearchOptions>;
     return keys.map(key => (options[key] ? '1' : '0')).join('');
+}
+
+/** True when at least one scope is selected — otherwise a search has nowhere to look. */
+export function hasSearchScope(options: TimelineSearchOptions): boolean {
+    return options.timelineFields || options.body;
+}
+
+export const TIMELINE_SEARCH_SETTINGS_VERSION = 1;
+
+/**
+ * Read persisted scope options, falling back to defaults for anything absent,
+ * malformed, or written by a schema this build does not know.
+ *
+ * Deliberately strict about types rather than coercing: a settings file that
+ * has been hand-edited or written by a future build should produce known-good
+ * defaults, not a half-applied mixture.
+ */
+export function readTimelineSearchSettings(
+    persisted: PersistedTimelineSearchOptions | undefined
+): TimelineSearchOptions {
+    if (!persisted || typeof persisted !== 'object') return { ...DEFAULT_SEARCH_OPTIONS };
+    if (persisted.schemaVersion !== TIMELINE_SEARCH_SETTINGS_VERSION) return { ...DEFAULT_SEARCH_OPTIONS };
+
+    const readFlag = (value: unknown, fallback: boolean): boolean =>
+        typeof value === 'boolean' ? value : fallback;
+
+    const options: TimelineSearchOptions = {
+        timelineFields: readFlag(persisted.timelineFields, DEFAULT_SEARCH_OPTIONS.timelineFields),
+        body: readFlag(persisted.body, DEFAULT_SEARCH_OPTIONS.body),
+        llmAssist: readFlag(persisted.llmAssist, DEFAULT_SEARCH_OPTIONS.llmAssist)
+    };
+
+    // A stored state with every scope off would leave the author with a search
+    // box that silently matches nothing and no obvious way back.
+    if (!hasSearchScope(options)) options.timelineFields = true;
+
+    return options;
+}
+
+export function writeTimelineSearchSettings(
+    options: TimelineSearchOptions
+): PersistedTimelineSearchOptions {
+    return {
+        schemaVersion: TIMELINE_SEARCH_SETTINGS_VERSION,
+        timelineFields: options.timelineFields,
+        body: options.body,
+        llmAssist: options.llmAssist
+    };
 }
 
 /**

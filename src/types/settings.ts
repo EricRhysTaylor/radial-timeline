@@ -481,6 +481,19 @@ export interface LlmTimingStats {
     sampleCount: number;
 }
 
+/**
+ * Persisted form of the timeline-search scope options.
+ *
+ * A view preference, deliberately stored in plugin settings and never in scene
+ * frontmatter — scene YAML belongs to the author.
+ */
+export interface PersistedTimelineSearchOptions {
+    schemaVersion: 1;
+    timelineFields: boolean;
+    body: boolean;
+    llmAssist: boolean;
+}
+
 export interface HoverMetadataField {
     key: string;           // Frontmatter key
     label: string;         // Display label
@@ -1146,6 +1159,13 @@ export interface RadialTimelineSettings {
     showBackdropRing?: boolean;
     chronologueBackdropMicroRings?: ChronologueBackdropMicroRing[];
     hoverMetadataFields?: HoverMetadataField[];
+
+    /**
+     * Persisted timeline-search scope options. Schema-stamped so a future shape
+     * change is detectable rather than silently misread; anything malformed
+     * falls back to defaults on load (see `readTimelineSearchSettings`).
+     */
+    timelineSearch?: PersistedTimelineSearchOptions;
 
     enableBeatYamlEditor?: boolean;
     // Per-system beat YAML + hover configs (keyed by system name or custom:<id>)

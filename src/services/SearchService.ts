@@ -7,7 +7,7 @@ import { isRenderedOnTimeline } from '../utils/sceneHelpers';
 import { frontmatterValueToText } from '../utils/frontmatter';
 import type { RadialTimelineSettings } from '../types/settings';
 import type { TimelineItem } from '../types';
-import { mergeSearchHit, type TimelineSearchHit } from './searchState';
+import { hasSearchScope, mergeSearchHit, type TimelineSearchHit } from './searchState';
 
 export interface TimelineSearchMatchOptions {
     includeCurrentSceneAnalysis?: boolean;
@@ -153,6 +153,14 @@ export class SearchService {
         state.status = 'running';
         state.error = undefined;
 
+        // No scope selected means the search has nowhere to look. Commit an
+        // empty result set rather than quietly matching on a scope the author
+        // turned off — the panel's status line explains the empty result.
+        if (!hasSearchScope(state.options)) {
+            this.commit(trimmed, new Map());
+            return;
+        }
+
         void this.plugin.getTimelineSceneData()
             .then(scenes => {
                 if (myRun !== this.runId) return; // superseded or cleared
@@ -169,6 +177,7 @@ export class SearchService {
                 // read post-await. Holding a reference to `plugin.settings` is
                 // not a freeze; the object is mutated in place.
                 const settings = this.plugin.settings;
+                const options = state.options;
                 const includeCurrentSceneAnalysis = !!settings.enableAiSceneAnalysis;
                 const planetaryProfile = getActivePlanetaryProfile(settings);
 
@@ -188,14 +197,19 @@ export class SearchService {
                         }
                     }
 
-                    const matched = timelineSceneMatchesSearch(scene, trimmed, {
-                        includeCurrentSceneAnalysis,
-                        planetaryLine,
-                        settings
-                    });
-                    if (matched && scene.path) {
-                        mergeSearchHit(hits, { path: scene.path, source: 'timelineFields', evidence: [] });
+                    if (options.timelineFields) {
+                        const matched = timelineSceneMatchesSearch(scene, trimmed, {
+                            includeCurrentSceneAnalysis,
+                            planetaryLine,
+                            settings
+                        });
+                        if (matched && scene.path) {
+                            mergeSearchHit(hits, { path: scene.path, source: 'timelineFields', evidence: [] });
+                        }
                     }
+
+                    // Scene body scope lands in Stage 3; until then `options.body`
+                    // cannot be enabled from the panel.
                 });
 
                 if (myRun !== this.runId) return; // superseded while matching

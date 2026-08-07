@@ -508,6 +508,27 @@ export interface TranslationKeys {
         renderError: string;
         /** Synopsis hover label for past-due dates. {{date}} is substituted with the formatted date string. */
         overdue: string;
+        search: {
+            inputLabel: string;
+            placeholder: string;
+            searchAction: string;
+            clearAction: string;
+            panelLabel: string;
+            scopeLegend: string;
+            scopeTimelineFields: { label: string; hint: string };
+            scopeBody: { label: string; hint: string };
+            assistLabel: string;
+            /** Shown beside the assist toggle while local-server support is not yet wired up. */
+            assistUnavailable: string;
+            statusIdle: string;
+            statusRunning: string;
+            /** {{count}} is substituted with the number of matched scenes. */
+            statusMatches: string;
+            statusNoMatches: string;
+            statusNoScope: string;
+            /** {{message}} is substituted with the verbatim failure text. */
+            statusError: string;
+        };
         modes: {
             narrative: { name: string; acronym: string };
             progress: { name: string; acronym: string };
@@ -2797,6 +2818,30 @@ export const en: TranslationKeys = {
         loadingData: 'Loading timeline data...',
         renderError: 'Error rendering timeline. Check console for details.',
         overdue: 'Overdue: {{date}}',
+        search: {
+            inputLabel: 'Search timeline',
+            placeholder: 'Search timeline',
+            searchAction: 'Search timeline',
+            clearAction: 'Clear timeline search',
+            panelLabel: 'Search options',
+            scopeLegend: 'Search in',
+            scopeTimelineFields: {
+                label: 'Timeline fields',
+                hint: 'Title, synopsis, and the fields shown on hover',
+            },
+            scopeBody: {
+                label: 'Scene body',
+                hint: 'Not available yet',
+            },
+            assistLabel: 'Local LLM assist',
+            assistUnavailable: 'Not available yet',
+            statusIdle: 'Press Enter to search',
+            statusRunning: 'Searching…',
+            statusMatches: '{{count}} scenes matched',
+            statusNoMatches: 'No scenes matched',
+            statusNoScope: 'Choose where to search',
+            statusError: 'Search failed: {{message}}',
+        },
         modes: {
             narrative: { name: 'Narrative', acronym: 'N' },
             progress: { name: 'Progress', acronym: 'P' },

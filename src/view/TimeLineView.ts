@@ -43,6 +43,8 @@ import { canPostSessionsToFeed, postSessionToCommunityFeed } from '../communityS
 import { DiscordChip } from '../communityShare/discordChip';
 import { projectSessionFeedPost } from '../services/WritingSessionLog';
 import { isRenderedOnTimeline } from '../utils/sceneHelpers';
+import { SearchPanelController } from './interactions/SearchPanelController';
+import { searchOptionsSignature, writeTimelineSearchSettings, type TimelineSearchOptions } from '../services/searchState';
 import { DEFAULT_BOOK_TITLE, getTimelineScope, getTimelineScopeTitle, isSagaScopeAvailable } from '../utils/books';
 import { getActiveRecentStructuralMoves } from '../utils/recentStructuralMoves';
 import type {
@@ -159,6 +161,7 @@ export class RadialTimelineView extends ItemView {
     private timelineSearchInput?: HTMLInputElement;
     private timelineSearchButton?: HTMLButtonElement;
     private timelineSearchButtonMode: 'search' | 'clear' = 'search';
+    private searchPanel?: SearchPanelController;
     private timelineLegendTrigger?: HTMLButtonElement;
     private timelineLegendPanel?: HTMLElement;
     private writingSessionButton?: HTMLButtonElement;
@@ -325,12 +328,23 @@ export class RadialTimelineView extends ItemView {
                 this.handleTimelineSearchInput();
             });
             this.registerDomEvent(searchInput, 'blur', () => {
+                // Blur commits only while assist is off. Once a local-model run
+                // is on the line, leaving the field must not silently start one
+                // — commit becomes explicit (Enter or the icon).
+                if (this.plugin.searchState.options.llmAssist) return;
                 this.commitTimelineSearchFromInput();
             });
             this.registerDomEvent(searchInput, 'keydown', (evt: KeyboardEvent) => {
                 if (evt.key === 'Enter') {
                     evt.preventDefault();
                     this.commitTimelineSearchFromInput();
+                    return;
+                }
+                // The panel handles the first Escape by collapsing itself; a
+                // second one, with the panel already closed, clears the search.
+                if (evt.key === 'Escape' && !this.searchPanel?.isExpanded()) {
+                    evt.preventDefault();
+                    this.clearTimelineSearchFromControl();
                 }
             });
 
@@ -624,6 +638,17 @@ export class RadialTimelineView extends ItemView {
             this.bookSwitcherManageBtn = manageBtn;
             this.timelineSearchInput = searchInput;
             this.timelineSearchButton = searchBtn;
+            this.searchPanel = new SearchPanelController(
+                {
+                    getSearchState: () => this.plugin.searchState,
+                    setSearchOptions: (options) => { void this.applySearchOptions(options); },
+                    registerDomEvent: (el, event, handler) =>
+                        this.registerDomEvent(el as HTMLElement, event, handler),
+                    register: (cleanup) => this.register(cleanup)
+                },
+                searchShell,
+                searchInput
+            );
             this.timelineLegendTrigger = legendBtn;
             this.timelineLegendPanel = legendPanel;
             this.writingSessionButton = sessionBtn;
@@ -2105,6 +2130,7 @@ export class RadialTimelineView extends ItemView {
     }
 
     public syncTimelineSearchControl(): void {
+        this.searchPanel?.syncFromState();
         if (!this.timelineSearchInput || !this.timelineSearchButton) return;
 
         const search = this.plugin.searchState;
@@ -2116,6 +2142,25 @@ export class RadialTimelineView extends ItemView {
 
         this.timelineSearchInput.value = '';
         this.setTimelineSearchButtonMode('search');
+    }
+
+    /**
+     * Apply a scope-options change: persist it, then re-run any active search
+     * so the results on screen always correspond to the options shown.
+     */
+    private async applySearchOptions(options: TimelineSearchOptions): Promise<void> {
+        const search = this.plugin.searchState;
+        if (searchOptionsSignature(search.options) === searchOptionsSignature(options)) return;
+
+        search.options = { ...options };
+        this.plugin.settings.timelineSearch = writeTimelineSearchSettings(search.options);
+        await this.plugin.saveSettings();
+
+        if (search.active && search.term) {
+            this.plugin.performSearch(search.term);
+        } else {
+            this.searchPanel?.syncFromState();
+        }
     }
 
     private setTimelineSearchButtonMode(mode: 'search' | 'clear'): void {

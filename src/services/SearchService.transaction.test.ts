@@ -137,6 +137,36 @@ describe('SearchService transaction', () => {
         expect(plugin.searchState.error).toBeUndefined();
     });
 
+    it('commits an empty result set when no scope is selected', async () => {
+        // The alternative — quietly matching on a scope the author turned off —
+        // would make the checkbox a lie. The panel's status line explains the
+        // empty result.
+        const { service, plugin, pending } = makeHarness();
+        plugin.searchState.options = { timelineFields: false, body: false, llmAssist: false };
+
+        service.performSearch('coast');
+        await flush();
+
+        expect(plugin.searchState.active).toBe(true);
+        expect(plugin.searchState.term).toBe('coast');
+        expect(plugin.searchState.hits.size).toBe(0);
+        // No scene load was even requested.
+        expect(pending).toHaveLength(0);
+    });
+
+    it('matches nothing from timeline fields once that scope is off', async () => {
+        const { service, plugin, pending } = makeHarness();
+        plugin.searchState.options = { timelineFields: false, body: true, llmAssist: false };
+
+        service.performSearch('coast');
+        pending[0].resolve([scene('a.md', 'the coast')]);
+        await flush();
+
+        // Body scope arrives in Stage 3; until then this scope contributes
+        // nothing, and no other scope may stand in for it.
+        expect(plugin.searchState.hits.size).toBe(0);
+    });
+
     it('skips matter notes, which the timeline never draws', async () => {
         // Front/back matter is parsed for manuscript export but excluded from
         // the rendered rings. Matching it produces a hit that lights up

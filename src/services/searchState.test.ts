@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
     createSearchState,
+    hasSearchScope,
     isSearchHit,
     mergeSearchHit,
     searchHitPaths,
+    readTimelineSearchSettings,
     searchOptionsSignature,
+    writeTimelineSearchSettings,
     type TimelineSearchHit
 } from './searchState';
 
@@ -112,6 +115,44 @@ describe('searchOptionsSignature', () => {
         // key dropped from that record fails here too.
         const optionCount = Object.keys(createSearchState().options).length;
         expect(searchOptionsSignature(createSearchState().options)).toHaveLength(optionCount);
+    });
+});
+
+describe('readTimelineSearchSettings', () => {
+    it('returns defaults when nothing is persisted', () => {
+        expect(readTimelineSearchSettings(undefined)).toEqual(createSearchState().options);
+    });
+
+    it('round-trips through the writer', () => {
+        const options = { timelineFields: true, body: true, llmAssist: false };
+        expect(readTimelineSearchSettings(writeTimelineSearchSettings(options))).toEqual(options);
+    });
+
+    it('ignores a payload written by an unknown schema version', () => {
+        const future = { schemaVersion: 2, timelineFields: false, body: true, llmAssist: true } as never;
+        expect(readTimelineSearchSettings(future)).toEqual(createSearchState().options);
+    });
+
+    it('replaces non-boolean flags with their defaults rather than coercing', () => {
+        const malformed = {
+            schemaVersion: 1, timelineFields: 'yes', body: 1, llmAssist: null
+        } as never;
+        expect(readTimelineSearchSettings(malformed)).toEqual(createSearchState().options);
+    });
+
+    it('repairs a stored state with every scope off', () => {
+        // Otherwise the author reopens to a search box that matches nothing
+        // with no obvious way back.
+        const allOff = writeTimelineSearchSettings({ timelineFields: false, body: false, llmAssist: false });
+        expect(readTimelineSearchSettings(allOff).timelineFields).toBe(true);
+    });
+});
+
+describe('hasSearchScope', () => {
+    it('is false only when every scope is off', () => {
+        expect(hasSearchScope({ timelineFields: true, body: false, llmAssist: false })).toBe(true);
+        expect(hasSearchScope({ timelineFields: false, body: true, llmAssist: false })).toBe(true);
+        expect(hasSearchScope({ timelineFields: false, body: false, llmAssist: true })).toBe(false);
     });
 });
 

@@ -9,7 +9,7 @@ import { ButtonComponent, Plugin, Notice, TAbstractFile, WorkspaceLeaf, addIcon 
 import { EditorView, type ViewUpdate } from '@codemirror/view';
 import { TimelineService } from './services/TimelineService';
 import { SceneDataService } from './services/SceneDataService';
-import { createSearchState, type TimelineSearchState } from './services/searchState';
+import { createSearchState, readTimelineSearchSettings, type TimelineSearchState } from './services/searchState';
 import { hexToRgb, rgbToHsl, hslToRgb, rgbToHex } from './utils/colour';
 import SynopsisManager from './SynopsisManager';
 import { RadialTimelineView } from './view/TimeLineView';
@@ -542,6 +542,11 @@ export default class RadialTimelinePlugin extends Plugin {
         ensureButtonComponentCompatibility();
         this.settingsService = new SettingsService(this);
         await this.loadSettings();
+
+        // Restore the author's search scope. Validated on read, so a malformed
+        // or future-schema value yields known-good defaults rather than a
+        // half-applied mixture.
+        this.searchState.options = readTimelineSearchSettings(this.settings.timelineSearch);
 
         addIcon('rt-logo', '<g transform="translate(-56.82,-75.59) scale(0.12030)"><path fill="currentColor" d="M604.11,1274.16l-131.83.12,36.57-162.23c12.42-55.12,57.45-94.1,114.42-94.09h122.98c10.22.01,20-1.99,28.72-6.65,14.3-7.63,20.82-22.45,19.24-38.15-2.34-23.35-20.29-34.12-42.51-35.41l-201.37-.06,29.2-125.03,185.04.12c69.83,3.45,127.94,44.91,151.99,110.3,18.56,53.7,7.91,111.98-27.6,156.25-17.24,21.5-39.41,37.45-64.95,49.11l71.96,144.34c.9,1.81,1.8,2.59-1.12,1.42l-142.07.04-64.96-128.49-53.36-.13-30.34,128.56Z"/><path fill="currentColor" d="M937.3,1274.25l17.69-77.78,60.02-258.56-45.47-.23c-9.55-54.08-42.3-98.13-90.97-124.96l425-.04-28.48,125.02-129.43.05-78.44,336.43-129.93.06Z"/></g>');
 

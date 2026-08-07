@@ -2103,6 +2103,115 @@
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--interactive-accent) 35%, transparent);
 }
 
+/* Expanded: the input and the panel share one border line so they read as a
+   single control rather than a field with a popover floating under it. */
+.ert-timeline-search.is-expanded .ert-timeline-search__input[type="search"] {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-color: transparent;
+}
+
+.ert-timeline-search-panel {
+  position: absolute;
+  top: calc(100% - 1px);
+  left: 0;
+  z-index: var(--layer-popover, 1000);
+  box-sizing: border-box;
+  /* Wider than the input, which clamps to 180px — the option labels need room. */
+  min-width: 232px;
+  max-width: min(300px, calc(100vw - 32px));
+  padding: 8px 10px 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--interactive-accent);
+  border-top-color: var(--background-modifier-border);
+  border-radius: 0 var(--radius-s) var(--radius-s) var(--radius-s);
+  background: var(--background-secondary);
+  box-shadow: var(--shadow-s);
+}
+
+/* Narrow panes: anchor to the right edge so the panel never pushes the
+   header into horizontal overflow. */
+.ert-timeline-search-panel.is-right-anchored {
+  left: auto;
+  right: 0;
+  border-radius: var(--radius-s) 0 var(--radius-s) var(--radius-s);
+}
+
+.ert-timeline-search-panel[hidden] {
+  display: none;
+}
+
+.ert-timeline-search-panel__scope {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ert-timeline-search-panel__legend {
+  padding: 0;
+  margin-bottom: 2px;
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-semibold);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ert-timeline-search-panel__assist {
+  padding-top: 7px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.ert-timeline-search-panel__row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  column-gap: 7px;
+  row-gap: 1px;
+  cursor: pointer;
+}
+
+.ert-timeline-search-panel__row.is-disabled {
+  cursor: default;
+}
+
+.ert-timeline-search-panel__checkbox {
+  margin: 0;
+  grid-row: 1;
+}
+
+.ert-timeline-search-panel__row-label {
+  grid-row: 1;
+  font-size: var(--font-ui-small);
+  color: var(--text-normal);
+}
+
+.ert-timeline-search-panel__row.is-disabled .ert-timeline-search-panel__row-label {
+  color: var(--text-muted);
+}
+
+/* The hint carries the reason a control is disabled, so it must stay legible
+   even though the control itself is dimmed. */
+.ert-timeline-search-panel__row-hint {
+  grid-column: 2;
+  grid-row: 2;
+  font-size: var(--font-ui-smaller);
+  line-height: 1.3;
+  color: var(--text-muted);
+}
+
+.ert-timeline-search-panel__status {
+  padding-top: 7px;
+  border-top: 1px solid var(--background-modifier-border);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
 .ert-timeline-title-action.clickable-icon,
 .rt-book-switcher__manage.clickable-icon {
   width: 24px;

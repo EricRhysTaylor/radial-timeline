@@ -2,10 +2,26 @@
 
 ## Status
 
-Planning. No implementation started. Mapped against the codebase as it exists
-today (every file:line below was read, not assumed). Written to be executed in
-small verified slices; each stage ends with `npx tsc --noEmit` + `npm test`
-green and is independently shippable.
+**Stages 1 and 1b are implemented and shipped** (commit `168f5157`). Stages 2–6
+remain planned. Mapped against the codebase as it exists today (every file:line
+below was read, not assumed). Each stage ends with `npx tsc --noEmit` +
+`npm test` green and is independently shippable.
+
+| Stage | State |
+| --- | --- |
+| 1 — One search state, transactional | **Done** |
+| 1b — Searched fields == rendered fields | **Done** |
+| 2 — The panel | Planned |
+| 3 — Scene body search | Planned |
+| 4 — Local LLM availability | Planned |
+| 5 — Concept search | Planned |
+| 6 — Body highlight on scene open | Planned |
+
+All four pre-existing defects listed below are fixed, plus a fifth found during
+implementation: the metadata-block gate in `SynopsisManager` tested only the
+*scene* hover list, so a beat or backdrop whose own fields were enabled had the
+whole block skipped and never rendered them — a third divergent derivation of
+the same fact the extraction exists to consolidate.
 
 Revised after a correctness review — see the Decision log for what changed and
 why. The review found four real holes in the first draft (async race, dropped

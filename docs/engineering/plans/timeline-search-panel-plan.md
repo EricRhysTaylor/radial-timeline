@@ -2,9 +2,14 @@
 
 ## Status
 
-**Stages 1, 1b, 2, 3, 4 and 6 are implemented and shipped.** Only Stage 5
-(concept search) remains; the assist toggle renders disabled until it lands,
-though the panel now reports the real local-model status. Mapped against the codebase as it exists today (every file:line
+**All seven stages are implemented and shipped.**
+
+Stage 5 (concept search) is **code-complete and correct under test, but not yet
+verified end to end against a real model.** Two live runs against a 30B local
+model failed — first on context length, then on timeout — and each failure was
+reported exactly as designed, with prior results preserved. Both causes are
+fixed (smaller default chunk budget, bounded reply length); a successful
+completion has not yet been observed. See "Open verification" below. Mapped against the codebase as it exists today (every file:line
 below was read, not assumed). Each stage ends with `npx tsc --noEmit` +
 `npm test` green and is independently shippable.
 
@@ -15,7 +20,7 @@ below was read, not assumed). Each stage ends with `npx tsc --noEmit` +
 | 2 — The panel | **Done** |
 | 3 — Scene body search | **Done** |
 | 4 — Local LLM availability | **Done** |
-| 5 — Concept search | Planned |
+| 5 — Concept search | **Shipped, live run unverified** |
 | 6 — Body highlight on scene open | **Done** |
 
 **`eState.match` is confirmed working** — verified in the sample vault: a body
@@ -714,6 +719,26 @@ Manual, in the sample vault (`docs/engineering/sample-vaults.md`):
 | Exact-match verification drops legitimate quotes | ≤15-word verbatim instruction in the prompt; drop count is surfaced, so a high drop rate is visible rather than hidden |
 | Cancel cannot stop an in-flight local completion | UI states what it actually does; real abort tracked as separate transport work |
 | Body index memory on large manuscripts | Scoped to the frozen scene set, `cachedRead`-backed, mtime-invalidated; size logged |
+
+## Open verification
+
+Concept search has not completed a successful live run. What was observed:
+
+1. **Context length.** The first attempt sent ~16k-token passes; the server
+   rejected them outright ("the number of tokens to keep from the initial prompt
+   is greater than the context length"). A local model's window is set when the
+   model is loaded, outside Obsidian, and cannot be discovered — so the default
+   is now 2k per pass, and only an operator's explicit `longContext`
+   declaration unlocks more.
+2. **Timeout.** The second attempt timed out per pass. Output was unbounded, so
+   a reasoning model spent its budget thinking before answering. Replies are now
+   capped at the provider's declared default output size.
+
+Still to confirm on the operator's machine: that a pass completes, that quotes
+verify against the corpus at a useful rate, and that the drop count stays low
+enough for the results to be worth reading. If passes remain slow, the levers
+are a longer `timeoutMs` in Settings → AI, a smaller/faster model, or a
+non-reasoning model.
 
 ## Open decisions
 

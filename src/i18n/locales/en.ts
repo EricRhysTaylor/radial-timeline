@@ -522,7 +522,9 @@ export interface TranslationKeys {
             assistUnavailable: string;
             statusIdle: string;
             statusRunning: string;
-            /** {{count}} is substituted with the number of matched scenes. */
+            /** Exactly one match. */
+            statusMatchOne: string;
+            /** {{count}} is substituted with the number of matched scenes (two or more). */
             statusMatches: string;
             statusNoMatches: string;
             statusNoScope: string;
@@ -2837,6 +2839,7 @@ export const en: TranslationKeys = {
             assistUnavailable: 'Not available yet',
             statusIdle: 'Press Enter to search',
             statusRunning: 'Searching…',
+            statusMatchOne: '1 scene matched',
             statusMatches: '{{count}} scenes matched',
             statusNoMatches: 'No scenes matched',
             statusNoScope: 'Choose where to search',

@@ -264,6 +264,7 @@ export class SearchPanelController {
         }
         if (!state.active) return t('timeline.search.statusIdle');
         if (state.hits.size === 0) return t('timeline.search.statusNoMatches');
+        if (state.hits.size === 1) return t('timeline.search.statusMatchOne');
         return t('timeline.search.statusMatches', { count: String(state.hits.size) });
     }
 }

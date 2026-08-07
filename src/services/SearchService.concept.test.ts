@@ -124,6 +124,75 @@ describe('concept search through the transaction', () => {
         expect(complete).toHaveBeenCalledTimes(3);
     });
 
+    it('publishes matches as they are found, not only at the end', async () => {
+        // A manuscript-wide run takes minutes. An author watching an unchanged
+        // timeline cannot tell work from a hang, and cannot start reading the
+        // matches that already exist.
+        const h = makeHarness();
+        h.plugin.searchState.options = { timelineFields: false, body: true, llmAssist: true };
+        h.bodies.set('a.md', 'first scene prose');
+        h.bodies.set('b.md', 'second scene prose');
+        h.bodies.set('c.md', 'third scene prose');
+
+        const seen: number[] = [];
+        complete.mockImplementation(() => {
+            // Record how many hits are visible on the timeline at each call.
+            seen.push(h.plugin.searchState.hits.size);
+            return Promise.resolve(reply([{ scene_id: '1', reason: 'r', quotes: ['prose'] }]));
+        });
+
+        h.service.performSearch('a question');
+        h.resolve([scene('a.md', ''), scene('b.md', ''), scene('c.md', '')]);
+        await settle();
+
+        // By the third request, earlier matches were already on screen.
+        expect(seen).toEqual([0, 1, 2]);
+        expect(h.plugin.searchState.hits.size).toBe(3);
+    });
+
+    it('keeps what it found when the author cancels', async () => {
+        // The author has been watching matches arrive and may already have
+        // opened one; discarding them for asking the sweep to stop would be
+        // indefensible.
+        const h = makeHarness();
+        h.plugin.searchState.options = { timelineFields: false, body: true, llmAssist: true };
+        h.bodies.set('a.md', 'first scene prose');
+        h.bodies.set('b.md', 'second scene prose');
+        h.bodies.set('c.md', 'third scene prose');
+
+        complete.mockImplementation(() => {
+            if (h.plugin.searchState.hits.size >= 1) h.service.cancelSearch();
+            return Promise.resolve(reply([{ scene_id: '1', reason: 'r', quotes: ['prose'] }]));
+        });
+
+        h.service.performSearch('a question');
+        h.resolve([scene('a.md', ''), scene('b.md', ''), scene('c.md', '')]);
+        await settle();
+
+        expect(h.plugin.searchState.hits.size).toBeGreaterThan(0);
+        expect(h.plugin.searchState.stoppedEarly).toBe(true);
+        expect(h.plugin.searchState.status).toBe('ready');
+    });
+
+    it('keeps matches already published when a later scene fails', async () => {
+        const h = makeHarness();
+        h.plugin.searchState.options = { timelineFields: false, body: true, llmAssist: true };
+        h.bodies.set('a.md', 'first scene prose');
+        h.bodies.set('b.md', 'second scene prose');
+
+        complete
+            .mockResolvedValueOnce(reply([{ scene_id: '1', reason: 'r', quotes: ['prose'] }]))
+            .mockResolvedValueOnce({ success: false, content: null, responseData: {}, error: 'boom' });
+
+        h.service.performSearch('a question');
+        h.resolve([scene('a.md', ''), scene('b.md', '')]);
+        await settle();
+
+        expect(h.plugin.searchState.status).toBe('error');
+        // Verified before the failure, and no less true for what came after.
+        expect(h.plugin.searchState.hits.size).toBe(1);
+    });
+
     it('keeps prior results when the model fails a chunk', async () => {
         const h = makeHarness();
         h.plugin.searchState.options = { timelineFields: false, body: true, llmAssist: true };

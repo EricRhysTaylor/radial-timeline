@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { buildPasses, chunkBudgetFor, parseMatches, verifyMatch, type ConceptSearchScene } from './ConceptSearchService';
+import {
+    buildPasses, chunkBudgetFor, extractKeywords, keywordScore, orderByPromise,
+    parseMatches, verifyMatch, type ConceptSearchScene
+} from './ConceptSearchService';
 import type { LocalLlmSettings } from '../ai/types';
 
 const scene = (overrides: Partial<ConceptSearchScene> = {}): ConceptSearchScene => ({
@@ -131,6 +134,69 @@ describe('chunkBudgetFor', () => {
 
     it('tolerates settings with no declared capabilities at all', () => {
         expect(chunkBudgetFor({} as unknown as LocalLlmSettings)).toBeLessThanOrEqual(2_000);
+    });
+});
+
+describe('extractKeywords', () => {
+    it('keeps the content words', () => {
+        expect(extractKeywords('a character falls into a crevice')).toEqual(['falls', 'crevice']);
+    });
+
+    it('drops the framing an author writes around a question', () => {
+        expect(extractKeywords('scenes about racing')).toEqual(['racing']);
+    });
+
+    it('drops words too short to discriminate', () => {
+        expect(extractKeywords('he is at war')).toEqual(['war']);
+    });
+
+    it('does not repeat a word', () => {
+        expect(extractKeywords('fall and fall again')).toEqual(['fall', 'again']);
+    });
+
+    it('returns nothing for a query that is all framing', () => {
+        expect(extractKeywords('what about these scenes')).toEqual([]);
+    });
+});
+
+describe('keywordScore', () => {
+    it('counts distinct keywords present', () => {
+        expect(keywordScore('she fell into the crevice', ['fell', 'crevice'])).toBe(2);
+        expect(keywordScore('she fell on the path', ['fell', 'crevice'])).toBe(1);
+        expect(keywordScore('nothing relevant', ['fell', 'crevice'])).toBe(0);
+    });
+
+    it('matches inside longer words, so no stemmer is needed', () => {
+        expect(keywordScore('she was falling', ['fall'])).toBe(1);
+    });
+});
+
+describe('orderByPromise', () => {
+    const s = (path: string, body: string): ConceptSearchScene => ({ path, bodyText: body });
+
+    it('reads the most keyword-dense scenes first', () => {
+        const ordered = orderByPromise(
+            [s('none.md', 'unrelated'), s('one.md', 'she fell'), s('both.md', 'fell into a crevice')],
+            ['fell', 'crevice']
+        );
+        expect(ordered.map(x => x.path)).toEqual(['both.md', 'one.md', 'none.md']);
+    });
+
+    it('still covers every scene — this is order, not a filter', () => {
+        // Filtering on keywords would defeat the point: concept search exists to
+        // find scenes that never use the author's words.
+        const scenes = [s('a.md', 'x'), s('b.md', 'fell'), s('c.md', 'y')];
+        expect(orderByPromise(scenes, ['fell'])).toHaveLength(3);
+    });
+
+    it('keeps manuscript order within a score band', () => {
+        const scenes = [s('a.md', 'x'), s('b.md', 'y'), s('c.md', 'z')];
+        expect(orderByPromise(scenes, ['nothing']).map(x => x.path)).toEqual(['a.md', 'b.md', 'c.md']);
+    });
+
+    it('leaves order untouched when the query has no keywords', () => {
+        const scenes = [s('a.md', 'x'), s('b.md', 'y')];
+        expect(orderByPromise(scenes, [])).toBe(scenes);
     });
 });
 

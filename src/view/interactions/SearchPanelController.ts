@@ -351,10 +351,15 @@ export class SearchPanelController {
         if (!hasSearchScope(state.options)) return t('timeline.search.statusNoScope');
         if (state.status === 'running') {
             if (state.progress) {
-                return t('timeline.search.statusChunk', {
+                const position = {
                     chunk: String(state.progress.chunk),
                     total: String(state.progress.chunkCount)
-                });
+                };
+                // Showing the running count is what turns a long sweep from a
+                // blank wait into something the author can act on partway.
+                return state.hits.size > 0
+                    ? t('timeline.search.statusChunkFound', { ...position, found: String(state.hits.size) })
+                    : t('timeline.search.statusChunk', position);
             }
             return t('timeline.search.statusRunning');
         }
@@ -367,6 +372,12 @@ export class SearchPanelController {
             : state.hits.size === 1
                 ? t('timeline.search.statusMatchOne')
                 : t('timeline.search.statusMatches', { count: String(state.hits.size) });
+
+        // A stopped run covered only part of the manuscript; saying "31 matched"
+        // would imply the whole book was read.
+        if (state.stoppedEarly) {
+            return t('timeline.search.statusStopped', { count: String(state.hits.size) });
+        }
 
         // Silence here would present a thin sweep as a complete one.
         if (state.droppedClaims && state.droppedClaims > 0) {

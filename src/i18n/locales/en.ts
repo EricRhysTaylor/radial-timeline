@@ -524,6 +524,10 @@ export interface TranslationKeys {
             assistConnected: string;
             /** Concept-run progress, counted in scenes. {{chunk}} of {{total}}. */
             statusChunk: string;
+            /** Progress once matches exist, so the count is visible while it runs. */
+            statusChunkFound: string;
+            /** The author cancelled; what was found is kept. */
+            statusStopped: string;
             /** Appended when the model named scenes it could not quote. {{count}} claims. */
             statusDropped: string;
             cancelAction: string;
@@ -2848,6 +2852,8 @@ export const en: TranslationKeys = {
             assistChecking: 'Checking for a local model\u2026',
             assistConnected: 'Connected: {{model}}',
             statusChunk: 'Reading scene {{chunk}} of {{total}}',
+            statusChunkFound: 'Reading scene {{chunk}} of {{total}} \u00b7 {{found}} found',
+            statusStopped: 'Stopped early \u2014 {{count}} found so far',
             statusDropped: '{{count}} model claims dropped (no verbatim match)',
             cancelAction: 'Cancel',
             cancelPending: 'Finishing current pass\u2026',

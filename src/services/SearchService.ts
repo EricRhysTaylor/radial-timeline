@@ -10,7 +10,6 @@ import type { TimelineItem } from '../types';
 import { hasSearchScope, mergeSearchHit, type TimelineSearchHit } from './searchState';
 import { SceneBodyIndex, findBodyMatches } from './SceneBodyIndex';
 import {
-    ConceptSearchCancelled,
     ConceptSearchService,
     type CancelToken,
     type ConceptSearchScene
@@ -324,6 +323,12 @@ export class SearchService {
         this.cancelToken = { cancelled: false };
         const cancel = this.cancelToken;
 
+        // Published as the sweep runs rather than held to the end. A run over a
+        // whole manuscript takes minutes; an author staring at an unchanged
+        // timeline has no way to tell work from a hang, and cannot start
+        // reading the matches that already exist.
+        const hits = new Map<string, TimelineSearchHit>();
+
         try {
             const outcome = await this.conceptSearch.run({
                 query: term,
@@ -334,27 +339,39 @@ export class SearchService {
                     if (myRun !== this.runId) return;
                     state.progress = progress;
                     this.syncTimelineSearchControls();
+                },
+                onHit: (hit) => {
+                    if (myRun !== this.runId) return;
+                    mergeSearchHit(hits, hit);
+                    this.publishPartial(term, hits);
                 }
             });
 
             if (myRun !== this.runId) return;
-
-            const hits = new Map<string, TimelineSearchHit>();
-            outcome.hits.forEach(hit => mergeSearchHit(hits, hit));
-            this.commit(term, hits, outcome.droppedClaims);
+            this.commit(term, hits, outcome.droppedClaims, outcome.cancelled);
         } catch (error) {
             if (myRun !== this.runId) return;
-            if (error instanceof ConceptSearchCancelled) {
-                // Discard the transaction; whatever was committed before stands.
-                state.status = 'ready';
-                state.progress = undefined;
-                this.syncTimelineSearchControls();
-                return;
-            }
             const message = error instanceof Error ? error.message : String(error);
             console.error('[Search] Concept search failed.', error);
+            // Matches already published stay: they were verified before the
+            // failure and are no less true for what came after.
             this.fail(message);
         }
+    }
+
+    /**
+     * Make the matches found so far visible without ending the run.
+     *
+     * Status stays `running`, so the panel keeps showing progress and the Cancel
+     * button, while the timeline lights up scene by scene.
+     */
+    private publishPartial(term: string, hits: Map<string, TimelineSearchHit>): void {
+        const state = this.plugin.searchState;
+        state.term = term;
+        state.active = true;
+        state.hits = new Map(hits);
+        this.syncTimelineSearchControls();
+        this.refreshTimelineViews();
     }
 
     /**
@@ -389,7 +406,8 @@ export class SearchService {
     private commit(
         term: string,
         hits: Map<string, TimelineSearchHit>,
-        droppedClaims?: number
+        droppedClaims?: number,
+        stoppedEarly?: boolean
     ): void {
         const state = this.plugin.searchState;
         state.term = term;
@@ -398,6 +416,7 @@ export class SearchService {
         state.error = undefined;
         state.progress = undefined;
         state.droppedClaims = droppedClaims;
+        state.stoppedEarly = stoppedEarly;
         state.hits = hits;
         this.syncTimelineSearchControls();
         this.refreshTimelineViews();
@@ -423,6 +442,7 @@ export class SearchService {
         state.error = undefined;
         state.progress = undefined;
         state.droppedClaims = undefined;
+        state.stoppedEarly = undefined;
         state.hits = new Map();
     }
 

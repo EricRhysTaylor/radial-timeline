@@ -47,6 +47,8 @@ export interface ConceptSearchProgress {
 
 export interface ConceptSearchOutcome {
     hits: TimelineSearchHit[];
+    /** True when the author stopped the sweep; the hits so far are still real. */
+    cancelled: boolean;
     /**
      * Scenes the model named whose quotes could not be found in the text it was
      * given. Surfaced to the author rather than swallowed: a high number means
@@ -54,14 +56,6 @@ export interface ConceptSearchOutcome {
      * complete one.
      */
     droppedClaims: number;
-}
-
-/** Thrown when the author cancels; the caller discards the transaction. */
-export class ConceptSearchCancelled extends Error {
-    constructor() {
-        super('Concept search cancelled.');
-        this.name = 'ConceptSearchCancelled';
-    }
 }
 
 export interface CancelToken {
@@ -100,6 +94,70 @@ export function chunkBudgetFor(localLlm: LocalLlmSettings): number {
 
 /** Long enough to be evidence, short enough to survive exact matching. */
 const MAX_QUOTE_WORDS = 15;
+
+/**
+ * Words too common to say anything about which scene to read first. Includes
+ * the framing an author naturally writes around a question ("scenes about…").
+ */
+const STOPWORDS = new Set([
+    'a', 'an', 'the', 'of', 'in', 'on', 'at', 'to', 'for', 'and', 'or', 'but',
+    'with', 'about', 'that', 'this', 'these', 'those', 'is', 'are', 'was',
+    'were', 'be', 'been', 'it', 'its', 'as', 'by', 'from', 'into', 'when',
+    'where', 'who', 'what', 'which', 'how', 'why', 'any', 'all', 'some',
+    'scene', 'scenes', 'chapter', 'chapters', 'character', 'characters'
+]);
+
+/**
+ * The content words of a query, used to decide reading order.
+ *
+ * "a character falls into a crevice" → ["character" is framing, so] falls,
+ * crevice. Deliberately no stemming: a literal substring test already catches
+ * "falls" inside "falling", and a stemmer would be one more thing to be subtly
+ * wrong about in a feature whose whole point is not guessing.
+ */
+export function extractKeywords(query: string): string[] {
+    const words = query.toLowerCase().split(/[^\p{L}\p{N}']+/u);
+    const seen: string[] = [];
+    for (const word of words) {
+        if (word.length < 3 || STOPWORDS.has(word)) continue;
+        if (!seen.includes(word)) seen.push(word);
+    }
+    return seen;
+}
+
+/** How many distinct query keywords appear in this text. */
+export function keywordScore(text: string, keywords: string[]): number {
+    if (keywords.length === 0) return 0;
+    const lower = text.toLowerCase();
+    return keywords.reduce((count, word) => (lower.includes(word) ? count + 1 : count), 0);
+}
+
+/**
+ * Read the most promising scenes first.
+ *
+ * The sweep still covers every scene — this only changes the order. A literal
+ * keyword hit is a weak signal, far too weak to *filter* on (the entire point
+ * of concept search is finding scenes that never use the author's words), but
+ * it is a good guess at where to look first. Front-loading those turns a
+ * two-and-a-half-minute wait with nothing on screen into first results within
+ * seconds, which is what makes the run reviewable while it is still going.
+ */
+export function orderByPromise(
+    scenes: ConceptSearchScene[],
+    keywords: string[]
+): ConceptSearchScene[] {
+    if (keywords.length === 0) return scenes;
+    return scenes
+        .map((scene, index) => ({
+            scene,
+            index,
+            score: keywordScore(`${scene.fieldsText ?? ''} ${scene.bodyText ?? ''}`, keywords)
+        }))
+        // Manuscript order within a score band, so the sweep still reads like a
+        // pass through the book rather than a shuffle.
+        .sort((a, b) => (b.score - a.score) || (a.index - b.index))
+        .map(entry => entry.scene);
+}
 
 /**
  * Output ceiling per pass.
@@ -259,15 +317,21 @@ export class ConceptSearchService {
         localLlm: LocalLlmSettings;
         cancel: CancelToken;
         onProgress: (progress: ConceptSearchProgress) => void;
+        /**
+         * Called as each match is confirmed, so the timeline fills in while the
+         * sweep continues and the author can start opening scenes.
+         */
+        onHit: (hit: TimelineSearchHit) => void;
     }): Promise<ConceptSearchOutcome> {
-        const { query, scenes, localLlm, cancel, onProgress } = input;
+        const { query, scenes, localLlm, cancel, onProgress, onHit } = input;
 
         const backend = getLocalLlmBackend(localLlm.backend);
         const providerLabel = LOCAL_LLM_BACKEND_LABELS[localLlm.backend];
         const apiKey = await getCredential(this.plugin, 'ollama');
         const transport = { baseUrl: localLlm.baseUrl, timeoutMs: localLlm.timeoutMs, apiKey };
 
-        const passes = buildPasses(scenes, chunkBudgetFor(localLlm));
+        const ordered = orderByPromise(scenes, extractKeywords(query));
+        const passes = buildPasses(ordered, chunkBudgetFor(localLlm));
         const hits: TimelineSearchHit[] = [];
         let droppedClaims = 0;
 
@@ -275,7 +339,11 @@ export class ConceptSearchService {
             // Checked between passes. Cancel cannot abort a request already in
             // flight — see SearchService for why that limitation is real. With
             // one scene per pass it lands within a couple of seconds.
-            if (cancel.cancelled) throw new ConceptSearchCancelled();
+            //
+            // Cancelling KEEPS what has been found. The author has been watching
+            // matches arrive and may already have opened one; throwing them away
+            // because they asked the sweep to stop would be indefensible.
+            if (cancel.cancelled) return { hits, droppedClaims, cancelled: true };
 
             const pass = passes[index];
             // Progress counts SCENES, which is what the author is watching;
@@ -330,16 +398,18 @@ export class ConceptSearchService {
                     droppedClaims += 1;
                     continue;
                 }
-                hits.push({
+                const hit: TimelineSearchHit = {
                     path: pass.scene.path,
                     source: verified.source,
                     evidence: verified.bodyQuotes,
                     reason: typeof match.reason === 'string' ? match.reason.trim() : undefined
-                });
+                };
+                hits.push(hit);
+                onHit(hit);
             }
         }
 
-        return { hits, droppedClaims };
+        return { hits, droppedClaims, cancelled: false };
     }
 }
 

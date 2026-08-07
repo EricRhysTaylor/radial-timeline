@@ -82,6 +82,8 @@ export interface TimelineSearchState {
      * as a complete one.
      */
     droppedClaims?: number;
+    /** True when the committed run was stopped early rather than completing. */
+    stoppedEarly?: boolean;
     hits: Map<string, TimelineSearchHit>;
 }
 

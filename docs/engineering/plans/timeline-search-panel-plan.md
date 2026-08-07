@@ -718,6 +718,32 @@ Manual, in the sample vault (`docs/engineering/sample-vaults.md`):
 | Cancel cannot stop an in-flight local completion | UI states what it actually does; real abort tracked as separate transport work |
 | Body index memory on large manuscripts | Scoped to the frozen scene set, `cachedRead`-backed, mtime-invalidated; size logged |
 
+## Making a long sweep usable (post-Stage 5)
+
+A manuscript-wide concept run takes minutes, and the first build held every
+result until the end — so the author watched an unchanged timeline with no way
+to tell work from a hang. Two changes, neither of which narrows the sweep:
+
+- **Matches publish as they are found.** Status stays `running` with progress
+  and Cancel while the timeline fills in scene by scene, and the running count
+  shows in the status line.
+- **The likeliest scenes are read first**, ordered by how many of the query's
+  content words a scene literally contains. This is **order, not a filter** —
+  filtering on keywords would defeat the point, since concept search exists to
+  find scenes that never use the author's words. Manuscript order is preserved
+  within a score band.
+- **Cancelling keeps what was found**, reported as "Stopped early — N found so
+  far" so a partial sweep is never mistaken for a complete one. A mid-sweep
+  failure likewise keeps what was already verified.
+
+Verified live: 9 found at scene 23, 17 at scene 38, Cancel at scene 48 leaving
+19 on the timeline.
+
+**Not built, and probably not needed:** act-based scope restriction. Ordering
+plus streaming gives first results in seconds, which was the actual complaint;
+a scope control would add UI for a problem that is now largely solved. Revisit
+if manuscripts get much larger than ~100 scenes.
+
 ## What live testing changed
 
 Three attempts, three distinct failures, each one a design assumption that only

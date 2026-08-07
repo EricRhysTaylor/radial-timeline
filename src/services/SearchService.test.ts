@@ -8,6 +8,9 @@ const field = (key: string, enabled = true) => ({ key, label: key, icon: '', ena
 const settingsWith = (overrides: Partial<RadialTimelineSettings>): RadialTimelineSettings =>
     ({ ...overrides } as RadialTimelineSettings);
 
+/** No custom hover fields configured — only the curated set is searchable. */
+const bareSettings = settingsWith({});
+
 const sceneWith = (overrides: Partial<TimelineItem>): TimelineItem =>
     ({ path: 'scene.md', title: 'Arrival', rawFrontmatter: {}, ...overrides } as TimelineItem);
 
@@ -19,7 +22,7 @@ describe('buildTimelineSearchTextFields', () => {
             subplot: 'Homecoming',
             Character: ['Ada']
         });
-        expect(buildTimelineSearchTextFields(scene)).toEqual(
+        expect(buildTimelineSearchTextFields(scene, { settings: bareSettings })).toEqual(
             expect.arrayContaining(['Arrival', 'She reaches the coast.', 'Homecoming', 'Ada'])
         );
     });
@@ -62,24 +65,24 @@ describe('timelineSceneMatchesSearch', () => {
 
     it('is case-insensitive and matches substrings', () => {
         const scene = sceneWith({ synopsis: 'She reaches the coast.' });
-        expect(timelineSceneMatchesSearch(scene, 'REACHES')).toBe(true);
-        expect(timelineSceneMatchesSearch(scene, 'coast')).toBe(true);
+        expect(timelineSceneMatchesSearch(scene, 'REACHES', { settings: bareSettings })).toBe(true);
+        expect(timelineSceneMatchesSearch(scene, 'coast', { settings: bareSettings })).toBe(true);
     });
 
     it('matches the visible date string', () => {
         const scene = sceneWith({ when: new Date(1812, 7, 1, 8, 0) });
-        expect(timelineSceneMatchesSearch(scene, 'Aug 1, 1812')).toBe(true);
+        expect(timelineSceneMatchesSearch(scene, 'Aug 1, 1812', { settings: bareSettings })).toBe(true);
     });
 
     it('survives a malformed When rather than aborting the run', () => {
         // formatDateForDisplay is strict by design; search sees whatever the
         // vault holds, so one bad date must not throw out the whole search.
         const scene = sceneWith({ synopsis: 'coast', when: new Date('nonsense') });
-        expect(() => timelineSceneMatchesSearch(scene, 'coast')).not.toThrow();
-        expect(timelineSceneMatchesSearch(scene, 'coast')).toBe(true);
+        expect(() => timelineSceneMatchesSearch(scene, 'coast', { settings: bareSettings })).not.toThrow();
+        expect(timelineSceneMatchesSearch(scene, 'coast', { settings: bareSettings })).toBe(true);
     });
 
     it('does not match an unrelated phrase', () => {
-        expect(timelineSceneMatchesSearch(sceneWith({ synopsis: 'coast' }), 'mountain')).toBe(false);
+        expect(timelineSceneMatchesSearch(sceneWith({ synopsis: 'coast' }), 'mountain', { settings: bareSettings })).toBe(false);
     });
 });

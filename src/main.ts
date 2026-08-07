@@ -1417,6 +1417,9 @@ export default class RadialTimelinePlugin extends Plugin {
 
     public clearSearch(): void { this.searchService.clearSearch(); }
 
+    /** Clear search on view close: invalidates the in-flight run, no re-render. */
+    public abandonSearch(): void { this.searchService.abandonSearch(); }
+
     public setCSSColorVariables(): void {
         this.themeService.applyCssVariables();
     }

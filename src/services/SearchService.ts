@@ -12,11 +12,14 @@ export interface TimelineSearchMatchOptions {
     includeCurrentSceneAnalysis?: boolean;
     planetaryLine?: string;
     /**
-     * Settings, so the enabled hover-metadata fields can be resolved. Required
-     * for the searched set to equal the rendered set; omitting it silently
-     * narrows the search back to the hardcoded fields.
+     * Settings, so the enabled hover-metadata fields can be resolved.
+     *
+     * Deliberately **required**: this is what makes the searched set equal the
+     * rendered set. If it were optional, a future caller could omit it and
+     * silently narrow the search back to the hardcoded fields — the exact bug
+     * this parameter exists to fix, reintroduced without a compile error.
      */
-    settings?: RadialTimelineSettings;
+    settings: RadialTimelineSettings;
 }
 
 const containsWholePhrase = (haystack: string | undefined, phrase: string, isDate: boolean = false): boolean => {
@@ -59,7 +62,7 @@ function appendSearchValue(fields: string[], value: unknown): void {
  * from `collectHoverMetadataText`, which is the same resolver and the same
  * formatter the renderer uses; do not re-derive them here.
  */
-export function buildTimelineSearchTextFields(scene: TimelineItem, options: TimelineSearchMatchOptions = {}): string[] {
+export function buildTimelineSearchTextFields(scene: TimelineItem, options: TimelineSearchMatchOptions): string[] {
     const fields: string[] = [];
 
     appendSearchValue(fields, scene.title);
@@ -76,16 +79,14 @@ export function buildTimelineSearchTextFields(scene: TimelineItem, options: Time
 
     // Custom hover-metadata fields, formatted exactly as displayed. Enabling a
     // field in hover metadata makes it searchable in the same action.
-    if (options.settings) {
-        for (const text of collectHoverMetadataText(options.settings, scene)) {
-            fields.push(text);
-        }
+    for (const text of collectHoverMetadataText(options.settings, scene)) {
+        fields.push(text);
     }
 
     return fields;
 }
 
-export function timelineSceneMatchesSearch(scene: TimelineItem, phrase: string, options: TimelineSearchMatchOptions = {}): boolean {
+export function timelineSceneMatchesSearch(scene: TimelineItem, phrase: string, options: TimelineSearchMatchOptions): boolean {
     const textMatched = buildTimelineSearchTextFields(scene, options)
         .some(field => containsWholePhrase(field, phrase, false));
     if (textMatched) return true;
@@ -210,8 +211,15 @@ export class SearchService {
         this.refreshTimelineViews();
     }
 
-    clearSearch(): void {
-        // Invalidate any in-flight run so it cannot resurrect cleared results.
+    /**
+     * Invalidate any in-flight run and drop all results.
+     *
+     * Owning `runId` here is the whole point of the transaction. A caller that
+     * reset the state object directly would leave the run token untouched, and
+     * the in-flight search would sail through its guard and commit into the
+     * state that was just cleared.
+     */
+    private reset(): void {
         this.runId += 1;
 
         const state = this.plugin.searchState;
@@ -220,8 +228,22 @@ export class SearchService {
         state.status = 'idle';
         state.error = undefined;
         state.hits = new Map();
+    }
 
+    clearSearch(): void {
+        this.reset();
         this.syncTimelineSearchControls();
         this.refreshTimelineViews();
+    }
+
+    /**
+     * Clear search because the view is going away.
+     *
+     * Same invalidation as `clearSearch`, without the sync/refresh — refreshing
+     * a closing view is pointless and re-entering render during unload invites
+     * side effects.
+     */
+    abandonSearch(): void {
+        this.reset();
     }
 }

@@ -2858,12 +2858,13 @@ export class RadialTimelineView extends ItemView {
     }
     
     async onClose(): Promise<void> {
-        // Clear search state directly without triggering refreshTimeline()
-        // (view is closing, so no point in refreshing - avoids side effects during unload)
-        this.plugin.searchState.active = false;
-        this.plugin.searchState.term = '';
-        this.plugin.searchState.status = 'idle';
-        this.plugin.searchState.hits = new Map();
+        // Clear search without triggering refreshTimeline() — the view is
+        // closing, so refreshing is pointless and invites side effects during
+        // unload. This must go through the service rather than resetting the
+        // state object here: only the service can invalidate the in-flight run
+        // token, and without that a search still in flight commits its results
+        // into the state we just cleared.
+        this.plugin.abandonSearch();
         
         // Clean up chronologue shift mode buttons (keyboard listeners auto-cleanup via view.register())
         if (this._chronologueShiftCleanup) {

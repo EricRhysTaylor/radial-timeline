@@ -99,6 +99,18 @@ export function searchHitPaths(state: TimelineSearchState): Set<string> {
 }
 
 /**
+ * Change-detection signature for the scope options.
+ *
+ * Lives beside the type so a new option cannot be added without this seeing it
+ * — building the signature at the call site would silently keep hashing the old
+ * three fields, and a scope change would stop forcing a re-render.
+ */
+export function searchOptionsSignature(options: TimelineSearchOptions): string {
+    const flags: Array<keyof TimelineSearchOptions> = ['timelineFields', 'body', 'llmAssist'];
+    return flags.map(flag => (options[flag] ? '1' : '0')).join('');
+}
+
+/**
  * Merge a hit into an accumulator, promoting `source` to 'both' when a scene
  * matched in more than one scope and unioning its evidence.
  */

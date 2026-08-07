@@ -12,7 +12,7 @@ import { DEFAULT_BOOK_TITLE, getActiveBook, getActiveBookTitle } from '../utils/
 import { getActiveRecentStructuralMoves } from '../utils/recentStructuralMoves';
 import { readSharedChapterTitle } from '../utils/timelineChapters';
 import { readPartMarker } from '../utils/timelineParts';
-import { searchHitPaths, type TimelineSearchState } from '../services/searchState';
+import { searchHitPaths, searchOptionsSignature, type TimelineSearchState } from '../services/searchState';
 
 /**
  * Types of changes that can trigger renders
@@ -248,7 +248,7 @@ export function createSnapshot(
         openFilePaths: new Set(openFilePaths),
         searchActive: searchState.active,
         searchTerm: searchState.term,
-        searchOptionsHash: `${searchState.options.timelineFields ? 1 : 0}${searchState.options.body ? 1 : 0}${searchState.options.llmAssist ? 1 : 0}`,
+        searchOptionsHash: searchOptionsSignature(searchState.options),
         searchResults: searchHitPaths(searchState),
         currentMode,
         currentMonth: now.getMonth(),

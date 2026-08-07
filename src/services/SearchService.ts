@@ -3,6 +3,7 @@ import type RadialTimelinePlugin from '../main';
 import { RadialTimelineView } from '../view/TimeLineView';
 import { getActivePlanetaryProfile, convertFromEarth } from '../utils/planetaryTime';
 import { collectHoverMetadataText, formatDateForDisplay } from '../utils/hoverMetadata';
+import { isRenderedOnTimeline } from '../utils/sceneHelpers';
 import { frontmatterValueToText } from '../utils/frontmatter';
 import type { RadialTimelineSettings } from '../types/settings';
 import type { TimelineItem } from '../types';
@@ -152,20 +153,32 @@ export class SearchService {
         state.status = 'running';
         state.error = undefined;
 
-        // Frozen for the life of the run — a mid-flight settings change must not
-        // make half the scenes match under different rules than the other half.
-        const settings = this.plugin.settings;
-        const includeCurrentSceneAnalysis = !!settings.enableAiSceneAnalysis;
-        const planetaryProfile = getActivePlanetaryProfile(settings);
-
         void this.plugin.getTimelineSceneData()
             .then(scenes => {
                 if (myRun !== this.runId) return; // superseded or cleared
+
+                // Every settings-derived input is resolved here, at one instant,
+                // immediately before the synchronous matching pass below. That
+                // pass never awaits, so no scene can be matched under different
+                // rules than another.
+                //
+                // Resolving these at call time instead would split the run's
+                // inputs across the await: the AI-analysis flag and planetary
+                // profile would be call-time values while the hover-metadata
+                // fields — reassigned wholesale by the settings UI — would be
+                // read post-await. Holding a reference to `plugin.settings` is
+                // not a freeze; the object is mutated in place.
+                const settings = this.plugin.settings;
+                const includeCurrentSceneAnalysis = !!settings.enableAiSceneAnalysis;
+                const planetaryProfile = getActivePlanetaryProfile(settings);
 
                 // Accumulate privately; the live state is untouched until commit.
                 const hits = new Map<string, TimelineSearchHit>();
 
                 scenes.forEach(scene => {
+                    // Only items the timeline actually draws can show a match.
+                    if (!isRenderedOnTimeline(scene)) return;
+
                     let planetaryLine: string | undefined;
                     if (planetaryProfile && scene.when) {
                         const conversion = convertFromEarth(scene.when, planetaryProfile);

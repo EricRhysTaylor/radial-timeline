@@ -88,6 +88,24 @@ export function isNonSceneItem(item: TimelineItem | { itemType?: string }): bool
 }
 
 /**
+ * Does this item appear anywhere on the timeline?
+ *
+ * Scenes, beats/plots, and backdrops all render — backdrops in their own ring
+ * (`BackdropRing.ts`), not the act/subplot rings. Matter notes do not: they are
+ * parsed for manuscript export and skipped by `Precompute` (`renderer/utils/
+ * Precompute.ts`), so nothing on screen can represent them. BookMeta notes never
+ * reach the scenes array at all.
+ *
+ * Search consults this so a match always has somewhere to show itself. Matching
+ * an unrendered item produces a hit that lights up nothing — indistinguishable
+ * from a broken search, and it inflates the match count and the change-detection
+ * signature with paths that are never in the DOM.
+ */
+export function isRenderedOnTimeline(item: TimelineItem | { itemType?: string }): boolean {
+    return !isMatterNote(item) && !isBookMetaNote(item);
+}
+
+/**
  * Canonical identity for a timeline item.
  *
  * The renderer identifies the same item across three surfaces — outer-ring

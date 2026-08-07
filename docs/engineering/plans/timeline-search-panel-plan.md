@@ -17,11 +17,26 @@ below was read, not assumed). Each stage ends with `npx tsc --noEmit` +
 | 5 — Concept search | Planned |
 | 6 — Body highlight on scene open | Planned |
 
-All four pre-existing defects listed below are fixed, plus a fifth found during
-implementation: the metadata-block gate in `SynopsisManager` tested only the
-*scene* hover list, so a beat or backdrop whose own fields were enabled had the
-whole block skipped and never rendered them — a third divergent derivation of
-the same fact the extraction exists to consolidate.
+All four pre-existing defects listed below are fixed, plus three found during
+implementation and review:
+
+5. The metadata-block gate in `SynopsisManager` tested only the *scene* hover
+   list, so a beat or backdrop whose own fields were enabled had the whole block
+   skipped and never rendered them — a third divergent derivation of the fact
+   the extraction exists to consolidate.
+6. `onClose` reset the state object directly instead of going through the
+   service, leaving the run token untouched, so an in-flight search committed
+   into a view that had just cleared it. Invalidation now lives in
+   `SearchService.reset()`, behind both `clearSearch()` and `abandonSearch()`.
+7. Search matched **matter notes**, which the timeline never draws — the
+   searchable==visible rule violated at the item level rather than the field
+   level.
+
+One non-defect correction: the run's settings-derived inputs were split across
+the `await` (AI flag and planetary profile at call time, hover fields after),
+and a comment claimed a freeze that holding a `plugin.settings` reference does
+not provide — the object is mutated in place. All inputs now resolve at one
+instant, immediately before the synchronous matching pass.
 
 Revised after a correctness review — see the Decision log for what changed and
 why. The review found four real holes in the first draft (async race, dropped
@@ -55,6 +70,14 @@ is the wrong feature:
 | Timeline fields | Scene title + the curated fields + **whatever custom fields the author enabled in hover metadata** | On the timeline, and on hover |
 | Scene body | Prose only — the YAML block is excluded | On click, highlighted in the editor |
 | *(neither)* | Disabled/hidden YAML fields | Nowhere — so nothing searches them |
+
+The rule cuts across *items* as well as fields. Search only considers items the
+timeline actually draws (`isRenderedOnTimeline`, `utils/sceneHelpers.ts`).
+Scenes, beats/plots, and backdrops all render — backdrops in their own ring.
+Front/back matter notes do not: `SceneDataService` puts them in the scenes array
+for manuscript export, and `Precompute` skips them. Matching one produces a hit
+that lights up nothing, and inflates both the match count and the
+change-detection signature with paths that are never in the DOM.
 
 A match the author cannot see is indistinguishable from a bug: the scene lights
 up yellow, they hover, and nothing is highlighted. Hidden YAML is searched by

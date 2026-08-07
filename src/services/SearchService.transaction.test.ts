@@ -25,6 +25,9 @@ function deferred(): Deferred {
 const scene = (path: string, synopsis: string): TimelineItem =>
     ({ path, title: path, synopsis, rawFrontmatter: {} } as TimelineItem);
 
+const itemOfType = (path: string, synopsis: string, itemType: string): TimelineItem =>
+    ({ path, title: path, synopsis, itemType, rawFrontmatter: {} } as TimelineItem);
+
 function makeHarness() {
     const pending: Deferred[] = [];
     let refreshCount = 0;
@@ -132,6 +135,64 @@ describe('SearchService transaction', () => {
 
         expect(plugin.searchState.status).toBe('idle');
         expect(plugin.searchState.error).toBeUndefined();
+    });
+
+    it('skips matter notes, which the timeline never draws', async () => {
+        // Front/back matter is parsed for manuscript export but excluded from
+        // the rendered rings. Matching it produces a hit that lights up
+        // nothing — and inflates both the match count and the change signature.
+        const { service, plugin, pending } = makeHarness();
+
+        service.performSearch('dedication');
+        pending[0].resolve([
+            scene('scene.md', 'the dedication was read aloud'),
+            itemOfType('front.md', 'dedication', 'Frontmatter'),
+            itemOfType('back.md', 'dedication', 'Backmatter')
+        ]);
+        await flush();
+
+        expect([...plugin.searchState.hits.keys()]).toEqual(['scene.md']);
+    });
+
+    it('still matches beats and backdrops, which do render', async () => {
+        const { service, plugin, pending } = makeHarness();
+
+        service.performSearch('storm');
+        pending[0].resolve([
+            ({
+                path: 'beat.md', title: 'Beat', synopsis: 'storm', itemType: 'Beat',
+                rawFrontmatter: { 'Beat Model': 'Save the Cat' }
+            } as TimelineItem),
+            itemOfType('backdrop.md', 'storm', 'Backdrop')
+        ]);
+        await flush();
+
+        expect([...plugin.searchState.hits.keys()].sort()).toEqual(['backdrop.md', 'beat.md']);
+    });
+
+    it('resolves every settings-derived input after the await, not across it', async () => {
+        // Swapping the whole settings object is the only way a test can tell
+        // the two designs apart: production reassigns properties *on* the
+        // settings object, which the old call-time capture saw anyway. What is
+        // under test is the timing — every input now comes from one instant,
+        // rather than the AI flag and planetary profile being read at call time
+        // while hover fields were read after the await.
+        const { service, plugin, pending } = makeHarness();
+
+        service.performSearch('Diego');
+        // Settings change while the scene load is still in flight.
+        plugin.settings = {
+            hoverMetadataFields: [{ key: 'Place', label: 'Place', icon: '', enabled: true }]
+        } as never;
+
+        pending[0].resolve([
+            ({ path: 'a.md', title: 'A', rawFrontmatter: { Place: 'Diego' } } as TimelineItem)
+        ]);
+        await flush();
+
+        // The whole run used the post-await settings, so the newly enabled
+        // hover field is searched — consistently, for every scene.
+        expect([...plugin.searchState.hits.keys()]).toEqual(['a.md']);
     });
 
     it('keeps prior results when a run fails, rather than blanking the timeline', async () => {

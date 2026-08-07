@@ -2143,6 +2143,12 @@ export class RadialTimelineView extends ItemView {
             return;
         }
 
+        // A run in flight has not committed its term yet. Blanking the box here
+        // would erase the author's query in front of them — invisible for the
+        // instant literal sweep, but a concept run reports progress for as long
+        // as it takes, and each report would wipe the field again.
+        if (search.status === 'running' || search.status === 'error') return;
+
         this.timelineSearchInput.value = '';
         this.setTimelineSearchButtonMode('search');
     }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { chunkScenes, parseMatches, verifyMatch, type ConceptSearchScene } from './ConceptSearchService';
+import { chunkBudgetFor, chunkScenes, parseMatches, verifyMatch, type ConceptSearchScene } from './ConceptSearchService';
+import type { LocalLlmSettings } from '../ai/types';
 
 const scene = (overrides: Partial<ConceptSearchScene> = {}): ConceptSearchScene => ({
     path: 'a.md',
@@ -87,6 +88,26 @@ describe('chunkScenes', () => {
 
     it('returns nothing for an empty corpus', () => {
         expect(chunkScenes([], 1000)).toEqual([]);
+    });
+});
+
+describe('chunkBudgetFor', () => {
+    const local = (caps: string[]): LocalLlmSettings =>
+        ({ declaredCapabilities: caps } as unknown as LocalLlmSettings);
+
+    it('stays small unless the operator declares long context', () => {
+        // The loaded context length is set outside Obsidian and cannot be
+        // discovered; overshooting it makes the server reject the whole
+        // request rather than degrade.
+        expect(chunkBudgetFor(local([]))).toBeLessThanOrEqual(2_000);
+    });
+
+    it('trusts an explicit longContext declaration', () => {
+        expect(chunkBudgetFor(local(['longContext']))).toBeGreaterThan(chunkBudgetFor(local([])));
+    });
+
+    it('tolerates settings with no declared capabilities at all', () => {
+        expect(chunkBudgetFor({} as unknown as LocalLlmSettings)).toBeLessThanOrEqual(2_000);
     });
 });
 

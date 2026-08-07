@@ -69,16 +69,34 @@ export interface CancelToken {
 }
 
 /**
- * Input-token budget per chunk.
+ * Input-token budget per chunk, when the operator has NOT declared long context.
  *
- * Half of the provider's declared default window, leaving room for the prompt
- * scaffold and the model's reply. `computeCaps` is deliberately not used here:
- * it is built around cloud models whose context windows are known facts, and a
- * local model's real window is not something the plugin can discover. Halving
- * a conservative default is an honest guess; deriving a precise-looking number
- * from unknowns would not be.
+ * Deliberately small. A local model's real context length is not something the
+ * plugin can discover — it is set when the model is loaded, outside Obsidian —
+ * and overshooting it does not degrade gracefully: the server rejects the whole
+ * request. Most local models are loaded at 4k–8k, so this leaves comfortable
+ * room for the prompt scaffold and the reply.
+ *
+ * `computeCaps` is not used here. It is built around cloud models whose windows
+ * are published facts; deriving a precise-looking number from an unknown would
+ * only make a guess look authoritative.
  */
-const CHUNK_INPUT_TOKEN_BUDGET = Math.floor(PROVIDER_CAPS.ollama.defaultInputTokens * 0.5);
+const DEFAULT_CHUNK_INPUT_TOKEN_BUDGET = 2_000;
+
+/**
+ * Budget when the operator has declared `longContext` in Settings → AI.
+ *
+ * Their declaration is the only trustworthy signal about the loaded window, so
+ * it — not a guess — is what unlocks larger, faster passes.
+ */
+const LONG_CONTEXT_CHUNK_INPUT_TOKEN_BUDGET = Math.floor(PROVIDER_CAPS.ollama.defaultInputTokens * 0.5);
+
+/** The per-chunk budget this configuration can safely fill. */
+export function chunkBudgetFor(localLlm: LocalLlmSettings): number {
+    return localLlm.declaredCapabilities?.includes('longContext')
+        ? LONG_CONTEXT_CHUNK_INPUT_TOKEN_BUDGET
+        : DEFAULT_CHUNK_INPUT_TOKEN_BUDGET;
+}
 
 /** Long enough to be evidence, short enough to survive exact matching. */
 const MAX_QUOTE_WORDS = 15;
@@ -132,7 +150,7 @@ function renderScene(scene: ConceptSearchScene, id: number): string {
  */
 export function chunkScenes(
     scenes: ConceptSearchScene[],
-    budgetTokens: number = CHUNK_INPUT_TOKEN_BUDGET
+    budgetTokens: number = DEFAULT_CHUNK_INPUT_TOKEN_BUDGET
 ): ConceptSearchScene[][] {
     const chunks: ConceptSearchScene[][] = [];
     let current: ConceptSearchScene[] = [];
@@ -209,7 +227,7 @@ export class ConceptSearchService {
         const apiKey = await getCredential(this.plugin, 'ollama');
         const transport = { baseUrl: localLlm.baseUrl, timeoutMs: localLlm.timeoutMs, apiKey };
 
-        const chunks = chunkScenes(scenes);
+        const chunks = chunkScenes(scenes, chunkBudgetFor(localLlm));
         const hits: TimelineSearchHit[] = [];
         let droppedClaims = 0;
 

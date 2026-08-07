@@ -101,6 +101,16 @@ export function chunkBudgetFor(localLlm: LocalLlmSettings): number {
 /** Long enough to be evidence, short enough to survive exact matching. */
 const MAX_QUOTE_WORDS = 15;
 
+/**
+ * Output ceiling per pass.
+ *
+ * The expected reply is a short list of scene ids and quotes, so leaving output
+ * unbounded only lets a reasoning model spend minutes thinking before it
+ * answers — and then hit the transport timeout, failing a pass that had nothing
+ * wrong with it. Bounded to the shape of the answer we actually asked for.
+ */
+const MAX_OUTPUT_TOKENS = PROVIDER_CAPS.ollama.defaultOutputTokens;
+
 const MATCH_SCHEMA: Record<string, unknown> = {
     type: 'object',
     required: ['matches'],
@@ -269,6 +279,7 @@ export class ConceptSearchService {
                         modelId: localLlm.defaultModelId,
                         systemPrompt,
                         userPrompt: prompt,
+                        maxOutputTokens: MAX_OUTPUT_TOKENS,
                         responseFormat: useResponseFormat ? { type: 'json_object' } : undefined
                     })
                 },

@@ -380,10 +380,14 @@ export class SearchPanelController {
         }
 
         // Silence here would present a thin sweep as a complete one.
+        const caveats: string[] = [];
         if (state.droppedClaims && state.droppedClaims > 0) {
-            return `${matched} · ${t('timeline.search.statusDropped', { count: String(state.droppedClaims) })}`;
+            caveats.push(t('timeline.search.statusDropped', { count: String(state.droppedClaims) }));
         }
-        return matched;
+        if (state.unreadableScenes && state.unreadableScenes > 0) {
+            caveats.push(t('timeline.search.statusUnreadable', { count: String(state.unreadableScenes) }));
+        }
+        return caveats.length > 0 ? `${matched} · ${caveats.join(' · ')}` : matched;
     }
 }
 

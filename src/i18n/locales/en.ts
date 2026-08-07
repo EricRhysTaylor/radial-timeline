@@ -530,6 +530,8 @@ export interface TranslationKeys {
             statusStopped: string;
             /** Appended when the model named scenes it could not quote. {{count}} claims. */
             statusDropped: string;
+            /** Appended when some scenes produced no usable reply at all. */
+            statusUnreadable: string;
             cancelAction: string;
             /** Cancel cannot abort a request already sent; this says so. */
             cancelPending: string;
@@ -2855,6 +2857,7 @@ export const en: TranslationKeys = {
             statusChunkFound: 'Reading scene {{chunk}} of {{total}} \u00b7 {{found}} found',
             statusStopped: 'Stopped early \u2014 {{count}} found so far',
             statusDropped: '{{count}} model claims dropped (no verbatim match)',
+            statusUnreadable: '{{count}} scenes unreadable',
             cancelAction: 'Cancel',
             cancelPending: 'Finishing current pass\u2026',
             statusIdle: 'Press Enter to search',

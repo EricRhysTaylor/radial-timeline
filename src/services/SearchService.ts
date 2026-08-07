@@ -348,7 +348,7 @@ export class SearchService {
             });
 
             if (myRun !== this.runId) return;
-            this.commit(term, hits, outcome.droppedClaims, outcome.cancelled);
+            this.commit(term, hits, outcome.droppedClaims, outcome.cancelled, outcome.unreadableScenes);
         } catch (error) {
             if (myRun !== this.runId) return;
             const message = error instanceof Error ? error.message : String(error);
@@ -407,7 +407,8 @@ export class SearchService {
         term: string,
         hits: Map<string, TimelineSearchHit>,
         droppedClaims?: number,
-        stoppedEarly?: boolean
+        stoppedEarly?: boolean,
+        unreadableScenes?: number
     ): void {
         const state = this.plugin.searchState;
         state.term = term;
@@ -417,6 +418,7 @@ export class SearchService {
         state.progress = undefined;
         state.droppedClaims = droppedClaims;
         state.stoppedEarly = stoppedEarly;
+        state.unreadableScenes = unreadableScenes;
         state.hits = hits;
         this.syncTimelineSearchControls();
         this.refreshTimelineViews();
@@ -443,6 +445,7 @@ export class SearchService {
         state.progress = undefined;
         state.droppedClaims = undefined;
         state.stoppedEarly = undefined;
+        state.unreadableScenes = undefined;
         state.hits = new Map();
     }
 

@@ -84,6 +84,8 @@ export interface TimelineSearchState {
     droppedClaims?: number;
     /** True when the committed run was stopped early rather than completing. */
     stoppedEarly?: boolean;
+    /** Scenes the sweep reached but could not get a usable answer for. */
+    unreadableScenes?: number;
     hits: Map<string, TimelineSearchHit>;
 }
 

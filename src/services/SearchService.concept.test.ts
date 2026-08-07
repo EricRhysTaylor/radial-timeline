@@ -188,18 +188,61 @@ describe('concept search through the transaction', () => {
         h.resolve([scene('a.md', ''), scene('b.md', '')]);
         await settle();
 
-        expect(h.plugin.searchState.status).toBe('error');
-        // Verified before the failure, and no less true for what came after.
+        // The bad scene no longer kills the sweep, so the run completes and
+        // keeps the match found before it — reporting the gap rather than
+        // pretending the scene simply had no match.
+        expect(h.plugin.searchState.status).toBe('ready');
         expect(h.plugin.searchState.hits.size).toBe(1);
+        expect(h.plugin.searchState.unreadableScenes).toBe(1);
     });
 
-    it('keeps prior results when the model fails a chunk', async () => {
+    it('skips a scene with an unusable reply and keeps sweeping', async () => {
+        // Losing ninety scenes of work to one malformed reply is a bad trade,
+        // especially once matches stream in and the author is already reading.
+        const h = makeHarness();
+        h.plugin.searchState.options = { timelineFields: false, body: true, llmAssist: true };
+        h.bodies.set('a.md', 'first scene prose');
+        h.bodies.set('bad.md', 'second scene prose');
+        h.bodies.set('c.md', 'third scene prose');
+
+        complete
+            .mockResolvedValueOnce(reply([{ scene_id: '1', reason: 'r', quotes: ['prose'] }]))
+            .mockResolvedValueOnce({ success: false, content: null, responseData: {}, error: 'Unterminated string' })
+            .mockResolvedValueOnce(reply([{ scene_id: '1', reason: 'r', quotes: ['prose'] }]));
+
+        h.service.performSearch('a question');
+        h.resolve([scene('a.md', ''), scene('bad.md', ''), scene('c.md', '')]);
+        await settle();
+
+        expect(h.plugin.searchState.status).toBe('ready');
+        // The scenes either side of the bad one still matched.
+        expect(h.plugin.searchState.hits.size).toBe(2);
+        // And the gap is reported, not hidden.
+        expect(h.plugin.searchState.unreadableScenes).toBe(1);
+    });
+
+    it('gives up when failures run consecutively — a dead server, not a bad reply', async () => {
+        const h = makeHarness();
+        h.plugin.searchState.options = { timelineFields: false, body: true, llmAssist: true };
+        for (let i = 0; i < 8; i += 1) h.bodies.set(`s${i}.md`, 'prose');
+        complete.mockResolvedValue({ success: false, content: null, responseData: {}, error: 'connection lost' });
+
+        h.service.performSearch('a question');
+        h.resolve(Array.from({ length: 8 }, (_, i) => scene(`s${i}.md`, '')));
+        await settle();
+
+        expect(h.plugin.searchState.status).toBe('error');
+        expect(h.plugin.searchState.error).toContain('in a row');
+        // Stopped rather than waiting out a timeout for every remaining scene.
+        expect(complete.mock.calls.length).toBeLessThan(8);
+    });
+
+    it('reports a gap rather than passing off an unreadable scene as a non-match', async () => {
+        // "No match here" and "never found out" are different answers, and the
+        // author has to be able to tell them apart.
         const h = makeHarness();
         h.plugin.searchState.options = { timelineFields: false, body: true, llmAssist: true };
         h.bodies.set('a.md', 'prose');
-        h.plugin.searchState.active = true;
-        h.plugin.searchState.term = 'earlier';
-        h.plugin.searchState.hits.set('kept.md', { path: 'kept.md', source: 'body', evidence: [] });
 
         complete.mockResolvedValue({ success: false, content: null, responseData: {}, error: 'model exploded' });
 
@@ -207,8 +250,26 @@ describe('concept search through the transaction', () => {
         h.resolve([scene('a.md', '')]);
         await settle();
 
+        expect(h.plugin.searchState.status).toBe('ready');
+        expect(h.plugin.searchState.hits.size).toBe(0);
+        expect(h.plugin.searchState.unreadableScenes).toBe(1);
+    });
+
+    it('abandons nothing already committed when the whole run errors', async () => {
+        const h = makeHarness();
+        h.plugin.searchState.options = { timelineFields: false, body: true, llmAssist: true };
+        for (let i = 0; i < 8; i += 1) h.bodies.set(`s${i}.md`, 'prose');
+        h.plugin.searchState.active = true;
+        h.plugin.searchState.term = 'earlier';
+        h.plugin.searchState.hits.set('kept.md', { path: 'kept.md', source: 'body', evidence: [] });
+
+        complete.mockResolvedValue({ success: false, content: null, responseData: {}, error: 'connection lost' });
+
+        h.service.performSearch('a homecoming');
+        h.resolve(Array.from({ length: 8 }, (_, i) => scene(`s${i}.md`, '')));
+        await settle();
+
         expect(h.plugin.searchState.status).toBe('error');
-        expect(h.plugin.searchState.error).toContain('model exploded');
         // A failed sweep must not publish an empty set over usable results.
         expect(h.plugin.searchState.hits.has('kept.md')).toBe(true);
     });

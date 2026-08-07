@@ -50,6 +50,12 @@ export interface ConceptSearchOutcome {
     /** True when the author stopped the sweep; the hits so far are still real. */
     cancelled: boolean;
     /**
+     * Scenes whose reply could not be read at all. Reported like dropped
+     * claims: the sweep covered them, but their answer was unusable, and
+     * saying so is the difference between "no match here" and "never found out".
+     */
+    unreadableScenes: number;
+    /**
      * Scenes the model named whose quotes could not be found in the text it was
      * given. Surfaced to the author rather than swallowed: a high number means
      * the model is inventing, and hiding that would present a thin sweep as a
@@ -94,6 +100,14 @@ export function chunkBudgetFor(localLlm: LocalLlmSettings): number {
 
 /** Long enough to be evidence, short enough to survive exact matching. */
 const MAX_QUOTE_WORDS = 15;
+
+/**
+ * Consecutive unusable replies before the sweep gives up.
+ *
+ * One bad reply is a bad reply; five in a row is a server that has gone away,
+ * and continuing would mean waiting out a timeout for every remaining scene.
+ */
+const CONSECUTIVE_FAILURE_LIMIT = 5;
 
 /**
  * Words too common to say anything about which scene to read first. Includes
@@ -169,19 +183,40 @@ export function orderByPromise(
  */
 const MAX_OUTPUT_TOKENS = PROVIDER_CAPS.ollama.defaultOutputTokens;
 
+/**
+ * Bounded on every axis.
+ *
+ * One request asks about one scene, so a reply needs at most one match, a
+ * one-line reason, and a couple of short quotes. Leaving these open let a model
+ * ramble past the output ceiling and get cut off mid-string — the observed
+ * failure was "Unterminated string in JSON at position 8316", which is the
+ * token cap landing in the middle of a quote. Constraining the shape is what
+ * keeps replies inside the budget instead of relying on the model's restraint.
+ */
+const MAX_QUOTES_PER_MATCH = 3;
+const MAX_REASON_CHARS = 200;
+const MAX_QUOTE_CHARS = 160;
+
 const MATCH_SCHEMA: Record<string, unknown> = {
     type: 'object',
     required: ['matches'],
+    additionalProperties: false,
     properties: {
         matches: {
             type: 'array',
+            maxItems: 1,
             items: {
                 type: 'object',
                 required: ['scene_id', 'reason', 'quotes'],
+                additionalProperties: false,
                 properties: {
                     scene_id: { type: 'string' },
-                    reason: { type: 'string' },
-                    quotes: { type: 'array', items: { type: 'string' } }
+                    reason: { type: 'string', maxLength: MAX_REASON_CHARS },
+                    quotes: {
+                        type: 'array',
+                        maxItems: MAX_QUOTES_PER_MATCH,
+                        items: { type: 'string', maxLength: MAX_QUOTE_CHARS }
+                    }
                 }
             }
         }
@@ -193,6 +228,7 @@ const SYSTEM_PROMPT = [
     'Return only scenes that genuinely bear on it. Returning nothing is a valid, useful answer.',
     `Every quote MUST be copied verbatim from the scene text you were given — same words, same spelling, same punctuation — and at most ${MAX_QUOTE_WORDS} words.`,
     'A quote you cannot copy exactly is worse than no quote: it will be discarded.',
+    `Give at most ${MAX_QUOTES_PER_MATCH} quotes and keep the reason to one short sentence.`,
     'Respond with JSON only.'
 ].join(' ');
 
@@ -334,6 +370,8 @@ export class ConceptSearchService {
         const passes = buildPasses(ordered, chunkBudgetFor(localLlm));
         const hits: TimelineSearchHit[] = [];
         let droppedClaims = 0;
+        let unreadableScenes = 0;
+        let consecutiveFailures = 0;
 
         for (let index = 0; index < passes.length; index += 1) {
             // Checked between passes. Cancel cannot abort a request already in
@@ -343,7 +381,7 @@ export class ConceptSearchService {
             // Cancelling KEEPS what has been found. The author has been watching
             // matches arrive and may already have opened one; throwing them away
             // because they asked the sweep to stop would be indefensible.
-            if (cancel.cancelled) return { hits, droppedClaims, cancelled: true };
+            if (cancel.cancelled) return { hits, droppedClaims, cancelled: true, unreadableScenes };
 
             const pass = passes[index];
             // Progress counts SCENES, which is what the author is watching;
@@ -385,12 +423,24 @@ export class ConceptSearchService {
             });
 
             if (!result.ok) {
-                // One failed scene means the sweep is incomplete. Publishing the
-                // rest would present a partial pass as a complete one.
-                throw new Error(
-                    `Local model failed on scene ${pass.sceneIndex + 1} of ${scenes.length}: ${result.error}`
+                // One unusable reply must not cost the author the other ninety
+                // scenes — especially now that matches stream in and they may
+                // already be reading them. Skip it, count it, keep going.
+                unreadableScenes += 1;
+                consecutiveFailures += 1;
+                console.warn(
+                    `[Search] Unusable reply for scene ${pass.sceneIndex + 1}: ${result.error}`
                 );
+                // A run of failures is a dead server, not a bad reply. Stopping
+                // beats timing out once per remaining scene.
+                if (consecutiveFailures >= CONSECUTIVE_FAILURE_LIMIT) {
+                    throw new Error(
+                        `Local model failed on ${consecutiveFailures} scenes in a row: ${result.error}`
+                    );
+                }
+                continue;
             }
+            consecutiveFailures = 0;
 
             for (const match of parseMatches(result.content)) {
                 const verified = verifyMatch(pass.scene, Array.isArray(match.quotes) ? match.quotes : []);
@@ -409,7 +459,7 @@ export class ConceptSearchService {
             }
         }
 
-        return { hits, droppedClaims, cancelled: false };
+        return { hits, droppedClaims, cancelled: false, unreadableScenes };
     }
 }
 

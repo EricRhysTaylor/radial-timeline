@@ -17,6 +17,7 @@ import {
 } from './yamlTemplateNormalize';
 import type { RadialTimelineSettings } from '../types/settings';
 import { getActiveFrontmatterMappings, normalizeFrontmatterKeys } from './frontmatter';
+import { getOptionalManagedKeys, isOptionalManagedKey } from './optionalManagedKeys';
 import { normalizeBeatSetNameInput, toBeatModelMatchKey } from './beatsInputNormalize';
 import { STARTER_BEAT_SETS } from './beatsSystems';
 import { findSavedBeatSystem } from './beatSystemState';
@@ -343,6 +344,10 @@ export async function runYamlAudit(options: YamlAuditOptions): Promise<YamlAudit
     if (noteType === 'Scene') {
         for (const key of sceneAiSchemaKeys) knownKeysForSafety.add(key);
     }
+    // Optional-managed keys ship in no template but are RT-owned schema. Without
+    // this the safety scanner would treat an authored Part field as a foreign key
+    // and offer the author's own structure up for deletion.
+    for (const key of getOptionalManagedKeys(noteType)) knownKeysForSafety.add(key);
     // Add common Obsidian-internal keys
     for (const k of ['position', 'cssclasses', 'tags', 'aliases']) knownKeysForSafety.add(k);
 
@@ -408,9 +413,12 @@ export async function runYamlAudit(options: YamlAuditOptions): Promise<YamlAudit
         const missingReferenceId = !referenceId;
 
         // Extra: note keys not in any template and not excluded. Tolerated AI
-        // keys (AI off) are never extra — see the tolerance note above.
+        // keys (AI off) are never extra — see the tolerance note above. Neither
+        // are optional-managed keys: they ship in no template by design, so
+        // "not in a template" is not evidence that they are foreign.
         const extraKeys = noteKeys.filter(k =>
             !allTemplateKeys.has(k) && !excludeKey(k) && !isToleratedAiKey(k)
+            && !isOptionalManagedKey(noteType, k)
         );
 
         // Order drift: only evaluated when no fields are missing

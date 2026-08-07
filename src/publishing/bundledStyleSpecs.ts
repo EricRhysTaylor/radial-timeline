@@ -130,6 +130,9 @@ const MODERN_CLASSIC_SPEC: DesignedStyleSpec = {
     parts: {
         mode: 'roman',
         pageBreak: true,
+        // Signature is the structural layout — it is the one that prints a
+        // Part's title when the author gives it one.
+        title: true,
         epigraph: true,
         epigraphPlacement: 'inline',
         openAny: true,

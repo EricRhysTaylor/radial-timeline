@@ -121,6 +121,7 @@ function randomSpec(rng: () => number): DesignedStyleSpec {
         parts: {
             mode: partsMode,
             pageBreak: rng() < 0.7,
+            title: rng() < 0.5,
             epigraph: rng() < 0.5,
             epigraphPlacement: rng() < 0.3 ? 'own-page' : 'inline',
             openAny: rng() < 0.3,
@@ -213,6 +214,19 @@ function checkInvariants(spec: DesignedStyleSpec, tex: string): Issue[] {
     if (spec.parts.mode !== 'off') {
         if (!tex.includes('\\newcommand{\\rtPart}')) {
             fail('rtPart-defined', 'parts on but \\rtPart macro not defined');
+        }
+        // Arity is invariant across every spec: the export always emits four
+        // arguments, so a layout that doesn't print titles must still accept one.
+        if (!tex.includes('\\newcommand{\\rtPart}[4]')) {
+            fail('rtPart-arity', 'parts on but \\rtPart does not take the 4 arguments the export emits');
+        }
+        // parts.title decides only whether #2 is typeset.
+        const typesetsTitle = tex.includes('{\\normalfont\\itshape\\large #2}');
+        if (spec.parts.title && !typesetsTitle) {
+            fail('rtPart-title', 'parts.title=true but the title argument is never typeset');
+        }
+        if (!spec.parts.title && typesetsTitle) {
+            fail('rtPart-title', 'parts.title=false but the title argument is typeset anyway');
         }
         // own-page epigraph requires an explicit cleardoublepage inside the macro
         if (spec.parts.epigraphPlacement === 'own-page' && (spec.parts.epigraph || spec.epigraph.enabled)) {
@@ -329,7 +343,7 @@ describe('generateDesignedStyleTex — property tests', () => {
         const tex = generateDesignedStyleTex(spec);
         // The whole .tex contains many \cleardoublepage calls (parts/chapters use them),
         // so scope the check to the \rtPart macro definition specifically.
-        const partMatch = tex.match(/\\newcommand\{\\rtPart\}\[3\]\{[\s\S]+?\n\}/);
+        const partMatch = tex.match(/\\newcommand\{\\rtPart\}\[\d+\]\{[\s\S]+?\n\}/);
         expect(partMatch).toBeTruthy();
         expect(partMatch![0]).toContain('\\cleardoublepage');
     });
@@ -420,7 +434,7 @@ describe('generateDesignedStyleTex — property tests', () => {
             epigraph: { enabled: true, italic: true, attributionStyle: 'em-dash-caps' },
         });
         const tex = generateDesignedStyleTex(inlineSpec);
-        const partMatch = tex.match(/\\newcommand\{\\rtPart\}\[3\]\{[\s\S]+?\n\}/);
+        const partMatch = tex.match(/\\newcommand\{\\rtPart\}\[\d+\]\{[\s\S]+?\n\}/);
         const partTex = partMatch![0];
         const count = (partTex.match(/\\cleardoublepage/g) || []).length;
         expect(count).toBeLessThanOrEqual(2);

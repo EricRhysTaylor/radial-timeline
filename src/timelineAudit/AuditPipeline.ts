@@ -9,11 +9,14 @@
 import type { Vault } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { getAIClient } from '../ai/runtime/aiClient';
+import type { AIProviderId, Capability } from '../ai/types';
 import { parseWhenField } from '../utils/date';
 import { buildChronologyEntries, buildChronologyPositionMap } from './chronology';
 import { loadScopedSceneNotes } from '../timeline/sharedSceneNotes';
 import type {
     TimelineAuditAiResponse,
+    TimelineAuditAiRunSummary,
+    TimelineAuditAiScope,
     TimelineAuditCallbacks,
     TimelineAuditCue,
     TimelineAuditDetectionSource,
@@ -128,6 +131,7 @@ function monthNameToIndex(name: string): string {
 
 function excerpt(text: string, maxChars: number): string {
     const trimmed = text.trim();
+    if (maxChars <= 0) return trimmed;
     if (trimmed.length <= maxChars) return trimmed;
     return `${trimmed.slice(0, maxChars).trim()}…`;
 }
@@ -244,9 +248,10 @@ function addEvidence(
 
 function setSuggestion(
     finding: WorkingFinding,
-    suggestion: TimelineAuditSuggestion
+    suggestion: TimelineAuditSuggestion,
+    replaceSafeSuggestion = false
 ): void {
-    if (finding.suggestedWhen && finding.safeApplyEligible) return;
+    if (finding.suggestedWhen && finding.safeApplyEligible && !replaceSafeSuggestion) return;
     finding.suggestedWhen = suggestion.when;
     finding.suggestedConfidence = suggestion.confidence;
     finding.suggestedProvenance = suggestion.provenance;
@@ -307,6 +312,8 @@ function createWorkingFinding(
         reviewAction: 'keep',
         unresolved: issues.length > 0,
         aiSuggested: false,
+        aiChecked: false,
+        aiTimelineRole: null,
         safeApplyEligible: false,
         cues: [],
         notes,
@@ -749,38 +756,73 @@ function detectContinuityFindings(inputs: TimelineAuditSceneInput[], findingMap:
     }
 }
 
-function buildAiPrompt(
+function compactNeighborEvidence(input: TimelineAuditSceneInput | null): string {
+    if (!input) return 'N/A';
+    const evidence = input.synopsis.trim() || input.summary.trim() || 'No synopsis or summary.'; // SAFE: prompt copy explicitly identifies absent neighbor context
+    const compact = evidence.replace(/\s+/g, ' ');
+    const clipped = compact.length > 900 ? `${compact.slice(0, 899).trimEnd()}…` : compact;
+    return `${input.title} | current When: ${formatWhen(input.parsedWhen)} | ${clipped}`;
+}
+
+function buildManuscriptNarrativeMap(inputs: TimelineAuditSceneInput[]): string {
+    return inputs
+        .slice()
+        .sort((a, b) => a.manuscriptOrderIndex - b.manuscriptOrderIndex)
+        .map(input => `${input.manuscriptOrderIndex + 1}. ${input.title} | provisional When: ${formatWhen(input.parsedWhen)}`)
+        .join('\n');
+}
+
+export function buildTimelineAuditAiPrompt(
     input: TimelineAuditSceneInput,
-    previous: TimelineAuditSceneInput | null,
-    next: TimelineAuditSceneInput | null
+    previousNarrative: TimelineAuditSceneInput | null,
+    nextNarrative: TimelineAuditSceneInput | null,
+    manuscriptInputs: TimelineAuditSceneInput[]
 ): string {
-    const previousWhen = previous?.parsedWhen ? formatWhen(previous.parsedWhen) : 'N/A';
-    const nextWhen = next?.parsedWhen ? formatWhen(next.parsedWhen) : 'N/A';
+    const provisionalWhen = input.rawWhen ?? 'Missing'; // SAFE: prompt must label a genuinely missing provisional date
+    const summary = input.summary || 'N/A'; // SAFE: prompt must label an absent optional scene summary
+    const synopsis = input.synopsis || 'N/A'; // SAFE: prompt must label an absent optional scene synopsis
+    const body = input.bodyExcerpt || 'N/A'; // SAFE: prompt must label an empty scene body
+    return `You are reconstructing a fiction manuscript chronology scene by scene.
 
-    return `You are auditing a fiction scene timeline. Determine whether the manuscript evidence disagrees with the YAML When value.
+The current YAML When may be a rough scaffold. Treat it as provisional evidence, not truth. Read the manuscript evidence and decide whether this scene is mainline action, a flashback, a flash-forward, parallel action, or unclear. Infer an updated timestamp only when the text and neighboring narrative scenes support one. Preserve uncertainty instead of inventing precision.
 
+Manuscript narrative map (all dates are provisional):
+${buildManuscriptNarrativeMap(manuscriptInputs)}
+
+Current narrative position: ${input.manuscriptOrderIndex + 1} of ${manuscriptInputs.length}
 Current scene: ${input.title}
-Current YAML When: ${input.rawWhen ?? 'Missing'}
-Previous chronological neighbor: ${previous?.title ?? 'N/A'} (${previousWhen})
-Next chronological neighbor: ${next?.title ?? 'N/A'} (${nextWhen})
+Current provisional YAML When: ${provisionalWhen}
 
-Summary:
-${input.summary || 'N/A'}
+Previous scene in narrative order:
+${compactNeighborEvidence(previousNarrative)}
 
-Synopsis:
-${input.synopsis || 'N/A'}
+Next scene in narrative order:
+${compactNeighborEvidence(nextNarrative)}
 
-Body excerpt:
-${input.bodyExcerpt || 'N/A'}
+Current scene summary:
+${summary}
 
-Return JSON only with:
+Current scene synopsis:
+${synopsis}
+
+Current scene manuscript text:
+${body}
+
+Check all of the following:
+- explicit dates, ages, elapsed time, day names, seasons, and time of day;
+- continuity with the previous and next narrative scenes;
+- memories, dreams, backstory, flashbacks, flash-forwards, and parallel action;
+- whether the provisional When puts the scene in the wrong era, day, order, or time bucket.
+
+Return JSON only. Use an empty string when no issue, position, or timestamp can be supported. suggestedWhen must be YYYY-MM-DD HH:mm when present.
 {
   "rationale": string,
   "evidenceQuotes": string[],
-  "issueType": "time_of_day_conflict" | "relative_order_conflict" | "continuity_conflict" | "ambiguous_time_signal" | "insufficient_evidence" | null,
+  "issueType": "time_of_day_conflict" | "relative_order_conflict" | "continuity_conflict" | "ambiguous_time_signal" | "insufficient_evidence" | "",
   "evidenceTier": "direct" | "strong_inference" | "ambiguous",
-  "writtenTimelinePosition": string | null,
-  "suggestedWhen": string | null,
+  "writtenTimelinePosition": string,
+  "timelineRole": "mainline" | "flashback" | "flash_forward" | "parallel" | "unclear",
+  "suggestedWhen": string,
   "confidence": "high" | "med" | "low"
 }`;
 }
@@ -800,11 +842,22 @@ export function getTimelineAuditAiResponseSchema(): Record<string, unknown> {
         properties: {
             rationale: { type: 'string' },
             evidenceQuotes: { type: 'array', items: { type: 'string' } },
-            issueType: { type: 'string' },
-            evidenceTier: { type: 'string' },
+            issueType: {
+                type: 'string',
+                enum: [
+                    'time_of_day_conflict',
+                    'relative_order_conflict',
+                    'continuity_conflict',
+                    'ambiguous_time_signal',
+                    'insufficient_evidence',
+                    ''
+                ]
+            },
+            evidenceTier: { type: 'string', enum: ['direct', 'strong_inference', 'ambiguous'] },
             writtenTimelinePosition: { type: 'string' },
+            timelineRole: { type: 'string', enum: ['mainline', 'flashback', 'flash_forward', 'parallel', 'unclear'] },
             suggestedWhen: { type: 'string' },
-            confidence: { type: 'string' }
+            confidence: { type: 'string', enum: ['high', 'med', 'low'] }
         },
         required: [
             'rationale',
@@ -812,6 +865,7 @@ export function getTimelineAuditAiResponseSchema(): Record<string, unknown> {
             'issueType',
             'evidenceTier',
             'writtenTimelinePosition',
+            'timelineRole',
             'suggestedWhen',
             'confidence'
         ]
@@ -825,38 +879,105 @@ export function parseAuditAiResponse(content: string): TimelineAuditAiResponse |
         if (fenced) {
             json = fenced[1].trim();
         }
-        const parsed = JSON.parse(json) as TimelineAuditAiResponse;
+        const parsed = JSON.parse(json) as Record<string, unknown>;
         if (!parsed || typeof parsed.rationale !== 'string') return null;
-        return parsed;
+
+        const issueTypes = new Set<TimelineAuditIssueType>([
+            'time_of_day_conflict',
+            'relative_order_conflict',
+            'continuity_conflict',
+            'ambiguous_time_signal',
+            'insufficient_evidence'
+        ]);
+        const evidenceTiers = new Set<TimelineAuditEvidenceTier>(['direct', 'strong_inference', 'ambiguous']);
+        const timelineRoles = new Set<TimelineAuditAiResponse['timelineRole']>([
+            'mainline',
+            'flashback',
+            'flash_forward',
+            'parallel',
+            'unclear'
+        ]);
+        const confidenceValues = new Set<TimelineAuditAiResponse['confidence']>(['high', 'med', 'low']);
+        const issueType = typeof parsed.issueType === 'string' && issueTypes.has(parsed.issueType as TimelineAuditIssueType)
+            ? parsed.issueType as TimelineAuditIssueType
+            : undefined;
+
+        return {
+            rationale: parsed.rationale,
+            evidenceQuotes: Array.isArray(parsed.evidenceQuotes)
+                ? parsed.evidenceQuotes.filter((quote): quote is string => typeof quote === 'string')
+                : [],
+            issueType,
+            evidenceTier: typeof parsed.evidenceTier === 'string'
+                && evidenceTiers.has(parsed.evidenceTier as TimelineAuditEvidenceTier)
+                ? parsed.evidenceTier as TimelineAuditEvidenceTier
+                : 'ambiguous',
+            writtenTimelinePosition: typeof parsed.writtenTimelinePosition === 'string'
+                ? parsed.writtenTimelinePosition
+                : '',
+            timelineRole: typeof parsed.timelineRole === 'string'
+                && timelineRoles.has(parsed.timelineRole as TimelineAuditAiResponse['timelineRole'])
+                ? parsed.timelineRole as TimelineAuditAiResponse['timelineRole']
+                : 'unclear',
+            suggestedWhen: typeof parsed.suggestedWhen === 'string' ? parsed.suggestedWhen : '',
+            confidence: typeof parsed.confidence === 'string'
+                && confidenceValues.has(parsed.confidence as TimelineAuditAiResponse['confidence'])
+                ? parsed.confidence as TimelineAuditAiResponse['confidence']
+                : 'low'
+        };
     } catch {
         return null;
     }
+}
+
+export function getTimelineAuditAiRequiredCapabilities(provider: AIProviderId): Capability[] {
+    if (provider === 'ollama') return ['jsonStrict'];
+    return ['jsonStrict', 'reasoningStrong'];
+}
+
+export function selectTimelineAuditAiInputs(
+    inputs: TimelineAuditSceneInput[],
+    scope: TimelineAuditAiScope | undefined
+): TimelineAuditSceneInput[] {
+    const inNarrativeOrder = inputs.slice().sort((a, b) => a.manuscriptOrderIndex - b.manuscriptOrderIndex);
+    if (!scope || scope.mode === 'manuscript') return inNarrativeOrder;
+
+    const selectedPaths = new Set(scope.paths ?? []); // SAFE: non-manuscript scope without paths intentionally selects no scenes
+    return inNarrativeOrder.filter(input => selectedPaths.has(input.path));
 }
 
 async function runAiInference(
     plugin: RadialTimelinePlugin,
     inputs: TimelineAuditSceneInput[],
     findingMap: Map<string, WorkingFinding>,
-    callbacks: TimelineAuditCallbacks
-): Promise<void> {
-    const chronologyEntries = buildChronologyEntries(inputs);
-    const aiCandidates = chronologyEntries
-        .filter((entry) => {
-            const finding = findingMap.get(entry.input.path);
-            return finding && finding.unresolved && !finding.safeApplyEligible;
-        })
-        .map((entry) => entry.input);
+    callbacks: TimelineAuditCallbacks,
+    scope: TimelineAuditAiScope | undefined
+): Promise<TimelineAuditAiRunSummary> {
+    const allNarrativeInputs = inputs.slice().sort((a, b) => a.manuscriptOrderIndex - b.manuscriptOrderIndex);
+    const aiCandidates = selectTimelineAuditAiInputs(allNarrativeInputs, scope);
+    const summary: TimelineAuditAiRunSummary = {
+        scopeMode: scope?.mode ?? 'manuscript', // SAFE: omitted AI scope is the documented whole-manuscript mode
+        requested: aiCandidates.length,
+        checked: 0,
+        suggestions: 0,
+        failed: 0
+    };
 
-    if (aiCandidates.length === 0) return;
+    callbacks.onAiQueue?.(aiCandidates.length);
+    if (aiCandidates.length === 0) return summary;
 
     const aiClient = getAIClient(plugin);
+    const aiSettings = plugin.settings.aiSettings;
+    if (!aiSettings) {
+        throw new Error('Timeline Audit AI requires configured AI settings.');
+    }
 
     for (let index = 0; index < aiCandidates.length; index += 1) {
         if (callbacks.abortSignal?.aborted) break;
         const input = aiCandidates[index];
-        const chronologyIndex = chronologyEntries.findIndex((entry) => entry.input.path === input.path);
-        const previous = chronologyIndex > 0 ? chronologyEntries[chronologyIndex - 1].input : null;
-        const next = chronologyIndex >= 0 && chronologyIndex < chronologyEntries.length - 1 ? chronologyEntries[chronologyIndex + 1].input : null;
+        const narrativeIndex = allNarrativeInputs.findIndex(candidate => candidate.path === input.path);
+        const previous = narrativeIndex > 0 ? allNarrativeInputs[narrativeIndex - 1] : null;
+        const next = narrativeIndex >= 0 && narrativeIndex < allNarrativeInputs.length - 1 ? allNarrativeInputs[narrativeIndex + 1] : null;
         const finding = findingMap.get(input.path);
         if (!finding) continue;
 
@@ -866,9 +987,9 @@ async function runAiInference(
             const run = await aiClient.run({
                 feature: 'TimelineAuditAI',
                 task: 'TimelineDiagnosis',
-                requiredCapabilities: ['jsonStrict', 'reasoningStrong'],
-                featureModeInstructions: 'Audit fiction-scene chronology conservatively. Prefer uncertainty over overclaiming.',
-                userInput: buildAiPrompt(input, previous, next),
+                requiredCapabilities: getTimelineAuditAiRequiredCapabilities(aiSettings.provider),
+                featureModeInstructions: 'Reconstruct fiction-scene chronology conservatively from manuscript evidence. Treat scaffolded dates as provisional and prefer uncertainty over invented precision.',
+                userInput: buildTimelineAuditAiPrompt(input, previous, next, allNarrativeInputs),
                 returnType: 'json',
                 responseSchema: getTimelineAuditAiResponseSchema(),
                 overrides: {
@@ -879,19 +1000,28 @@ async function runAiInference(
                 }
             });
 
-            if (run.aiStatus !== 'success' || !run.content) continue;
+            if (run.aiStatus !== 'success' || !run.content) {
+                summary.failed += 1;
+                continue;
+            }
 
             const parsed = parseAuditAiResponse(run.content);
-            if (!parsed) continue;
+            if (!parsed) {
+                summary.failed += 1;
+                continue;
+            }
 
+            finding.aiChecked = true;
+            finding.aiTimelineRole = parsed.timelineRole;
+            summary.checked += 1;
             finding.notes.push(parsed.rationale);
             finding.detectionSources.add('ai');
 
-            for (const quote of parsed.evidenceQuotes ?? []) {
+            for (const quote of parsed.evidenceQuotes) {
                 addEvidence(finding, {
                     source: 'ai',
                     detectionSource: 'ai',
-                    tier: parsed.evidenceTier ?? 'ambiguous',
+                    tier: parsed.evidenceTier,
                     label: 'AI evidence',
                     snippet: quote
                 });
@@ -902,7 +1032,7 @@ async function runAiInference(
                     finding,
                     parsed.issueType,
                     'ai',
-                    parsed.evidenceTier ?? 'ambiguous',
+                    parsed.evidenceTier,
                     parsed.rationale
                 );
             }
@@ -917,20 +1047,36 @@ async function runAiInference(
             if (parsed.suggestedWhen) {
                 const suggestedWhen = parseWhenField(parsed.suggestedWhen);
                 if (suggestedWhen) {
-                    setSuggestion(finding, {
-                        when: suggestedWhen,
-                        confidence: parsed.confidence ?? 'low',
-                        provenance: 'ai',
-                        reason: parsed.rationale,
-                        source: 'ai',
-                        safeApply: false
-                    });
+                    const suggestionDiffers = !finding.currentWhen
+                        || suggestedWhen.getTime() !== finding.currentWhen.getTime();
+                    if (suggestionDiffers) {
+                        setSuggestion(finding, {
+                            when: suggestedWhen,
+                            confidence: parsed.confidence,
+                            provenance: 'ai',
+                            reason: parsed.rationale,
+                            source: 'ai',
+                            safeApply: false
+                        }, true);
+                        summary.suggestions += 1;
+                        if (!parsed.issueType) {
+                            addIssue(
+                                finding,
+                                'ambiguous_time_signal',
+                                'ai',
+                                parsed.evidenceTier,
+                                parsed.rationale
+                            );
+                        }
+                    }
                 }
             }
         } catch {
-            // Silent per-scene AI failures keep the deterministic audit usable.
+            summary.failed += 1;
         }
     }
+
+    return summary;
 }
 
 function finalizeFinding(finding: WorkingFinding): TimelineAuditFinding {
@@ -959,7 +1105,8 @@ function finalizeFinding(finding: WorkingFinding): TimelineAuditFinding {
         && !finding.aiSuggested
     ) || finding.safeApplyEligible;
 
-    const allowedActions: TimelineAuditFinding['allowedActions'] = safeApplyEligible
+    const hasSuggestion = finding.suggestedWhen instanceof Date && Boolean(finding.suggestedProvenance);
+    const allowedActions: TimelineAuditFinding['allowedActions'] = hasSuggestion
         ? ['apply', 'keep', 'mark_review']
         : status === 'aligned'
             ? ['keep']
@@ -1031,6 +1178,7 @@ export async function runTimelineAuditFromInputs(
     const mergedConfig = { ...DEFAULT_CONFIG, ...config };
     const chronologyPositionMap = buildChronologyPositionMap(inputs);
     const workingFindings = new Map<string, WorkingFinding>();
+    let aiRunSummary: TimelineAuditAiRunSummary | undefined;
 
     for (const input of inputs) {
         workingFindings.set(input.path, createWorkingFinding(input, chronologyPositionMap));
@@ -1056,14 +1204,17 @@ export async function runTimelineAuditFromInputs(
 
     if (mergedConfig.runAiInference && plugin) {
         callbacks.onStageChange?.('ai');
-        await runAiInference(plugin, inputs, workingFindings, callbacks);
+        aiRunSummary = await runAiInference(plugin, inputs, workingFindings, callbacks, mergedConfig.aiScope);
     }
 
     callbacks.onStageChange?.('complete');
-    return buildAuditResult(Array.from(workingFindings.values()).map(finalizeFinding));
+    return buildAuditResult(Array.from(workingFindings.values()).map(finalizeFinding), aiRunSummary);
 }
 
-function buildAuditResult(findings: TimelineAuditFinding[]): TimelineAuditResult {
+function buildAuditResult(
+    findings: TimelineAuditFinding[],
+    aiRunSummary?: TimelineAuditAiRunSummary
+): TimelineAuditResult {
     const sorted = findings.slice().sort(sortAuditFindingsForDisplay);
     const stats = {
         totalScenes: sorted.length,
@@ -1077,7 +1228,8 @@ function buildAuditResult(findings: TimelineAuditFinding[]): TimelineAuditResult
         findings: sorted,
         stats,
         appliedSuggestionCount: sorted.filter((finding) => finding.reviewAction === 'apply').length,
-        unresolvedCount: sorted.filter((finding) => finding.unresolved).length
+        unresolvedCount: sorted.filter((finding) => finding.unresolved).length,
+        aiRunSummary
     };
 }
 

@@ -151,6 +151,47 @@ export function redistributeAngles(
 }
 
 /**
+ * Expand a Sequence-aligned scene into the empty arc that follows it.
+ *
+ * Aligned scenes cannot be repacked: each one's start angle IS its position in
+ * the manuscript, which is the whole point of the mode. So the hovered scene
+ * keeps its start angle, grows its end angle into the gap ahead, and no other
+ * scene moves. Repacking here is what made hover flicker — the scene jumped out
+ * from under the cursor, which un-hovered it, which restored it.
+ *
+ * Growth stops at the next scene (or the segment end). A scene with no gap
+ * ahead — one immediately followed by another of the same subplot — cannot
+ * expand, and returns no change rather than overlapping its neighbour.
+ */
+export function expandIntoGap(
+    elements: SceneAngleData[],
+    hoveredId: string,
+    targetSize: number,
+    segmentEndAngle: number
+): RedistributionResult[] {
+    const hovered = elements.find(e => e.id === hoveredId);
+    if (!hovered) return [];
+
+    const nextStartAngle = elements.reduce((nearest, element) => {
+        if (element.id === hoveredId) return nearest;
+        if (element.startAngle < hovered.endAngle) return nearest;
+        return Math.min(nearest, element.startAngle);
+    }, segmentEndAngle);
+
+    const available = nextStartAngle - hovered.startAngle;
+    const currentSize = hovered.endAngle - hovered.startAngle;
+    // Partial growth still reveals more of the title than the original slice.
+    const newSize = Math.min(targetSize, available);
+    if (newSize <= currentSize) return [];
+
+    return [{
+        id: hoveredId,
+        newStartAngle: hovered.startAngle,
+        newEndAngle: hovered.startAngle + newSize
+    }];
+}
+
+/**
  * Build SVG arc path for a scene cell
  */
 export function buildArcPath(
@@ -172,13 +213,18 @@ export function buildArcPath(
     const endCosInner = formatNumber(innerRadius * Math.cos(endAngle));
     const endSinInner = formatNumber(innerRadius * Math.sin(endAngle));
 
-    // Keep large-arc flag at 0 (matches renderer) so geometry remains identical pre/post hover.
+    // Large-arc flag is derived the same way the renderer derives it
+    // (SceneArcs.sceneArcPath), so geometry stays identical pre/post hover —
+    // including for an arc wider than a half turn, which drawn the short way
+    // round would come out as a crescent on the far side of the wheel.
+    const largeArcFlag = Math.abs(endAngle - startAngle) > Math.PI ? 1 : 0;
+
     return `
         M ${startCosInner} ${startSinInner}
         L ${startCosOuter} ${startSinOuter}
-        A ${outerRadiusFmt} ${outerRadiusFmt} 0 0 1 ${endCosOuter} ${endSinOuter}
+        A ${outerRadiusFmt} ${outerRadiusFmt} 0 ${largeArcFlag} 1 ${endCosOuter} ${endSinOuter}
         L ${endCosInner} ${endSinInner}
-        A ${innerRadiusFmt} ${innerRadiusFmt} 0 0 0 ${startCosInner} ${startSinInner}
+        A ${innerRadiusFmt} ${innerRadiusFmt} 0 ${largeArcFlag} 0 ${startCosInner} ${startSinInner}
     `;
 }
 

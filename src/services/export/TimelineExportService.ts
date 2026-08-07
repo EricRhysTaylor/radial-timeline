@@ -34,6 +34,7 @@ import type {
     RadialTimelineSettings,
     ReadabilityScale,
     RuntimeContentType,
+    SubplotAlignment,
     TimelineItem,
 } from '../../types';
 import { isMatterNote } from '../../utils/sceneHelpers';
@@ -78,6 +79,7 @@ export interface TimelineExportRenderConfig {
     runtimeContentType?: RuntimeContentType;
     currentMode?: string;
     sortByWhenDate?: boolean;
+    subplotAlignment?: SubplotAlignment;
     showChapterMarkers?: boolean;
     timelineScope?: 'book' | 'saga';
     books: BookProfile[];
@@ -176,6 +178,7 @@ export function snapshotRenderConfig(settings: RadialTimelineSettings): Timeline
         runtimeContentType: settings.runtimeContentType,
         currentMode: settings.currentMode,
         sortByWhenDate: settings.sortByWhenDate,
+        subplotAlignment: settings.subplotAlignment,
         showChapterMarkers: settings.showChapterMarkers,
         timelineScope: settings.timelineScope,
         books: settings.books,

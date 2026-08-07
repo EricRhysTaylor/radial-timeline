@@ -4,7 +4,7 @@ import * as path from 'path'; // SAFE: Node path builds absolute desktop font pa
 import type RadialTimelinePlugin from '../main';
 import type { HotfixHistoryEntry, PandocLayoutTemplate } from '../types';
 import { getPandocLayoutSortRank } from '../publishing/templateTiering';
-import { generateDesignedStyleTex } from '../publishing/designedStyle';
+import { generateDesignedStyleTex, migrateDesignedStyleSpec } from '../publishing/designedStyle';
 import { BUNDLED_FICTION_SPECS, type BundledFictionId } from '../publishing/bundledStyleSpecs';
 import { getPandocFolder } from './exportFormats';
 import { getEmbeddedAssetBytes, getEmbeddedAssetByteLength, type EmbeddedAssetKey } from './embeddedAssets';
@@ -271,6 +271,18 @@ export function ensureBundledPandocLayoutsRegistered(plugin: RadialTimelinePlugi
 
     for (const layout of existing) {
         if (!layout.bundled) {
+            // Designed layouts own their spec, so this is the one place a stored
+            // spec is read back and can be brought up to the current version.
+            // Bundled layouts take their spec from the canonical definition below
+            // and are always current by construction.
+            if (layout.designedSpec) {
+                const migratedSpec = migrateDesignedStyleSpec(layout.designedSpec);
+                if (migratedSpec !== layout.designedSpec) {
+                    normalized.push({ ...layout, designedSpec: migratedSpec });
+                    changed = true;
+                    continue;
+                }
+            }
             normalized.push(layout);
             continue;
         }

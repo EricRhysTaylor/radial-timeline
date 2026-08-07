@@ -1,5 +1,5 @@
-import type { AiSettingsV1, AIProviderId, AnthropicCacheTtl, LocalLlmBackendId, LocalLlmConfigurationMode, LocalLlmJsonMode } from '../types';
-import { ANTHROPIC_REQUESTED_CACHE_TTL, buildDefaultAiSettings, cloneBuiltInRoleTemplates } from './aiSettings';
+import type { AiSettingsV1, AIProviderId, AnthropicCacheTtl, DeclarableLocalCapability, LocalLlmBackendId, LocalLlmConfigurationMode, LocalLlmJsonMode } from '../types';
+import { ANTHROPIC_REQUESTED_CACHE_TTL, buildDefaultAiSettings, cloneBuiltInRoleTemplates, DECLARABLE_LOCAL_CAPABILITIES } from './aiSettings';
 import { BUILTIN_MODELS } from '../registry/builtinModels';
 import {
     GEMINI_CACHE_TTL_DEFAULT_SECONDS,
@@ -152,6 +152,24 @@ export function validateAiSettings(input?: AiSettingsV1 | null): AiSettingsValid
 
     if (!VALID_LOCAL_LLM_JSON_MODES.includes(value.localLlm.jsonMode)) {
         value.localLlm.jsonMode = defaults.localLlm.jsonMode;
+    }
+
+    if (!Array.isArray(value.localLlm.declaredCapabilities)) {
+        value.localLlm.declaredCapabilities = [...defaults.localLlm.declaredCapabilities];
+    } else {
+        const seen = new Set<DeclarableLocalCapability>();
+        const unknown: string[] = [];
+        for (const entry of value.localLlm.declaredCapabilities) {
+            if (DECLARABLE_LOCAL_CAPABILITIES.includes(entry)) {
+                seen.add(entry);
+            } else {
+                unknown.push(String(entry));
+            }
+        }
+        if (unknown.length > 0) {
+            warnings.push(`Ignoring unknown declared Local LLM capabilit${unknown.length === 1 ? 'y' : 'ies'}: ${unknown.join(', ')}.`);
+        }
+        value.localLlm.declaredCapabilities = DECLARABLE_LOCAL_CAPABILITIES.filter(cap => seen.has(cap));
     }
 
     if (typeof value.roleTemplateId !== 'string' || !value.roleTemplateId.trim()) {

@@ -1,10 +1,94 @@
 import type { TimelineItem } from '../../types';
 import { formatNumber } from '../../utils/svg';
-import { getSceneState, buildSquareClasses, buildTextClasses, extractGradeFromScene, isBeatNote, type PluginRendererFacade, shouldDisplayMissingWhenWarning } from '../../utils/sceneHelpers';
+import { getSceneState, buildSquareClasses, buildTextClasses, extractGradeFromScene, isBeatNote, type PluginRendererFacade, sceneKey, shouldDisplayMissingWhenWarning, usesWhenOrdering } from '../../utils/sceneHelpers';
 import { getScenePrefixNumber, getNumberSquareSize } from '../../utils/text';
 import { getReadabilityMultiplier } from '../../utils/readability';
 import { generateNumberSquareGroup, makeSceneId } from '../../utils/numberSquareHelpers';
 import { getTimelineScope } from '../../utils/books';
+import { getTimelineSegmentCount } from '../utils/TimelineSegments';
+import type { PositionInfo } from '../utils/SceneLayout';
+
+interface SubplotRingPlacement {
+  ring: number;
+  segment: number;
+  sceneIndex: number;
+  startAngle: number;
+  radius: number;
+}
+
+/**
+ * Where a scene's number square sits on its subplot ring.
+ *
+ * Both number-square passes (standard mode, and the inner rings under All
+ * Scenes mode) place squares the same way; this is that placement, once.
+ * Returns null when the scene has no place on a ring — a square drawn at a
+ * derived-but-wrong angle is worse than no square.
+ */
+function resolveSubplotRingPlacement(params: {
+  scene: TimelineItem;
+  masterSubplotOrder: string[];
+  NUM_RINGS: number;
+  ringStartRadii: number[];
+  ringWidths: number[];
+  scenesByActAndSubplot: Record<number, Record<string, TimelineItem[]>>;
+  sortByWhen: boolean;
+  isSagaScope: boolean;
+  totalSegments: number;
+  /** Sequence alignment: outer-ring angles keyed by scene. Absent in Fill. */
+  outerPositionByKey?: Map<string, PositionInfo>;
+}): SubplotRingPlacement | null {
+  const {
+    scene, masterSubplotOrder, NUM_RINGS, ringStartRadii, ringWidths,
+    scenesByActAndSubplot, sortByWhen, isSagaScope, totalSegments, outerPositionByKey
+  } = params;
+
+  const subplot = scene.subplot && scene.subplot.trim().length > 0 ? scene.subplot : 'Main Plot';
+  const subplotIndex = masterSubplotOrder.indexOf(subplot);
+  if (subplotIndex === -1) return null;
+  const ring = NUM_RINGS - 1 - subplotIndex;
+  if (ring < 0 || ring >= NUM_RINGS) return null;
+
+  // When date sorting collapses every scene into one full-circle segment.
+  const rawSegment = sortByWhen
+    ? 0
+    : (isSagaScope
+      ? (typeof scene.bookIndex === 'number' ? scene.bookIndex : 0)
+      : ((scene.actNumber !== undefined ? scene.actNumber : 1) - 1));
+  // Clamp to the nearest valid segment so this lookup agrees with how
+  // Precompute.ts bucketed the scene — an unclamped index misses the scene
+  // entirely and re-derives a wrapped-around angle.
+  const segment = Math.min(Math.max(rawSegment, 0), totalSegments - 1);
+
+  const ringScenes = ((scenesByActAndSubplot[segment] && scenesByActAndSubplot[segment][subplot]) || [])
+    .filter(s => !isBeatNote(s));
+  // Match by canonical key, not object identity: the scene handed to this
+  // function is often a different instance than the one in the bucket.
+  const key = sceneKey(scene);
+  const sceneIndex = ringScenes.findIndex(s => sceneKey(s) === key);
+  if (sceneIndex === -1) return null;
+
+  // Sequence alignment: the square follows its arc to the outer-ring angle.
+  // No counterpart means the arc was not drawn either, so neither is the square.
+  let startAngle: number;
+  if (outerPositionByKey) {
+    const aligned = outerPositionByKey.get(key);
+    if (!aligned) return null;
+    startAngle = aligned.startAngle;
+  } else {
+    const segmentSpan = sortByWhen ? 2 * Math.PI : (2 * Math.PI) / totalSegments;
+    const segmentStart = sortByWhen ? -Math.PI / 2 : (segment * 2 * Math.PI) / totalSegments - Math.PI / 2;
+    startAngle = segmentStart + (sceneIndex * (segmentSpan / ringScenes.length));
+  }
+
+  const innerR = ringStartRadii[ring];
+  return {
+    ring,
+    segment,
+    sceneIndex,
+    startAngle,
+    radius: innerR + (ringWidths[ring] / 2)
+  };
+}
 
 /**
  * Unified number square rendering function
@@ -28,7 +112,6 @@ export function renderNumberSquaresUnified(params: {
   sceneNumbersMap?: Map<string, { number: string; x: number; y: number; width: number; height: number }>;
   enableSubplotColors?: boolean;
   resolveSubplotVisual?: (scene: TimelineItem) => { subplotIndex: number } | null;
-  numActs?: number;
 }): string {
   const {
     plugin,
@@ -45,15 +128,14 @@ export function renderNumberSquaresUnified(params: {
     scenesByActAndSubplot,
     sceneNumbersMap,
     enableSubplotColors = false,
-    resolveSubplotVisual,
-    numActs
+    resolveSubplotVisual
   } = params;
 
   let svg = '<g class="rt-number-squares">';
   const readabilityScale = getReadabilityMultiplier(plugin.settings);
   const squareScale = readabilityScale > 1 ? 1 + (readabilityScale - 1) * 0.75 : 1; // pad more aggressively when font grows
   const isSagaScope = getTimelineScope(plugin.settings) === 'saga';
-  const totalActs = isSagaScope ? Math.max(1, numActs ?? 1) : Math.max(3, numActs ?? 3);
+  const totalSegments = getTimelineSegmentCount(plugin.settings);
 
   scenes.forEach((scene, idx) => {
     if (isBeatNote(scene) || scene.itemType === 'Backdrop') return;
@@ -65,11 +147,7 @@ export function renderNumberSquaresUnified(params: {
     let textPathRadius: number;
     let sceneId: string;
 
-    const uniqueKey =
-      scene.path ||
-      (scene.title
-        ? `${scene.title}::${scene.number ?? ''}::${String(scene.when ?? '')}`
-        : undefined);
+    const uniqueKey = sceneKey(scene);
 
     let posForOuter: { startAngle: number; endAngle: number } | undefined;
 
@@ -82,51 +160,22 @@ export function renderNumberSquaresUnified(params: {
       sceneId = makeSceneId(act, ringOuter, idx, true, true, uniqueKey);
       posForOuter = pos;
     } else if (NUM_RINGS && masterSubplotOrder && ringStartRadii && ringWidths && scenesByActAndSubplot) {
-      // Main Plot mode: calculate positions on-the-fly
-      const subplot = scene.subplot || 'Main Plot';
-      const subplotIndex = masterSubplotOrder.indexOf(subplot);
-      const ring = NUM_RINGS - 1 - subplotIndex;
-
-      // Check if using When date sorting
-      const currentMode = plugin.settings.currentMode || 'narrative';
-      const isChronologueMode = currentMode === 'chronologue';
-      const sortByWhen = isChronologueMode ? true : (plugin.settings.sortByWhenDate ?? false);
-
-      const sceneActNumber = scene.actNumber !== undefined ? scene.actNumber : 1;
-      // When using When date sorting, all scenes are in act 0
-      const rawActIndex = sortByWhen
-        ? 0
-        : (isSagaScope ? (typeof scene.bookIndex === 'number' ? scene.bookIndex : 0) : (sceneActNumber - 1));
-      // Clamp to the nearest valid quadrant so this lookup agrees with how
-      // Precompute.ts bucketed the scene — an unclamped index here would
-      // miss the scene (empty lookup) and re-derive a wrapped-around angle.
-      const actIndex = Math.min(Math.max(rawActIndex, 0), totalActs - 1);
-
-      const scenesInActAndSubplot = (scenesByActAndSubplot[actIndex] && scenesByActAndSubplot[actIndex][subplot]) || [];
-      const filteredScenes = scenesInActAndSubplot.filter(s => !isBeatNote(s));
-      const sceneIndex = filteredScenes.indexOf(scene);
-
-      // Calculate angles based on sorting method
-      let startAngle: number;
-      let endAngle: number;
-
-      if (sortByWhen) {
-        // When date mode: Full 360° circle
-        startAngle = -Math.PI / 2;
-        endAngle = (3 * Math.PI) / 2;
-      } else {
-        // Manuscript mode: divide full circle by configured acts
-        startAngle = (actIndex * 2 * Math.PI) / totalActs - Math.PI / 2;
-        endAngle = ((actIndex + 1) * 2 * Math.PI) / totalActs - Math.PI / 2;
-      }
-
-      const totalAngularSpace = endAngle - startAngle;
-      const sceneAngularSize = filteredScenes.length > 0 ? totalAngularSpace / filteredScenes.length : 0;
-      let currentAngle = startAngle;
-      for (let i = 0; i < sceneIndex; i++) currentAngle += sceneAngularSize;
-      sceneStartAngle = currentAngle;
-      textPathRadius = (ringStartRadii[ring] + (ringStartRadii[ring] + ringWidths[ring])) / 2;
-      sceneId = makeSceneId(actIndex, ring, sceneIndex, false, false, uniqueKey);
+      // Main Plot mode: derive the placement from the subplot ring
+      const placement = resolveSubplotRingPlacement({
+        scene,
+        masterSubplotOrder,
+        NUM_RINGS,
+        ringStartRadii,
+        ringWidths,
+        scenesByActAndSubplot,
+        sortByWhen: usesWhenOrdering(plugin.settings),
+        isSagaScope,
+        totalSegments
+      });
+      if (!placement) return;
+      sceneStartAngle = placement.startAngle;
+      textPathRadius = placement.radius;
+      sceneId = makeSceneId(placement.segment, placement.ring, placement.sceneIndex, false, false, uniqueKey);
     } else {
       return; // Invalid parameters
     }
@@ -232,18 +281,15 @@ export function renderInnerRingsNumberSquaresAllScenes(params: {
   sceneGrades: Map<string, string>;
   enableSubplotColors?: boolean;
   resolveSubplotVisual?: (scene: TimelineItem) => { subplotIndex: number } | null;
-  numActs?: number;
+  outerPositionByKey?: Map<string, PositionInfo>;
 }): string {
-  const { plugin, NUM_RINGS, masterSubplotOrder, ringStartRadii, ringWidths, scenesByActAndSubplot, scenes, sceneGrades, enableSubplotColors = false, resolveSubplotVisual, numActs } = params;
+  const { plugin, NUM_RINGS, masterSubplotOrder, ringStartRadii, ringWidths, scenesByActAndSubplot, scenes, sceneGrades, enableSubplotColors = false, resolveSubplotVisual, outerPositionByKey } = params;
   const readabilityScale = getReadabilityMultiplier(plugin.settings);
   const squareScale = readabilityScale > 1 ? 1 + (readabilityScale - 1) * 0.75 : 1;
   const isSagaScope = getTimelineScope(plugin.settings) === 'saga';
-  const totalActs = isSagaScope ? Math.max(1, numActs ?? 1) : Math.max(3, numActs ?? 3);
+  const totalSegments = getTimelineSegmentCount(plugin.settings);
 
-  // Check if using When date sorting
-  const currentMode = plugin.settings.currentMode || 'narrative';
-  const isChronologueMode = currentMode === 'chronologue';
-  const sortByWhen = isChronologueMode ? true : (plugin.settings.sortByWhenDate ?? false);
+  const sortByWhen = usesWhenOrdering(plugin.settings);
 
   let svg = '';
   scenes.forEach((scene) => {
@@ -253,48 +299,21 @@ export function renderInnerRingsNumberSquaresAllScenes(params: {
     const subplot = scene.subplot && scene.subplot.trim().length > 0 ? scene.subplot : 'Main Plot';
     // Skip Main Plot scenes - they're always in the outer ring, not inner rings
     if (subplot === 'Main Plot') return;
-    const subplotIndex = masterSubplotOrder.indexOf(subplot);
-    if (subplotIndex === -1) return;
-    const ring = NUM_RINGS - 1 - subplotIndex;
-    if (ring < 0 || ring >= NUM_RINGS) return;
 
-    // When using When date sorting, all scenes are in act 0
-    // When using manuscript order, use the scene's actual act
-    const sceneActNumber = scene.actNumber !== undefined ? scene.actNumber : 1;
-    const rawActIndex = sortByWhen
-      ? 0
-      : (isSagaScope ? (typeof scene.bookIndex === 'number' ? scene.bookIndex : 0) : (sceneActNumber - 1));
-    // Clamp to the nearest valid quadrant — see renderNumberSquaresUnified above.
-    const actIndex = Math.min(Math.max(rawActIndex, 0), totalActs - 1);
-
-    const scenesInActAndSubplot = (scenesByActAndSubplot[actIndex] && scenesByActAndSubplot[actIndex][subplot]) || [];
-    const filteredScenesForIndex = scenesInActAndSubplot.filter(s => !isBeatNote(s));
-    // Find scene by path/title instead of object reference (fixes first-render bug)
-    const sceneKey = scene.path || scene.title || '';
-    const sceneIndex = filteredScenesForIndex.findIndex(s => (s.path || s.title || '') === sceneKey);
-    if (sceneIndex === -1) return;
-
-    // Calculate angles based on sorting method
-    let startAngle: number;
-    let endAngle: number;
-
-    if (sortByWhen) {
-      // When date mode: Full 360° circle
-      startAngle = -Math.PI / 2;
-      endAngle = (3 * Math.PI) / 2;
-    } else {
-      // Manuscript mode: divide full circle by configured acts
-      startAngle = (actIndex * 2 * Math.PI) / totalActs - Math.PI / 2;
-      endAngle = ((actIndex + 1) * 2 * Math.PI) / totalActs - Math.PI / 2;
-    }
-    const innerR = ringStartRadii[ring];
-    const outerR = innerR + ringWidths[ring];
-    const totalAngularSpace = endAngle - startAngle;
-    const sceneAngularSize = filteredScenesForIndex.length > 0 ? totalAngularSpace / filteredScenesForIndex.length : 0;
-    let currentAngle = startAngle;
-    for (let i = 0; i < sceneIndex; i++) currentAngle += sceneAngularSize;
-    const sceneStartAngle = currentAngle;
-    const textPathRadius = (innerR + outerR) / 2;
+    const placement = resolveSubplotRingPlacement({
+      scene,
+      masterSubplotOrder,
+      NUM_RINGS,
+      ringStartRadii,
+      ringWidths,
+      scenesByActAndSubplot,
+      sortByWhen,
+      isSagaScope,
+      totalSegments,
+      outerPositionByKey
+    });
+    if (!placement) return;
+    const { ring, segment: actIndex, sceneIndex, startAngle: sceneStartAngle, radius: textPathRadius } = placement;
     const squareSize = getNumberSquareSize(number, squareScale);
     const squareX = textPathRadius * Math.cos(sceneStartAngle);
     const squareY = textPathRadius * Math.sin(sceneStartAngle);
@@ -305,10 +324,7 @@ export function renderInnerRingsNumberSquaresAllScenes(params: {
       squareClasses += ' rt-missing-when';
       textClasses += ' rt-missing-when';
     }
-    const uniqueKey =
-      scene.path ||
-      (scene.title ? `${scene.title}::${scene.number ?? ''}::${String(scene.when ?? '')}` : undefined);
-    const sceneId = makeSceneId(actIndex, ring, sceneIndex, false, false, uniqueKey);
+    const sceneId = makeSceneId(actIndex, ring, sceneIndex, false, false, sceneKey(scene));
     extractGradeFromScene(scene, sceneId, sceneGrades, plugin);
     const grade = sceneGrades.get(sceneId);
     if (plugin.settings.enableAiSceneAnalysis && grade) textClasses += ` rt-grade-${grade}`;
@@ -343,7 +359,6 @@ export function renderNumberSquaresStandard(params: {
   sceneNumbersMap: Map<string, { number: string; x: number; y: number; width: number; height: number }>;
   enableSubplotColors?: boolean;
   resolveSubplotVisual?: (scene: TimelineItem) => { subplotIndex: number } | null;
-  numActs?: number;
 }): string {
   return renderNumberSquaresUnified({
     plugin: params.plugin,
@@ -356,7 +371,6 @@ export function renderNumberSquaresStandard(params: {
     scenesByActAndSubplot: params.scenesByActAndSubplot,
     sceneNumbersMap: params.sceneNumbersMap,
     enableSubplotColors: params.enableSubplotColors,
-    resolveSubplotVisual: params.resolveSubplotVisual,
-    numActs: params.numActs
+    resolveSubplotVisual: params.resolveSubplotVisual
   });
 }

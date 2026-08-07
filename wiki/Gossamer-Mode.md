@@ -33,6 +33,10 @@ Gossamer Mode visualizes beat-level scoring across your active story beat system
   <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Gossamer score manager — manual entry for the active signal</div>
 </div>
 
+## Subplot Alignment
+
+The **alignment chip** at the left of the mode row switches subplot rings between **Fill** (scenes spread evenly across each act) and **Sequence** (every scene sits at its true position in the full manuscript, with empty cells where a thread is dormant). See [Subplot Alignment in Narrative Mode](Narrative-Mode#subplot-alignment-fill-vs-sequence) — the same control applies here.
+
 <a name="signals"></a>
 ## Signals
 

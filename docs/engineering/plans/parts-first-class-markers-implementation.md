@@ -200,13 +200,34 @@ Checked in this order:
 | Case | Action |
 |---|---|
 | **author-owned `Part:` marker present** (per journal, §5.4) | act derivation **never applies**; marker set *is* the structure. Migrate epigraphs (§5.3), stamp. |
-| no markers, **monotonic** acts (`1,1,2,3`) | derive markers; sequential numerals match act-derived numerals |
-| no markers, **re-entrant** (`1,2,1`) | **block** (D2) — report offending scenes, write nothing |
+| no markers, boundary acts are **exactly 1, 2, … k** | derive markers; sequential numerals match act-derived numerals |
+| no markers, **re-entrant** (`1,2,1`) | **block** (D2) — report the re-entering boundaries, write nothing |
+| no markers, **gap or non-1 start** (`1,3` / `2,3`) | **block** — report the out-of-sequence boundaries |
 | no markers, **missing/malformed `Act:`** | block, list offending scenes |
 
 "Author-owned" is decided by the journal, **not by mere presence**.
 
+**Correction to an earlier revision:** "monotonic" is *not* the derivable condition. The
+pre-migration numeral comes from the Act number; the post-migration numeral comes from the
+marker's position. Those agree only when boundary acts are exactly `1, 2, … k`. Two further
+sequences renumber a book just as silently as re-entry does:
+
+- **Gaps** — acts `1, 3` print `Part I, Part III` today; sequential numbering prints `I, II`.
+- **Start above 1** — acts `2, 3` print `Part II` first today; sequential prints `Part I`.
+
+One predicate (`boundaryActs[i] === i + 1`) rules out all three divergences.
+
+**Blocked reports name only the offending boundaries**, not every boundary. The repair path sends
+the author to look at specific scenes, so a five-part book blocked by one late re-entry must not
+list all five.
+
 ### 5.3 Epigraph migration is never guessed
+
+**Quote and attribution are independent.** A slot holding only an attribution is carried forward,
+not dropped: `\rtPart` guards `#3` and `#4` separately, so an attribution with no quote already
+typesets alone in the act-derived export. Dropping it would make the migration lossy, and applying
+the rule in one classification path but not the other would make them disagree — so both use one
+predicate.
 
 Legacy epigraphs are indexed by act index (`src/publishing/spreadValidationContext.ts:167`). For
 author-placed markers that index has no reliable correspondence. **Propose** a mapping in the
@@ -235,7 +256,23 @@ writes is attributable.
 | journal present, book incomplete | crashed mid-write | **resume or restore** — never reclassify |
 | journal complete + stamped | done | no-op |
 
-Only monotonic books are provably output-neutral. That is the honest scope of the guarantee.
+### Who validates the journal — the executor
+
+The planner treats the journal's "markers I wrote" set as **trusted input** and does not validate
+it. Deciding whether a journal is still resumable belongs to the executor, because only the
+executor holds both artifacts — the journal's recorded plan and a freshly computed one — and only
+it can act on the answer.
+
+This matters for a specific hazard: an author who edits `Act:` values *between* a crashed run and
+the next one produces a current plan that disagrees with the journal. Resuming would apply half of
+one plan and half of another. **The executor must compare the recorded plan against a fresh plan
+before resuming, and restore rather than resume on any disagreement.** The planner is pure
+classification and has no notion of a previous run beyond the disown-set.
+
+### Scope of the output-neutrality guarantee
+
+Books whose boundary acts are exactly `1, 2, … k` are provably output-neutral. Everything else is
+blocked, not converted. That is the honest scope.
 
 ---
 

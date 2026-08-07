@@ -522,6 +522,9 @@
 
 /* Scene card */
 .ert-timeline-repair-scene-card {
+    --ert-iconBtn-bg: transparent;
+    --ert-iconBtn-hover-bg: transparent;
+
     display: flex;
     align-items: flex-start;
     gap: var(--ert-gap-sm);
@@ -824,13 +827,17 @@
     gap: var(--ert-gap-3xs);
     padding: var(--ert-gap-3xs);
     border-radius: var(--radius-s);
-    background: var(--background-primary);
-    border: 1px solid var(--background-modifier-border);
+    background: transparent;
+    border: 1px solid transparent;
 }
 
-.ert-timeline-repair-step-group .ert-timeline-repair-shift-btn {
-    border: none;
+/* Keep the four shift arrows flush with the scene row at rest. The modal's
+   shared icon-button rule is more specific, so this scoped override prevents
+   it from restoring the dark fill while leaving other icon buttons alone. */
+.ert-ui.ert-scope--modal .ert-timeline-repair-step-group .ert-timeline-repair-shift-btn {
+    border-color: transparent;
     background: transparent;
+    box-shadow: none;
 }
 
 .ert-timeline-repair-shift-btn {
@@ -849,7 +856,9 @@
     transition: all 0.15s ease;
 }
 
-.ert-timeline-repair-shift-btn:hover {
+.ert-ui.ert-scope--modal .ert-timeline-repair-step-group .ert-timeline-repair-shift-btn:hover,
+.ert-ui.ert-scope--modal .ert-timeline-repair-step-group .ert-timeline-repair-shift-btn:focus-visible {
+    background: transparent;
     color: var(--text-normal);
     border-color: var(--interactive-accent);
 }
@@ -898,9 +907,9 @@
 }
 
 .ert-timeline-repair-audit-toggle.ert-is-active {
-    background: var(--interactive-accent);
+    background: transparent;
     border-color: var(--interactive-accent);
-    color: var(--text-on-accent);
+    color: var(--text-normal);
 }
 
 .ert-timeline-repair-audit-toggle svg {
@@ -914,9 +923,9 @@
 .ert-timeline-repair-bucket-controls {
     display: inline-flex;
     gap: 0;
-    border: 1px solid var(--background-modifier-border);
+    border: 1px solid transparent;
     border-radius: var(--radius-s);
-    overflow: hidden;
+    overflow: visible;
 }
 
 .ert-timeline-repair-bucket-controls .ert-timeline-repair-bucket-pill {
@@ -925,7 +934,7 @@
 }
 
 .ert-timeline-repair-bucket-controls .ert-timeline-repair-bucket-pill + .ert-timeline-repair-bucket-pill {
-    border-left: 1px solid var(--background-modifier-border);
+    border-left: 1px solid transparent;
 }
 
 .ert-timeline-repair-bucket-pill {
@@ -950,14 +959,33 @@
 
 .ert-timeline-repair-bucket-pill.ert-is-active {
     border-color: var(--interactive-accent);
-    background: var(--interactive-accent);
-    color: var(--text-on-accent);
+    background: transparent;
+    color: var(--text-normal);
 }
 
 .ert-timeline-repair-bucket-pill svg {
     width: 14px;
     height: 14px;
     display: block;
+}
+
+/* Scene-row actions are outline-only in every interaction state. Keeping the
+   override at the card boundary prevents a focused row from retaining the
+   modal-wide icon fill while the pointer reveals controls on another row. */
+.ert-ui.ert-scope--modal .ert-timeline-repair-scene-card .ert-iconBtn {
+    background: transparent;
+    background-color: transparent;
+    background-image: none;
+    border-color: transparent;
+    box-shadow: none;
+}
+
+.ert-ui.ert-scope--modal .ert-timeline-repair-scene-card .ert-iconBtn:hover,
+.ert-ui.ert-scope--modal .ert-timeline-repair-scene-card .ert-iconBtn:focus-visible,
+.ert-ui.ert-scope--modal .ert-timeline-repair-scene-card .ert-iconBtn:active,
+.ert-ui.ert-scope--modal .ert-timeline-repair-scene-card .ert-iconBtn.ert-is-active {
+    border-color: var(--interactive-accent);
+    color: var(--text-normal);
 }
 
 /* Button spacer */

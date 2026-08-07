@@ -29,6 +29,7 @@ describe('inferLocalLlmCapability', () => {
     it('returns tier 1 when structured JSON fails', () => {
         const assessment = inferLocalLlmCapability({
             modelId: 'llama3.1:8b',
+            declaredCapabilities: ['reasoningStrong', 'longContext', 'highOutputCap'],
             diagnostics: buildDiagnostics({
                 structuredJson: { ok: false, message: 'Expected object but got markdown.' }
             })
@@ -42,10 +43,50 @@ describe('inferLocalLlmCapability', () => {
             modelId: 'mistral-nemo:12b',
             contextWindow: 131072,
             maxOutput: 8192,
+            declaredCapabilities: ['reasoningStrong', 'longContext', 'highOutputCap'],
             diagnostics: buildDiagnostics()
         });
         expect(assessment.tier).toBe(4);
         expect(assessment.featureSupport.inquiry).toBe('yes');
+    });
+
+    /*
+     * The tier heuristic and the runtime capability floor used to disagree in
+     * public: a 30B model read as "Tier 4 — Full — Summary yes" in settings
+     * while every Summary refresh scene threw "lacks required capability:
+     * reasoningStrong". A tier still describes how capable the model *looks*;
+     * featureSupport must describe what RT will actually dispatch.
+     */
+    it('reports no feature support until the author declares the capabilities the runtime requires', () => {
+        const assessment = inferLocalLlmCapability({
+            modelId: 'qwen/qwen3-30b-a3b-2507',
+            contextWindow: 131072,
+            maxOutput: 8192,
+            diagnostics: buildDiagnostics({ modelId: 'qwen/qwen3-30b-a3b-2507' })
+        });
+        expect(assessment.tier).toBe(4);
+        expect(assessment.featureSupport).toEqual({
+            summary: 'no',
+            pulses: 'no',
+            gossamer: 'no',
+            inquiry: 'no'
+        });
+        expect(assessment.explanation).toContain('reasoningStrong');
+    });
+
+    it('unlocks only the features whose declared capability floor is met', () => {
+        const assessment = inferLocalLlmCapability({
+            modelId: 'qwen/qwen3-30b-a3b-2507',
+            contextWindow: 131072,
+            maxOutput: 8192,
+            declaredCapabilities: ['reasoningStrong'],
+            diagnostics: buildDiagnostics({ modelId: 'qwen/qwen3-30b-a3b-2507' })
+        });
+        expect(assessment.featureSupport.summary).toBe('yes');
+        expect(assessment.featureSupport.pulses).toBe('yes');
+        // Gossamer and Inquiry also need longContext + highOutputCap.
+        expect(assessment.featureSupport.gossamer).toBe('no');
+        expect(assessment.featureSupport.inquiry).toBe('no');
     });
 
     it('returns a conservative heuristic tier for an unvalidated 8B model', () => {

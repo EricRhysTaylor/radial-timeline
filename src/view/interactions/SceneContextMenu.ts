@@ -7,6 +7,10 @@ import { openOrRevealFile } from '../../utils/fileUtils';
 import type { RadialTimelineSettings, TimelineItem } from '../../types';
 import { AddSceneConfirmModal } from '../../modals/AddSceneConfirmModal';
 import { buildChapterContainerSummaries, SetChapterModal } from '../../modals/SetChapterModal';
+import { buildPartContainerSummaries, SetPartModal } from '../../modals/SetPartModal';
+import { readPartMarker, SHARED_PART_FIELD_KEY } from '../../utils/timelineParts';
+import { describeParts } from '../../publishing/layoutVisuals';
+import { resolveActiveNovelPandocLayout } from '../../utils/exportFormats';
 import { readSharedChapterTitle, SHARED_CHAPTER_FIELD_KEY } from '../../utils/timelineChapters';
 import { frontmatterValueToText } from '../../utils/frontmatter';
 
@@ -244,6 +248,87 @@ async function clearChapterMarker(
     );
 }
 
+/** Find the note's own `Part` key, tolerating case and separator drift. */
+function findPartFrontmatterKey(frontmatter: Record<string, unknown> | undefined): string | undefined {
+    if (!frontmatter) return undefined;
+    const wanted = SHARED_PART_FIELD_KEY.toLowerCase();
+    for (const key of Object.keys(frontmatter)) {
+        if (key.toLowerCase().replace(/[\s_-]/g, '') === wanted) return key;
+    }
+    return undefined;
+}
+
+async function writePartMarker(
+    view: SceneContextMenuView,
+    file: TFile,
+    value: string | true,
+    successMessage: string
+): Promise<void> {
+    await updateSceneFrontmatter(
+        view,
+        file,
+        (fm) => {
+            const key = findPartFrontmatterKey(fm) ?? SHARED_PART_FIELD_KEY;
+            fm[key] = value;
+        },
+        successMessage
+    );
+}
+
+async function clearPartMarker(
+    view: SceneContextMenuView,
+    file: TFile,
+    successMessage: string
+): Promise<void> {
+    await updateSceneFrontmatter(
+        view,
+        file,
+        (fm) => {
+            const key = findPartFrontmatterKey(fm);
+            // Clearing deletes the key rather than blanking it: an empty `Part:`
+            // is not a marker, and leaving it behind is noise in the note.
+            if (key) delete fm[key];
+        },
+        successMessage
+    );
+}
+
+async function setPartAtScene(
+    view: SceneContextMenuView,
+    file: TFile,
+    currentValue: string | true | undefined
+): Promise<void> {
+    if (typeof view.plugin.getSceneData !== 'function') {
+        new Notice('Could not set part because timeline scene data is unavailable.', 5000);
+        return;
+    }
+
+    try {
+        const scenes = await view.plugin.getSceneData();
+        const layout = resolveActiveNovelPandocLayout(view.plugin.settings);
+        const result = await new SetPartModal(
+            view.plugin.app,
+            file.basename,
+            currentValue,
+            buildPartContainerSummaries(scenes),
+            layout?.designedSpec ? describeParts(layout.designedSpec) : null,
+            layout?.name
+        ).waitForResult();
+        if (!result) return;
+
+        if (result.clear) {
+            await clearPartMarker(view, file, `Cleared part marker from ${file.basename}.`);
+            return;
+        }
+        if (result.value !== undefined) {
+            await writePartMarker(view, file, result.value, `Set part marker on ${file.basename}.`);
+        }
+    } catch (error) {
+        console.error('[SceneContextMenu] Failed to set part:', error);
+        new Notice(`Could not set part for ${file.basename}. Review the console for details.`, 7000);
+    }
+}
+
 function menuTitle(label: string, active: boolean): string {
     return active ? `${label}  ✓` : label;
 }
@@ -396,6 +481,13 @@ function showSceneContextMenu(view: SceneContextMenuView, group: Element, event:
     const currentStatus = normalizeStatus(frontmatter.Status);
     const currentStage = normalizeScalar(frontmatter['Publish Stage']) || 'Zero';
     const currentChapterTitle = readSharedChapterTitle(frontmatter);
+    const currentPartMarker = readPartMarker(frontmatter);
+    const currentPartValue: string | true | undefined = currentPartMarker
+        ? (currentPartMarker.titled && currentPartMarker.title ? currentPartMarker.title : true)
+        : undefined;
+    const currentPartLabel = currentPartMarker
+        ? (currentPartMarker.title ?? 'numeral only')
+        : undefined;
     const pulseFlag = normalizeScalar(frontmatter['Pulse Update']);
     const pulseAlreadyFlagged = /^(yes|true|1)$/i.test(pulseFlag);
 
@@ -415,6 +507,13 @@ function showSceneContextMenu(view: SceneContextMenuView, group: Element, event:
             item.setTitle(currentChapterTitle ? `Set chapter… (${currentChapterTitle})` : 'Set chapter…');
             item.onClick(() => {
                 void setChapterAtScene(view, file, currentChapterTitle);
+            });
+        });
+        menu.addItem(item => {
+            item.setIcon('bookmark');
+            item.setTitle(currentPartLabel ? `Set part… (${currentPartLabel})` : 'Set part…');
+            item.onClick(() => {
+                void setPartAtScene(view, file, currentPartValue);
             });
         });
         menu.addSeparator();

@@ -159,7 +159,12 @@ describe('AI client local LLM capability floor', () => {
 
     it('throws with a remediation message when a required capability is missing', () => {
         expect(code).toMatch(/Local model[\s\S]{0,80}lacks required capabilit/);
-        expect(code).toContain('Switch to a cloud provider');
+        // Both remediations must be reachable. Pointing only at cloud providers
+        // made the local path a dead end: local models carry a fixed
+        // ['jsonStrict'] baseline, so nothing the author could do would satisfy
+        // a reasoningStrong floor. The settings path is that missing door.
+        expect(code).toContain('Settings → AI → Local LLM → Model capabilities');
+        expect(code).toContain('switch to a cloud provider');
     });
 });
 

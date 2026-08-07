@@ -1,8 +1,11 @@
 import { PLOT_PIXEL_WIDTH } from '../layout/LayoutConstants';
 import type { TimelineItem } from '../../types';
-import { isBeatNote } from '../../utils/sceneHelpers';
+import { isBeatNote, sceneKey } from '../../utils/sceneHelpers';
 
 export type PositionInfo = { startAngle: number; endAngle: number; angularSize: number };
+
+/** Angular gaps below this are not worth a DOM node. */
+const MIN_VOID_SPAN = 0.001;
 
 export function computePositions(innerR: number, outerR: number, startAngle: number, endAngle: number, items: TimelineItem[]): Map<number, PositionInfo> {
     const middleRadius = (innerR + outerR) / 2;
@@ -27,36 +30,54 @@ export function computePositions(innerR: number, outerR: number, startAngle: num
     return positions;
 }
 
-export function getEffectiveScenesForRing(
-    allScenes: TimelineItem[],
-    actIndex: number,
-    subplot: string | undefined,
-    outerAllScenes: boolean,
-    isOuter: boolean,
-    grouped: { [act: number]: { [subplot: string]: TimelineItem[] } }
-): TimelineItem[] {
-    if (isOuter && outerAllScenes) {
-        const seenPaths = new Set<string>();
-        const seenPlotKeys = new Set<string>();
-        const result: TimelineItem[] = [];
-        allScenes.forEach(s => {
-            const a = s.actNumber !== undefined ? s.actNumber - 1 : 0;
-            if (a !== actIndex) return;
-            if (isBeatNote(s)) {
-                const key = `${String(s.title || '')}::${String(s.actNumber ?? '')}`;
-                if (seenPlotKeys.has(key)) return;
-                seenPlotKeys.add(key);
-                result.push(s);
-            } else {
-                const k = s.path || `${s.title || ''}::${String(s.when || '')}`;
-                if (seenPaths.has(k)) return;
-                seenPaths.add(k);
-                result.push(s);
-            }
-        });
-        return result;
-    }
+/**
+ * Sequence layout: give each item the angle its counterpart holds in the
+ * all-scenes outer ring, so a subplot ring shows where its scenes actually fall
+ * in the manuscript.
+ *
+ * An item with no counterpart gets no position and is skipped by the caller.
+ * That only happens if a subplot ring holds a scene the outer ring does not,
+ * which the outer ring's construction rules out — placing it at a guessed angle
+ * would be a lie about where the scene sits.
+ */
+export function alignPositionsToOuterRing(
+    items: TimelineItem[],
+    outerPositionByKey: Map<string, PositionInfo>
+): Map<number, PositionInfo> {
+    const positions = new Map<number, PositionInfo>();
+    items.forEach((item, idx) => {
+        const position = outerPositionByKey.get(sceneKey(item));
+        if (position) positions.set(idx, position);
+    });
+    return positions;
+}
 
-    const list = subplot ? (grouped[actIndex] && grouped[actIndex][subplot]) || [] : [];
-    return outerAllScenes ? list.filter(s => !isBeatNote(s)) : list.filter(s => !isBeatNote(s));
+/**
+ * The unoccupied arcs of a ring — everything between `startAngle` and
+ * `endAngle` that no item covers.
+ *
+ * Fill layout leaves at most one span, at the end. Sequence layout leaves one
+ * wherever the subplot has no scene, and those gaps are the point: they show
+ * the stretches of manuscript this subplot is absent from.
+ */
+export function computeVoidSpans(
+    positions: Iterable<PositionInfo>,
+    startAngle: number,
+    endAngle: number
+): Array<{ startAngle: number; endAngle: number }> {
+    const occupied = Array.from(positions).sort((a, b) => a.startAngle - b.startAngle);
+    const spans: Array<{ startAngle: number; endAngle: number }> = [];
+    let cursor = startAngle;
+
+    occupied.forEach(position => {
+        if (position.startAngle - cursor > MIN_VOID_SPAN) {
+            spans.push({ startAngle: cursor, endAngle: position.startAngle });
+        }
+        if (position.endAngle > cursor) cursor = position.endAngle;
+    });
+
+    if (endAngle - cursor > MIN_VOID_SPAN) {
+        spans.push({ startAngle: cursor, endAngle });
+    }
+    return spans;
 }

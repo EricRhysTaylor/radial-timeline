@@ -8,7 +8,13 @@ import {
     type SceneReorderProgress
 } from '../../services/SceneReorderService';
 import { DragConfirmModal } from '../../modals/DragConfirmModal';
-import { DRAG_DROP_ARC_RADIUS, DRAG_DROP_TICK_OUTER_RADIUS, DRAG_DROP_TICK_LENGTH } from '../../renderer/layout/LayoutConstants';
+import {
+    DragOverlays,
+    cssEscape,
+    getOuterRingIndex,
+    resolvePublishStageColorFromGroup,
+    resolveSubplotColorFromGroup
+} from './dragGeometry';
 import { formatBeatDecimalPrefix, formatIntegerPrefix } from '../../utils/prefixOrder';
 import { resolveSelectedBeatModelFromSettings } from '../../utils/beatSystemState';
 import { appendRecentStructuralMove, getActiveRecentStructuralMoves } from '../../utils/recentStructuralMoves';
@@ -167,20 +173,19 @@ export class OuterRingDragController {
     private startY = 0;
     private startTime = 0;
     private confirming = false;
-    private dropTick: SVGPathElement | null = null;
     private originColor?: string;
     private originModalColor?: string;
     private originStartAngle?: number;
     private originOuterR?: number;
-    private dropArc: SVGPathElement | null = null;
     private sourcePath: string | null = null;
-    private dragIndicator: SVGGElement | null = null; // Tangent-aligned reorder indicator
     private sourceScenePathEl: SVGPathElement | null = null;
+    private readonly overlays: DragOverlays;
 
     constructor(view: OuterRingViewAdapter, svg: SVGSVGElement, options: OuterRingDragOptions) {
         this.view = view;
         this.svg = svg;
         this.options = options;
+        this.overlays = new DragOverlays(svg);
     }
 
     attach(): void {
@@ -197,7 +202,7 @@ export class OuterRingDragController {
         draggableGroups.forEach(g => g.setAttribute('data-draggable', 'true'));
 
         // Create the tangent-aligned drag reorder indicator (move-horizontal arrows)
-        this.createDragIndicator();
+        this.overlays.createIndicator();
 
         this.view.registerDomEvent(window as unknown as HTMLElement, 'pointermove', (evt: PointerEvent) => this.onPointerMove(evt));
         this.view.registerDomEvent(window as unknown as HTMLElement, 'pointerup', (evt: PointerEvent) => { void this.onPointerUp(evt); });
@@ -234,36 +239,15 @@ export class OuterRingDragController {
     }
 
     /**
-     * Return the current rotation offset in radians.
-     * When the timeline is rotated (via the rotation toggle), `#timeline-rotatable`
-     * is rotated by -360/numActs degrees.  Overlay elements (indicator, drop tick,
-     * drop arc) live outside that group, so their angle calculations must add this
-     * offset to match the visual positions of the rotated scene groups.
-     */
-    private getRotationOffsetRad(): number {
-        const rotated = this.svg.getAttribute('data-rotated') === 'true';
-        if (!rotated) return 0;
-        const numActs = parseInt(this.svg.getAttribute('data-segment-count') || this.svg.getAttribute('data-num-acts') || '3', 10);
-        const angleDeg = numActs > 0 ? 360 / numActs : 120;
-        return -(angleDeg * Math.PI) / 180;
-    }
-
-    /**
      * Determine the outer ring index (the highest ring number among all scene groups).
      * Only the outer ring supports drag reorder; inner subplot rings are read-only.
      */
     private getOuterRingIndex(): number {
-        const allRings = Array.from(this.svg.querySelectorAll<SVGGElement>('.rt-scene-group'))
-            .map(g => Number(g.getAttribute('data-ring') ?? -1))
-            .filter(r => r >= 0);
-        return allRings.length > 0 ? Math.max(...allRings) : 0;
+        return getOuterRingIndex(this.svg);
     }
 
     private cssEscape(value: string): string {
-        if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
-            return CSS.escape(value);
-        }
-        return value.replace(/[^a-zA-Z0-9_-]/g, '\\$&');
+        return cssEscape(value);
     }
 
     private getBasenameFromPath(path: string): string {
@@ -500,20 +484,9 @@ export class OuterRingDragController {
             this.currentTarget.element.style.removeProperty('--rt-drag-stroke-color');
         }
         this.currentTarget = null;
-        
+
         // Hide tick and arc completely when not in use
-        if (this.dropTick) {
-            this.dropTick.setAttribute('d', '');
-            this.dropTick.removeAttribute('stroke');
-            this.dropTick.style.removeProperty('--rt-drag-stroke-color');
-            this.dropTick.classList.add('ert-hidden');
-        }
-        if (this.dropArc) {
-            this.dropArc.setAttribute('d', '');
-            this.dropArc.removeAttribute('stroke');
-            this.dropArc.style.removeProperty('--rt-drag-stroke-color');
-            this.dropArc.classList.add('ert-hidden');
-        }
+        this.overlays.clear();
     }
 
     private setHighlight(target: DropTarget | null): void {
@@ -543,9 +516,9 @@ export class OuterRingDragController {
             const startAngle = Number(target.group.getAttribute('data-start-angle') ?? '');
             const outerR = Number(target.group.getAttribute('data-outer-r') ?? '');
             if (!Number.isFinite(startAngle) || !Number.isFinite(outerR)) return;
-            this.updateDropTick(startAngle, outerR, this.originColor);
+            this.overlays.showTick(startAngle, this.originColor);
             if (this.originStartAngle !== undefined && this.originOuterR !== undefined) {
-                this.updateDropArc(this.originStartAngle, startAngle, this.originColor);
+                this.overlays.showArc(this.originStartAngle, startAngle, this.originColor);
             }
         } else if (target.type === 'void') {
             target.element.classList.add('rt-drop-target');
@@ -555,9 +528,9 @@ export class OuterRingDragController {
             // For void cell, show tick at the start of the void area
             const outerR = Number(target.element.getAttribute('data-outer-r') ?? '');
             if (Number.isFinite(target.startAngle) && Number.isFinite(outerR)) {
-                this.updateDropTick(target.startAngle, outerR, this.originColor);
+                this.overlays.showTick(target.startAngle, this.originColor);
                 if (this.originStartAngle !== undefined) {
-                    this.updateDropArc(this.originStartAngle, target.startAngle, this.originColor);
+                    this.overlays.showArc(this.originStartAngle, target.startAngle, this.originColor);
                 }
             }
         }
@@ -603,98 +576,6 @@ export class OuterRingDragController {
         return null;
     }
 
-    private ensureDropTick(): SVGPathElement {
-        if (this.dropTick && this.dropTick.isConnected) return this.dropTick;
-        const existing = this.svg.querySelector<SVGPathElement>('.rt-drop-target-tick');
-        if (existing) {
-            // Reset existing element to hidden state
-            existing.classList.add('ert-hidden');
-            existing.setAttribute('d', '');
-            existing.removeAttribute('stroke');
-            this.dropTick = existing;
-            return existing;
-        }
-        const path = this.svg.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.classList.add('rt-drop-target-tick', 'ert-hidden');
-        path.setAttribute('d', '');
-        const overlays = this.svg.querySelector<SVGGElement>('#rt-overlays');
-        if (overlays) overlays.appendChild(path); else this.svg.appendChild(path);
-        this.dropTick = path;
-        return path;
-    }
-
-    private ensureDropArc(): SVGPathElement {
-        if (this.dropArc && this.dropArc.isConnected) return this.dropArc;
-        const existing = this.svg.querySelector<SVGPathElement>('.rt-drop-target-arc');
-        if (existing) {
-            // Reset existing element to hidden state
-            existing.classList.add('ert-hidden');
-            existing.setAttribute('d', '');
-            existing.removeAttribute('stroke');
-            this.dropArc = existing;
-            return existing;
-        }
-        const path = this.svg.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.classList.add('rt-drop-target-arc', 'ert-hidden');
-        path.setAttribute('d', '');
-        const overlays = this.svg.querySelector<SVGGElement>('#rt-overlays');
-        if (overlays) overlays.appendChild(path); else this.svg.appendChild(path);
-        this.dropArc = path;
-        return path;
-    }
-
-    private updateDropTick(startAngle: number, outerR: number, color?: string): void {
-        // Apply rotation offset so the tick matches the visual scene positions
-        const angle = startAngle + this.getRotationOffsetRad();
-        const r2 = DRAG_DROP_TICK_OUTER_RADIUS;
-        const r1 = r2 - DRAG_DROP_TICK_LENGTH;
-        const x1 = r1 * Math.cos(angle);
-        const y1 = r1 * Math.sin(angle);
-        const x2 = r2 * Math.cos(angle);
-        const y2 = r2 * Math.sin(angle);
-        const tick = this.ensureDropTick();
-        tick.classList.remove('ert-hidden');
-        tick.setAttribute('d', `M ${x1} ${y1} L ${x2} ${y2}`);
-        if (color) {
-            tick.style.setProperty('--rt-drag-stroke-color', color);
-            tick.setAttribute('stroke', color);
-        } else {
-            tick.style.removeProperty('--rt-drag-stroke-color');
-            tick.removeAttribute('stroke');
-        }
-    }
-
-    private updateDropArc(startAngle: number, endAngle: number, color?: string): void {
-        const arc = this.ensureDropArc();
-        arc.classList.remove('ert-hidden');
-        const rArc = DRAG_DROP_ARC_RADIUS;
-
-        // Apply rotation offset so the arc matches the visual scene positions
-        const rotOffset = this.getRotationOffsetRad();
-
-        const norm = (a: number) => {
-            while (a < -Math.PI) a += Math.PI * 2;
-            while (a > Math.PI) a -= Math.PI * 2;
-            return a;
-        };
-        const a0 = startAngle + rotOffset;
-        const a1 = endAngle + rotOffset;
-        const delta = norm(a1 - a0);
-        const largeArc = Math.abs(delta) > Math.PI ? 1 : 0;
-        const sweep = delta >= 0 ? 1 : 0;
-        const x0 = rArc * Math.cos(a0);
-        const y0 = rArc * Math.sin(a0);
-        const x1p = rArc * Math.cos(a1);
-        const y1p = rArc * Math.sin(a1);
-        arc.setAttribute('d', `M ${x0} ${y0} A ${rArc} ${rArc} 0 ${largeArc} ${sweep} ${x1p} ${y1p}`);
-        if (color) {
-            arc.style.setProperty('--rt-drag-stroke-color', color);
-            arc.setAttribute('stroke', color);
-        } else {
-            arc.style.removeProperty('--rt-drag-stroke-color');
-            arc.removeAttribute('stroke');
-        }
-    }
 
     private resetState(): void {
         // Only mark interaction time if a drag was actually in progress
@@ -1366,140 +1247,24 @@ export class OuterRingDragController {
     }
 
     // ── Drag reorder indicator (tangent-aligned move-horizontal arrows) ──
+    // Geometry and colour resolution live in ./dragGeometry so Chronologue drag
+    // draws identical chrome from one implementation.
 
-    /** Lucide move-horizontal icon paths, centered on origin (offset by -12,-12 from 24×24 viewBox) */
-    private static readonly INDICATOR_ICON = [
-        'M 6 -4 L 10 0 L 6 4',   // right arrow (18-12=6, 8-12=-4, etc.)
-        'M -10 0 L 10 0',         // horizontal line
-        'M -6 -4 L -10 0 L -6 4', // left arrow
-    ].join(' ');
-    private static readonly INDICATOR_OFFSET = 22; // px above the outer ring edge
-
-    /**
-     * Create the drag reorder indicator SVG element in the overlays layer.
-     * Uses the Lucide move-horizontal icon, centered on its origin so rotate() works naturally.
-     */
-    private createDragIndicator(): void {
-        if (this.dragIndicator?.isConnected) return;
-        const ns = 'http://www.w3.org/2000/svg';
-        const doc = this.svg.ownerDocument;
-        const g = doc.createElementNS(ns, 'g');
-        g.classList.add('rt-drag-reorder-indicator');
-        const path = doc.createElementNS(ns, 'path');
-        path.setAttribute('d', OuterRingDragController.INDICATOR_ICON);
-        g.appendChild(path);
-        const overlays = this.svg.querySelector<SVGGElement>('#rt-overlays');
-        if (overlays) overlays.appendChild(g); else this.svg.appendChild(g);
-        this.dragIndicator = g;
-    }
-
-    /**
-     * Position and show the drag indicator above the hovered scene/beat group.
-     * The icon is placed at the center angle of the arc, a few px above the outer ring,
-     * and rotated so its horizontal arrows are tangent to the ring.
-     */
     private showDragIndicator(group: SVGGElement): void {
-        if (!this.dragIndicator || this.dragging) return;
-        const startAngle = Number(group.getAttribute('data-start-angle') ?? '');
-        const endAngle = Number(group.getAttribute('data-end-angle') ?? '');
-        const outerR = Number(group.getAttribute('data-outer-r') ?? '');
-        if (!Number.isFinite(startAngle) || !Number.isFinite(endAngle) || !Number.isFinite(outerR)) return;
-
-        // Apply rotation offset so the indicator matches the visual position
-        const rotOffset = this.getRotationOffsetRad();
-        const centerAngle = (startAngle + endAngle) / 2 + rotOffset;
-        const r = outerR + OuterRingDragController.INDICATOR_OFFSET;
-        const x = r * Math.cos(centerAngle);
-        const y = r * Math.sin(centerAngle);
-        // Rotate so horizontal arrows align with the ring tangent at this angle
-        const rotDeg = (centerAngle * 180) / Math.PI + 90;
-        const subplotColor = this.resolveSubplotColorFromGroup(group);
-
-        this.dragIndicator.setAttribute('transform', `translate(${x}, ${y}) rotate(${rotDeg})`);
-        if (subplotColor) {
-            this.dragIndicator.style.setProperty('--rt-drag-indicator-color', subplotColor);
-        } else {
-            this.dragIndicator.style.removeProperty('--rt-drag-indicator-color');
-        }
-        this.dragIndicator.classList.add('rt-visible');
+        if (this.dragging) return;
+        this.overlays.showIndicator(group, this.resolveSubplotColorFromGroup(group));
     }
 
-    /** Hide the drag indicator */
     private hideDragIndicator(): void {
-        if (this.dragIndicator) {
-            this.dragIndicator.classList.remove('rt-visible');
-            this.dragIndicator.style.removeProperty('--rt-drag-indicator-color');
-        }
+        this.overlays.hideIndicator();
     }
 
     private resolvePublishStageColorFromGroup(group: SVGGElement): string {
-        const readCssVariable = (name: string): string | undefined => {
-            try {
-                const value = getComputedStyle(group.ownerDocument.documentElement).getPropertyValue(name).trim();
-                return value || undefined;
-            } catch {
-                return undefined;
-            }
-        };
-
-        const normalizeStage = (raw: unknown): 'Zero' | 'Author' | 'House' | 'Press' => {
-            const value = Array.isArray(raw) ? raw[0] : raw;
-            const stage = String(value ?? '').trim().toLowerCase();
-            if (stage === 'author') return 'Author';
-            if (stage === 'house') return 'House';
-            if (stage === 'press') return 'Press';
-            return 'Zero';
-        };
-
-        const stageFromFrontmatter = (): 'Zero' | 'Author' | 'House' | 'Press' => {
-            const encodedPath = group.getAttribute('data-path');
-            const filePath = encodedPath ? decodeURIComponent(encodedPath) : '';
-            if (!filePath) return 'Zero';
-            const file = this.view.plugin.app.vault.getAbstractFileByPath(filePath);
-            if (!(file instanceof TFile)) return 'Zero';
-            const cache = this.view.plugin.app.metadataCache.getFileCache(file);
-            const frontmatter = cache?.frontmatter;
-            if (!frontmatter) return 'Zero';
-            return normalizeStage(frontmatter['Publish Stage'] ?? frontmatter['publish stage'] ?? frontmatter['publishStage']);
-        };
-
-        const stage = stageFromFrontmatter();
-        return (
-            readCssVariable(`--rt-publishStageColors-${stage}`)
-            || readCssVariable('--rt-publishStageColors-Zero')
-            || readCssVariable('--rt-max-publish-stage-color')
-            || '#9370DB'
-        );
+        return resolvePublishStageColorFromGroup(this.view.plugin.app, group);
     }
 
     private resolveSubplotColorFromGroup(group: SVGGElement): string | undefined {
-        const readCssVariable = (name: string): string | undefined => {
-            try {
-                const value = getComputedStyle(group.ownerDocument.documentElement).getPropertyValue(name).trim();
-                return value || undefined;
-            } catch {
-                return undefined;
-            }
-        };
-
-        const subplotIdxAttr = group.getAttribute('data-subplot-color-index') || group.getAttribute('data-subplot-index');
-        if (subplotIdxAttr) {
-            const idx = Number(subplotIdxAttr);
-            if (Number.isFinite(idx)) {
-                const normalized = ((Math.trunc(idx) % 16) + 16) % 16;
-                const subplotColor =
-                    readCssVariable(`--rt-subplot-colors-${normalized}`)
-                    || this.view.plugin.settings.subplotColors?.[normalized];
-                if (subplotColor) return subplotColor;
-            }
-        }
-
-        const scenePath = group.querySelector<SVGPathElement>('.rt-scene-path');
-        if (scenePath) {
-            const fillAttr = scenePath.getAttribute('fill')?.trim();
-            if (fillAttr && !fillAttr.startsWith('url(')) return fillAttr;
-        }
-        return undefined;
+        return resolveSubplotColorFromGroup(group, this.view.plugin.settings.subplotColors);
     }
 
     /**

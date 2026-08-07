@@ -2,21 +2,22 @@ import type { TimelineItem } from '../../types';
 import {
     isBeatNote,
     type PluginRendererFacade,
-    sortScenes,
+    sceneKey,
+    usesWhenOrdering,
     extractGradeFromScene
 } from '../../utils/sceneHelpers';
 import { makeSceneId } from '../../utils/numberSquareHelpers';
-import { computePositions } from '../utils/SceneLayout';
-import { resolveDominantScene } from '../components/SubplotDominanceIndicators';
-import { shouldRenderStoryBeats, shouldShowAllScenesInOuterRing } from '../modules/ModeRenderingHelpers';
+import { buildOuterRingSequence } from '../utils/OuterRingSequence';
+import { shouldRenderStoryBeats, shouldShowAllScenesInOuterRing, usesSequenceAlignment } from '../modules/ModeRenderingHelpers';
+import type { PositionInfo } from '../utils/SceneLayout';
 import {
     renderOuterRingNumberSquares,
     renderInnerRingsNumberSquaresAllScenes,
     renderNumberSquaresStandard
 } from '../components/NumberSquares';
 import type { SceneNumberInfo } from '../../utils/constants';
-import { getConfiguredActCount } from '../../utils/acts';
 import { getTimelineScope } from '../../utils/books';
+import { getTimelineSegmentCount } from '../utils/TimelineSegments';
 
 // Define the interface for the number square visual resolver logic
 export type NumberSquareVisualResolver = (scene: TimelineItem) => { subplotIndex: number };
@@ -32,7 +33,6 @@ export interface NumberSquareRenderContext {
     sceneNumbersMap: Map<string, SceneNumberInfo>;
     numberSquareVisualResolver: NumberSquareVisualResolver | null;
     shouldApplyNumberSquareColors: boolean;
-    numActs: number;
 }
 
 export function renderNumberSquares(ctx: NumberSquareRenderContext): string {
@@ -46,21 +46,23 @@ export function renderNumberSquares(ctx: NumberSquareRenderContext): string {
         sceneGrades,
         sceneNumbersMap,
         numberSquareVisualResolver,
-        shouldApplyNumberSquareColors,
-        numActs
+        shouldApplyNumberSquareColors
     } = ctx;
 
     let svg = '';
     const isSagaScope = getTimelineScope(plugin.settings) === 'saga';
     const NUM_RINGS = masterSubplotOrder.length;
-    const totalActs = isSagaScope
-        ? Math.max(1, numActs || 1)
-        : Math.max(3, numActs || getConfiguredActCount(plugin.settings));
+    const totalSegments = getTimelineSegmentCount(plugin.settings);
 
     if (shouldShowAllScenesInOuterRing(plugin)) {
         // In outer-ring-narrative mode, draw number squares for ALL rings
 
         svg += `<g class="rt-number-squares">`;
+
+        // Sequence alignment: subplot squares follow their arcs to the outer
+        // ring, so collect every segment's angles as the outer pass builds them.
+        const isSequenceAlignment = usesSequenceAlignment(plugin);
+        const outerPositionByKey = new Map<string, PositionInfo>();
 
         // First, draw squares for the outer ring (all scenes combined)
         const ringOuter = NUM_RINGS - 1;
@@ -69,10 +71,9 @@ export function renderNumberSquares(ctx: NumberSquareRenderContext): string {
         const squareRadiusOuter = (innerROuter + outerROuter) / 2;
 
         // Determine number of acts to iterate based on sorting method
-        const currentMode = plugin.settings.currentMode || 'narrative';
-        const isChronologueMode = currentMode === 'chronologue';
-        const sortByWhen = isChronologueMode ? true : (plugin.settings.sortByWhenDate ?? false);
-        const actsToRender = sortByWhen ? 1 : totalActs;
+        const isChronologueMode = (plugin.settings.currentMode || 'narrative') === 'chronologue';
+        const sortByWhen = usesWhenOrdering(plugin.settings);
+        const actsToRender = sortByWhen ? 1 : totalSegments;
 
         for (let act = 0; act < actsToRender; act++) {
             let startAngle: number;
@@ -84,81 +85,34 @@ export function renderNumberSquares(ctx: NumberSquareRenderContext): string {
                 endAngle = (3 * Math.PI) / 2;
             } else {
                 // Manuscript mode: divide full circle by configured acts
-                startAngle = (act * 2 * Math.PI) / totalActs - Math.PI / 2;
-                endAngle = ((act + 1) * 2 * Math.PI) / totalActs - Math.PI / 2;
+                startAngle = (act * 2 * Math.PI) / totalSegments - Math.PI / 2;
+                endAngle = ((act + 1) * 2 * Math.PI) / totalSegments - Math.PI / 2;
             }
 
-            // Build combined list for this act (or all scenes if using When date)
-            const seenPaths = new Set<string>();
-            const seenPlotKeys = new Set<string>();
-            const combined: TimelineItem[] = [];
-
-            // Group scenes by path first to apply dominant subplot resolution
-            const scenesByPathForSquares = new Map<string, TimelineItem[]>();
-
-            scenes.forEach(s => {
-                if (s.itemType === 'Backdrop') return; // SKIP BACKDROP
-
-                // When using When date sorting, include all scenes (ignore Act)
-                // When using manuscript order, filter by Act
-                if (!sortByWhen) {
-                    const sAct = isSagaScope
-                        ? (typeof s.bookIndex === 'number' ? s.bookIndex : 0)
-                        : (s.actNumber !== undefined ? s.actNumber - 1 : 0);
-                    if (sAct !== act) return;
-                }
-
-                if (isBeatNote(s)) {
-                    // Skip beats entirely in Chronologue mode - beats should never appear
-                    if (isChronologueMode || !shouldRenderStoryBeats(plugin)) return;
-
-                    const pKey = `${String(s.title || '')}::${String(s.actNumber ?? '')}`;
-                    if (seenPlotKeys.has(pKey)) return;
-                    seenPlotKeys.add(pKey);
-                    combined.push(s);
-                } else {
-                    // Group scenes by path for dominant subplot resolution
-                    const key = s.path || `${s.title || ''}::${String(s.when || '')}`;
-                    if (!scenesByPathForSquares.has(key)) {
-                        scenesByPathForSquares.set(key, []);
-                    }
-                    scenesByPathForSquares.get(key)!.push(s);
-                }
+            // Same sequence the arcs were drawn from — see OuterRingSequence.
+            const { items: sortedCombined, positions, positionByKey } = buildOuterRingSequence({
+                scenes,
+                segment: act,
+                isSagaScope,
+                sortByWhen,
+                forceChronological: isChronologueMode,
+                includeBeats: !isChronologueMode && shouldRenderStoryBeats(plugin),
+                masterSubplotOrder,
+                dominantSubplots: plugin.settings.dominantSubplots,
+                innerR: innerROuter,
+                outerR: outerROuter,
+                startAngle,
+                endAngle
             });
 
-            // Now process grouped scenes, selecting the appropriate one for each path
-            // This matches the logic used in the main slice rendering
-            scenesByPathForSquares.forEach((scenesForPath, pathKey) => {
-                if (seenPaths.has(pathKey)) return;
-                seenPaths.add(pathKey);
-
-                // Select which Scene object to use based on dominant subplot preference
-                const scenePath = scenesForPath[0].path;
-                const resolution = resolveDominantScene({
-                    scenePath,
-                    candidateScenes: scenesForPath,
-                    masterSubplotOrder,
-                    dominantSubplots: plugin.settings.dominantSubplots
-                });
-
-                combined.push(resolution.scene);
-            });
-
-            // CRITICAL: Sort the combined array the same way as main rendering does
-            // Chronologue mode always uses chronological sorting
-            const forceChronological = isChronologueMode;
-            const sortedCombined = sortScenes(combined, sortByWhen, forceChronological);
-
-            // Positions derived from shared geometry using SORTED array
-            const positionsDetailed = computePositions(innerROuter, outerROuter, startAngle, endAngle, sortedCombined);
-            const positions = new Map<number, { startAngle: number; endAngle: number }>();
-            positionsDetailed.forEach((p, i) => positions.set(i, { startAngle: p.startAngle, endAngle: p.endAngle }));
+            if (isSequenceAlignment) {
+                positionByKey.forEach((position, key) => outerPositionByKey.set(key, position));
+            }
 
             if (plugin.settings.enableAiSceneAnalysis) {
                 sortedCombined.forEach((sceneItem, combinedIdx) => {
                     if (isBeatNote(sceneItem)) return;
-                    const uniqueKey = sceneItem.path || `${sceneItem.title || ''}::${sceneItem.number ?? ''}::${String(sceneItem.when ?? '')}`;
-                    const combinedSceneId = makeSceneId(act, ringOuter, combinedIdx, true, true, uniqueKey);
+                    const combinedSceneId = makeSceneId(act, ringOuter, combinedIdx, true, true, sceneKey(sceneItem));
                     extractGradeFromScene(sceneItem, combinedSceneId, sceneGrades, plugin);
                 });
             }
@@ -189,7 +143,7 @@ export function renderNumberSquares(ctx: NumberSquareRenderContext): string {
             sceneGrades,
             enableSubplotColors: shouldApplyNumberSquareColors,
             resolveSubplotVisual: numberSquareVisualResolver || undefined,
-            numActs
+            outerPositionByKey: isSequenceAlignment ? outerPositionByKey : undefined
         });
 
         svg += `</g>`;
@@ -205,8 +159,7 @@ export function renderNumberSquares(ctx: NumberSquareRenderContext): string {
             sceneGrades,
             sceneNumbersMap,
             enableSubplotColors: shouldApplyNumberSquareColors,
-            resolveSubplotVisual: numberSquareVisualResolver || undefined,
-            numActs
+            resolveSubplotVisual: numberSquareVisualResolver || undefined
         });
     }
 

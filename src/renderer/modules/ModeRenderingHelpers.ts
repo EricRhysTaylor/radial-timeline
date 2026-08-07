@@ -60,17 +60,44 @@ export function shouldShowSubplotRings(plugin: PluginFacade): boolean {
  */
 export function shouldShowAllScenesInOuterRing(plugin: PluginFacade): boolean {
     const currentMode = plugin.settings.currentMode || TimelineMode.NARRATIVE;
-    const modeDef = getModeDefinition(currentMode as TimelineMode);
-    
-    // Check outer ring content setting
-    // 'narrative' → true, 'chronologue' → true, 'subplot-only' → false
-    return modeDef.rendering.outerRingContent === 'narrative' || 
+    return modeHasAllScenesOuterRing(currentMode as TimelineMode);
+}
+
+/**
+ * Whether a mode's outer ring holds every scene rather than Main Plot only.
+ *
+ * Asked by the renderer through the plugin facade above, and by the header
+ * (which knows a mode id, not a plugin) to decide whether the subplot
+ * alignment toggle applies. One answer, two callers.
+ *
+ * 'narrative' → true, 'chronologue' → true, 'subplot-only' → false
+ */
+export function modeHasAllScenesOuterRing(mode: TimelineMode): boolean {
+    const modeDef = getModeDefinition(mode);
+    return modeDef.rendering.outerRingContent === 'narrative' ||
            modeDef.rendering.outerRingContent === 'chronologue';
 }
 
 /**
+ * Check if subplot rings align each scene to its outer-ring angle (Sequence)
+ * rather than spreading to fill their segment (Fill).
+ *
+ * Alignment needs an all-scenes outer ring to align against, so the mode gate
+ * is structural, not a list of allowed modes: Progress mode's outer ring holds
+ * only Main Plot scenes, so there is nothing to align to and the setting has
+ * no effect there.
+ *
+ * @param plugin - Plugin facade with settings
+ * @returns true if subplot scenes should be drawn at their outer-ring angles
+ */
+export function usesSequenceAlignment(plugin: PluginFacade): boolean {
+    if (plugin.settings.subplotAlignment !== 'sequence') return false;
+    return shouldShowAllScenesInOuterRing(plugin);
+}
+
+/**
  * Check if the inner ring should show scene content
- * 
+ *
  * @param plugin - Plugin facade with settings
  * @returns true if inner rings show content, false if hidden/empty
  */

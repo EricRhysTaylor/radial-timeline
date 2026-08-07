@@ -32,7 +32,7 @@ export interface WhenChangeRecord {
     /** Provenance of the new value (WhenSource). */
     source: string;
     /** Which tool performed the write. */
-    tool: 'scaffold' | 'audit';
+    tool: 'scaffold' | 'audit' | 'chronologue';
 }
 
 async function ensureLogFolder(app: App): Promise<void> {

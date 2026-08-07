@@ -4,8 +4,8 @@ import { parseSceneTitle } from '../../utils/text';
 import {
     isBeatNote,
     type PluginRendererFacade,
-    sortScenes,
-    extractGradeFromScene
+    sceneKey,
+    sortScenes
 } from '../../utils/sceneHelpers';
 import { makeSceneId } from '../../utils/numberSquareHelpers';
 import {
@@ -16,14 +16,14 @@ import {
     PADDING_RENDER_PX,
     SCENE_TITLE_INSET
 } from '../layout/LayoutConstants';
-import { computePositions } from '../utils/SceneLayout';
+import { alignPositionsToOuterRing, computePositions, computeVoidSpans, type PositionInfo } from '../utils/SceneLayout';
+import { buildOuterRingSequence } from '../utils/OuterRingSequence';
 import { getFillForScene } from '../utils/SceneFill';
 import { estimatePixelsFromTitle } from '../utils/LabelMetrics';
 import { sceneArcPath, renderVoidCellPath } from '../components/SceneArcs';
 import { renderSceneGroup } from '../components/Scenes';
-import { shouldRenderStoryBeats, shouldShowAllScenesInOuterRing } from '../modules/ModeRenderingHelpers';
+import { shouldRenderStoryBeats, shouldShowAllScenesInOuterRing, usesSequenceAlignment } from '../modules/ModeRenderingHelpers';
 import { appendSynopsisElementForScene } from '../utils/SynopsisBuilder';
-import { resolveDominantScene } from '../components/SubplotDominanceIndicators';
 import type { StageColorMap } from '../utils/Gossamer';
 import { getReadabilityMultiplier } from '../../utils/readability';
 import type { OuterRingChapterBoundaryGeometry } from '../components/ChapterMarkers';
@@ -44,10 +44,12 @@ export interface RingRenderContext {
     PUBLISH_STAGE_COLORS: StageColorMap;
     maxTextWidth: number;
     synopsesElements: SVGGElement[];
-    sceneGrades: Map<string, string>;
-    manuscriptOrderPositions?: Map<string, { startAngle: number; endAngle: number }>;
+    /**
+     * Filled by this renderer: where each scene sits on the all-scenes outer
+     * ring. Chronologue's duration and backbone arcs read it afterwards.
+     */
+    outerRingPositionByKey?: Map<string, PositionInfo>;
     outerRingChapterBoundaryGeometry?: Map<string, OuterRingChapterBoundaryGeometry>;
-    numActs: number;
     maxStageColor?: string; // Shared project stage color for Gossamer beat strokes.
 }
 
@@ -67,10 +69,8 @@ export function renderRings(ctx: RingRenderContext): string {
         PUBLISH_STAGE_COLORS,
         maxTextWidth,
         synopsesElements,
-        sceneGrades,
-        manuscriptOrderPositions,
-        outerRingChapterBoundaryGeometry,
-        numActs
+        outerRingPositionByKey,
+        outerRingChapterBoundaryGeometry
     } = ctx;
 
     let svg = '';
@@ -106,9 +106,14 @@ export function renderRings(ctx: RingRenderContext): string {
     const currentMode = plugin.settings.currentMode || 'narrative';
     const forceSubplotFillColors = currentMode === 'narrative' || currentMode === 'chronologue';
     const isSagaScope = getTimelineScope(plugin.settings) === 'saga';
+    const isSequenceAlignment = usesSequenceAlignment(plugin);
 
     // Loop through Acts
     for (let act = 0; act < actsToRender; act++) {
+        // Populated by this act's outer ring (drawn first, at ringOffset 0) and
+        // read by its subplot rings. Stays undefined when there is no
+        // all-scenes outer ring to align against.
+        let outerPositionByKey: Map<string, PositionInfo> | undefined;
         const totalRings = NUM_RINGS;
         const subplotCount = masterSubplotOrder.length;
         const ringsToUse = Math.min(subplotCount, totalRings);
@@ -129,9 +134,8 @@ export function renderRings(ctx: RingRenderContext): string {
                 endAngle = (3 * Math.PI) / 2;
             } else {
                 // Manuscript mode: divide full circle by configured acts
-                const totalActsDivisor = actsToRender || numActs;
-                startAngle = (act * 2 * Math.PI) / totalActsDivisor - Math.PI / 2;
-                endAngle = ((act + 1) * 2 * Math.PI) / totalActsDivisor - Math.PI / 2;
+                startAngle = (act * 2 * Math.PI) / actsToRender - Math.PI / 2;
+                endAngle = ((act + 1) * 2 * Math.PI) / actsToRender - Math.PI / 2;
             }
 
             const subplot = masterSubplotOrder[ringOffset];
@@ -141,79 +145,37 @@ export function renderRings(ctx: RingRenderContext): string {
 
             // --- Outer Ring Special Handling ---
             if (isOuterRing && shouldShowAllScenesInOuterRing(plugin)) {
-                // Build combined list for this Act
-                const seenPaths = new Set<string>();
-                const seenPlotKeys = new Set<string>();
-                const combined: TimelineItem[] = [];
-
-                const scenesByPath = new Map<string, TimelineItem[]>();
-                scenes.forEach(s => {
-                    if (s.itemType === 'Backdrop') return; // EXCLUDE BACKDROP
-
-                    if (!sortByWhen) {
-                        const sAct = isSagaScope
-                            ? (typeof s.bookIndex === 'number' ? s.bookIndex : 0)
-                            : (s.actNumber !== undefined ? s.actNumber - 1 : 0);
-                        if (sAct !== act) return;
-                    }
-
-                    if (isBeatNote(s)) {
-                        if (isChronologueMode || !shouldRenderStoryBeats(plugin)) return;
-                        const pKey = `${String(s.title || '')}::${String(s.actNumber ?? '')}`;
-                        if (!seenPlotKeys.has(pKey)) {
-                            seenPlotKeys.add(pKey);
-                            combined.push(s);
-                        }
-                    } else {
-                        const key = s.path || `${s.title || ''}::${String(s.when || '')}`;
-                        if (!scenesByPath.has(key)) {
-                            scenesByPath.set(key, []);
-                        }
-                        scenesByPath.get(key)!.push(s);
-                    }
+                const sequence = buildOuterRingSequence({
+                    scenes,
+                    segment: act,
+                    isSagaScope,
+                    sortByWhen,
+                    forceChronological,
+                    includeBeats: !isChronologueMode && shouldRenderStoryBeats(plugin),
+                    masterSubplotOrder,
+                    dominantSubplots: plugin.settings.dominantSubplots,
+                    innerR,
+                    outerR,
+                    startAngle,
+                    endAngle
                 });
+                const { items: sortedCombined, positions } = sequence;
+                outerPositionByKey = sequence.positionByKey;
 
-                scenesByPath.forEach((scenesForPath, pathKey) => {
-                    if (seenPaths.has(pathKey)) return;
-                    seenPaths.add(pathKey);
+                // A stored preference that matches no candidate is stale — drop it.
+                const dominantSubplots = plugin.settings.dominantSubplots;
+                if (dominantSubplots) {
+                    sequence.staleDominantPaths.forEach(path => { delete dominantSubplots[path]; });
+                }
 
-                    const scenePath = scenesForPath[0].path;
-                    const resolution = resolveDominantScene({
-                        scenePath,
-                        candidateScenes: scenesForPath,
-                        masterSubplotOrder,
-                        dominantSubplots: plugin.settings.dominantSubplots
-                    });
-
-                    if (scenePath && resolution.storedPreference && !resolution.preferenceMatched && plugin.settings.dominantSubplots) {
-                        delete plugin.settings.dominantSubplots[scenePath];
-                    }
-
-                    combined.push(resolution.scene);
-
-                    // Extract grade
-                    const sceneIndex = combined.length - 1;
-                    const uniqueKey = resolution.scene?.path || `${resolution.scene?.title || ''}::${resolution.scene?.number ?? ''}::${String(resolution.scene?.when ?? '')}`;
-                    const allScenesSceneId = makeSceneId(act, NUM_RINGS - 1, sceneIndex, true, true, uniqueKey);
-                    extractGradeFromScene(resolution.scene, allScenesSceneId, sceneGrades, plugin);
-                });
-
-                const sortedCombined = sortScenes(combined, sortByWhen, forceChronological);
-                const positions = computePositions(innerR, outerR, startAngle, endAngle, sortedCombined);
-
-                // Store positions for Level 4 duration arcs (chronologue mode only)
-                if (isChronologueMode && manuscriptOrderPositions) {
-                    sortedCombined.forEach((scene, idx) => {
-                        const position = positions.get(idx);
-                        if (position) {
-                            // Use path as primary key, fallback to title for scenes without paths
-                            const key = scene.path || `title:${scene.title || ''}`;
-                            manuscriptOrderPositions.set(key, position);
-                        }
-                    });
+                // Publish this act's outer-ring angles for later passes
+                // (Chronologue's duration and backbone arcs).
+                if (outerRingPositionByKey) {
+                    sequence.positionByKey.forEach((position, key) => outerRingPositionByKey.set(key, position));
                 }
 
                 // Render
+                let ringScenesSvg = '';
                 sortedCombined.forEach((scene, idx) => {
                     const { text } = parseSceneTitle(scene.title || '', scene.number);
                     const position = positions.get(idx)!;
@@ -242,7 +204,7 @@ export function renderRings(ctx: RingRenderContext): string {
 
                     const color = getFillForScene(scene, PUBLISH_STAGE_COLORS, subplotColorFor, true, forceSubplotFillColors);
                     const arcPathStr = sceneArcPath(innerR, effectiveOuterR, sceneStartAngle, sceneEndAngle);
-                    const sceneUniqueKey = scene.path || `${scene.title || ''}::${scene.number ?? ''}::${String(scene.when ?? '')}`;
+                    const sceneUniqueKey = sceneKey(scene);
                     const sceneId = makeSceneId(act, ring, idx, true, true, sceneUniqueKey);
 
                     if (!isBeatNote(scene) && scene.path) {
@@ -305,7 +267,7 @@ export function renderRings(ctx: RingRenderContext): string {
                         return '';
                     })();
 
-                    svg += `
+                    ringScenesSvg += `
                         ${renderSceneGroup({
                             scene,
                             act,
@@ -329,7 +291,8 @@ export function renderRings(ctx: RingRenderContext): string {
                                   d="M ${formatNumber(textPathRadius * Math.cos(sceneStartAngle + TEXTPATH_START_NUDGE_RAD))} ${formatNumber(textPathRadius * Math.sin(sceneStartAngle + TEXTPATH_START_NUDGE_RAD))} 
                                      A ${formatNumber(textPathRadius)} ${formatNumber(textPathRadius)} 0 ${textPathLargeArcFlag} 1 ${formatNumber(textPathRadius * Math.cos(sceneEndAngle))} ${formatNumber(textPathRadius * Math.sin(sceneEndAngle))}" 
                                   fill="none"/>
-                            <text class="rt-scene-title${scene.path && plugin.openScenePaths.has(scene.path) ? ' rt-scene-is-open' : ''}" dy="${dyOffset}" data-scene-id="${sceneId}">
+                            <clipPath id="clip-${sceneId}"><use href="#${sceneId}"/></clipPath>
+                            <text class="rt-scene-title${scene.path && plugin.openScenePaths.has(scene.path) ? ' rt-scene-is-open' : ''}" clip-path="url(#clip-${sceneId})" dy="${dyOffset}" data-scene-id="${sceneId}">
                                 <textPath href="#textPath-${act}-${ring}-outer-${idx}" startOffset="4">
                                     ${text}
                                 </textPath>
@@ -347,19 +310,19 @@ export function renderRings(ctx: RingRenderContext): string {
                         </g>`;
                 });
 
-                // Void cells
-                const totalUsedSpace = Array.from(positions.values()).reduce((sum, p) => sum + p.angularSize, 0);
-                const totalAngularSpace = endAngle - startAngle;
-                const remainingVoidSpace = totalAngularSpace - totalUsedSpace;
-                if (remainingVoidSpace > 0.001) {
-                    const voidStartAngle = startAngle + totalUsedSpace;
-                    const voidEndAngle = endAngle;
-                    svg += renderVoidCellPath(innerR, outerR, voidStartAngle, voidEndAngle, {
+                // Void cells are emitted before the ring's scenes so a scene that
+                // grows on hover (Sequence expands into its gap) is not buried
+                // under the void fill — SVG paints later siblings on top. Note
+                // this order is why scene titles carry an explicit clip: with
+                // voids on top they used to mask overflowing titles by accident.
+                computeVoidSpans(positions.values(), startAngle, endAngle).forEach(span => {
+                    svg += renderVoidCellPath(innerR, outerR, span.startAngle, span.endAngle, {
                         act,
                         ring,
                         isOuterRing: true
                     });
-                }
+                });
+                svg += ringScenesSvg;
 
                 continue; // Continue to next ring loop (which iterates rings for this act)
             }
@@ -373,8 +336,14 @@ export function renderRings(ctx: RingRenderContext): string {
                 const isAllScenesMode = shouldShowAllScenesInOuterRing(plugin);
                 const effectiveScenes = sortedCurrentScenes.filter(scene => !isBeatNote(scene));
 
-                const scenePositions = computePositions(innerR, outerR, startAngle, endAngle, effectiveScenes);
+                // Sequence: each scene sits at its outer-ring angle, leaving real
+                // gaps where this subplot is absent. Fill: spread across the segment.
+                const isAlignedRing = isSequenceAlignment && outerPositionByKey !== undefined;
+                const scenePositions = (isAlignedRing && outerPositionByKey)
+                    ? alignPositionsToOuterRing(effectiveScenes, outerPositionByKey)
+                    : computePositions(innerR, outerR, startAngle, endAngle, effectiveScenes);
 
+                let ringScenesSvg = '';
                 effectiveScenes.forEach((scene, idx) => {
                     const { text } = parseSceneTitle(scene.title || '', scene.number);
                     const position = scenePositions.get(idx);
@@ -395,7 +364,7 @@ export function renderRings(ctx: RingRenderContext): string {
                     );
 
                     const arcPathStr = sceneArcPath(innerR, outerR, sceneStartAngle, sceneEndAngle);
-                    const sceneUniqueKey = scene.path || `${scene.title || ''}::${scene.number ?? ''}::${String(scene.when ?? '')}`;
+                    const sceneUniqueKey = sceneKey(scene);
                     const sceneId = makeSceneId(act, ring, idx, false, false, sceneUniqueKey);
 
                     const subplotIdxAttr = (() => {
@@ -408,7 +377,7 @@ export function renderRings(ctx: RingRenderContext): string {
                     if (scene.path && plugin.openScenePaths.has(scene.path)) sceneClasses += " rt-scene-is-open";
 
 
-                    svg += `
+                    ringScenesSvg += `
                         ${renderSceneGroup({
                             scene,
                             act,
@@ -420,7 +389,8 @@ export function renderRings(ctx: RingRenderContext): string {
                             endAngle: sceneEndAngle,
                             subplotIdxAttr,
                             subplotColorIdxAttr,
-                            titleInset: sceneTitleInset
+                            titleInset: sceneTitleInset,
+                            aligned: isAlignedRing
                         })}
                             <path id="${sceneId}"
                                   d="${arcPathStr}" 
@@ -432,7 +402,8 @@ export function renderRings(ctx: RingRenderContext): string {
                                   d="M ${formatNumber(textPathRadius * Math.cos(sceneStartAngle + TEXTPATH_START_NUDGE_RAD))} ${formatNumber(textPathRadius * Math.sin(sceneStartAngle + TEXTPATH_START_NUDGE_RAD))} 
                                      A ${formatNumber(textPathRadius)} ${formatNumber(textPathRadius)} 0 ${textPathLargeArcFlag} 1 ${formatNumber(textPathRadius * Math.cos(sceneEndAngle))} ${formatNumber(textPathRadius * Math.sin(sceneEndAngle))}" 
                                   fill="none"/>
-                            <text class="rt-scene-title${scene.path && plugin.openScenePaths.has(scene.path) ? ' rt-scene-is-open' : ''}" data-scene-id="${sceneId}">
+                            <clipPath id="clip-${sceneId}"><use href="#${sceneId}"/></clipPath>
+                            <text class="rt-scene-title${scene.path && plugin.openScenePaths.has(scene.path) ? ' rt-scene-is-open' : ''}" clip-path="url(#clip-${sceneId})" data-scene-id="${sceneId}">
                                 <textPath href="#textPath-${act}-${ring}-${idx}" startOffset="4">
                                     ${text}
                                 </textPath>
@@ -440,20 +411,19 @@ export function renderRings(ctx: RingRenderContext): string {
                         </g>`;
                 });
 
-                // Void cells for inner rings
-                const totalUsedSpace = Array.from(scenePositions.values()).reduce((sum, p) => sum + p.angularSize, 0);
-                const totalAngularSpace = endAngle - startAngle;
-                const remainingVoidSpace = totalAngularSpace - totalUsedSpace;
-
-                if (remainingVoidSpace > 0.001) {
-                    const voidStartAngle = startAngle + totalUsedSpace;
-                    const voidEndAngle = endAngle;
-                    svg += renderVoidCellPath(innerR, outerR, voidStartAngle, voidEndAngle, {
+                // Void cells are emitted before the ring's scenes so a scene that
+                // grows on hover (Sequence expands into its gap) is not buried
+                // under the void fill — SVG paints later siblings on top. Note
+                // this order is why scene titles carry an explicit clip: with
+                // voids on top they used to mask overflowing titles by accident.
+                computeVoidSpans(scenePositions.values(), startAngle, endAngle).forEach(span => {
+                    svg += renderVoidCellPath(innerR, outerR, span.startAngle, span.endAngle, {
                         act,
                         ring,
                         isOuterRing: isOuterRing
                     });
-                }
+                });
+                svg += ringScenesSvg;
             } else {
                 // No scenes, render empty void ring
                 svg += renderVoidCellPath(innerR, outerR, startAngle, endAngle, {

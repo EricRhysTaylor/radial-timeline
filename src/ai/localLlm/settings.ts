@@ -1,5 +1,5 @@
 import type RadialTimelinePlugin from '../../main';
-import type { AiSettingsV1, LocalLlmBackendId, LocalLlmJsonMode, LocalLlmSettings, ModelInfo, ModelSelectionResult } from '../types';
+import type { AiSettingsV1, Capability, DeclarableLocalCapability, LocalLlmBackendId, LocalLlmJsonMode, LocalLlmSettings, ModelInfo, ModelSelectionResult } from '../types';
 import { buildDefaultAiSettings, cloneDefaultLocalLlmSettings } from '../settings/aiSettings';
 import { validateAiSettings } from '../settings/validateAiSettings';
 import { BUILTIN_MODELS } from '../registry/builtinModels';
@@ -15,6 +15,24 @@ export const LOCAL_LLM_BACKEND_LABELS: Record<LocalLlmBackendId, string> = {
 export const LOCAL_LLM_JSON_MODE_LABEL_KEYS: Record<LocalLlmJsonMode, string> = {
     response_format: 'settings.ai.localLlmConfig.optionJsonModeResponseFormat',
     prompt_only: 'settings.ai.localLlmConfig.optionJsonModePromptOnly'
+};
+
+export const LOCAL_LLM_CAPABILITY_LABEL_KEYS: Record<
+    DeclarableLocalCapability,
+    { name: string; desc: string }
+> = {
+    reasoningStrong: {
+        name: 'settings.ai.localLlmConfig.capabilityReasoningStrongName',
+        desc: 'settings.ai.localLlmConfig.capabilityReasoningStrongDesc'
+    },
+    longContext: {
+        name: 'settings.ai.localLlmConfig.capabilityLongContextName',
+        desc: 'settings.ai.localLlmConfig.capabilityLongContextDesc'
+    },
+    highOutputCap: {
+        name: 'settings.ai.localLlmConfig.capabilityHighOutputCapName',
+        desc: 'settings.ai.localLlmConfig.capabilityHighOutputCapDesc'
+    }
 };
 
 export function normalizeLocalLlmServerBaseUrl(baseUrl: string): string {
@@ -67,13 +85,25 @@ function buildCustomLocalModelInfo(modelId: string): ModelInfo {
     };
 }
 
+/**
+ * Local backends publish no capability manifest, so the registry entry only
+ * carries the `jsonStrict` baseline. Everything above that baseline is an
+ * operator assertion made in Settings → AI → Local LLM; merge it here so the
+ * capability floor in `aiClient` has one authoritative model to check against.
+ */
+function applyDeclaredCapabilities(model: ModelInfo, declared: DeclarableLocalCapability[]): ModelInfo {
+    if (declared.length === 0) return model;
+    const merged = new Set<Capability>([...model.capabilities, ...declared]);
+    return { ...model, capabilities: [...merged] };
+}
+
 export function resolveLocalLlmModelInfo(aiSettings: AiSettingsV1): ModelInfo {
     const localLlm = getLocalLlmSettings(aiSettings);
     const target = localLlm.defaultModelId.trim() || cloneDefaultLocalLlmSettings().defaultModelId;
     const matched = BUILTIN_MODELS.find(model =>
         model.provider === 'ollama' && (model.id === target || model.alias === target)
     );
-    return matched ?? buildCustomLocalModelInfo(target);
+    return applyDeclaredCapabilities(matched ?? buildCustomLocalModelInfo(target), localLlm.declaredCapabilities);
 }
 
 export function resolveLocalLlmSelection(aiSettings: AiSettingsV1): ModelSelectionResult {

@@ -215,15 +215,15 @@ describe('assembleManuscript scene heading formatting', () => {
     it('injects scene Chapter field headings before scene content and suppresses scene headings in Modern Classic mode', async () => {
         // Scenes self-declare their Act via the canonical `Act:` frontmatter
         // field — the same source the timeline ring uses. Modern Classic emits
-        // \rtPart at every Act-boundary transition, which here is scene1+scene2
+        // \rtPart at every Part marker, which here is scene1 and scene3
         // (Act 1) → scene3 (Act 2). No beat indirection.
         const scene1 = makeFile('Scenes/1 Opening.md', '1 Opening');
         const scene2 = makeFile('Scenes/2 Midpoint.md', '2 Midpoint');
         const scene3 = makeFile('Scenes/3 Turn.md', '3 Turn');
         const vault = makeVault({
-            [scene1.path]: '---\nClass: Scene\nAct: 1\n---\n\nFirst body.',
-            [scene2.path]: '---\nClass: Scene\nAct: 1\n---\n\nSecond body.',
-            [scene3.path]: '---\nClass: Scene\nAct: 2\n---\n\nThird body.'
+            [scene1.path]: '---\nClass: Scene\nPart: true\n---\n\nFirst body.',
+            [scene2.path]: '---\nClass: Scene\n---\n\nSecond body.',
+            [scene3.path]: '---\nClass: Scene\nPart: true\n---\n\nThird body.'
         });
 
         const assembled = await assembleManuscript(
@@ -256,17 +256,18 @@ describe('assembleManuscript scene heading formatting', () => {
                 },
                 modernClassicStructure: {
                     enabled: true,
-                    actEpigraphs: [
+                    partEpigraphs: [
                         'The beginning of all things.',
                         'When we are strongest — who draws back?\nMost merry — who falls down laughing?\nWhen we are very bad, what can they do to us?',
                     ],
-                    actEpigraphAttributions: ['Anonymous', 'The Narrator'],
+                    partEpigraphAttributions: ['Anonymous', 'The Narrator'],
                 }
             }
         );
 
-        expect(assembled.text).toContain('\\rtPart{I}{The beginning of all things.}{Anonymous}');
-        const expectedActTwoEpigraph = String.raw`\rtPart{II}{When we are strongest — who draws back?\\
+        expect(assembled.text).toContain('\\rtPart{I}{}{The beginning of all things.}{Anonymous}');
+        // Empty title slot — Parts are Act-derived here, and an Act has no name.
+        const expectedActTwoEpigraph = String.raw`\rtPart{II}{}{When we are strongest — who draws back?\\
 Most merry — who falls down laughing?\\
 When we are very bad, what can they do to us?}{The Narrator}`;
         expect(assembled.text).toContain(expectedActTwoEpigraph);
@@ -278,7 +279,7 @@ When we are very bad, what can they do to us?}{The Narrator}`;
         const sceneSepArgs = Array.from(assembled.text.matchAll(/\\rtSceneSep\{([^}]+)\}/g)).map(match => match[1]);
         expect(sceneSepArgs).toEqual(['i', 'ii', 'i']);
 
-        const partOneIndex = assembled.text.indexOf('\\rtPart{I}{The beginning of all things.}{Anonymous}');
+        const partOneIndex = assembled.text.indexOf('\\rtPart{I}{}{The beginning of all things.}{Anonymous}');
         const partTwoIndex = assembled.text.indexOf(expectedActTwoEpigraph);
         const chapterTwoIndex = assembled.text.indexOf('\\rtChapter{2}{Everything of Possibility.}');
         expect(partOneIndex).toBeGreaterThanOrEqual(0);
@@ -324,8 +325,8 @@ When we are very bad, what can they do to us?}{The Narrator}`;
         const scene1 = makeFile('Scenes/1 Opening.md', '1 Opening');
         const scene2 = makeFile('Scenes/2 Midpoint.md', '2 Midpoint');
         const vault = makeVault({
-            [scene1.path]: '---\nClass: Scene\nAct: 1\n---\n\nFirst body.',
-            [scene2.path]: '---\nClass: Scene\nAct: 2\n---\n\nSecond body.'
+            [scene1.path]: '---\nClass: Scene\nPart: true\n---\n\nFirst body.',
+            [scene2.path]: '---\nClass: Scene\n---\n\nSecond body.'
         });
 
         // Mirror CommandRegistrar's wiring: when a layout suppresses chapter

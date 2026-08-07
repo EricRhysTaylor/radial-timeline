@@ -12,9 +12,9 @@ This page covers:
 - Installing and duplicating templates
 - Book Details, Book Pages, and inline LaTeX matter examples
 - The `Chapter:` field — how you mark chapter breaks
-- Parts — how they're generated from Acts
+- Parts and chapters — how you mark them on scenes
 - Setting up **Signature** (advanced book-style structure)
-- Act epigraphs, scene opener headings
+- Part epigraphs, scene opener headings
 - Export checks and template readiness
 - Exporting
 
@@ -166,25 +166,59 @@ You can add or clear chapter markers from the scene right-click menu in Narrativ
 
 ---
 
-## Parts — Derived from Acts
+## The `Part:` Field
 
-You don't type "Part I" anywhere. Parts are generated automatically from your **Acts**.
+Parts work exactly like chapters: a scene note carries a `Part:` field, and that scene opens the part.
 
-1. Set **Act count** in **Settings → Core → Acts** (e.g., 3). This is the canonical partition that also drives the timeline ring.
-2. Set the `Act:` field on each scene (`Act: 1`, `Act: 2`, …). This is the same field the timeline reads to place the scene in its act segment, so what you see in the ring is what the export prints.
-3. When the exporter crosses from Act 1 to Act 2, it emits a **Part II** divider page.
+```yaml
+---
+Class: Scene
+Part: true            # numeral only — prints "I"
+---
+```
 
-**Part ordering**: Part → Chapter → Scene.
+```yaml
+---
+Class: Scene
+Part: The Crossing    # numeral and title
+---
+```
 
-- Part I contains all scenes whose `Act: 1` (with their chapters)
-- Part II contains all scenes whose `Act: 2`
-- Part III contains all scenes whose `Act: 3`
+Set `Part: true` when you want the numeral alone, which is what most books do. Give it a string when the part has a name.
 
-Not every template uses Parts. Only templates with `usesModernClassicStructure` (currently **Signature**) print Part divider pages. Simpler templates ignore act boundaries and flow straight through.
+Key behaviors:
 
-> Beats are not used to determine acts for export. The export reads each scene's own `Act:` field directly, the same way the timeline ring does, so Parts in the PDF always match the act partitioning you see in Narrative mode.
+- **Scene notes only**, same as `Chapter:`.
+- **Numbering is automatic and sequential.** The first marked scene is Part I, the second Part II, and so on. You never type a numeral.
+- **Case-insensitive.** `Part`, `part`, `PART` all work.
+- **An empty `Part:` is not a marker.** Clearing a part deletes the field rather than blanking it.
 
-Narrative Mode can show these same publishing structures as outer-ring placards. See [Narrative Mode](Narrative-Mode#chapter-and-part-placards) for the UI behavior.
+You do **not** need `Part:` on every scene — only where a part begins. Scenes before the first marker simply belong to no part, which is what you want for a prologue.
+
+**Ordering**: Part → Chapter → Scene. A scene can open both a part and a chapter.
+
+Add or clear part markers from the scene right-click menu in Narrative mode (**Set part…**), or edit the field directly in the scene note.
+
+> Parts are independent of Acts. `Act:` places a scene in its act zone on the timeline; it has nothing to do with publishing. A three-act book can have two parts, or five, or none.
+
+Not every template prints Parts. Only layouts configured to do so — **Signature** among the bundled ones — emit Part divider pages. Others flow straight through and ignore your markers.
+
+---
+
+## Part Epigraphs
+
+A Part page can carry a quote and an attribution. These live in the book's layout options, not in the scene note, because they are typography rather than manuscript text.
+
+**Settings → Publish → (your layout) → Part epigraphs**
+
+Entries pair with markers **by position**: the first entry prints on Part I, the second on Part II, and so on.
+
+Because the pairing is positional, the two sides have to agree. The export checks report both directions:
+
+- **Fewer epigraphs than marked parts** — some parts will print without one.
+- **More epigraphs than marked parts** — the surplus will never print, because there is no part to print it on.
+
+Both appear on the PART preview card in the Publish panel and in the export checks before you generate a PDF.
 
 ---
 
@@ -209,17 +243,22 @@ Here's the full setup, step by step.
 
 The template file writes to `Radial Timeline/Pandoc/rt_modern_classic.tex` in your vault.
 
-### Step 2 — Set your Act count
+### Step 2 — Mark your parts
 
-**Settings → Core → Acts → Act count**
+Right-click the scene that opens each part in Narrative mode and choose **Set part…**, or add the field directly:
 
-This is a global plugin setting (not a per-template one). Most novels use 3 acts; some use 4 or 5. Whatever you select here is the number of Parts your book will have.
+```yaml
+Part: true            # numeral only
+Part: The Crossing    # numeral and title
+```
 
-### Step 3 — Make sure your scenes carry an `Act:` value
+Numbering is automatic — the first marked scene is Part I. You do not need to mark anything if your book has no parts; Signature simply prints none.
 
-Signature generates Part breaks at every act-boundary transition in narrative order. It reads each scene's own `Act:` field directly (the same field the timeline ring uses to place the scene), so what you see partitioned in Narrative mode is exactly what gets printed as Parts.
+### Step 3 — Add part epigraphs (optional)
 
-If you used **Book Designer** to scaffold your manuscript, this is already set. Otherwise, check that every scene has a numeric `Act:` field (`1`, `2`, `3`, …) in its frontmatter.
+**Settings → Publish → Signature → Part epigraphs**
+
+Entries pair with your markers by position. If the counts disagree in either direction, the Publish panel and the export checks say so before you generate a PDF.
 
 See [Scene Properties](YAML-Frontmatter) for the full frontmatter schema.
 
@@ -235,7 +274,7 @@ You can have many chapters per act. There's no upper limit and no naming require
 
 ### Step 5 — (Optional) Add act epigraphs
 
-**Settings → Publish → PDF Styles → Signature** → click the **+** button at the end of the row to expand special options → **Act epigraphs**.
+**Settings → Publish → PDF Styles → Signature** → click the **+** button at the end of the row to expand special options → **Part epigraphs**.
 
 For each act, fill in:
 - **Quote** — the epigraph text
@@ -265,11 +304,9 @@ Output goes to `Radial Timeline/Export/` by default. You can change the destinat
 The smallest setup that produces a valid Signature PDF:
 
 - Signature **Installed**
-- **Act count** set (default 3 is fine)
-- At least one scene with an `Act:` field (`1`, `2`, …) — and one transition to a higher Act if you want a Part II
 - At least one scene (anywhere) with a `Chapter:` value
 
-Epigraphs, extra chapters, and multi-act structure are all optional refinements.
+That is genuinely all. Parts are optional — mark a scene with `Part:` only if your book has them. Epigraphs and extra chapters are further refinements.
 
 ---
 
@@ -331,7 +368,9 @@ If you're migrating a manuscript that already carries Pandoc/LaTeX markup, this 
 
 **Template shows "Not installed" after I clicked Install.** The `.tex` file couldn't be written — check that `Radial Timeline/Pandoc/` exists and is writable.
 
-**Parts don't appear in my Signature export.** Parts only emit when scenes cross an act boundary. Check that your scenes have `Act:` values in their frontmatter and that more than one act is represented in the selection.
+**Parts don't appear in my Signature export.** Parts emit where a scene carries a `Part:` field. Check that at least one exported scene has one, and that the value is not empty — an empty `Part:` is not a marker. If you are exporting a scene range, check a marked scene falls inside it.
+
+**I set a part but no badge appears on the timeline.** Turn on **Settings → Core → Show part and chapter markers**. The markers are saved either way; that toggle only controls whether the ring displays them.
 
 **Chapter numbering is wrong.** The exporter numbers chapters by the order `Chapter:` values appear in the timeline. If a `Chapter:` value appears out of order, renumbering will reflect that. Check narrative order via [Timeline Modes](Radial-Timeline-View#modes-at-a-glance).
 

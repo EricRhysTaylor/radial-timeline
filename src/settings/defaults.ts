@@ -113,6 +113,7 @@ export const DEFAULT_SETTINGS: RadialTimelineSettings = {
     synopsisHoverMaxLines: 5, // @deprecated Legacy fallback; hover lines now derive from synopsis word limit
     enableHoverDebugLogging: false,
     sortByWhenDate: false, // Default: manuscript order (backward compatible)
+    subplotAlignment: 'fill', // Default: subplot rings spread to fill their segment
     chronologueDurationCapSelection: 'auto',
     chronologueCalendarDefault: 'earth',
     chronologueLastCalendarView: 'earth',

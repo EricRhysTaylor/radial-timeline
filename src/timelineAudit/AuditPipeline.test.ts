@@ -1,7 +1,17 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { TFile } from 'obsidian';
-import { parseAuditAiResponse, runTimelineAuditFromInputs } from './AuditPipeline';
+import type RadialTimelinePlugin from '../main';
+import { getAIClient } from '../ai/runtime/aiClient';
+import {
+    buildTimelineAuditAiPrompt,
+    getTimelineAuditAiRequiredCapabilities,
+    parseAuditAiResponse,
+    runTimelineAuditFromInputs,
+    selectTimelineAuditAiInputs
+} from './AuditPipeline';
 import type { TimelineAuditSceneInput } from './types';
+
+vi.mock('../ai/runtime/aiClient', () => ({ getAIClient: vi.fn() }));
 
 function makeFile(path: string): TFile {
     const basename = path.split('/').pop()?.replace(/\.md$/i, '') ?? path;
@@ -157,5 +167,145 @@ describe('timeline audit pipeline', () => {
     it('validates AI response parsing conservatively', () => {
         expect(parseAuditAiResponse('not json')).toBeNull();
         expect(parseAuditAiResponse('{"rationale":"Mixed signals","evidenceQuotes":["later that night"],"evidenceTier":"ambiguous"}')?.evidenceTier).toBe('ambiguous');
+        expect(parseAuditAiResponse('{"rationale":"Maybe","evidenceQuotes":[],"issueType":"invented_issue","evidenceTier":"certain","timelineRole":"memory-ish","confidence":"certain"}')).toMatchObject({
+            issueType: undefined,
+            evidenceTier: 'ambiguous',
+            timelineRole: 'unclear',
+            confidence: 'low'
+        });
+    });
+
+    it('builds explicit whole-manuscript and limited AI queues in narrative order', () => {
+        const inputs = [
+            makeInput({ path: 'Story/3.md', manuscriptOrderIndex: 2 }),
+            makeInput({ path: 'Story/1.md', manuscriptOrderIndex: 0 }),
+            makeInput({ path: 'Story/2.md', manuscriptOrderIndex: 1 })
+        ];
+
+        expect(selectTimelineAuditAiInputs(inputs, { mode: 'manuscript' }).map(input => input.path))
+            .toEqual(['Story/1.md', 'Story/2.md', 'Story/3.md']);
+        expect(selectTimelineAuditAiInputs(inputs, {
+            mode: 'range',
+            startScene: 2,
+            endScene: 3,
+            paths: ['Story/2.md', 'Story/3.md']
+        }).map(input => input.path)).toEqual(['Story/2.md', 'Story/3.md']);
+    });
+
+    it('treats scaffolded dates as provisional and gives AI narrative-neighbor manuscript context', () => {
+        const previous = makeInput({
+            path: 'Story/1 Before.md',
+            manuscriptOrderIndex: 0,
+            rawWhen: '2085-04-01 08:00',
+            synopsis: 'They leave for the tournament.'
+        });
+        const current = makeInput({
+            path: 'Story/2 Memory.md',
+            manuscriptOrderIndex: 1,
+            rawWhen: '2085-04-01 13:00',
+            bodyExcerpt: 'When he was six, the tower filled the whole sky.'
+        });
+        const next = makeInput({
+            path: 'Story/3 After.md',
+            manuscriptOrderIndex: 2,
+            rawWhen: '2085-04-01 19:00',
+            summary: 'The tournament resumes.'
+        });
+
+        const prompt = buildTimelineAuditAiPrompt(current, previous, next, [previous, current, next]);
+        expect(prompt).toContain('rough scaffold');
+        expect(prompt).toContain('Manuscript narrative map');
+        expect(prompt).toContain('1. 1 Before | provisional When: 2085-04-01 08:00');
+        expect(prompt).toContain('Previous scene in narrative order');
+        expect(prompt).toContain('When he was six');
+        expect(prompt).toContain('flashback');
+        expect(prompt).toContain('2 of 3');
+    });
+
+    it('uses the Local LLM strict-JSON baseline while retaining stronger cloud-model routing', () => {
+        expect(getTimelineAuditAiRequiredCapabilities('ollama')).toEqual(['jsonStrict']);
+        expect(getTimelineAuditAiRequiredCapabilities('openai')).toEqual(['jsonStrict', 'reasoningStrong']);
+    });
+
+    it('replaces a shallow deterministic suggestion with a differing AI chronology suggestion', async () => {
+        vi.mocked(getAIClient).mockReturnValue({
+            run: vi.fn(async () => ({
+                aiStatus: 'success',
+                content: JSON.stringify({
+                    rationale: 'The scene is explicitly a childhood flashback.',
+                    evidenceQuotes: ['When he was six'],
+                    issueType: 'relative_order_conflict',
+                    evidenceTier: 'direct',
+                    writtenTimelinePosition: 'Eight years before the mainline',
+                    timelineRole: 'flashback',
+                    suggestedWhen: '2077-10-14 13:13',
+                    confidence: 'high'
+                })
+            }))
+        } as unknown as ReturnType<typeof getAIClient>);
+        const plugin = {
+            settings: { aiSettings: { provider: 'ollama' } }
+        } as unknown as RadialTimelinePlugin;
+
+        const result = await runTimelineAuditFromInputs([
+            makeInput({
+                path: 'Story/7 FB Red Rover.md',
+                manuscriptOrderIndex: 0,
+                rawWhen: '2085-04-01 08:00',
+                bodyExcerpt: 'That evening he remembered. When he was six, the tower filled the sky.'
+            })
+        ], {
+            runDeterministicPass: true,
+            runContinuityPass: false,
+            runAiInference: true,
+            aiScope: { mode: 'manuscript' }
+        }, plugin);
+
+        expect(result.findings[0]).toMatchObject({
+            aiSuggested: true,
+            aiTimelineRole: 'flashback',
+            suggestedProvenance: 'ai',
+            safeApplyEligible: false
+        });
+        expect(result.findings[0].suggestedWhen?.getFullYear()).toBe(2077);
+    });
+
+    it('does not offer Apply when AI repeats the existing timestamp', async () => {
+        vi.mocked(getAIClient).mockReturnValue({
+            run: vi.fn(async () => ({
+                aiStatus: 'success',
+                content: JSON.stringify({
+                    rationale: 'The provisional timestamp fits the scene.',
+                    evidenceQuotes: [],
+                    issueType: '',
+                    evidenceTier: 'ambiguous',
+                    writtenTimelinePosition: '',
+                    timelineRole: 'mainline',
+                    suggestedWhen: '2085-04-01 08:00',
+                    confidence: 'med'
+                })
+            }))
+        } as unknown as ReturnType<typeof getAIClient>);
+        const plugin = {
+            settings: { aiSettings: { provider: 'ollama' } }
+        } as unknown as RadialTimelinePlugin;
+
+        const result = await runTimelineAuditFromInputs([
+            makeInput({
+                path: 'Story/1 Mainline.md',
+                manuscriptOrderIndex: 0,
+                rawWhen: '2085-04-01 08:00',
+                bodyExcerpt: 'They cross the field.'
+            })
+        ], {
+            runDeterministicPass: true,
+            runContinuityPass: false,
+            runAiInference: true,
+            aiScope: { mode: 'manuscript' }
+        }, plugin);
+
+        expect(result.findings[0].suggestedWhen).toBeNull();
+        expect(result.findings[0].allowedActions).toEqual(['keep']);
+        expect(result.aiRunSummary?.suggestions).toBe(0);
     });
 });

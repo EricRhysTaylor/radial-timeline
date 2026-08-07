@@ -950,6 +950,19 @@ body.rt-modal-open .radial-timeline-container * {
   pointer-events: none;
 }
 
+/* Sequence alignment makes voids the majority of every subplot ring, so they
+   step back a shade from the scenes rather than sitting level with them. The
+   stroke matches the fill: at this lightness a white hairline would outline
+   every gap, and the empty stretches should read as one quiet field. Scenes
+   keep their own white edge, so cell boundaries still read. Act spokes are
+   handled separately (timeline.css) — a shade this slight cannot carry a
+   near-white line. Chronologue's sub-mode palettes override this from
+   timeline.css. */
+.radial-timeline-svg[data-subplot-alignment="sequence"] .rt-void-cell {
+  fill: var(--rt-color-empty-recessed);
+  stroke: var(--rt-color-empty-recessed);
+}
+
 /* Optimized global fade: Apply to all children when parent has class */
 /* Excludes backdrop segments which have their own styling */
 .rt-global-fade .rt-scene-path:not(.rt-selected):not(.rt-backdrop-segment) {

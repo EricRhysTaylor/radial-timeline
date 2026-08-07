@@ -87,6 +87,33 @@ export function isNonSceneItem(item: TimelineItem | { itemType?: string }): bool
 }
 
 /**
+ * Canonical identity for a timeline item.
+ *
+ * The renderer identifies the same item across three surfaces — outer-ring
+ * dedupe, DOM scene ids, and subplot-ring lookups — and those surfaces MUST
+ * agree or an item silently splits into two. The vault path is the identity
+ * whenever there is one; the composite is only for items that never reached
+ * disk. Never inline a variant of this expression.
+ */
+export function sceneKey(item: Pick<TimelineItem, 'path' | 'title' | 'number' | 'when'>): string {
+    if (item.path) return item.path;
+    return `${item.title || ''}::${item.number ?? ''}::${String(item.when ?? '')}`;
+}
+
+/**
+ * Whether the timeline is ordered by When date rather than manuscript order.
+ *
+ * Chronologue is always chronological; every other mode follows the setting.
+ * This decides both the sort and the segmentation (When ordering collapses all
+ * acts into one full-circle segment), so it must be answered identically
+ * everywhere — it is the `sortByWhen` argument to sortScenes below.
+ */
+export function usesWhenOrdering(settings: { currentMode?: string; sortByWhenDate?: boolean }): boolean {
+    if (settings.currentMode === 'chronologue') return true;
+    return settings.sortByWhenDate ?? false;
+}
+
+/**
  * Sort scenes based on plugin settings
  * @param scenes - Scenes to sort
  * @param sortByWhen - If true, sort by When date; if false, sort by manuscript order
@@ -105,6 +132,29 @@ export function sortScenes(
     // When sorting chronologically (by When date):
     // Both beats and scenes can have When dates and should be sorted together
     return sortScenesChronologically(scenes);
+}
+
+/**
+ * The scene sequence the Chronologue ring renders: beats and backdrops removed,
+ * one entry per scene file, sorted chronologically.
+ *
+ * SINGLE SOURCE OF TRUTH for the Chronologue outer-ring order. Both the label
+ * renderer and the drag controller read it, so a dropped scene resolves its
+ * neighbours from exactly the sequence the author is looking at.
+ */
+export function buildChronologueSceneSequence(scenes: TimelineItem[]): TimelineItem[] {
+    const seenKeys = new Set<string>();
+    const combined: TimelineItem[] = [];
+
+    scenes.forEach(scene => {
+        if (isBeatNote(scene) || scene.itemType === 'Backdrop') return;
+        const key = scene.path || `${scene.title || ''}::${String(scene.when || '')}`; // SAFE: pathless items are deduped on their rendered identity instead
+        if (seenKeys.has(key)) return;
+        seenKeys.add(key);
+        combined.push(scene);
+    });
+
+    return sortScenes(combined, true, true);
 }
 
 export interface PluginRendererFacade {
@@ -132,6 +182,7 @@ export interface PluginRendererFacade {
         runtimeContentType?: 'novel' | 'screenplay';
         currentMode?: string;
         sortByWhenDate?: boolean;
+        subplotAlignment?: 'fill' | 'sequence';
         showChapterMarkers?: boolean;
         timelineScope?: 'book' | 'saga';
         books: BookProfile[];

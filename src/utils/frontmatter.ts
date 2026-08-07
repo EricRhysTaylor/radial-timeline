@@ -2,6 +2,7 @@
  * Frontmatter utilities - case-insensitive key handling
  */
 
+import { getFrontMatterInfo, parseYaml } from 'obsidian';
 import type { RadialTimelineSettings } from '../types/settings';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
 import { getBaseKeys } from './yamlTemplateNormalize';
@@ -373,4 +374,30 @@ function readFirstNonEmptyString(
     }
   }
   return undefined;
+}
+
+/**
+ * Parse a note's frontmatter the way the manuscript exporter does.
+ *
+ * Deliberately does NOT apply user key mappings. `SceneDataService` builds a
+ * TimelineItem's `rawFrontmatter` with `normalizeFrontmatterKeys(fm, mappings)`,
+ * so a vault using custom metadata mapping shows the timeline a renamed field
+ * (`MyAct` → `Act`) that the export never sees — the export reads each file's
+ * own frontmatter text and normalizes casing only.
+ *
+ * Anything that must reproduce export behaviour — the Part marker migration
+ * above all — has to read through here rather than through the metadata cache,
+ * or it will plan structure the export would not emit.
+ */
+export function extractFrontmatterObject(content: string): Record<string, unknown> | null {
+  try {
+    const fmInfo = getFrontMatterInfo(content);
+    const fmText = (fmInfo as { frontmatter?: string }).frontmatter;
+    if (!fmText) return null;
+    const yaml = parseYaml(fmText);
+    if (!yaml || typeof yaml !== 'object' || Array.isArray(yaml)) return null;
+    return normalizeFrontmatterKeys(yaml as Record<string, unknown>);
+  } catch {
+    return null;
+  }
 }

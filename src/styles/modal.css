@@ -3002,3 +3002,226 @@
   color: var(--text-muted);
   font-size: var(--font-ui-smaller);
 }
+
+/* Set part… — mirrors the chapter modal; Parts are the same kind of
+   author-placed marker, so they get the same visual treatment. */
+.ert-set-part-modal__part-icon {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--interactive-accent);
+  flex: 0 0 auto;
+}
+
+.ert-set-part-modal__list-section,
+.ert-set-part-modal__layout-section {
+  display: grid;
+  gap: var(--ert-gap-sm);
+}
+
+.ert-set-part-modal__list-title,
+.ert-set-part-modal__layout-title {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ert-set-part-modal__list {
+  display: grid;
+  gap: var(--ert-gap-xs);
+  max-height: min(320px, 42vh);
+  overflow: auto;
+}
+
+.ert-set-part-modal__part-row {
+  display: flex;
+  gap: var(--ert-gap-sm);
+  align-items: center;
+  padding: var(--ert-pad-xs) var(--ert-pad-cozy);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--ert-control-radius);
+  background: var(--background-secondary);
+}
+
+.ert-set-part-modal__part-body {
+  min-width: 0;
+}
+
+.ert-set-part-modal__part-name {
+  color: var(--text-normal);
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ert-set-part-modal__part-range,
+.ert-set-part-modal__empty,
+.ert-set-part-modal__layout-note {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+/* ── Chronologue placement modal ─────────────────────────────────────────
+   Dropping a scene on the Chronologue ring asks "when does it now happen?".
+   Shares the drag-confirm status row and accent variable; the rows below are
+   the placement-specific chrome. */
+
+.ert-place-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ert-gap-sm);
+  margin: 0;
+}
+
+.ert-place-body.is-committing {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.ert-place-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ert-gap-cozy);
+}
+
+.ert-place-seam-group {
+  display: flex;
+  gap: var(--ert-gap-xs);
+}
+
+.ert-place-seam-button {
+  flex: 1 1 0;
+  padding: var(--ert-pad-sm);
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.ert-place-seam-button.is-active {
+  border-color: color-mix(in srgb, var(--ert-confirm-accent, var(--interactive-accent)) 60%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--ert-confirm-accent, var(--interactive-accent)) 12%, var(--background-secondary));
+  color: var(--text-normal);
+}
+
+.ert-place-context {
+  display: flex;
+  align-items: stretch;
+  gap: var(--ert-gap-xs);
+}
+
+.ert-place-context-cell {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: var(--ert-pad-sm);
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  font-size: 0.86em;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.ert-place-context-cell.is-subject {
+  border-color: color-mix(in srgb, var(--ert-confirm-accent, var(--interactive-accent)) 55%, var(--background-modifier-border));
+  color: var(--text-normal);
+  font-weight: 600;
+}
+
+.ert-place-context-arrow {
+  display: flex;
+  align-items: center;
+  color: var(--text-faint);
+}
+
+.ert-place-room {
+  font-size: 0.8em;
+  color: var(--text-faint);
+  padding: 0 var(--ert-gap-2xs);
+}
+
+.ert-place-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ert-gap-xs);
+}
+
+.ert-place-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ert-gap-2xs);
+  padding: var(--ert-pad-sm);
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.ert-place-row.is-selected {
+  border-color: color-mix(in srgb, var(--ert-confirm-accent, var(--interactive-accent)) 60%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--ert-confirm-accent, var(--interactive-accent)) 10%, var(--background-secondary));
+}
+
+.ert-place-row.is-invalid {
+  border-color: color-mix(in srgb, var(--text-error) 45%, var(--background-modifier-border));
+}
+
+.ert-place-row:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.ert-place-row-main {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--ert-gap-xs);
+}
+
+.ert-place-row-label {
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.ert-place-row-when {
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+  color: var(--text-accent);
+}
+
+.ert-place-row-elapsed {
+  font-size: 0.8em;
+  color: var(--text-muted);
+}
+
+.ert-place-row-warning {
+  font-size: 0.8em;
+  color: var(--text-warning);
+}
+
+.ert-place-empty {
+  font-size: 0.86em;
+  color: var(--text-muted);
+  padding: var(--ert-pad-sm);
+}
+
+.ert-place-custom-input {
+  width: 100%;
+  font-family: var(--font-monospace);
+}
+
+.ert-place-modal .ert-modal-actions .is-hidden-action {
+  display: none;
+}
+
+.ert-place-seam-note {
+  font-size: 0.86em;
+  color: var(--text-muted);
+  padding: 0 var(--ert-gap-2xs);
+}

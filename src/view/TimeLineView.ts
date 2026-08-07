@@ -9,7 +9,7 @@ import { TimelineRepairModal } from '../modals/TimelineRepairModal';
 import { TimelineAuditModal } from '../modals/TimelineAuditModal';
 import RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
-import type { TimelineItem } from '../types';
+import type { SubplotAlignment, TimelineItem } from '../types';
 import { renderSvgFromString } from '../utils/svgDom';
 import { openOrRevealFileByPath } from '../utils/fileUtils';
 import { setupRotationController, setupSearchControls as setupSearchControlsExt, addHighlightRectangles as addHighlightRectanglesExt, setupModeToggleController, setupVersionIndicatorController, setupHelpIconController, setupTooltips, setupSubplotKeyController } from './interactions';
@@ -17,6 +17,7 @@ import { isShiftModeActive } from './interactions/ChronologueShiftController';
 import { RendererService } from '../services/RendererService';
 import { ModeManager, createModeManager } from '../modes/ModeManager';
 import { getModeDefinition, getToggleableModes } from '../modes/ModeRegistry';
+import { modeHasAllScenesOuterRing } from '../renderer/modules/ModeRenderingHelpers';
 import { TimelineMode } from '../modes/ModeDefinition';
 import { BugReportModal } from '../modals/BugReportModal';
 import { ModeInteractionController, createInteractionController } from '../modes/ModeInteractionController';
@@ -143,6 +144,8 @@ export class RadialTimelineView extends ItemView {
     private modeNavButtons?: Map<string, HTMLButtonElement>;
     private chronologueSubNavEl?: HTMLElement;
     private chronologueSubNavBtns?: { shift: HTMLButtonElement; alt: HTMLButtonElement; runtime: HTMLButtonElement };
+    private alignmentToggleEl?: HTMLElement;
+    private alignmentToggleBtn?: HTMLButtonElement;
     // Populated by ChronologueShiftController each render (the single source of
     // truth for the sub-mode toggles); cleared on its teardown. The header
     // sub-nav routes clicks through these so keyboard/click stay unified.
@@ -614,6 +617,7 @@ export class RadialTimelineView extends ItemView {
             headerEl.insertBefore(modeNav, wrapper);
             this.modeNavButtons = modeButtons;
             this.buildChronologueSubNav(doc, modeNav, chronologueModeBtn);
+            this.buildAlignmentToggle(doc, modeNav);
 
             this.bookSwitcherEl = wrapper;
             this.bookSwitcherSelect = select;
@@ -679,6 +683,95 @@ export class RadialTimelineView extends ItemView {
         // Leaving Chronologue: hide its sub-nav immediately (the controller
         // teardown also hides it, but the mode setter fires before re-render).
         if (this._currentMode !== 'chronologue') this.hideChronologueSubNav();
+        this.syncAlignmentToggle();
+    }
+
+    /**
+     * Build the subplot alignment toggle once, leading the mode row.
+     *
+     * Alignment is a saved layout preference, not a momentary sub-mode like
+     * Chronologue's Shift / Alt / Runtime, and it applies to every mode that
+     * draws an all-scenes outer ring — all but Progress. So it leads the row
+     * rather than nesting under one mode button, which also keeps it clear of
+     * the Chronologue chips on the far side.
+     *
+     * One chip, labelled with the current state: the label IS the value, so
+     * there is no "which of these two is on?" to decode.
+     */
+    private buildAlignmentToggle(doc: Document, modeNav: HTMLElement): void {
+        const group = doc.createElement('div');
+        group.className = 'ert-timeline-subnav ert-timeline-alignment-toggle';
+        group.setAttribute('role', 'group');
+        group.setAttribute('aria-label', t('timeline.subplotAlignment.groupLabel'));
+        group.hidden = true;
+
+        const btn = doc.createElement('button');
+        btn.className = 'ert-timeline-subnav__btn';
+        btn.type = 'button';
+        const glyphEl = doc.createElement('span');
+        glyphEl.className = 'ert-timeline-subnav__glyph';
+        glyphEl.setAttribute('aria-hidden', 'true');
+        const labelEl = doc.createElement('span');
+        labelEl.className = 'ert-timeline-subnav__label';
+        btn.appendChild(glyphEl);
+        btn.appendChild(labelEl);
+        this.registerDomEvent(btn, 'click', (evt: MouseEvent) => {
+            evt.preventDefault();
+            evt.stopPropagation();
+            const next: SubplotAlignment = (this.plugin.settings.subplotAlignment ?? 'fill') === 'sequence'
+                ? 'fill'
+                : 'sequence';
+            void this.setSubplotAlignment(next);
+        });
+        group.appendChild(btn);
+
+        modeNav.insertBefore(group, modeNav.firstChild);
+
+        this.alignmentToggleEl = group;
+        this.alignmentToggleBtn = btn;
+        this.syncAlignmentToggle();
+    }
+
+    /**
+     * Reflect the saved alignment on the toggle, and hide it in modes with no
+     * all-scenes outer ring to align against (Progress). The mode test is the
+     * same one the renderer gates on, asked by mode id.
+     */
+    private syncAlignmentToggle(): void {
+        const group = this.alignmentToggleEl;
+        const btn = this.alignmentToggleBtn;
+        if (!group || !btn) return;
+
+        group.hidden = !modeHasAllScenesOuterRing(this._currentMode as TimelineMode);
+
+        const active: SubplotAlignment = this.plugin.settings.subplotAlignment ?? 'fill';
+        const other: SubplotAlignment = active === 'sequence' ? 'fill' : 'sequence';
+        const activeLabel = t(`timeline.subplotAlignment.${active}.label`);
+        const otherLabel = t(`timeline.subplotAlignment.${other}.label`);
+        const hint = `${t(`timeline.subplotAlignment.${active}.tooltip`)} ${t('timeline.subplotAlignment.switchTo', { name: otherLabel })}`;
+
+        btn.dataset.alignment = active;
+        const glyphEl = btn.querySelector('.ert-timeline-subnav__glyph');
+        if (glyphEl) glyphEl.textContent = active === 'sequence' ? '\u25D4' : '\u25CD';
+        const labelEl = btn.querySelector('.ert-timeline-subnav__label');
+        if (labelEl) labelEl.textContent = activeLabel;
+        btn.setAttribute('aria-label', hint);
+        applyTooltip(btn, hint, 'bottom');
+        // Always the current state, never an unchosen option — the chip reads
+        // as a value, so the dashed "inactive" styling would misrepresent it.
+        btn.classList.add('is-active');
+    }
+
+    /**
+     * Switch subplot alignment. Layout-affecting, so it saves and re-renders;
+     * ChangeDetection carries subplotAlignment so the render is not skipped.
+     */
+    private async setSubplotAlignment(alignment: SubplotAlignment): Promise<void> {
+        if ((this.plugin.settings.subplotAlignment ?? 'fill') === alignment) return;
+        this.plugin.settings.subplotAlignment = alignment;
+        await this.plugin.saveSettings();
+        this.syncAlignmentToggle();
+        await this.refreshTimeline();
     }
 
     /**
@@ -690,24 +783,24 @@ export class RadialTimelineView extends ItemView {
      */
     private buildChronologueSubNav(doc: Document, modeNav: HTMLElement, anchorBtn?: HTMLButtonElement): void {
         const subNav = doc.createElement('div');
-        subNav.className = 'ert-timeline-chronologue-subnav';
+        subNav.className = 'ert-timeline-subnav';
         subNav.setAttribute('role', 'group');
         subNav.setAttribute('aria-label', 'Chronologue sub-modes');
         subNav.hidden = true;
 
         const makeBtn = (submode: 'shift' | 'alt' | 'runtime', label: string, glyph: string, aria: string): HTMLButtonElement => {
             const btn = doc.createElement('button');
-            btn.className = 'ert-timeline-chronologue-subnav__btn';
+            btn.className = 'ert-timeline-subnav__btn';
             btn.type = 'button';
             btn.dataset.submode = submode;
             btn.setAttribute('aria-pressed', 'false');
             btn.setAttribute('aria-label', aria);
             const glyphEl = doc.createElement('span');
-            glyphEl.className = 'ert-timeline-chronologue-subnav__glyph';
+            glyphEl.className = 'ert-timeline-subnav__glyph';
             glyphEl.setAttribute('aria-hidden', 'true');
             glyphEl.textContent = glyph;
             const labelEl = doc.createElement('span');
-            labelEl.className = 'ert-timeline-chronologue-subnav__label';
+            labelEl.className = 'ert-timeline-subnav__label';
             labelEl.textContent = label;
             btn.appendChild(glyphEl);
             btn.appendChild(labelEl);

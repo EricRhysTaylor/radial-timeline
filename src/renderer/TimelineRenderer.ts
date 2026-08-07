@@ -21,9 +21,11 @@ import {
     extractGradeFromScene,
     isBeatNote,
     isSceneItem,
+    usesWhenOrdering,
     type PluginRendererFacade
 } from '../utils/sceneHelpers';
 import { makeSceneId } from '../utils/numberSquareHelpers';
+import type { PositionInfo } from './utils/SceneLayout';
 import { buildChronologueOuterLabels, renderChronologueOverlays, renderOuterLabelTexts, renderChronologueOuterTicks } from './utils/Chronologue';
 import { isRuntimeModeActive } from '../view/interactions/ChronologueShiftController';
 import { computeCacheableValues } from './utils/Precompute';
@@ -58,7 +60,7 @@ import { renderTargetDateTick, type TargetTickEnhancedData } from './components/
 import { renderProgressRing, resolveProgressEstimate, resolveProgressRingDate } from './components/ProgressRing';
 import { serializeSynopsesToString } from './components/Synopses';
 import { renderCalendarSpokesLayer } from './utils/MonthSpokes';
-import { shouldShowSubplotRings, shouldShowAllScenesInOuterRing } from './modules/ModeRenderingHelpers';
+import { shouldShowSubplotRings, shouldShowAllScenesInOuterRing, usesSequenceAlignment } from './modules/ModeRenderingHelpers';
 import { collectChronologueSceneEntries, type ChronologueSceneEntry } from './components/ChronologueTimeline';
 import { appendSynopsisElementForScene } from './utils/SynopsisBuilder';
 import { renderGossamerOverlay, type StageColorMap } from './utils/Gossamer';
@@ -79,6 +81,8 @@ import {
     collapseTimelineChapterMarkersByResolvedBoundary,
     resolveTimelineChapterMarkers
 } from '../utils/timelineChapters';
+import { resolveActiveNovelPandocLayout } from '../utils/exportFormats';
+import { resolveTimelinePartMarkers, type TimelinePartMarker } from '../utils/timelineParts';
 
 
 // STATUS_COLORS and SceneNumberInfo now imported from constants
@@ -98,37 +102,6 @@ const STATUS_HEADER_TOOLTIPS: Record<string, string> = {
     Due: 'Due — tasks or scenes with a past-due date',
     Completed: 'Completed — tasks or scenes finished'
 };
-
-function resolveActiveNovelPandocLayout(settings: RadialTimelineSettings): PandocLayoutTemplate | null {
-    const layouts = Array.isArray(settings.pandocLayouts) ? settings.pandocLayouts : [];
-    if (layouts.length === 0) return null;
-
-    const activeBook = getActiveBook(settings);
-    const publishingPreferences: BookPublishingPreferences | undefined = Array.isArray(settings.bookPublishingPreferences)
-        ? settings.bookPublishingPreferences.find(entry => entry.bookId === activeBook?.id)
-        : undefined;
-    const exportProfiles: ExportProfile[] = Array.isArray(settings.exportProfiles) ? settings.exportProfiles : [];
-    const preferredExportProfileId = publishingPreferences?.lastUsedExportProfileId
-        || settings.lastUsedExportProfileId
-        || publishingPreferences?.defaultExportProfileId;
-    const exportProfileTemplateId = preferredExportProfileId
-        ? exportProfiles.find(profile => profile.id === preferredExportProfileId)?.templateProfileId
-        : undefined;
-
-    const candidateIds = [
-        activeBook?.lastUsedPandocLayoutByPreset?.novel,
-        exportProfileTemplateId,
-        publishingPreferences?.preferredTemplateProfileIdByContext?.novel,
-        (settings as LegacyPersistedSettings).lastUsedPandocLayoutByPreset?.novel,
-    ].filter((id): id is string => typeof id === 'string' && id.trim().length > 0);
-
-    for (const id of candidateIds) {
-        const layout = layouts.find(candidate => candidate.id === id);
-        if (layout) return layout;
-    }
-
-    return null;
-}
 
 function layoutSupportsPartMarkers(layout: PandocLayoutTemplate | null): boolean {
     if (!layout) return false;
@@ -167,45 +140,52 @@ function toRomanNumeral(value: number): string {
 function buildNarrativePartMarkers(params: {
     settings: RadialTimelineSettings;
     layout: PandocLayoutTemplate | null;
-    timelineSegments: ReturnType<typeof buildTimelineSegments>;
+    partMarkers: TimelinePartMarker[];
+    boundaryGeometryByScenePath: Map<string, OuterRingChapterBoundaryGeometry>;
 }): NarrativePartMarker[] {
-    const { settings, layout, timelineSegments } = params;
-    if (!layoutSupportsPartMarkers(layout)) return [];
+    const { settings, layout, partMarkers, boundaryGeometryByScenePath } = params;
     if (getTimelineScope(settings) !== 'book') return [];
-
-    const actSegments = timelineSegments.filter(segment => segment.kind === 'act');
-    if (actSegments.length < 2) return [];
+    if (partMarkers.length === 0) return [];
 
     const activeBook = getActiveBook(settings);
     const layoutOptions = layout ? activeBook?.layoutOptions?.[layout.id] : undefined;
-    const epigraphs = Array.isArray(layoutOptions?.actEpigraphs) ? layoutOptions.actEpigraphs : [];
-    const attributions = Array.isArray(layoutOptions?.actEpigraphAttributions) ? layoutOptions.actEpigraphAttributions : [];
-    const layoutName = layout?.name || 'Selected layout';
+    const epigraphs = Array.isArray(layoutOptions?.partEpigraphs) ? layoutOptions.partEpigraphs : [];
+    const attributions = Array.isArray(layoutOptions?.partEpigraphAttributions)
+        ? layoutOptions.partEpigraphAttributions
+        : [];
+    const prints = layoutSupportsPartMarkers(layout);
+    const layoutName = layout?.name || 'No layout selected';
     const advertisesEpigraph = layout?.designedSpec?.parts?.epigraph === true
         || layout?.hasEpigraphs === true
         || layout?.usesModernClassicStructure === true;
 
-    return actSegments.map((segment) => {
-        const actNumber = segment.index + 1;
-        const partLabel = `Part ${toRomanNumeral(actNumber)}`;
-        const quote = typeof epigraphs[segment.index] === 'string' ? epigraphs[segment.index].trim() : '';
-        const attribution = typeof attributions[segment.index] === 'string' ? attributions[segment.index].trim() : '';
-        const tooltipLines = [`${layoutName} ${partLabel}`];
+    return partMarkers.flatMap((marker, index) => {
+        const geometry = boundaryGeometryByScenePath.get(marker.resolvedScenePath);
+        if (!geometry) return [];
 
-        if (advertisesEpigraph) {
-            tooltipLines.push(`Epigraph: ${quote || 'not configured'}`);
-            tooltipLines.push(`Attribution: ${attribution || 'not configured'}`);
-            if (!quote && !attribution) {
-                tooltipLines.push('Status: Part page will render without epigraph text.');
-            }
+        // Numbering is sequential by marker order, matching the export.
+        const label = `Part ${toRomanNumeral(index + 1)}`;
+        const title = marker.titled && marker.title ? ` · ${marker.title}` : '';
+        const quote = typeof epigraphs[index] === 'string' ? epigraphs[index].trim() : '';
+        const attribution = typeof attributions[index] === 'string' ? attributions[index].trim() : '';
+
+        // Structure first, print status second. The marker is the author's;
+        // whether it prints depends on a layout they can change at any time.
+        const tooltipLines = [`${label}${title}`];
+        if (quote) tooltipLines.push(`Epigraph: ${quote}`);
+        if (attribution) tooltipLines.push(`Attribution: ${attribution}`);
+
+        if (!layout) {
+            // No status line: nothing is selected, so nothing can be claimed.
+        } else if (!prints) {
+            tooltipLines.push(`${layoutName} does not print Parts.`);
+        } else if (advertisesEpigraph && !quote && !attribution) {
+            tooltipLines.push(`${layoutName} prints this Part without epigraph text.`);
         } else {
-            tooltipLines.push('Status: Part page enabled.');
+            tooltipLines.push(`${layoutName} prints this Part.`);
         }
 
-        return {
-            startAngle: segment.startAngle,
-            tooltip: tooltipLines.join('\n'),
-        };
+        return [{ startAngle: geometry.startAngle, tooltip: tooltipLines.join('\n') }];
     });
 }
 
@@ -335,7 +315,7 @@ export function createTimelineSVG(
     const isChronologueMode = currentMode === 'chronologue';
     const isProgressMode = currentMode === 'progress';
     const isSagaScope = getTimelineScope(settings) === 'saga';
-    const sortByWhen = isChronologueMode ? true : (settings.sortByWhenDate ?? false);
+    const sortByWhen = usesWhenOrdering(settings);
     const forceChronological = isChronologueMode;
     const showChapterMarkers = isNarrativeMode && !sortByWhen && (settings.showChapterMarkers ?? false);
     const chronologueSceneEntries: ChronologueSceneEntry[] | undefined = isChronologueMode
@@ -344,7 +324,7 @@ export function createTimelineSVG(
 
     // Create SVG root and expose the dominant publish-stage colour for CSS via a hidden <g> element
     let svg = `<svg width="${size}" height="${size}" viewBox="-${size / 2} -${size / 2} ${size} ${size}" 
-                       xmlns="http://www.w3.org/2000/svg" class="radial-timeline-svg ${readabilityClass}" data-font-scale="${readabilityScale}" data-num-acts="${numActs}" data-segment-count="${numActs}" data-segment-kind="${segmentKind}" data-line-inner-radius="${lineInnerRadius}"
+                       xmlns="http://www.w3.org/2000/svg" class="radial-timeline-svg ${readabilityClass}" data-font-scale="${readabilityScale}" data-num-acts="${numActs}" data-segment-count="${numActs}" data-segment-kind="${segmentKind}" data-subplot-alignment="${usesSequenceAlignment(plugin) ? 'sequence' : 'fill'}" data-line-inner-radius="${lineInnerRadius}"
                        preserveAspectRatio="xMidYMid meet">`;
 
 
@@ -533,7 +513,7 @@ export function createTimelineSVG(
         // When using manuscript order, use the scene's actual act
         const currentMode = settings.currentMode || 'narrative';
         const isChronologueMode = currentMode === 'chronologue';
-        const sortByWhen = isChronologueMode ? true : (settings.sortByWhenDate ?? false);
+        const sortByWhen = usesWhenOrdering(settings);
 
         const sceneActNumber = scene.actNumber !== undefined ? scene.actNumber : 1;
         const rawActIndex = sortByWhen
@@ -591,7 +571,10 @@ export function createTimelineSVG(
 
     // Store manuscript-order scene positions for Level 4 duration arcs (keyed by scene path or title)
     // Initialize map if in Chronologue mode so RingRenderer can populate it
-    const manuscriptOrderPositions: Map<string, { startAngle: number; endAngle: number }> | undefined = isChronologueMode ? new Map() : undefined;
+    // Where each scene sits on the all-scenes outer ring, keyed canonically.
+    // Chronologue's duration and backbone arcs draw from it; RingRenderer fills
+    // it from the sequence it already built.
+    const outerRingPositionByKey: Map<string, PositionInfo> | undefined = isChronologueMode ? new Map() : undefined;
 
     // Determine how many acts to render based on sorting method
     // When date sorting: Use full 360° circle (only "act 0")
@@ -615,10 +598,8 @@ export function createTimelineSVG(
         PUBLISH_STAGE_COLORS,
         maxTextWidth,
         synopsesElements,
-        sceneGrades,
-        manuscriptOrderPositions,
+        outerRingPositionByKey,
         outerRingChapterBoundaryGeometry: showChapterMarkers ? new Map<string, OuterRingChapterBoundaryGeometry>() : undefined,
-        numActs,
         maxStageColor // Pass for Gossamer mode beat strokes
     };
 
@@ -720,8 +701,7 @@ export function createTimelineSVG(
         sceneGrades,
         sceneNumbersMap,
         numberSquareVisualResolver: numberSquareVisualResolver || null,
-        shouldApplyNumberSquareColors,
-        numActs
+        shouldApplyNumberSquareColors
     };
 
     svg += renderNumberSquares(numberSquareContext);
@@ -735,7 +715,10 @@ export function createTimelineSVG(
         const partMarkers = buildNarrativePartMarkers({
             settings,
             layout: activeNovelLayout,
-            timelineSegments
+            // One `Part:` field per scene, so the resolver already yields at
+            // most one marker per boundary — no collapse pass needed.
+            partMarkers: resolveTimelinePartMarkers(chapterResolverItems),
+            boundaryGeometryByScenePath: ringRenderContext.outerRingChapterBoundaryGeometry,
         });
         svg += renderNarrativeChapterMarkers({
             markers: chapterMarkers,
@@ -765,7 +748,7 @@ export function createTimelineSVG(
             plugin,
             scenes,
             subplotOuterRadius,
-            manuscriptOrderPositions,
+            manuscriptOrderPositions: outerRingPositionByKey,
             ringStartRadii,
             ringWidths,
             masterSubplotOrder,

@@ -2,6 +2,7 @@ import type {
     AIProviderId,
     AiSettingsV1,
     AIRoleTemplate,
+    DeclarableLocalCapability,
     LocalLlmSettings,
     ModelPolicy
 } from '../types';
@@ -34,6 +35,17 @@ export const DEFAULT_CACHE_WINDOWS = {
     openaiRetention: '24h',
     openaiInMemoryWindowMinutes: OPENAI_IN_MEMORY_WINDOW_MINUTES_DEFAULT
 } as const;
+/**
+ * The capabilities an operator may declare for their local model, in the order
+ * the settings UI renders them. This is the single source of truth for both the
+ * settings toggles and the persisted-value validator — `jsonStrict` is excluded
+ * because it is the unconditional local baseline, never an operator choice.
+ */
+export const DECLARABLE_LOCAL_CAPABILITIES: DeclarableLocalCapability[] = [
+    'reasoningStrong',
+    'longContext',
+    'highOutputCap'
+];
 export const DEFAULT_LOCAL_LLM_SETTINGS: LocalLlmSettings = {
     enabled: true,
     configurationMode: 'auto',
@@ -42,7 +54,8 @@ export const DEFAULT_LOCAL_LLM_SETTINGS: LocalLlmSettings = {
     defaultModelId: 'llama3',
     timeoutMs: 45000,
     maxRetries: 1,
-    jsonMode: 'response_format'
+    jsonMode: 'response_format',
+    declaredCapabilities: []
 };
 export const BUILTIN_ROLE_TEMPLATES: AIRoleTemplate[] = [
     {
@@ -88,7 +101,10 @@ export function cloneBuiltInRoleTemplates(): AIRoleTemplate[] {
 }
 
 export function cloneDefaultLocalLlmSettings(): LocalLlmSettings {
-    return { ...DEFAULT_LOCAL_LLM_SETTINGS };
+    return {
+        ...DEFAULT_LOCAL_LLM_SETTINGS,
+        declaredCapabilities: [...DEFAULT_LOCAL_LLM_SETTINGS.declaredCapabilities]
+    };
 }
 
 export function buildDefaultAiSettings(): AiSettingsV1 {

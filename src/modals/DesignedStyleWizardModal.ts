@@ -1791,6 +1791,11 @@ export class DesignedStyleWizardModal extends Modal {
             this.mutateSpec((s) => { s.parts.pageBreak = v; });
         });
 
+        const titleCell = this.compactCell(togglesRow, 'Print part title');
+        this.toggleInput(titleCell, !!this.spec.parts.title, (v) => {
+            this.mutateSpec((s) => { s.parts.title = v; });
+        });
+
         const epCell = this.compactCell(togglesRow, 'Epigraph after part');
         this.toggleInput(epCell, this.spec.parts.epigraph, (v) => {
             this.mutateSpec((s) => { s.parts.epigraph = v; });
@@ -1814,6 +1819,7 @@ export class DesignedStyleWizardModal extends Modal {
         this.renderPanelGlossary(body, [
             { term: 'Part / Act',         definition: 'A top-level division grouping multiple chapters or scenes (e.g. Part I, Part II). Often introduced with a dedicated opener page.' },
             { term: 'Numeral style',      definition: 'How the part number is rendered: I II III (Roman), 1 2 3 (Arabic), or One Two (Word).' },
+            { term: 'Part title',         definition: 'Prints the name you gave a part under its numeral, so "Part I" becomes "Part I / The Crossing". Off prints the numeral alone. Parts without a name print the numeral either way.' },
             { term: 'Page break',         definition: 'When on, every Part heading starts on a fresh page (`\\cleardoublepage`). Off keeps Parts inline in the running text.' },
             { term: 'Epigraph',           definition: 'A short quote (with optional attribution) printed under the Part heading. Inline keeps it on the Part page; Own page floats it onto a dedicated leaf.' },
             { term: 'openany',            definition: 'LaTeX `book[openany]` — chapters can start on either left or right pages instead of always recto. Saves blank pages in shorter books.' },

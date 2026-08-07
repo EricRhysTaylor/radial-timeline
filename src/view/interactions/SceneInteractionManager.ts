@@ -21,6 +21,7 @@ import {
     calculateTargetSize,
     getSegmentBoundaries,
     redistributeAngles,
+    expandIntoGap,
     buildArcPath,
     buildTextPath,
     SCENE_TITLE_INSET
@@ -521,14 +522,19 @@ export class SceneInteractionManager {
         const actNum = Number(hoveredAct);
         const actBounds = getSegmentBoundaries(actNum, this.totalSegments);
         
-        // Redistribute angles
-        const redistribution = redistributeAngles(
-            actElements,
-            hoveredGroup.id,
-            targetSize,
-            actBounds.start,
-            actBounds.end
-        );
+        // A Sequence-aligned scene is pinned to its outer-ring angle, so it
+        // grows into the gap ahead instead of the ring repacking around it.
+        const isAligned = hoveredGroup.getAttribute('data-aligned') === 'true';
+        const redistribution = isAligned
+            ? expandIntoGap(actElements, hoveredGroup.id, targetSize, actBounds.end)
+            : redistributeAngles(
+                actElements,
+                hoveredGroup.id,
+                targetSize,
+                actBounds.start,
+                actBounds.end
+            );
+        if (redistribution.length === 0) return; // Nothing to grow into
         
         // Apply redistribution
         redistribution.forEach(result => {

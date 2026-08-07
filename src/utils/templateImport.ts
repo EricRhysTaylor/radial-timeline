@@ -15,6 +15,7 @@ import { adaptPandocLayoutToTemplateAsset, adaptPandocLayoutToTemplateProfile } 
 import { summarizeValidationIssues } from '../services/PublishingValidationService';
 import type { DetectedTemplateProfile } from '../publishing/templateDetection';
 import { detectImportedTemplateStyle } from '../publishing/templateDetection';
+import { describeRtPartArityIssue } from '../publishing/rttsValidation';
 
 export interface ImportedTemplateCandidate {
     layout: PandocLayoutTemplate;
@@ -173,6 +174,19 @@ export async function buildImportedTemplateCandidate(
             code: 'import_missing_body',
             level: 'error',
             message: 'The template must include a $body$ placeholder.',
+            scope: 'asset',
+            actionable: true,
+        });
+    }
+
+    // Reject a legacy \rtPart on the way in, rather than accepting the template
+    // and blocking every later export with the same message.
+    const partArityIssue = content ? describeRtPartArityIssue(content) : null;
+    if (partArityIssue) {
+        issues.push({
+            code: 'import_part_arity_mismatch',
+            level: 'error',
+            message: partArityIssue.message,
             scope: 'asset',
             actionable: true,
         });

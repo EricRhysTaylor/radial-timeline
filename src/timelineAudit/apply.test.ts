@@ -80,4 +80,34 @@ describe('timeline audit apply adapter', () => {
         expect(docs.get('Story/2 Keep.md')?.NeedsReview).toBeUndefined();
         expect(docs.get('Story/3 Review.md')?.NeedsReview).toBeUndefined();
     });
+
+    it('writes an individually accepted AI date suggestion without treating it as bulk-safe', async () => {
+        const docs = new Map<string, Record<string, unknown>>([
+            ['Story/7 Flashback.md', { When: '2085-04-01 08:00' }]
+        ]);
+        const app = {
+            fileManager: {
+                processFrontMatter: async (file: TFile, updater: (fm: Record<string, unknown>) => void) => {
+                    const current = docs.get(file.path);
+                    if (!current) throw new Error(`Missing doc: ${file.path}`);
+                    updater(current);
+                }
+            },
+            vault: {
+                getAbstractFileByPath: () => null,
+                createFolder: async () => undefined,
+                create: async () => { throw new Error('log write not under test'); }
+            }
+        } as unknown as App;
+
+        await applyAuditFindings(app, [makeFinding('Story/7 Flashback.md', 'apply', {
+            suggestedWhen: new Date('2077-10-14T13:13:00'),
+            suggestedConfidence: 'med',
+            suggestedProvenance: 'ai',
+            aiSuggested: true,
+            safeApplyEligible: false
+        })]);
+
+        expect(docs.get('Story/7 Flashback.md')?.When).toBe('2077-10-14 13:13');
+    });
 });

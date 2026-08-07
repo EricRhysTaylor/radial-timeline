@@ -1,5 +1,6 @@
 import type { RadialTimelineSettings } from '../types/settings';
 import { computeCanonicalOrder } from '../utils/yamlTemplateNormalize';
+import { withOptionalManagedKeys } from '../utils/optionalManagedKeys';
 import type {
     SceneExpectedKeys,
     ScenePropertyDefinitions,
@@ -53,9 +54,12 @@ export function resolveSceneExpectedKeys(
     const expectedKeys = policy.advancedEnabled
         ? [...coreKeys, ...advancedKeys]
         : [...coreKeys];
+    // computeCanonicalOrder already splices optional-managed keys in; the
+    // core-only branch bypasses it, so apply the same registry here or a scene
+    // carrying a Part field would read as foreign to the reorder pass.
     const canonicalOrder = policy.advancedEnabled
         ? computeCanonicalOrder('Scene', settings)
-        : ['ID', ...coreKeys.filter((key) => key.toLowerCase() !== 'id')];
+        : withOptionalManagedKeys('Scene', ['ID', ...coreKeys.filter((key) => key.toLowerCase() !== 'id')]);
 
     return {
         coreKeys,

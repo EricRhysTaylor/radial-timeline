@@ -13,6 +13,25 @@ export interface TimelineSegment {
     endAngle: number;
 }
 
+/**
+ * How many segments the wheel is divided into: one per book under saga scope,
+ * one per act otherwise.
+ *
+ * Every ring, every angle and every act-bucket lookup divides by this number,
+ * so it must be answered identically everywhere — three call sites used to
+ * massage a passed-down count with their own floors, and disagreeing about it
+ * is what put scenes in the wrong quadrant. Takes only the fields it needs, so
+ * the renderer's narrow settings facade can ask too.
+ */
+export function getTimelineSegmentCount(
+    settings: Pick<RadialTimelineSettings, 'timelineScope' | 'books' | 'actCount'>
+): number {
+    if (getTimelineScope(settings) === 'saga') {
+        return Math.max(1, getSagaBooks(settings).length);
+    }
+    return getConfiguredActCount(settings);
+}
+
 export function buildTimelineSegments(settings: RadialTimelineSettings): TimelineSegment[] {
     const scope = getTimelineScope(settings);
     if (scope === 'saga') {
@@ -27,7 +46,7 @@ export function buildTimelineSegments(settings: RadialTimelineSettings): Timelin
         );
     }
 
-    const actCount = getConfiguredActCount(settings);
+    const actCount = getTimelineSegmentCount(settings);
     const actLabels = parseActLabels(settings, actCount);
     return buildEqualSegments(
         Array.from({ length: actCount }, (_, index) => ({

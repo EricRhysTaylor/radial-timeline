@@ -840,8 +840,8 @@ export class CommandRegistrar {
                         modernClassicStructure: useModernClassicStructure
                             ? {
                                 enabled: true,
-                                actEpigraphs: modernClassicLayoutOptions?.actEpigraphs,
-                                actEpigraphAttributions: modernClassicLayoutOptions?.actEpigraphAttributions
+                                partEpigraphs: modernClassicLayoutOptions?.partEpigraphs,
+                                partEpigraphAttributions: modernClassicLayoutOptions?.partEpigraphAttributions
                             }
                             : undefined,
                         bookPageOrder,
@@ -1193,12 +1193,12 @@ export class CommandRegistrar {
             const normalized = values.map(value => (typeof value === 'string' ? value.trim() : ''));
             return normalized.some(value => value.length > 0) ? normalized : undefined;
         };
-        const actEpigraphs = normalizeList(scopedOptions.actEpigraphs);
-        const actEpigraphAttributions = normalizeList(scopedOptions.actEpigraphAttributions);
-        if (!actEpigraphs && !actEpigraphAttributions) return undefined;
+        const partEpigraphs = normalizeList(scopedOptions.partEpigraphs);
+        const partEpigraphAttributions = normalizeList(scopedOptions.partEpigraphAttributions);
+        if (!partEpigraphs && !partEpigraphAttributions) return undefined;
         return {
-            ...(actEpigraphs ? { actEpigraphs } : {}),
-            ...(actEpigraphAttributions ? { actEpigraphAttributions } : {})
+            ...(partEpigraphs ? { partEpigraphs } : {}),
+            ...(partEpigraphAttributions ? { partEpigraphAttributions } : {})
         };
     }
 

@@ -1,3 +1,4 @@
+import type { DeclarableLocalCapability } from '../types';
 import type { LocalLlmDiagnosticsReport } from './diagnostics';
 
 export type LocalLlmCapabilityTier = 0 | 1 | 2 | 3 | 4;
@@ -24,6 +25,47 @@ export interface InferLocalLlmCapabilityInput {
     contextWindow?: number | null;
     maxOutput?: number | null;
     diagnostics?: LocalLlmDiagnosticsReport | null;
+    /**
+     * What the author has declared their model can do. `tier` ignores this — a
+     * tier describes how capable the model *looks*. `featureSupport` does not:
+     * it must describe what RT will actually run, and the runtime refuses any
+     * feature whose capability floor is undeclared. Omitting this is the same
+     * as declaring nothing.
+     */
+    declaredCapabilities?: DeclarableLocalCapability[];
+}
+
+/**
+ * The capability floor each feature enforces at dispatch, mirroring the
+ * `requiredCapabilities` it passes to `aiClient.run()`. `jsonStrict` is omitted
+ * because every local model already carries it as the baseline.
+ *
+ * Keep in sync with: `sceneAnalysis/aiProvider.ts` (summary + pulses),
+ * `GossamerCommands.ts`, `inquiry/runner/InquiryRunnerService.ts`.
+ */
+const FEATURE_CAPABILITY_REQUIREMENTS: Record<keyof LocalLlmCapabilityFeatureMap, DeclarableLocalCapability[]> = {
+    summary: ['reasoningStrong'],
+    pulses: ['reasoningStrong'],
+    gossamer: ['reasoningStrong', 'longContext', 'highOutputCap'],
+    inquiry: ['reasoningStrong', 'longContext', 'highOutputCap']
+};
+
+function clampFeatureSupport(
+    featureSupport: LocalLlmCapabilityFeatureMap,
+    declaredCapabilities: DeclarableLocalCapability[]
+): { featureSupport: LocalLlmCapabilityFeatureMap; blocked: DeclarableLocalCapability[] } {
+    const declared = new Set(declaredCapabilities);
+    const clamped: LocalLlmCapabilityFeatureMap = { ...featureSupport };
+    const blocked = new Set<DeclarableLocalCapability>();
+
+    for (const feature of Object.keys(FEATURE_CAPABILITY_REQUIREMENTS) as (keyof LocalLlmCapabilityFeatureMap)[]) {
+        const missing = FEATURE_CAPABILITY_REQUIREMENTS[feature].filter(cap => !declared.has(cap));
+        if (missing.length === 0 || clamped[feature] === 'no') continue;
+        clamped[feature] = 'no';
+        missing.forEach(cap => blocked.add(cap));
+    }
+
+    return { featureSupport: clamped, blocked: [...blocked] };
 }
 
 const TIER_LABELS: Record<LocalLlmCapabilityTier, { name: string; summary: string }> = {
@@ -139,14 +181,22 @@ export function inferLocalLlmCapability(input: InferLocalLlmCapabilityInput): Lo
     }
 
     const labels = TIER_LABELS[tier];
+    const clamped = clampFeatureSupport(
+        LOCAL_LLM_TIER_FEATURES[tier],
+        input.declaredCapabilities ?? []
+    );
+    const baseExplanation = input.diagnostics
+        ? buildValidatedExplanation(tier, input.diagnostics, heuristicTier)
+        : buildHeuristicExplanation(input.modelId, tier, input.contextWindow, input.maxOutput);
+
     return {
         tier,
         tierName: labels.name,
         tierSummary: labels.summary,
         confidence,
-        featureSupport: LOCAL_LLM_TIER_FEATURES[tier],
-        explanation: input.diagnostics
-            ? buildValidatedExplanation(tier, input.diagnostics, heuristicTier)
-            : buildHeuristicExplanation(input.modelId, tier, input.contextWindow, input.maxOutput)
+        featureSupport: clamped.featureSupport,
+        explanation: clamped.blocked.length > 0
+            ? `${baseExplanation} Features above are blocked until you declare ${clamped.blocked.join(', ')} under Model capabilities.`
+            : baseExplanation
     };
 }

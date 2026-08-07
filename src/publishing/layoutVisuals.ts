@@ -11,9 +11,13 @@
  * Render helpers are pure DOM builders — no plugin state, no settings access.
  *
  * RT terminology → export structure:
- *   Parts    = Acts (Act count → \rtPart{I}{quote}{attribution})
- *   Chapters = Timeline notes carrying a Chapter field
+ *   Parts    = Scene notes carrying a Part field (\rtPart{I}{title}{quote}{attr})
+ *   Chapters = Scene notes carrying a Chapter field
  *   Scenes   = Scene notes (primary unit; \rtSceneSep{roman} openers)
+ *
+ * Parts and Chapters are both author-placed markers on scenes. Part epigraph
+ * text is stored per book per layout and pairs with markers by position: the
+ * first marker takes the first entry.
  */
 import type { PandocLayoutTemplate } from '../types';
 import type { ManuscriptSceneHeadingMode } from '../utils/manuscript';
@@ -228,14 +232,24 @@ function describeMargins(spec: DesignedStyleSpec): string {
     return `${fmt(m.topIn)} / ${fmt(m.rightIn)} / ${fmt(m.bottomIn)} / ${fmt(m.leftIn)} in (T/R/B/L)`;
 }
 
-/** Parts row — derived from parts.mode + parts.epigraph + placement + flags. Returns null when off. */
-function describeParts(spec: DesignedStyleSpec): string | null {
+/**
+ * Parts row — derived from parts.mode + parts.title + epigraph + flags.
+ * Returns null when the layout prints no Parts at all.
+ *
+ * Exported so the Set part… modal can show what the selected layout will do
+ * with a marker without inventing its own phrasing. One description, two
+ * surfaces.
+ */
+export function describeParts(spec: DesignedStyleSpec): string | null {
     if (spec.parts.mode === 'off') return null;
     const numbering = spec.parts.mode === 'roman' ? 'Roman numeral'
         : spec.parts.mode === 'arabic' ? 'Arabic number'
         : spec.parts.mode === 'word' ? 'Word'
         : 'Numbered';
     const flags: string[] = [];
+    // Stated either way: "numeral only" is the answer to "why isn't my part
+    // title printing?", so silence on the negative case is the unhelpful choice.
+    flags.push(spec.parts.title ? 'with title' : 'numeral only');
     if (spec.parts.epigraph) {
         flags.push(spec.parts.epigraphPlacement === 'own-page'
             ? 'epigraph on own page'
@@ -244,7 +258,7 @@ function describeParts(spec: DesignedStyleSpec): string | null {
     if (spec.parts.openAny) flags.push('openany');
     if (!spec.parts.pageBreak) flags.push('no page break');
     const tail = flags.length ? ` — ${flags.join(', ')}` : '';
-    return `Act opener — ${numbering}${tail}`;
+    return `Part opener — ${numbering}${tail}`;
 }
 
 /** Chapters row — derived from chapters.mode. Returns null when off. */
@@ -756,10 +770,11 @@ function getLayoutPictogramRowsByVariant(variant: FictionLayoutVariant): LayoutP
 // BODY (top row) is never alerted. The top-row scene spread is alerted only
 // for the title-only-without-titles case (check c).
 export type SpreadValidationContext = {
-    actCount: number;
+    /** # of scenes carrying a `Part:` marker — the parts that will print. */
+    partMarkerCount: number;
     chapterFieldCount: number;
     /** # of acts with a non-empty epigraph quote (used by Part-epigraph check). */
-    actEpigraphPopulatedCount?: number;
+    partEpigraphPopulatedCount?: number;
     /** # of chapter markers whose chapter title is non-empty. */
     chapterTitlePopulatedCount?: number;
     /** Fraction (0..1) of scenes-in-selection that carry a non-empty title. */
@@ -767,7 +782,7 @@ export type SpreadValidationContext = {
 };
 
 const PART_WARNING_TOOLTIP =
-    'No Parts will render — fewer than two Acts configured for this book.';
+    'No Parts will render — no scenes have a Part field set.';
 const CHAPTER_WARNING_TOOLTIP =
     'No chapter pages will render — no scenes have a Chapter field set.';
 const SCENE_TITLE_WARNING_TOOLTIP =
@@ -780,9 +795,23 @@ const SCENE_TITLE_WARNING_TOOLTIP =
  */
 function partEpigraphTooltip(populated: number, total: number): string {
     if (populated <= 0) {
-        return 'Part epigraphs configured but no act has an epigraph quote.';
+        return 'Part epigraphs configured but none has been written.';
     }
-    return `Part epigraphs partially populated — ${populated} of ${total} acts have a quote.`;
+    return `Part epigraphs partially populated — ${populated} of ${total} marked Parts have a quote.`;
+}
+
+/**
+ * The reverse imbalance: epigraph text with no Part to print it on.
+ *
+ * Entries pair with markers by position, so anything past the last marker is
+ * text the author wrote that the export will never emit. Silence here reads as
+ * "your epigraphs are fine" when some of them are simply unreachable.
+ */
+function surplusEpigraphTooltip(populated: number, markers: number): string {
+    const surplus = populated - markers;
+    return `${surplus} Part epigraph${surplus === 1 ? '' : 's'} will not print — `
+        + `${populated} written but only ${markers} scene${markers === 1 ? '' : 's'} `
+        + 'carry a Part field.';
 }
 
 /** Chapter-title tooltip — same dual-state shape as partEpigraphTooltip. */
@@ -816,29 +845,42 @@ export function applySpreadValidation(
         }
 
         if (spread.label === 'PART') {
-            if (ctx.actCount < 2) {
+            if (Number.isFinite(ctx.partMarkerCount) && ctx.partMarkerCount < 1) {
                 return { ...spread, warningLevel: 'warning', warningTooltip: PART_WARNING_TOOLTIP };
             }
             // Part-epigraph check fires only when the spread itself advertises
             // the feature (presence of epigraphText) AND the caller has opted
-            // in by supplying `actEpigraphPopulatedCount`. Callers that omit
+            // in by supplying `partEpigraphPopulatedCount`. Callers that omit
             // the field get the historical behavior (no extra warning).
             //
             // Two firing modes:
-            //   • finite actCount → warn when populated < actCount (partial OR
-            //                       zero); tooltip carries the fraction.
-            //   • infinite actCount (data-less settings preview) → warn only
-            //                       on zero population (back-compat phrasing).
+            //   • finite marker count → warn when the two sides disagree in
+            //                       either direction; the tooltip says which.
+            //   • infinite marker count (data-less settings preview) → warn
+            //                       only on zero population.
             const advertisesEpigraph = !!spread.rightPage?.epigraphText || !!spread.leftPage?.epigraphText;
-            if (advertisesEpigraph && typeof ctx.actEpigraphPopulatedCount === 'number') {
-                if (Number.isFinite(ctx.actCount) && ctx.actEpigraphPopulatedCount < ctx.actCount) {
+            if (advertisesEpigraph && typeof ctx.partEpigraphPopulatedCount === 'number') {
+                if (Number.isFinite(ctx.partMarkerCount)
+                    && ctx.partEpigraphPopulatedCount > ctx.partMarkerCount) {
                     return {
                         ...spread,
                         warningLevel: 'warning',
-                        warningTooltip: partEpigraphTooltip(ctx.actEpigraphPopulatedCount, ctx.actCount),
+                        warningTooltip: surplusEpigraphTooltip(
+                            ctx.partEpigraphPopulatedCount, ctx.partMarkerCount
+                        ),
                     };
                 }
-                if (!Number.isFinite(ctx.actCount) && ctx.actEpigraphPopulatedCount === 0) {
+                if (Number.isFinite(ctx.partMarkerCount)
+                    && ctx.partEpigraphPopulatedCount < ctx.partMarkerCount) {
+                    return {
+                        ...spread,
+                        warningLevel: 'warning',
+                        warningTooltip: partEpigraphTooltip(
+                            ctx.partEpigraphPopulatedCount, ctx.partMarkerCount
+                        ),
+                    };
+                }
+                if (!Number.isFinite(ctx.partMarkerCount) && ctx.partEpigraphPopulatedCount === 0) {
                     return {
                         ...spread,
                         warningLevel: 'warning',
@@ -941,21 +983,22 @@ export function collectSpreadStatuses(
 ): SpreadStatus[] {
     const out: SpreadStatus[] = [];
 
-    // ── PART spread → "N Acts configured" (+ epigraph completion) ──
+    // ── PART spread → "N Parts marked" (+ epigraph completion) ──
     // Always emit when the layout has a PART spread, the spread isn't
-    // warning, and we know the act count. Emit epigraph completion as a
+    // warning, and we know the marker count. Emit epigraph completion as a
     // separate line so the modal never hides it inside a combined sentence.
     const partSpread = rows.special.find(s => s.label === 'PART' && !s.sceneMode);
-    if (partSpread && partSpread.warningLevel !== 'warning' && Number.isFinite(ctx.actCount) && ctx.actCount >= 2) {
+    if (partSpread && partSpread.warningLevel !== 'warning'
+        && Number.isFinite(ctx.partMarkerCount) && ctx.partMarkerCount >= 1) {
         const advertisesEpigraph = !!partSpread.rightPage?.epigraphText || !!partSpread.leftPage?.epigraphText;
         const allEpigraphsPopulated =
             advertisesEpigraph
-            && typeof ctx.actEpigraphPopulatedCount === 'number'
-            && ctx.actEpigraphPopulatedCount >= ctx.actCount;
+            && typeof ctx.partEpigraphPopulatedCount === 'number'
+            && ctx.partEpigraphPopulatedCount >= ctx.partMarkerCount;
         out.push({
             id: 'parts-count',
             tone: 'info',
-            text: `${ctx.actCount} Acts configured.`,
+            text: `${ctx.partMarkerCount} Part${ctx.partMarkerCount === 1 ? '' : 's'} marked.`,
         });
         if (allEpigraphsPopulated) {
             out.push({

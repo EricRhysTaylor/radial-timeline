@@ -175,10 +175,10 @@ export function normalizeBookPublishingPreferences(preferences: Partial<BookPubl
                 if (!value) return [];
                 const normalized = {
                     ...(value.sceneHeadingMode ? { sceneHeadingMode: normalizeSceneHeadingMode(value.sceneHeadingMode) } : {}),
-                    ...(Array.isArray(value.actEpigraphs) ? { actEpigraphs: value.actEpigraphs.filter(isNonEmptyString).map(item => item.trim()) } : {}),
-                    ...(Array.isArray(value.actEpigraphAttributions) ? { actEpigraphAttributions: value.actEpigraphAttributions.filter(isNonEmptyString).map(item => item.trim()) } : {}),
+                    ...(Array.isArray(value.partEpigraphs) ? { partEpigraphs: value.partEpigraphs.filter(isNonEmptyString).map(item => item.trim()) } : {}),
+                    ...(Array.isArray(value.partEpigraphAttributions) ? { partEpigraphAttributions: value.partEpigraphAttributions.filter(isNonEmptyString).map(item => item.trim()) } : {}),
                 };
-                if (!normalized.sceneHeadingMode && !normalized.actEpigraphs && !normalized.actEpigraphAttributions) return [];
+                if (!normalized.sceneHeadingMode && !normalized.partEpigraphs && !normalized.partEpigraphAttributions) return [];
                 return [[key, normalized]];
             })
         ) as BookPublishingPreferences['profileOverrides']

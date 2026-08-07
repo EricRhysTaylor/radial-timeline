@@ -89,7 +89,7 @@ export class SearchPanelController {
                 fieldset,
                 t('timeline.search.scopeBody.label'),
                 t('timeline.search.scopeBody.hint'),
-                true
+                false
             )
         });
         this.panel.appendChild(fieldset);

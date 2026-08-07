@@ -30,6 +30,7 @@ import { parseWhenField } from './utils/date';
 import { getReadabilityMultiplier, getReadabilityScale } from './utils/readability';
 import { isAlienModeActive } from './view/interactions/ChronologueShiftController';
 import { applySearchTermHighlightsInRoot, clearSearchHighlightsInRoot } from './view/interactions/SearchInteractions';
+import { shouldHighlightMetadataTerm } from './services/searchState';
 import { getIcon } from 'obsidian';
 import { getSynopsisHoverLineLimit } from './utils/synopsisLimits';
 
@@ -1709,7 +1710,7 @@ export default class SynopsisManager {
     this.positionTextElements(synopsis, position.isRightAligned, position.isTopHalf, adjustedRadius, sceneId, lineInnerRadius);
 
     const search = this.plugin.searchState;
-    if (search.active && search.term) {
+    if (shouldHighlightMetadataTerm(search)) {
       clearSearchHighlightsInRoot(synopsis);
       applySearchTermHighlightsInRoot(synopsis, search.term);
     }

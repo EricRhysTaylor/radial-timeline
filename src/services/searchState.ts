@@ -127,6 +127,17 @@ export function hasSearchScope(options: TimelineSearchOptions): boolean {
     return options.timelineFields || options.body;
 }
 
+/**
+ * Should the term be highlighted inside the hover synopsis?
+ *
+ * Only when the timeline fields were actually searched. A body-only search must
+ * not paint highlights onto metadata it never looked at — the author would see
+ * the term lit up in a field that had nothing to do with the match.
+ */
+export function shouldHighlightMetadataTerm(state: TimelineSearchState): boolean {
+    return state.active && !!state.term && state.options.timelineFields;
+}
+
 export const TIMELINE_SEARCH_SETTINGS_VERSION = 1;
 
 /**

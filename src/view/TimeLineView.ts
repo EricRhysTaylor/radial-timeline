@@ -2724,7 +2724,7 @@ export class RadialTimelineView extends ItemView {
                     // Handle search changes (highlight text + number square state)
                     if (changeResult.changeTypes.has(ChangeType.SEARCH)) {
                         this.rendererService.updateNumberSquaresDOM(container, this.plugin);
-                        this.rendererService.updateSearchHighlights(container, this.plugin.searchState.term);
+                        this.rendererService.updateSearchHighlights(container);
                         updated = true;
                     }
                     
@@ -2792,7 +2792,7 @@ export class RadialTimelineView extends ItemView {
                 if (this.plugin.searchState.active) {
                     const containerEl = container;
                     if (this.rendererService) {
-                         this.rendererService.updateSearchHighlights(containerEl, this.plugin.searchState.term);
+                         this.rendererService.updateSearchHighlights(containerEl);
                     }
                 }
 

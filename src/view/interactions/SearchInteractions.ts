@@ -1,5 +1,5 @@
 import { escapeRegExp } from '../../utils/regex';
-import type { TimelineSearchState } from '../../services/searchState';
+import { shouldHighlightMetadataTerm, type TimelineSearchState } from '../../services/searchState';
 
 /**
  * CSS-escape a value for use in attribute selectors
@@ -159,7 +159,13 @@ export function addHighlightRectangles(view: SearchView): void {
     if (!search.active) return;
 
     const svg = view.contentEl.querySelector('.radial-timeline-svg');
-    applySearchTermHighlightsInRoot(view.contentEl, search.term);
+
+    // Term highlighting is scoped: a body-only search must not paint the term
+    // onto metadata it never looked at. The number squares below still light up
+    // for every hit, whichever scope produced it.
+    if (shouldHighlightMetadataTerm(search)) {
+        applySearchTermHighlightsInRoot(view.contentEl, search.term);
+    }
 
     // Mark search-result classes on scene groups with matched paths
     if (!svg) {

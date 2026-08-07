@@ -2831,7 +2831,7 @@ export const en: TranslationKeys = {
             },
             scopeBody: {
                 label: 'Scene body',
-                hint: 'Not available yet',
+                hint: 'The prose itself, highlighted when you open the scene',
             },
             assistLabel: 'Local LLM assist',
             assistUnavailable: 'Not available yet',

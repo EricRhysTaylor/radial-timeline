@@ -268,8 +268,11 @@ export class RendererService {
      * Rebuild search highlights without full re-render.
      * Clears previous rt-search-term nodes and rt-search-result classes,
      * then re-applies highlights using existing logic.
+     *
+     * Reads the term and scope from `plugin.searchState` — deliberately not a
+     * parameter, so a caller cannot pass one term while the state holds another.
      */
-    updateSearchHighlights(containerEl: HTMLElement, searchTerm?: string): boolean {
+    updateSearchHighlights(containerEl: HTMLElement): boolean {
         // Find actual container (may be wrapped)
         const container = containerEl.children[1] as HTMLElement | undefined ?? containerEl;
         const svg = container.querySelector<SVGSVGElement>('.radial-timeline-svg');

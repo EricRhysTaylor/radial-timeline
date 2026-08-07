@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { TFile } from 'obsidian';
 import type { TimelineItem } from '../types';
 import { SearchService } from './SearchService';
 import { createSearchState } from './searchState';
@@ -32,9 +33,33 @@ function makeHarness() {
     const pending: Deferred[] = [];
     let refreshCount = 0;
 
+    /** Scene path → body prose, standing in for the vault. */
+    const bodies = new Map<string, string>();
+    let bodyReads = 0;
+
+    const app = {
+        vault: {
+            // Registration is a no-op here; invalidation is exercised directly.
+            on: () => ({}),
+            getAbstractFileByPath: (path: string) => {
+                if (!bodies.has(path)) return null;
+                const file = new TFile(path);
+                // SAFE: the mock TFile carries no stat; the index keys its cache on mtime.
+                (file as unknown as { stat: { mtime: number } }).stat = { mtime: 1 };
+                return file;
+            },
+            cachedRead: (file: TFile) => {
+                bodyReads += 1;
+                return Promise.resolve(bodies.get(file.path) ?? '');
+            }
+        },
+        metadataCache: { getFileCache: () => ({}) }
+    };
+
     const plugin = {
         searchState: createSearchState(),
         settings: {} as Record<string, unknown>,
+        registerEvent: () => { /* no-op */ },
         getTimelineSceneData: () => {
             const d = deferred();
             pending.push(d);
@@ -43,11 +68,13 @@ function makeHarness() {
         getTimelineViews: () => [{
             refreshTimeline: () => { refreshCount += 1; },
             syncTimelineSearchControl: () => { /* no-op */ }
-        }]
+        }],
+        bodies,
+        get bodyReads() { return bodyReads; }
     };
 
     // SAFE: structural stub — the service only touches the members above.
-    const service = new SearchService({} as never, plugin as never);
+    const service = new SearchService(app as never, plugin as never);
     return { service, plugin, pending, refreshCount: () => refreshCount };
 }
 
@@ -157,14 +184,62 @@ describe('SearchService transaction', () => {
     it('matches nothing from timeline fields once that scope is off', async () => {
         const { service, plugin, pending } = makeHarness();
         plugin.searchState.options = { timelineFields: false, body: true, llmAssist: false };
+        // No body text for this scene, so neither scope can produce a hit.
+        plugin.bodies.set('a.md', '');
 
         service.performSearch('coast');
         pending[0].resolve([scene('a.md', 'the coast')]);
         await flush();
 
-        // Body scope arrives in Stage 3; until then this scope contributes
-        // nothing, and no other scope may stand in for it.
         expect(plugin.searchState.hits.size).toBe(0);
+    });
+
+    it('matches body prose when that scope is on', async () => {
+        const { service, plugin, pending } = makeHarness();
+        plugin.searchState.options = { timelineFields: false, body: true, llmAssist: false };
+        plugin.bodies.set('a.md', 'She reached the Coast at dawn.');
+
+        service.performSearch('coast');
+        pending[0].resolve([scene('a.md', 'nothing relevant in the synopsis')]);
+        await flush();
+
+        const hit = plugin.searchState.hits.get('a.md');
+        expect(hit?.source).toBe('body');
+        // Evidence is the prose's own casing, so Stage 6 can re-locate it.
+        expect(hit?.evidence).toEqual(['Coast']);
+    });
+
+    it('unions both scopes rather than letting one replace the other', async () => {
+        // Enabling a second scope must never remove matches the first found.
+        const { service, plugin, pending } = makeHarness();
+        plugin.searchState.options = { timelineFields: true, body: true, llmAssist: false };
+        plugin.bodies.set('body-only.md', 'deep in the coast fog');
+        plugin.bodies.set('fields-only.md', 'nothing here');
+        plugin.bodies.set('both.md', 'the coast again');
+
+        service.performSearch('coast');
+        pending[0].resolve([
+            scene('body-only.md', 'unrelated synopsis'),
+            scene('fields-only.md', 'the coast road'),
+            scene('both.md', 'the coast road')
+        ]);
+        await flush();
+
+        const hits = plugin.searchState.hits;
+        expect(hits.get('body-only.md')?.source).toBe('body');
+        expect(hits.get('fields-only.md')?.source).toBe('timelineFields');
+        expect(hits.get('both.md')?.source).toBe('both');
+    });
+
+    it('does not read bodies at all when body scope is off', async () => {
+        const { service, plugin, pending } = makeHarness();
+        plugin.searchState.options = { timelineFields: true, body: false, llmAssist: false };
+
+        service.performSearch('coast');
+        pending[0].resolve([scene('a.md', 'the coast')]);
+        await flush();
+
+        expect(plugin.bodyReads).toBe(0);
     });
 
     it('skips matter notes, which the timeline never draws', async () => {

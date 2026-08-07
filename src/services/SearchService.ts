@@ -8,6 +8,7 @@ import { frontmatterValueToText } from '../utils/frontmatter';
 import type { RadialTimelineSettings } from '../types/settings';
 import type { TimelineItem } from '../types';
 import { hasSearchScope, mergeSearchHit, type TimelineSearchHit } from './searchState';
+import { SceneBodyIndex, findBodyMatches } from './SceneBodyIndex';
 
 export interface TimelineSearchMatchOptions {
     includeCurrentSceneAnalysis?: boolean;
@@ -109,9 +110,23 @@ export class SearchService {
      */
     private runId = 0;
 
+    private readonly bodyIndex: SceneBodyIndex;
+
     constructor(app: App, plugin: RadialTimelinePlugin) {
         this.app = app;
         this.plugin = plugin;
+        this.bodyIndex = new SceneBodyIndex(app);
+
+        // Cached bodies are keyed by mtime, so an edit is caught on the next
+        // read. Rename and delete are not — the path itself becomes wrong, so
+        // the entry has to go.
+        plugin.registerEvent(app.vault.on('rename', (file, oldPath) => {
+            this.bodyIndex.invalidate(oldPath);
+            this.bodyIndex.invalidate(file.path);
+        }));
+        plugin.registerEvent(app.vault.on('delete', (file) => {
+            this.bodyIndex.invalidate(file.path);
+        }));
     }
 
     openSearchPrompt(): void {
@@ -161,32 +176,48 @@ export class SearchService {
             return;
         }
 
+        // Read once, up front. Safe against drift because changing an option
+        // re-runs the search, which invalidates this run — and because the panel
+        // *replaces* the options object rather than mutating it, so this
+        // reference stays the one this run was started with.
+        const options = state.options;
+
         void this.plugin.getTimelineSceneData()
-            .then(scenes => {
+            .then(async scenes => {
                 if (myRun !== this.runId) return; // superseded or cleared
 
+                // Only items the timeline actually draws can show a match.
+                const searchable = scenes.filter(scene => isRenderedOnTimeline(scene));
+
+                // Body text is the run's only remaining async input, so it is
+                // gathered here — before the settings capture below, which must
+                // sit immediately ahead of the synchronous pass.
+                const bodies = options.body
+                    ? await this.bodyIndex.load(searchable)
+                    : null;
+
+                if (myRun !== this.runId) return; // superseded during body reads
+
                 // Every settings-derived input is resolved here, at one instant,
-                // immediately before the synchronous matching pass below. That
-                // pass never awaits, so no scene can be matched under different
-                // rules than another.
+                // with no await between this point and the end of the matching
+                // pass. That pass never yields, so no scene can be matched under
+                // different rules than another.
                 //
-                // Resolving these at call time instead would split the run's
-                // inputs across the await: the AI-analysis flag and planetary
-                // profile would be call-time values while the hover-metadata
-                // fields — reassigned wholesale by the settings UI — would be
-                // read post-await. Holding a reference to `plugin.settings` is
-                // not a freeze; the object is mutated in place.
+                // Resolving these earlier would split the run's inputs across an
+                // await: the AI-analysis flag and planetary profile would be
+                // captured at one moment while the hover-metadata fields —
+                // reassigned wholesale by the settings UI — would be read at
+                // another. Holding a reference to `plugin.settings` is not a
+                // freeze; the object is mutated in place.
                 const settings = this.plugin.settings;
-                const options = state.options;
                 const includeCurrentSceneAnalysis = !!settings.enableAiSceneAnalysis;
                 const planetaryProfile = getActivePlanetaryProfile(settings);
 
                 // Accumulate privately; the live state is untouched until commit.
                 const hits = new Map<string, TimelineSearchHit>();
 
-                scenes.forEach(scene => {
-                    // Only items the timeline actually draws can show a match.
-                    if (!isRenderedOnTimeline(scene)) return;
+                searchable.forEach(scene => {
+                    if (!scene.path) return;
 
                     let planetaryLine: string | undefined;
                     if (planetaryProfile && scene.when) {
@@ -203,13 +234,20 @@ export class SearchService {
                             planetaryLine,
                             settings
                         });
-                        if (matched && scene.path) {
+                        if (matched) {
                             mergeSearchHit(hits, { path: scene.path, source: 'timelineFields', evidence: [] });
                         }
                     }
 
-                    // Scene body scope lands in Stage 3; until then `options.body`
-                    // cannot be enabled from the panel.
+                    // Both scopes contribute: a scene matching in each is one hit
+                    // labelled 'both', never one scope silently standing in for
+                    // the other.
+                    if (bodies) {
+                        const evidence = findBodyMatches(bodies.get(scene.path) ?? '', trimmed);
+                        if (evidence.length > 0) {
+                            mergeSearchHit(hits, { path: scene.path, source: 'body', evidence });
+                        }
+                    }
                 });
 
                 if (myRun !== this.runId) return; // superseded while matching

@@ -192,6 +192,7 @@ function describeFont(spec: DesignedStyleSpec): string {
         case 'crimson':          return 'Crimson Text (serif)';
         case 'system-serif':     return 'TeX Gyre Pagella (serif)';
         case 'system-sans':      return 'Arial (sans)';
+        case 'custom':           return spec.body.customFontName ? `${spec.body.customFontName} (custom)` : 'Custom font';
         default:                 return 'Serif';
     }
 }

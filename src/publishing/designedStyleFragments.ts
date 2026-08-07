@@ -205,6 +205,7 @@ export function renderFontspec(spec: DesignedStyleSpec, options: RenderFontspecO
         '\\defaultfontfeatures{Ligatures=TeX}',
         buildFontspecBlock({
             fontKey: spec.body.font,
+            customFontName: spec.body.customFontName,
             vaultFontDir: options.vaultFontDir,
             letterSpacing: spec.runningHeader.letterSpacing,
         }),

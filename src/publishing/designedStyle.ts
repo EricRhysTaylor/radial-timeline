@@ -51,7 +51,9 @@ export interface DesignedStyleSpec {
     paperSize: 'us-trade-6x9' | 'us-letter' | 'a4' | { widthIn: number; heightIn: number };
     margins: { topIn: number; bottomIn: number; leftIn: number; rightIn: number; mirrored?: boolean };
     body: {
-        font: 'sorts-mill-goudy' | 'latin-modern' | 'source-serif' | 'eb-garamond' | 'crimson' | 'system-serif' | 'system-sans';
+        font: 'sorts-mill-goudy' | 'latin-modern' | 'source-serif' | 'eb-garamond' | 'crimson' | 'system-serif' | 'system-sans' | 'custom';
+        /** Exact font family name as installed on the OS. Only read when font === 'custom'. */
+        customFontName?: string;
         fontFallbackChain: string[];
         sizePt: number;
         lineSpacing: number;

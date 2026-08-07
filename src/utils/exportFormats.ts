@@ -896,6 +896,9 @@ const FONT_KEY_TO_DISPLAY: Record<DesignedStyleSpec['body']['font'], string> = {
     'crimson':          'Crimson Text',
     'system-serif':     'TeX Gyre Pagella',
     'system-sans':      'Arial',
+    // Placeholder only — 'custom' always resolves its display name from the
+    // spec's own customFontName in resolveFontDiagnosticForKey, never from here.
+    'custom':           'Custom font',
 };
 
 const GOOGLE_FONTS_BY_KEY: Partial<Record<DesignedStyleSpec['body']['font'], string>> = {
@@ -923,6 +926,9 @@ function specForLayout(layout?: PandocLayoutTemplate): DesignedStyleSpec | undef
  * diagnostic and the actual export agree on what counts as "present".
  */
 function vaultHasFontFiles(fontKey: DesignedStyleSpec['body']['font']): boolean {
+    // Custom fonts are never vault-bundled — always resolved via system
+    // font activation, same as eb-garamond/crimson/system-serif/system-sans.
+    if (fontKey === 'custom') return false;
     const root = getVaultFontDir();
     if (!root) return false;
     const entry = FONT_REGISTRY[fontKey];
@@ -955,9 +961,10 @@ function vaultHasFontFiles(fontKey: DesignedStyleSpec['body']['font']): boolean 
  */
 export function getFontDiagnosticForFontKey(
     fontKey: DesignedStyleSpec['body']['font'] | undefined,
-    overridePlatform?: FontDiagnosticPlatform
+    overridePlatform?: FontDiagnosticPlatform,
+    customFontName?: string
 ): FontDiagnostic {
-    return resolveFontDiagnosticForKey(fontKey, overridePlatform);
+    return resolveFontDiagnosticForKey(fontKey, overridePlatform, customFontName);
 }
 
 /**
@@ -981,7 +988,8 @@ export function getFontDiagnosticForFontKey(
  */
 function resolveFontDiagnosticForKey(
     fontKey: DesignedStyleSpec['body']['font'] | undefined,
-    overridePlatform?: FontDiagnosticPlatform
+    overridePlatform?: FontDiagnosticPlatform,
+    customFontName?: string
 ): FontDiagnostic {
     const platform = overridePlatform ?? getCurrentPlatform();
     if (!fontKey) {
@@ -989,6 +997,49 @@ function resolveFontDiagnosticForKey(
         // read this 'ok' as a font verdict.
         return { state: 'ok', primaryFontName: 'Default serif', resolvedFontName: 'Default serif', specDriven: false };
     }
+
+    // Custom: the display name IS the user's own text, not a registry
+    // lookup. Same vault→system→missing resolution, just keyed on that name.
+    if (fontKey === 'custom') {
+        const name = customFontName?.trim();
+        if (!name) {
+            return {
+                state: 'missing-system',
+                primaryFontName: 'Custom font',
+                resolvedFontName: 'Custom font',
+                installHint: {
+                    source: 'ctan',
+                    message: 'Enter the exact font family name as installed on your system (e.g. via Font Book, Windows Fonts, or fontconfig).',
+                },
+                specDriven: true,
+            };
+        }
+        // XeLaTeX decides, exactly as for the preset system fonts. This matters
+        // most here: the name is arbitrary user text, so a typo, a font that
+        // fontconfig can see but Core Text cannot, or one deactivated in Font
+        // Book after it was typed would otherwise read as available right up
+        // until the export failed on it.
+        const probed = probeFontWithXelatex(name);
+        if (probed === true) {
+            return { state: 'ok', primaryFontName: name, resolvedFontName: name, specDriven: true };
+        }
+        const catalog = loadSystemFontCatalog();
+        const canVerify = Array.isArray(catalog);
+        const installed = probed === null
+            && ((canVerify && isFontInstalled(name, catalog))
+                || requiredSystemFontFileExists(name, platform));
+        if (installed) {
+            return { state: 'ok', primaryFontName: name, resolvedFontName: name, specDriven: true };
+        }
+        return {
+            state: 'missing-system',
+            primaryFontName: name,
+            resolvedFontName: name,
+            installHint: buildCtanHint(name),
+            specDriven: true,
+        };
+    }
+
     const primaryFontName = FONT_KEY_TO_DISPLAY[fontKey];
 
     // 1. Vault-bundled files present → ready (Path-based emit).
@@ -1052,7 +1103,7 @@ export function getStructuredFontDiagnostic(
     overridePlatform?: FontDiagnosticPlatform
 ): FontDiagnostic {
     const spec = specForLayout(layout);
-    return resolveFontDiagnosticForKey(spec?.body.font, overridePlatform);
+    return resolveFontDiagnosticForKey(spec?.body.font, overridePlatform, spec?.body.customFontName);
 }
 
 /**

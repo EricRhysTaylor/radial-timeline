@@ -127,6 +127,35 @@ describe('buildFontspecBlock — vault → system resolution', () => {
             .toThrow(/Unknown font key/);
     });
 
+    it('custom: emits a plain \\setmainfont using customFontName, bypassing the registry', () => {
+        const block = buildFontspecBlock({ fontKey: 'custom', customFontName: 'Palatino Linotype' });
+        expect(block).toBe('\\setmainfont{Palatino Linotype}');
+    });
+
+    it('custom: ignores vaultFontDir — always resolves via system activation', () => {
+        const root = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-resolver-custom-'));
+        try {
+            const block = buildFontspecBlock({ fontKey: 'custom', customFontName: 'My Font', vaultFontDir: root });
+            expect(block).toBe('\\setmainfont{My Font}');
+            expect(block).not.toContain('Path =');
+        } finally {
+            fs.rmSync(root, { recursive: true, force: true });
+        }
+    });
+
+    it('custom: appends a \\headerfont declaration when letterSpacing > 0', () => {
+        const block = buildFontspecBlock({ fontKey: 'custom', customFontName: 'My Font', letterSpacing: 15 });
+        expect(block).toContain('\\setmainfont{My Font}');
+        expect(block).toContain('\\newfontface\\headerfont{My Font}[LetterSpace=15.0]');
+    });
+
+    it('custom: throws when no font name is provided (no silent default)', () => {
+        expect(() => buildFontspecBlock({ fontKey: 'custom' }))
+            .toThrow(/no font name was provided/);
+        expect(() => buildFontspecBlock({ fontKey: 'custom', customFontName: '   ' }))
+            .toThrow(/no font name was provided/);
+    });
+
     it('emits no \\PackageError or \\IfFontExistsTF blocks under any path', () => {
         for (const fontKey of Object.keys(FONT_REGISTRY)) {
             const block = buildFontspecBlock({ fontKey });

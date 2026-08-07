@@ -1,5 +1,6 @@
 import { TFile } from 'obsidian';
 import { openOrRevealFile } from '../../utils/fileUtils';
+import { buildSearchHighlight } from '../../services/searchHighlight';
 import { RadialTimelineView } from '../TimeLineView';
 
 export function setupGossamerMode(view: RadialTimelineView, svg: SVGSVGElement): void {
@@ -283,7 +284,8 @@ export function setupGossamerMode(view: RadialTimelineView, svg: SVGSVGElement):
         const filePath = decodeURIComponent(encodedPath);
         const file = view.plugin.app.vault.getAbstractFileByPath(filePath);
         if (file instanceof TFile) {
-            await openOrRevealFile(view.plugin.app, file);
+            const highlight = await buildSearchHighlight(view.plugin.app, file, view.plugin.searchState);
+            await openOrRevealFile(view.plugin.app, file, false, highlight);
         }
     };
 
@@ -299,7 +301,8 @@ export function setupGossamerMode(view: RadialTimelineView, svg: SVGSVGElement):
         const path = decodeURIComponent(encodedPath);
         const file = view.plugin.app.vault.getAbstractFileByPath(path);
         if (file instanceof TFile) {
-            await openOrRevealFile(view.plugin.app, file);
+            const highlight = await buildSearchHighlight(view.plugin.app, file, view.plugin.searchState);
+            await openOrRevealFile(view.plugin.app, file, false, highlight);
         }
     };
 

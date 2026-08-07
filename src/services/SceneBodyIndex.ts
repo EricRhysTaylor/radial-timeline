@@ -55,6 +55,55 @@ export function findBodyMatches(body: string, phrase: string): string[] {
     return variants;
 }
 
+/**
+ * Character ranges to highlight for `evidence`, as offsets into `content`.
+ *
+ * Computed against the file **as it stands right now**, not against offsets
+ * captured when the search ran — those go stale the moment the author edits the
+ * scene, and a highlight landing on the wrong words is worse than none.
+ * Evidence that no longer appears is simply skipped.
+ *
+ * Confined to the body. `extractBodyAfterFrontmatter` always returns a suffix of
+ * `content`, so the body's start offset is the length difference — which keeps
+ * "body scope searches prose only" true all the way through to the highlight,
+ * rather than lighting up a stray occurrence inside the YAML.
+ */
+export function locateBodyEvidenceRanges(
+    content: string,
+    body: string,
+    evidence: string[]
+): Array<[number, number]> {
+    if (!content || !body || evidence.length === 0) return [];
+
+    const bodyOffset = content.length - body.length;
+    const ranges: Array<[number, number]> = [];
+
+    for (const passage of evidence) {
+        if (!passage) continue;
+        let from = 0;
+        for (;;) {
+            const at = body.indexOf(passage, from);
+            if (at === -1) break;
+            ranges.push([bodyOffset + at, bodyOffset + at + passage.length]);
+            from = at + passage.length;
+        }
+    }
+
+    // Obsidian walks these in order; overlapping ranges (one evidence string
+    // containing another) would double-mark the same text.
+    ranges.sort((a, b) => a[0] - b[0]);
+    const merged: Array<[number, number]> = [];
+    for (const range of ranges) {
+        const last = merged[merged.length - 1];
+        if (last && range[0] <= last[1]) {
+            last[1] = Math.max(last[1], range[1]);
+            continue;
+        }
+        merged.push([range[0], range[1]]);
+    }
+    return merged;
+}
+
 export class SceneBodyIndex {
     private readonly vault: Vault;
     private readonly metadataCache: MetadataCache;

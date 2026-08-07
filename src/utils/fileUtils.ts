@@ -11,30 +11,55 @@
 import { App, TFile, MarkdownView } from 'obsidian';
 
 /**
+ * Text to flash-highlight in the opened file — the same ephemeral state
+ * Obsidian core search uses when you click one of its results.
+ */
+export interface OpenMatchHighlight {
+  /** Full raw file content: Obsidian resolves `matches` as offsets into this. */
+  content: string;
+  /** `[start, end)` character ranges to mark. */
+  matches: Array<[number, number]>;
+}
+
+/**
  * Opens a file in the workspace using Obsidian's recommended approach.
  * Uses workspace.openLinkText() which automatically handles duplicate tab prevention.
- * 
+ *
  * @param app - The Obsidian App instance
  * @param file - The file to open
  * @param newLeaf - Whether to open in a new leaf. Default false (reuse existing tab).
+ * @param highlight - Optional text to flash-highlight once the file is showing.
  * @returns Promise that resolves when the file is opened/revealed
  */
-export async function openOrRevealFile(app: App, file: TFile, newLeaf: boolean = false): Promise<void> {
+export async function openOrRevealFile(
+  app: App,
+  file: TFile,
+  newLeaf: boolean = false,
+  highlight?: OpenMatchHighlight
+): Promise<void> {
+  const eState = highlight ? { match: highlight } : undefined;
+
   // Check if file is already open
   const leaves = app.workspace.getLeavesOfType('markdown');
   const existingLeaf = leaves.find(leaf => {
     const view = leaf.view;
     return view instanceof MarkdownView && view.file?.path === file.path;
   });
-  
+
   if (existingLeaf) {
+    // Re-open through the leaf rather than just activating it: setActiveLeaf
+    // alone carries no ephemeral state, so a highlight would silently do
+    // nothing in the common case where the scene is already open.
+    if (eState) {
+      await existingLeaf.openFile(file, { active: true, eState }); // SAFE: openFile used to carry search-highlight state that openLinkText cannot pass to an already-open leaf
+    }
     app.workspace.setActiveLeaf(existingLeaf);
     return;
   }
-  
+
   // Use Obsidian's openLinkText which handles duplicate tab prevention automatically
   // Pass the file path as linktext and sourcePath (can be empty string for absolute paths)
-  await app.workspace.openLinkText(file.path, '', newLeaf);
+  await app.workspace.openLinkText(file.path, '', newLeaf, eState ? { eState } : undefined);
 }
 
 /**

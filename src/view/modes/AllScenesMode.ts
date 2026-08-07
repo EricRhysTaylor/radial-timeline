@@ -1,5 +1,6 @@
 import { TFile } from 'obsidian';
 import { openOrRevealFile } from '../../utils/fileUtils';
+import { buildSearchHighlight } from '../../services/searchHighlight';
 import type { TimelineItem } from '../../types';
 import { handleDominantSubplotSelection } from '../interactions/DominantSubplotHandler';
 import { SceneInteractionManager } from '../interactions/SceneInteractionManager';
@@ -32,12 +33,16 @@ export function setupSceneInteractions(view: RadialTimelineView, group: Element,
             // Handle dominant subplot selection for scenes in multiple subplots
             await handleDominantSubplotSelection(view, group, svgElement, scenes);
 
+            // Built once and reused by both open paths, so a Zero Draft
+            // override lands on the passage too.
+            const highlight = await buildSearchHighlight(view.plugin.app, file, view.plugin.searchState);
+
             const zeroDraftHandled = await maybeHandleZeroDraftClick({
                 app: view.plugin.app,
                 file,
                 enableZeroDraftMode: view.plugin.settings.enableZeroDraftMode,
                 sceneTitle: file.basename || 'Scene',
-                onOverrideOpen: async () => openOrRevealFile(view.plugin.app, file, false)
+                onOverrideOpen: async () => openOrRevealFile(view.plugin.app, file, false, highlight)
             });
             if (zeroDraftHandled) {
                 evt.preventDefault();
@@ -45,7 +50,7 @@ export function setupSceneInteractions(view: RadialTimelineView, group: Element,
                 return;
             }
 
-            await openOrRevealFile(view.plugin.app, file, false);
+            await openOrRevealFile(view.plugin.app, file, false, highlight);
         })(); });
 
         view.registerDomEvent(group as HTMLElement, 'mouseenter', () => {

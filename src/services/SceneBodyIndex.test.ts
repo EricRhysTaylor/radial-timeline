@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { findBodyMatches } from './SceneBodyIndex';
+import { findBodyMatches, locateBodyEvidenceRanges } from './SceneBodyIndex';
+import { extractBodyAfterFrontmatter } from '../utils/frontmatterDocument';
 
 describe('findBodyMatches', () => {
     it('finds a match regardless of case', () => {
@@ -46,5 +47,83 @@ describe('findBodyMatches', () => {
         // its words in any order.
         expect(findBodyMatches('she reached the coast at dawn', 'the coast')).toEqual(['the coast']);
         expect(findBodyMatches('the dawn reached her coast', 'the coast')).toEqual([]);
+    });
+});
+
+describe('extractBodyAfterFrontmatter suffix invariant', () => {
+    // locateBodyEvidenceRanges derives the body's start offset as
+    // content.length - body.length. That is only valid because the helper
+    // always returns a SUFFIX of the content. If it ever returned a rewritten
+    // string, every highlight would land at the wrong offset.
+    const cases: Array<[string, string]> = [
+        ['with frontmatter', '---\nClass: Scene\n---\nShe reached the coast.'],
+        ['without frontmatter', 'She reached the coast.'],
+        ['CRLF frontmatter', '---\r\nClass: Scene\r\n---\r\nShe reached the coast.'],
+        ['empty body', '---\nClass: Scene\n---\n'],
+        ['fence-like text in body', 'Prose.\n\n---\n\nMore prose.']
+    ];
+
+    for (const [name, content] of cases) {
+        it(`returns a suffix — ${name}`, () => {
+            const body = extractBodyAfterFrontmatter(content, {});
+            expect(content.endsWith(body)).toBe(true);
+        });
+    }
+});
+
+describe('locateBodyEvidenceRanges', () => {
+    const content = '---\nClass: Scene\n---\nShe reached the Coast at dawn.';
+    const body = extractBodyAfterFrontmatter(content, {});
+
+    it('maps a body match to its offset in the whole file', () => {
+        const [range] = locateBodyEvidenceRanges(content, body, ['Coast']);
+        expect(content.slice(range[0], range[1])).toBe('Coast');
+    });
+
+    it('finds every occurrence', () => {
+        const many = '---\nA: b\n---\ncoast and coast and coast';
+        const manyBody = extractBodyAfterFrontmatter(many, {});
+        const ranges = locateBodyEvidenceRanges(many, manyBody, ['coast']);
+        expect(ranges).toHaveLength(3);
+        ranges.forEach(([from, to]) => expect(many.slice(from, to)).toBe('coast'));
+    });
+
+    it('never marks text inside the frontmatter', () => {
+        // Body scope searched prose only; a stray occurrence in the YAML must
+        // not light up, or the highlight would contradict the scope.
+        const withYaml = '---\nPlace: Coast\n---\nShe reached the Coast.';
+        const yamlBody = extractBodyAfterFrontmatter(withYaml, {});
+        const ranges = locateBodyEvidenceRanges(withYaml, yamlBody, ['Coast']);
+        expect(ranges).toHaveLength(1);
+        expect(ranges[0][0]).toBeGreaterThan(withYaml.indexOf('Place: Coast'));
+    });
+
+    it('skips evidence the author has since edited away', () => {
+        expect(locateBodyEvidenceRanges(content, body, ['mountain'])).toEqual([]);
+    });
+
+    it('keeps the surviving evidence when only some of it is gone', () => {
+        const ranges = locateBodyEvidenceRanges(content, body, ['mountain', 'Coast']);
+        expect(ranges).toHaveLength(1);
+        expect(content.slice(ranges[0][0], ranges[0][1])).toBe('Coast');
+    });
+
+    it('merges overlapping ranges so text is not double-marked', () => {
+        const overlap = 'the coastline';
+        const ranges = locateBodyEvidenceRanges(overlap, overlap, ['coast', 'coastline']);
+        expect(ranges).toEqual([[4, 13]]);
+    });
+
+    it('returns ranges in ascending order', () => {
+        const many = 'coast, then Coast, then COAST';
+        const ranges = locateBodyEvidenceRanges(many, many, ['COAST', 'coast', 'Coast']);
+        const starts = ranges.map(r => r[0]);
+        expect([...starts].sort((a, b) => a - b)).toEqual(starts);
+    });
+
+    it('returns nothing for empty inputs', () => {
+        expect(locateBodyEvidenceRanges('', '', ['coast'])).toEqual([]);
+        expect(locateBodyEvidenceRanges(content, body, [])).toEqual([]);
+        expect(locateBodyEvidenceRanges(content, body, [''])).toEqual([]);
     });
 });

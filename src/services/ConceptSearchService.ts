@@ -213,11 +213,20 @@ const ELEMENTS_SCHEMA: Record<string, unknown> = {
     }
 };
 
+/**
+ * The prompts state the JSON shape explicitly rather than relying on the
+ * response_format schema.
+ *
+ * Both are sent when `jsonMode` is `response_format`, but an operator may set
+ * `prompt_only` — and on a machine measured here, skipping the grammar roughly
+ * halved per-scene latency for identical answers. A prompt that only works
+ * under enforcement would make that setting silently useless.
+ */
 const ELEMENTS_SYSTEM_PROMPT = [
     "Break the reader's request into the separate things a scene must contain to satisfy it.",
     'Each element is one testable fact, phrased as a short question.',
-    "Example: 'dinner with Entiat' -> ['Does this scene depict a dinner?', 'Is Entiat present in this scene?'].",
-    'Respond with JSON only.'
+    `Reply with JSON only, exactly this shape: {"elements":["<question>"]}, at most ${MAX_ELEMENTS} entries.`,
+    "Example: 'dinner with Entiat' -> {\"elements\":[\"Does this scene depict a dinner?\",\"Is Entiat present in this scene?\"]}."
 ].join(' ');
 
 const VERDICT_SYSTEM_PROMPT = [
@@ -225,7 +234,8 @@ const VERDICT_SYSTEM_PROMPT = [
     'Answer only from what the scene shows.',
     `Then give up to ${MAX_QUOTES_PER_MATCH} short verbatim quotes from the scene supporting any true answers.`,
     'A quote you cannot copy exactly is worse than no quote: it will be discarded.',
-    'Respond with JSON only.'
+    'Reply with JSON only, exactly this shape: {"answers":[true,false],"quotes":["<verbatim>"]}',
+    'where answers holds one boolean per question, in order.'
 ].join(' ');
 
 /** Answer count is pinned to the question count, so a short reply cannot be misread. */

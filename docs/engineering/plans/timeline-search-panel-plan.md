@@ -31,6 +31,19 @@ implementation and review:
 7. Search matched **matter notes**, which the timeline never draws — the
    searchable==visible rule violated at the item level rather than the field
    level.
+8. Search state is global, but `onClose` cleared it whenever *any* timeline
+   closed. With two timelines open, closing one left the survivor showing
+   highlighted squares and a term in its box that the state no longer agreed
+   with. Only the last timeline to close clears now, compared by identity
+   because the closing leaf is still enumerated at that point.
+
+Renderability is now one shared predicate, `isRenderedOnTimeline`
+(`utils/sceneHelpers.ts`), used by both the render pipeline and search — they
+previously answered the same question in two places and could have drifted.
+The scope-option change signature is exhaustive by construction
+(`Record<keyof TimelineSearchOptions, true>`), so adding an option without
+adding it to the signature is a compile error rather than a scope change that
+silently stops forcing a re-render.
 
 One non-defect correction: the run's settings-derived inputs were split across
 the `await` (AI flag and planetary profile at call time, hover fields after),

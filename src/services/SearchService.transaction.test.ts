@@ -34,7 +34,7 @@ function makeHarness() {
 
     const plugin = {
         searchState: createSearchState(),
-        settings: {},
+        settings: {} as Record<string, unknown>,
         getTimelineSceneData: () => {
             const d = deferred();
             pending.push(d);
@@ -170,29 +170,57 @@ describe('SearchService transaction', () => {
         expect([...plugin.searchState.hits.keys()].sort()).toEqual(['backdrop.md', 'beat.md']);
     });
 
-    it('resolves every settings-derived input after the await, not across it', async () => {
-        // Swapping the whole settings object is the only way a test can tell
-        // the two designs apart: production reassigns properties *on* the
-        // settings object, which the old call-time capture saw anyway. What is
-        // under test is the timing — every input now comes from one instant,
-        // rather than the AI flag and planetary profile being read at call time
-        // while hover fields were read after the await.
+    it('resolves settings-derived inputs after the await, using the production mutation shape', async () => {
+        // The settings UI mutates properties ON the settings object rather than
+        // replacing it (ScenePropertiesSection reassigns
+        // settings.hoverMetadataFields; the AI toggle flips
+        // settings.enableAiSceneAnalysis). So this test mutates a property, not
+        // the object.
+        //
+        // enableAiSceneAnalysis is the input that distinguishes the two
+        // designs: it used to be read at call time while hover fields were read
+        // after the await, splitting one run's inputs across two moments. Now
+        // every input is resolved together, immediately before the synchronous
+        // matching pass.
         const { service, plugin, pending } = makeHarness();
+        plugin.settings.enableAiSceneAnalysis = false;
 
-        service.performSearch('Diego');
-        // Settings change while the scene load is still in flight.
-        plugin.settings = {
-            hoverMetadataFields: [{ key: 'Place', label: 'Place', icon: '', enabled: true }]
-        } as never;
+        service.performSearch('pacing lags');
+
+        // The author enables AI scene analysis while the scene load is in flight.
+        plugin.settings.enableAiSceneAnalysis = true;
 
         pending[0].resolve([
-            ({ path: 'a.md', title: 'A', rawFrontmatter: { Place: 'Diego' } } as TimelineItem)
+            ({
+                path: 'a.md',
+                title: 'A',
+                currentSceneAnalysis: 'B / pacing lags in the middle',
+                rawFrontmatter: {}
+            } as TimelineItem)
         ]);
         await flush();
 
-        // The whole run used the post-await settings, so the newly enabled
-        // hover field is searched — consistently, for every scene.
+        // Resolved post-await, so the run sees the flag as it stands when the
+        // matching pass actually runs. Under the old call-time capture this
+        // scene would not have matched at all.
         expect([...plugin.searchState.hits.keys()]).toEqual(['a.md']);
+    });
+
+    it('applies one settings snapshot to every scene in a run', async () => {
+        // The matching pass never awaits, so no scene can be matched under
+        // different rules than another.
+        const { service, plugin, pending } = makeHarness();
+        plugin.settings.enableAiSceneAnalysis = true;
+
+        service.performSearch('pacing lags');
+        pending[0].resolve([
+            ({ path: 'a.md', title: 'A', currentSceneAnalysis: 'pacing lags', rawFrontmatter: {} } as TimelineItem),
+            ({ path: 'b.md', title: 'B', currentSceneAnalysis: 'pacing lags', rawFrontmatter: {} } as TimelineItem),
+            ({ path: 'c.md', title: 'C', currentSceneAnalysis: 'pacing lags', rawFrontmatter: {} } as TimelineItem)
+        ]);
+        await flush();
+
+        expect([...plugin.searchState.hits.keys()]).toEqual(['a.md', 'b.md', 'c.md']);
     });
 
     it('keeps prior results when a run fails, rather than blanking the timeline', async () => {

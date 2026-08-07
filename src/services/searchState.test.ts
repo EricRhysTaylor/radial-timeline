@@ -4,6 +4,7 @@ import {
     isSearchHit,
     mergeSearchHit,
     searchHitPaths,
+    searchOptionsSignature,
     type TimelineSearchHit
 } from './searchState';
 
@@ -84,6 +85,33 @@ describe('mergeSearchHit', () => {
         mergeSearchHit(hits, hit({ source: 'body', evidence }));
         evidence.push('added later');
         expect(hits.get('scene.md')?.evidence).toEqual(['passage']);
+    });
+});
+
+describe('searchOptionsSignature', () => {
+    it('changes whenever any option changes', () => {
+        const base = createSearchState().options;
+        const signatures = new Set([
+            searchOptionsSignature(base),
+            searchOptionsSignature({ ...base, timelineFields: false }),
+            searchOptionsSignature({ ...base, body: true }),
+            searchOptionsSignature({ ...base, llmAssist: true })
+        ]);
+        expect(signatures.size).toBe(4);
+    });
+
+    it('is stable for the default options', () => {
+        // ChangeDetection fixtures assert against this literal; a silent
+        // reordering would make them pass while comparing nothing real.
+        expect(searchOptionsSignature(createSearchState().options)).toBe('100');
+    });
+
+    it('covers every option key', () => {
+        // The compile-time guarantee is SEARCH_OPTION_KEYS being typed
+        // Record<keyof TimelineSearchOptions, true>; this pins the arity so a
+        // key dropped from that record fails here too.
+        const optionCount = Object.keys(createSearchState().options).length;
+        expect(searchOptionsSignature(createSearchState().options)).toHaveLength(optionCount);
     });
 });
 

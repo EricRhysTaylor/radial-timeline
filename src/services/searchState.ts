@@ -99,15 +99,25 @@ export function searchHitPaths(state: TimelineSearchState): Set<string> {
 }
 
 /**
- * Change-detection signature for the scope options.
+ * Every option key, in signature order.
  *
- * Lives beside the type so a new option cannot be added without this seeing it
- * — building the signature at the call site would silently keep hashing the old
- * three fields, and a scope change would stop forcing a re-render.
+ * Typed as `Record<keyof TimelineSearchOptions, true>` so adding a field to the
+ * interface without listing it here is a **compile error**. A hand-written array
+ * would have accepted the omission silently, and the new option would never
+ * reach the change signature — a scope change that stops forcing a re-render.
+ * Declaration order is the signature order (`Object.keys` preserves it for
+ * string keys), so existing signatures stay stable.
  */
+const SEARCH_OPTION_KEYS: Record<keyof TimelineSearchOptions, true> = {
+    timelineFields: true,
+    body: true,
+    llmAssist: true
+};
+
+/** Change-detection signature for the scope options. */
 export function searchOptionsSignature(options: TimelineSearchOptions): string {
-    const flags: Array<keyof TimelineSearchOptions> = ['timelineFields', 'body', 'llmAssist'];
-    return flags.map(flag => (options[flag] ? '1' : '0')).join('');
+    const keys = Object.keys(SEARCH_OPTION_KEYS) as Array<keyof TimelineSearchOptions>;
+    return keys.map(key => (options[key] ? '1' : '0')).join('');
 }
 
 /**

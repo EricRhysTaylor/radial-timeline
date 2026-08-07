@@ -42,7 +42,7 @@ import { WritingSessionCompletionModal } from '../modals/WritingSessionCompletio
 import { canPostSessionsToFeed, postSessionToCommunityFeed } from '../communityShare/communityShareClient';
 import { DiscordChip } from '../communityShare/discordChip';
 import { projectSessionFeedPost } from '../services/WritingSessionLog';
-import { isMatterNote } from '../utils/sceneHelpers';
+import { isRenderedOnTimeline } from '../utils/sceneHelpers';
 import { DEFAULT_BOOK_TITLE, getTimelineScope, getTimelineScopeTitle, isSagaScopeAvailable } from '../utils/books';
 import { getActiveRecentStructuralMoves } from '../utils/recentStructuralMoves';
 import type {
@@ -2633,7 +2633,10 @@ export class RadialTimelineView extends ItemView {
         // Get the scene data using the plugin's method
         this.plugin.getTimelineSceneData()
             .then(async (sceneData) => {
-                const timelineSceneData = sceneData.filter(item => !isMatterNote(item));
+                // Same predicate search uses, so the two can never disagree
+                // about what the timeline draws — a match must always have
+                // somewhere to show itself.
+                const timelineSceneData = sceneData.filter(item => isRenderedOnTimeline(item));
 
                 // If in Gossamer mode, the change might be a score update. We must
                 // rebuild the run data here to ensure the renderer gets the latest scores.
@@ -2858,13 +2861,22 @@ export class RadialTimelineView extends ItemView {
     }
     
     async onClose(): Promise<void> {
-        // Clear search without triggering refreshTimeline() — the view is
-        // closing, so refreshing is pointless and invites side effects during
-        // unload. This must go through the service rather than resetting the
-        // state object here: only the service can invalidate the in-flight run
-        // token, and without that a search still in flight commits its results
-        // into the state we just cleared.
-        this.plugin.abandonSearch();
+        // Search state is global, but closing one timeline must not wipe the
+        // search another open timeline is still showing — the surviving view
+        // would keep its highlighted squares and its term in the box while the
+        // state behind them said "no search", until something unrelated forced
+        // a re-render. Only the last timeline to close clears it.
+        //
+        // Compared by identity rather than counting, because the closing leaf
+        // is still enumerated by getTimelineViews() at this point.
+        //
+        // Going through the service is what invalidates the in-flight run
+        // token; resetting the state object directly would let a search still
+        // in flight commit into the state we just cleared.
+        const otherTimelineViews = this.plugin.getTimelineViews().filter(view => view !== this);
+        if (otherTimelineViews.length === 0) {
+            this.plugin.abandonSearch();
+        }
         
         // Clean up chronologue shift mode buttons (keyboard listeners auto-cleanup via view.register())
         if (this._chronologueShiftCleanup) {

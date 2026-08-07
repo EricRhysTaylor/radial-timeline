@@ -44,6 +44,7 @@ import { DiscordChip } from '../communityShare/discordChip';
 import { projectSessionFeedPost } from '../services/WritingSessionLog';
 import { isRenderedOnTimeline } from '../utils/sceneHelpers';
 import { SearchPanelController } from './interactions/SearchPanelController';
+import { getLocalLlmAvailability } from '../ai/localLlm/availability';
 import { searchOptionsSignature, writeTimelineSearchSettings, type TimelineSearchOptions } from '../services/searchState';
 import { DEFAULT_BOOK_TITLE, getTimelineScope, getTimelineScopeTitle, isSagaScopeAvailable } from '../utils/books';
 import { getActiveRecentStructuralMoves } from '../utils/recentStructuralMoves';
@@ -642,6 +643,7 @@ export class RadialTimelineView extends ItemView {
                 {
                     getSearchState: () => this.plugin.searchState,
                     setSearchOptions: (options) => { void this.applySearchOptions(options); },
+                    getLocalModelStatus: () => getLocalLlmAvailability(this.plugin),
                     registerDomEvent: (el, event, handler) =>
                         this.registerDomEvent(el as HTMLElement, event, handler),
                     register: (cleanup) => this.register(cleanup)

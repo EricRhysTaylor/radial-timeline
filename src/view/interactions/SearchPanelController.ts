@@ -21,11 +21,20 @@ import { t } from '../../i18n';
 import type { TimelineSearchOptions, TimelineSearchState } from '../../services/searchState';
 import { hasSearchScope } from '../../services/searchState';
 
+/** What the panel needs to know about the local model, and nothing more. */
+export interface LocalModelStatus {
+    available: boolean;
+    reason?: string;
+    modelId?: string;
+}
+
 export interface SearchPanelHost {
     /** Live search state; the panel reads it, never mutates it. */
     getSearchState(): TimelineSearchState;
     /** Persist and apply an options change. */
     setSearchOptions(options: TimelineSearchOptions): void;
+    /** Probe the configured local model. Cheap and cached; safe to call per expand. */
+    getLocalModelStatus(): Promise<LocalModelStatus>;
     registerDomEvent(el: HTMLElement | Document, event: string, handler: (ev: Event) => void): void;
     register(cleanup: () => void): void;
 }
@@ -46,7 +55,10 @@ export class SearchPanelController {
     private readonly statusEl: HTMLElement;
     private readonly scopeRows: ScopeRow[] = [];
     private readonly assistCheckbox: HTMLInputElement;
+    private readonly assistHint: HTMLElement;
     private expanded = false;
+    /** Generation token: a slow probe must not overwrite a newer answer. */
+    private statusProbeId = 0;
 
     constructor(host: SearchPanelHost, shell: HTMLElement, input: HTMLInputElement) {
         this.host = host;
@@ -81,7 +93,7 @@ export class SearchPanelController {
                 t('timeline.search.scopeTimelineFields.label'),
                 t('timeline.search.scopeTimelineFields.hint'),
                 false
-            )
+            ).checkbox
         });
         this.scopeRows.push({
             key: 'body',
@@ -90,19 +102,21 @@ export class SearchPanelController {
                 t('timeline.search.scopeBody.label'),
                 t('timeline.search.scopeBody.hint'),
                 false
-            )
+            ).checkbox
         });
         this.panel.appendChild(fieldset);
 
         // --- Assist ----------------------------------------------------------
         const assistWrap = doc.createElement('div');
         assistWrap.className = 'ert-timeline-search-panel__assist';
-        this.assistCheckbox = this.buildCheckRow(
+        const assistRow = this.buildCheckRow(
             assistWrap,
             t('timeline.search.assistLabel'),
-            t('timeline.search.assistUnavailable'),
+            t('timeline.search.assistChecking'),
             true
         );
+        this.assistCheckbox = assistRow.checkbox;
+        this.assistHint = assistRow.hint;
         this.panel.appendChild(assistWrap);
 
         // --- Status ----------------------------------------------------------
@@ -127,7 +141,7 @@ export class SearchPanelController {
         label: string,
         hint: string,
         disabled: boolean
-    ): HTMLInputElement {
+    ): { checkbox: HTMLInputElement; hint: HTMLElement } {
         const doc = parent.ownerDocument;
         const row = doc.createElement('label');
         row.className = 'ert-timeline-search-panel__row';
@@ -152,7 +166,7 @@ export class SearchPanelController {
         row.appendChild(text);
         row.appendChild(hintEl);
         parent.appendChild(row);
-        return checkbox;
+        return { checkbox, hint: hintEl };
     }
 
     private bindEvents(doc: Document): void {
@@ -215,6 +229,35 @@ export class SearchPanelController {
         this.input.setAttribute('aria-expanded', 'true');
         this.syncFromState();
         this.applyEdgeAnchor();
+        void this.refreshLocalModelStatus();
+    }
+
+    /**
+     * Ask whether a local model is usable and say so plainly.
+     *
+     * The assist checkbox stays disabled either way until concept search exists
+     * — a control that toggles nothing would be a lie. But the *reason* is worth
+     * showing now: an author whose server is down can see and fix that here,
+     * rather than discovering it later when the feature arrives.
+     */
+    private async refreshLocalModelStatus(): Promise<void> {
+        const probeId = ++this.statusProbeId;
+        this.assistHint.textContent = t('timeline.search.assistChecking');
+
+        let status: LocalModelStatus;
+        try {
+            status = await this.host.getLocalModelStatus();
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            status = { available: false, reason: message };
+        }
+
+        // A newer expand already asked; its answer wins.
+        if (probeId !== this.statusProbeId) return;
+
+        this.assistHint.textContent = status.available
+            ? t('timeline.search.assistConnected', { model: status.modelId ?? '' })
+            : (status.reason ?? t('timeline.search.assistChecking'));
     }
 
     /**

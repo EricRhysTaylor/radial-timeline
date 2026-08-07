@@ -518,8 +518,10 @@ export interface TranslationKeys {
             scopeTimelineFields: { label: string; hint: string };
             scopeBody: { label: string; hint: string };
             assistLabel: string;
-            /** Shown beside the assist toggle while local-server support is not yet wired up. */
-            assistUnavailable: string;
+            /** Shown while the local-server probe is in flight. */
+            assistChecking: string;
+            /** Local model is usable. {{model}} is the model id. */
+            assistConnected: string;
             statusIdle: string;
             statusRunning: string;
             /** Exactly one match. */
@@ -2836,7 +2838,8 @@ export const en: TranslationKeys = {
                 hint: 'The prose itself, highlighted when you open the scene',
             },
             assistLabel: 'Local LLM assist',
-            assistUnavailable: 'Not available yet',
+            assistChecking: 'Checking for a local model\u2026',
+            assistConnected: 'Connected: {{model}} \u2014 not used by search yet',
             statusIdle: 'Press Enter to search',
             statusRunning: 'Searching…',
             statusMatchOne: '1 scene matched',

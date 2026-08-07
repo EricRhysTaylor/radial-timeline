@@ -12,6 +12,7 @@ import { DEFAULT_BOOK_TITLE, getActiveBook, getActiveBookTitle } from '../utils/
 import { getActiveRecentStructuralMoves } from '../utils/recentStructuralMoves';
 import { readSharedChapterTitle } from '../utils/timelineChapters';
 import { readPartMarker } from '../utils/timelineParts';
+import { searchHitPaths, type TimelineSearchState } from '../services/searchState';
 
 /**
  * Types of changes that can trigger renders
@@ -45,6 +46,13 @@ export interface TimelineSnapshot {
     // UI state
     openFilePaths: Set<string>;
     searchActive: boolean;
+    /**
+     * The committed term. Tracked separately from the result set because two
+     * different terms can match the same scenes — without this the SVG is not
+     * rebuilt and the previous term stays highlighted in the hover metadata.
+     */
+    searchTerm: string;
+    searchOptionsHash: string;
     searchResults: Set<string>;
     currentMode: string;
     
@@ -109,8 +117,7 @@ export interface ChangeDetectionResult {
 export function createSnapshot(
     scenes: TimelineItem[],
     openFilePaths: Set<string>,
-    searchActive: boolean,
-    searchResults: Set<string>,
+    searchState: TimelineSearchState,
     currentMode: string,
     settings: RadialTimelineSettings,
     gossamerRun: GossamerRun | null | undefined
@@ -239,8 +246,10 @@ export function createSnapshot(
         sceneHash,
         sceneVisualHash,
         openFilePaths: new Set(openFilePaths),
-        searchActive,
-        searchResults: new Set(searchResults),
+        searchActive: searchState.active,
+        searchTerm: searchState.term,
+        searchOptionsHash: `${searchState.options.timelineFields ? 1 : 0}${searchState.options.body ? 1 : 0}${searchState.options.llmAssist ? 1 : 0}`,
+        searchResults: searchHitPaths(searchState),
         currentMode,
         currentMonth: now.getMonth(),
         currentDate: now.toISOString().split('T')[0],
@@ -309,8 +318,13 @@ export function detectChanges(
         changeTypes.add(ChangeType.OPEN_FILES);
     }
     
-    // Detect search changes
-    if (prev.searchActive !== current.searchActive || !setsEqual(prev.searchResults, current.searchResults)) {
+    // Detect search changes. The term and the scope options are part of the
+    // signature, not just the matched paths: two terms can produce an identical
+    // result set while highlighting different words inside it.
+    if (prev.searchActive !== current.searchActive ||
+        prev.searchTerm !== current.searchTerm ||
+        prev.searchOptionsHash !== current.searchOptionsHash ||
+        !setsEqual(prev.searchResults, current.searchResults)) {
         changeTypes.add(ChangeType.SEARCH);
     }
     

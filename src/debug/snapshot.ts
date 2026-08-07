@@ -85,8 +85,8 @@ export function buildSnapshot(plugin: RadialTimelinePlugin): DebugSnapshot {
             povCount: povs.size,
         },
         renderStats: {
-            searchActive: plugin.searchActive,
-            searchResultCount: plugin.searchResults.size,
+            searchActive: plugin.searchState.active,
+            searchResultCount: plugin.searchState.hits.size,
         },
         errors: {
             errorCount: 0,

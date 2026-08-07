@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ChangeType, createSnapshot, detectChanges, type TimelineSnapshot } from './ChangeDetection';
+import { createSearchState } from '../services/searchState';
 
 vi.mock('../services/VersionCheckService', () => ({
   getVersionCheckService: () => ({ isUpdateAvailable: () => false })
@@ -12,6 +13,8 @@ function makeSnapshot(overrides: Partial<TimelineSnapshot> = {}): TimelineSnapsh
     sceneVisualHash: 'scene-visual-hash',
     openFilePaths: new Set(),
     searchActive: false,
+    searchTerm: '',
+    searchOptionsHash: '100',
     searchResults: new Set(),
     currentMode: 'narrative',
     currentMonth: 0,
@@ -100,12 +103,52 @@ describe('detectChanges', () => {
     expect(result.updateStrategy).toBe('selective');
   });
 
+  it('detects a search change when the term changes but the matched scenes do not', () => {
+    // Two terms can match the same scenes. Keying only on the result set left
+    // the previous term highlighted in the hover metadata, because the SVG was
+    // never rebuilt.
+    const prev = makeSnapshot({
+      searchActive: true,
+      searchTerm: 'Alice',
+      searchResults: new Set(['scene.md'])
+    });
+    const current = makeSnapshot({
+      searchActive: true,
+      searchTerm: 'Bob',
+      searchResults: new Set(['scene.md']),
+      timestamp: 2
+    });
+
+    const result = detectChanges(prev, current);
+
+    expect(result.changeTypes.has(ChangeType.SEARCH)).toBe(true);
+  });
+
+  it('detects a search change when only the scope options change', () => {
+    const prev = makeSnapshot({
+      searchActive: true,
+      searchTerm: 'Alice',
+      searchOptionsHash: '100',
+      searchResults: new Set(['scene.md'])
+    });
+    const current = makeSnapshot({
+      searchActive: true,
+      searchTerm: 'Alice',
+      searchOptionsHash: '110',
+      searchResults: new Set(['scene.md']),
+      timestamp: 2
+    });
+
+    const result = detectChanges(prev, current);
+
+    expect(result.changeTypes.has(ChangeType.SEARCH)).toBe(true);
+  });
+
   it('forces a full render when a scene Chapter marker changes', () => {
     const base = createSnapshot(
       [{ path: 'scene.md', title: 'Scene', rawFrontmatter: {} } as never],
       new Set(),
-      false,
-      new Set(),
+      createSearchState(),
       'narrative',
       {} as never,
       null
@@ -113,8 +156,7 @@ describe('detectChanges', () => {
     const withChapter = createSnapshot(
       [{ path: 'scene.md', title: 'Scene', rawFrontmatter: { Chapter: 'Arrival' } } as never],
       new Set(),
-      false,
-      new Set(),
+      createSearchState(),
       'narrative',
       {} as never,
       null
@@ -135,8 +177,7 @@ describe('detectChanges', () => {
     const snapshot = (frontmatter: Record<string, unknown>) => createSnapshot(
       [{ path: 'scene.md', title: 'Scene', rawFrontmatter: frontmatter } as never],
       new Set(),
-      false,
-      new Set(),
+      createSearchState(),
       'narrative',
       {} as never,
       null
@@ -156,8 +197,7 @@ describe('detectChanges', () => {
     const snapshot = (frontmatter: Record<string, unknown>) => createSnapshot(
       [{ path: 'scene.md', title: 'Scene', rawFrontmatter: frontmatter } as never],
       new Set(),
-      false,
-      new Set(),
+      createSearchState(),
       'narrative',
       {} as never,
       null
@@ -175,8 +215,7 @@ describe('detectChanges', () => {
     const snapshot = (frontmatter: Record<string, unknown>) => createSnapshot(
       [{ path: 'scene.md', title: 'Scene', rawFrontmatter: frontmatter } as never],
       new Set(),
-      false,
-      new Set(),
+      createSearchState(),
       'narrative',
       {} as never,
       null

@@ -1,4 +1,5 @@
 import { escapeRegExp } from '../../utils/regex';
+import type { TimelineSearchState } from '../../services/searchState';
 
 /**
  * CSS-escape a value for use in attribute selectors
@@ -13,9 +14,7 @@ function cssEscape(value: string): string {
 interface SearchView {
     contentEl: HTMLElement;
     plugin: {
-        searchActive: boolean;
-        searchTerm: string;
-        searchResults: Set<string>;
+        searchState: TimelineSearchState;
         clearSearch: () => void;
     };
     registerDomEvent: (el: HTMLElement, event: string, handler: (ev: Event) => void) => void;
@@ -156,10 +155,11 @@ export function applySearchTermHighlightsInRoot(root: ParentNode, searchTerm: st
 }
 
 export function addHighlightRectangles(view: SearchView): void {
-    if (!view.plugin.searchActive) return;
+    const search = view.plugin.searchState;
+    if (!search.active) return;
 
     const svg = view.contentEl.querySelector('.radial-timeline-svg');
-    applySearchTermHighlightsInRoot(view.contentEl, view.plugin.searchTerm);
+    applySearchTermHighlightsInRoot(view.contentEl, search.term);
 
     // Mark search-result classes on scene groups with matched paths
     if (!svg) {
@@ -170,7 +170,7 @@ export function addHighlightRectangles(view: SearchView): void {
     allSceneGroups.forEach((group) => {
         const pathAttr = group.getAttribute('data-path');
         if (!pathAttr) return;
-        if (!view.plugin.searchResults.has(decodeURIComponent(pathAttr))) return;
+        if (!search.hits.has(decodeURIComponent(pathAttr))) return;
 
         const scenePath = group.querySelector('.rt-scene-path');
         const sceneId = scenePath?.id;

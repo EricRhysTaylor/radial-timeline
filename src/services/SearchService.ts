@@ -2,12 +2,21 @@ import { App, Notice } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { RadialTimelineView } from '../view/TimeLineView';
 import { getActivePlanetaryProfile, convertFromEarth } from '../utils/planetaryTime';
+import { collectHoverMetadataText, formatDateForDisplay } from '../utils/hoverMetadata';
 import { frontmatterValueToText } from '../utils/frontmatter';
+import type { RadialTimelineSettings } from '../types/settings';
 import type { TimelineItem } from '../types';
+import { mergeSearchHit, type TimelineSearchHit } from './searchState';
 
 export interface TimelineSearchMatchOptions {
     includeCurrentSceneAnalysis?: boolean;
     planetaryLine?: string;
+    /**
+     * Settings, so the enabled hover-metadata fields can be resolved. Required
+     * for the searched set to equal the rendered set; omitting it silently
+     * narrows the search back to the hardcoded fields.
+     */
+    settings?: RadialTimelineSettings;
 }
 
 const containsWholePhrase = (haystack: string | undefined, phrase: string, isDate: boolean = false): boolean => {
@@ -21,35 +30,17 @@ const containsWholePhrase = (haystack: string | undefined, phrase: string, isDat
     return h.includes(p);
 };
 
-// Format date for matching the visible hover title date.
-const formatDateForDisplay = (when: Date | undefined): string => {
-    if (!when || !(when instanceof Date)) return '';
-    try {
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const month = months[when.getMonth()];
-        const day = when.getDate();
-        const year = when.getFullYear();
-        const hours = when.getHours();
-        const minutes = when.getMinutes();
-        let dateStr = `${month} ${day}, ${year}`;
-        if (hours === 0 && minutes === 0) {
-            dateStr += ` @ Midnight`;
-        } else if (hours === 12 && minutes === 0) {
-            dateStr += ` @ Noon`;
-        } else {
-            const period = hours >= 12 ? 'PM' : 'AM';
-            const displayHours = hours % 12 === 0 ? 12 : hours % 12;
-            if (minutes === 0) {
-                dateStr += ` @ ${displayHours}${period}`;
-            } else {
-                dateStr += ` @ ${displayHours}:${String(minutes).padStart(2, '0')}${period}`;
-            }
-        }
-        return dateStr;
-    } catch {
-        return '';
-    }
-};
+/**
+ * The visible date string, or '' when the scene has no usable date.
+ *
+ * `formatDateForDisplay` is strict about invalid Dates by design (the renderer
+ * wants to know); search sees whatever the vault holds, so it checks first
+ * rather than letting a malformed `When:` abort the whole run.
+ */
+function displayDateOrEmpty(when: Date | undefined): string {
+    if (!(when instanceof Date) || Number.isNaN(when.getTime())) return '';
+    return formatDateForDisplay(when);
+}
 
 function appendSearchValue(fields: string[], value: unknown): void {
     if (value === undefined || value === null) return;
@@ -61,6 +52,13 @@ function appendSearchValue(fields: string[], value: unknown): void {
     if (text) fields.push(text);
 }
 
+/**
+ * Every string the timeline displays for a scene — the searchable set.
+ *
+ * This must stay equal to what the hover synopsis renders. Custom fields come
+ * from `collectHoverMetadataText`, which is the same resolver and the same
+ * formatter the renderer uses; do not re-derive them here.
+ */
 export function buildTimelineSearchTextFields(scene: TimelineItem, options: TimelineSearchMatchOptions = {}): string[] {
     const fields: string[] = [];
 
@@ -76,6 +74,14 @@ export function buildTimelineSearchTextFields(scene: TimelineItem, options: Time
 
     appendSearchValue(fields, options.planetaryLine);
 
+    // Custom hover-metadata fields, formatted exactly as displayed. Enabling a
+    // field in hover metadata makes it searchable in the same action.
+    if (options.settings) {
+        for (const text of collectHoverMetadataText(options.settings, scene)) {
+            fields.push(text);
+        }
+    }
+
     return fields;
 }
 
@@ -85,7 +91,7 @@ export function timelineSceneMatchesSearch(scene: TimelineItem, phrase: string, 
     if (textMatched) return true;
 
     const dateFieldNumeric = scene.when?.toLocaleDateString();
-    const dateFieldDisplay = formatDateForDisplay(scene.when);
+    const dateFieldDisplay = displayDateOrEmpty(scene.when);
     return containsWholePhrase(dateFieldNumeric, phrase, true) ||
         containsWholePhrase(dateFieldDisplay, phrase, false);
 }
@@ -93,6 +99,13 @@ export function timelineSceneMatchesSearch(scene: TimelineItem, phrase: string, 
 export class SearchService {
     private plugin: RadialTimelinePlugin;
     private app: App;
+
+    /**
+     * Monotonic run token. A run commits only if it is still the current one,
+     * so a slow earlier search resolving after a newer search — or after Clear
+     * — discards its work instead of overwriting live results.
+     */
+    private runId = 0;
 
     constructor(app: App, plugin: RadialTimelinePlugin) {
         this.app = app;
@@ -124,45 +137,91 @@ export class SearchService {
         this.plugin.getTimelineViews().forEach(view => view.syncTimelineSearchControl());
     }
 
-    performSearch(term: string): void {
-        if (!term || term.trim().length === 0) { this.clearSearch(); return; }
-        this.plugin.searchTerm = term.trim();
-        this.plugin.searchActive = true;
-        this.plugin.searchResults.clear();
-        this.syncTimelineSearchControls();
+    private refreshTimelineViews(): void {
+        this.plugin.getTimelineViews().forEach(view => view.refreshTimeline());
+    }
 
-        // Get active planetary profile for planetary line search
-        const planetaryProfile = getActivePlanetaryProfile(this.plugin.settings);
-        
-        void this.plugin.getSceneData().then(scenes => {
-            scenes.forEach(scene => {
-                let planetaryLine: string | undefined;
-                // Add planetary line text if planetary time is enabled and scene has a When date
-                if (planetaryProfile && scene.when) {
-                    const conversion = convertFromEarth(scene.when, planetaryProfile);
-                    if (conversion) {
-                        const label = (planetaryProfile.label || 'LOCAL').toUpperCase();
-                        planetaryLine = `${label}: ${conversion.formatted}`;
+    performSearch(term: string): void {
+        const trimmed = term.trim();
+        if (!trimmed) { this.clearSearch(); return; }
+
+        // Claim this run. Anything already in flight is now stale.
+        const myRun = ++this.runId;
+        const state = this.plugin.searchState;
+        state.status = 'running';
+        state.error = undefined;
+
+        // Frozen for the life of the run — a mid-flight settings change must not
+        // make half the scenes match under different rules than the other half.
+        const settings = this.plugin.settings;
+        const includeCurrentSceneAnalysis = !!settings.enableAiSceneAnalysis;
+        const planetaryProfile = getActivePlanetaryProfile(settings);
+
+        void this.plugin.getTimelineSceneData()
+            .then(scenes => {
+                if (myRun !== this.runId) return; // superseded or cleared
+
+                // Accumulate privately; the live state is untouched until commit.
+                const hits = new Map<string, TimelineSearchHit>();
+
+                scenes.forEach(scene => {
+                    let planetaryLine: string | undefined;
+                    if (planetaryProfile && scene.when) {
+                        const conversion = convertFromEarth(scene.when, planetaryProfile);
+                        if (conversion) {
+                            const label = (planetaryProfile.label || 'LOCAL').toUpperCase();
+                            planetaryLine = `${label}: ${conversion.formatted}`;
+                        }
                     }
-                }
-                
-                const matched = timelineSceneMatchesSearch(scene, this.plugin.searchTerm, {
-                    includeCurrentSceneAnalysis: !!this.plugin.settings.enableAiSceneAnalysis,
-                    planetaryLine
+
+                    const matched = timelineSceneMatchesSearch(scene, trimmed, {
+                        includeCurrentSceneAnalysis,
+                        planetaryLine,
+                        settings
+                    });
+                    if (matched && scene.path) {
+                        mergeSearchHit(hits, { path: scene.path, source: 'timelineFields', evidence: [] });
+                    }
                 });
-                if (matched && scene.path) this.plugin.searchResults.add(scene.path);
+
+                if (myRun !== this.runId) return; // superseded while matching
+
+                this.commit(trimmed, hits);
+            })
+            .catch(error => {
+                if (myRun !== this.runId) return;
+                const message = error instanceof Error ? error.message : String(error);
+                state.status = 'error';
+                state.error = message;
+                console.error('[Search] Scene data load failed.', error);
+                this.syncTimelineSearchControls();
             });
-            const timelineViews = this.plugin.getTimelineViews();
-            timelineViews.forEach(view => view.refreshTimeline());
-        });
+    }
+
+    /** Atomically replace the committed results. */
+    private commit(term: string, hits: Map<string, TimelineSearchHit>): void {
+        const state = this.plugin.searchState;
+        state.term = term;
+        state.active = true;
+        state.status = 'ready';
+        state.error = undefined;
+        state.hits = hits;
+        this.syncTimelineSearchControls();
+        this.refreshTimelineViews();
     }
 
     clearSearch(): void {
-        this.plugin.searchActive = false;
-        this.plugin.searchTerm = '';
-        this.plugin.searchResults.clear();
+        // Invalidate any in-flight run so it cannot resurrect cleared results.
+        this.runId += 1;
+
+        const state = this.plugin.searchState;
+        state.term = '';
+        state.active = false;
+        state.status = 'idle';
+        state.error = undefined;
+        state.hits = new Map();
+
         this.syncTimelineSearchControls();
-        const timelineViews = this.plugin.getTimelineViews();
-        timelineViews.forEach(view => view.refreshTimeline());
+        this.refreshTimelineViews();
     }
 }

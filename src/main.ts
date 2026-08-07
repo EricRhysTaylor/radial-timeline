@@ -9,6 +9,7 @@ import { ButtonComponent, Plugin, Notice, TAbstractFile, WorkspaceLeaf, addIcon 
 import { EditorView, type ViewUpdate } from '@codemirror/view';
 import { TimelineService } from './services/TimelineService';
 import { SceneDataService } from './services/SceneDataService';
+import { createSearchState, type TimelineSearchState } from './services/searchState';
 import { hexToRgb, rgbToHsl, hslToRgb, rgbToHex } from './utils/colour';
 import SynopsisManager from './SynopsisManager';
 import { RadialTimelineView } from './view/TimeLineView';
@@ -152,10 +153,9 @@ export default class RadialTimelinePlugin extends Plugin {
     // Reference to settings tab for programmatic tab switching
     public settingsTab?: RadialTimelineSettingsTab;
 
-    // Search related properties
-    searchTerm: string = '';
-    searchActive: boolean = false;
-    searchResults: Set<string> = new Set<string>();
+    // Timeline search — one state object owned by SearchService. Readers treat
+    // it as immutable; see src/services/searchState.ts.
+    searchState: TimelineSearchState = createSearchState();
 
     // Transient (not persisted): an Inquiry run currently in flight.
     // Lives on the plugin so it survives InquiryView close/reopen — the run

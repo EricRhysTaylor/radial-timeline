@@ -1,73 +1,85 @@
 import { describe, expect, it } from 'vitest';
 import type { TimelineItem } from '../types';
+import type { RadialTimelineSettings } from '../types/settings';
 import { buildTimelineSearchTextFields, timelineSceneMatchesSearch } from './SearchService';
 
-function makeScene(overrides: Partial<TimelineItem> = {}): TimelineItem {
-    return {
-        date: '2026-04-09',
-        when: new Date(2026, 3, 9, 12, 0, 0),
-        path: 'Scenes/42 Embryo Clinic.md',
-        title: '42 Embryo Clinic',
-        synopsis: 'Chae Ban undergoes a medical scan.',
-        Duration: '1 hour',
-        subplot: 'Chae Ban & Trisan Pregnancy',
-        Character: ['Chae Ban', 'Entiat Chelan'],
-        currentSceneAnalysis: 'Body autonomy threat + / Pacification proposal personalizes stakes immediately',
-        previousSceneAnalysis: 'Family fractures ? / Support network shaky before Chae stands alone',
-        nextSceneAnalysis: 'Authority as predator + / Entiat threat manifests as open violence',
-        rawFrontmatter: {
-            Place: 'Diego, Earth',
-            POV: 'Unindexed POV'
-        },
-        itemType: 'Scene',
-        ...overrides
-    };
-}
+const field = (key: string, enabled = true) => ({ key, label: key, icon: '', enabled });
 
-describe('timeline search surface', () => {
-    it('indexes only requested hover-visible scene fields plus current pulse analysis', () => {
-        const scene = makeScene();
-        const fields = buildTimelineSearchTextFields(scene, {
-            includeCurrentSceneAnalysis: true,
-            planetaryLine: 'MARS: SOL YEAR 61'
+const settingsWith = (overrides: Partial<RadialTimelineSettings>): RadialTimelineSettings =>
+    ({ ...overrides } as RadialTimelineSettings);
+
+const sceneWith = (overrides: Partial<TimelineItem>): TimelineItem =>
+    ({ path: 'scene.md', title: 'Arrival', rawFrontmatter: {}, ...overrides } as TimelineItem);
+
+describe('buildTimelineSearchTextFields', () => {
+    it('covers the curated fields the timeline renders', () => {
+        const scene = sceneWith({
+            title: 'Arrival',
+            synopsis: 'She reaches the coast.',
+            subplot: 'Homecoming',
+            Character: ['Ada']
         });
-
-        expect(fields.join('\n')).toContain('42 Embryo Clinic');
-        expect(fields.join('\n')).toContain('Chae Ban undergoes a medical scan.');
-        expect(fields.join('\n')).toContain('1 hour');
-        expect(fields.join('\n')).toContain('Chae Ban & Trisan Pregnancy');
-        expect(fields.join('\n')).toContain('Entiat Chelan');
-        expect(fields.join('\n')).toContain('Body autonomy threat');
-        expect(fields.join('\n')).toContain('MARS: SOL YEAR 61');
-        expect(fields.join('\n')).not.toContain('Family fractures');
-        expect(fields.join('\n')).not.toContain('Authority as predator');
-        expect(fields.join('\n')).not.toContain('Diego, Earth');
-        expect(fields.join('\n')).not.toContain('Unindexed POV');
+        expect(buildTimelineSearchTextFields(scene)).toEqual(
+            expect.arrayContaining(['Arrival', 'She reaches the coast.', 'Homecoming', 'Ada'])
+        );
     });
 
-    it('does not match previous or next pulse YAML', () => {
-        const scene = makeScene();
-
-        expect(timelineSceneMatchesSearch(scene, 'Body autonomy threat', {
-            includeCurrentSceneAnalysis: true
-        })).toBe(true);
-        expect(timelineSceneMatchesSearch(scene, 'Family fractures', {
-            includeCurrentSceneAnalysis: true
-        })).toBe(false);
-        expect(timelineSceneMatchesSearch(scene, 'Authority as predator', {
-            includeCurrentSceneAnalysis: true
-        })).toBe(false);
+    it('includes custom hover fields the author enabled', () => {
+        // The searchable set must equal the visible set: enabling a field in
+        // hover metadata makes it searchable in the same action.
+        const settings = settingsWith({ hoverMetadataFields: [field('Place')] });
+        const scene = sceneWith({ rawFrontmatter: { Place: '[[Place/Diego]]' } });
+        expect(buildTimelineSearchTextFields(scene, { settings })).toContain('Diego');
     });
 
-    it('matches title, date, duration, synopsis, character, and subplot text', () => {
-        const scene = makeScene();
+    it('omits custom fields the author disabled', () => {
+        const settings = settingsWith({ hoverMetadataFields: [field('Place', false)] });
+        const scene = sceneWith({ rawFrontmatter: { Place: 'Diego' } });
+        expect(buildTimelineSearchTextFields(scene, { settings })).not.toContain('Diego');
+    });
+});
 
-        expect(timelineSceneMatchesSearch(scene, 'Embryo Clinic')).toBe(true);
-        expect(timelineSceneMatchesSearch(scene, 'Apr 9, 2026 @ Noon')).toBe(true);
-        expect(timelineSceneMatchesSearch(scene, '4/9/2026')).toBe(true);
-        expect(timelineSceneMatchesSearch(scene, '1 hour')).toBe(true);
-        expect(timelineSceneMatchesSearch(scene, 'medical scan')).toBe(true);
-        expect(timelineSceneMatchesSearch(scene, 'Entiat Chelan')).toBe(true);
-        expect(timelineSceneMatchesSearch(scene, 'Trisan Pregnancy')).toBe(true);
+describe('timelineSceneMatchesSearch', () => {
+    it('matches a custom hover field once it is enabled, and not before', () => {
+        const scene = sceneWith({ rawFrontmatter: { Place: 'Diego' } });
+
+        const disabled = settingsWith({ hoverMetadataFields: [field('Place', false)] });
+        expect(timelineSceneMatchesSearch(scene, 'Diego', { settings: disabled })).toBe(false);
+
+        const enabled = settingsWith({ hoverMetadataFields: [field('Place')] });
+        expect(timelineSceneMatchesSearch(scene, 'Diego', { settings: enabled })).toBe(true);
+    });
+
+    it('matches the displayed string, not the raw wikilink path', () => {
+        // Matching the raw value would let `Place/` light up a scene with
+        // nothing highlighted on hover to explain why.
+        const settings = settingsWith({ hoverMetadataFields: [field('Place')] });
+        const scene = sceneWith({ rawFrontmatter: { Place: '[[Place/Diego]]' } });
+
+        expect(timelineSceneMatchesSearch(scene, 'Diego', { settings })).toBe(true);
+        expect(timelineSceneMatchesSearch(scene, 'Place/', { settings })).toBe(false);
+    });
+
+    it('is case-insensitive and matches substrings', () => {
+        const scene = sceneWith({ synopsis: 'She reaches the coast.' });
+        expect(timelineSceneMatchesSearch(scene, 'REACHES')).toBe(true);
+        expect(timelineSceneMatchesSearch(scene, 'coast')).toBe(true);
+    });
+
+    it('matches the visible date string', () => {
+        const scene = sceneWith({ when: new Date(1812, 7, 1, 8, 0) });
+        expect(timelineSceneMatchesSearch(scene, 'Aug 1, 1812')).toBe(true);
+    });
+
+    it('survives a malformed When rather than aborting the run', () => {
+        // formatDateForDisplay is strict by design; search sees whatever the
+        // vault holds, so one bad date must not throw out the whole search.
+        const scene = sceneWith({ synopsis: 'coast', when: new Date('nonsense') });
+        expect(() => timelineSceneMatchesSearch(scene, 'coast')).not.toThrow();
+        expect(timelineSceneMatchesSearch(scene, 'coast')).toBe(true);
+    });
+
+    it('does not match an unrelated phrase', () => {
+        expect(timelineSceneMatchesSearch(sceneWith({ synopsis: 'coast' }), 'mountain')).toBe(false);
     });
 });

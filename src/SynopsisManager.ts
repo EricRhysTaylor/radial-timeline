@@ -6,7 +6,12 @@
 import type RadialTimelinePlugin from './main';
 import type { TimelineItem } from './types';
 import type { HoverMetadataField } from './types/settings';
-import { getBeatConfigForItem } from './utils/beatsTemplates';
+import {
+  resolveHoverMetadataFields,
+  readFrontmatterFieldValue,
+  formatHoverMetadataValue,
+  formatDateForDisplay
+} from './utils/hoverMetadata';
 import { decodeHtmlEntities, parseSceneTitleComponents } from './utils/text';
 import { getPublishStageStyle, splitSynopsisLines, decodeContentLines, isOverdueAndIncomplete } from './synopsis/SynopsisData';
 import { createSynopsisContainer, createTextGroup, createText } from './synopsis/SynopsisView';
@@ -805,45 +810,6 @@ export default class SynopsisManager {
     return fragment;
   }
 
-  /**
-   * Format date from When field to friendly format for display
-   * @param when Date object from scene.when
-   * @returns Formatted date string (e.g., "Aug 1, 1812 @ 8AM" or "Apr 6, 1812 @ Noon" or "Apr 6, 1812 @ Midnight")
-   */
-  private formatDateForDisplay(when: Date | undefined): string {
-    if (!when) {
-      return '';
-    }
-    if (!(when instanceof Date) || Number.isNaN(when.getTime())) {
-      throw new Error('formatDateForDisplay requires a valid Date object');
-    }
-
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const month = months[when.getMonth()];
-    const day = when.getDate();
-    const year = when.getFullYear();
-    const hours = when.getHours();
-    const minutes = when.getMinutes();
-
-    let dateStr = `${month} ${day}, ${year}`;
-
-    if (hours === 0 && minutes === 0) {
-      dateStr += ' @ Midnight';
-    } else if (hours === 12 && minutes === 0) {
-      dateStr += ' @ Noon';
-    } else {
-      const period = hours >= 12 ? 'PM' : 'AM';
-      const displayHours = hours % 12 === 0 ? 12 : hours % 12;
-      if (minutes === 0) {
-        dateStr += ` @ ${displayHours}${period}`;
-      } else {
-        dateStr += ` @ ${displayHours}:${String(minutes).padStart(2, '0')}${period}`;
-      }
-    }
-
-    return dateStr;
-  }
-
   private buildPlanetaryLine(scene: TimelineItem): string | null {
     if (!scene.when) return null;
     const profile = getActivePlanetaryProfile(this.plugin.settings);
@@ -1113,10 +1079,10 @@ export default class SynopsisManager {
           // Use Alien Date Format
           formattedDate = conversion.formatted;
         } else {
-          formattedDate = this.formatDateForDisplay(scene.when);
+          formattedDate = formatDateForDisplay(scene.when);
         }
       } else {
-        formattedDate = this.formatDateForDisplay(scene.when);
+        formattedDate = formatDateForDisplay(scene.when);
       }
     }
 
@@ -1124,7 +1090,7 @@ export default class SynopsisManager {
     if (isBackdrop && scene.End) {
       const endDate = parseWhenField(scene.End);
       if (endDate) {
-        duration = `to ${this.formatDateForDisplay(endDate)}`;
+        duration = `to ${formatDateForDisplay(endDate)}`;
       } else {
         duration = `to ${scene.End}`;
       }
@@ -1337,9 +1303,12 @@ export default class SynopsisManager {
       synopsisTextGroup.appendChild(synopsisLineElement);
     }
 
-    // Process metadata items with consistent vertical spacing
-    // Also render if there are enabled advanced YAML fields
-    const hasEnabledHoverFields = (this.plugin.settings.hoverMetadataFields || []).some((f: HoverMetadataField) => f.enabled);
+    // Process metadata items with consistent vertical spacing.
+    // Also render if there are enabled advanced YAML fields — resolved per item
+    // type, the same way the block below renders them. Gating on the scene list
+    // alone skipped the whole block for a beat or backdrop whose own fields were
+    // enabled, so those fields never appeared.
+    const hasEnabledHoverFields = resolveHoverMetadataFields(this.plugin.settings, scene).length > 0;
     if (metadataItems.length > 0 || hasEnabledHoverFields) {
 
       // Helper function to add a spacer element
@@ -1362,16 +1331,6 @@ export default class SynopsisManager {
       const synopsisBottomY = synopsisEndIndex * lineHeight;
       // Call addSpacer with height 0, and store the returned start position
       let currentMetadataY = addSpacer(synopsisBottomY, 0);
-      const readFrontmatterFieldValue = (fm: Record<string, unknown> | undefined, key: string): unknown => {
-        if (!fm) return undefined;
-        if (Object.prototype.hasOwnProperty.call(fm, key)) return fm[key];
-        const target = key.toLowerCase().replace(/[\s_-]/g, '');
-        for (const [fmKey, value] of Object.entries(fm)) {
-          if (fmKey.toLowerCase().replace(/[\s_-]/g, '') === target) return value;
-        }
-        return undefined;
-      };
-
       const showTripletNeighbors = this.plugin.settings.showFullTripletAnalysis ?? true;
 
       // Process previousSceneAnalysis metadata if it exists and AI scene analysis is enabled
@@ -1455,21 +1414,9 @@ export default class SynopsisManager {
       }
 
       // --- Custom Hover Metadata Fields ---
-      const isBeatItem = scene.itemType === 'Beat' || scene.itemType === 'Plot';
-      const isBackdropItem = scene.itemType === 'Backdrop';
-      const beatModelForHover = (() => {
-        const raw = scene.rawFrontmatter?.['Beat Model'];
-        if (typeof raw === 'string' && raw.trim().length > 0) return raw;
-        const normalized = scene['Beat Model'];
-        if (typeof normalized === 'string' && normalized.trim().length > 0) return normalized;
-        return undefined;
-      })();
-      const hoverFieldSource = isBeatItem
-        ? getBeatConfigForItem(this.plugin.settings, beatModelForHover).beatHoverMetadataFields
-        : isBackdropItem
-          ? (this.plugin.settings.backdropHoverMetadataFields || [])
-          : (this.plugin.settings.hoverMetadataFields || []);
-      const enabledHoverFields = hoverFieldSource.filter((f: HoverMetadataField) => f.enabled);
+      // Resolver and formatter are shared with SearchService so the searched
+      // set stays equal to the rendered set (src/utils/hoverMetadata.ts).
+      const enabledHoverFields = resolveHoverMetadataFields(this.plugin.settings, scene);
       if (enabledHoverFields.length > 0) {
         const hoverMetaStartY = currentMetadataY;
         let hoverMetaLinesAdded = 0;
@@ -1485,48 +1432,7 @@ export default class SynopsisManager {
 
           const y = hoverMetaStartY + (hoverMetaLinesAdded * metadataLineHeight);
 
-          // Format the value for display
-          const formatValue = (val: unknown): string => {
-            if (val === null || val === undefined) return '';
-
-            // Handle arrays (e.g., Place: ["[[Earth]]", "[[Place/Diego]]"])
-            if (Array.isArray(val)) {
-              return val.map(item => formatValue(item)).join(', ');
-            }
-
-            let str: string;
-            if (val instanceof Date) {
-              str = val.toString();
-            } else if (typeof val === 'string') {
-              str = val;
-            } else if (typeof val === 'number' || typeof val === 'boolean' || typeof val === 'bigint') {
-              str = String(val);
-            } else if (typeof val === 'object') {
-              try {
-                str = JSON.stringify(val);
-              } catch {
-                str = '';
-              }
-            } else {
-              str = '';
-            }
-
-            // Strip wiki link brackets: [[Link]] -> Link, [[Path/Name]] -> Name
-            str = str.replace(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g, (_match, link) => {
-              // Get the display name (last part of path)
-              const parts = link.split('/');
-              return parts[parts.length - 1];
-            });
-
-            // Handle Date objects
-            if (val instanceof Date && !isNaN(val.getTime())) {
-              return this.formatDateForDisplay(val);
-            }
-
-            return str.trim();
-          };
-
-          const valueStr = formatValue(sceneValue);
+          const valueStr = formatHoverMetadataValue(sceneValue);
           if (!valueStr) return; // Skip if formatted value is empty
 
           // Create a group for this advanced YAML line
@@ -1802,9 +1708,10 @@ export default class SynopsisManager {
     const lineInnerRadius = this.getLineInnerRadius(svg);
     this.positionTextElements(synopsis, position.isRightAligned, position.isTopHalf, adjustedRadius, sceneId, lineInnerRadius);
 
-    if (this.plugin.searchActive && this.plugin.searchTerm) {
+    const search = this.plugin.searchState;
+    if (search.active && search.term) {
       clearSearchHighlightsInRoot(synopsis);
-      applySearchTermHighlightsInRoot(synopsis, this.plugin.searchTerm);
+      applySearchTermHighlightsInRoot(synopsis, search.term);
     }
   }
 
@@ -2920,10 +2827,10 @@ export default class SynopsisManager {
 
     const suggestions: string[] = [];
     if (previousDate) {
-      suggestions.push(`Prev ${this.formatDateForDisplay(previousDate)}`);
+      suggestions.push(`Prev ${formatDateForDisplay(previousDate)}`);
     }
     if (nextDate) {
-      suggestions.push(`Next ${this.formatDateForDisplay(nextDate)}`);
+      suggestions.push(`Next ${formatDateForDisplay(nextDate)}`);
     }
 
     if (suggestions.length === 0) {

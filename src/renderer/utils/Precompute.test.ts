@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { TimelineItem } from '../../types';
 import { computeCacheableValues } from './Precompute';
+import { createSearchState } from '../../services/searchState';
 
 describe('computeCacheableValues', () => {
     it('uses the project most-advanced publish stage color in Gossamer mode', () => {
@@ -17,9 +18,7 @@ describe('computeCacheableValues', () => {
                 enableAiSceneAnalysis: false,
                 actCount: 3,
             },
-            searchActive: false,
-            searchResults: new Set<string>(),
-            searchTerm: '',
+            searchState: createSearchState(),
             openScenePaths: new Set<string>(),
             desaturateColor: (hex: string) => hex,
             calculateCompletionEstimate: () => null,
@@ -70,9 +69,7 @@ describe('computeCacheableValues', () => {
                 enableAiSceneAnalysis: false,
                 actCount: 3,
             },
-            searchActive: false,
-            searchResults: new Set<string>(),
-            searchTerm: '',
+            searchState: createSearchState(),
             openScenePaths: new Set<string>(),
             desaturateColor: (hex: string) => hex,
             calculateCompletionEstimate: () => null,

@@ -2107,8 +2107,9 @@ export class RadialTimelineView extends ItemView {
     public syncTimelineSearchControl(): void {
         if (!this.timelineSearchInput || !this.timelineSearchButton) return;
 
-        if (this.plugin.searchActive && this.plugin.searchTerm) {
-            this.timelineSearchInput.value = this.plugin.searchTerm;
+        const search = this.plugin.searchState;
+        if (search.active && search.term) {
+            this.timelineSearchInput.value = search.term;
             this.setTimelineSearchButtonMode('clear');
             return;
         }
@@ -2130,26 +2131,28 @@ export class RadialTimelineView extends ItemView {
     private handleTimelineSearchInput(): void {
         if (!this.timelineSearchInput) return;
 
+        const search = this.plugin.searchState;
         const term = this.timelineSearchInput.value.trim();
         if (!term) {
             this.setTimelineSearchButtonMode('search');
-            if (this.plugin.searchActive || this.plugin.searchTerm) {
+            if (search.active || search.term) {
                 this.plugin.clearSearch();
             }
             return;
         }
 
         this.setTimelineSearchButtonMode(
-            this.plugin.searchActive && term === this.plugin.searchTerm ? 'clear' : 'search'
+            search.active && term === search.term ? 'clear' : 'search'
         );
     }
 
     private commitTimelineSearchFromInput(): void {
         if (!this.timelineSearchInput) return;
 
+        const search = this.plugin.searchState;
         const term = this.timelineSearchInput.value.trim();
         if (!term) {
-            if (this.plugin.searchActive || this.plugin.searchTerm) {
+            if (search.active || search.term) {
                 this.plugin.clearSearch();
             } else {
                 this.setTimelineSearchButtonMode('search');
@@ -2157,7 +2160,7 @@ export class RadialTimelineView extends ItemView {
             return;
         }
 
-        if (this.plugin.searchActive && term === this.plugin.searchTerm && this.timelineSearchButtonMode === 'clear') {
+        if (search.active && term === search.term && this.timelineSearchButtonMode === 'clear') {
             return;
         }
 
@@ -2171,7 +2174,8 @@ export class RadialTimelineView extends ItemView {
             this.timelineSearchInput.focus();
         }
         this.setTimelineSearchButtonMode('search');
-        if (this.plugin.searchActive || this.plugin.searchTerm) {
+        const search = this.plugin.searchState;
+        if (search.active || search.term) {
             this.plugin.clearSearch();
         }
     }
@@ -2646,8 +2650,7 @@ export class RadialTimelineView extends ItemView {
                 const currentSnapshot = createSnapshot(
                     timelineSceneData,
                     this.plugin.openScenePaths,
-                    this.plugin.searchActive,
-                    this.plugin.searchResults,
+                    this.plugin.searchState,
                     this._currentMode,
                     this.plugin.settings,
                     this.plugin._gossamerLastRun
@@ -2673,7 +2676,7 @@ export class RadialTimelineView extends ItemView {
                     // Handle search changes (highlight text + number square state)
                     if (changeResult.changeTypes.has(ChangeType.SEARCH)) {
                         this.rendererService.updateNumberSquaresDOM(container, this.plugin);
-                        this.rendererService.updateSearchHighlights(container, this.plugin.searchTerm);
+                        this.rendererService.updateSearchHighlights(container, this.plugin.searchState.term);
                         updated = true;
                     }
                     
@@ -2738,10 +2741,10 @@ export class RadialTimelineView extends ItemView {
 
                 // Re-wire search controls and highlights now that DOM is current
                 this.setupSearchControls();
-                if (this.plugin.searchActive) {
+                if (this.plugin.searchState.active) {
                     const containerEl = container;
                     if (this.rendererService) {
-                         this.rendererService.updateSearchHighlights(containerEl, this.plugin.searchTerm);
+                         this.rendererService.updateSearchHighlights(containerEl, this.plugin.searchState.term);
                     }
                 }
 
@@ -2857,9 +2860,10 @@ export class RadialTimelineView extends ItemView {
     async onClose(): Promise<void> {
         // Clear search state directly without triggering refreshTimeline()
         // (view is closing, so no point in refreshing - avoids side effects during unload)
-        this.plugin.searchActive = false;
-        this.plugin.searchTerm = '';
-        this.plugin.searchResults.clear();
+        this.plugin.searchState.active = false;
+        this.plugin.searchState.term = '';
+        this.plugin.searchState.status = 'idle';
+        this.plugin.searchState.hits = new Map();
         
         // Clean up chronologue shift mode buttons (keyboard listeners auto-cleanup via view.register())
         if (this._chronologueShiftCleanup) {

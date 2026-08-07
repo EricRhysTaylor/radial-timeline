@@ -8,6 +8,7 @@ import type { BookProfile, ChronologueBackdropMicroRing, GlobalPovMode, Readabil
 import type { GossamerHistoricalRunOverlay, GossamerMinMaxBand, GossamerRun } from './gossamer';
 import { parseWhenField } from './date';
 import { comparePrefixTokens, extractPrefixToken } from './prefixOrder';
+import { isSearchHit, type TimelineSearchState } from '../services/searchState';
 
 const STATUSES_REQUIRING_WHEN = new Set(['working', 'complete']);
 
@@ -199,9 +200,7 @@ export interface PluginRendererFacade {
         synopsisGenerationMaxWords?: number;
         synopsisGenerationMaxLines?: number;
     };
-    searchActive: boolean;
-    searchResults: Set<string>;
-    searchTerm: string;
+    searchState: TimelineSearchState;
     openScenePaths: Set<string>;
     desaturateColor(hex: string, amount: number): string;
     calculateCompletionEstimate(scenes: TimelineItem[]): {
@@ -285,7 +284,7 @@ export function extractGradeFromScene(
  */
 export function getSceneState(scene: TimelineItem, plugin: PluginRendererFacade): SceneState {
     const isSceneOpen = !!(scene.path && plugin.openScenePaths.has(scene.path));
-    const isSearchMatch = !!(plugin.searchActive && scene.path && plugin.searchResults.has(scene.path));
+    const isSearchMatch = isSearchHit(plugin.searchState, scene.path);
     const hasEdits = !!(scene.pendingEdits && scene.pendingEdits.trim() !== '');
     return { isSceneOpen, isSearchMatch, hasEdits };
 }

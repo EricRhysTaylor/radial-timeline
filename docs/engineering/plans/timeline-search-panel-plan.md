@@ -28,6 +28,23 @@ also expands a panel that is visually continuous with the input, exposing:
   which finds phrases *and concepts*. Disabled and grayed when no local server
   is connected, with the reason stated in plain words.
 
+### The organizing rule: searchable == visible
+
+Every scope resolves to something the author can actually see. This is the rule
+that decides what belongs in each scope, and it is why "search all frontmatter"
+is the wrong feature:
+
+| Scope | What it covers | Where the match becomes visible |
+| --- | --- | --- |
+| Timeline fields | Scene title + the curated fields + **whatever custom fields the author enabled in hover metadata** | On the timeline, and on hover |
+| Scene body | Prose only — the YAML block is excluded | On click, highlighted in the editor |
+| *(neither)* | Disabled/hidden YAML fields | Nowhere — so nothing searches them |
+
+A match the author cannot see is indistinguishable from a bug: the scene lights
+up yellow, they hover, and nothing is highlighted. Hidden YAML is searched by
+neither scope for exactly that reason. Body scope is not "everything in the
+note" — it is the prose, and its matches are visible the moment the scene opens.
+
 Match presentation does not change: matched scenes get the existing yellow
 number square, and hovering a match keeps the existing metadata term
 highlighting. New capability is added **behind** that same visual contract.
@@ -78,6 +95,20 @@ from four modes: `AllScenesMode.ts:48`, `MainPlotMode.ts:122`,
 `onOverrideOpen` paths (`AllScenesMode.ts:40`, `MainPlotMode.ts:115`). No
 highlight state is passed anywhere.
 
+**Hover metadata rendering** — [SynopsisManager.ts:1457-1590](../../../src/SynopsisManager.ts#L1457).
+The visible custom-field set is `settings.hoverMetadataFields` filtered to
+`.enabled`, resolved **per item type**: scenes use `hoverMetadataFields`,
+backdrops use `backdropHoverMetadataFields`, and beats/plots use
+`getBeatConfigForItem(settings, beatModel).beatHoverMetadataFields`
+([:1467-1472](../../../src/SynopsisManager.ts#L1467)). `HoverMetadataField` is
+`{ key, label, icon, enabled }` ([types/settings.ts:484](../../../src/types/settings.ts#L484)).
+Values are read by a **local closure** `readFrontmatterFieldValue`
+([:1365](../../../src/SynopsisManager.ts#L1365)) that falls back to a
+punctuation/case-insensitive key match, then formatted by a second local
+closure `formatValue` ([:1487](../../../src/SynopsisManager.ts#L1487)) that
+joins arrays with `, `, strips `[[wikilinks]]` to their display name, and
+formats dates. Neither closure is exported.
+
 **Frontmatter body extraction** — the canonical helper is
 `extractBodyAfterFrontmatter()` ([frontmatterDocument.ts:12](../../../src/utils/frontmatterDocument.ts#L12)):
 it prefers Obsidian's `position.end.offset` and falls back to stripping the
@@ -113,6 +144,13 @@ that follow.
    keys on `searchActive` plus the result-path set. Two different terms that
    match the same scenes produce an identical signature, so the SVG is not
    rebuilt and the previous term stays highlighted in the hover metadata.
+4. **Enabled custom hover fields are visible but not searchable.**
+   `buildTimelineSearchTextFields()` ([SearchService.ts:64](../../../src/services/SearchService.ts#L64))
+   hardcodes title / synopsis / Character / subplot / Duration. It never
+   consults `settings.hoverMetadataFields`. An author who enables a custom
+   field — Place, POV, Mood — sees it on hover and reasonably expects to search
+   it, and gets silence. This is the searchable==visible rule already being
+   violated today, independent of anything in this plan. Fixed in Stage 1b.
 
 ## Interaction design
 
@@ -141,12 +179,14 @@ prose), assist is *how*. LLM assist × Timeline fields is meaningful on its own
 orthogonal rather than collapsing into one list.
 
 **Label wording.** The first scope is labeled *Timeline fields*, not
-*Frontmatter*. Search covers a curated set (title, synopsis, Character,
-subplot, Duration, dates, planetary line, optional scene analysis) — not
-arbitrary author frontmatter. Labeling it "Frontmatter" would promise that a
-custom author field is searchable; it is not, and the author would read the
-resulting silence as a broken search. See Open decisions if the intent is to
-genuinely widen it to every field.
+*Frontmatter*. It covers the scene title, the curated fields (synopsis,
+Character, subplot, Duration, dates, planetary line, optional scene analysis),
+**and every custom field the author enabled in hover metadata** — i.e. exactly
+what is rendered on the timeline and in the hover synopsis. "Frontmatter" would
+promise that *any* YAML key is searchable, including the ones the author chose
+not to display; a match there would light a scene yellow with nothing visible
+to explain why. The label names what the scope actually is: the fields the
+timeline shows.
 
 The panel is a child of `.ert-timeline-search`, absolutely positioned at
 `top: calc(100% - 1px); left: 0` — the same pattern `.ert-timeline-legend`
@@ -264,6 +304,51 @@ Ship Stage 1 alone and verify: same matches, same yellow squares, same hover
 highlighting — plus Saga scope searching all books, no stale-run clobbering,
 and term-change forcing a re-highlight.
 
+### Stage 1b — Searched fields == rendered fields
+
+Small, self-contained, and shippable on its own: it fixes pre-existing defect 4
+with no UI change. An author who enabled a custom hover field can search it the
+day this lands, panel or no panel.
+
+The problem is that the visible set and the searched set are computed in two
+places that do not know about each other. The renderer resolves it from
+settings through two **unexported local closures** inside `SynopsisManager`;
+search hardcodes a different list. That is two sources of truth for one fact.
+
+Extract into `src/utils/hoverMetadata.ts`:
+
+```ts
+/** Resolve the enabled hover-metadata fields for an item, per item type. */
+export function resolveHoverMetadataFields(
+    settings: RadialTimelineSettings, scene: TimelineItem
+): HoverMetadataField[];
+
+/** Punctuation/case-insensitive frontmatter key lookup. */
+export function readFrontmatterFieldValue(
+    fm: Record<string, unknown> | undefined, key: string
+): unknown;
+
+/** Render a frontmatter value exactly as the hover synopsis displays it. */
+export function formatHoverMetadataValue(value: unknown): string;
+```
+
+Move the bodies verbatim from `SynopsisManager.ts:1365`, `:1467-1472`, and
+`:1487`; `SynopsisManager` then imports them instead of defining them. No
+behavior change on the render side — this is a pure extraction, verifiable by
+the hover synopsis looking identical.
+
+`buildTimelineSearchTextFields()` then appends, for each enabled field,
+`formatHoverMetadataValue(readFrontmatterFieldValue(scene.rawFrontmatter, field.key))`.
+
+**Formatting must go through the same function**, not `frontmatterValueToText`.
+The author sees `Diego` (wikilink-stripped from `[[Place/Diego]]`); if search
+matched the raw value they could match on `Place`, highlight the scene, and
+find nothing highlighted on hover — the same invisible-match failure this rule
+exists to prevent. Search the string the author is looking at.
+
+Disabled fields are not searched. Toggling a hover field on makes it searchable
+in the same action — one control, one consequence.
+
 ### Stage 2 — The panel (UI only, no new search capability)
 
 - Build the panel in `ensureBookSwitcher()`, extracted into
@@ -307,6 +392,20 @@ interface SceneBodyEntry {
   the canonical helper, which already handles a missing metadata cache by
   stripping the YAML fence rather than falling through to offset `0` and
   treating frontmatter as prose.
+
+**Body scope does not open the door to the whole note.** The YAML block is
+excluded by construction — `extractBodyAfterFrontmatter` slices from the
+frontmatter's end offset, and on a missing metadata cache strips the leading
+`---…---` fence by regex. Body means prose. So the two scopes are disjoint:
+timeline fields cover the *visible* metadata, body covers the prose, and a YAML
+key the author chose not to display is searched by neither. Enabling Scene body
+never silently starts matching hidden metadata.
+
+The one edge: a scene whose frontmatter is *malformed* enough that Obsidian
+fails to parse it **and** the fence does not match the strip regex. That file's
+YAML text falls through into `body`. This is acceptable and self-explaining —
+the author is already seeing that raw YAML as literal text in their editor, so
+a match in it is still a visible match. Worth a debug log, not a guard.
 - **No offsets are stored.** Hits carry the matched passage text; ranges are
   computed against the current file when the scene is opened (Stage 6). An
   offset captured at search time is wrong the moment the author edits the
@@ -502,7 +601,16 @@ Unit (vitest, alongside the existing `*.test.ts` neighbors):
 - Body matcher: multiple hits per scene, regex metacharacters treated
   literally, case-insensitivity, empty body.
 - `extractBodyAfterFrontmatter` integration: file with frontmatter, without,
-  with an absent metadata cache, CRLF line endings.
+  with an absent metadata cache, CRLF line endings. **Body never contains a
+  well-formed YAML block** — assert on a fixture whose frontmatter holds a
+  distinctive token that body search must not match.
+- `resolveHoverMetadataFields`: scene / beat / backdrop each resolve their own
+  list; disabled fields excluded.
+- Searched set == rendered set: a scene with a custom `Place` field is
+  unsearchable while the field is disabled and searchable once enabled, with no
+  other change.
+- `formatHoverMetadataValue` parity: searching the displayed string (`Diego`)
+  hits; searching a raw-only fragment (`Place/`) does not.
 - `SceneBodyIndex` invalidation on mtime change.
 - **Scope union:** both boxes checked yields the union of timeline-field and
   body hits, with `source` correctly attributed.
@@ -543,15 +651,7 @@ Manual, in the sample vault (`docs/engineering/sample-vaults.md`):
 
 ## Open decisions
 
-**Both prior open questions are now closed** (see Decision log). One remains,
-and it is a product call rather than an engineering one:
-
-1. **Should the first scope widen to genuinely arbitrary frontmatter?** Today
-   it is a curated field list, and this plan labels it *Timeline fields* to say
-   so honestly. Widening it to every author-defined key is a real feature with
-   its own questions (which types are searchable, how nested values flatten,
-   whether `frontmatterValueToText` covers it). If the intent was literally
-   "search my frontmatter", that is a follow-up, not a rename.
+None. All three prior questions are closed — see the Decision log.
 
 ## Decision log
 
@@ -585,6 +685,22 @@ and it is a product call rather than an engineering one:
 - **2026-08-07** *(review)* — Label is *Timeline fields*, not *Frontmatter* —
   the searched set is curated, and the broader promise would read as a bug to
   any author with custom fields.
+- **2026-08-07** *(Eric)* — **Searchable == visible** is the organizing rule,
+  and it closes the "widen to all frontmatter?" question with a *no*. The
+  searched metadata set is not a hardcoded list; it is *whatever the timeline
+  renders* — scene title, curated fields, and the custom fields the author
+  enabled in hover metadata. Searching hidden YAML would light a scene yellow
+  with nothing visible on hover to explain it.
+- **2026-08-07** *(Eric)* — Body scope is **prose only**, not "the whole note".
+  `extractBodyAfterFrontmatter` excludes the YAML block by construction, so the
+  two scopes are disjoint and enabling Scene body never quietly starts matching
+  hidden metadata. Body still satisfies the visibility rule — its matches are
+  visible on click, highlighted in the editor.
+- **2026-08-07** *(Eric)* — Consequence: the hover-field resolver and value
+  formatter move out of `SynopsisManager`'s private closures into a shared
+  module (Stage 1b), so the rendered set and the searched set are one fact in
+  one place. Search must match the *displayed* string (`[[Place/Diego]]` →
+  `Diego`), not the raw value, or it reintroduces invisible matches.
 - **2026-08-07** *(review)* — Corrected a bad citation in the first draft:
   `manuscript.ts:754` and `referenceIdBackfill.ts:58` do **not** establish a
   frontmatter-offset precedent (they use `extractCountableBodyText` and

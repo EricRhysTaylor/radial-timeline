@@ -2,14 +2,12 @@
 
 ## Status
 
-**All seven stages are implemented and shipped.**
+**All seven stages are implemented, shipped, and verified live.**
 
-Stage 5 (concept search) is **code-complete and correct under test, but not yet
-verified end to end against a real model.** Two live runs against a 30B local
-model failed — first on context length, then on timeout — and each failure was
-reported exactly as designed, with prior results preserved. Both causes are
-fixed (smaller default chunk budget, bounded reply length); a successful
-completion has not yet been observed. See "Open verification" below. Mapped against the codebase as it exists today (every file:line
+Concept search completed a full run against a real 30B local model: 96 scenes
+read one per request in ~2.5 minutes, **31 scenes matched, 4 model claims
+dropped for want of a verbatim quote** — the verification gate working and
+reporting itself. Mapped against the codebase as it exists today (every file:line
 below was read, not assumed). Each stage ends with `npx tsc --noEmit` +
 `npm test` green and is independently shippable.
 
@@ -20,7 +18,7 @@ below was read, not assumed). Each stage ends with `npx tsc --noEmit` +
 | 2 — The panel | **Done** |
 | 3 — Scene body search | **Done** |
 | 4 — Local LLM availability | **Done** |
-| 5 — Concept search | **Shipped, live run unverified** |
+| 5 — Concept search | **Done** |
 | 6 — Body highlight on scene open | **Done** |
 
 **`eState.match` is confirmed working** — verified in the sample vault: a body
@@ -720,25 +718,30 @@ Manual, in the sample vault (`docs/engineering/sample-vaults.md`):
 | Cancel cannot stop an in-flight local completion | UI states what it actually does; real abort tracked as separate transport work |
 | Body index memory on large manuscripts | Scoped to the frozen scene set, `cachedRead`-backed, mtime-invalidated; size logged |
 
-## Open verification
+## What live testing changed
 
-Concept search has not completed a successful live run. What was observed:
+Three attempts, three distinct failures, each one a design assumption that only
+a real server could falsify:
 
-1. **Context length.** The first attempt sent ~16k-token passes; the server
-   rejected them outright ("the number of tokens to keep from the initial prompt
-   is greater than the context length"). A local model's window is set when the
-   model is loaded, outside Obsidian, and cannot be discovered — so the default
-   is now 2k per pass, and only an operator's explicit `longContext`
-   declaration unlocks more.
-2. **Timeout.** The second attempt timed out per pass. Output was unbounded, so
-   a reasoning model spent its budget thinking before answering. Replies are now
-   capped at the provider's declared default output size.
+1. **Context length.** Multi-scene batches of ~16k tokens were rejected outright
+   ("the number of tokens to keep from the initial prompt is greater than the
+   context length"). A local model's window is set when the model is loaded,
+   outside Obsidian, and cannot be discovered.
+2. **Timeout.** Smaller batches still timed out. Output was unbounded, so a
+   reasoning model spent its whole budget thinking before answering. Replies are
+   now capped.
+3. **Malformed JSON.** Probing the server directly showed the model returning
+   structurally broken output — a duplicated, half-closed `quotes` key. The
+   cause was `toWireResponseFormat` sending LM Studio a permissive
+   `{type:'object'}` placeholder instead of the caller's real schema. Sending
+   the actual schema produced valid output on the identical prompt.
 
-Still to confirm on the operator's machine: that a pass completes, that quotes
-verify against the corpus at a useful rate, and that the drop count stays low
-enough for the results to be worth reading. If passes remain slow, the levers
-are a longer `timeoutMs` in Settings → AI, a smaller/faster model, or a
-non-reasoning model.
+The resolution was **one scene per request**, which removes the dependence on an
+undiscoverable window entirely, keeps each call ~1.5s, isolates a failure to one
+scene, and asks the model an easier question ("does this scene bear on the
+query" rather than "which of these six"). Scenes too long to send whole are
+split into overlapping windows so nothing is lost at a seam; progress still
+counts scenes.
 
 ## Open decisions
 

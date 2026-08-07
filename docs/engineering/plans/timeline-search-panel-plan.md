@@ -2,8 +2,9 @@
 
 ## Status
 
-**Stages 1 and 1b are implemented and shipped** (commit `168f5157`). Stages 2–6
-remain planned. Mapped against the codebase as it exists today (every file:line
+**Stages 1, 1b, 2, 3 and 6 are implemented and shipped.** Stages 4 and 5 (the
+local-LLM work) remain planned; the assist toggle renders disabled until they
+land. Mapped against the codebase as it exists today (every file:line
 below was read, not assumed). Each stage ends with `npx tsc --noEmit` +
 `npm test` green and is independently shippable.
 
@@ -11,11 +12,19 @@ below was read, not assumed). Each stage ends with `npx tsc --noEmit` +
 | --- | --- |
 | 1 — One search state, transactional | **Done** |
 | 1b — Searched fields == rendered fields | **Done** |
-| 2 — The panel | Planned |
-| 3 — Scene body search | Planned |
+| 2 — The panel | **Done** |
+| 3 — Scene body search | **Done** |
 | 4 — Local LLM availability | Planned |
 | 5 — Concept search | Planned |
-| 6 — Body highlight on scene open | Planned |
+| 6 — Body highlight on scene open | **Done** |
+
+**`eState.match` is confirmed working** — verified in the sample vault: a body
+match opens the scene scrolled to the passage with every occurrence
+highlighted. The CodeMirror 6 decoration fallback named below is therefore
+**not needed** and should not be built.
+
+Stage 6 was taken before 4 and 5 because Stage 3 shipped a panel hint —
+"highlighted when you open the scene" — that Stage 6 is what makes true.
 
 All four pre-existing defects listed below are fixed, plus three found during
 implementation and review:

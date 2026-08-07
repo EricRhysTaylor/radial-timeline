@@ -718,6 +718,43 @@ Manual, in the sample vault (`docs/engineering/sample-vaults.md`):
 | Cancel cannot stop an in-flight local completion | UI states what it actually does; real abort tracked as separate transport work |
 | Body index memory on large manuscripts | Scoped to the frozen scene set, `cachedRead`-backed, mtime-invalidated; size logged |
 
+## Precision: decomposition, not judgement (post-Stage 5)
+
+"dinner with Entiat" matched a breakfast scene. Asking a model *does this scene
+match?* is asking for a judgement call, and judgement is what a small local
+model is worst at. Measured against five real scenes:
+
+| prompt | result |
+| --- | --- |
+| loose | matched the breakfast scene — wrong |
+| strict | rejected the scene titled "Dinner with Entiat" — wrong |
+| stricter | rejected everything — 3/5 |
+
+Tuning adjectives only moved the error around. Tellingly, the model's own reason
+often read *"the scene describes breakfast, not dinner"* while it still returned
+a match: it reasoned correctly and filled the slot anyway.
+
+The fix is structural. The request is decomposed once per run into the separate
+facts a scene must satisfy — "dinner with Entiat" becomes *Does this scene
+depict a dinner?* and *Is Entiat present in this scene?* — each scene answers
+those as plain questions about what it shows, and **the conjunction is computed
+in code**. That is what makes "if it isn't dinner with Entiat, it isn't a match"
+a rule rather than a request. Measured **5/5** on the same scenes, and verified
+live: scene 17 "Dinner with Entiat" lights up, scene 11 "Chae Ban Breakfast"
+does not.
+
+The answers also make a better `reason` than model prose — a near miss reads
+"depict a dinner: no · Entiat present: yes", which can be argued with.
+
+### On throughput
+
+Per-scene latency is dominated by the local server, not by anything the plugin
+controls. The identical request measured 2.7s early in a session and 12–18s
+later the same day under load; schema shape (bounded arrays, string length
+limits, even a fully permissive schema) made no consistent difference. Decomposition
+costs one extra call **per run**, not per scene. If sweeps feel slow the levers
+are the model and the machine, not the prompt.
+
 ## Making a long sweep usable (post-Stage 5)
 
 A manuscript-wide concept run takes minutes, and the first build held every

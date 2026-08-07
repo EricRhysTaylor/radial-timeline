@@ -2,9 +2,9 @@
 
 ## Status
 
-**Stages 1, 1b, 2, 3 and 6 are implemented and shipped.** Stages 4 and 5 (the
-local-LLM work) remain planned; the assist toggle renders disabled until they
-land. Mapped against the codebase as it exists today (every file:line
+**Stages 1, 1b, 2, 3, 4 and 6 are implemented and shipped.** Only Stage 5
+(concept search) remains; the assist toggle renders disabled until it lands,
+though the panel now reports the real local-model status. Mapped against the codebase as it exists today (every file:line
 below was read, not assumed). Each stage ends with `npx tsc --noEmit` +
 `npm test` green and is independently shippable.
 
@@ -14,7 +14,7 @@ below was read, not assumed). Each stage ends with `npx tsc --noEmit` +
 | 1b — Searched fields == rendered fields | **Done** |
 | 2 — The panel | **Done** |
 | 3 — Scene body search | **Done** |
-| 4 — Local LLM availability | Planned |
+| 4 — Local LLM availability | **Done** |
 | 5 — Concept search | Planned |
 | 6 — Body highlight on scene open | **Done** |
 
@@ -25,6 +25,11 @@ highlighted. The CodeMirror 6 decoration fallback named below is therefore
 
 Stage 6 was taken before 4 and 5 because Stage 3 shipped a panel hint —
 "highlighted when you open the scene" — that Stage 6 is what makes true.
+
+The availability probe is verified against a real server: the panel reports
+`Connected: qwen/qwen3-30b-a3b-2507`. The **failure** branches (server stopped,
+model not loaded) are unit-tested but not yet exercised live, since doing so
+means stopping the operator's server.
 
 All four pre-existing defects listed below are fixed, plus three found during
 implementation and review:

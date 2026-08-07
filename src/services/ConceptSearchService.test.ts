@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
     buildPasses, chunkBudgetFor, extractKeywords, keywordScore, orderByPromise,
-    parseMatches, verifyMatch, type ConceptSearchScene
+    describeVerdict, verifyMatch, type ConceptSearchScene
 } from './ConceptSearchService';
 import type { LocalLlmSettings } from '../ai/types';
 
@@ -200,26 +200,15 @@ describe('orderByPromise', () => {
     });
 });
 
-describe('parseMatches', () => {
-    it('reads a well-formed reply', () => {
-        const matches = parseMatches('{"matches":[{"scene_id":"1","reason":"r","quotes":["q"]}]}');
-        expect(matches).toHaveLength(1);
-        expect(matches[0].scene_id).toBe('1');
+describe('describeVerdict', () => {
+    it('reads as the reason a scene did or did not qualify', () => {
+        expect(describeVerdict(
+            ['Does this scene depict a dinner?', 'Is Entiat present in this scene?'],
+            [false, true]
+        )).toBe('depict a dinner: no · Entiat present: yes');
     });
 
-    it('treats an empty match list as a real answer', () => {
-        // "Nothing bears on this question" is useful and must not read as a
-        // parse failure.
-        expect(parseMatches('{"matches":[]}')).toEqual([]);
-    });
-
-    it('yields nothing for malformed or unexpected shapes', () => {
-        expect(parseMatches('not json')).toEqual([]);
-        expect(parseMatches('{"matches":"nope"}')).toEqual([]);
-        expect(parseMatches('{}')).toEqual([]);
-    });
-
-    it('discards entries without a scene id', () => {
-        expect(parseMatches('{"matches":[{"reason":"r","quotes":[]}]}')).toEqual([]);
+    it('handles an element that is not phrased as a question', () => {
+        expect(describeVerdict(['a storm at sea'], [true])).toBe('a storm at sea: yes');
     });
 });

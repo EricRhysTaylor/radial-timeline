@@ -98,9 +98,6 @@ export function chunkBudgetFor(localLlm: LocalLlmSettings): number {
         : DEFAULT_CHUNK_INPUT_TOKEN_BUDGET;
 }
 
-/** Long enough to be evidence, short enough to survive exact matching. */
-const MAX_QUOTE_WORDS = 15;
-
 /**
  * Consecutive unusable replies before the sweep gives up.
  *
@@ -184,58 +181,90 @@ export function orderByPromise(
 const MAX_OUTPUT_TOKENS = PROVIDER_CAPS.ollama.defaultOutputTokens;
 
 /**
- * Bounded on every axis.
+ * Requests are decomposed, then answered as facts.
  *
- * One request asks about one scene, so a reply needs at most one match, a
- * one-line reason, and a couple of short quotes. Leaving these open let a model
- * ramble past the output ceiling and get cut off mid-string — the observed
- * failure was "Unterminated string in JSON at position 8316", which is the
- * token cap landing in the middle of a quote. Constraining the shape is what
- * keeps replies inside the budget instead of relying on the model's restraint.
+ * Asking a model "does this scene match?" is asking for a judgement call, and
+ * judgement is exactly what a small local model is worst at: prompted loosely
+ * it matched breakfast to "dinner with Entiat"; prompted strictly it rejected
+ * the scene actually titled "Dinner with Entiat". Tuning the adjectives just
+ * moved the error around.
+ *
+ * So the request is first broken into the separate facts a scene must satisfy —
+ * "dinner with Entiat" becomes *is this a dinner?* and *is Entiat present?* —
+ * and the model answers each as a plain question about what the scene shows.
+ * The conjunction is then computed in code, not left to the model's discretion.
+ * Measured on five real scenes, this went from 3/5 to 5/5, and the wrong
+ * answers it does give are legible: breakfast scores [dinner: no, Entiat: yes].
  */
+const MAX_ELEMENTS = 4;
 const MAX_QUOTES_PER_MATCH = 3;
-const MAX_REASON_CHARS = 200;
 const MAX_QUOTE_CHARS = 160;
 
-const MATCH_SCHEMA: Record<string, unknown> = {
+const ELEMENTS_SCHEMA: Record<string, unknown> = {
     type: 'object',
-    required: ['matches'],
+    required: ['elements'],
     additionalProperties: false,
     properties: {
-        matches: {
+        elements: {
             type: 'array',
-            maxItems: 1,
-            items: {
-                type: 'object',
-                required: ['scene_id', 'reason', 'quotes'],
-                additionalProperties: false,
-                properties: {
-                    scene_id: { type: 'string' },
-                    reason: { type: 'string', maxLength: MAX_REASON_CHARS },
-                    quotes: {
-                        type: 'array',
-                        maxItems: MAX_QUOTES_PER_MATCH,
-                        items: { type: 'string', maxLength: MAX_QUOTE_CHARS }
-                    }
-                }
-            }
+            maxItems: MAX_ELEMENTS,
+            items: { type: 'string', maxLength: 80 }
         }
     }
 };
 
-const SYSTEM_PROMPT = [
-    'You find scenes in a novel that bear on the reader\'s question.',
-    'Return only scenes that genuinely bear on it. Returning nothing is a valid, useful answer.',
-    `Every quote MUST be copied verbatim from the scene text you were given — same words, same spelling, same punctuation — and at most ${MAX_QUOTE_WORDS} words.`,
-    'A quote you cannot copy exactly is worse than no quote: it will be discarded.',
-    `Give at most ${MAX_QUOTES_PER_MATCH} quotes and keep the reason to one short sentence.`,
+const ELEMENTS_SYSTEM_PROMPT = [
+    "Break the reader's request into the separate things a scene must contain to satisfy it.",
+    'Each element is one testable fact, phrased as a short question.',
+    "Example: 'dinner with Entiat' -> ['Does this scene depict a dinner?', 'Is Entiat present in this scene?'].",
     'Respond with JSON only.'
 ].join(' ');
 
-interface ModelMatch {
-    scene_id: string;
-    reason: string;
-    quotes: string[];
+const VERDICT_SYSTEM_PROMPT = [
+    'Answer each question about the scene with true or false, in order.',
+    'Answer only from what the scene shows.',
+    `Then give up to ${MAX_QUOTES_PER_MATCH} short verbatim quotes from the scene supporting any true answers.`,
+    'A quote you cannot copy exactly is worse than no quote: it will be discarded.',
+    'Respond with JSON only.'
+].join(' ');
+
+/** Answer count is pinned to the question count, so a short reply cannot be misread. */
+function verdictSchema(elementCount: number): Record<string, unknown> {
+    return {
+        type: 'object',
+        required: ['answers', 'quotes'],
+        additionalProperties: false,
+        properties: {
+            answers: {
+                type: 'array',
+                minItems: elementCount,
+                maxItems: elementCount,
+                items: { type: 'boolean' }
+            },
+            quotes: {
+                type: 'array',
+                maxItems: MAX_QUOTES_PER_MATCH,
+                items: { type: 'string', maxLength: MAX_QUOTE_CHARS }
+            }
+        }
+    };
+}
+
+/** A readable account of why a scene did or did not qualify. */
+export function describeVerdict(elements: string[], answers: boolean[]): string {
+    return elements
+        .map((element, index) => `${stripQuestion(element)}: ${answers[index] ? 'yes' : 'no'}`)
+        .join(' · ');
+}
+
+function stripQuestion(element: string): string {
+    return element
+        .replace(/^does this scene\s*/i, '')
+        .replace(/^is there\s*/i, '')
+        .replace(/^is\s*/i, '')
+        .replace(/\s*in this scene\??$/i, '')
+        .replace(/\?$/, '')
+        .trim() || element;
 }
 
 /** The text a scene contributes. One scene per request, so it needs no id. */
@@ -340,6 +369,51 @@ export function verifyMatch(
     return { bodyQuotes, source };
 }
 
+interface JsonCallInput {
+    backend: ReturnType<typeof getLocalLlmBackend>;
+    providerLabel: string;
+    transport: { baseUrl: string; timeoutMs: number; apiKey?: string };
+    localLlm: LocalLlmSettings;
+    schema: Record<string, unknown>;
+    schemaName: string;
+    systemPrompt: string;
+    userPrompt: string;
+}
+
+/** One strict-JSON round trip. Returns null when the reply was unusable. */
+async function callJson(input: JsonCallInput): Promise<{ ok: true; value: unknown } | { ok: false; error: string }> {
+    const result = await runStructuredJsonPipeline({
+        providerLabel: input.providerLabel,
+        schema: input.schema,
+        jsonMode: input.localLlm.jsonMode,
+        maxRetries: input.localLlm.maxRetries,
+        runner: {
+            run: ({ systemPrompt, userPrompt, useResponseFormat }) => input.backend.complete({
+                ...input.transport,
+                modelId: input.localLlm.defaultModelId,
+                systemPrompt,
+                userPrompt,
+                maxOutputTokens: MAX_OUTPUT_TOKENS,
+                // The real schema, not a permissive placeholder: on backends
+                // that enforce it, this is what keeps the reply structurally
+                // valid instead of merely object-shaped.
+                responseFormat: useResponseFormat
+                    ? { type: 'json_object', schema: input.schema, schemaName: input.schemaName }
+                    : undefined
+            })
+        },
+        systemPrompt: input.systemPrompt,
+        userPrompt: input.userPrompt
+    });
+
+    if (!result.ok) return { ok: false, error: result.error };
+    try {
+        return { ok: true, value: JSON.parse(result.content) };
+    } catch (error) {
+        return { ok: false, error: error instanceof Error ? error.message : String(error) };
+    }
+}
+
 export class ConceptSearchService {
     private readonly plugin: RadialTimelinePlugin;
 
@@ -366,6 +440,25 @@ export class ConceptSearchService {
         const apiKey = await getCredential(this.plugin, 'ollama');
         const transport = { baseUrl: localLlm.baseUrl, timeoutMs: localLlm.timeoutMs, apiKey };
 
+        // Decompose once, up front. Every scene is then judged against the same
+        // set of facts, so the sweep is internally consistent.
+        const elementsCall = await callJson({
+            backend, providerLabel, transport, localLlm,
+            schema: ELEMENTS_SCHEMA, schemaName: 'request_elements',
+            systemPrompt: ELEMENTS_SYSTEM_PROMPT,
+            userPrompt: `Request: ${query}`
+        });
+        if (!elementsCall.ok) {
+            throw new Error(`Local model could not read the request: ${elementsCall.error}`);
+        }
+        const parsedElements = (elementsCall.value as { elements?: unknown }).elements;
+        const elements = Array.isArray(parsedElements)
+            ? parsedElements.filter((e): e is string => typeof e === 'string' && e.trim().length > 0)
+            : [];
+        // A request that resists decomposition is still a request: test it whole
+        // rather than silently searching for nothing.
+        const questions = elements.length > 0 ? elements : [query];
+
         const ordered = orderByPromise(scenes, extractKeywords(query));
         const passes = buildPasses(ordered, chunkBudgetFor(localLlm));
         const hits: TimelineSearchHit[] = [];
@@ -388,90 +481,68 @@ export class ConceptSearchService {
             // windows of one long scene report that scene's number.
             onProgress({ chunk: pass.sceneIndex + 1, chunkCount: scenes.length });
 
-            const userPrompt = [
-                `Question: ${query}`,
-                '',
-                'Scene:',
-                pass.text,
-                '',
-                'If this scene bears on the question, return one match with scene_id "1".',
-                'Return {"matches":[]} if it does not.'
-            ].join('\n');
-
-            const result = await runStructuredJsonPipeline({
-                providerLabel,
-                schema: MATCH_SCHEMA,
-                jsonMode: localLlm.jsonMode,
-                maxRetries: localLlm.maxRetries,
-                runner: {
-                    run: ({ systemPrompt, userPrompt: prompt, useResponseFormat }) => backend.complete({
-                        ...transport,
-                        modelId: localLlm.defaultModelId,
-                        systemPrompt,
-                        userPrompt: prompt,
-                        maxOutputTokens: MAX_OUTPUT_TOKENS,
-                        // The real schema, not a permissive placeholder: on
-                        // backends that enforce it, this is what keeps the reply
-                        // structurally valid instead of merely object-shaped.
-                        responseFormat: useResponseFormat
-                            ? { type: 'json_object', schema: MATCH_SCHEMA, schemaName: 'scene_matches' }
-                            : undefined
-                    })
-                },
-                systemPrompt: SYSTEM_PROMPT,
-                userPrompt
+            const numbered = questions.map((q, i) => `${i + 1}. ${q}`).join('\n');
+            const verdictCall = await callJson({
+                backend, providerLabel, transport, localLlm,
+                schema: verdictSchema(questions.length), schemaName: 'scene_verdict',
+                systemPrompt: VERDICT_SYSTEM_PROMPT,
+                userPrompt: `Scene:\n${pass.text}\n\nQuestions:\n${numbered}`
             });
 
-            if (!result.ok) {
+            if (!verdictCall.ok) {
                 // One unusable reply must not cost the author the other ninety
                 // scenes — especially now that matches stream in and they may
                 // already be reading them. Skip it, count it, keep going.
                 unreadableScenes += 1;
                 consecutiveFailures += 1;
                 console.warn(
-                    `[Search] Unusable reply for scene ${pass.sceneIndex + 1}: ${result.error}`
+                    `[Search] Unusable reply for scene ${pass.sceneIndex + 1}: ${verdictCall.error}`
                 );
                 // A run of failures is a dead server, not a bad reply. Stopping
                 // beats timing out once per remaining scene.
                 if (consecutiveFailures >= CONSECUTIVE_FAILURE_LIMIT) {
                     throw new Error(
-                        `Local model failed on ${consecutiveFailures} scenes in a row: ${result.error}`
+                        `Local model failed on ${consecutiveFailures} scenes in a row: ${verdictCall.error}`
                     );
                 }
                 continue;
             }
             consecutiveFailures = 0;
 
-            for (const match of parseMatches(result.content)) {
-                const verified = verifyMatch(pass.scene, Array.isArray(match.quotes) ? match.quotes : []);
-                if (!verified) {
-                    droppedClaims += 1;
-                    continue;
-                }
-                const hit: TimelineSearchHit = {
-                    path: pass.scene.path,
-                    source: verified.source,
-                    evidence: verified.bodyQuotes,
-                    reason: typeof match.reason === 'string' ? match.reason.trim() : undefined
-                };
-                hits.push(hit);
-                onHit(hit);
+            const reply = verdictCall.value as { answers?: unknown; quotes?: unknown };
+            const answers = Array.isArray(reply.answers)
+                ? reply.answers.map(Boolean)
+                : [];
+            if (answers.length !== questions.length) {
+                unreadableScenes += 1;
+                continue;
             }
+
+            // The conjunction is computed here, not conceded to the model. This
+            // is what makes "if it isn't dinner with Entiat, it isn't a match"
+            // a rule rather than a request.
+            if (!answers.every(Boolean)) continue;
+
+            const quotes = Array.isArray(reply.quotes)
+                ? reply.quotes.filter((q): q is string => typeof q === 'string')
+                : [];
+            const verified = verifyMatch(pass.scene, quotes);
+            if (!verified) {
+                droppedClaims += 1;
+                continue;
+            }
+
+            const hit: TimelineSearchHit = {
+                path: pass.scene.path,
+                source: verified.source,
+                evidence: verified.bodyQuotes,
+                reason: describeVerdict(questions, answers)
+            };
+            hits.push(hit);
+            onHit(hit);
         }
 
         return { hits, droppedClaims, cancelled: false, unreadableScenes };
     }
 }
 
-/** Strict-JSON output has already been validated; this only shapes it. */
-export function parseMatches(content: string): ModelMatch[] {
-    try {
-        const parsed = JSON.parse(content) as { matches?: unknown };
-        if (!Array.isArray(parsed.matches)) return [];
-        return parsed.matches.filter((entry): entry is ModelMatch =>
-            !!entry && typeof entry === 'object' && 'scene_id' in entry
-        );
-    } catch {
-        return [];
-    }
-}

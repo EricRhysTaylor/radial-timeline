@@ -58,9 +58,19 @@ function makeHarness() {
 
 const settle = async () => { for (let i = 0; i < 12; i++) await new Promise(r => setTimeout(r, 0)); };
 
-const reply = (matches: unknown) => ({
-    success: true, content: JSON.stringify({ matches }), responseData: {}, error: undefined
+/** The one-off decomposition reply that opens every run. */
+const elementsReply = (elements: string[]) => ({
+    success: true, content: JSON.stringify({ elements }), responseData: {}, error: undefined
 });
+
+/** A per-scene verdict: one boolean per question, plus supporting quotes. */
+const verdict = (answers: boolean[], quotes: string[] = []) => ({
+    success: true, content: JSON.stringify({ answers, quotes }), responseData: {}, error: undefined
+});
+
+/** Matches when every element holds and the quote is verbatim. */
+const match = (quotes: string[]) => verdict([true], quotes);
+const noMatch = () => verdict([false], []);
 
 beforeEach(() => {
     listModels.mockReset();
@@ -78,8 +88,9 @@ describe('concept search through the transaction', () => {
         // One request per scene now, so each gets its own reply: the first
         // quotes the prose, the second invents.
         complete
-            .mockResolvedValueOnce(reply([{ scene_id: '1', reason: 'arrival', quotes: ['at dawn'] }]))
-            .mockResolvedValueOnce(reply([{ scene_id: '1', reason: 'invented', quotes: ['she wept for the city'] }]));
+            .mockResolvedValueOnce(elementsReply(['Does this scene depict an arrival?']))
+            .mockResolvedValueOnce(match(['at dawn']))
+            .mockResolvedValueOnce(match(['she wept for the city']));
 
         h.service.performSearch('a homecoming');
         h.resolve([scene('real.md', ''), scene('fake.md', '')]);
@@ -88,7 +99,9 @@ describe('concept search through the transaction', () => {
         expect([...h.plugin.searchState.hits.keys()]).toEqual(['real.md']);
         expect(h.plugin.searchState.droppedClaims).toBe(1);
         expect(h.plugin.searchState.hits.get('real.md')?.evidence).toEqual(['at dawn']);
-        expect(h.plugin.searchState.hits.get('real.md')?.reason).toBe('arrival');
+        // The reason is now derived from the verdict, not the model's prose:
+        // it says which element held, so a match can be argued with.
+        expect(h.plugin.searchState.hits.get('real.md')?.reason).toBe('depict an arrival: yes');
     });
 
     it('refuses to run when no local model is available', async () => {
@@ -115,13 +128,16 @@ describe('concept search through the transaction', () => {
         h.bodies.set('a.md', 'first scene prose');
         h.bodies.set('b.md', 'second scene prose');
         h.bodies.set('c.md', 'third scene prose');
-        complete.mockResolvedValue(reply([]));
+        complete
+            .mockResolvedValueOnce(elementsReply(['Is anything relevant here?']))
+            .mockResolvedValue(noMatch());
 
         h.service.performSearch('a question');
         h.resolve([scene('a.md', ''), scene('b.md', ''), scene('c.md', '')]);
         await settle();
 
-        expect(complete).toHaveBeenCalledTimes(3);
+        // One decomposition call, then one per scene.
+        expect(complete).toHaveBeenCalledTimes(4);
     });
 
     it('publishes matches as they are found, not only at the end', async () => {
@@ -135,10 +151,12 @@ describe('concept search through the transaction', () => {
         h.bodies.set('c.md', 'third scene prose');
 
         const seen: number[] = [];
+        let first = true;
         complete.mockImplementation(() => {
+            if (first) { first = false; return Promise.resolve(elementsReply(['Relevant?'])); }
             // Record how many hits are visible on the timeline at each call.
             seen.push(h.plugin.searchState.hits.size);
-            return Promise.resolve(reply([{ scene_id: '1', reason: 'r', quotes: ['prose'] }]));
+            return Promise.resolve(match(['prose']));
         });
 
         h.service.performSearch('a question');
@@ -160,9 +178,11 @@ describe('concept search through the transaction', () => {
         h.bodies.set('b.md', 'second scene prose');
         h.bodies.set('c.md', 'third scene prose');
 
+        let firstCall = true;
         complete.mockImplementation(() => {
+            if (firstCall) { firstCall = false; return Promise.resolve(elementsReply(['Relevant?'])); }
             if (h.plugin.searchState.hits.size >= 1) h.service.cancelSearch();
-            return Promise.resolve(reply([{ scene_id: '1', reason: 'r', quotes: ['prose'] }]));
+            return Promise.resolve(match(['prose']));
         });
 
         h.service.performSearch('a question');
@@ -181,7 +201,8 @@ describe('concept search through the transaction', () => {
         h.bodies.set('b.md', 'second scene prose');
 
         complete
-            .mockResolvedValueOnce(reply([{ scene_id: '1', reason: 'r', quotes: ['prose'] }]))
+            .mockResolvedValueOnce(elementsReply(['Relevant?']))
+            .mockResolvedValueOnce(match(['prose']))
             .mockResolvedValueOnce({ success: false, content: null, responseData: {}, error: 'boom' });
 
         h.service.performSearch('a question');
@@ -206,9 +227,10 @@ describe('concept search through the transaction', () => {
         h.bodies.set('c.md', 'third scene prose');
 
         complete
-            .mockResolvedValueOnce(reply([{ scene_id: '1', reason: 'r', quotes: ['prose'] }]))
+            .mockResolvedValueOnce(elementsReply(['Relevant?']))
+            .mockResolvedValueOnce(match(['prose']))
             .mockResolvedValueOnce({ success: false, content: null, responseData: {}, error: 'Unterminated string' })
-            .mockResolvedValueOnce(reply([{ scene_id: '1', reason: 'r', quotes: ['prose'] }]));
+            .mockResolvedValueOnce(match(['prose']));
 
         h.service.performSearch('a question');
         h.resolve([scene('a.md', ''), scene('bad.md', ''), scene('c.md', '')]);
@@ -225,7 +247,9 @@ describe('concept search through the transaction', () => {
         const h = makeHarness();
         h.plugin.searchState.options = { timelineFields: false, body: true, llmAssist: true };
         for (let i = 0; i < 8; i += 1) h.bodies.set(`s${i}.md`, 'prose');
-        complete.mockResolvedValue({ success: false, content: null, responseData: {}, error: 'connection lost' });
+        complete
+            .mockResolvedValueOnce(elementsReply(['Relevant?']))
+            .mockResolvedValue({ success: false, content: null, responseData: {}, error: 'connection lost' });
 
         h.service.performSearch('a question');
         h.resolve(Array.from({ length: 8 }, (_, i) => scene(`s${i}.md`, '')));
@@ -244,7 +268,9 @@ describe('concept search through the transaction', () => {
         h.plugin.searchState.options = { timelineFields: false, body: true, llmAssist: true };
         h.bodies.set('a.md', 'prose');
 
-        complete.mockResolvedValue({ success: false, content: null, responseData: {}, error: 'model exploded' });
+        complete
+            .mockResolvedValueOnce(elementsReply(['Relevant?']))
+            .mockResolvedValue({ success: false, content: null, responseData: {}, error: 'model exploded' });
 
         h.service.performSearch('a homecoming');
         h.resolve([scene('a.md', '')]);
@@ -263,7 +289,9 @@ describe('concept search through the transaction', () => {
         h.plugin.searchState.term = 'earlier';
         h.plugin.searchState.hits.set('kept.md', { path: 'kept.md', source: 'body', evidence: [] });
 
-        complete.mockResolvedValue({ success: false, content: null, responseData: {}, error: 'connection lost' });
+        complete
+            .mockResolvedValueOnce(elementsReply(['Relevant?']))
+            .mockResolvedValue({ success: false, content: null, responseData: {}, error: 'connection lost' });
 
         h.service.performSearch('a homecoming');
         h.resolve(Array.from({ length: 8 }, (_, i) => scene(`s${i}.md`, '')));
@@ -278,7 +306,9 @@ describe('concept search through the transaction', () => {
         const h = makeHarness();
         h.plugin.searchState.options = { timelineFields: false, body: true, llmAssist: true };
         h.bodies.set('a.md', 'prose');
-        complete.mockResolvedValue(reply([]));
+        complete
+            .mockResolvedValueOnce(elementsReply(['Relevant?']))
+            .mockResolvedValue(noMatch());
 
         h.service.performSearch('a homecoming');
         h.resolve([scene('a.md', '')]);

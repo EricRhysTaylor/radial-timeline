@@ -43,7 +43,10 @@ type JsonRecord = Record<string, unknown>;
 
 export type LocalLlmWireResponseFormat =
     | { type: 'json_object' }
-    | { type: 'json_schema'; json_schema: { name: string; schema: Record<string, unknown> } };
+    | {
+        type: 'json_schema';
+        json_schema: { name: string; strict?: boolean; schema: Record<string, unknown> };
+    };
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
     return new Promise((resolve, reject) => {

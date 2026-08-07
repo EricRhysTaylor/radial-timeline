@@ -75,10 +75,11 @@ describe('concept search through the transaction', () => {
         h.bodies.set('real.md', 'She reached the coast at dawn.');
         h.bodies.set('fake.md', 'A wholly unrelated paragraph.');
 
-        complete.mockResolvedValue(reply([
-            { scene_id: '1', reason: 'arrival', quotes: ['at dawn'] },
-            { scene_id: '2', reason: 'invented', quotes: ['she wept for the city'] }
-        ]));
+        // One request per scene now, so each gets its own reply: the first
+        // quotes the prose, the second invents.
+        complete
+            .mockResolvedValueOnce(reply([{ scene_id: '1', reason: 'arrival', quotes: ['at dawn'] }]))
+            .mockResolvedValueOnce(reply([{ scene_id: '1', reason: 'invented', quotes: ['she wept for the city'] }]));
 
         h.service.performSearch('a homecoming');
         h.resolve([scene('real.md', ''), scene('fake.md', '')]);
@@ -104,6 +105,23 @@ describe('concept search through the transaction', () => {
         expect(h.plugin.searchState.error).toContain('connection refused');
         // No cloud fallback: the run simply does not happen.
         expect(complete).not.toHaveBeenCalled();
+    });
+
+    it('sends one request per scene, never a batch', async () => {
+        // Batching is what broke this live: rejected for exceeding an
+        // undiscoverable context length, then timing out when it did fit.
+        const h = makeHarness();
+        h.plugin.searchState.options = { timelineFields: false, body: true, llmAssist: true };
+        h.bodies.set('a.md', 'first scene prose');
+        h.bodies.set('b.md', 'second scene prose');
+        h.bodies.set('c.md', 'third scene prose');
+        complete.mockResolvedValue(reply([]));
+
+        h.service.performSearch('a question');
+        h.resolve([scene('a.md', ''), scene('b.md', ''), scene('c.md', '')]);
+        await settle();
+
+        expect(complete).toHaveBeenCalledTimes(3);
     });
 
     it('keeps prior results when the model fails a chunk', async () => {

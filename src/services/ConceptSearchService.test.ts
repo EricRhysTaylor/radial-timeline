@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chunkBudgetFor, chunkScenes, parseMatches, verifyMatch, type ConceptSearchScene } from './ConceptSearchService';
+import { buildPasses, chunkBudgetFor, parseMatches, verifyMatch, type ConceptSearchScene } from './ConceptSearchService';
 import type { LocalLlmSettings } from '../ai/types';
 
 const scene = (overrides: Partial<ConceptSearchScene> = {}): ConceptSearchScene => ({
@@ -64,30 +64,53 @@ describe('verifyMatch', () => {
     });
 });
 
-describe('chunkScenes', () => {
+describe('buildPasses', () => {
     const sized = (path: string, chars: number): ConceptSearchScene =>
         ({ path, bodyText: 'x'.repeat(chars) });
 
-    it('keeps scenes together while they fit', () => {
-        const chunks = chunkScenes([sized('a.md', 40), sized('b.md', 40)], 1000);
-        expect(chunks).toHaveLength(1);
+    it('sends exactly one scene per request', () => {
+        // Batching several scenes is what broke this against a real server:
+        // rejected outright when the batch exceeded an undiscoverable context
+        // length, then timing out when it did fit.
+        const passes = buildPasses([sized('a.md', 40), sized('b.md', 40)], 1000);
+        expect(passes).toHaveLength(2);
+        expect(passes.map(p => p.scene.path)).toEqual(['a.md', 'b.md']);
     });
 
-    it('starts a new chunk when the budget would be exceeded', () => {
-        // ~4 chars per token, so 400 chars is ~100 tokens.
-        const chunks = chunkScenes([sized('a.md', 400), sized('b.md', 400)], 120);
-        expect(chunks).toHaveLength(2);
+    it('reports scene indices so progress counts scenes', () => {
+        const passes = buildPasses([sized('a.md', 40), sized('b.md', 40)], 1000);
+        expect(passes.map(p => p.sceneIndex)).toEqual([0, 1]);
     });
 
-    it('gives an oversized scene its own chunk rather than skipping it', () => {
-        // Refusing to look at a long scene would silently exclude it from the
-        // sweep while still reporting a complete pass.
-        const chunks = chunkScenes([sized('a.md', 40), sized('huge.md', 40_000)], 120);
-        expect(chunks.flat().map(s => s.path)).toContain('huge.md');
+    it('windows a scene too long to send whole, rather than truncating it', () => {
+        // Silently dropping the tail would report a complete sweep of prose it
+        // never read.
+        const passes = buildPasses([sized('huge.md', 4_000)], 100);
+        expect(passes.length).toBeGreaterThan(1);
+        expect(passes.every(p => p.scene.path === 'huge.md')).toBe(true);
+        // Every window still belongs to scene 0, so progress does not inflate.
+        expect(passes.every(p => p.sceneIndex === 0)).toBe(true);
+    });
+
+    it('overlaps windows so a passage is not lost at a seam', () => {
+        const body = Array.from({ length: 400 }, (_, i) => `w${i}`).join(' ');
+        const passes = buildPasses([{ path: 'a.md', bodyText: body }], 100);
+        const covered = passes.map(p => p.text).join('');
+        // Every word survives somewhere, including those near the boundaries.
+        expect(covered).toContain('w0');
+        expect(covered).toContain('w399');
+    });
+
+    it('keeps the scene details on every window of a long scene', () => {
+        const passes = buildPasses(
+            [{ path: 'a.md', fieldsText: 'Arrival · Homecoming', bodyText: 'x'.repeat(4_000) }],
+            100
+        );
+        expect(passes.every(p => p.text.includes('Arrival · Homecoming'))).toBe(true);
     });
 
     it('returns nothing for an empty corpus', () => {
-        expect(chunkScenes([], 1000)).toEqual([]);
+        expect(buildPasses([], 1000)).toEqual([]);
     });
 });
 

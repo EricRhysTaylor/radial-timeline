@@ -40,7 +40,7 @@ export interface ConceptSearchScene {
 }
 
 export interface ConceptSearchProgress {
-    /** 1-based. */
+    /** 1-based scene index — what the author understands, not internal passes. */
     chunk: number;
     chunkCount: number;
 }
@@ -144,41 +144,71 @@ interface ModelMatch {
     quotes: string[];
 }
 
-/** The text a scene contributes, labelled so the model can cite precisely. */
-function renderScene(scene: ConceptSearchScene, id: number): string {
-    const parts: string[] = [`### SCENE ${id}`];
+/** The text a scene contributes. One scene per request, so it needs no id. */
+function renderScene(scene: ConceptSearchScene): string {
+    const parts: string[] = [];
     if (scene.fieldsText) parts.push(`Details: ${scene.fieldsText}`);
     if (scene.bodyText) parts.push(`Text:\n${scene.bodyText}`);
     return parts.join('\n');
 }
 
+/** One request: a single scene, or one window of a scene too long to send whole. */
+export interface ConceptSearchPass {
+    scene: ConceptSearchScene;
+    /** The text this request shows the model. */
+    text: string;
+    /** 0-based scene index, so progress can be reported in scenes. */
+    sceneIndex: number;
+}
+
 /**
- * Group scenes so each chunk fits the budget.
+ * One scene per request.
  *
- * A scene larger than the budget on its own still gets its own chunk — refusing
- * to look at a long scene would silently exclude it from the sweep.
+ * Batching several scenes into one call is what broke this against a real
+ * server: a local model's context length is set when the model is loaded and
+ * cannot be discovered, so a batch sized against a guessed window was rejected
+ * outright, and a batch small enough to fit still took long enough to hit the
+ * transport timeout. A single scene is small, fast, and predictable — and a
+ * failure is isolated to one scene rather than taking six down with it.
+ *
+ * It also asks an easier question. "Does this scene bear on the query?" is a
+ * judgement a small model makes far more reliably than "which of these six".
+ *
+ * A scene longer than the budget is split into overlapping windows rather than
+ * truncated: every part of every scene is looked at, and the overlap keeps a
+ * passage from being lost at a seam. Quotes still verify against the whole
+ * scene, so a window is only ever a reading unit.
  */
-export function chunkScenes(
+export function buildPasses(
     scenes: ConceptSearchScene[],
     budgetTokens: number = DEFAULT_CHUNK_INPUT_TOKEN_BUDGET
-): ConceptSearchScene[][] {
-    const chunks: ConceptSearchScene[][] = [];
-    let current: ConceptSearchScene[] = [];
-    let currentTokens = 0;
+): ConceptSearchPass[] {
+    const passes: ConceptSearchPass[] = [];
+    // Characters, not tokens, once we are slicing text.
+    const budgetChars = budgetTokens * 4;
+    const overlapChars = Math.floor(budgetChars * 0.1);
 
-    for (const scene of scenes) {
-        const tokens = estimateTokensFromText(renderScene(scene, 0));
-        if (current.length > 0 && currentTokens + tokens > budgetTokens) {
-            chunks.push(current);
-            current = [];
-            currentTokens = 0;
+    scenes.forEach((scene, sceneIndex) => {
+        const whole = renderScene(scene);
+        if (estimateTokensFromText(whole) <= budgetTokens) {
+            passes.push({ scene, text: whole, sceneIndex });
+            return;
         }
-        current.push(scene);
-        currentTokens += tokens;
-    }
 
-    if (current.length > 0) chunks.push(current);
-    return chunks;
+        const body = scene.bodyText ?? '';
+        const head = renderScene({ ...scene, bodyText: undefined });
+        const step = Math.max(1, budgetChars - overlapChars);
+        for (let start = 0; start < body.length; start += step) {
+            const window = body.slice(start, start + budgetChars);
+            passes.push({
+                scene,
+                text: `${head}\nText:\n${window}`,
+                sceneIndex
+            });
+        }
+    });
+
+    return passes;
 }
 
 /** Case-insensitive, whitespace-tolerant only in the sense of exact substring. */
@@ -237,35 +267,29 @@ export class ConceptSearchService {
         const apiKey = await getCredential(this.plugin, 'ollama');
         const transport = { baseUrl: localLlm.baseUrl, timeoutMs: localLlm.timeoutMs, apiKey };
 
-        const chunks = chunkScenes(scenes, chunkBudgetFor(localLlm));
+        const passes = buildPasses(scenes, chunkBudgetFor(localLlm));
         const hits: TimelineSearchHit[] = [];
         let droppedClaims = 0;
 
-        for (let index = 0; index < chunks.length; index += 1) {
-            // Checked between chunks only. Cancel cannot abort a request already
-            // in flight — see SearchService for why that limitation is real.
+        for (let index = 0; index < passes.length; index += 1) {
+            // Checked between passes. Cancel cannot abort a request already in
+            // flight — see SearchService for why that limitation is real. With
+            // one scene per pass it lands within a couple of seconds.
             if (cancel.cancelled) throw new ConceptSearchCancelled();
 
-            onProgress({ chunk: index + 1, chunkCount: chunks.length });
-
-            const chunk = chunks[index];
-            // Numbered per chunk: models mangle file paths, and a local number
-            // maps back deterministically.
-            const numbered = new Map<string, ConceptSearchScene>();
-            const rendered = chunk.map((scene, position) => {
-                const id = String(position + 1);
-                numbered.set(id, scene);
-                return renderScene(scene, position + 1);
-            }).join('\n\n');
+            const pass = passes[index];
+            // Progress counts SCENES, which is what the author is watching;
+            // windows of one long scene report that scene's number.
+            onProgress({ chunk: pass.sceneIndex + 1, chunkCount: scenes.length });
 
             const userPrompt = [
                 `Question: ${query}`,
                 '',
-                'Scenes:',
-                rendered,
+                'Scene:',
+                pass.text,
                 '',
-                'Return {"matches":[{"scene_id":"<number>","reason":"<one line>","quotes":["<verbatim>"]}]}.',
-                'Return {"matches":[]} if none bear on the question.'
+                'If this scene bears on the question, return one match with scene_id "1".',
+                'Return {"matches":[]} if it does not.'
             ].join('\n');
 
             const result = await runStructuredJsonPipeline({
@@ -280,7 +304,12 @@ export class ConceptSearchService {
                         systemPrompt,
                         userPrompt: prompt,
                         maxOutputTokens: MAX_OUTPUT_TOKENS,
-                        responseFormat: useResponseFormat ? { type: 'json_object' } : undefined
+                        // The real schema, not a permissive placeholder: on
+                        // backends that enforce it, this is what keeps the reply
+                        // structurally valid instead of merely object-shaped.
+                        responseFormat: useResponseFormat
+                            ? { type: 'json_object', schema: MATCH_SCHEMA, schemaName: 'scene_matches' }
+                            : undefined
                     })
                 },
                 systemPrompt: SYSTEM_PROMPT,
@@ -288,27 +317,21 @@ export class ConceptSearchService {
             });
 
             if (!result.ok) {
-                // One bad chunk means the sweep is incomplete. Publishing the
+                // One failed scene means the sweep is incomplete. Publishing the
                 // rest would present a partial pass as a complete one.
                 throw new Error(
-                    `Local model failed on chunk ${index + 1} of ${chunks.length}: ${result.error}`
+                    `Local model failed on scene ${pass.sceneIndex + 1} of ${scenes.length}: ${result.error}`
                 );
             }
 
-            const matches = parseMatches(result.content);
-            for (const match of matches) {
-                const scene = numbered.get(String(match.scene_id).trim());
-                if (!scene) {
-                    droppedClaims += 1;
-                    continue;
-                }
-                const verified = verifyMatch(scene, Array.isArray(match.quotes) ? match.quotes : []);
+            for (const match of parseMatches(result.content)) {
+                const verified = verifyMatch(pass.scene, Array.isArray(match.quotes) ? match.quotes : []);
                 if (!verified) {
                     droppedClaims += 1;
                     continue;
                 }
                 hits.push({
-                    path: scene.path,
+                    path: pass.scene.path,
                     source: verified.source,
                     evidence: verified.bodyQuotes,
                     reason: typeof match.reason === 'string' ? match.reason.trim() : undefined

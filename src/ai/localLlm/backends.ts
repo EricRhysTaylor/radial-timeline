@@ -9,6 +9,17 @@ import {
 } from './transport';
 import type { LocalLlmBackendId } from '../types';
 
+/**
+ * A request for JSON output. `schema` is optional so existing callers keep
+ * their behaviour, but supplying it is what buys real server-side enforcement
+ * on backends that support it.
+ */
+export interface LocalLlmJsonRequest {
+    type: 'json_object';
+    schema?: Record<string, unknown>;
+    schemaName?: string;
+}
+
 export interface LocalLlmBackend {
     id: LocalLlmBackendId;
     label: string;
@@ -20,25 +31,33 @@ export interface LocalLlmBackend {
         maxOutputTokens?: number;
         temperature?: number;
         topP?: number;
-        responseFormat?: { type: 'json_object' };
+        responseFormat?: LocalLlmJsonRequest;
     }): Promise<LocalLlmCompletionResponse>;
 }
 
 export function toWireResponseFormat(
     id: LocalLlmBackendId,
-    requested?: { type: 'json_object' }
+    requested?: LocalLlmJsonRequest
 ): LocalLlmWireResponseFormat | undefined {
     if (!requested) return undefined;
     if (id === 'lmStudio') {
-        // LM Studio's /v1/chat/completions rejects response_format type 'json_object':
-        // it only accepts 'json_schema' or 'text'. A permissive object schema keeps
-        // server-side JSON enforcement equivalent to json_object.
+        // LM Studio's /v1/chat/completions rejects response_format type
+        // 'json_object': it accepts only 'json_schema' or 'text'.
+        //
+        // When the caller supplies its real schema, send THAT. A permissive
+        // `{type:'object'}` placeholder tells the server "any object will do",
+        // which in practice lets a model emit structurally broken JSON — the
+        // observed failure was a reply with a duplicated, half-closed `quotes`
+        // key. Constraining generation to the actual shape is what makes the
+        // reply parseable.
         return {
             type: 'json_schema',
-            json_schema: { name: 'response', schema: { type: 'object' } }
+            json_schema: requested.schema
+                ? { name: requested.schemaName ?? 'response', strict: true, schema: requested.schema }
+                : { name: 'response', schema: { type: 'object' } }
         };
     }
-    return requested;
+    return { type: 'json_object' };
 }
 
 function createOpenAiCompatibleBackend(id: LocalLlmBackendId): LocalLlmBackend {

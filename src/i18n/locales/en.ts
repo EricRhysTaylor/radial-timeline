@@ -522,7 +522,7 @@ export interface TranslationKeys {
             assistChecking: string;
             /** Local model is usable. {{model}} is the model id. */
             assistConnected: string;
-            /** Concept-run progress. {{chunk}} of {{total}}. */
+            /** Concept-run progress, counted in scenes. {{chunk}} of {{total}}. */
             statusChunk: string;
             /** Appended when the model named scenes it could not quote. {{count}} claims. */
             statusDropped: string;
@@ -2847,7 +2847,7 @@ export const en: TranslationKeys = {
             assistLabel: 'Local LLM assist',
             assistChecking: 'Checking for a local model\u2026',
             assistConnected: 'Connected: {{model}}',
-            statusChunk: 'Reading the manuscript \u2014 pass {{chunk}} of {{total}}',
+            statusChunk: 'Reading scene {{chunk}} of {{total}}',
             statusDropped: '{{count}} model claims dropped (no verbatim match)',
             cancelAction: 'Cancel',
             cancelPending: 'Finishing current pass\u2026',

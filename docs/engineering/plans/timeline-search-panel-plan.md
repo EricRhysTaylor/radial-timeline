@@ -7,18 +7,23 @@ today (every file:line below was read, not assumed). Written to be executed in
 small verified slices; each stage ends with `npx tsc --noEmit` + `npm test`
 green and is independently shippable.
 
+Revised after a correctness review — see the Decision log for what changed and
+why. The review found four real holes in the first draft (async race, dropped
+frontmatter when both scopes are on, stale persisted offsets, and a Cancel that
+could not actually cancel); all four are closed below.
+
 ## Goal
 
 Today the timeline search box is a single blind text field: type a phrase,
-press Enter, and scenes whose **frontmatter** contains that literal phrase get
-a yellow number square. Authors have no way to (a) see what is being searched,
-(b) search the prose itself, or (c) ask a question the manuscript answers
-without using those exact words.
+press Enter, and scenes whose **timeline fields** contain that literal phrase
+get a yellow number square. Authors have no way to (a) see what is being
+searched, (b) search the prose itself, or (c) ask a question the manuscript
+answers without using those exact words.
 
 Target: clicking the search control still lets the author type immediately, but
 also expands a panel that is visually continuous with the input, exposing:
 
-- **Where to look** — Frontmatter (default on) and/or Scene body.
+- **Where to look** — Timeline fields (default on) and/or Scene body.
 - **How to look** — literal phrase (current behavior) or **Local LLM assist**,
   which finds phrases *and concepts*. Disabled and grayed when no local server
   is connected, with the reason stated in plain words.
@@ -26,7 +31,7 @@ also expands a panel that is visually continuous with the input, exposing:
 Match presentation does not change: matched scenes get the existing yellow
 number square, and hovering a match keeps the existing metadata term
 highlighting. New capability is added **behind** that same visual contract.
-Additionally, clicking a matched scene opens it with the matching body ranges
+Additionally, clicking a matched scene opens it with the matching body passages
 highlighted in the editor.
 
 ## Current behavior (verified)
@@ -47,9 +52,10 @@ via `setTimelineSearchButtonMode()` ([:2120](../../../src/view/TimeLineView.ts#L
 `performSearch` sets `plugin.searchTerm` / `plugin.searchActive`, walks
 `getSceneData()`, and calls `timelineSceneMatchesSearch()`, which tests a
 case-insensitive **substring** (`containsWholePhrase`, [:13](../../../src/services/SearchService.ts#L13))
-against title, synopsis, Character, subplot, Duration, optionally
-`currentSceneAnalysis`, the planetary line, and two date renderings. Matched
-paths land in `plugin.searchResults: Set<string>`, then every view
+against a **curated field set** — title, synopsis, Character, subplot,
+Duration, optionally `currentSceneAnalysis`, the planetary line, and two date
+renderings ([`buildTimelineSearchTextFields`, :64](../../../src/services/SearchService.ts#L64)).
+Matched paths land in `plugin.searchResults: Set<string>`, then every view
 re-renders.
 
 **Rendering** — two independent surfaces:
@@ -67,24 +73,46 @@ re-renders.
 `searchResults` set ([:313](../../../src/renderer/ChangeDetection.ts#L313)).
 
 **Scene click → open** — `openOrRevealFile()` ([fileUtils.ts:22](../../../src/utils/fileUtils.ts#L22))
-from four call sites: `AllScenesMode.ts:48`, `MainPlotMode.ts:122`,
-`GossamerMode.ts:286,302`, `ChronologueMode.ts`. No highlight state is passed.
+from four modes: `AllScenesMode.ts:48`, `MainPlotMode.ts:122`,
+`GossamerMode.ts:286,302`, `ChronologueMode.ts` — plus two Zero Draft
+`onOverrideOpen` paths (`AllScenesMode.ts:40`, `MainPlotMode.ts:115`). No
+highlight state is passed anywhere.
+
+**Frontmatter body extraction** — the canonical helper is
+`extractBodyAfterFrontmatter()` ([frontmatterDocument.ts:12](../../../src/utils/frontmatterDocument.ts#L12)):
+it prefers Obsidian's `position.end.offset` and falls back to stripping the
+first YAML fence by regex. Currently used only by `frontmatterWriteSafety.ts`.
 
 **Local LLM** — `src/ai/localLlm/` is complete and reusable:
 `transport.ts` does abortable, size-bounded `/models` probes; `backends.ts`
 abstracts ollama / lmStudio / openaiCompatible; `structuredJson.ts` runs a
 strict-JSON pipeline honoring `jsonMode` + `maxRetries`; `diagnostics.ts`
-`runLocalLlmDiagnostics()` returns reachable / modelAvailable /
-basicCompletion / structuredJson. Settings live at `aiSettings.localLlm`
-(default `ollama`, `http://localhost:11434/v1`).
+`runLocalLlmDiagnostics(plugin, overrides?)` returns reachable /
+modelAvailable / basicCompletion / structuredJson — note it accepts **unsaved
+overrides**, which matters for cache keying. Settings live at
+`aiSettings.localLlm` (default `ollama`, `http://localhost:11434/v1`).
 
-### Pre-existing defect found while mapping
+### Pre-existing defects found while mapping
 
-`performSearch` calls `plugin.getSceneData()`, not `plugin.getTimelineSceneData()`
-([main.ts:775-797](../../../src/main.ts#L775)). In **Saga scope** the timeline
-renders every book's scenes but search only scans the active book — matches in
-other books are silently invisible. Fix in Stage 1 as part of the state
-consolidation; it is a one-line change once search has a single entry point.
+All three are fixed in Stage 1, because each would be amplified by the features
+that follow.
+
+1. **Saga scope is under-searched.** `performSearch` calls
+   `plugin.getSceneData()`, not `plugin.getTimelineSceneData()`
+   ([main.ts:775-797](../../../src/main.ts#L775)). In Saga scope the timeline
+   renders every book's scenes but search only scans the active book — matches
+   in other books are silently invisible.
+2. **The async search races itself.** `performSearch` fires
+   `void this.plugin.getSceneData().then(...)` with no generation token
+   ([SearchService.ts:137](../../../src/services/SearchService.ts#L137)). A slow
+   earlier run resolving after a newer search — or after Clear — mutates
+   `searchResults` and re-renders with stale hits. Today the window is small
+   because matching is synchronous; with body reads and LLM calls it becomes
+   seconds wide.
+3. **Change detection ignores the term.** [ChangeDetection.ts:313](../../../src/renderer/ChangeDetection.ts#L313)
+   keys on `searchActive` plus the result-path set. Two different terms that
+   match the same scenes produce an identical signature, so the SVG is not
+   rebuilt and the previous term stays highlighted in the hover metadata.
 
 ## Interaction design
 
@@ -97,7 +125,7 @@ consolidation; it is a one-line change once search has a single entry point.
     ├── input.ert-timeline-search__input
     └── div.ert-timeline-search-panel   role="group"  ← NEW
         ├── fieldset .ert-timeline-search-panel__scope   "Search in"
-        │   ├── checkbox  Frontmatter        (default on)
+        │   ├── checkbox  Timeline fields    (default on)
         │   └── checkbox  Scene body
         ├── div .ert-timeline-search-panel__assist
         │   ├── checkbox  Local LLM assist   (disabled + grayed when offline)
@@ -107,10 +135,18 @@ consolidation; it is a one-line change once search has a single entry point.
 ```
 
 Two **independent axes**, not three radio modes: scope is *where* to look
-(additive checkboxes — an author can want a name in frontmatter *and* in the
-prose), assist is *how*. LLM assist × Frontmatter is meaningful on its own
+(additive checkboxes — an author can want a name in the metadata *and* in the
+prose), assist is *how*. LLM assist × Timeline fields is meaningful on its own
 (fuzzy synopsis/character matching without the exact words), so the axes stay
 orthogonal rather than collapsing into one list.
+
+**Label wording.** The first scope is labeled *Timeline fields*, not
+*Frontmatter*. Search covers a curated set (title, synopsis, Character,
+subplot, Duration, dates, planetary line, optional scene analysis) — not
+arbitrary author frontmatter. Labeling it "Frontmatter" would promise that a
+custom author field is searchable; it is not, and the author would read the
+resulting silence as a broken search. See Open decisions if the intent is to
+genuinely widen it to every field.
 
 The panel is a child of `.ert-timeline-search`, absolutely positioned at
 `top: calc(100% - 1px); left: 0` — the same pattern `.ert-timeline-legend`
@@ -118,7 +154,9 @@ already uses ([timeline.css:2152](../../../src/styles/timeline.css#L2152)), so
 the header's stacking and clipping are already proven for this. Visual
 continuity: while expanded the input flattens its bottom corners and the panel
 flattens its top, sharing one border line, so input + panel read as a single
-control.
+control. The panel needs its own width floor independent of the input's
+`clamp(112px, 14vw, 180px)`, and must flip to `right: 0` anchoring when it
+would overflow a narrow pane.
 
 ### Behavior
 
@@ -127,9 +165,9 @@ control.
 | Focus input, or click the search icon in `search` mode | Panel expands. Typing works immediately — expanding never steals focus from the input. |
 | Change any option | Options persist; if a search is already active it re-runs with the new options. |
 | `Enter` / icon click | Commit search. Panel stays open so the author can retune. |
-| `Escape` | Collapse panel, keep the term and results. Second `Escape` clears the search. |
+| `Escape` | Collapse panel, **return focus to the input**, keep the term and results. Second `Escape` clears the search. |
 | Click outside / `focusout` of the whole shell | Collapse panel. **Do not** commit on blur in LLM mode — see below. |
-| Clear (`search-x`) | Clear term + results, collapse panel, keep option selections. |
+| Clear (`search-x`) | Clear term + results, cancel any in-flight run, collapse panel, keep option selections. |
 
 **Blur-commit must change.** Today `blur` commits ([:327](../../../src/view/TimeLineView.ts#L327)),
 which is harmless for a synchronous substring scan but would fire an LLM run
@@ -148,29 +186,36 @@ rather than a debounce so the behavior is deterministic.
   readable* — never a gray control with no explanation.
 - Status line is `aria-live="polite"` so match counts and progress are announced.
 - Full keyboard path: Tab from input → scope checkboxes → assist → Cancel.
+  `Escape` returns focus to the input rather than dropping it to `<body>`.
 
 ## Architecture
 
-### Stage 1 — One search state (refactor, no new features)
+### Stage 1 — One search state, transactional (refactor, no new features)
 
 Three plugin fields (`searchTerm`, `searchActive`, `searchResults`,
 [main.ts:156](../../../src/main.ts#L156)) become one object. Adding scope, assist,
-async status, and per-scene body ranges to three parallel fields would multiply
-the drift surface; consolidating first is what makes every later stage a small
-diff.
+async status, and per-scene evidence to three parallel fields would multiply the
+drift surface; consolidating first is what makes every later stage a small diff.
 
 ```ts
 // src/services/searchState.ts
 export interface TimelineSearchOptions {
-    frontmatter: boolean;   // default true
-    body: boolean;          // default false
-    llmAssist: boolean;     // default false; forced false when unavailable
+    timelineFields: boolean;  // default true
+    body: boolean;            // default false
+    llmAssist: boolean;       // default false; forced false when unavailable
 }
+
+export type SearchHitSource = 'timelineFields' | 'body' | 'both';
 
 export interface TimelineSearchHit {
     path: string;
-    /** File-offset ranges to highlight when the scene is opened. Empty for frontmatter-only hits. */
-    ranges: Array<[number, number]>;
+    source: SearchHitSource;
+    /**
+     * Verbatim body passages that justified this hit — NOT offsets.
+     * Offsets go stale the moment the author edits the scene; ranges are
+     * recomputed against the current file at click time (Stage 6).
+     */
+    evidence: string[];
     /** LLM assist only: the model's one-line justification. */
     reason?: string;
 }
@@ -178,6 +223,7 @@ export interface TimelineSearchHit {
 export type TimelineSearchStatus = 'idle' | 'running' | 'ready' | 'error';
 
 export interface TimelineSearchState {
+    /** The committed term — the one the results actually correspond to. */
     term: string;
     options: TimelineSearchOptions;
     active: boolean;
@@ -188,24 +234,35 @@ export interface TimelineSearchState {
 }
 ```
 
-`plugin.searchState` is the single source of truth. **No compatibility
-getters** for the old three fields — per `code-doctrine.md` ("prefer deletion
-over accommodation"), every reader migrates in the same commit:
+**Every search runs as a transaction.** `SearchService` holds a monotonic
+`runId`. A run freezes its term, options, and scene set at start, accumulates
+hits into a **private** map, and commits — atomically replacing
+`state.hits`, `state.term`, and `state.status` — only if `runId` is still
+current. A superseded or cancelled run discards its work and touches nothing.
+This is what makes "Cancel leaves previous results intact" true rather than
+aspirational, and it closes pre-existing defect 2.
+
+**Change detection gains the committed term** alongside `active`, `options`,
+and the hit-path set, closing pre-existing defect 3.
+
+**No compatibility getters** for the old three fields — per `code-doctrine.md`
+("prefer deletion over accommodation"), every reader migrates in the same commit:
 
 | File | What changes |
 | --- | --- |
 | `src/main.ts:156-157` + `searchResults` decl | Replaced by `searchState` |
-| `src/services/SearchService.ts` | Rewritten around the state object; `getSceneData` → `getTimelineSceneData` (Saga fix) |
+| `src/services/SearchService.ts` | Rewritten around the state object + runId; `getSceneData` → `getTimelineSceneData` (Saga fix) |
 | `src/view/TimeLineView.ts:2100-2177, 2649, 2676, 2741-2744, 2860-2861` | Read `searchState` |
 | `src/view/interactions/SearchInteractions.ts:13-22, 159-173` | `SearchView` interface + `hits` lookup |
 | `src/utils/sceneHelpers.ts:202-204, 288` | `isSearchMatch` from `hits` |
 | `src/SynopsisManager.ts:1805` | Guard reads `searchState` |
-| `src/renderer/ChangeDetection.ts:47, 112, 242, 313` | Track `active`, `options`, and the hit-path set |
+| `src/renderer/ChangeDetection.ts:47, 112, 242, 313` | Track `active`, `options`, committed `term`, hit-path set |
 | `src/debug/snapshot.ts:28, 88` | Snapshot the state object |
 | `ChangeDetection.test.ts`, `Precompute.test.ts` | Fixture updates |
 
-Ship Stage 1 alone and verify no behavior change: same matches, same yellow
-squares, same hover highlighting — plus Saga scope now searching all books.
+Ship Stage 1 alone and verify: same matches, same yellow squares, same hover
+highlighting — plus Saga scope searching all books, no stale-run clobbering,
+and term-change forcing a re-highlight.
 
 ### Stage 2 — The panel (UI only, no new search capability)
 
@@ -218,12 +275,19 @@ squares, same hover highlighting — plus Saga scope now searching all books.
   block (interface + values, both halves).
 - CSS appended to the existing `.ert-timeline-search` block in
   `src/styles/timeline.css`. Theme tokens only, no hardcoded hex.
-- Options persist in plugin settings (`settings.timelineSearch`), **not** in
-  scene frontmatter — this is a view preference and scene YAML belongs to the
-  author.
+- Options persist in plugin settings as
+  `settings.timelineSearch: { schemaVersion: 1, timelineFields, body, llmAssist }`
+   — schema-stamped and validated on load, with unknown/malformed values
+  replaced by defaults rather than trusted. This is a view preference and never
+  touches scene frontmatter; scene YAML belongs to the author.
 - At this stage the assist checkbox renders disabled with "Checking…" and the
-  scope checkboxes drive nothing but their own persistence. Frontmatter-only
+  scope checkboxes drive nothing but their own persistence. Timeline-field
   search still works exactly as before.
+
+**Metadata highlight gating.** `applySearchTermHighlightsInRoot()` runs only
+when `options.timelineFields` is on **and** assist is off. A body-only search
+must not paint highlights onto metadata it never searched, and under assist the
+author's query words generally do not appear in the text at all.
 
 ### Stage 3 — Scene body search (no LLM)
 
@@ -233,29 +297,34 @@ New `src/services/SceneBodyIndex.ts`:
 interface SceneBodyEntry {
     path: string;
     mtime: number;
-    /** Body text with frontmatter stripped. */
+    /** Body text with frontmatter stripped, via extractBodyAfterFrontmatter. */
     body: string;
-    /** Char offset of body[0] within the raw file — needed to map ranges back for highlighting. */
-    bodyOffset: number;
 }
 ```
 
-- Reads with `vault.cachedRead`; `bodyOffset` from
-  `metadataCache.getFileCache(file)?.frontmatterPosition?.end.offset ?? 0`
-  (the plugin already uses `cachedRead` + frontmatter offsets in
-  `utils/manuscript.ts:754` and `utils/referenceIdBackfill.ts:58`).
+- Reads with `vault.cachedRead`, then `extractBodyAfterFrontmatter(raw, cache)`
+  ([frontmatterDocument.ts:12](../../../src/utils/frontmatterDocument.ts#L12)) —
+  the canonical helper, which already handles a missing metadata cache by
+  stripping the YAML fence rather than falling through to offset `0` and
+  treating frontmatter as prose.
+- **No offsets are stored.** Hits carry the matched passage text; ranges are
+  computed against the current file when the scene is opened (Stage 6). An
+  offset captured at search time is wrong the moment the author edits the
+  scene, and a highlight landing on the wrong words is worse than none.
 - Invalidated on `mtime` change and on vault `modify` / `rename` / `delete`.
-- Built lazily on the first body search, scoped to the active book (or all
-  Saga books when in Saga scope). Entry count and total chars logged; if a
-  bound is ever applied it is reported in the status line — never a silent cap.
+- Built lazily on the first body search, over the same scene set the search
+  transaction froze. Entry count and total chars logged; if a bound is ever
+  applied it is reported in the status line — never a silent cap.
 
-Matching: case-insensitive literal `indexOf` sweep collecting **all** ranges —
-not a regex, so an author's apostrophes, parentheses, and em dashes need no
+Matching: case-insensitive literal `indexOf` sweep collecting every occurrence
+— not a regex, so an author's apostrophes, parentheses, and em dashes need no
 escaping and mean exactly themselves. This deliberately matches the existing
 `containsWholePhrase` semantics, so switching scope changes *where* the plugin
-looks, never *what counts as a match*.
+looks, never *what counts as a match*. Each occurrence is stored as the matched
+passage plus a short surrounding window, which is what Stage 6 re-locates.
 
-Ranges are stored as file offsets (`bodyOffset + bodyRange`) on the hit.
+When both scopes are on, a scene matching either is a hit, and `source` records
+which side (or `both`) produced it.
 
 ### Stage 4 — Local LLM availability
 
@@ -280,15 +349,21 @@ Checks, in order, each producing a specific reason: local LLM disabled in
 settings → server unreachable (the transport's own error text) → configured
 model absent from `/models` (names the model). Uses only
 `backend.listModels()` via the existing `transport.ts` probe — **no completion
-calls** — so it stays fast enough for a UI affordance. Cached ~60s in memory,
-invalidated whenever `aiSettings.localLlm` is saved.
+calls** — so it stays fast enough for a UI affordance.
+
+**Cache key = `enabled | backend | baseUrl | defaultModelId`**, ~60s TTL.
+Keying on settings identity rather than a bare timestamp matters because
+`runLocalLlmDiagnostics()` accepts unsaved overrides
+([diagnostics.ts:35](../../../src/ai/localLlm/diagnostics.ts#L35)) — a
+Settings-side "test this other URL" must never poison the panel's view of the
+saved configuration. Write-through from diagnostics happens **only** when that
+run used canonical settings with no overrides.
 
 **Single source of truth.** These two checks are exactly the first two checks
 of `runLocalLlmDiagnostics()` ([diagnostics.ts:53-60](../../../src/ai/localLlm/diagnostics.ts#L53)).
 Rather than duplicate them, `diagnostics.ts` is refactored to call the shared
-probe and continue with its deeper completion tests, and a settings-side
-diagnostics run writes through to the same cache. Settings → AI and the search
-panel then cannot report contradictory connection states.
+probe and continue with its deeper completion tests. Settings → AI and the
+search panel then cannot report contradictory connection states.
 
 Panel wiring: on expand, `getLocalLlmAvailability()`; available → checkbox
 enabled, note reads the model id; unavailable → checkbox disabled + forced off,
@@ -302,9 +377,12 @@ New `src/services/ConceptSearchService.ts`.
    status shows the reason and the run does not start. **No cloud fallback** —
    both because manuscript prose must not silently leave the machine and
    because silent degradation is against `fallback-policy.md`.
-2. **Corpus.** From `SceneBodyIndex` when body scope is on; from the
-   frontmatter fields `buildTimelineSearchTextFields()` already assembles when
-   only frontmatter scope is on.
+2. **Corpus — union, not either/or.** Every selected scope contributes. With
+   both boxes checked, each scene's payload is its timeline fields
+   (`buildTimelineSearchTextFields()`) **concatenated with** its body text from
+   `SceneBodyIndex`, with the two sections labeled so the model's quotes can be
+   attributed back to the right `source`. Checking a second box must never
+   remove a source of matches.
 3. **Chunking.** Reuse `src/ai/tokens/inputTokenEstimate.ts` and `computeCaps`
    for the local model's window rather than inventing a second estimator.
    Scenes are numbered per chunk (`scene_id: "7"`), never addressed by path —
@@ -316,34 +394,47 @@ New `src/services/ConceptSearchService.ts`.
    { "type": "object", "required": ["matches"], "properties": {
      "matches": { "type": "array", "items": {
        "type": "object",
-       "required": ["scene_id", "confidence", "reason", "quotes"],
+       "required": ["scene_id", "reason", "quotes"],
        "properties": {
-         "scene_id":   { "type": "string" },
-         "confidence": { "type": "number" },
-         "reason":     { "type": "string" },
-         "quotes":     { "type": "array", "items": { "type": "string" } }
+         "scene_id": { "type": "string" },
+         "reason":   { "type": "string" },
+         "quotes":   { "type": "array", "items": { "type": "string" } }
        } } } } }
    ```
 
-   The prompt instructs: return only scenes that genuinely bear on the query;
-   every quote must be copied **verbatim** from the scene text.
-5. **Verify every quote** against the indexed text — exact match first, then
-   whitespace-normalized. This mirrors what Inquiry already does with evidence
-   refs (`InquiryRunnerService.verifyFindingRefs`, [:2238](../../../src/inquiry/runner/InquiryRunnerService.ts#L2238)).
-   Unverifiable quote → dropped. Scene with zero verified quotes → dropped
-   entirely. A highlight the text cannot support is worse than no highlight.
+   No `confidence` field. Local-model self-scored confidence is uncalibrated —
+   it would be a number the UI could not honestly act on. **Verified evidence
+   is the gate.** The prompt instructs: return only scenes that genuinely bear
+   on the query, and copy each quote **verbatim and short (≤15 words)** from
+   the scene text.
+5. **Verify every quote exactly** against the indexed text — a plain substring
+   test, no whitespace normalization. Normalized matching needs a reliable
+   normalized→raw offset map to be usable for highlighting, and that map is a
+   bug farm; the ≤15-word instruction is what keeps exact-match recall
+   acceptable instead. Unverifiable quote → dropped. Scene with zero verified
+   quotes → dropped entirely. A highlight the text cannot support is worse than
+   no highlight.
 6. **Report the drops.** Status line: `14 scenes · 3 model claims dropped (no
    verbatim match)`. Silent truncation would read as full coverage.
-7. **Cancellable** via `AbortController`, with `chunk 3/7` progress. Cancel
-   leaves the previous results intact.
+7. **A failed chunk fails the run.** If any chunk errors or fails JSON
+   validation after its retries, the whole transaction is abandoned, the status
+   shows the verbatim error, and the previously committed results stay on
+   screen. Publishing the surviving chunks would present a partial sweep as a
+   complete one.
+8. **Cancel, defined honestly.** Cancel discards the pending transaction and
+   schedules no further chunks; previously committed results remain. It does
+   **not** abort the HTTP request already in flight — local completions go
+   through `requestUrl` + `withTimeout` with no `AbortSignal`
+   ([transport.ts:394](../../../src/ai/localLlm/transport.ts#L394)); the lone
+   `AbortController` in that file guards the `/models` probe
+   ([:285](../../../src/ai/localLlm/transport.ts#L285)). Adding a real abort
+   means moving completions from `requestUrl` to `fetch`, which reintroduces
+   the CORS exposure `requestUrl` exists to avoid — a separate, deliberate
+   change, not a rider on this feature. The UI says "Finishing current chunk…"
+   rather than claiming an instant stop. Progress shows `chunk 3/7`.
 
 Verified hits then flow into `searchState.hits` and render through the
 **existing** yellow-number-square path — no new render code.
-
-Term highlighting in the hover synopsis is **skipped** under assist, because
-the author's query words usually do not appear in the prose. (Deferred idea:
-highlight the verified quote where it appears in the synopsis, and surface
-`reason` on hover. Out of scope for V1.)
 
 ### Stage 6 — Body highlight on scene open
 
@@ -361,15 +452,30 @@ export async function openOrRevealFile(
 ): Promise<void>;
 ```
 
+Ranges are **computed at click time**, not carried from the search: read the
+file, locate each stored evidence passage in the current content, and build
+ranges from what is there now. Evidence that no longer appears (the author
+edited it away) is skipped silently — the scene still opens.
+
 Implemented via `leaf.openFile(file, { active: true, eState: { match: highlight } })`
 — the same ephemeral state Obsidian core search uses to flash-highlight a
 result. `OpenViewState.eState` is typed `Record<string, unknown>` in
 `obsidian.d.ts`, so this needs no cast and no `// SAFE:` comment.
 
-The four scene-click call sites (`AllScenesMode.ts:48`, `MainPlotMode.ts:122`,
-`ChronologueMode.ts`, `GossamerMode.ts:286,302`) pass the hit's ranges when the
-clicked path is in `searchState.hits` and has ranges; otherwise they pass
-nothing and behave exactly as today.
+**Both branches of `openOrRevealFile` must carry it.** The existing-leaf branch
+currently calls `setActiveLeaf()` and returns
+([fileUtils.ts:30-33](../../../src/utils/fileUtils.ts#L30)) — it never calls
+`openFile`, so a highlight would silently do nothing whenever the scene is
+already open, which is the common case. That branch becomes
+`existingLeaf.openFile(file, { active: true, eState: { match } })`.
+
+Call sites: the four mode click handlers (`AllScenesMode.ts:48`,
+`MainPlotMode.ts:122`, `ChronologueMode.ts`, `GossamerMode.ts:286,302`)
+**and** the two Zero Draft `onOverrideOpen` callbacks
+(`AllScenesMode.ts:40`, `MainPlotMode.ts:115`) — otherwise the highlight
+vanishes for exactly the authors who use Zero Draft mode. Each passes the hit's
+evidence when the clicked path is in `searchState.hits`; otherwise nothing, and
+behavior is identical to today.
 
 **Verify `eState.match` empirically in the sample vault before building on
 it.** Decided-in-advance Plan B if it proves unreliable across editing modes: a
@@ -391,49 +497,96 @@ The search panel is never that choice.
 
 Unit (vitest, alongside the existing `*.test.ts` neighbors):
 - `searchState` reducers: option toggles, clear, status transitions.
-- Body matcher: multiple hits per scene, overlapping candidates, regex
-  metacharacters treated literally, case-insensitivity, empty body.
-- `bodyOffset` arithmetic: with and without frontmatter, CRLF files.
+- **Transaction:** a stale run resolving after a newer one commits nothing; a
+  run resolving after Clear commits nothing; Cancel preserves prior hits.
+- Body matcher: multiple hits per scene, regex metacharacters treated
+  literally, case-insensitivity, empty body.
+- `extractBodyAfterFrontmatter` integration: file with frontmatter, without,
+  with an absent metadata cache, CRLF line endings.
 - `SceneBodyIndex` invalidation on mtime change.
-- `availability`: each failure branch yields its own specific reason.
-- Quote verification: exact, whitespace-normalized, and rejected quotes;
-  a scene losing all quotes is dropped.
-- `ChangeDetection`: option change and hit-set change each force a re-render.
+- **Scope union:** both boxes checked yields the union of timeline-field and
+  body hits, with `source` correctly attributed.
+- `availability`: each failure branch yields its own specific reason; an
+  overrides-based diagnostics run does not write through to the cache.
+- Quote verification: exact matches accepted, near-misses rejected, a scene
+  losing all quotes is dropped; one failing chunk abandons the whole run.
+- Evidence → range recomputation: passage present, passage edited away,
+  passage now appearing twice.
+- `ChangeDetection`: option change, term change **with an identical hit set**,
+  and hit-set change each force a re-render.
 
 Manual, in the sample vault (`docs/engineering/sample-vaults.md`):
-- Frontmatter-only search matches the pre-change result set exactly (regression).
+- Timeline-field search matches the pre-change result set exactly (regression).
 - Saga scope now matches across all books.
-- Panel keyboard path, `Escape` twice, outside-click collapse.
+- Panel keyboard path, `Escape` twice, focus returns to the input, outside-click
+  collapse.
+- Panel in a **narrow split pane** — no clipping, no horizontal overflow,
+  right-anchor flip works.
 - Assist grayed with server stopped; the note names the actual reason; enables
   within one expand cycle after the server starts.
 - Concept query with no literal overlap ("a betrayal the reader sees coming")
-  highlights plausible scenes; clicking one highlights the quoted passage.
+  highlights plausible scenes; clicking one highlights the quoted passage —
+  including when the scene is **already open in another tab**, and in Zero
+  Draft mode.
 - Cancel mid-run leaves prior results intact.
 
 ## Risks
 
 | Risk | Mitigation |
 | --- | --- |
-| `eState.match` behaves inconsistently across reading/live-preview/source | Verify in Stage 6 before wiring all four call sites; CM6 extension is the pre-decided branch |
+| `eState.match` behaves inconsistently across reading/live-preview/source | Verify in Stage 6 before wiring all six call sites; CM6 extension is the pre-decided branch |
 | Stage 1 refactor touches 10 files and could regress search silently | Ship Stage 1 alone with no behavior change; regression check is "identical result set" |
-| Local models return confident nonsense | Mandatory verbatim quote verification; unverifiable claims dropped and counted in the UI |
-| A 60-scene concept run is slow enough to feel broken | Per-chunk progress + Cancel; assist never commits on blur |
-| Body index memory on large manuscripts | Scoped to active book, `cachedRead`-backed, mtime-invalidated; size logged |
+| Local models return confident nonsense | Mandatory exact verbatim quote verification; unverifiable claims dropped and counted in the UI; no confidence field to lend false authority |
+| Exact-match verification drops legitimate quotes | ≤15-word verbatim instruction in the prompt; drop count is surfaced, so a high drop rate is visible rather than hidden |
+| Cancel cannot stop an in-flight local completion | UI states what it actually does; real abort tracked as separate transport work |
+| Body index memory on large manuscripts | Scoped to the frozen scene set, `cachedRead`-backed, mtime-invalidated; size logged |
 
 ## Open decisions
 
-1. **Saga scope under assist** — searching every book's prose multiplies the
-   token cost. Proposal: assist runs on the active book only, with the status
-   line saying so. Needs a call before Stage 5.
-2. **Confidence threshold** — whether to expose a sensitivity control or fix a
-   threshold internally. Proposal: fix it internally for V1; a slider is a
-   knob that cannot be explained to an author without explaining the model.
+**Both prior open questions are now closed** (see Decision log). One remains,
+and it is a product call rather than an engineering one:
+
+1. **Should the first scope widen to genuinely arbitrary frontmatter?** Today
+   it is a curated field list, and this plan labels it *Timeline fields* to say
+   so honestly. Widening it to every author-defined key is a real feature with
+   its own questions (which types are searchable, how nested values flatten,
+   whether `frontmatterValueToText` covers it). If the intent was literally
+   "search my frontmatter", that is a follow-up, not a rename.
 
 ## Decision log
 
 - **2026-08-07** — Scope modeled as two independent axes (where × how), not
-  three exclusive modes: LLM assist over frontmatter is independently useful,
-  and authors legitimately want frontmatter *and* body at once.
+  three exclusive modes: LLM assist over timeline fields is independently
+  useful, and authors legitimately want metadata *and* body at once.
 - **2026-08-07** — No cloud provider path for body/concept search, by design.
 - **2026-08-07** — Search state consolidated into one object before any feature
   work, with no compatibility shim for the three old fields.
+- **2026-08-07** *(review)* — Every search is a transaction with a run token.
+  The pre-existing race is latent today and becomes seconds-wide with async
+  scopes; "Cancel preserves prior results" is unimplementable without it.
+- **2026-08-07** *(review)* — Hits store verbatim evidence text, not offsets.
+  Offsets captured at search time go stale on the next edit; ranges are
+  recomputed against the current file at click time.
+- **2026-08-07** *(review)* — Concept corpus is the **union** of selected
+  scopes. The first draft used body-or-fields, which silently dropped metadata
+  matches when the author enabled a second scope.
+- **2026-08-07** *(review)* — `confidence` dropped from the schema entirely.
+  Uncalibrated self-scoring cannot be acted on honestly; verified evidence is
+  the only gate. Quote verification is exact-only for V1 — normalized matching
+  needs a normalized→raw offset map that is not worth its bug surface.
+- **2026-08-07** *(review)* — Cancel is defined as "discard the transaction,
+  schedule no more chunks." Local completions use `requestUrl` with no
+  `AbortSignal`, so claiming instant abort would be a lie in the UI. Real
+  abort = moving completions to `fetch`, tracked separately.
+- **2026-08-07** *(review)* — Saga assist searches the **full visible Saga
+  scope**. The earlier active-book-only proposal would have re-created the
+  exact scope inconsistency Stage 1 exists to fix; chunking and Cancel are the
+  right tools for the workload, and local inference has no per-token cost.
+- **2026-08-07** *(review)* — Label is *Timeline fields*, not *Frontmatter* —
+  the searched set is curated, and the broader promise would read as a bug to
+  any author with custom fields.
+- **2026-08-07** *(review)* — Corrected a bad citation in the first draft:
+  `manuscript.ts:754` and `referenceIdBackfill.ts:58` do **not** establish a
+  frontmatter-offset precedent (they use `extractCountableBodyText` and
+  `prepareFrontmatterRewrite`). The canonical helper is
+  `extractBodyAfterFrontmatter`.

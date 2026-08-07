@@ -644,6 +644,7 @@ export class RadialTimelineView extends ItemView {
                     getSearchState: () => this.plugin.searchState,
                     setSearchOptions: (options) => { void this.applySearchOptions(options); },
                     getLocalModelStatus: () => getLocalLlmAvailability(this.plugin),
+                    cancelSearch: () => this.plugin.cancelSearch(),
                     registerDomEvent: (el, event, handler) =>
                         this.registerDomEvent(el as HTMLElement, event, handler),
                     register: (cleanup) => this.register(cleanup)

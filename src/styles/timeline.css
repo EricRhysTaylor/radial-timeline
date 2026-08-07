@@ -2208,8 +2208,29 @@
 .ert-timeline-search-panel__status {
   padding-top: 7px;
   border-top: 1px solid var(--background-modifier-border);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   font-size: var(--font-ui-smaller);
   color: var(--text-muted);
+}
+
+.ert-timeline-search-panel__status-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ert-timeline-search-panel__cancel {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  font-size: var(--font-ui-smaller);
+  line-height: 1.4;
+  height: auto;
+  cursor: pointer;
+}
+
+.ert-timeline-search-panel__cancel[hidden] {
+  display: none;
 }
 
 .ert-timeline-title-action.clickable-icon,

@@ -60,6 +60,12 @@ export interface TimelineSearchHit {
 
 export type TimelineSearchStatus = 'idle' | 'running' | 'ready' | 'error';
 
+/** Which chunk of a multi-call concept run is in flight. */
+export interface TimelineSearchProgress {
+    chunk: number;
+    chunkCount: number;
+}
+
 export interface TimelineSearchState {
     /** The committed term — the one `hits` actually corresponds to. */
     term: string;
@@ -68,6 +74,14 @@ export interface TimelineSearchState {
     status: TimelineSearchStatus;
     /** Verbatim failure text. Never a generic "search failed". */
     error?: string;
+    /** Set only while a concept run is stepping through chunks. */
+    progress?: TimelineSearchProgress;
+    /**
+     * Model claims discarded for want of a verbatim quote, on the committed
+     * run. Reported rather than swallowed — silence would present a thin sweep
+     * as a complete one.
+     */
+    droppedClaims?: number;
     hits: Map<string, TimelineSearchHit>;
 }
 

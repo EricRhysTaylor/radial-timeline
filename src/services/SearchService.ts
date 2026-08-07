@@ -9,6 +9,15 @@ import type { RadialTimelineSettings } from '../types/settings';
 import type { TimelineItem } from '../types';
 import { hasSearchScope, mergeSearchHit, type TimelineSearchHit } from './searchState';
 import { SceneBodyIndex, findBodyMatches } from './SceneBodyIndex';
+import {
+    ConceptSearchCancelled,
+    ConceptSearchService,
+    type CancelToken,
+    type ConceptSearchScene
+} from './ConceptSearchService';
+import { getLocalLlmAvailability } from '../ai/localLlm/availability';
+import { getCanonicalLocalLlmSettings } from '../ai/localLlm/settings';
+import type { TimelineSearchOptions } from './searchState';
 
 export interface TimelineSearchMatchOptions {
     includeCurrentSceneAnalysis?: boolean;
@@ -111,11 +120,15 @@ export class SearchService {
     private runId = 0;
 
     private readonly bodyIndex: SceneBodyIndex;
+    private readonly conceptSearch: ConceptSearchService;
+    /** Shared with the in-flight concept run so the panel can stop it. */
+    private cancelToken: CancelToken = { cancelled: false };
 
     constructor(app: App, plugin: RadialTimelinePlugin) {
         this.app = app;
         this.plugin = plugin;
         this.bodyIndex = new SceneBodyIndex(app);
+        this.conceptSearch = new ConceptSearchService(plugin);
 
         // Cached bodies are keyed by mtime, so an edit is caught on the next
         // read. Rename and delete are not — the path itself becomes wrong, so
@@ -213,20 +226,21 @@ export class SearchService {
                 const includeCurrentSceneAnalysis = !!settings.enableAiSceneAnalysis;
                 const planetaryProfile = getActivePlanetaryProfile(settings);
 
+                if (options.llmAssist) {
+                    await this.runConceptSearch({
+                        myRun, term: trimmed, searchable, bodies, settings,
+                        includeCurrentSceneAnalysis, planetaryProfile, options
+                    });
+                    return;
+                }
+
                 // Accumulate privately; the live state is untouched until commit.
                 const hits = new Map<string, TimelineSearchHit>();
 
                 searchable.forEach(scene => {
                     if (!scene.path) return;
 
-                    let planetaryLine: string | undefined;
-                    if (planetaryProfile && scene.when) {
-                        const conversion = convertFromEarth(scene.when, planetaryProfile);
-                        if (conversion) {
-                            const label = (planetaryProfile.label || 'LOCAL').toUpperCase();
-                            planetaryLine = `${label}: ${conversion.formatted}`;
-                        }
-                    }
+                    const planetaryLine = this.planetaryLineFor(scene, planetaryProfile);
 
                     if (options.timelineFields) {
                         const matched = timelineSceneMatchesSearch(scene, trimmed, {
@@ -264,13 +278,126 @@ export class SearchService {
             });
     }
 
+    /**
+     * The concept path: gate on a live availability check, build the corpus
+     * from the selected scopes, then let the model propose and the quotes
+     * decide.
+     */
+    private async runConceptSearch(input: {
+        myRun: number;
+        term: string;
+        searchable: TimelineItem[];
+        bodies: Map<string, string> | null;
+        settings: RadialTimelineSettings;
+        includeCurrentSceneAnalysis: boolean;
+        planetaryProfile: ReturnType<typeof getActivePlanetaryProfile>;
+        options: TimelineSearchOptions;
+    }): Promise<void> {
+        const { myRun, term, searchable, bodies, settings, options } = input;
+        const state = this.plugin.searchState;
+
+        // Forced, not cached: the author is committing to a run, and a stale
+        // "available" would fail confusingly a minute later.
+        const availability = await getLocalLlmAvailability(this.plugin, { force: true });
+        if (myRun !== this.runId) return;
+        if (!availability.available) {
+            this.fail(availability.reason ?? 'No local model is available.');
+            return;
+        }
+
+        const corpus: ConceptSearchScene[] = searchable
+            .filter(scene => !!scene.path)
+            .map(scene => {
+                const fieldsText = options.timelineFields
+                    ? buildTimelineSearchTextFields(scene, {
+                        includeCurrentSceneAnalysis: input.includeCurrentSceneAnalysis,
+                        planetaryLine: this.planetaryLineFor(scene, input.planetaryProfile),
+                        settings
+                    }).join(' · ')
+                    : undefined;
+                const bodyText = options.body ? bodies?.get(scene.path as string) : undefined;
+                return { path: scene.path as string, fieldsText, bodyText };
+            })
+            // A scene contributing no text would just spend tokens.
+            .filter(scene => !!scene.fieldsText || !!scene.bodyText);
+
+        this.cancelToken = { cancelled: false };
+        const cancel = this.cancelToken;
+
+        try {
+            const outcome = await this.conceptSearch.run({
+                query: term,
+                scenes: corpus,
+                localLlm: getCanonicalLocalLlmSettings(this.plugin),
+                cancel,
+                onProgress: (progress) => {
+                    if (myRun !== this.runId) return;
+                    state.progress = progress;
+                    this.syncTimelineSearchControls();
+                }
+            });
+
+            if (myRun !== this.runId) return;
+
+            const hits = new Map<string, TimelineSearchHit>();
+            outcome.hits.forEach(hit => mergeSearchHit(hits, hit));
+            this.commit(term, hits, outcome.droppedClaims);
+        } catch (error) {
+            if (myRun !== this.runId) return;
+            if (error instanceof ConceptSearchCancelled) {
+                // Discard the transaction; whatever was committed before stands.
+                state.status = 'ready';
+                state.progress = undefined;
+                this.syncTimelineSearchControls();
+                return;
+            }
+            const message = error instanceof Error ? error.message : String(error);
+            console.error('[Search] Concept search failed.', error);
+            this.fail(message);
+        }
+    }
+
+    /**
+     * Report a failure without publishing an empty result set — whatever the
+     * author had on screen is still usable, and blanking it would punish them
+     * for a failure that was not theirs.
+     */
+    private fail(message: string): void {
+        const state = this.plugin.searchState;
+        state.status = 'error';
+        state.error = message;
+        state.progress = undefined;
+        this.syncTimelineSearchControls();
+    }
+
+    private planetaryLineFor(
+        scene: TimelineItem,
+        profile: ReturnType<typeof getActivePlanetaryProfile>
+    ): string | undefined {
+        if (!profile || !scene.when) return undefined;
+        const conversion = convertFromEarth(scene.when, profile);
+        if (!conversion) return undefined;
+        return `${(profile.label || 'LOCAL').toUpperCase()}: ${conversion.formatted}`;
+    }
+
+    /** Stop an in-flight concept run at the next chunk boundary. */
+    cancelSearch(): void {
+        this.cancelToken.cancelled = true;
+    }
+
     /** Atomically replace the committed results. */
-    private commit(term: string, hits: Map<string, TimelineSearchHit>): void {
+    private commit(
+        term: string,
+        hits: Map<string, TimelineSearchHit>,
+        droppedClaims?: number
+    ): void {
         const state = this.plugin.searchState;
         state.term = term;
         state.active = true;
         state.status = 'ready';
         state.error = undefined;
+        state.progress = undefined;
+        state.droppedClaims = droppedClaims;
         state.hits = hits;
         this.syncTimelineSearchControls();
         this.refreshTimelineViews();
@@ -286,12 +413,16 @@ export class SearchService {
      */
     private reset(): void {
         this.runId += 1;
+        // Any concept run still stepping through chunks stops scheduling more.
+        this.cancelToken.cancelled = true;
 
         const state = this.plugin.searchState;
         state.term = '';
         state.active = false;
         state.status = 'idle';
         state.error = undefined;
+        state.progress = undefined;
+        state.droppedClaims = undefined;
         state.hits = new Map();
     }
 

@@ -35,6 +35,8 @@ export interface SearchPanelHost {
     setSearchOptions(options: TimelineSearchOptions): void;
     /** Probe the configured local model. Cheap and cached; safe to call per expand. */
     getLocalModelStatus(): Promise<LocalModelStatus>;
+    /** Stop an in-flight concept run at the next chunk boundary. */
+    cancelSearch(): void;
     registerDomEvent(el: HTMLElement | Document, event: string, handler: (ev: Event) => void): void;
     register(cleanup: () => void): void;
 }
@@ -56,6 +58,9 @@ export class SearchPanelController {
     private readonly scopeRows: ScopeRow[] = [];
     private readonly assistCheckbox: HTMLInputElement;
     private readonly assistHint: HTMLElement;
+    private readonly statusText: HTMLElement;
+    private readonly cancelButton: HTMLButtonElement;
+    private cancelRequested = false;
     private expanded = false;
     /** Generation token: a slow probe must not overwrite a newer answer. */
     private statusProbeId = 0;
@@ -124,6 +129,18 @@ export class SearchPanelController {
         this.statusEl.className = 'ert-timeline-search-panel__status';
         this.statusEl.setAttribute('role', 'status');
         this.statusEl.setAttribute('aria-live', 'polite');
+
+        this.statusText = doc.createElement('span');
+        this.statusText.className = 'ert-timeline-search-panel__status-text';
+        this.statusEl.appendChild(this.statusText);
+
+        this.cancelButton = doc.createElement('button');
+        this.cancelButton.type = 'button';
+        this.cancelButton.className = 'ert-timeline-search-panel__cancel';
+        this.cancelButton.textContent = t('timeline.search.cancelAction');
+        this.cancelButton.hidden = true;
+        this.statusEl.appendChild(this.cancelButton);
+
         this.panel.appendChild(this.statusEl);
 
         shell.appendChild(this.panel);
@@ -174,6 +191,16 @@ export class SearchPanelController {
             this.host.registerDomEvent(row.checkbox, 'change', () => this.commitOptions());
         }
         this.host.registerDomEvent(this.assistCheckbox, 'change', () => this.commitOptions());
+
+        this.host.registerDomEvent(this.cancelButton, 'click', () => {
+            // The label changes rather than the button vanishing: a request that
+            // cannot take effect until the current pass returns should say so,
+            // not look ignored.
+            this.cancelRequested = true;
+            this.cancelButton.disabled = true;
+            this.statusText.textContent = t('timeline.search.cancelPending');
+            this.host.cancelSearch();
+        });
 
         // Expanding must never steal focus from the input — the author is
         // typing, and the panel is a companion, not a modal.
@@ -233,12 +260,12 @@ export class SearchPanelController {
     }
 
     /**
-     * Ask whether a local model is usable and say so plainly.
+     * Ask whether a local model is usable, enable the control accordingly, and
+     * say plainly what was found.
      *
-     * The assist checkbox stays disabled either way until concept search exists
-     * — a control that toggles nothing would be a lie. But the *reason* is worth
-     * showing now: an author whose server is down can see and fix that here,
-     * rather than discovering it later when the feature arrives.
+     * When no model is available the checkbox is disabled *and* the option is
+     * forced off — an assist flag left set against a server that has gone away
+     * would fail at commit for reasons the panel had stopped showing.
      */
     private async refreshLocalModelStatus(): Promise<void> {
         const probeId = ++this.statusProbeId;
@@ -258,6 +285,14 @@ export class SearchPanelController {
         this.assistHint.textContent = status.available
             ? t('timeline.search.assistConnected', { model: status.modelId ?? '' })
             : (status.reason ?? t('timeline.search.assistChecking'));
+
+        this.assistCheckbox.disabled = !status.available;
+        this.assistCheckbox.parentElement?.classList.toggle('is-disabled', !status.available);
+
+        // A model that has gone away must not leave the option silently on.
+        if (!status.available && this.host.getSearchState().options.llmAssist) {
+            this.commitOptions();
+        }
     }
 
     /**
@@ -296,19 +331,48 @@ export class SearchPanelController {
         }
         this.assistCheckbox.checked = state.options.llmAssist;
 
-        this.statusEl.textContent = this.describeStatus(state);
+        const running = state.status === 'running';
+        // Only a concept run has passes to cancel; the literal sweep is over
+        // before a button could be pressed.
+        this.cancelButton.hidden = !(running && state.options.llmAssist);
+        if (!running) {
+            this.cancelRequested = false;
+            this.cancelButton.disabled = false;
+        }
+
+        if (this.cancelRequested && running) {
+            this.statusText.textContent = t('timeline.search.cancelPending');
+            return;
+        }
+        this.statusText.textContent = this.describeStatus(state);
     }
 
     private describeStatus(state: TimelineSearchState): string {
         if (!hasSearchScope(state.options)) return t('timeline.search.statusNoScope');
-        if (state.status === 'running') return t('timeline.search.statusRunning');
+        if (state.status === 'running') {
+            if (state.progress) {
+                return t('timeline.search.statusChunk', {
+                    chunk: String(state.progress.chunk),
+                    total: String(state.progress.chunkCount)
+                });
+            }
+            return t('timeline.search.statusRunning');
+        }
         if (state.status === 'error') {
             return t('timeline.search.statusError', { message: state.error ?? '' });
         }
         if (!state.active) return t('timeline.search.statusIdle');
-        if (state.hits.size === 0) return t('timeline.search.statusNoMatches');
-        if (state.hits.size === 1) return t('timeline.search.statusMatchOne');
-        return t('timeline.search.statusMatches', { count: String(state.hits.size) });
+        const matched = state.hits.size === 0
+            ? t('timeline.search.statusNoMatches')
+            : state.hits.size === 1
+                ? t('timeline.search.statusMatchOne')
+                : t('timeline.search.statusMatches', { count: String(state.hits.size) });
+
+        // Silence here would present a thin sweep as a complete one.
+        if (state.droppedClaims && state.droppedClaims > 0) {
+            return `${matched} · ${t('timeline.search.statusDropped', { count: String(state.droppedClaims) })}`;
+        }
+        return matched;
     }
 }
 

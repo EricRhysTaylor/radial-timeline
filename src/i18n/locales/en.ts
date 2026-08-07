@@ -522,6 +522,13 @@ export interface TranslationKeys {
             assistChecking: string;
             /** Local model is usable. {{model}} is the model id. */
             assistConnected: string;
+            /** Concept-run progress. {{chunk}} of {{total}}. */
+            statusChunk: string;
+            /** Appended when the model named scenes it could not quote. {{count}} claims. */
+            statusDropped: string;
+            cancelAction: string;
+            /** Cancel cannot abort a request already sent; this says so. */
+            cancelPending: string;
             statusIdle: string;
             statusRunning: string;
             /** Exactly one match. */
@@ -2839,7 +2846,11 @@ export const en: TranslationKeys = {
             },
             assistLabel: 'Local LLM assist',
             assistChecking: 'Checking for a local model\u2026',
-            assistConnected: 'Connected: {{model}} \u2014 not used by search yet',
+            assistConnected: 'Connected: {{model}}',
+            statusChunk: 'Reading the manuscript \u2014 pass {{chunk}} of {{total}}',
+            statusDropped: '{{count}} model claims dropped (no verbatim match)',
+            cancelAction: 'Cancel',
+            cancelPending: 'Finishing current pass\u2026',
             statusIdle: 'Press Enter to search',
             statusRunning: 'Searching…',
             statusMatchOne: '1 scene matched',

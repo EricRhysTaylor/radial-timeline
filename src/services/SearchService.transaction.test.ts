@@ -278,36 +278,29 @@ describe('SearchService transaction', () => {
     it('resolves settings-derived inputs after the await, using the production mutation shape', async () => {
         // The settings UI mutates properties ON the settings object rather than
         // replacing it (ScenePropertiesSection reassigns
-        // settings.hoverMetadataFields; the AI toggle flips
-        // settings.enableAiSceneAnalysis). So this test mutates a property, not
+        // settings.hoverMetadataFields). So this test mutates a property, not
         // the object.
         //
-        // enableAiSceneAnalysis is the input that distinguishes the two
-        // designs: it used to be read at call time while hover fields were read
-        // after the await, splitting one run's inputs across two moments. Now
-        // every input is resolved together, immediately before the synchronous
-        // matching pass.
+        // What is pinned is the timing: every settings-derived input is read at
+        // one instant, immediately before the synchronous matching pass, rather
+        // than some at call time and some after the await.
         const { service, plugin, pending } = makeHarness();
-        plugin.settings.enableAiSceneAnalysis = false;
+        plugin.settings.hoverMetadataFields = [];
 
-        service.performSearch('pacing lags');
+        service.performSearch('Diego');
 
-        // The author enables AI scene analysis while the scene load is in flight.
-        plugin.settings.enableAiSceneAnalysis = true;
+        // The author enables a hover field while the scene load is in flight.
+        plugin.settings.hoverMetadataFields = [
+            { key: 'Place', label: 'Place', icon: '', enabled: true }
+        ];
 
         pending[0].resolve([
-            ({
-                path: 'a.md',
-                title: 'A',
-                currentSceneAnalysis: 'B / pacing lags in the middle',
-                rawFrontmatter: {}
-            } as TimelineItem)
+            ({ path: 'a.md', title: 'A', rawFrontmatter: { Place: 'Diego' } } as TimelineItem)
         ]);
         await flush();
 
-        // Resolved post-await, so the run sees the flag as it stands when the
-        // matching pass actually runs. Under the old call-time capture this
-        // scene would not have matched at all.
+        // Resolved post-await, so the run sees settings as they stand when the
+        // matching pass actually runs.
         expect([...plugin.searchState.hits.keys()]).toEqual(['a.md']);
     });
 
@@ -315,13 +308,15 @@ describe('SearchService transaction', () => {
         // The matching pass never awaits, so no scene can be matched under
         // different rules than another.
         const { service, plugin, pending } = makeHarness();
-        plugin.settings.enableAiSceneAnalysis = true;
+        plugin.settings.hoverMetadataFields = [
+            { key: 'Place', label: 'Place', icon: '', enabled: true }
+        ];
 
-        service.performSearch('pacing lags');
+        service.performSearch('Diego');
         pending[0].resolve([
-            ({ path: 'a.md', title: 'A', currentSceneAnalysis: 'pacing lags', rawFrontmatter: {} } as TimelineItem),
-            ({ path: 'b.md', title: 'B', currentSceneAnalysis: 'pacing lags', rawFrontmatter: {} } as TimelineItem),
-            ({ path: 'c.md', title: 'C', currentSceneAnalysis: 'pacing lags', rawFrontmatter: {} } as TimelineItem)
+            ({ path: 'a.md', title: 'A', rawFrontmatter: { Place: 'Diego' } } as TimelineItem),
+            ({ path: 'b.md', title: 'B', rawFrontmatter: { Place: 'Diego' } } as TimelineItem),
+            ({ path: 'c.md', title: 'C', rawFrontmatter: { Place: 'Diego' } } as TimelineItem)
         ]);
         await flush();
 

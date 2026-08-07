@@ -19,7 +19,6 @@ import { getCanonicalLocalLlmSettings } from '../ai/localLlm/settings';
 import type { TimelineSearchOptions } from './searchState';
 
 export interface TimelineSearchMatchOptions {
-    includeCurrentSceneAnalysis?: boolean;
     planetaryLine?: string;
     /**
      * Settings, so the enabled hover-metadata fields can be resolved.
@@ -81,10 +80,10 @@ export function buildTimelineSearchTextFields(scene: TimelineItem, options: Time
     appendSearchValue(fields, scene.subplot);
     appendSearchValue(fields, scene.Duration);
 
-    if (options.includeCurrentSceneAnalysis) {
-        appendSearchValue(fields, scene["currentSceneAnalysis"]);
-    }
-
+    // The AI Pulse analysis is deliberately NOT searched. It is commentary
+    // *about* a scene — a grade and editorial notes — not something the scene
+    // contains, and it is not reliably about that scene in particular. Matching
+    // it would light up a scene because a critique of it mentioned a meal.
     appendSearchValue(fields, options.planetaryLine);
 
     // Custom hover-metadata fields, formatted exactly as displayed. Enabling a
@@ -222,13 +221,12 @@ export class SearchService {
                 // another. Holding a reference to `plugin.settings` is not a
                 // freeze; the object is mutated in place.
                 const settings = this.plugin.settings;
-                const includeCurrentSceneAnalysis = !!settings.enableAiSceneAnalysis;
                 const planetaryProfile = getActivePlanetaryProfile(settings);
 
                 if (options.llmAssist) {
                     await this.runConceptSearch({
                         myRun, term: trimmed, searchable, bodies, settings,
-                        includeCurrentSceneAnalysis, planetaryProfile, options
+                        planetaryProfile, options
                     });
                     return;
                 }
@@ -243,7 +241,6 @@ export class SearchService {
 
                     if (options.timelineFields) {
                         const matched = timelineSceneMatchesSearch(scene, trimmed, {
-                            includeCurrentSceneAnalysis,
                             planetaryLine,
                             settings
                         });
@@ -288,7 +285,6 @@ export class SearchService {
         searchable: TimelineItem[];
         bodies: Map<string, string> | null;
         settings: RadialTimelineSettings;
-        includeCurrentSceneAnalysis: boolean;
         planetaryProfile: ReturnType<typeof getActivePlanetaryProfile>;
         options: TimelineSearchOptions;
     }): Promise<void> {
@@ -309,7 +305,6 @@ export class SearchService {
             .map(scene => {
                 const fieldsText = options.timelineFields
                     ? buildTimelineSearchTextFields(scene, {
-                        includeCurrentSceneAnalysis: input.includeCurrentSceneAnalysis,
                         planetaryLine: this.planetaryLineFor(scene, input.planetaryProfile),
                         settings
                     }).join(' · ')

@@ -44,11 +44,15 @@ export function clearSearchHighlightsInRoot(root: ParentNode): void {
 export function applySearchTermHighlightsInRoot(root: ParentNode, searchTerm: string): void {
     if (!searchTerm) return;
     const escapedPattern = escapeRegExp(searchTerm);
-    const isNonCurrentScenePulseElement = (element: Element): boolean => {
-        const pulseText = element.closest('[data-pulse-section]');
-        const section = pulseText?.getAttribute('data-pulse-section');
-        return !!section && section !== 'currentSceneAnalysis';
-    };
+    /**
+     * Pulse analysis is never term-highlighted.
+     *
+     * It is commentary about a scene rather than part of it, and not reliably
+     * about that scene in particular — highlighting the search term inside a
+     * critique would present editorial notes as if they were the match.
+     */
+    const isPulseElement = (element: Element): boolean =>
+        !!element.closest('[data-pulse-section]');
 
     const highlightTspan = (tspan: Element, originalText: string, fillColor: string | null) => {
         const doc = tspan.ownerDocument;
@@ -117,7 +121,7 @@ export function applySearchTermHighlightsInRoot(root: ParentNode, searchTerm: st
     // Synopsis text elements (only those without tspan children)
     root.querySelectorAll('.rt-synopsis-text text').forEach((textEl) => {
         if (textEl.querySelector('tspan')) return;
-        if (isNonCurrentScenePulseElement(textEl)) return;
+        if (isPulseElement(textEl)) return;
         const originalText = textEl.textContent || '';
         if (!originalText || !originalText.match(new RegExp(escapedPattern, 'i'))) return;
         const fillColor = (textEl as SVGTextElement).getAttribute('fill');
@@ -146,7 +150,7 @@ export function applySearchTermHighlightsInRoot(root: ParentNode, searchTerm: st
 
     // Unhandled tspans under synopsis
     root.querySelectorAll('.rt-synopsis-text text tspan:not([data-item-type])').forEach((tspan) => {
-        if (isNonCurrentScenePulseElement(tspan)) return;
+        if (isPulseElement(tspan)) return;
         const originalText = tspan.textContent || '';
         if (!originalText || !originalText.match(new RegExp(escapedPattern, 'i'))) return;
         const fillColor = (tspan as SVGTSpanElement).getAttribute('fill');

@@ -42,6 +42,29 @@ describe('buildTimelineSearchTextFields', () => {
     });
 });
 
+describe('AI Pulse analysis is not searchable', () => {
+    // It is commentary *about* a scene — a grade and editorial notes — not
+    // something the scene contains, and not reliably about that scene in
+    // particular. Matching it would light a scene up because a critique of it
+    // mentioned a meal.
+    const scene = sceneWith({
+        synopsis: 'She reaches the coast.',
+        currentSceneAnalysis: 'B / Compelling lore expansion, but tighten the family dialogue'
+    } as Partial<TimelineItem>);
+
+    it('is absent from the searchable fields', () => {
+        const fields = buildTimelineSearchTextFields(scene, { settings: bareSettings });
+        expect(fields.join(' ')).not.toContain('Compelling lore expansion');
+    });
+
+    it('does not produce a match', () => {
+        expect(timelineSceneMatchesSearch(scene, 'lore expansion', { settings: bareSettings })).toBe(false);
+        // The scene's own text still matches, so this is a narrowing of the
+        // corpus rather than a broken search.
+        expect(timelineSceneMatchesSearch(scene, 'coast', { settings: bareSettings })).toBe(true);
+    });
+});
+
 describe('timelineSceneMatchesSearch', () => {
     it('matches a custom hover field once it is enabled, and not before', () => {
         const scene = sceneWith({ rawFrontmatter: { Place: 'Diego' } });

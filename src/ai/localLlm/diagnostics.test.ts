@@ -71,3 +71,71 @@ describe('runLocalLlmDiagnostics', () => {
         expect(report.modelAvailable.message).toContain('missing-model');
     });
 });
+
+describe('structured JSON mode is measured, not assumed', () => {
+    const plugin = async () => ({
+        app: {},
+        settings: { aiSettings: { ...(await import('../settings/aiSettings')).buildDefaultAiSettings() } }
+    // SAFE: structural stub — diagnostics only reads the members above.
+    } as never);
+
+    beforeEach(() => {
+        listModels.mockReset();
+        complete.mockReset();
+        getCredential.mockReset();
+        getCredential.mockResolvedValue('');
+        listModels.mockResolvedValue([{ id: 'llama3' }]);
+    });
+
+    const ok = (content: string) => ({ success: true, content, responseData: {}, error: undefined });
+
+    it('recommends the other mode when it is much faster', async () => {
+        // The author is choosing between enforcement and speed; a number from
+        // their own machine beats advice that may not hold there.
+        let call = 0;
+        complete.mockImplementation(() => {
+            call += 1;
+            if (call === 1) return Promise.resolve(ok('READY'));            // basic completion
+            if (call === 2) return new Promise(res => setTimeout(() => res(ok('{"status":"ok"}')), 60));
+            return Promise.resolve(ok('{"status":"ok"}'));                   // the other mode, instant
+        });
+
+        const { runLocalLlmDiagnostics } = await import('./diagnostics');
+        const report = await runLocalLlmDiagnostics(await plugin());
+
+        expect(report.structuredJson.ok).toBe(true);
+        expect(report.structuredJson.message).toContain('Consider switching');
+    });
+
+    it('says to keep the current mode when the other one fails', async () => {
+        let call = 0;
+        complete.mockImplementation(() => {
+            call += 1;
+            if (call === 1) return Promise.resolve(ok('READY'));
+            if (call === 2) return Promise.resolve(ok('{"status":"ok"}'));
+            return Promise.resolve(ok('not json at all'));
+        });
+
+        const { runLocalLlmDiagnostics } = await import('./diagnostics');
+        const report = await runLocalLlmDiagnostics(await plugin());
+
+        expect(report.structuredJson.ok).toBe(true);
+        expect(report.structuredJson.message).toContain('keep the current mode');
+    });
+
+    it('points at the working mode when the configured one fails', async () => {
+        let call = 0;
+        complete.mockImplementation(() => {
+            call += 1;
+            if (call === 1) return Promise.resolve(ok('READY'));
+            if (call === 2) return Promise.resolve(ok('nonsense'));
+            return Promise.resolve(ok('{"status":"ok"}'));
+        });
+
+        const { runLocalLlmDiagnostics } = await import('./diagnostics');
+        const report = await runLocalLlmDiagnostics(await plugin());
+
+        expect(report.structuredJson.ok).toBe(false);
+        expect(report.structuredJson.message).toContain('should fix this');
+    });
+});

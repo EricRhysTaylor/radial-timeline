@@ -4,7 +4,18 @@ export interface LocalLlmTransportRequest {
     baseUrl: string;
     timeoutMs: number;
     apiKey?: string;
+    /**
+     * Cancels the request AND the work behind it.
+     *
+     * Without this a caller giving up only stops listening: the server keeps
+     * generating an answer nobody will collect, and those orphans accumulate
+     * across its parallel slots until it is wedged.
+     */
+    signal?: AbortSignal;
 }
+
+/** Raised when the caller cancelled, as distinct from a timeout. */
+export const LOCAL_LLM_CANCELLED = 'Local LLM request cancelled.';
 
 export interface LocalLlmModelEntry {
     id: string;
@@ -242,6 +253,9 @@ type ModelListResponse = { data?: unknown[]; error?: { message?: string } };
 /** A model list is a few KB; anything larger is not an LLM `/models` endpoint. */
 const MODEL_LIST_MAX_BYTES = 2_000_000;
 
+/** A completion is bounded by max_completion_tokens; this is a sanity ceiling. */
+const COMPLETION_MAX_BYTES = 8_000_000;
+
 function normalizeModelList(responseData: ModelListResponse): LocalLlmModelEntry[] {
     if (!Array.isArray(responseData?.data)) {
         throw new Error('Local LLM backend returned an unexpected model list response.');
@@ -367,6 +381,50 @@ export async function fetchOllamaModelDetails(
     };
 }
 
+/**
+ * Genuinely abortable completion.
+ *
+ * Returns null when the connection could not be established at all, so the
+ * caller can try the CORS-safe path. Aborts — timeout or caller cancel — are
+ * thrown, never retried: retrying through a non-abortable transport is exactly
+ * how a cancelled request turns back into an orphan.
+ */
+async function fetchCompletionAbortable(
+    url: string,
+    requestPayload: Record<string, unknown>,
+    transport: LocalLlmTransportRequest
+): Promise<{ status: number; text: string } | null> {
+    const controller = new AbortController();
+    let timedOut = false;
+    const timer = window.setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+    }, transport.timeoutMs);
+    const onExternalAbort = () => controller.abort();
+    transport.signal?.addEventListener('abort', onExternalAbort);
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: buildHeaders(transport.apiKey),
+            body: JSON.stringify(requestPayload),
+            signal: controller.signal
+        });
+        const text = await readBoundedText(response, COMPLETION_MAX_BYTES);
+        return { status: response.status, text };
+    } catch (error) {
+        if (timedOut) throw new Error('Local LLM completion request timed out.');
+        if (transport.signal?.aborted) throw new Error(LOCAL_LLM_CANCELLED);
+        // A TypeError here means the connection never happened (CORS block or
+        // refused), which the requestUrl path may still manage.
+        if (error instanceof TypeError) return null;
+        throw error;
+    } finally {
+        window.clearTimeout(timer);
+        transport.signal?.removeEventListener('abort', onExternalAbort);
+    }
+}
+
 export async function callOpenAiCompatibleLocalCompletion(input: {
     transport: LocalLlmTransportRequest;
     modelId: string;
@@ -394,26 +452,13 @@ export async function callOpenAiCompatibleLocalCompletion(input: {
         requestPayload.response_format = input.responseFormat;
     }
 
-    try {
-        const response = await withTimeout(requestUrl({
-            url: normalizeBaseUrl(input.transport.baseUrl, '/chat/completions'),
-            method: 'POST',
-            headers: buildHeaders(input.transport.apiKey),
-            body: JSON.stringify(requestPayload),
-            throw: false
-        }), input.transport.timeoutMs, 'Local LLM completion request timed out.');
-        const responseData = response.json;
-        if (response.status >= 400) {
+    const url = normalizeBaseUrl(input.transport.baseUrl, '/chat/completions');
+
+    const interpret = (status: number, responseData: unknown): LocalLlmCompletionResponse => {
+        if (status >= 400) {
             const message = (responseData as { error?: { message?: string } })?.error?.message
-                || response.text
-                || `HTTP ${response.status}`;
-            return {
-                success: false,
-                content: null,
-                responseData,
-                requestPayload,
-                error: message
-            };
+                || `HTTP ${status}`;
+            return { success: false, content: null, responseData, requestPayload, error: message };
         }
         const choices = Array.isArray((responseData as { choices?: OpenAiCompatibleChoice[] })?.choices)
             ? (responseData as { choices: OpenAiCompatibleChoice[] }).choices
@@ -428,12 +473,38 @@ export async function callOpenAiCompatibleLocalCompletion(input: {
                 error: 'Local LLM backend returned no completion content.'
             };
         }
-        return {
-            success: true,
-            content,
-            responseData,
-            requestPayload
-        };
+        return { success: true, content, responseData, requestPayload };
+    };
+
+    try {
+        // Abortable first, so a timeout or a cancel actually stops the server.
+        const direct = await fetchCompletionAbortable(url, requestPayload, input.transport);
+        if (direct) {
+            let responseData: unknown;
+            try {
+                responseData = JSON.parse(direct.text);
+            } catch {
+                return {
+                    success: false,
+                    content: null,
+                    responseData: direct.text,
+                    requestPayload,
+                    error: 'Local LLM backend returned a non-JSON response.'
+                };
+            }
+            return interpret(direct.status, responseData);
+        }
+
+        // CORS-safe fallback, reached only when the connection never happened —
+        // never after an abort, which is thrown above.
+        const response = await withTimeout(requestUrl({
+            url,
+            method: 'POST',
+            headers: buildHeaders(input.transport.apiKey),
+            body: JSON.stringify(requestPayload),
+            throw: false
+        }), input.transport.timeoutMs, 'Local LLM completion request timed out.');
+        return interpret(response.status, response.json);
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         return {

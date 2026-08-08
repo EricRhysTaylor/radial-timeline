@@ -533,7 +533,7 @@ export interface TranslationKeys {
             /** Appended when some scenes produced no usable reply at all. */
             statusUnreadable: string;
             cancelAction: string;
-            /** Cancel cannot abort a request already sent; this says so. */
+            /** Shown between pressing Cancel and the run winding down. */
             cancelPending: string;
             statusIdle: string;
             statusRunning: string;
@@ -2859,7 +2859,7 @@ export const en: TranslationKeys = {
             statusDropped: '{{count}} model claims dropped (no verbatim match)',
             statusUnreadable: '{{count}} scenes unreadable',
             cancelAction: 'Cancel',
-            cancelPending: 'Finishing current pass\u2026',
+            cancelPending: 'Stopping\u2026',
             statusIdle: 'Press Enter to search',
             statusRunning: 'Searching…',
             statusMatchOne: '1 scene matched',

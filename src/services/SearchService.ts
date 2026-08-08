@@ -121,6 +121,8 @@ export class SearchService {
     private readonly conceptSearch: ConceptSearchService;
     /** Shared with the in-flight concept run so the panel can stop it. */
     private cancelToken: CancelToken = { cancelled: false };
+    /** Aborts the request in flight, so a stopped sweep stops the server too. */
+    private cancelController = new AbortController();
 
     constructor(app: App, plugin: RadialTimelinePlugin) {
         this.app = app;
@@ -315,7 +317,8 @@ export class SearchService {
             // A scene contributing no text would just spend tokens.
             .filter(scene => !!scene.fieldsText || !!scene.bodyText);
 
-        this.cancelToken = { cancelled: false };
+        this.cancelController = new AbortController();
+        this.cancelToken = { cancelled: false, signal: this.cancelController.signal };
         const cancel = this.cancelToken;
 
         // Published as the sweep runs rather than held to the end. A run over a
@@ -392,9 +395,10 @@ export class SearchService {
         return `${(profile.label || 'LOCAL').toUpperCase()}: ${conversion.formatted}`;
     }
 
-    /** Stop an in-flight concept run at the next chunk boundary. */
+    /** Stop an in-flight concept run, including the request already sent. */
     cancelSearch(): void {
         this.cancelToken.cancelled = true;
+        this.cancelController.abort();
     }
 
     /** Atomically replace the committed results. */
@@ -429,8 +433,10 @@ export class SearchService {
      */
     private reset(): void {
         this.runId += 1;
-        // Any concept run still stepping through chunks stops scheduling more.
+        // Stop a concept run scheduling more passes, and abort the one in
+        // flight — clearing a search should not leave the server working.
         this.cancelToken.cancelled = true;
+        this.cancelController.abort();
 
         const state = this.plugin.searchState;
         state.term = '';

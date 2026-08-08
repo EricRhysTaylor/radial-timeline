@@ -66,6 +66,12 @@ export interface ConceptSearchOutcome {
 
 export interface CancelToken {
     cancelled: boolean;
+    /**
+     * Aborts the request in flight, not just the scheduling of the next one.
+     * Without it a cancelled sweep leaves the server generating answers nobody
+     * will read.
+     */
+    signal?: AbortSignal;
 }
 
 /**
@@ -448,7 +454,7 @@ export class ConceptSearchService {
         const backend = getLocalLlmBackend(localLlm.backend);
         const providerLabel = LOCAL_LLM_BACKEND_LABELS[localLlm.backend];
         const apiKey = await getCredential(this.plugin, 'ollama');
-        const transport = { baseUrl: localLlm.baseUrl, timeoutMs: localLlm.timeoutMs, apiKey };
+        const transport = { baseUrl: localLlm.baseUrl, timeoutMs: localLlm.timeoutMs, apiKey, signal: cancel.signal };
 
         // Decompose once, up front. Every scene is then judged against the same
         // set of facts, so the sweep is internally consistent.
@@ -477,9 +483,8 @@ export class ConceptSearchService {
         let consecutiveFailures = 0;
 
         for (let index = 0; index < passes.length; index += 1) {
-            // Checked between passes. Cancel cannot abort a request already in
-            // flight — see SearchService for why that limitation is real. With
-            // one scene per pass it lands within a couple of seconds.
+            // The signal aborts the request in flight; this check stops the
+            // loop scheduling another.
             //
             // Cancelling KEEPS what has been found. The author has been watching
             // matches arrive and may already have opened one; throwing them away

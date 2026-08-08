@@ -3634,15 +3634,15 @@ export function renderAiSection(params: {
             // The one finding that matters BECAUSE nothing is broken. Collapsing
             // it with the rest of the detail would hide the only actionable
             // result of a green run.
-            const faster = localLlmValidationReport?.fasterJsonMode;
-            if (faster) {
+            const timing = localLlmValidationReport?.jsonModeTiming;
+            if (timing) {
                 const note = localLlmChecksDetail.createDiv({
                     cls: 'ert-field-note ert-ai-local-llm-checks-rollup is-actionable'
                 });
                 note.setText(
-                    `Structured JSON mode: ${faster.label} was about ${faster.speedup.toFixed(1)}x faster here `
-                    + `(${(faster.otherMs / 1000).toFixed(1)}s vs ${(faster.activeMs / 1000).toFixed(1)}s) `
-                    + 'and returned valid JSON. Switching is worth considering.'
+                    `Structured JSON mode: ${timing.label} took ${(timing.ms / 1000).toFixed(1)}s here. `
+                    + `${timing.alternateLabel} is usually much faster on local servers, and Radial Timeline `
+                    + 'validates every reply either way — worth trying if runs feel slow.'
                 );
             }
         } else if (!hasHealthyServer) {

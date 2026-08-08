@@ -6,6 +6,9 @@ import { runStructuredJsonPipeline } from './structuredJson';
 import { primeLocalLlmAvailability, probeLocalLlmServer } from './availability';
 import type { LocalLlmJsonMode, LocalLlmSettings } from '../types';
 
+/** Above this, server-enforced JSON is slow enough to be worth mentioning. */
+const SLOW_STRUCTURED_MS = 2_500;
+
 export interface LocalLlmDiagnosticCheck {
     ok: boolean;
     message: string;
@@ -22,18 +25,16 @@ export interface LocalLlmDiagnosticsReport {
     /** Compatibility field: RT no longer auto-repairs malformed JSON at runtime. */
     repairPath: LocalLlmDiagnosticCheck;
     /**
-     * A materially faster JSON mode, measured on this machine.
+     * Set when the configured JSON mode was measurably slow on this machine.
      *
      * Structured rather than prose because it has to survive into the healthy
      * rollup: this is the one finding that matters *because* nothing is broken,
      * so it cannot live only in the detail the panel collapses when green.
      */
-    fasterJsonMode?: {
-        mode: LocalLlmJsonMode;
+    jsonModeTiming?: {
         label: string;
-        speedup: number;
-        activeMs: number;
-        otherMs: number;
+        alternateLabel: string;
+        ms: number;
     };
 }
 
@@ -64,7 +65,7 @@ export async function runLocalLlmDiagnostics(
     let modelAvailable: LocalLlmDiagnosticCheck = { ok: false, message: 'Model availability not tested.' };
     let basicCompletion: LocalLlmDiagnosticCheck = { ok: false, message: 'Basic completion not tested.' };
     let structuredJson: LocalLlmDiagnosticCheck = { ok: false, message: 'Structured JSON path not tested.' };
-    let fasterJsonMode: LocalLlmDiagnosticsReport['fasterJsonMode'];
+    let jsonModeTiming: LocalLlmDiagnosticsReport['jsonModeTiming'];
 
     // Reachability and model presence come from the shared probe, so this panel
     // and the timeline search panel can never disagree about whether a local
@@ -113,84 +114,63 @@ export async function runLocalLlmDiagnostics(
         ? { ok: true, message: 'Basic completion succeeded.' }
         : { ok: false, message: basic.error || 'Backend did not return the expected READY response.' };
 
-    // Both JSON modes are measured, not assumed. Server-side enforcement is
-    // several times slower than prompting on some servers — an author choosing
-    // between them deserves a number from their own machine rather than advice
-    // that may not hold there.
+    // Only the CONFIGURED mode is exercised.
+    //
+    // An earlier version probed both so it could report which was faster. That
+    // guaranteed one slow call per validation — and `withTimeout` rejects
+    // locally without aborting the request, so the server kept generating for
+    // an answer nobody was waiting for. Those orphans accumulate across the
+    // server's parallel slots and wedge it. A settings hint is not worth
+    // leaving work running that no one will collect.
     const schema = {
         type: 'object',
         properties: { status: { type: 'string' } },
         required: ['status']
     };
-    const tryMode = async (jsonMode: 'response_format' | 'prompt_only') => {
-        const startedAt = Date.now();
-        const result = await runStructuredJsonPipeline({
-            providerLabel: LOCAL_LLM_BACKEND_LABELS[localLlm.backend],
-            schema,
-            jsonMode,
-            maxRetries: localLlm.maxRetries,
-            runner: {
-                run: ({ systemPrompt, userPrompt, useResponseFormat }) => backend.complete({
-                    ...transport,
-                    modelId: localLlm.defaultModelId,
-                    systemPrompt,
-                    userPrompt,
-                    maxOutputTokens: 64,
-                    responseFormat: useResponseFormat
-                        ? { type: 'json_object', schema, schemaName: 'diagnostic' }
-                        : undefined
-                })
-            },
-            systemPrompt: 'Return only JSON.',
-            userPrompt: 'Return {"status":"ok"} as valid JSON, with no other keys.'
-        });
-        return { ok: result.ok, error: result.ok ? undefined : result.error, ms: Date.now() - startedAt };
-    };
+    const startedAt = Date.now();
+    const structured = await runStructuredJsonPipeline({
+        providerLabel: LOCAL_LLM_BACKEND_LABELS[localLlm.backend],
+        schema,
+        jsonMode: localLlm.jsonMode,
+        maxRetries: localLlm.maxRetries,
+        runner: {
+            run: ({ systemPrompt, userPrompt, useResponseFormat }) => backend.complete({
+                ...transport,
+                modelId: localLlm.defaultModelId,
+                systemPrompt,
+                userPrompt,
+                maxOutputTokens: 64,
+                responseFormat: useResponseFormat
+                    ? { type: 'json_object', schema, schemaName: 'diagnostic' }
+                    : undefined
+            })
+        },
+        systemPrompt: 'Return only JSON.',
+        userPrompt: 'Return {"status":"ok"} as valid JSON, with no other keys.'
+    });
+    const elapsedMs = Date.now() - startedAt;
 
-    const active = localLlm.jsonMode;
-    const other = active === 'response_format' ? 'prompt_only' : 'response_format';
-    const activeResult = await tryMode(active);
-    const otherResult = await tryMode(other);
-
-    const label = (mode: 'response_format' | 'prompt_only') =>
+    const modeLabel = (mode: LocalLlmJsonMode) =>
         mode === 'response_format' ? 'Response format' : 'Prompt only';
-    const seconds = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
+    const alternate: LocalLlmJsonMode =
+        localLlm.jsonMode === 'response_format' ? 'prompt_only' : 'response_format';
 
-    if (!activeResult.ok) {
-        structuredJson = {
-            ok: false,
-            message: otherResult.ok
-                ? `${label(active)} failed: ${activeResult.error} — ${label(other)} succeeded in ${seconds(otherResult.ms)}, so switching Structured JSON mode should fix this.`
-                : `${label(active)} failed: ${activeResult.error}`
-        };
-    } else if (!otherResult.ok) {
-        structuredJson = {
+    structuredJson = structured.ok
+        ? {
             ok: true,
-            message: `${label(active)} succeeded in ${seconds(activeResult.ms)}. ${label(other)} did not return valid JSON, so keep the current mode.`
-        };
-    } else {
-        // Both work: the only remaining question is speed, and a small
-        // difference is not worth acting on.
-        const ratio = activeResult.ms > 0 ? otherResult.ms / activeResult.ms : 1;
-        if (ratio < 0.6) {
-            const speedup = 1 / ratio;
-            fasterJsonMode = {
-                mode: other,
-                label: label(other),
-                speedup,
-                activeMs: activeResult.ms,
-                otherMs: otherResult.ms
-            };
-            structuredJson = {
-                ok: true,
-                message: `${label(active)} succeeded in ${seconds(activeResult.ms)}, but ${label(other)} also returned valid JSON in ${seconds(otherResult.ms)} — about ${speedup.toFixed(1)}x faster. Consider switching Structured JSON mode.`
-            };
-        } else {
-            structuredJson = {
-                ok: true,
-                message: `${label(active)} succeeded in ${seconds(activeResult.ms)}; ${label(other)} took ${seconds(otherResult.ms)}. Current mode is a good choice.`
-            };
+            message: `Structured JSON path succeeded in ${(elapsedMs / 1000).toFixed(1)}s using ${modeLabel(localLlm.jsonMode)}.`
         }
+        : { ok: false, message: structured.error };
+
+    // Reported from the one measurement taken, never from a second probe.
+    // Server-enforced JSON is the mode that tends to be slow, so a suggestion
+    // is only ever offered in that direction.
+    if (structured.ok && localLlm.jsonMode === 'response_format' && elapsedMs > SLOW_STRUCTURED_MS) {
+        jsonModeTiming = {
+            label: modeLabel(localLlm.jsonMode),
+            alternateLabel: modeLabel(alternate),
+            ms: elapsedMs
+        };
     }
 
     const repairPath: LocalLlmDiagnosticCheck = {
@@ -207,6 +187,6 @@ export async function runLocalLlmDiagnostics(
         basicCompletion,
         structuredJson,
         repairPath,
-        fasterJsonMode
+        jsonModeTiming
     };
 }

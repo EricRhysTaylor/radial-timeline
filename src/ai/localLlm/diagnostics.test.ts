@@ -89,82 +89,37 @@ describe('structured JSON mode is measured, not assumed', () => {
 
     const ok = (content: string) => ({ success: true, content, responseData: {}, error: undefined });
 
-    it('carries the recommendation as data, so a green run can still show it', async () => {
-        // The status panel collapses detail when everything passes. A finding
-        // that only matters BECAUSE nothing is broken has to survive that.
-        let call = 0;
-        complete.mockImplementation(() => {
-            call += 1;
-            if (call === 1) return Promise.resolve(ok('READY'));
-            if (call === 2) return new Promise(res => setTimeout(() => res(ok('{"status":"ok"}')), 60));
-            return Promise.resolve(ok('{"status":"ok"}'));
-        });
+    it('makes exactly one structured call — never a second probe', async () => {
+        // Probing the other mode too meant one guaranteed slow call per
+        // validation, and withTimeout rejects locally without aborting the
+        // request — so the server kept generating for an answer nobody would
+        // collect. Those orphans accumulate and wedge it.
+        complete.mockResolvedValue(ok('{"status":"ok"}'));
 
         const { runLocalLlmDiagnostics } = await import('./diagnostics');
-        const report = await runLocalLlmDiagnostics(await plugin());
+        await runLocalLlmDiagnostics(await plugin());
 
-        expect(report.fasterJsonMode?.mode).toBe('prompt_only');
-        expect(report.fasterJsonMode?.speedup).toBeGreaterThan(1);
+        // One basic completion, one structured. Nothing speculative.
+        expect(complete).toHaveBeenCalledTimes(2);
     });
 
-    it('offers no recommendation when the difference is not worth acting on', async () => {
-        // Nagging about a marginal gain trains people to ignore the panel.
-        complete.mockImplementation((): Promise<unknown> => Promise.resolve(ok('{"status":"ok"}')));
-        // First call is the basic READY check, which this returns JSON for; the
-        // structured checks are what matter and both are instant.
-        const { runLocalLlmDiagnostics } = await import('./diagnostics');
-        const report = await runLocalLlmDiagnostics(await plugin());
-
-        expect(report.fasterJsonMode).toBeUndefined();
-    });
-
-    it('recommends the other mode when it is much faster', async () => {
-        // The author is choosing between enforcement and speed; a number from
-        // their own machine beats advice that may not hold there.
-        let call = 0;
-        complete.mockImplementation(() => {
-            call += 1;
-            if (call === 1) return Promise.resolve(ok('READY'));            // basic completion
-            if (call === 2) return new Promise(res => setTimeout(() => res(ok('{"status":"ok"}')), 60));
-            return Promise.resolve(ok('{"status":"ok"}'));                   // the other mode, instant
-        });
+    it('reports how long the configured mode took', async () => {
+        complete.mockResolvedValue(ok('{"status":"ok"}'));
 
         const { runLocalLlmDiagnostics } = await import('./diagnostics');
         const report = await runLocalLlmDiagnostics(await plugin());
 
         expect(report.structuredJson.ok).toBe(true);
-        expect(report.structuredJson.message).toContain('Consider switching');
+        expect(report.structuredJson.message).toMatch(/succeeded in [0-9.]+s using /);
     });
 
-    it('says to keep the current mode when the other one fails', async () => {
-        let call = 0;
-        complete.mockImplementation(() => {
-            call += 1;
-            if (call === 1) return Promise.resolve(ok('READY'));
-            if (call === 2) return Promise.resolve(ok('{"status":"ok"}'));
-            return Promise.resolve(ok('not json at all'));
-        });
+    it('offers no suggestion when the configured mode is quick', async () => {
+        // Nagging about a fast path trains people to ignore the panel.
+        complete.mockResolvedValue(ok('{"status":"ok"}'));
 
         const { runLocalLlmDiagnostics } = await import('./diagnostics');
         const report = await runLocalLlmDiagnostics(await plugin());
 
-        expect(report.structuredJson.ok).toBe(true);
-        expect(report.structuredJson.message).toContain('keep the current mode');
-    });
-
-    it('points at the working mode when the configured one fails', async () => {
-        let call = 0;
-        complete.mockImplementation(() => {
-            call += 1;
-            if (call === 1) return Promise.resolve(ok('READY'));
-            if (call === 2) return Promise.resolve(ok('nonsense'));
-            return Promise.resolve(ok('{"status":"ok"}'));
-        });
-
-        const { runLocalLlmDiagnostics } = await import('./diagnostics');
-        const report = await runLocalLlmDiagnostics(await plugin());
-
-        expect(report.structuredJson.ok).toBe(false);
-        expect(report.structuredJson.message).toContain('should fix this');
+        expect(report.jsonModeTiming).toBeUndefined();
     });
 });

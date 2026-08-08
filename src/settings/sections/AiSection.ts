@@ -3631,6 +3631,20 @@ export function renderAiSection(params: {
             appendChecksRollup('Running validation checks...');
         } else if (allChecksPassed) {
             appendChecksRollup('All checks passed — connection · model availability · basic · structured · repair.');
+            // The one finding that matters BECAUSE nothing is broken. Collapsing
+            // it with the rest of the detail would hide the only actionable
+            // result of a green run.
+            const faster = localLlmValidationReport?.fasterJsonMode;
+            if (faster) {
+                const note = localLlmChecksDetail.createDiv({
+                    cls: 'ert-field-note ert-ai-local-llm-checks-rollup is-actionable'
+                });
+                note.setText(
+                    `Structured JSON mode: ${faster.label} was about ${faster.speedup.toFixed(1)}x faster here `
+                    + `(${(faster.otherMs / 1000).toFixed(1)}s vs ${(faster.activeMs / 1000).toFixed(1)}s) `
+                    + 'and returned valid JSON. Switching is worth considering.'
+                );
+            }
         } else if (!hasHealthyServer) {
             appendChecksRollup(localLlmServerDetectionError
                 ? 'No healthy local servers were detected automatically.'

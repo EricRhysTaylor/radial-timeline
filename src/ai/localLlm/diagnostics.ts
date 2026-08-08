@@ -4,7 +4,7 @@ import { getLocalLlmBackend } from './backends';
 import { getCanonicalLocalLlmSettings, LOCAL_LLM_BACKEND_LABELS } from './settings';
 import { runStructuredJsonPipeline } from './structuredJson';
 import { primeLocalLlmAvailability, probeLocalLlmServer } from './availability';
-import type { LocalLlmSettings } from '../types';
+import type { LocalLlmJsonMode, LocalLlmSettings } from '../types';
 
 export interface LocalLlmDiagnosticCheck {
     ok: boolean;
@@ -21,6 +21,20 @@ export interface LocalLlmDiagnosticsReport {
     structuredJson: LocalLlmDiagnosticCheck;
     /** Compatibility field: RT no longer auto-repairs malformed JSON at runtime. */
     repairPath: LocalLlmDiagnosticCheck;
+    /**
+     * A materially faster JSON mode, measured on this machine.
+     *
+     * Structured rather than prose because it has to survive into the healthy
+     * rollup: this is the one finding that matters *because* nothing is broken,
+     * so it cannot live only in the detail the panel collapses when green.
+     */
+    fasterJsonMode?: {
+        mode: LocalLlmJsonMode;
+        label: string;
+        speedup: number;
+        activeMs: number;
+        otherMs: number;
+    };
 }
 
 function resolveSettings(
@@ -50,6 +64,7 @@ export async function runLocalLlmDiagnostics(
     let modelAvailable: LocalLlmDiagnosticCheck = { ok: false, message: 'Model availability not tested.' };
     let basicCompletion: LocalLlmDiagnosticCheck = { ok: false, message: 'Basic completion not tested.' };
     let structuredJson: LocalLlmDiagnosticCheck = { ok: false, message: 'Structured JSON path not tested.' };
+    let fasterJsonMode: LocalLlmDiagnosticsReport['fasterJsonMode'];
 
     // Reachability and model presence come from the shared probe, so this panel
     // and the timeline search panel can never disagree about whether a local
@@ -157,15 +172,25 @@ export async function runLocalLlmDiagnostics(
         // Both work: the only remaining question is speed, and a small
         // difference is not worth acting on.
         const ratio = activeResult.ms > 0 ? otherResult.ms / activeResult.ms : 1;
-        structuredJson = ratio < 0.6
-            ? {
+        if (ratio < 0.6) {
+            const speedup = 1 / ratio;
+            fasterJsonMode = {
+                mode: other,
+                label: label(other),
+                speedup,
+                activeMs: activeResult.ms,
+                otherMs: otherResult.ms
+            };
+            structuredJson = {
                 ok: true,
-                message: `${label(active)} succeeded in ${seconds(activeResult.ms)}, but ${label(other)} also returned valid JSON in ${seconds(otherResult.ms)} — about ${(1 / ratio).toFixed(1)}x faster. Consider switching Structured JSON mode.`
-            }
-            : {
+                message: `${label(active)} succeeded in ${seconds(activeResult.ms)}, but ${label(other)} also returned valid JSON in ${seconds(otherResult.ms)} — about ${speedup.toFixed(1)}x faster. Consider switching Structured JSON mode.`
+            };
+        } else {
+            structuredJson = {
                 ok: true,
                 message: `${label(active)} succeeded in ${seconds(activeResult.ms)}; ${label(other)} took ${seconds(otherResult.ms)}. Current mode is a good choice.`
             };
+        }
     }
 
     const repairPath: LocalLlmDiagnosticCheck = {
@@ -181,6 +206,7 @@ export async function runLocalLlmDiagnostics(
         modelAvailable,
         basicCompletion,
         structuredJson,
-        repairPath
+        repairPath,
+        fasterJsonMode
     };
 }

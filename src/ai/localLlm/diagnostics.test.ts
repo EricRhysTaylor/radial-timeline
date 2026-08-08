@@ -89,6 +89,35 @@ describe('structured JSON mode is measured, not assumed', () => {
 
     const ok = (content: string) => ({ success: true, content, responseData: {}, error: undefined });
 
+    it('carries the recommendation as data, so a green run can still show it', async () => {
+        // The status panel collapses detail when everything passes. A finding
+        // that only matters BECAUSE nothing is broken has to survive that.
+        let call = 0;
+        complete.mockImplementation(() => {
+            call += 1;
+            if (call === 1) return Promise.resolve(ok('READY'));
+            if (call === 2) return new Promise(res => setTimeout(() => res(ok('{"status":"ok"}')), 60));
+            return Promise.resolve(ok('{"status":"ok"}'));
+        });
+
+        const { runLocalLlmDiagnostics } = await import('./diagnostics');
+        const report = await runLocalLlmDiagnostics(await plugin());
+
+        expect(report.fasterJsonMode?.mode).toBe('prompt_only');
+        expect(report.fasterJsonMode?.speedup).toBeGreaterThan(1);
+    });
+
+    it('offers no recommendation when the difference is not worth acting on', async () => {
+        // Nagging about a marginal gain trains people to ignore the panel.
+        complete.mockImplementation((): Promise<unknown> => Promise.resolve(ok('{"status":"ok"}')));
+        // First call is the basic READY check, which this returns JSON for; the
+        // structured checks are what matter and both are instant.
+        const { runLocalLlmDiagnostics } = await import('./diagnostics');
+        const report = await runLocalLlmDiagnostics(await plugin());
+
+        expect(report.fasterJsonMode).toBeUndefined();
+    });
+
     it('recommends the other mode when it is much faster', async () => {
         // The author is choosing between enforcement and speed; a number from
         // their own machine beats advice that may not hold there.

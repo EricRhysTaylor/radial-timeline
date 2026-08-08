@@ -410,3 +410,10 @@
   margin-top: 8px;
 }
 
+
+/* A green run's one actionable finding: readable, not alarming — nothing is
+   wrong, there is simply a faster setting available. */
+.ert-ai-local-llm-checks-rollup.is-actionable {
+  margin-top: 4px;
+  color: var(--text-normal);
+}

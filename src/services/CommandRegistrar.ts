@@ -1,4 +1,3 @@
-/* global __RT_RELEASE__ -- build-time flags injected by esbuild define; see esbuild.config.mjs */
 /*
  * CommandRegistrar
  * Encapsulates all command+ribbon registration.
@@ -41,7 +40,7 @@ import { chunkScenesIntoParts } from '../utils/splitOutput';
 import { resolveBookPages, type MatterNoteSummary } from '../utils/bookPagesResolver';
 import { ensureBundledLayoutInstalledForExport } from '../utils/pandocBundledLayouts';
 import { getLayoutAbbreviation, resolveTemplateAccess, TEMPLATE_ACCESS_FALLBACK_MESSAGE } from '../publishing/templateTiering';
-import { hasProFeatureAccess } from '../settings/featureGate';
+import { areBetaCommandsVisible, hasProFeatureAccess } from '../settings/featureGate';
 import { cleanupFormatForOutputFormat, getDefaultManuscriptCleanupOptions, normalizeManuscriptCleanupOptions, sanitizeCompiledManuscript, sanitizeCompiledManuscriptForPdf } from '../utils/manuscriptSanitize';
 import { getManuscriptLayoutExportBehavior } from '../utils/manuscriptLayoutExport';
 import { ExportFailure, categorizeExportError } from '../utils/exportErrors';
@@ -104,7 +103,7 @@ export class CommandRegistrar {
                 void this.plugin.getInquiryService().activateView();
             },
         });
-        if (!__RT_RELEASE__) {
+        if (areBetaCommandsVisible()) {
             this.plugin.addCommand({
                 id: 'inquiry-omnibus-pass',
                 name: t('commands.inquiryOmnibusPass'),
@@ -125,7 +124,7 @@ export class CommandRegistrar {
         // Dev-only diagnostics: dump hover/render timings + a DOM census so
         // performance work starts from evidence, not guesses. Never ships in
         // release builds.
-        if (!__RT_RELEASE__) {
+        if (areBetaCommandsVisible()) {
             this.plugin.addCommand({
                 id: 'copy-performance-report',
                 name: 'Copy performance report (dev)',
@@ -189,7 +188,7 @@ export class CommandRegistrar {
         });
 
         // Beta (dev builds only): one-button manuscript onboarding via local LLM.
-        if (!__RT_RELEASE__) {
+        if (areBetaCommandsVisible()) {
             this.plugin.addCommand({
                 id: 'onboard-manuscript',
                 name: 'Onboard existing manuscript (BETA)',
@@ -256,27 +255,33 @@ export class CommandRegistrar {
             }
         });
 
-        // Export the currently rendered timeline as a self-contained image.
-        this.plugin.addCommand({
-            id: 'export-timeline-image',
-            name: t('commands.exportTimelineImage'),
-            callback: () => {
-                new TimelineImageExportModal(this.app, async (choice) => {
-                    const service = new TimelineExportService(this.plugin, this.app);
-                    await service.exportImage(choice.format, choice.scale);
-                }).open();
-            }
-        });
+        // Dev-only tooling: these two feed the web-engine fixture corpus and
+        // have no use for authors, so they stay behind the same beta-command
+        // gate as the other internal-testing commands above. Never ships in
+        // release builds.
+        if (areBetaCommandsVisible()) {
+            // Export the currently rendered timeline as a self-contained image.
+            this.plugin.addCommand({
+                id: 'export-timeline-image',
+                name: t('commands.exportTimelineImage'),
+                callback: () => {
+                    new TimelineImageExportModal(this.app, async (choice) => {
+                        const service = new TimelineExportService(this.plugin, this.app);
+                        await service.exportImage(choice.format, choice.scale);
+                    }).open();
+                }
+            });
 
-        // Export the timeline render input pipeline as schema-stamped JSON.
-        this.plugin.addCommand({
-            id: 'export-timeline-data',
-            name: t('commands.exportTimelineData'),
-            callback: async () => {
-                const service = new TimelineExportService(this.plugin, this.app);
-                await service.exportDataJson();
-            }
-        });
+            // Export the timeline render input pipeline as schema-stamped JSON.
+            this.plugin.addCommand({
+                id: 'export-timeline-data',
+                name: t('commands.exportTimelineData'),
+                callback: async () => {
+                    const service = new TimelineExportService(this.plugin, this.app);
+                    await service.exportDataJson();
+                }
+            });
+        }
     }
 
     private resolveCleanupOptions(result: ManuscriptModalResult): ManuscriptExportCleanupOptions {

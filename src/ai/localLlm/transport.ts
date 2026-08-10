@@ -401,9 +401,14 @@ async function fetchCompletionAbortable(
         controller.abort();
     }, transport.timeoutMs);
     const onExternalAbort = () => controller.abort();
+    // An AbortSignal is not a DOM element: registerDomEvent cannot bind it, and
+    // this is a module-level function with no Component to own the handle.
+    // SAFE: removed unconditionally in the finally below, so it cannot leak.
     transport.signal?.addEventListener('abort', onExternalAbort);
 
     try {
+        // This path exists so a cancelled or timed-out completion actually stops
+        // (see the doc above). SAFE: requestUrl cannot be aborted.
         const response = await fetch(url, {
             method: 'POST',
             headers: buildHeaders(transport.apiKey),

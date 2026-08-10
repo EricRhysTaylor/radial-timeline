@@ -120,8 +120,6 @@ export class SceneBodyIndex {
      */
     async load(scenes: TimelineItem[]): Promise<Map<string, string>> {
         const bodies = new Map<string, string>();
-        let readCount = 0;
-        let totalChars = 0;
 
         for (const scene of scenes) {
             if (!scene.path) continue;
@@ -132,7 +130,6 @@ export class SceneBodyIndex {
             const cached = this.entries.get(scene.path);
             if (cached && cached.mtime === file.stat.mtime) {
                 bodies.set(scene.path, cached.body);
-                totalChars += cached.body.length;
                 continue;
             }
 
@@ -145,20 +142,12 @@ export class SceneBodyIndex {
                 const body = extractBodyAfterFrontmatter(raw, frontmatter ?? {});
                 this.entries.set(scene.path, { mtime: file.stat.mtime, body });
                 bodies.set(scene.path, body);
-                readCount += 1;
-                totalChars += body.length;
             } catch (error) {
                 // One unreadable scene must not fail the whole search; it simply
                 // contributes no body matches. Logged so it is not invisible.
                 const message = error instanceof Error ? error.message : String(error);
                 console.warn(`[Search] Could not read scene body "${scene.path}": ${message}`);
             }
-        }
-
-        if (readCount > 0) {
-            console.debug(
-                `[Search] Body index: ${bodies.size} scenes, ${readCount} read from disk, ${totalChars} chars.`
-            );
         }
 
         return bodies;

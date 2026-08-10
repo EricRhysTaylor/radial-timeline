@@ -42,6 +42,8 @@ describe('local completion abort', () => {
     it('reports a caller cancel distinctly from a timeout', async () => {
         const controller = new AbortController();
         globalThis.fetch = vi.fn((_url: unknown, init?: RequestInit) => new Promise((_res, rej) => {
+            // No DOM element and no Component here, and the stub dies with the test.
+            // SAFE: an AbortSignal cannot be bound by registerDomEvent.
             init?.signal?.addEventListener('abort', () => rej(new DOMException('Aborted', 'AbortError')));
         })) as never;
 
@@ -61,6 +63,8 @@ describe('local completion abort', () => {
         // orphan again.
         const controller = new AbortController();
         const fetchMock = vi.fn((_url: unknown, init?: RequestInit) => new Promise((_res, rej) => {
+            // No DOM element and no Component here, and the stub dies with the test.
+            // SAFE: an AbortSignal cannot be bound by registerDomEvent.
             init?.signal?.addEventListener('abort', () => rej(new DOMException('Aborted', 'AbortError')));
         }));
         globalThis.fetch = fetchMock as never;
@@ -78,6 +82,8 @@ describe('local completion abort', () => {
 
     it('times out without leaving the request running', async () => {
         globalThis.fetch = vi.fn((_url: unknown, init?: RequestInit) => new Promise((_res, rej) => {
+            // No DOM element and no Component here, and the stub dies with the test.
+            // SAFE: an AbortSignal cannot be bound by registerDomEvent.
             init?.signal?.addEventListener('abort', () => rej(new DOMException('Aborted', 'AbortError')));
         })) as never;
 

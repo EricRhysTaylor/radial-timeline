@@ -2120,10 +2120,12 @@
   /* Wider than the input, which clamps to 180px — the option labels need room. */
   min-width: 232px;
   max-width: min(300px, calc(100vw - 32px));
-  padding: 8px 10px 9px;
+  /* 10px/9px are optical: the panel sits 1px under the input's border, so the
+     bottom pad is nudged to make the two read as one control. No token matches. */
+  padding: var(--size-4-2) 10px 9px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--size-4-2);
   border: 1px solid var(--interactive-accent);
   border-top-color: var(--background-modifier-border);
   border-radius: 0 var(--radius-s) var(--radius-s) var(--radius-s);
@@ -2149,7 +2151,7 @@
   border: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--size-2-3);
 }
 
 .ert-timeline-search-panel__legend {
@@ -2210,7 +2212,7 @@
   border-top: 1px solid var(--background-modifier-border);
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: var(--size-4-2);
   font-size: var(--font-ui-smaller);
   color: var(--text-muted);
 }
@@ -2222,7 +2224,7 @@
 
 .ert-timeline-search-panel__cancel {
   flex: 0 0 auto;
-  padding: 2px 8px;
+  padding: var(--size-2-1) var(--size-4-2);
   font-size: var(--font-ui-smaller);
   line-height: 1.4;
   height: auto;

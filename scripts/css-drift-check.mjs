@@ -8,33 +8,24 @@ const ROOT = process.cwd();
 // everywhere; the WARN rules (raw-hex / spacing-px / shadow-rgba / rt-legacy)
 // are budgeted against scripts/css-drift-baseline.json so previously-invisible
 // renderer-island debt is frozen, not silently growable.
-const FILES = [
-  "src/styles/rt-ui.css",
-  "src/styles/settings.css",
-  "src/styles/modal.css",
-  "src/styles/timeline-audit.css",
-  "src/styles/timeline-repair.css",
-  "src/styles/book-designer.css",
-  "src/styles/legacy/apr-legacy.css",
-  "src/styles/legacy/rt-ui-legacy.css",
-  "src/styles/apr-thumb.css",
-  "src/styles/base.css",
-  "src/styles/briefing.css",
-  "src/styles/chronologue-alt.css",
-  "src/styles/chronologue-base.css",
-  "src/styles/chronologue-runtime.css",
-  "src/styles/chronologue-shift.css",
-  "src/styles/drag.css",
-  "src/styles/font.css",
-  "src/styles/grid.css",
-  "src/styles/indicators.css",
-  "src/styles/inquiry.css",
-  "src/styles/pulse.css",
-  "src/styles/scenes.css",
-  "src/styles/timeline.css",
-  "src/styles/variables.css",
-  "styles.css", // optional: if your bundler emits this
-].map((p) => path.join(ROOT, p));
+//
+// Walk src/styles rather than listing files by hand: a hand-maintained list
+// silently exempts whatever nobody remembered to add (src/styles/features/*
+// and bug-report.css were unscanned this way). The generated bundle
+// (./styles.css) is NOT scanned — it is a concatenation of these sources, so
+// including it counted every warning twice and made the totals depend on
+// whether the tree had been built.
+const SOURCE_DIR = path.join(ROOT, "src/styles");
+const collectCss = (dir) =>
+  fs
+    .readdirSync(dir, { withFileTypes: true })
+    .flatMap((entry) => {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) return collectCss(full);
+      return entry.name.endsWith(".css") ? [full] : [];
+    })
+    .sort();
+const FILES = collectCss(SOURCE_DIR);
 
 const exists = (p) => fs.existsSync(p);
 const read = (p) => fs.readFileSync(p, "utf8");

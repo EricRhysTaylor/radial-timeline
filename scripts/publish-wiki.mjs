@@ -30,10 +30,27 @@ function publish() {
     console.log(`Cloning ${WIKI_REPO}...`);
     run(`git clone ${WIKI_REPO} ${TEMP_DIR}`);
 
-    // 3. Copy files from 'wiki/' to temp dir
+    // 3. Copy files from 'wiki/' to temp dir. rsync rather than cp -R so Finder
+    // droppings stay out: .DS_Store is gitignored in this repo, so it is
+    // invisible here but would be published to the public wiki, which has no
+    // such ignore (one reached the live wiki on 2026-08-10 this way).
     console.log(`Copying files from ${SOURCE_DIR} to ${TEMP_DIR}...`);
-    // Using cp -R for simplicity on Mac
-    run(`cp -R ${SOURCE_DIR}/. ${TEMP_DIR}/`);
+    run(`rsync -a --exclude='.DS_Store' ${SOURCE_DIR}/ ${TEMP_DIR}/`);
+
+    // 3a. Sweep any .DS_Store the wiki repo already carries, so publishing also
+    // retires ones committed before the exclusion above existed.
+    const sweepDsStore = (dir) => {
+        for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+            if (entry.name === '.git') continue;
+            const full = path.join(dir, entry.name);
+            if (entry.isDirectory()) sweepDsStore(full);
+            else if (entry.name === '.DS_Store') {
+                console.log(`Removing ${path.relative(TEMP_DIR, full)} from the wiki.`);
+                fs.rmSync(full);
+            }
+        }
+    };
+    sweepDsStore(TEMP_DIR);
 
     // 3b. Prune pages that no longer exist in wiki/. cp never deletes, so
     // renamed or retired pages otherwise stay live on the public wiki forever

@@ -18,8 +18,8 @@ export const BEAT_SYSTEM_COPY: Record<string, {
         description: 'Tracks departure, transformation, ordeal, and return.\n\nUse it when you want a mythic or identity-driven arc with visible inner and outer transformation.\n\nBest for: quest stories, speculative fiction, coming-of-age, transformational journeys\nMomentum profile: departure -> trials -> ordeal -> return with change',
         examples: 'Examples: Star Wars, The Hobbit, A Wizard of Earthsea.',
         sourceLink: {
-            label: "Joseph Campbell and the Hero's Journey",
-            href: 'https://www.jcf.org/learn/joseph-campbell-heros-journey'
+            label: "Christopher Vogler's The Writer's Journey",
+            href: 'https://en.wikipedia.org/wiki/The_Writer%27s_Journey:_Mythic_Structure_for_Writers'
         }
     },
     'Classic Dramatic Structure': {

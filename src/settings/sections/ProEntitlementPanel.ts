@@ -104,7 +104,7 @@ export function renderProEntitlementPanel({
         plugin.settings.proAccessEnabled = enabled;
         await plugin.saveSettings();
         if (!enabled) {
-            new Notice('Pro mode off — Core surface only. Turn it back on any time in Settings → Pro.');
+            new Notice('Pro workflows hidden — Core surface only.');
         }
         onEntitlementChanged?.();
     };
@@ -127,7 +127,7 @@ export function renderProEntitlementPanel({
     collapsedPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: 'PRO' });
     // No title text: the PRO pill already names the surface, and with the toggle
     // hidden there is no mode for "Pro mode" to describe.
-    const collapsedToggle = createToggle(collapsedRow, 'Toggle Pro mode');
+    const collapsedToggle = createToggle(collapsedRow, 'Toggle Pro workflows');
     // Toggle hidden for now: Pro mode stays on for every install, so there is no
     // state for the reader to manage. The control and its wiring are left intact —
     // unhide this line to bring the switch back.
@@ -141,8 +141,7 @@ export function renderProEntitlementPanel({
     const keySetting = new Setting(keyContainer)
         .setName('Pro access key')
         .setDesc(
-            'Nothing to enter. Pro mode is on for every install and needs no key. ' +
-            'The switch above is the only control \u2014 this field is inactive.'
+            'Nothing to enter. Pro is on for every install and needs no key \u2014 this field is inactive.'
         )
         .addText(text => {
             text.setPlaceholder('XXXX-XXXX-XXXX-XXXX');
@@ -152,7 +151,7 @@ export function renderProEntitlementPanel({
         .addButton(button => {
             button
                 .setButtonText('Validate')
-                .setTooltip('Nothing to validate — Pro mode needs no key')
+                .setTooltip('Nothing to validate — Pro needs no key')
                 .setDisabled(true);
         });
 

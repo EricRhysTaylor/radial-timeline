@@ -1873,7 +1873,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     });
     const advancedHeading = addProRow(new Setting(advancedPanel))
         .setName('Advanced Pandoc')
-        .setDesc('Available when Pro mode is on (Settings \u2192 Pro). Carry an existing Pandoc/LaTeX setup into exports. Applies to PDF export only.')
+        .setDesc('A Pro workflow. Carry an existing Pandoc/LaTeX setup into exports. Applies to PDF export only.')
         .setHeading();
     addHeadingIcon(advancedHeading, 'wrench');
     applyErtHeaderLayout(advancedHeading);
@@ -2734,8 +2734,8 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     btn.onClick(() => {
                         if (!isActive) {
                             new Notice(isCustomizingBundled
-                                ? 'Pro mode is off \u2014 turn it on in Settings \u2192 Pro to customize PDF styles.'
-                                : 'Pro mode is off \u2014 turn it on in Settings \u2192 Pro to edit designed styles.');
+                                ? 'Customizing PDF styles is a Pro workflow.'
+                                : 'Editing designed styles is a Pro workflow.');
                             return;
                         }
                         new DesignedStyleWizardModal(app, plugin, {
@@ -2983,11 +2983,11 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         }
         if (!isActive) {
             button.buttonEl.addClass('ert-pro-locked');
-            button.setTooltip('Available when Pro mode is on (Settings \u2192 Pro).');
+            button.setTooltip('A Pro workflow.');
         }
         button.onClick(() => {
             if (!isActive) {
-                new Notice('Pro mode is off \u2014 turn it on in Settings \u2192 Pro to design custom styles.');
+                new Notice('Designing custom styles is a Pro workflow.');
                 return;
             }
             new DesignedStyleWizardModal(app, plugin, {
@@ -3016,11 +3016,11 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         }
         if (!isActive) {
             button.buttonEl.addClass('ert-pro-locked');
-            button.setTooltip('Available when Pro mode is on (Settings \u2192 Pro).');
+            button.setTooltip('A Pro workflow.');
         }
         button.onClick(() => {
             if (!isActive) {
-                new Notice('Pro mode is off \u2014 turn it on in Settings \u2192 Pro to import a custom template.');
+                new Notice('Importing custom templates is a Pro workflow.');
                 return;
             }
             new ImportTemplateModal(app, plugin, commitImportedTemplate).open();

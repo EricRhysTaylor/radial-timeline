@@ -766,7 +766,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             helperLine: 'PDF export is powered by Pandoc and LaTeX — industry-standard formatting tools, handled for you behind the scenes. Book Details and Book Pages are optional; you can export a PDF from a built-in style without them.',
             kicker: 'WHAT YOU CAN DO',
             features: [
-                { icon: 'layout-template', text: 'PDF Style — Start here. Two styles on the Core surface, two more with Pro mode on, or import your own' },
+                { icon: 'layout-template', text: 'PDF Style — Start here. Two styles on the Core surface, two more with Pro, or import your own' },
                 { icon: 'file-output', text: 'Export — Markdown anytime; a print-ready PDF once a style is set' },
                 { icon: 'file-text', text: 'Book Details (optional) — Title, author, and publishing info in one place' },
                 { icon: 'book-open-text', text: 'Book Pages (optional) — Front & back matter: title page, dedication, epigraph, and more' }

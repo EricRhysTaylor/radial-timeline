@@ -125,8 +125,8 @@ export function renderProEntitlementPanel({
     const collapsedPillIcon = collapsedPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON });
     setIcon(collapsedPillIcon, 'signature');
     collapsedPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: 'PRO' });
-    const collapsedTitle = collapsedLeft.createDiv({ cls: 'ert-pro-mode__collapsed-title' });
-    collapsedTitle.createSpan({ cls: 'ert-pro-mode__title-text', text: 'Pro mode' });
+    // No title text: the PRO pill already names the surface, and with the toggle
+    // hidden there is no mode for "Pro mode" to describe.
     const collapsedToggle = createToggle(collapsedRow, 'Toggle Pro mode');
     // Toggle hidden for now: Pro mode stays on for every install, so there is no
     // state for the reader to manage. The control and its wiring are left intact —

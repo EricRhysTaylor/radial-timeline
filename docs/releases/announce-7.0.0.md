@@ -1,7 +1,7 @@
 # 7.0.0 — announcement drafts
 
 Derived from `draft-for-release-7.0.0.md`. Structure and rules live in
-`Brand/messaging-canon.md` §8.
+`Brand/messaging-canon.md` §10.
 
 **Images: unblocked.** 13 in `wiki/images/`, onboarding and share-settings gaps
 now closed. Only *APR direct to Community* still has no capture — minor, and no

@@ -139,7 +139,7 @@ export class AuthorProgressCampaignService {
 
     public async sendCampaignToCommunity(campaignId: string, options?: { silent?: boolean }): Promise<'private' | 'active' | null> {
         if (!hasProFeatureAccess(this.plugin)) {
-            throw new Error('Community APR sharing requires Pro access.');
+            throw new Error('Pro mode is off — turn it on in Settings → Pro to share an APR campaign to Community.');
         }
         const result = await this.renderService.buildCampaignReport(campaignId);
         if (!result) return null;

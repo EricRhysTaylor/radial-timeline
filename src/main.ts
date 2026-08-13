@@ -477,7 +477,7 @@ export default class RadialTimelinePlugin extends Plugin {
                 return;
             }
             if (!hasProFeatureAccess(this)) {
-                new Notice('Saga Timeline is a Pro feature.');
+                new Notice('Pro mode is off — turn it on in Settings → Pro to use Saga Timeline.');
                 return;
             }
             this.settings.timelineScope = 'saga';

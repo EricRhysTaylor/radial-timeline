@@ -183,7 +183,7 @@ Configure the Chronologue backdrop ring and micro-backdrop rings.
 
 *   **Working patterns**: The pattern library used for scenes whose `Status` is `Working`.
 *   **Working pattern**: Choose the live motif used on the timeline for `Working` scenes.
-*   **Custom patterns**: Pro adds a custom-pattern editor for author-defined motifs.
+*   **Custom patterns**: With Pro mode on, a custom-pattern editor for author-defined motifs appears here.
 
 <a name="progress-stage-colors"></a>
 ## Progress Stage Colors

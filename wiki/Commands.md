@@ -42,7 +42,7 @@ Some commands are hidden until their required feature is enabled. Others remain 
 *   **Scene pulse analysis** and **Summary refresh** appear only when **AI LLM features** are enabled in [Settings → AI](Settings-AI).
 *   **Open inquiry** stays listed either way, but the same AI-enabled gate applies: with AI off, it shows a notice and refuses to run instead of opening. The Inquiry ribbon icon is also hidden while AI is off.
 *   **Gossamer analysis** is visible, but the run requires an active beat system, story beats, scene content, and usable AI settings.
-*   **Runtime estimator** requires **Pro** access. Runtime configuration lives in [Settings → Core](Settings-Core#runtime-estimation).
+*   **Runtime estimator** appears when **Pro mode** is on (Settings → PRO). Runtime configuration lives in [Settings → Core](Settings-Core#runtime-estimation).
 *   **Planetary time calculator** is visible, but it needs at least one configured planetary profile before it can produce a conversion.
 *   **Timeline order** and **Timeline audit** show a release-pending notice in public release builds and are usable in development/testing builds.
 *   **Inquiry omnibus** appears only in development/testing builds.

@@ -598,16 +598,6 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         infoEl.createSpan({ text: alert.description, cls: 'ert-notification-history__description' });
     }
 
-    private renderProCallout(containerEl: HTMLElement, text: string, switchToProTab: () => void): void {
-        const callout = containerEl.createDiv({ cls: 'ert-pro-callout' });
-        const badge = callout.createSpan({ cls: 'ert-pro-callout-badge' });
-        setIcon(badge, 'signature');
-        badge.createSpan({ text: 'Pro' });
-        callout.createSpan({ cls: 'ert-pro-callout-text', text });
-        callout.createSpan({ cls: 'ert-pro-callout-arrow', text: '→' });
-        this.plugin.registerDomEvent(callout, 'click', () => { switchToProTab(); });
-    }
-
     private applyElementBlockLayout(containerEl: HTMLElement): void {
         const settingItems = containerEl.querySelectorAll('.ert-settings-searchable-content .setting-item');
         settingItems.forEach(settingEl => {
@@ -752,12 +742,13 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             badgeIcon: 'signature',
             badgeVariant: ERT_CLASSES.BADGE_PILL_NEUTRAL,
             wikiHref: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Pro',
-            title: 'Pro extends the core experience.',
-            subtitle: 'More control, more capacity, and deeper narrative tools. Take your writing to the next level with the features that speed workflow and elevate productivity.',
-            kicker: 'Pro unlocks:',
+            title: 'Pro mode is a switch, not a purchase.',
+            subtitle: 'Pro mode is on by default and gathers Radial Timeline’s heavier workflows under one toggle. Switch it off for a quieter Core workspace, switch it back on and everything returns. Nothing here is for sale.',
+            helperLine: 'Pro is a service, not a set of unlocked features. Everything the plugin does stays free. Pro covers hosted analysis and serving readers at scale.',
+            kicker: 'Grouped under Pro mode:',
             features: [
                 { icon: 'file-output', text: 'Advanced exports — PDF, Outline, and structured data formats' },
-                { icon: 'layout-grid', text: 'Publishing workflows, runtime planning, and advanced campaign tools' },
+                { icon: 'layout-grid', text: 'Publishing workflows, runtime planning, and campaign tools' },
                 { icon: 'waves', text: 'Extended Inquiry prompts' },
                 { icon: 'timer', text: 'Runtime estimation and session planning' },
                 { icon: 'radio', text: 'Social campaign management and teaser controls' },
@@ -776,7 +767,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             helperLine: 'PDF export is powered by Pandoc and LaTeX — industry-standard formatting tools, handled for you behind the scenes. Book Details and Book Pages are optional; you can export a PDF from a built-in style without them.',
             kicker: 'WHAT YOU CAN DO',
             features: [
-                { icon: 'layout-template', text: 'PDF Style — Start here. Two styles free with Core, two more with Pro, or import your own' },
+                { icon: 'layout-template', text: 'PDF Style — Start here. Two styles on the Core surface, two more with Pro mode on, or import your own' },
                 { icon: 'file-output', text: 'Export — Markdown anytime; a print-ready PDF once a style is set' },
                 { icon: 'file-text', text: 'Book Details (optional) — Title, author, and publishing info in one place' },
                 { icon: 'book-open-text', text: 'Book Pages (optional) — Front & back matter: title page, dedication, epigraph, and more' }
@@ -809,6 +800,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             wikiHref: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Settings-Inquiry',
             title: 'Analyze your story as a complete system.',
             subtitle: 'Evaluate how scenes, books, and entire sagas work together. Inquiry uses your manuscript(s), outlines, characters, and worldbuilding to surface structural weak points, missing or underdeveloped material, and momentum issues—all in a single view with clear visual signals and quantifiers.',
+            helperLine: 'Inquiry runs on the provider key you add in Settings → AI. Your key, your models. A hosted option that runs the analysis on our models and prompts will be available later as a paid service, for authors who would rather not manage a key at all.',
             kicker: 'Inquiry Focus Areas:',
             features: [
                 { icon: 'search', text: 'Source Scans — Choose scan locations, class scopes, and source types to include.' },

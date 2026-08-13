@@ -3,8 +3,8 @@ import type { PandocLayoutTemplate, TemplateKind, TemplateTier, ValidationIssue 
 export const BASIC_MANUSCRIPT_LAYOUT_ID = 'bundled-fiction-classic-manuscript';
 export const CONTEMPORARY_LITERARY_LAYOUT_ID = 'bundled-fiction-contemporary-literary';
 
-export const TEMPLATE_ACCESS_FALLBACK_MESSAGE = 'The saved PDF style is a Pro style. This export will use Basic instead.';
-export const TEMPLATE_ACCESS_LOCKED_MESSAGE = 'Selected PDF style requires Pro and no Core fallback is available.';
+export const TEMPLATE_ACCESS_FALLBACK_MESSAGE = 'The saved PDF style is a Pro mode style and Pro mode is off. This export will use Basic instead.';
+export const TEMPLATE_ACCESS_LOCKED_MESSAGE = 'The selected PDF style needs Pro mode on (Settings → Pro), and no Core fallback is available.';
 
 export interface TemplateAccessResolution {
     requestedLayout?: PandocLayoutTemplate;
@@ -127,7 +127,7 @@ export function resolveTemplateAccess(params: {
                 buildIssue(
                     'info',
                     tier === 'free' ? 'template_access_core_included' : 'template_access_requires_pro',
-                    tier === 'free' ? 'Included with Core.' : 'Available with Pro.',
+                    tier === 'free' ? 'Included with Core.' : 'Shown with Pro mode on.',
                     requestedLayout.id
                 ),
             ],
@@ -155,7 +155,7 @@ export function resolveTemplateAccess(params: {
         usedFallback: false,
         issues: [
             buildIssue('error', 'template_access_locked_no_fallback', TEMPLATE_ACCESS_LOCKED_MESSAGE, requestedLayout.id),
-            buildIssue('info', 'template_access_requires_pro', 'Available with Pro.', requestedLayout.id),
+            buildIssue('info', 'template_access_requires_pro', 'Shown with Pro mode on.', requestedLayout.id),
         ],
     };
 }

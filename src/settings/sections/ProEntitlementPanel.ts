@@ -104,7 +104,7 @@ export function renderProEntitlementPanel({
         plugin.settings.proAccessEnabled = enabled;
         await plugin.saveSettings();
         if (!enabled) {
-            new Notice('Pro disabled — previewing Core mode');
+            new Notice('Pro mode off — Core surface only. Turn it back on any time in Settings → Pro.');
         }
         onEntitlementChanged?.();
     };
@@ -126,17 +126,16 @@ export function renderProEntitlementPanel({
     setIcon(collapsedPillIcon, 'signature');
     collapsedPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: 'PRO' });
     const collapsedTitle = collapsedLeft.createDiv({ cls: 'ert-pro-mode__collapsed-title' });
-    collapsedTitle.createSpan({ cls: 'ert-pro-mode__title-text', text: 'Pro Signature (Early Access)' });
-    const collapsedToggle = createToggle(collapsedRow, 'Toggle Pro Mode');
+    collapsedTitle.createSpan({ cls: 'ert-pro-mode__title-text', text: 'Pro mode' });
+    const collapsedToggle = createToggle(collapsedRow, 'Toggle Pro mode');
 
-    // ── Pro access key (preview — future account-based validation) ─
+    // ── Pro access key (inactive field, retained for settings compatibility) ─
     const keyContainer = collapsed.createDiv({ cls: 'ert-pro-key-container' });
     const keySetting = new Setting(keyContainer)
-        .setName('Pro access (coming soon)')
+        .setName('Pro access key')
         .setDesc(
-            'You\u2019re currently using Pro Mode during Early Access. ' +
-            'As development continues, Pro will transition to an access-based system, ' +
-            'with free Core features alongside it as before.'
+            'Nothing to enter. Pro mode is on for every install and needs no key. ' +
+            'The switch above is the only control \u2014 this field is inactive.'
         )
         .addText(text => {
             text.setPlaceholder('XXXX-XXXX-XXXX-XXXX');
@@ -146,7 +145,7 @@ export function renderProEntitlementPanel({
         .addButton(button => {
             button
                 .setButtonText('Validate')
-                .setTooltip('No validation needed during Early Access preview')
+                .setTooltip('Nothing to validate — Pro mode needs no key')
                 .setDisabled(true);
         });
 
@@ -162,13 +161,16 @@ export function renderProEntitlementPanel({
     const proNote = heroContent.createDiv({ cls: 'ert-pro-hero-notePill' });
     proNote.createSpan({ text: 'Pro workflows appear throughout RT in magenta.' });
     const heroCopy = heroContent.createEl('p', { cls: `${ERT_CLASSES.SECTION_DESC} ert-hero-subtitle ert-pro-hero-body` });
-    heroCopy.appendText('Pro Mode extends Radial Timeline with ');
+    heroCopy.appendText('Pro mode gathers Radial Timeline’s ');
     heroCopy.createEl('strong', { text: 'advanced workflows for authors who want more' });
-    heroCopy.appendText('. Evaluate your story with deeper INQUIRY+ questions, track structure and momentum across scenes, and generate polished manuscripts with PANDOC PDF EXPORTS and custom LaTeX templates. Share progress through APR CAMPAIGNS, and explore WEBSITE EXCLUSIVES including ');
+    heroCopy.appendText(' under one switch: deeper INQUIRY+ questions, structure and momentum tracking across scenes, PANDOC PDF EXPORTS with custom LaTeX templates, APR CAMPAIGNS, and TEMPLATE VAULTS such as ');
     heroCopy.createSpan({ cls: 'ert-mono-inline', text: 'Pride & Prejudice' });
     heroCopy.appendText(' and ');
     heroCopy.createSpan({ cls: 'ert-mono-inline', text: 'Sherlock Holmes' });
-    heroCopy.appendText(' template vaults, Omnibus Inquiry briefings, and guided workflow demonstrations.');
+    heroCopy.appendText('. Turn the switch off for a quieter Core workspace; turn it back on and everything returns. There is nothing to buy on this tab.');
+
+    const heroServiceNote = heroContent.createEl('p', { cls: `${ERT_CLASSES.SECTION_DESC} ert-pro-hero-body` });
+    heroServiceNote.setText('Pro is a service, not a set of unlocked features. Everything the plugin does stays free. Pro covers hosted analysis and serving readers at scale.');
 
     const featureStrip = heroContent.createDiv({ cls: 'ert-pro-hero-pillStrip' });
     const featureItems = [
@@ -176,7 +178,7 @@ export function renderProEntitlementPanel({
         { icon: 'share-2', label: 'APR Campaigns' },
         { icon: 'waves', label: 'Inquiry+' },
         { icon: 'waypoints', label: 'Structure' },
-        { icon: 'sparkles', label: 'Website Exclusives' }
+        { icon: 'sparkles', label: 'Template Vaults' }
     ];
     featureItems.forEach(({ icon, label }) => {
         const item = featureStrip.createDiv({ cls: 'ert-pro-hero-pill' });

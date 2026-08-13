@@ -257,6 +257,9 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         li.createSpan({ text: item.text });
     });
 
+    const pricingPromise = hero.createEl('p', { cls: ERT_CLASSES.FIELD_NOTE });
+    pricingPromise.setText('The plugin is free forever. Sharing your timeline is free forever. If we ever charge for anything, it will be for things that cost us money to run — and nothing you use today will ever be taken away.');
+
     const activationSection = section.createDiv({ cls: ERT_CLASSES.STACK });
     const connectionHeading = new Setting(activationSection)
         .setName('Connect Radial Timeline')

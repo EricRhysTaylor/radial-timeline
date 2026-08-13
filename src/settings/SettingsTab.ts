@@ -799,7 +799,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             wikiHref: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Settings-Inquiry',
             title: 'Analyze your story as a complete system.',
             subtitle: 'Evaluate how scenes, books, and entire sagas work together. Inquiry uses your manuscript(s), outlines, characters, and worldbuilding to surface structural weak points, missing or underdeveloped material, and momentum issues—all in a single view with clear visual signals and quantifiers.',
-            helperLine: 'Inquiry runs on the provider key you add in Settings → AI. Your key, your models. A hosted option that runs the analysis on our models and prompts will be available later as a paid service, for authors who would rather not manage a key at all.',
+            helperLine: 'Inquiry runs on the provider key you add in Settings → AI. Your key, your models.',
             kicker: 'Inquiry Focus Areas:',
             features: [
                 { icon: 'search', text: 'Source Scans — Choose scan locations, class scopes, and source types to include.' },

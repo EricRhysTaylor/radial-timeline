@@ -743,7 +743,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             badgeVariant: ERT_CLASSES.BADGE_PILL_NEUTRAL,
             wikiHref: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Pro',
             title: 'The deeper end of Radial Timeline.',
-            subtitle: 'Pro gathers Radial Timeline’s heavier workflows in one place — the tools you reach for once a draft is real.',
+            subtitle: 'Radial Timeline’s heavier workflows — the tools you reach for once a draft is real.',
             kicker: 'Pro workflows:',
             features: [
                 { icon: 'file-output', text: 'Advanced exports — PDF, Outline, and structured data formats' },

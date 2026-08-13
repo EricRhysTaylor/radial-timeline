@@ -170,7 +170,7 @@ export function renderProEntitlementPanel({
     const heroCopy = heroContent.createEl('p', { cls: `${ERT_CLASSES.SECTION_DESC} ert-hero-subtitle ert-pro-hero-body` });
     heroCopy.appendText('Pro is a collection of ');
     heroCopy.createEl('strong', { text: 'Pro workflows' });
-    heroCopy.appendText(' — the deeper end of Radial Timeline, gathered in one place. Evaluate your story with deeper INQUIRY+ questions, track structure and momentum across scenes, and generate polished manuscripts with PANDOC PDF EXPORTS and custom LaTeX templates. Share progress through APR CAMPAIGNS, and explore WEBSITE EXCLUSIVES including template vaults such as ');
+    heroCopy.appendText(' — the deeper end of Radial Timeline. Evaluate your story with deeper INQUIRY+ questions, track structure and momentum across scenes, and generate polished manuscripts with PANDOC PDF EXPORTS and custom LaTeX templates. Share progress through APR CAMPAIGNS, and explore WEBSITE EXCLUSIVES including template vaults such as ');
     heroCopy.createSpan({ cls: 'ert-mono-inline', text: 'Pride & Prejudice' });
     heroCopy.appendText(' and ');
     heroCopy.createSpan({ cls: 'ert-mono-inline', text: 'Sherlock Holmes' });

@@ -128,9 +128,16 @@ export function renderProEntitlementPanel({
     const collapsedTitle = collapsedLeft.createDiv({ cls: 'ert-pro-mode__collapsed-title' });
     collapsedTitle.createSpan({ cls: 'ert-pro-mode__title-text', text: 'Pro mode' });
     const collapsedToggle = createToggle(collapsedRow, 'Toggle Pro mode');
+    // Toggle hidden for now: Pro mode stays on for every install, so there is no
+    // state for the reader to manage. The control and its wiring are left intact —
+    // unhide this line to bring the switch back.
+    collapsedToggle.parentElement?.hide();
 
     // ── Pro access key (inactive field, retained for settings compatibility) ─
     const keyContainer = collapsed.createDiv({ cls: 'ert-pro-key-container' });
+    // Hidden alongside the toggle: there is no key to enter, and a key field on
+    // this tab reads as a prompt to buy something. Unhide to restore.
+    keyContainer.hide();
     const keySetting = new Setting(keyContainer)
         .setName('Pro access key')
         .setDesc(
@@ -161,16 +168,13 @@ export function renderProEntitlementPanel({
     const proNote = heroContent.createDiv({ cls: 'ert-pro-hero-notePill' });
     proNote.createSpan({ text: 'Pro workflows appear throughout RT in magenta.' });
     const heroCopy = heroContent.createEl('p', { cls: `${ERT_CLASSES.SECTION_DESC} ert-hero-subtitle ert-pro-hero-body` });
-    heroCopy.appendText('Pro mode gathers Radial Timeline’s ');
-    heroCopy.createEl('strong', { text: 'advanced workflows for authors who want more' });
-    heroCopy.appendText(' under one switch: deeper INQUIRY+ questions, structure and momentum tracking across scenes, PANDOC PDF EXPORTS with custom LaTeX templates, APR CAMPAIGNS, and TEMPLATE VAULTS such as ');
+    heroCopy.appendText('Pro is a collection of ');
+    heroCopy.createEl('strong', { text: 'Pro workflows' });
+    heroCopy.appendText(' — the deeper end of Radial Timeline, gathered in one place. Evaluate your story with deeper INQUIRY+ questions, track structure and momentum across scenes, and generate polished manuscripts with PANDOC PDF EXPORTS and custom LaTeX templates. Share progress through APR CAMPAIGNS, and explore WEBSITE EXCLUSIVES including template vaults such as ');
     heroCopy.createSpan({ cls: 'ert-mono-inline', text: 'Pride & Prejudice' });
     heroCopy.appendText(' and ');
     heroCopy.createSpan({ cls: 'ert-mono-inline', text: 'Sherlock Holmes' });
-    heroCopy.appendText('. Turn the switch off for a quieter Core workspace; turn it back on and everything returns. There is nothing to buy on this tab.');
-
-    const heroServiceNote = heroContent.createEl('p', { cls: `${ERT_CLASSES.SECTION_DESC} ert-pro-hero-body` });
-    heroServiceNote.setText('Pro is a service, not a set of unlocked features. Everything the plugin does stays free. Pro covers hosted analysis and serving readers at scale.');
+    heroCopy.appendText(', Omnibus Inquiry briefings, and guided workflow demonstrations.');
 
     const featureStrip = heroContent.createDiv({ cls: 'ert-pro-hero-pillStrip' });
     const featureItems = [
@@ -178,7 +182,7 @@ export function renderProEntitlementPanel({
         { icon: 'share-2', label: 'APR Campaigns' },
         { icon: 'waves', label: 'Inquiry+' },
         { icon: 'waypoints', label: 'Structure' },
-        { icon: 'sparkles', label: 'Template Vaults' }
+        { icon: 'sparkles', label: 'Website Exclusives' }
     ];
     featureItems.forEach(({ icon, label }) => {
         const item = featureStrip.createDiv({ cls: 'ert-pro-hero-pill' });

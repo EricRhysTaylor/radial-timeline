@@ -742,10 +742,9 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             badgeIcon: 'signature',
             badgeVariant: ERT_CLASSES.BADGE_PILL_NEUTRAL,
             wikiHref: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Pro',
-            title: 'Pro mode is a switch, not a purchase.',
-            subtitle: 'Pro mode is on by default and gathers Radial Timeline’s heavier workflows under one toggle. Switch it off for a quieter Core workspace, switch it back on and everything returns. Nothing here is for sale.',
-            helperLine: 'Pro is a service, not a set of unlocked features. Everything the plugin does stays free. Pro covers hosted analysis and serving readers at scale.',
-            kicker: 'Grouped under Pro mode:',
+            title: 'The deeper end of Radial Timeline.',
+            subtitle: 'Pro gathers Radial Timeline’s heavier workflows in one place — the tools you reach for once a draft is real.',
+            kicker: 'Pro workflows:',
             features: [
                 { icon: 'file-output', text: 'Advanced exports — PDF, Outline, and structured data formats' },
                 { icon: 'layout-grid', text: 'Publishing workflows, runtime planning, and campaign tools' },

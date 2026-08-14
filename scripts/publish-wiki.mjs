@@ -34,8 +34,14 @@ function publish() {
     // droppings stay out: .DS_Store is gitignored in this repo, so it is
     // invisible here but would be published to the public wiki, which has no
     // such ignore (one reached the live wiki on 2026-08-10 this way).
+    // --delete makes wiki/ the source of truth, so a file deleted here is
+    // deleted on the public wiki too. Without it, images removed locally lived
+    // on forever (8 such orphans had accumulated by 2026-08-13); the .md pruning
+    // in 3b only ever covered top-level pages, never images.
+    // .git is excluded so --delete cannot wipe the clone's own metadata, and
+    // rsync protects excluded paths from deletion unless --delete-excluded.
     console.log(`Copying files from ${SOURCE_DIR} to ${TEMP_DIR}...`);
-    run(`rsync -a --exclude='.DS_Store' ${SOURCE_DIR}/ ${TEMP_DIR}/`);
+    run(`rsync -a --delete --exclude='.git' --exclude='.DS_Store' ${SOURCE_DIR}/ ${TEMP_DIR}/`);
 
     // 3a. Sweep any .DS_Store the wiki repo already carries, so publishing also
     // retires ones committed before the exclusion above existed.

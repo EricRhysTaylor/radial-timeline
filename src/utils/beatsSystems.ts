@@ -312,6 +312,7 @@ export const PLOT_SYSTEMS: Record<string, PlotSystemPreset> = {
       {
         name: "Setup",
         id: "classic-dramatic-structure:setup",
+        act: 1,
         description: "Something disrupts the status quo and creates a problem that demands attention. Establishes what is at stake.",
         placement: "0-10%",
         range: "10-25"
@@ -319,6 +320,7 @@ export const PLOT_SYSTEMS: Record<string, PlotSystemPreset> = {
       {
         name: "Complication",
         id: "classic-dramatic-structure:complication",
+        act: 2,
         description: "Obstacles worsen the situation. Each complication raises the cost of action and narrows available options.",
         placement: "10-50%",
         range: "25-50"
@@ -326,6 +328,7 @@ export const PLOT_SYSTEMS: Record<string, PlotSystemPreset> = {
       {
         name: "Pressure",
         id: "classic-dramatic-structure:pressure",
+        act: 2,
         description: "Tension reaches its peak. The protagonist faces a forced choice between costly alternatives with no clean exit.",
         placement: "50-75%",
         range: "50-75"
@@ -333,6 +336,7 @@ export const PLOT_SYSTEMS: Record<string, PlotSystemPreset> = {
       {
         name: "Pivotal Choice",
         id: "classic-dramatic-structure:pivotal-choice",
+        act: 3,
         description: "An irreversible action answers the central question. The protagonist commits and the situation changes permanently.",
         placement: "75-90%",
         range: "75-100"
@@ -340,6 +344,7 @@ export const PLOT_SYSTEMS: Record<string, PlotSystemPreset> = {
       {
         name: "Outcome",
         id: "classic-dramatic-structure:outcome",
+        act: 3,
         description: "The new state after the decision. Shows cost, gain, and thematic meaning — what changed and why it matters.",
         placement: "90-100%",
         range: "50-80"

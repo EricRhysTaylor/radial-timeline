@@ -9,7 +9,7 @@ Access Radial Timeline settings in Obsidian via **Settings → Community Plugins
 *   [Publish](Publishing) — Pandoc, PDF styles, bundled layouts, chapter markers, Parts, and manuscript export workflow.
 *   [AI](Settings-AI) — Provider setup, model selection, local/OpenAI-compatible settings, and analysis behavior.
 *   [Advanced](Settings-Advanced) — Timeline display options, remap frontmatter field keys, ripple rename, logs, and export-path readouts.
-*   [PRO](Pro) — the Pro mode switch, runtime workflows, advanced publishing layouts, APR campaigns, and runtime mode.
+*   [PRO](Pro) — Pro workflows: runtime, advanced publishing layouts, APR campaigns, and runtime mode.
 
 ## Reference Pages
 

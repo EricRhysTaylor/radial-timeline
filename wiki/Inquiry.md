@@ -207,12 +207,12 @@ Inquiry can write findings directly into your scene frontmatter:
 <a name="prompts"></a>
 ## Prompts
 
-Each zone ships with built-in questions: **4 core questions** per zone, plus **5 more** per zone when Pro mode is on — **9 built-in questions** per zone in total.
+Each zone ships with built-in questions: **4 core questions** per zone, plus **5 more** per zone with Pro — **9 built-in questions** per zone in total.
 
 You can also add your own custom questions on top of the built-ins:
 
 *   **Core surface**: Up to 3 custom questions per zone.
-*   **Pro mode on**: Up to 8 custom questions per zone.
+*   **Pro**: Up to 8 custom questions per zone.
 *   Drag to reorder questions within a zone.
 *   Toggle individual questions on/off.
 *   Reset to built-in defaults using the restore button.

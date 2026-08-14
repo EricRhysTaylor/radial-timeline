@@ -5,7 +5,7 @@
 
 Radial Timeline turns your scene notes into a finished manuscript using **Pandoc** and **LaTeX**. You select a template that defines the look of the page — fonts, headers, chapter openers, part dividers — and the plugin assembles your scenes into that format and hands the result to Pandoc to produce a PDF.
 
-**Pandoc-based PDF export ships with the plugin.** The Core surface exports PDFs with the bundled Core publishing layouts. Turning **Pro mode** on adds extra bundled PDF layouts and deeper publishing customization. All of it is free — Pro mode is a Settings switch, not a purchase. See [Pro](Pro).
+**Pandoc-based PDF export ships with the plugin.** The Core surface exports PDFs with the bundled Core publishing layouts. **Pro** covers extra bundled PDF layouts and deeper publishing customization. See [Pro](Pro).
 
 This page covers:
 - The template catalog (what's bundled and what each one looks like)
@@ -46,7 +46,7 @@ Word (DOCX) export needs only step 1 — Pandoc, no LaTeX.
 
 Bundled templates live in **Settings → Publish → PDF Styles**. Each row shows a status pill (**Installed** / **Not installed**), a preview card, and buttons for **Install** and **Duplicate**.
 
-The Core surface includes the standard publishing layouts needed for Pandoc PDF export. Pro mode adds further advanced layouts and deeper publishing controls.
+The Core surface includes the standard publishing layouts needed for Pandoc PDF export. Pro covers further advanced layouts and deeper publishing controls.
 
 ### Novel templates
 
@@ -90,14 +90,14 @@ PDF layouts require their intended fonts rather than substituting fallbacks. Bun
 
 Only installed templates can be used for export.
 
-## Core Surface and Pro mode Layouts
+## Core Surface and Pro Layouts
 
-Settings → Publish is split around Core-surface and Pro mode publishing work:
+Settings → Publish is split around Core-surface and Pro publishing work:
 
 *   **Core** includes Pandoc setup, output folders, Book Details, Book Pages, the **Basic** and **Standard** layouts, and Auto configure publishing.
-*   **Pro mode** adds the **Professional**, **Signature**, **Screenplay**, and **Podcast Script** layouts and deeper designed publishing controls.
+*   **Pro** covers the **Professional**, **Signature**, **Screenplay**, and **Podcast Script** layouts and deeper designed publishing controls.
 
-The export panel and **Settings → Publish** use the same template rules. If a Pro mode layout is selected while Pro mode is off, Radial Timeline exports with **Basic** instead of leaving the export blocked.
+The export panel and **Settings → Publish** use the same template rules. If a Pro layout is selected and unavailable, Radial Timeline exports with **Basic** instead of leaving the export blocked.
 
 ## Book Details and Matter Pages
 
@@ -225,7 +225,7 @@ Both appear on the PART preview card in the Publish panel and in the export chec
 ## Setting Up Signature
 
 > [!NOTE]
-> Signature is a **✦ Pro** layout. Selecting it with Pro mode off exports with Basic instead.
+> Signature is a **✦ Pro** layout. If it is unavailable, exporting falls back to Basic.
 
 Signature is the most structured bundled template. It produces a book-style manuscript with:
 
@@ -356,7 +356,7 @@ If you're migrating a manuscript that already carries Pandoc/LaTeX markup, this 
 
 **Removed only when the matching cleanup toggle is on:** `%%comments%%`, `%%ai: queries%%`, HTML comments, links (label kept), callouts, block IDs, and (PDF/Word) task-list markers.
 
-**Document metadata:** `title` and `author` always come from your BookMeta note. A YAML metadata block at the top of your old manuscript is *not* forwarded — use **Settings → Publish → Advanced Pandoc** (Pro mode) instead:
+**Document metadata:** `title` and `author` always come from your BookMeta note. A YAML metadata block at the top of your old manuscript is *not* forwarded — use **Settings → Publish → Advanced Pandoc** (Pro) instead:
 - **Custom Pandoc metadata** — extra `--metadata key: value` pairs for custom/imported templates (`lang`, `subtitle`, or any variable your template reads).
 - **Custom LaTeX preamble** — raw LaTeX injected into the PDF preamble after the layout's own setup, so your `\usepackage`/`\newcommand` definitions win. This is the escape hatch for reproducing an existing Pandoc setup exactly.
 

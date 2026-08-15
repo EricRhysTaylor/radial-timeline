@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+    applyGenericSubplotNames,
     buildBakedStyleDeclaration,
     buildTimelineDataExport,
     ExportStyleClasses,
@@ -8,6 +9,7 @@ import {
     snapshotRenderConfig,
     TIMELINE_DATA_EXPORT_SCHEMA_VERSION,
     type BuildTimelineDataExportParams,
+    type TimelineDataExportDocument,
 } from './TimelineExportService';
 import {
     buildFontFaceCss,
@@ -113,6 +115,127 @@ describe('buildTimelineDataExport', () => {
         expect(serialized).not.toContain('/Users/');
         expect(serialized).not.toContain('/home/');
         expect(serialized).not.toMatch(/[A-Za-z]:\\\\/); // Windows drive path
+    });
+});
+
+/**
+ * Fixture modeling a multi-subplot scene the way SceneDataService actually
+ * produces it: one TimelineItem per subplot, all sharing a single
+ * `rawFrontmatter` object by reference (metadata.Subplot as an array).
+ * Includes a single-subplot scene and a Main-Plot-default scene (no
+ * `Subplot` key in its frontmatter at all) to exercise the passthrough paths.
+ */
+function makeGenericNameItems(): TimelineItem[] {
+    const heistFrontmatter: Record<string, unknown> = { Class: 'Scene', Subplot: ['Heist', 'Redemption Arc'] };
+    return [
+        {
+            title: '1 Opening', date: '2020-01-01', path: 'Book/1 Opening.md', itemType: 'Scene',
+            subplot: 'Redemption Arc',
+            rawFrontmatter: { Class: 'Scene', Subplot: 'Redemption Arc' },
+        },
+        {
+            title: '2 Heist Setup', date: '2020-01-02', path: 'Book/2 Heist Setup.md', itemType: 'Scene',
+            subplot: 'Heist',
+            rawFrontmatter: heistFrontmatter,
+        },
+        {
+            title: '2 Heist Setup', date: '2020-01-02', path: 'Book/2 Heist Setup.md', itemType: 'Scene',
+            subplot: 'Redemption Arc',
+            rawFrontmatter: heistFrontmatter,
+        },
+        {
+            title: '3 Quiet Scene', date: '2020-01-03', path: 'Book/3 Quiet.md', itemType: 'Scene',
+            subplot: 'Main Plot',
+            rawFrontmatter: { Class: 'Scene' },
+        },
+    ];
+}
+
+describe('applyGenericSubplotNames (via buildTimelineDataExport genericSubplotNames option)', () => {
+    it('maps subplot names to "Subplot N" in order of first appearance across items', () => {
+        const doc = buildTimelineDataExport(makeParams({ items: makeGenericNameItems(), genericSubplotNames: true }));
+        // Encounter order: 'Redemption Arc' (item 0), 'Heist' (item 1), 'Main Plot' (item 3).
+        expect(doc.items[0].subplot).toBe('Subplot 1'); // Redemption Arc
+        expect(doc.items[1].subplot).toBe('Subplot 2'); // Heist
+        expect(doc.items[2].subplot).toBe('Subplot 1'); // Redemption Arc again -> same mapping
+        expect(doc.items[3].subplot).toBe('Subplot 3'); // Main Plot
+    });
+
+    it('applies the same mapping to rawFrontmatter.Subplot, both string and array forms', () => {
+        const doc = buildTimelineDataExport(makeParams({ items: makeGenericNameItems(), genericSubplotNames: true }));
+        expect(doc.items[0].rawFrontmatter?.Subplot).toBe('Subplot 1');
+        expect(doc.items[1].rawFrontmatter?.Subplot).toEqual(['Subplot 2', 'Subplot 1']);
+        // The Main-Plot scene never had a Subplot key in its frontmatter; it
+        // must not be invented by the transform.
+        expect(doc.items[3].rawFrontmatter).not.toHaveProperty('Subplot');
+    });
+
+    it('keeps sibling items of a multi-subplot scene sharing one rawFrontmatter object, mutated once', () => {
+        const doc = buildTimelineDataExport(makeParams({ items: makeGenericNameItems(), genericSubplotNames: true }));
+        // Items 1 and 2 were exploded from the same scene and must still
+        // reference the identical (cloned) rawFrontmatter object post-export,
+        // so the web-engine adapter's dedup-by-reference still works.
+        expect(doc.items[1].rawFrontmatter).toBe(doc.items[2].rawFrontmatter);
+    });
+
+    it('remaps renderConfig.dominantSubplots values using the same mapping', () => {
+        const doc = buildTimelineDataExport(makeParams({
+            items: makeGenericNameItems(),
+            genericSubplotNames: true,
+            settings: makeSettings({ dominantSubplots: { 'Book/2 Heist Setup.md': 'Redemption Arc' } }),
+        }));
+        expect(doc.renderConfig.dominantSubplots).toEqual({ 'Book/2 Heist Setup.md': 'Subplot 1' });
+    });
+
+    it('leaves renderConfig.dominantSubplots absent when the settings snapshot carries none', () => {
+        const doc = buildTimelineDataExport(makeParams({ items: makeGenericNameItems(), genericSubplotNames: true }));
+        expect(doc.renderConfig.dominantSubplots).toBeUndefined();
+    });
+
+    it('preserves the item count', () => {
+        const items = makeGenericNameItems();
+        const doc = buildTimelineDataExport(makeParams({ items, genericSubplotNames: true }));
+        expect(doc.items).toHaveLength(items.length);
+        expect(doc.context.itemCount).toBe(items.length);
+    });
+
+    it('never touches scene titles (a revealing field, not structural)', () => {
+        const doc = buildTimelineDataExport(makeParams({ items: makeGenericNameItems(), genericSubplotNames: true }));
+        expect(doc.items[0].title).toBe('1 Opening');
+        expect(doc.items[1].title).toBe('2 Heist Setup');
+        expect(doc.items[3].title).toBe('3 Quiet Scene');
+    });
+
+    it('is deterministic: identical input produces an identical mapping on repeated calls', () => {
+        const first = buildTimelineDataExport(makeParams({ items: makeGenericNameItems(), genericSubplotNames: true }));
+        const second = buildTimelineDataExport(makeParams({ items: makeGenericNameItems(), genericSubplotNames: true }));
+        expect(second.items.map((i) => i.subplot)).toEqual(first.items.map((i) => i.subplot));
+        expect(second.items.map((i) => i.rawFrontmatter?.Subplot)).toEqual(first.items.map((i) => i.rawFrontmatter?.Subplot));
+    });
+
+    it('OFF (default) is a passthrough: subplot names are exported verbatim', () => {
+        const doc = buildTimelineDataExport(makeParams({ items: makeGenericNameItems() }));
+        expect(doc.items[0].subplot).toBe('Redemption Arc');
+        expect(doc.items[1].subplot).toBe('Heist');
+        expect(doc.items[1].rawFrontmatter?.Subplot).toEqual(['Heist', 'Redemption Arc']);
+        expect(doc.items[3].subplot).toBe('Main Plot');
+    });
+
+    it('OFF (genericSubplotNames explicitly false) is also a passthrough', () => {
+        const doc = buildTimelineDataExport(makeParams({ items: makeGenericNameItems(), genericSubplotNames: false }));
+        expect(doc.items[0].subplot).toBe('Redemption Arc');
+        expect(doc.items[1].rawFrontmatter?.Subplot).toEqual(['Heist', 'Redemption Arc']);
+    });
+
+    it('applyGenericSubplotNames tolerates a non-string entry inside a Subplot array', () => {
+        const doc: TimelineDataExportDocument = buildTimelineDataExport(makeParams({
+            items: [
+                { title: 'S', date: '2020-01-01', path: 'Book/S.md', itemType: 'Scene', subplot: 'Alpha', rawFrontmatter: { Subplot: ['Alpha', 42] } },
+            ],
+        }));
+        applyGenericSubplotNames(doc);
+        expect(doc.items[0].subplot).toBe('Subplot 1');
+        expect(doc.items[0].rawFrontmatter?.Subplot).toEqual(['Subplot 1', 42]);
     });
 });
 

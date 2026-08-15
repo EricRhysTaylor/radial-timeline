@@ -20,6 +20,7 @@ import { TimelineRepairModal } from '../modals/TimelineRepairModal';
 import { TimelineAuditModal } from '../modals/TimelineAuditModal';
 import { AuthorProgressModal } from '../modals/AuthorProgressModal';
 import { TimelineImageExportModal } from '../modals/TimelineImageExportModal';
+import { TimelineDataExportConsentModal } from '../modals/TimelineDataExportConsentModal';
 import { TimelineExportService } from './export/TimelineExportService';
 import { CreateRtNoteModal, type RtNoteSubtypeId } from '../modals/CreateRtNoteModal';
 import { buildEntityNoteContent, entityFolderFor, type EntityKind } from '../utils/entityNotes';
@@ -273,12 +274,17 @@ export class CommandRegistrar {
             });
 
             // Export the timeline render input pipeline as schema-stamped JSON.
+            // Gated behind a consent dialog (Amendment 1 §Consent flow, step 1
+            // Export) that states what the file contains before anything is
+            // written, and offers the generic-ring-names toggle.
             this.plugin.addCommand({
                 id: 'export-timeline-data',
                 name: t('commands.exportTimelineData'),
-                callback: async () => {
-                    const service = new TimelineExportService(this.plugin, this.app);
-                    await service.exportDataJson();
+                callback: () => {
+                    new TimelineDataExportConsentModal(this.app, async (choice) => {
+                        const service = new TimelineExportService(this.plugin, this.app);
+                        await service.exportDataJson({ genericSubplotNames: choice.genericSubplotNames });
+                    }).open();
                 }
             });
         }

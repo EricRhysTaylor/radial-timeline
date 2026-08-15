@@ -141,6 +141,13 @@ export interface BuildTimelineDataExportParams {
     now?: Date;
     /** Injectable provenance UUID for deterministic tests. Defaults to a new UUID. */
     exportId?: string;
+    /**
+     * When true, replace every subplot name in the document with a generic
+     * label ("Subplot 1", "Subplot 2", …) via {@link applyGenericSubplotNames}.
+     * Default false (passthrough) — subplot names are structural per Amendment
+     * 1 and are exported verbatim unless the author opts into anonymizing them.
+     */
+    genericSubplotNames?: boolean;
 }
 
 /**
@@ -207,7 +214,7 @@ export function buildTimelineDataExport(params: BuildTimelineDataExportParams): 
             matterMeta: item.matterMeta,
         }));
 
-    return {
+    const doc: TimelineDataExportDocument = {
         schemaVersion: TIMELINE_DATA_EXPORT_SCHEMA_VERSION,
         exportedAt: now.toISOString(),
         exportId: params.exportId ?? generateExportId(),
@@ -224,6 +231,74 @@ export function buildTimelineDataExport(params: BuildTimelineDataExportParams): 
         renderConfig: snapshotRenderConfig(params.settings),
         items,
     };
+
+    if (params.genericSubplotNames) {
+        applyGenericSubplotNames(doc);
+    }
+
+    return doc;
+}
+
+/**
+ * Replace every subplot name in an export document with a generic label
+ * ("Subplot 1", "Subplot 2", …), mutating `doc` in place. Mapping is
+ * assigned in order of first appearance while walking `items` (manuscript /
+ * author order) and applied consistently to every place a subplot name lives
+ * in the document:
+ *
+ *  - each item's `subplot` field;
+ *  - the same scene's `rawFrontmatter.Subplot` (string or string[]) — the
+ *    field the web-engine adapter's dedup reads. A multi-subplot scene is
+ *    exploded into one TimelineItem per subplot (SceneDataService), and all
+ *    of those sibling items share one `rawFrontmatter` object by reference,
+ *    so it is remapped once per unique object;
+ *  - `renderConfig.dominantSubplots`, a path -> preferred-subplot-name map.
+ *
+ * Scene TITLES are never touched here — titles are a revealing field (reveal
+ * model, server-side), not structural, and are untouched by this toggle.
+ *
+ * Per Amendment 1 §Data scope: "the plugin's export offers a 'generic ring
+ * names' toggle (Subplot 1, Subplot 2…) for authors whose subplot names are
+ * themselves spoilers."
+ */
+export function applyGenericSubplotNames(doc: TimelineDataExportDocument): void {
+    const mapping = new Map<string, string>();
+    const genericNameFor = (name: string): string => {
+        let mapped = mapping.get(name);
+        if (mapped === undefined) {
+            mapped = `Subplot ${mapping.size + 1}`;
+            mapping.set(name, mapped);
+        }
+        return mapped;
+    };
+
+    const seenRawFrontmatter = new Set<Record<string, unknown>>();
+    for (const item of doc.items) {
+        if (item.subplot) {
+            item.subplot = genericNameFor(item.subplot);
+        }
+
+        const raw = item.rawFrontmatter;
+        if (raw && !seenRawFrontmatter.has(raw)) {
+            seenRawFrontmatter.add(raw);
+            const rawSubplot = raw.Subplot;
+            if (Array.isArray(rawSubplot)) {
+                raw.Subplot = rawSubplot.map((entry) =>
+                    typeof entry === 'string' ? genericNameFor(entry) : entry
+                );
+            } else if (typeof rawSubplot === 'string' && rawSubplot.length > 0) {
+                raw.Subplot = genericNameFor(rawSubplot);
+            }
+        }
+    }
+
+    if (doc.renderConfig.dominantSubplots) {
+        const remapped: Record<string, string> = {};
+        for (const [path, name] of Object.entries(doc.renderConfig.dominantSubplots)) {
+            remapped[path] = genericNameFor(name);
+        }
+        doc.renderConfig.dominantSubplots = remapped;
+    }
 }
 
 function deepClone<T>(value: T): T {
@@ -712,7 +787,7 @@ export class TimelineExportService {
     }
 
     /** Export the render input pipeline as a schema-stamped JSON document. */
-    public async exportDataJson(): Promise<void> {
+    public async exportDataJson(options?: { genericSubplotNames?: boolean }): Promise<void> {
         try {
             const items = await this.plugin.getSceneData();
             if (!items || items.length === 0) {
@@ -729,6 +804,7 @@ export class TimelineExportService {
                 mode: active?.mode ?? this.plugin.settings.currentMode,
                 activeBookId: this.plugin.settings.activeBookId,
                 bookTitle: this.plugin.getActiveBookTitle(),
+                genericSubplotNames: options?.genericSubplotNames,
             });
 
             await this.ensureExportFolder();

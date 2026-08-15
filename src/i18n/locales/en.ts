@@ -597,6 +597,19 @@ export interface TranslationKeys {
         exportTimelineImage: string;
         exportTimelineData: string;
     };
+    timelineDataExportModal: {
+        badge: string;
+        title: string;
+        subtitle: string;
+        structuralHeading: string;
+        structuralBody: string;
+        revealingHeading: string;
+        revealingBody: string;
+        genericNamesToggleLabel: string;
+        genericNamesToggleDescription: string;
+        cancelButton: string;
+        exportButton: string;
+    };
     common: {
         yes: string;
         no: string;
@@ -2917,6 +2930,19 @@ export const en: TranslationKeys = {
         authorProgressReport: 'Author progress report (APR)',
         exportTimelineImage: 'Export timeline as image (SVG / PNG)',
         exportTimelineData: 'Export timeline data (JSON)',
+    },
+    timelineDataExportModal: {
+        badge: 'Export',
+        title: 'Export timeline data',
+        subtitle: 'This file is the source for your Interactive Timeline share. Nothing is shared until you upload it to your Community share and activate it.',
+        structuralHeading: 'Always included (structural)',
+        structuralBody: 'Scene numbers, acts, subplot names, status, publish stage, item type, scene and act counts, book title, and author attribution.',
+        revealingHeading: 'Held for later reveal (revealing)',
+        revealingBody: 'Scene titles, synopses, character names, POV, and story dates are included in the file, held for later per-scene reveal — nothing is shared until you upload this file to your Community share and activate it.',
+        genericNamesToggleLabel: 'Generic ring names (Subplot 1, Subplot 2…)',
+        genericNamesToggleDescription: 'Use this if your subplot names could reveal plot. Scene titles are not affected — they are a revealing field, hidden until you choose to reveal each scene.',
+        cancelButton: 'Cancel',
+        exportButton: 'Export',
     },
     common: {
         yes: 'Yes',

@@ -105,7 +105,7 @@ export const REFACTOR_ALERTS: RefactorAlert[] = [
         severity: 'warning',
         icon: 'archive-restore',
         title: 'Recovery files moved out of Logs',
-        description: 'Snapshots and the Gossamer Archive — the files used to recover deleted or overwritten note data — now live under Radial Timeline/Recover instead of Radial Timeline/Logs. The Logs folder now holds only disposable run logs, so you can purge it at any time without losing recovery data. If a Snapshots or Gossamer Archive folder already exists under Radial Timeline/Logs, move it into Radial Timeline/Recover to preserve that earlier recovery data.',
+        description: 'Snapshots and the Gossamer Archive — the files used to recover deleted or overwritten note data — now live under Radial Timeline/Recover instead of Radial Timeline/Logs. The Logs folder now holds only disposable run logs, so you can purge it at any time without losing recovery data. If a folder still exists at Radial Timeline/Logs/Snapshots or Radial Timeline/Logs/Gossamer Archive from before this update, move that specific folder into Radial Timeline/Recover to preserve the earlier recovery data. Warning: do NOT move Radial Timeline/Snapshots — that is a different, currently-live folder that Timeline Repair reads from to restore your timeline, and moving it will break that restore feature.',
     },
     {
         id: 'inquiry-pro-button-design-v1',

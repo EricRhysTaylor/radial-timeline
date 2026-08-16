@@ -235,7 +235,10 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     const titleRow = hero.createDiv({ cls: 'ert-hero-titleRow' });
     titleRow.createDiv({
         cls: `${ERT_CLASSES.SECTION_TITLE} ert-hero-title`,
-        text: 'Community share'
+        // Not "Community share" — the status pill directly above already says
+        // that, and the tab is named Community. The hero title carries the
+        // invitation instead of echoing the surface name a third time.
+        text: 'Share your journey'
     });
     hero.createEl('p', {
         cls: `${ERT_CLASSES.SECTION_DESC} ert-hero-subtitle`,

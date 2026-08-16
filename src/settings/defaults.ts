@@ -11,6 +11,7 @@ import { DEFAULT_CUSTOM_BEAT_SYSTEM_ID, buildDefaultCustomBeatSystem, getCustomB
 import { PLOT_SYSTEM_NAMES } from '../utils/beatsSystems';
 import { buildDefaultAuthorProgressSettings } from '../authorProgress/authorProgressConfig';
 import { buildDefaultCommunityShareSettings } from '../communityShare/communityShareSettings';
+import { systemFolderPath } from '../utils/systemFolder';
 
 export const DEFAULT_SETTINGS: RadialTimelineSettings = {
     books: [],
@@ -19,9 +20,9 @@ export const DEFAULT_SETTINGS: RadialTimelineSettings = {
     sourcePath: '',
     showSourcePathAsTitle: true, // @deprecated Legacy — book title from BookProfile after migration
     validFolderPaths: [], // Default empty array for folder path history
-    aiOutputFolder: 'Radial Timeline/Logs', // @deprecated Logging paths are now internalized.
-    manuscriptOutputFolder: 'Radial Timeline/Export',
-    outlineOutputFolder: 'Radial Timeline/Export',
+    aiOutputFolder: systemFolderPath('Logs'), // @deprecated Logging paths are now internalized.
+    manuscriptOutputFolder: systemFolderPath('Export'),
+    outlineOutputFolder: systemFolderPath('Export'),
     inquirySources: {
         scanRoots: [],
         bookInclusion: {},
@@ -254,7 +255,7 @@ Chapter:`,
 
     // Export / Pandoc defaults
     pandocPath: '',
-    pandocFolder: 'Radial Timeline/Pandoc',
+    pandocFolder: systemFolderPath('Pandoc'),
     pandocLayouts: [],
     lastUsedPandocLayoutByPreset: {},
     pandocTemplates: {

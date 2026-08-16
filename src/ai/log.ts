@@ -14,6 +14,7 @@ import {
 } from './cost/estimateCorpusCost';
 import { getActivePricingTable } from './cost/providerPricing';
 import { type TokenUsage } from './usage/providerUsage';
+import { systemFolderPath } from '../utils/systemFolder';
 
 export { extractTokenUsage, type TokenUsage } from './usage/providerUsage';
 
@@ -145,11 +146,11 @@ export type UsageCostBreakdown = {
     totalCostUSD?: number;
 };
 
-const DEFAULT_LOGS_ROOT = 'Radial Timeline/Logs';
+const DEFAULT_LOGS_ROOT = systemFolderPath('Logs');
 // Recovery data (snapshots + Gossamer Archive) lives OUTSIDE the Logs tree so
 // the author can purge Logs at any time without losing the materials needed to
 // reconstruct deleted or overwritten note data.
-const DEFAULT_RECOVER_ROOT = 'Radial Timeline/Recover';
+const DEFAULT_RECOVER_ROOT = systemFolderPath('Recover');
 const CONTENT_LOGS_FOLDER_NAME = 'Content';
 const INQUIRY_LOGS_FOLDER_NAME = 'Inquiry';
 const GOSSAMER_LOGS_FOLDER_NAME = 'Gossamer';

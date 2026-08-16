@@ -8,6 +8,7 @@ import { addPathChip } from '../pathChip';
 import { FolderLocationModal } from '../../modals/FolderLocationModal';
 import { DEFAULT_SETTINGS } from '../defaults';
 import { resolveExportOutputFolder, escapesVaultRoot } from '../../utils/aiOutput';
+import { systemFolderPath } from '../../utils/systemFolder';
 import { ERT_CLASSES } from '../../ui/classes';
 import { IMPACT_FULL } from '../SettingImpact';
 import { countContentLogFiles, resolveLogsRoot } from '../../ai/log';
@@ -57,7 +58,7 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
     logsContainer.createDiv({ cls: 'ert-config-group-title', text: 'Logs' });
 
     const outputFolder = resolveLogsRoot();
-    const exportFolderDefault = DEFAULT_SETTINGS.manuscriptOutputFolder || 'Radial Timeline/Export';
+    const exportFolderDefault = DEFAULT_SETTINGS.manuscriptOutputFolder || systemFolderPath('Export');
 
     // Logs
     const logsRow = createDenseRow(logsContainer, {

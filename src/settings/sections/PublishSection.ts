@@ -30,6 +30,7 @@ import { normalizeMatterClassValue, parseMatterMetaFromFrontmatter } from '../..
 import { resolveBookPages, applyBookPageOrder, inferRoleFromFilename, ROLE_SIDE, type BookPageRole, type MatterNoteSummary, type ResolvedPage } from '../../utils/bookPagesResolver';
 import { getSceneFilesByOrder } from '../../utils/manuscript';
 import { resolveManuscriptOutputFolder } from '../../utils/aiOutput';
+import { systemFolderPath } from '../../utils/systemFolder';
 import { updateBookMetaField, type EditableBookMetaFieldKey } from '../../utils/bookMetaEditing';
 import { isProActive } from '../proEntitlement';
 import {
@@ -1803,7 +1804,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         });
 
     // ── Pandoc Folder ──────────────────────────────────────────────────────
-    const defaultPandocFolder = normalizePath(DEFAULT_SETTINGS.pandocFolder || 'Radial Timeline/Pandoc');
+    const defaultPandocFolder = normalizePath(DEFAULT_SETTINGS.pandocFolder || systemFolderPath('Pandoc'));
     let pandocFolderText: TextComponent | null = null;
     let pandocFolderInputEl: HTMLInputElement | null = null;
     const saveAndValidatePandocFolder = async (): Promise<void> => {

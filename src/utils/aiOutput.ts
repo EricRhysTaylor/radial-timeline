@@ -2,6 +2,7 @@ import { normalizePath } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { countContentLogFiles, resolveLogsRoot } from '../ai/log';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
+import { systemFolderPath } from './systemFolder';
 
 export function resolveAiOutputFolder(plugin: RadialTimelinePlugin): string {
     void plugin;
@@ -44,7 +45,7 @@ export function resolveExportOutputFolder(plugin: RadialTimelinePlugin): string 
     // exports. Exports are written through the Obsidian vault API, so the
     // folder must stay inside the vault: an absolute path or a value that
     // escapes the vault root falls back to the canonical default.
-    const fallback = normalizePath(DEFAULT_SETTINGS.manuscriptOutputFolder || 'Radial Timeline/Export');
+    const fallback = normalizePath(DEFAULT_SETTINGS.manuscriptOutputFolder || systemFolderPath('Export'));
     const configured = (plugin.settings.manuscriptOutputFolder || '').trim();
     if (!configured) return fallback;
     const normalized = normalizePath(configured);

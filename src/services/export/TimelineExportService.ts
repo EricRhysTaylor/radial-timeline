@@ -22,9 +22,11 @@
  * intentionally free of Obsidian imports so it is unit-testable in node.
  */
 
-import { Notice } from 'obsidian';
+import { Notice, normalizePath } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import type { App } from 'obsidian';
+import { resolveExportOutputFolder } from '../../utils/aiOutput';
+import { systemFolderPath } from '../../utils/systemFolder';
 import type {
     BookMeta,
     BookProfile,
@@ -52,8 +54,39 @@ import {
  */
 export const TIMELINE_DATA_EXPORT_SCHEMA_VERSION = '1.1.0';
 
-/** Vault-relative folder new exports are written into. */
-export const TIMELINE_EXPORT_FOLDER = 'Radial Timeline Exports';
+/**
+ * Vault-relative folder the JSON data export (the Community share file) is
+ * written into. A sibling of `Social` inside the canonical system folder: the
+ * two are the plugin's outward-facing artifact domains — `Social` holds APR
+ * artwork, `Community` holds the interactive-timeline share files.
+ */
+export const TIMELINE_COMMUNITY_EXPORT_FOLDER = systemFolderPath('Community');
+
+/**
+ * Subfolder of the author's configured Export folder that timeline images land
+ * in. The Export folder itself holds manuscript-shaped documents (compiled
+ * manuscripts, outlines, cue cards, Gossamer evidence), so timestamped SVG/PNG
+ * artwork gets its own bucket rather than interleaving with the files authors
+ * hand to editors — the same sub-scoping the split-run exporter already uses.
+ */
+export const TIMELINE_IMAGE_EXPORT_SUBFOLDER = 'Timeline';
+
+/**
+ * Pre-relocation top-level folder. Exports used to create this as a SECOND
+ * top-level Radial Timeline folder beside the canonical one. Nothing writes
+ * here any more; the constant survives only so a vault that still has the
+ * folder can be told once where its exports moved to. Existing files are never
+ * moved or deleted — they are the author's.
+ */
+export const LEGACY_TIMELINE_EXPORT_FOLDER = 'Radial Timeline Exports';
+
+/**
+ * Vault-relative folder timeline images are written into, following the
+ * author's configured Export folder (Settings -> Configuration).
+ */
+export function resolveTimelineImageExportFolder(plugin: RadialTimelinePlugin): string {
+    return normalizePath(`${resolveExportOutputFolder(plugin)}/${TIMELINE_IMAGE_EXPORT_SUBFOLDER}`);
+}
 
 export type TimelineImageFormat = 'svg' | 'png';
 
@@ -724,11 +757,40 @@ export class TimelineExportService {
         }
     }
 
-    private async ensureExportFolder(): Promise<void> {
-        const existing = this.app.vault.getAbstractFileByPath(TIMELINE_EXPORT_FOLDER);
-        if (!existing) {
-            await this.app.vault.createFolder(TIMELINE_EXPORT_FOLDER);
+    /**
+     * Create `folderPath` on demand, walking each segment — both destinations
+     * are nested (`<system>/Community`, `<Export>/Timeline`), so a single
+     * createFolder call cannot be relied on to materialize the parent.
+     */
+    private async ensureExportFolder(folderPath: string): Promise<void> {
+        const normalized = normalizePath(folderPath);
+        let current = '';
+        for (const segment of normalized.split('/').filter(Boolean)) {
+            current = current ? `${current}/${segment}` : segment;
+            if (this.app.vault.getAbstractFileByPath(current)) continue;
+            await this.app.vault.createFolder(current);
         }
+    }
+
+    /**
+     * Tell the author once — after an export has actually succeeded at the new
+     * location — that the old top-level `Radial Timeline Exports` folder is
+     * dead. Only fires for vaults that still have the folder, so authors who
+     * never produced a pre-relocation export never see it. The flag is plugin
+     * state, not scene YAML.
+     */
+    private async noticeLegacyFolderOnce(): Promise<void> {
+        if (this.plugin.settings.timelineExportRelocationNoticed) return;
+        if (!this.app.vault.getAbstractFileByPath(LEGACY_TIMELINE_EXPORT_FOLDER)) return;
+        this.plugin.settings.timelineExportRelocationNoticed = true;
+        await this.plugin.saveSettings();
+        new Notice(
+            `Timeline exports now live under ${TIMELINE_COMMUNITY_EXPORT_FOLDER} (data) and `
+            + `${resolveTimelineImageExportFolder(this.plugin)} (images). The old `
+            + `"${LEGACY_TIMELINE_EXPORT_FOLDER}" folder is no longer used — its files are `
+            + `yours to keep, move, or delete.`,
+            12000
+        );
     }
 
     private slugify(value: string): string {
@@ -760,25 +822,28 @@ export class TimelineExportService {
                 active.svg,
                 this.plugin.manifest.version
             );
-            await this.ensureExportFolder();
+            const folder = resolveTimelineImageExportFolder(this.plugin);
+            await this.ensureExportFolder(folder);
 
             if (format === 'svg') {
-                const path = `${TIMELINE_EXPORT_FOLDER}/${this.buildFileName(active.mode, 'svg')}`;
+                const path = `${folder}/${this.buildFileName(active.mode, 'svg')}`;
                 await this.app.vault.create(path, svgString);
                 new Notice(`Timeline SVG exported to ${path}`);
+                await this.noticeLegacyFolderOnce();
                 return;
             }
 
             const png = await this.svgToPngBuffer(svgString, width, height, scale);
             const scaleTag = scale === 1 ? '' : `@${scale}x`;
             const baseName = this.buildFileName(active.mode, 'png').replace(/\.png$/, `${scaleTag}.png`);
-            const path = `${TIMELINE_EXPORT_FOLDER}/${baseName}`;
+            const path = `${folder}/${baseName}`;
             // Vault API, not adapter: re-exporting the same mode+scale must
             // overwrite, so modify an existing file rather than failing create.
             const existing = this.app.vault.getFileByPath(path);
             if (existing) await this.app.vault.modifyBinary(existing, png);
             else await this.app.vault.createBinary(path, png);
             new Notice(`Timeline PNG (${scale}x) exported to ${path}`);
+            await this.noticeLegacyFolderOnce();
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             new Notice(`Timeline image export failed: ${message}`);
@@ -807,11 +872,12 @@ export class TimelineExportService {
                 genericSubplotNames: options?.genericSubplotNames,
             });
 
-            await this.ensureExportFolder();
+            await this.ensureExportFolder(TIMELINE_COMMUNITY_EXPORT_FOLDER);
             const mode = doc.context.mode ?? 'timeline'; // SAFE: filename slug only; 'timeline' names an export whose document recorded no mode
-            const path = `${TIMELINE_EXPORT_FOLDER}/${this.buildFileName(mode, 'json')}`;
+            const path = `${TIMELINE_COMMUNITY_EXPORT_FOLDER}/${this.buildFileName(mode, 'json')}`;
             await this.app.vault.create(path, JSON.stringify(doc, null, 2));
             new Notice(`Timeline data exported to ${path}`);
+            await this.noticeLegacyFolderOnce();
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             new Notice(`Timeline data export failed: ${message}`);

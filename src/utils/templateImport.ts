@@ -16,6 +16,7 @@ import { summarizeValidationIssues } from '../services/PublishingValidationServi
 import type { DetectedTemplateProfile } from '../publishing/templateDetection';
 import { detectImportedTemplateStyle } from '../publishing/templateDetection';
 import { describeRtPartArityIssue } from '../publishing/rttsValidation';
+import { systemFolderPath } from './systemFolder';
 
 export interface ImportedTemplateCandidate {
     layout: PandocLayoutTemplate;
@@ -92,7 +93,7 @@ export function compactTemplatePathForStorage(plugin: RadialTimelinePlugin, rawP
     const normalized = normalizePath(trimmed.replace(/^\/+/, ''));
     if (!normalized) return '';
 
-    const defaultPandocFolder = normalizePath(DEFAULT_SETTINGS.pandocFolder || 'Radial Timeline/Pandoc');
+    const defaultPandocFolder = normalizePath(DEFAULT_SETTINGS.pandocFolder || systemFolderPath('Pandoc'));
     const pandocFolder = normalizePath((plugin.settings.pandocFolder || defaultPandocFolder).trim() || defaultPandocFolder);
     const prefix = `${pandocFolder}/`;
     if (normalized.startsWith(prefix)) {

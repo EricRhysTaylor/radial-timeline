@@ -8,6 +8,7 @@ import { App, ButtonComponent, Modal, ToggleComponent } from 'obsidian';
 import { scheduleClassAfterPaint } from '../utils/domClassEffects';
 import { scheduleFocusAfterPaint } from '../utils/domFocus';
 import { t } from '../i18n';
+import { TIMELINE_COMMUNITY_EXPORT_FOLDER } from '../services/export/TimelineExportService';
 
 /**
  * Author's choice from the timeline data export consent dialog.
@@ -69,6 +70,15 @@ export class TimelineDataExportConsentModal extends Modal {
                 this.genericSubplotNames = value;
             });
         toggleCard.createDiv({ cls: 'ert-sub-card-note', text: t('timelineDataExportModal.genericNamesToggleDescription') });
+
+        // Name the destination in the dialog that authorizes the write, so the
+        // author knows where the file lands before they consent to it.
+        const destination = panel.createDiv({ cls: 'ert-sub-card' });
+        destination.createDiv({ cls: 'ert-sub-card-head', text: t('timelineDataExportModal.destinationHeading') });
+        destination.createDiv({
+            cls: 'ert-sub-card-note',
+            text: t('timelineDataExportModal.destinationBody', { path: TIMELINE_COMMUNITY_EXPORT_FOLDER }),
+        });
 
         const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
         new ButtonComponent(actions)

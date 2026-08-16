@@ -18,6 +18,7 @@ import { getRuntimeSettings } from '../utils/runtimeEstimator';
 import { normalizeStatus } from '../utils/text';
 import { buildPrivateSessionLog, type PrivateSessionLogRow } from './WritingSessionLog';
 import { countWords, extractBodyText } from '../utils/manuscript';
+import { RT_SYSTEM_FOLDER } from '../utils/systemFolder';
 
 const MAX_SESSION_RECORDS = 500;
 
@@ -51,7 +52,7 @@ const HEARTBEAT_PERSIST_MS = 30 * 1000;
  * and stays with the author if they uninstall the plugin. Local only — never
  * uploaded.
  */
-const PORTABLE_LOG_FOLDER = 'Radial Timeline';
+const PORTABLE_LOG_FOLDER = RT_SYSTEM_FOLDER;
 const PORTABLE_LOG_PATH = `${PORTABLE_LOG_FOLDER}/Writing Sessions.json`;
 
 export type PortableSessionLogRead =

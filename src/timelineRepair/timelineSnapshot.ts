@@ -17,8 +17,9 @@
 
 import { TFile, type App } from 'obsidian';
 import type { SessionDiffModel } from './types';
+import { systemFolderPath } from '../utils/systemFolder';
 
-export const TIMELINE_SNAPSHOT_FOLDER = 'Radial Timeline/Snapshots/Timeline';
+export const TIMELINE_SNAPSHOT_FOLDER = systemFolderPath('Snapshots', 'Timeline');
 
 export interface TimelineSnapshotEntry {
     path: string;

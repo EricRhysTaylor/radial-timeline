@@ -3,6 +3,7 @@ import type RadialTimelinePlugin from '../../main';
 import { resolveBookTitle } from '../../renderer/apr/aprHelpers';
 import { AuthorProgressRenderService } from './AuthorProgressRenderService';
 import { writeManagedOutput } from '../../utils/logVaultOps';
+import { systemFolderPath } from '../../utils/systemFolder';
 
 export class AuthorProgressPublishService {
     constructor(
@@ -41,7 +42,7 @@ export class AuthorProgressPublishService {
         const exportPath = this.renderService.getDefaultExportPath(settings);
         await this.renderService.saveAprOutput(exportPath, format, svgString, width, height);
 
-        const exportFolder = exportPath.substring(0, exportPath.lastIndexOf('/')) || 'Radial Timeline/Social';
+        const exportFolder = exportPath.substring(0, exportPath.lastIndexOf('/')) || systemFolderPath('Social');
         const exportFileName = exportPath.substring(exportPath.lastIndexOf('/') + 1);
         const stem = exportFileName.includes('.') ? exportFileName.replace(/\.[^.]+$/, '') : exportFileName;
         const noteFileName = `${stem}.md`;

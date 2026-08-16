@@ -1021,6 +1021,13 @@ export interface RadialTimelineSettings {
     manuscriptOutputFolder?: string;
     /** @deprecated Outline exports use the shared Export folder. Kept in sync with `manuscriptOutputFolder` so stale values can't diverge. */
     outlineOutputFolder?: string;
+    /**
+     * Internal one-time flag: the author has been told that timeline exports
+     * moved out of the old top-level `Radial Timeline Exports` folder into the
+     * canonical system folder. Set after the first successful export in a vault
+     * that still contains the old folder.
+     */
+    timelineExportRelocationNoticed?: boolean;
     inquirySources?: InquirySourcesSettings;
     inquiryPromptConfig?: InquiryPromptConfig;
     inquirySessionCache?: InquirySessionCacheRecord;

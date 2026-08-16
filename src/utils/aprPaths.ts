@@ -1,3 +1,5 @@
+import { systemFolderPath } from './systemFolder';
+
 export type AprSize = 'small' | 'medium' | 'large';
 export type AprFrequency = 'manual' | 'daily' | 'weekly' | 'monthly';
 /** Legacy v1 path tokens kept here ONLY for matching pre-v6 export filenames. Not a valid AprSize. */
@@ -58,6 +60,9 @@ export function normalizeAprExportFormat(value: unknown): AprExportFormat {
     return EXPORT_FORMATS.includes(normalized as AprExportFormat) ? normalized as AprExportFormat : 'png';
 }
 
+/** APR artwork root — the Social subfolder of the canonical system folder. */
+const SOCIAL_ROOT = systemFolderPath('Social');
+
 /** Legacy size tokens used in v1 paths (kept for backward-compat path matching only). */
 const LEGACY_SIZES: LegacyAprSizeToken[] = ['thumb', 'small', 'medium', 'large'];
 const QUALITY_TOKENS: AprExportQuality[] = ['standard', 'ultra', 'print'];
@@ -70,7 +75,7 @@ export function isDefaultEmbedPath(path: string | undefined, options: { bookTitl
     if (!path?.trim()) return false;
     const bookSlug = slugify(options.bookTitle, 'book');
     const mode = formatAprMode(options.updateFrequency);
-    const prefix = `Radial Timeline/Social/${bookSlug}/`;
+    const prefix = `${SOCIAL_ROOT}/${bookSlug}/`;
     if (!path.startsWith(prefix)) return false;
     const filename = path.slice(prefix.length);
     for (const format of EXPORT_FORMATS) {
@@ -107,7 +112,7 @@ export function buildDefaultEmbedPath(options: {
     const mode = formatAprMode(options.updateFrequency);
     const quality = resolveQuality(options.aprExportQuality);
     const format = normalizeAprExportFormat(options.exportFormat);
-    return `Radial Timeline/Social/${bookSlug}/apr-default-${mode}-${quality}.${format}`;
+    return `${SOCIAL_ROOT}/${bookSlug}/apr-default-${mode}-${quality}.${format}`;
 }
 
 /**
@@ -130,5 +135,5 @@ export function buildCampaignEmbedPath(options: {
     const quality = resolveQuality(options.aprExportQuality);
     const teaserSuffix = options.teaserEnabled ? '-teaser' : '';
     const format = normalizeAprExportFormat(options.exportFormat);
-    return `Radial Timeline/Social/${bookSlug}/campaigns/apr-${campaignSlug}-${mode}-${quality}${teaserSuffix}.${format}`;
+    return `${SOCIAL_ROOT}/${bookSlug}/campaigns/apr-${campaignSlug}-${mode}-${quality}${teaserSuffix}.${format}`;
 }

@@ -1,6 +1,7 @@
 import { App, Notice, Setting, TAbstractFile, TFolder, normalizePath, setIcon } from 'obsidian';
+import { RT_SYSTEM_FOLDER } from '../utils/systemFolder';
 
-const VAULT_ROOT_PREFIX = 'Radial Timeline/';
+const VAULT_ROOT_PREFIX = `${RT_SYSTEM_FOLDER}/`;
 
 function shortenVaultPath(vaultPath: string): string {
     const normalized = vaultPath.replace(/^\/+/, '');

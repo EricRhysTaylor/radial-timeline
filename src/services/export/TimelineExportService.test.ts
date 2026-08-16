@@ -6,8 +6,12 @@ import {
     ExportStyleClasses,
     generateExportId,
     isRuntimeChromeElement,
+    resolveTimelineImageExportFolder,
     snapshotRenderConfig,
+    LEGACY_TIMELINE_EXPORT_FOLDER,
+    TIMELINE_COMMUNITY_EXPORT_FOLDER,
     TIMELINE_DATA_EXPORT_SCHEMA_VERSION,
+    TIMELINE_IMAGE_EXPORT_SUBFOLDER,
     type BuildTimelineDataExportParams,
     type TimelineDataExportDocument,
 } from './TimelineExportService';
@@ -19,6 +23,9 @@ import {
     type ExportFontFaceRule,
 } from './exportFonts';
 import type { BookMeta, RadialTimelineSettings, TimelineItem } from '../../types';
+import { RT_SYSTEM_FOLDER, systemFolderPath } from '../../utils/systemFolder';
+import { DEFAULT_SETTINGS } from '../../settings/defaults';
+import type RadialTimelinePlugin from '../../main';
 
 /**
  * Minimal settings stub carrying only the facade-consumed fields the render
@@ -401,6 +408,45 @@ describe('isRuntimeChromeElement', () => {
         expect(isRuntimeChromeElement(target('text', ['rt-scene-title']))).toBe(false);
         expect(isRuntimeChromeElement(target('g', []))).toBe(false);
         expect(isRuntimeChromeElement(target('svg', ['radial-timeline-svg']))).toBe(false);
+    });
+});
+
+describe('export destinations', () => {
+    function pluginWithExportFolder(value: string | undefined): RadialTimelinePlugin {
+        return { settings: { manuscriptOutputFolder: value } } as unknown as RadialTimelinePlugin;
+    }
+
+    it('writes the community share JSON beside Social in the canonical system folder', () => {
+        expect(TIMELINE_COMMUNITY_EXPORT_FOLDER).toBe(systemFolderPath('Community'));
+        expect(TIMELINE_COMMUNITY_EXPORT_FOLDER).toBe('Radial Timeline/Community');
+    });
+
+    it('writes timeline images under the configured Export folder', () => {
+        expect(resolveTimelineImageExportFolder(pluginWithExportFolder(undefined)))
+            .toBe(`${DEFAULT_SETTINGS.manuscriptOutputFolder}/${TIMELINE_IMAGE_EXPORT_SUBFOLDER}`);
+        expect(resolveTimelineImageExportFolder(pluginWithExportFolder(undefined)))
+            .toBe('Radial Timeline/Export/Timeline');
+    });
+
+    it('follows a retargeted Export folder instead of re-joining the system root', () => {
+        expect(resolveTimelineImageExportFolder(pluginWithExportFolder('Manuscripts/Out')))
+            .toBe('Manuscripts/Out/Timeline');
+    });
+
+    it('never creates a second top-level folder beside the canonical one', () => {
+        const destinations = [
+            TIMELINE_COMMUNITY_EXPORT_FOLDER,
+            resolveTimelineImageExportFolder(pluginWithExportFolder(undefined)),
+        ];
+        for (const destination of destinations) {
+            expect(destination.startsWith(`${RT_SYSTEM_FOLDER}/`)).toBe(true);
+            expect(destination.startsWith(LEGACY_TIMELINE_EXPORT_FOLDER)).toBe(false);
+        }
+    });
+
+    it('keeps the legacy folder name as a read-only marker, never a destination', () => {
+        expect(LEGACY_TIMELINE_EXPORT_FOLDER).toBe('Radial Timeline Exports');
+        expect(TIMELINE_COMMUNITY_EXPORT_FOLDER).not.toBe(LEGACY_TIMELINE_EXPORT_FOLDER);
     });
 });
 

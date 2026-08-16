@@ -17,6 +17,7 @@ import {
 } from '../utils/aprPaths';
 import { resolveBookTitle, resolveProjectPath } from '../renderer/apr/aprHelpers';
 import { isSceneItem } from '../utils/sceneHelpers';
+import { systemFolderPath } from '../utils/systemFolder';
 
 export class AuthorProgressModal extends Modal {
     private plugin: RadialTimelinePlugin;
@@ -560,7 +561,7 @@ export class AuthorProgressModal extends Modal {
         // Auto-update legacy export paths
         if (settings) {
             const legacySlug = campaign.name.toLowerCase().replace(/\s+/g, '-');
-            const legacyPath = `Radial Timeline/Social/${legacySlug}-progress.svg`;
+            const legacyPath = `${systemFolderPath('Social')}/${legacySlug}-progress.svg`;
             if (campaign.exportPath === legacyPath) {
                 const nextPath = buildCampaignEmbedPath({
                     bookTitle: this.plugin.getActiveBookTitle(),

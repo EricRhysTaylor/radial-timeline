@@ -2,6 +2,7 @@ import { App, DataAdapter, normalizePath } from 'obsidian';
 import type { InquirySession } from './sessionTypes';
 import type { InquiryVaultIdentity } from './sessionArtifact';
 import { parseSessionArtifact, parseSessionArtifactVault, serializeSessionsToArtifact } from './sessionArtifact';
+import { systemFolderPath } from '../utils/systemFolder';
 
 /**
  * Vault-resident persistence for inquiry sessions — the single source of truth
@@ -15,7 +16,7 @@ import { parseSessionArtifact, parseSessionArtifactVault, serializeSessionsToArt
  * chokepoint as before. Pre-2026-06 vaults kept this file in the hidden
  * `.radial-timeline/` dotfolder; see LEGACY_* + migrateInquirySidecarToVisible.
  */
-export const INQUIRY_SIDECAR_DIR = 'Radial Timeline/Inquiry/Sessions';
+export const INQUIRY_SIDECAR_DIR = systemFolderPath('Inquiry', 'Sessions');
 export const INQUIRY_SIDECAR_PATH = `${INQUIRY_SIDECAR_DIR}/sessions.json`;
 
 // Pre-2026-06 hidden location. Read as a fallback and one-time migrated to the

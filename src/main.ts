@@ -71,6 +71,7 @@ import type { GossamerCacheWindow } from './gossamer/cacheWindow';
 import { seedProEntitlement } from './settings/proEntitlementSeed';
 import { hasProFeatureAccess } from './settings/featureGate';
 import { DisposableRegistry } from './core/disposable';
+import { systemFolderPath } from './utils/systemFolder';
 
 // Import the new scene analysis function <<< UPDATED IMPORT
 
@@ -1114,9 +1115,9 @@ export default class RadialTimelinePlugin extends Plugin {
             }
         }
 
-        const legacyManuscriptFolder = 'Radial Timeline/Manuscript';
-        const legacyOutlineFolder = 'Radial Timeline/Outline';
-        const exportFolderDefault = DEFAULT_SETTINGS.manuscriptOutputFolder || 'Radial Timeline/Export';
+        const legacyManuscriptFolder = systemFolderPath('Manuscript');
+        const legacyOutlineFolder = systemFolderPath('Outline');
+        const exportFolderDefault = DEFAULT_SETTINGS.manuscriptOutputFolder || systemFolderPath('Export');
         const manuscriptFolder = (this.settings.manuscriptOutputFolder || '').trim();
         const outlineFolder = ((this.settings as LegacyPersistedSettings).outlineOutputFolder || '').trim();
         let exportFolderMigrated = false;

@@ -607,6 +607,8 @@ export interface TranslationKeys {
         revealingBody: string;
         genericNamesToggleLabel: string;
         genericNamesToggleDescription: string;
+        destinationHeading: string;
+        destinationBody: string;
         cancelButton: string;
         exportButton: string;
     };
@@ -2941,6 +2943,8 @@ export const en: TranslationKeys = {
         revealingBody: 'Scene titles, synopses, character names, POV, and story dates are included in the file, held for later per-scene reveal — nothing is shared until you upload this file to your Community share and activate it.',
         genericNamesToggleLabel: 'Generic ring names (Subplot 1, Subplot 2…)',
         genericNamesToggleDescription: 'Use this if your subplot names could reveal plot. Scene titles are not affected — they are a revealing field, hidden until you choose to reveal each scene.',
+        destinationHeading: 'Where it is saved',
+        destinationBody: 'The file is written to {path} in your vault. Nothing leaves your vault until you upload it.',
         cancelButton: 'Cancel',
         exportButton: 'Export',
     },

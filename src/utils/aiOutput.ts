@@ -1,24 +1,7 @@
 import { normalizePath } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
-import { countContentLogFiles, resolveLogsRoot } from '../ai/log';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
 import { systemFolderPath } from './systemFolder';
-
-export function resolveAiOutputFolder(plugin: RadialTimelinePlugin): string {
-    void plugin;
-    return resolveLogsRoot();
-}
-
-export async function ensureAiOutputFolder(plugin: RadialTimelinePlugin): Promise<string> {
-    const folder = resolveAiOutputFolder(plugin);
-    try { await plugin.app.vault.createFolder(folder); } catch { /* folder may already exist */ }
-    return folder;
-}
-
-/** @deprecated Content log counting now aggregates current feature content folders. */
-export function countAiLogFiles(plugin: RadialTimelinePlugin): number {
-    return countContentLogFiles(plugin);
-}
 
 export function resolveManuscriptOutputFolder(plugin: RadialTimelinePlugin): string {
     return resolveExportOutputFolder(plugin);

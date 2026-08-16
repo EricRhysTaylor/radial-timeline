@@ -28,6 +28,7 @@ import { mountSvgMarkup } from '../../utils/svgDom';
 import { getActiveBook } from '../../utils/books';
 import { AuthorProgressService } from '../../services/AuthorProgressService';
 import { canShareAprToCommunity, normalizeCommunityShareSettings } from '../../communityShare/communityShareSettings';
+import { findCommunityBookConflict, resolveCampaignBookId } from '../../authorProgress/campaignCommunityBinding';
 
 export interface CampaignManagerProps {
     app: App;
@@ -709,7 +710,24 @@ function renderCampaignDetails(
         bookDropdown.setValue(campaign.targetBookId ?? '');
         bookDropdown.onChange(async (val) => {
             if (!plugin.settings.authorProgress?.campaigns) return;
-            plugin.settings.authorProgress.campaigns[index].targetBookId = val || undefined;
+            const target = plugin.settings.authorProgress.campaigns[index];
+            if (target.sendToCommunity) {
+                // "Active book" would let a book switch silently change what
+                // publishes, and a book already claimed by another sharing
+                // campaign would overwrite its APR on My Share.
+                if (!val) {
+                    new Notice('A campaign that sends to Community needs an explicit book, so switching your active book cannot change what publishes.');
+                    bookDropdown.setValue(target.targetBookId ?? '');
+                    return;
+                }
+                const conflict = findCommunityBookConflict(plugin.settings, { id: target.id, targetBookId: val });
+                if (conflict) {
+                    new Notice(`"${conflict.name}" already sends that book's APR to Community. My Share keeps one APR per book.`);
+                    bookDropdown.setValue(target.targetBookId ?? '');
+                    return;
+                }
+            }
+            target.targetBookId = val || undefined;
             await plugin.saveSettings();
             onUpdate();
             });
@@ -1004,7 +1022,25 @@ function renderCampaignDetails(
             .onChange(async (value) => {
                 if (!plugin.settings.authorProgress?.campaigns) return;
                 if (value && !canSendToCommunity) return;
-                plugin.settings.authorProgress.campaigns[index].sendToCommunity = value;
+                const target = plugin.settings.authorProgress.campaigns[index];
+                if (value) {
+                    const bookId = resolveCampaignBookId(plugin.settings, target);
+                    if (!bookId) {
+                        new Notice('Choose a book for this campaign before sending its APR to Community.');
+                        toggle.setValue(false);
+                        return;
+                    }
+                    const conflict = findCommunityBookConflict(plugin.settings, target);
+                    if (conflict) {
+                        new Notice(`"${conflict.name}" already sends this book's APR to Community. My Share keeps one APR per book — turn off Send to Community on "${conflict.name}" first.`);
+                        toggle.setValue(false);
+                        return;
+                    }
+                    // Pin the resolved book. A campaign that publishes publicly
+                    // must not silently retarget when the active book changes.
+                    target.targetBookId = bookId;
+                }
+                target.sendToCommunity = value;
                 await plugin.saveSettings();
                 onUpdate();
             }))

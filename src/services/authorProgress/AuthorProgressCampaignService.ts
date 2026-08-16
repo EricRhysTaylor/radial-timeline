@@ -4,6 +4,7 @@ import type { AuthorProgressCampaign, AuthorProgressSettings } from '../../types
 import { hasProFeatureAccess } from '../../settings/featureGate';
 import { getTeaserRevealLevel, getTeaserThresholds } from '../../renderer/apr/AprConstants';
 import { uploadAprToCommunity } from '../../communityShare/communityShareClient';
+import { findCommunityBookConflict, resolveCampaignBookId } from '../../authorProgress/campaignCommunityBinding';
 import { AuthorProgressRenderService, type AuthorProgressCampaignBuildResult } from './AuthorProgressRenderService';
 import { AuthorProgressPublishService } from './AuthorProgressPublishService';
 
@@ -234,9 +235,17 @@ export class AuthorProgressCampaignService {
         }
 
         const campaign = authorProgress.campaigns[campaignIndex];
-        const bookKey = campaign.targetBookId ?? this.plugin.settings.activeBookId;
-        if (!bookKey || !this.plugin.settings.books.some(book => book.id === bookKey)) {
+        const bookKey = resolveCampaignBookId(this.plugin.settings, campaign);
+        if (!bookKey) {
             throw new Error('Choose a campaign book before sending its APR to Community.');
+        }
+        // My Share keeps one APR per book, so a second campaign on the same
+        // book would overwrite the first instead of publishing alongside it.
+        // Settings written before the Send-to-Community guard can still hold
+        // that pair, so refuse here rather than let the newer upload win.
+        const conflict = findCommunityBookConflict(this.plugin.settings, campaign);
+        if (conflict) {
+            throw new Error(`"${conflict.name}" also sends this book's APR to Community, and My Share keeps one APR per book. Turn off Send to Community on "${conflict.name}" or point one campaign at a different book.`);
         }
 
         const attemptedAt = new Date().toISOString();

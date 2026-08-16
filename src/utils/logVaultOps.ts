@@ -1,6 +1,6 @@
 import { App, TAbstractFile, TFile, Vault, getFrontMatterInfo, normalizePath, parseYaml } from 'obsidian';
 import { confirmWithErtModal } from '../modals/ErtConfirmModal';
-import { resolveSnapshotsLogsRoot } from '../ai/log';
+import { resolveRecoverSnapshotsRoot } from '../ai/log';
 
 export interface TrashFilesOptions {
     operation: string;
@@ -17,6 +17,19 @@ export interface SnapshotFrontmatterFieldsOptions {
 export interface SnapshotFileBeforeOverwriteOptions {
     operation: string;
     meta?: Record<string, unknown>;
+}
+
+export interface DeletionSnapshotPreviewDetail {
+    fields: string[];
+    values: Record<string, unknown>;
+}
+
+export interface WriteDeletionSnapshotOptions {
+    /** Display name of the note type being pruned, e.g. 'Beat', 'Backdrop', 'Scene'. */
+    noteType: string;
+    operation: 'delete_advanced';
+    preview: Map<TFile, DeletionSnapshotPreviewDetail>;
+    scopeSummary: string;
 }
 
 export interface ManagedOutputOverwriteCheckOptions {
@@ -58,10 +71,6 @@ export function useSystemTrash(app: App): boolean {
     }
 }
 
-function resolveArchiveLogFolder(): string {
-    return resolveSnapshotsLogsRoot();
-}
-
 async function ensureFolder(app: App, folderPath: string): Promise<void> {
     const normalized = normalizePath(folderPath.trim());
     if (!normalized) return;
@@ -83,7 +92,7 @@ function createSnapshotFileName(operation: string): string {
 }
 
 async function writeSnapshotPayload(app: App, payload: Record<string, unknown>, options: { operation: string }): Promise<string> {
-    const logsFolder = resolveArchiveLogFolder();
+    const logsFolder = resolveRecoverSnapshotsRoot();
     await ensureFolder(app, logsFolder);
     const snapshotPath = normalizePath(`${logsFolder}/${createSnapshotFileName(options.operation)}`);
     await app.vault.create(snapshotPath, JSON.stringify(payload, null, 2));
@@ -213,6 +222,65 @@ export async function snapshotFileBeforeOverwrite(
         }],
         meta: options.meta ?? {}
     }, { operation: options.operation });
+}
+
+function isEmptyDeletionValue(value: unknown): boolean {
+    if (value === undefined || value === null) return true;
+    if (typeof value === 'string') return value.trim().length === 0;
+    if (Array.isArray(value)) return value.length === 0;
+    return false;
+}
+
+/**
+ * Canonical "advanced field delete" snapshot writer. Records only the fields
+ * that carried a value before deletion, so a no-op delete (all-empty fields)
+ * never produces a snapshot file. Output path and payload shape are shared by
+ * every note type that supports advanced-field deletion (Beat, Backdrop,
+ * Scene) — the noteType field is the only per-caller variation.
+ */
+export async function writeDeletionSnapshot(
+    app: App,
+    options: WriteDeletionSnapshotOptions
+): Promise<string | null> {
+    const entries: Array<{
+        path: string;
+        basename: string;
+        fields: Array<{ key: string; value: unknown }>;
+    }> = [];
+
+    for (const [file, detail] of options.preview.entries()) {
+        const fields = detail.fields
+            .filter((field) => !isEmptyDeletionValue(detail.values[field]))
+            .map((field) => ({ key: field, value: detail.values[field] }));
+        if (fields.length === 0) continue;
+        entries.push({
+            path: file.path,
+            basename: file.basename,
+            fields
+        });
+    }
+
+    if (entries.length === 0) return null;
+
+    const logsRoot = resolveRecoverSnapshotsRoot();
+    await ensureFolder(app, logsRoot);
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `${timestamp}-${options.noteType.toLowerCase()}-${options.operation}.json`;
+    const snapshotPath = normalizePath(`${logsRoot}/${filename}`);
+    const payload = {
+        version: 1,
+        createdAt: new Date().toISOString(),
+        noteType: options.noteType,
+        operation: options.operation,
+        scopeSummary: options.scopeSummary,
+        filesWithValuedDeletes: entries.length,
+        valuedFieldDeletes: entries.reduce((sum, entry) => sum + entry.fields.length, 0),
+        entries
+    };
+
+    await app.vault.create(snapshotPath, `${JSON.stringify(payload, null, 2)}\n`);
+    return snapshotPath;
 }
 
 async function snapshotFileCollection(

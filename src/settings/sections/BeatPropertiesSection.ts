@@ -85,7 +85,7 @@ import {
     updateLoadedBeatTab,
 } from '../../storyBeats/workspaceState';
 import { parseDescriptionParts } from '../../utils/descriptionParser';
-import { resolveSnapshotsLogsRoot } from '../../ai/log';
+import { writeDeletionSnapshot } from '../../utils/logVaultOps';
 import type { FieldEntry, BeatRow, BeatNoteCustomContentSummary } from './beats/types';
 import { BEAT_SYSTEM_COPY } from './beats/beatSystemCopy';
 import { dirtyState, type InnerStage } from './beats/dirtyState';
@@ -3896,71 +3896,6 @@ export function renderBeatPropertiesSection(params: {
             };
         };
 
-        type DeletePreviewDetail = { fields: string[]; values: Record<string, unknown> };
-        const ensureVaultFolder = async (folderPath: string): Promise<string> => {
-            const normalized = normalizePath(folderPath.trim());
-            if (!normalized) return '';
-            const parts = normalized.split('/').filter(Boolean);
-            let current = '';
-            for (const part of parts) {
-                current = current ? `${current}/${part}` : part;
-                if (!app.vault.getAbstractFileByPath(current)) {
-                    try {
-                        await app.vault.createFolder(current);
-                    } catch {
-                        // Folder may already exist if created concurrently.
-                    }
-                }
-            }
-            return normalized;
-        };
-        const writeDeletionSnapshot = async (params: {
-            operation: 'delete_advanced';
-            preview: Map<TFile, DeletePreviewDetail>;
-            scopeSummary: string;
-        }): Promise<string | null> => {
-            const entries: Array<{
-                path: string;
-                basename: string;
-                fields: Array<{ key: string; value: unknown }>;
-            }> = [];
-
-            for (const [file, detail] of params.preview.entries()) {
-                const fields = detail.fields
-                    .filter((field) => !isEmptyValue(detail.values[field]))
-                    .map((field) => ({ key: field, value: detail.values[field] }));
-                if (fields.length === 0) continue;
-                entries.push({
-                    path: file.path,
-                    basename: file.basename,
-                    fields
-                });
-            }
-
-            if (entries.length === 0) return null;
-
-            const logsRoot = resolveSnapshotsLogsRoot();
-            const snapshotFolder = await ensureVaultFolder(logsRoot);
-            if (!snapshotFolder) return null;
-
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            const filename = `${timestamp}-${noteType.toLowerCase()}-${params.operation}.json`;
-            const snapshotPath = normalizePath(`${logsRoot}/${filename}`);
-            const payload = {
-                version: 1,
-                createdAt: new Date().toISOString(),
-                noteType,
-                operation: params.operation,
-                scopeSummary: params.scopeSummary,
-                filesWithValuedDeletes: entries.length,
-                valuedFieldDeletes: entries.reduce((sum, entry) => sum + entry.fields.length, 0),
-                entries
-            };
-
-            await app.vault.create(snapshotPath, `${JSON.stringify(payload, null, 2)}\n`);
-            return snapshotPath;
-        };
-
         // ─── Header row: two-column Setting layout (title+desc left, audit button right) ──
         const auditSetting = new Settings(parentEl)
             .setName(`Check ${noteType.toLowerCase()} properties`)
@@ -5155,7 +5090,8 @@ export function renderBeatPropertiesSection(params: {
             let deletionSnapshotPath: string | null = null;
             if (hasValuedFields) {
                 try {
-                    deletionSnapshotPath = await writeDeletionSnapshot({
+                    deletionSnapshotPath = await writeDeletionSnapshot(app, {
+                        noteType,
                         operation: 'delete_advanced',
                         preview,
                         scopeSummary: auditScopeSummary

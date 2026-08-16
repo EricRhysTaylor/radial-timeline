@@ -11,7 +11,8 @@ import {
     formatUsageCostBreakdownLines,
     resolveContentLogRoots,
     resolveContentLogsRoot,
-    resolveLogsRoot
+    resolveLogsRoot,
+    resolveRecoverSnapshotsRoot
 } from './log';
 
 function makeFolder(path: string, children: Array<TFile | TFolder> = []): TFolder {
@@ -56,6 +57,13 @@ describe('log roots', () => {
             'Radial Timeline/Logs/Gossamer/Content',
             'Radial Timeline/Logs/Pulse/Content'
         ]);
+    });
+
+    // Renamed from resolveSnapshotsLogsRoot (folder-taxonomy cleanup, Tier 1
+    // P1): the resolved path is byte-identical to the pre-rename value —
+    // Snapshots lives under Recover, never under Logs.
+    it('resolves the recover snapshots root, unchanged by the rename', () => {
+        expect(resolveRecoverSnapshotsRoot()).toBe('Radial Timeline/Recover/Snapshots');
     });
 });
 

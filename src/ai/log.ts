@@ -2,7 +2,7 @@
  * Unified AI exchange logging
  */
 import type RadialTimelinePlugin from '../main';
-import { normalizePath, Notice, type Vault, TFile, TFolder } from 'obsidian';
+import { normalizePath, type Vault, TFile, TFolder } from 'obsidian';
 import { redactSensitiveObject, redactSensitiveValue } from './credentials/redactSensitive';
 import { getModelDisplayName } from '../utils/modelResolver';
 import {
@@ -157,7 +157,8 @@ const GOSSAMER_LOGS_FOLDER_NAME = 'Gossamer';
 const GOSSAMER_ARCHIVE_FOLDER_NAME = 'Gossamer Archive';
 const PULSE_LOGS_FOLDER_NAME = 'Pulse';
 const MOVES_LOGS_FOLDER_NAME = 'Moves';
-const SNAPSHOTS_LOGS_FOLDER_NAME = 'Snapshots';
+// Lives under Recover, not Logs — named for its subfolder, not its parent.
+const RECOVER_SNAPSHOTS_FOLDER_NAME = 'Snapshots';
 
 function normalizePricingProvider(provider?: string | null): 'anthropic' | 'openai' | 'google' | null {
     const normalized = typeof provider === 'string' ? provider.trim().toLowerCase() : '';
@@ -580,36 +581,6 @@ export function resolveContentLogRoots(): string[] {
     ];
 }
 
-export async function ensureLogsRoot(vault: Vault): Promise<TFolder | null> {
-    const folderPath = resolveLogsRoot();
-    const existing = vault.getAbstractFileByPath(folderPath);
-    if (existing && !(existing instanceof TFolder)) {
-        return null;
-    }
-    try {
-        await vault.createFolder(folderPath);
-    } catch {
-        // Folder may already exist.
-    }
-    const folder = vault.getAbstractFileByPath(folderPath);
-    return folder instanceof TFolder ? folder : null;
-}
-
-export async function ensureContentLogsRoot(vault: Vault): Promise<TFolder | null> {
-    const folderPath = resolveContentLogsRoot();
-    const existing = vault.getAbstractFileByPath(folderPath);
-    if (existing && !(existing instanceof TFolder)) {
-        return null;
-    }
-    try {
-        await vault.createFolder(folderPath);
-    } catch {
-        // Folder may already exist.
-    }
-    const folder = vault.getAbstractFileByPath(folderPath);
-    return folder instanceof TFolder ? folder : null;
-}
-
 async function ensureNestedFolder(vault: Vault, folderPath: string): Promise<TFolder | null> {
     const normalized = normalizePath(folderPath);
     const parts = normalized.split('/').filter(Boolean);
@@ -698,16 +669,12 @@ export async function ensureMovesLogsRoot(vault: Vault): Promise<TFolder | null>
 }
 
 // Recovery data — lives under Recover, never under Logs.
-export function resolveSnapshotsLogsRoot(): string {
-    return normalizePath(`${DEFAULT_RECOVER_ROOT}/${SNAPSHOTS_LOGS_FOLDER_NAME}`);
+export function resolveRecoverSnapshotsRoot(): string {
+    return normalizePath(`${DEFAULT_RECOVER_ROOT}/${RECOVER_SNAPSHOTS_FOLDER_NAME}`);
 }
 
-export async function ensureSnapshotsLogsRoot(vault: Vault): Promise<TFolder | null> {
-    return ensureNestedFolder(vault, resolveSnapshotsLogsRoot());
-}
-
-export function resolveAiLogFolder(): string {
-    return resolveLogsRoot();
+export async function ensureRecoverSnapshotsRoot(vault: Vault): Promise<TFolder | null> {
+    return ensureNestedFolder(vault, resolveRecoverSnapshotsRoot());
 }
 
 export function resolveAvailableLogPath(vault: Vault, folderPath: string, baseName: string): string {
@@ -748,21 +715,4 @@ export function countContentLogFiles(plugin: RadialTimelinePlugin): number {
         countMarkdownFiles(plugin.app.vault.getAbstractFileByPath(folderPath));
     }
     return count;
-}
-
-export async function writeAiLog(
-    plugin: RadialTimelinePlugin,
-    vault: Vault,
-    options: { baseName: string; content: string }
-): Promise<void> {
-    const folderPath = normalizePath(resolveLogsRoot());
-    try {
-        const folder = await ensureLogsRoot(vault);
-        if (!folder) throw new Error('Log folder path is not a folder.');
-        const filePath = resolveAvailableLogPath(vault, folderPath, options.baseName);
-        await vault.create(filePath, options.content.trim());
-    } catch (e) {
-        console.error('[AI][log] Failed to write log:', redactSensitiveObject(e));
-        new Notice('Failed to write AI log.');
-    }
 }

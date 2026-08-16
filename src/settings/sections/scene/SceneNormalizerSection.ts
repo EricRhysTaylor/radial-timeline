@@ -1,4 +1,4 @@
-import { App, ButtonComponent, Modal, Notice, TFile, normalizePath, setIcon, setTooltip, Setting as Settings } from 'obsidian';
+import { App, ButtonComponent, Modal, Notice, TFile, setIcon, setTooltip, Setting as Settings } from 'obsidian';
 import { ERT_CLASSES } from '../../../ui/classes';
 import type RadialTimelinePlugin from '../../../main';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../../wikiLink';
@@ -33,9 +33,7 @@ import { getExcludeKeyPredicate, RESERVED_OBSIDIAN_KEYS } from '../../../utils/y
 import { formatSafetyIssues } from '../../../utils/yamlSafety';
 import { openOrRevealFile } from '../../../utils/fileUtils';
 import { getAdvancedMode, shouldEnableRemoveAdvanced } from '../../../scenes/core/scenePropertyState';
-import { resolveSnapshotsLogsRoot } from '../../../ai/log';
-
-type DeletePreviewDetail = { fields: string[]; values: Record<string, unknown> };
+import { writeDeletionSnapshot } from '../../../utils/logVaultOps';
 
 function createBadge(container: HTMLElement, text: string): HTMLElement {
     const badge = container.createSpan({
@@ -132,71 +130,6 @@ function formatBatchNotice(params: {
     if (skipped > 0) parts.push(`${skipped} ${skippedLabel}`);
     if (failed > 0) parts.push(`${failed} failed`);
     return parts.join(', ') || noChangeText;
-}
-
-async function ensureVaultFolder(app: App, folderPath: string): Promise<string> {
-    const normalized = normalizePath(folderPath.trim());
-    if (!normalized) return '';
-    const parts = normalized.split('/').filter(Boolean);
-    let current = '';
-    for (const part of parts) {
-        current = current ? `${current}/${part}` : part;
-        if (!app.vault.getAbstractFileByPath(current)) {
-            try {
-                await app.vault.createFolder(current);
-            } catch {
-                // Folder may already exist.
-            }
-        }
-    }
-    return normalized;
-}
-
-async function writeDeletionSnapshot(app: App, plugin: RadialTimelinePlugin, params: {
-    operation: 'delete_advanced';
-    preview: Map<TFile, DeletePreviewDetail>;
-    scopeSummary: string;
-}): Promise<string | null> {
-    const entries: Array<{
-        path: string;
-        basename: string;
-        fields: Array<{ key: string; value: unknown }>;
-    }> = [];
-
-    for (const [file, detail] of params.preview.entries()) {
-        const fields = detail.fields
-            .filter((field) => !isEmptyValue(detail.values[field]))
-            .map((field) => ({ key: field, value: detail.values[field] }));
-        if (fields.length === 0) continue;
-        entries.push({
-            path: file.path,
-            basename: file.basename,
-            fields,
-        });
-    }
-
-    if (entries.length === 0) return null;
-
-    const logsRoot = resolveSnapshotsLogsRoot();
-    const snapshotFolder = await ensureVaultFolder(app, logsRoot);
-    if (!snapshotFolder) return null;
-
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `${timestamp}-scene-${params.operation}.json`;
-    const snapshotPath = normalizePath(`${logsRoot}/${filename}`);
-    const payload = {
-        version: 1,
-        createdAt: new Date().toISOString(),
-        noteType: 'Scene',
-        operation: params.operation,
-        scopeSummary: params.scopeSummary,
-        filesWithValuedDeletes: entries.length,
-        valuedFieldDeletes: entries.reduce((sum, entry) => sum + entry.fields.length, 0),
-        entries,
-    };
-
-    await app.vault.create(snapshotPath, `${JSON.stringify(payload, null, 2)}\n`);
-    return snapshotPath;
 }
 
 export function renderSceneNormalizerSection(params: {
@@ -695,7 +628,8 @@ export function renderSceneNormalizerSection(params: {
             let deletionSnapshotPath: string | null = null;
             for (const [, detail] of preview.entries()) {
                 if (detail.fields.some((field) => !isEmptyValue(detail.values[field]))) {
-                    deletionSnapshotPath = await writeDeletionSnapshot(app, plugin, {
+                    deletionSnapshotPath = await writeDeletionSnapshot(app, {
+                        noteType: 'Scene',
                         operation: 'delete_advanced',
                         preview,
                         scopeSummary: auditScopeSummary,

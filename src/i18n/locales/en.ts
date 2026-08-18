@@ -607,7 +607,6 @@ export interface TranslationKeys {
         revealingBody: string;
         genericNamesToggleLabel: string;
         genericNamesToggleDescription: string;
-        destinationHeading: string;
         destinationBody: string;
         cancelButton: string;
         exportButton: string;
@@ -2936,17 +2935,16 @@ export const en: TranslationKeys = {
     timelineDataExportModal: {
         badge: 'Export',
         title: 'Export timeline data',
-        subtitle: 'This file is the source for your Interactive Timeline share. Nothing is shared until you upload it to your Community share and activate it.',
-        structuralHeading: 'Always included (structural)',
-        structuralBody: 'Scene numbers, acts, subplot names, status, publish stage, item type, scene and act counts, book title, and author attribution.',
-        revealingHeading: 'Held for later reveal (revealing)',
-        revealingBody: 'Scene titles, synopses, character names, POV, and story dates are included in the file, held for later per-scene reveal — nothing is shared until you upload this file to your Community share and activate it.',
+        subtitle: 'Nothing is shared by exporting. The file stays in your vault until you upload it to your Community share and activate it.',
+        structuralHeading: 'Shared when you activate',
+        structuralBody: 'Scene numbers, acts, subplot names, status, publish stage, book title, and author.',
+        revealingHeading: 'Held for per-scene reveal',
+        revealingBody: 'Scene titles, synopses, characters, POV, and story dates — hidden until you reveal each scene.',
         genericNamesToggleLabel: 'Generic ring names (Subplot 1, Subplot 2…)',
-        genericNamesToggleDescription: 'Use this if your subplot names could reveal plot. Scene titles are not affected — they are a revealing field, hidden until you choose to reveal each scene.',
-        destinationHeading: 'Where it is saved',
-        destinationBody: 'The file is written to {path} in your vault. Nothing leaves your vault until you upload it.',
+        genericNamesToggleDescription: 'Use if your subplot names could reveal plot.',
+        destinationBody: 'Saved to {{path}} in your vault.',
         cancelButton: 'Cancel',
-        exportButton: 'Export',
+        exportButton: 'Export JSON',
     },
     common: {
         yes: 'Yes',

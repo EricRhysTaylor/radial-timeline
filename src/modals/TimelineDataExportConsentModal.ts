@@ -51,17 +51,15 @@ export class TimelineDataExportConsentModal extends Modal {
         header.createDiv({ cls: 'ert-modal-title', text: t('timelineDataExportModal.title') });
         header.createDiv({ cls: 'ert-modal-subtitle', text: t('timelineDataExportModal.subtitle') });
 
-        const panel = contentEl.createDiv({ cls: 'ert-glass-card ert-stack' });
-
-        const structural = panel.createDiv({ cls: 'ert-sub-card' });
+        const structural = contentEl.createDiv({ cls: 'ert-glass-card ert-sub-card' });
         structural.createDiv({ cls: 'ert-sub-card-head', text: t('timelineDataExportModal.structuralHeading') });
         structural.createDiv({ cls: 'ert-sub-card-note', text: t('timelineDataExportModal.structuralBody') });
 
-        const revealing = panel.createDiv({ cls: 'ert-sub-card' });
+        const revealing = contentEl.createDiv({ cls: 'ert-glass-card ert-sub-card' });
         revealing.createDiv({ cls: 'ert-sub-card-head', text: t('timelineDataExportModal.revealingHeading') });
         revealing.createDiv({ cls: 'ert-sub-card-note', text: t('timelineDataExportModal.revealingBody') });
 
-        const toggleCard = panel.createDiv({ cls: 'ert-sub-card' });
+        const toggleCard = contentEl.createDiv({ cls: 'ert-glass-card ert-sub-card' });
         const toggleRow = toggleCard.createDiv({ cls: 'ert-manuscript-toggle-row' });
         toggleRow.createSpan({ cls: 'ert-manuscript-toggle-label', text: t('timelineDataExportModal.genericNamesToggleLabel') });
         new ToggleComponent(toggleRow)
@@ -73,9 +71,7 @@ export class TimelineDataExportConsentModal extends Modal {
 
         // Name the destination in the dialog that authorizes the write, so the
         // author knows where the file lands before they consent to it.
-        const destination = panel.createDiv({ cls: 'ert-sub-card' });
-        destination.createDiv({ cls: 'ert-sub-card-head', text: t('timelineDataExportModal.destinationHeading') });
-        destination.createDiv({
+        contentEl.createDiv({
             cls: 'ert-sub-card-note',
             text: t('timelineDataExportModal.destinationBody', { path: TIMELINE_COMMUNITY_EXPORT_FOLDER }),
         });

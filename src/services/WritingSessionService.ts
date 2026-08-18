@@ -436,6 +436,9 @@ export function normalizeWritingSessionsSettings(settings: WritingSessionsSettin
     const defaultMode = coerceMode(settings?.defaults?.defaultMode);
     const defaultStage = coerceStagePreference(settings?.defaults?.defaultStage);
     const targetMode = coerceTargetMode(settings?.defaults?.targetMode);
+    // Default ON: unset (first run / pre-7.1 data) sprints on a countdown;
+    // only an explicit false (the author unchecked it) counts up.
+    const countdownSprint = settings?.defaults?.countdownSprint !== false;
     const weeklyGoalDays = coerceWeeklyGoalDays(settings?.defaults?.weeklyGoalDays);
     const writingStatsOpen = settings?.defaults?.writingStatsOpen === true;
     const idleTimeoutMs = coerceIdleTimeoutMs(settings?.defaults?.idleTimeoutMs);
@@ -445,7 +448,7 @@ export function normalizeWritingSessionsSettings(settings: WritingSessionsSettin
     const active = settings?.active;
     return {
         schemaVersion: WRITING_SESSIONS_SCHEMA_VERSION,
-        defaults: { defaultMode, defaultStage, targetMode, weeklyGoalDays, writingStatsOpen, idleTimeoutMs, postSessionsToFeed },
+        defaults: { defaultMode, defaultStage, targetMode, countdownSprint, weeklyGoalDays, writingStatsOpen, idleTimeoutMs, postSessionsToFeed },
         ...(active ? {
             active: {
                 ...active,
@@ -914,6 +917,18 @@ export class WritingSessionService {
     async setDefaultTargetMode(mode: WritingSessionTargetMode): Promise<void> {
         const settings = this.getSettings();
         settings.defaults.targetMode = coerceTargetMode(mode);
+        await this.plugin.saveSettings();
+    }
+
+    /** Remembered state of the start panel's "Countdown sprint" toggle. */
+    isCountdownSprintEnabled(): boolean {
+        return this.getSettings().defaults.countdownSprint !== false;
+    }
+
+    async setCountdownSprint(enabled: boolean): Promise<void> {
+        const settings = this.getSettings();
+        if (settings.defaults.countdownSprint === (enabled === true)) return;
+        settings.defaults.countdownSprint = enabled === true;
         await this.plugin.saveSettings();
     }
 

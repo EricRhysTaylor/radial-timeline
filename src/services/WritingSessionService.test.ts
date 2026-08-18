@@ -278,6 +278,7 @@ describe('WritingSessionService pure helpers', () => {
 
         expect(normalized.defaults.defaultMode).toBe('drafting');
         expect(normalized.defaults.targetMode).toBe('time');
+        expect(normalized.defaults.countdownSprint).toBe(true);
         expect(normalized.defaults.weeklyGoalDays).toBe(7);
         expect(normalized.defaults.writingStatsOpen).toBe(false);
         expect(normalized.records).toEqual([]);
@@ -653,6 +654,41 @@ describe('WritingSessionService pure helpers', () => {
             'working',
             'modified',
         ]);
+    });
+});
+
+describe('WritingSessionService countdown sprint memory', () => {
+    const sprintPlugin = (defaults: Record<string, unknown> = {}) => ({
+        settings: {
+            books: [{ id: 'book-1', title: 'Book One', sourceFolder: 'Book' }],
+            activeBookId: 'book-1',
+            writingSessions: { defaults: { defaultMode: 'drafting', ...defaults }, records: [] },
+        },
+        saveSettings: vi.fn(async () => undefined),
+    });
+
+    it('sprints on a countdown until the author turns it off', () => {
+        expect(new WritingSessionService(sprintPlugin() as any).isCountdownSprintEnabled()).toBe(true);
+        expect(new WritingSessionService(sprintPlugin({ countdownSprint: false }) as any).isCountdownSprintEnabled()).toBe(false);
+    });
+
+    it('remembers the toggle so the next session opens the way the last one closed', async () => {
+        const plugin = sprintPlugin();
+        const service = new WritingSessionService(plugin as any);
+
+        await service.setCountdownSprint(false);
+
+        expect(plugin.settings.writingSessions.defaults.countdownSprint).toBe(false);
+        expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
+        expect(service.isCountdownSprintEnabled()).toBe(false);
+
+        // No write when nothing changed.
+        await service.setCountdownSprint(false);
+        expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
+
+        await service.setCountdownSprint(true);
+        expect(service.isCountdownSprintEnabled()).toBe(true);
+        expect(plugin.saveSettings).toHaveBeenCalledTimes(2);
     });
 });
 

@@ -169,9 +169,6 @@ export class RadialTimelineView extends ItemView {
     private writingSessionLabel?: HTMLElement;
     private writingSessionPanel?: HTMLElement;
     private discordChip?: DiscordChip;
-    private writingSessionModeSelect?: HTMLSelectElement;
-    private writingSessionCountdownToggle?: HTMLInputElement;
-    private writingSessionGoalInput?: HTMLInputElement;
     private writingSessionTickInterval?: number;
     private gossamerCachePillEl?: HTMLElement;
     private gossamerCacheTickInterval?: number;
@@ -1646,10 +1643,9 @@ export class RadialTimelineView extends ItemView {
         const countdownLabel = countdownRow.createEl('label', { cls: 'ert-timeline-session-panel__toggle-label' });
         countdownToggle = countdownLabel.createEl('input', { cls: 'ert-timeline-session-panel__toggle' });
         countdownToggle.type = 'checkbox';
-        countdownToggle.checked = true;
+        countdownToggle.checked = service.isCountdownSprintEnabled();
         countdownLabel.createSpan({ text: 'Countdown sprint' });
         this.isolateSessionPanelControl(countdownToggle);
-        this.writingSessionCountdownToggle = countdownToggle;
 
         const goalRow = sprintSection.createDiv({ cls: 'ert-timeline-session-panel__row' });
         goalRow.createDiv({ cls: 'ert-timeline-session-panel__label', text: 'Minutes' });
@@ -1661,7 +1657,6 @@ export class RadialTimelineView extends ItemView {
         goalInput.step = '1';
         goalInput.value = String(sessionGoalMinutes);
         this.isolateSessionPanelControl(goalInput);
-        this.writingSessionGoalInput = goalInput;
 
         const wordGoalRow = sprintSection.createDiv({ cls: 'ert-timeline-session-panel__row' });
         wordGoalRow.createDiv({ cls: 'ert-timeline-session-panel__label', text: 'Words' });
@@ -1678,7 +1673,6 @@ export class RadialTimelineView extends ItemView {
         // closing the Target block, not an icon the author has to decode.
         const beginRow = sprintSection.createDiv({ cls: 'ert-timeline-session-panel__begin-row' });
         const beginButton = this.createSessionButton(beginRow, 'Begin Session', 'ert-timeline-session-panel__begin', startSession);
-        beginButton.setAttribute('aria-label', 'Begin writing session');
         this.isolateSessionPanelControl(beginButton);
 
         const sessionSection = form.createDiv({ cls: 'ert-timeline-session-panel__section' });
@@ -1712,7 +1706,6 @@ export class RadialTimelineView extends ItemView {
                 new Notice(error instanceof Error ? error.message : 'Could not save writing session defaults.');
             });
         });
-        this.writingSessionModeSelect = modeSelect;
 
         const stageRow = sessionSection.createDiv({ cls: 'ert-timeline-session-panel__row' });
         stageRow.createDiv({ cls: 'ert-timeline-session-panel__label', text: 'Stage' });
@@ -1773,6 +1766,9 @@ export class RadialTimelineView extends ItemView {
 
         countdownToggle.onchange = () => {
             syncTargetControls();
+            void service.setCountdownSprint(countdownToggle.checked).catch(error => {
+                new Notice(error instanceof Error ? error.message : 'Could not save the countdown sprint setting.');
+            });
         };
         syncTargetControls();
         this.registerDomEvent(goalInput, 'keydown', (event: KeyboardEvent) => {

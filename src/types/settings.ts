@@ -325,6 +325,12 @@ export interface WritingSessionDefaults {
     defaultMode: WritingSessionMode;
     defaultStage?: WritingSessionStagePreference;
     targetMode?: WritingSessionTargetMode;
+    /**
+     * Remembered state of the "Countdown sprint" toggle in the start panel:
+     * ON counts a time target down to zero, OFF counts up with no bell.
+     * Default ON.
+     */
+    countdownSprint?: boolean;
     weeklyGoalDays?: number;
     writingStatsOpen?: boolean;
     /**

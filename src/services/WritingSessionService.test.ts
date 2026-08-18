@@ -280,7 +280,6 @@ describe('WritingSessionService pure helpers', () => {
         expect(normalized.defaults.targetMode).toBe('time');
         expect(normalized.defaults.weeklyGoalDays).toBe(7);
         expect(normalized.defaults.writingStatsOpen).toBe(false);
-        expect(normalized.defaults.autoTrack).toBe(true);
         expect(normalized.records).toEqual([]);
         expect(normalized.active?.id).toBe('active');
     });
@@ -663,23 +662,13 @@ describe('WritingSessionService auto-track', () => {
             books: [{ id: 'book-1', title: 'Book One', sourceFolder: 'Book' }],
             activeBookId: 'book-1',
             writingSessions: {
-                defaults: { defaultMode: 'drafting', autoTrack: true },
+                defaults: { defaultMode: 'drafting' },
                 records: [],
             },
         },
         getSceneData: async () => [],
         saveSettings: vi.fn(async () => undefined),
         ...overrides,
-    });
-
-    it('does nothing on activity when auto-track is disabled', async () => {
-        const plugin = autoTrackPlugin();
-        plugin.settings.writingSessions.defaults.autoTrack = false;
-        const service = new WritingSessionService(plugin as any);
-
-        await service.onActivity();
-
-        expect(plugin.settings.writingSessions.active).toBeUndefined();
     });
 
     it('never starts a session on activity — only the author begins one', async () => {
@@ -861,7 +850,7 @@ describe('WritingSessionService per-scene activity', () => {
             books: [{ id: 'book-1', title: 'Book One', sourceFolder: 'Book' }],
             activeBookId: 'book-1',
             writingSessions: {
-                defaults: { defaultMode: 'drafting', autoTrack: true },
+                defaults: { defaultMode: 'drafting' },
                 records: [],
             },
         },

@@ -438,9 +438,6 @@ export function normalizeWritingSessionsSettings(settings: WritingSessionsSettin
     const targetMode = coerceTargetMode(settings?.defaults?.targetMode);
     const weeklyGoalDays = coerceWeeklyGoalDays(settings?.defaults?.weeklyGoalDays);
     const writingStatsOpen = settings?.defaults?.writingStatsOpen === true;
-    // Default ON: unset (first run / pre-v5 data) enables auto-track; only an
-    // explicit false (the author unchecked it) keeps it off.
-    const autoTrack = settings?.defaults?.autoTrack !== false;
     const idleTimeoutMs = coerceIdleTimeoutMs(settings?.defaults?.idleTimeoutMs);
     // Default OFF: posting session summaries to the community feed is opt-in
     // at every layer, matching the Community Share doctrine.
@@ -448,7 +445,7 @@ export function normalizeWritingSessionsSettings(settings: WritingSessionsSettin
     const active = settings?.active;
     return {
         schemaVersion: WRITING_SESSIONS_SCHEMA_VERSION,
-        defaults: { defaultMode, defaultStage, targetMode, weeklyGoalDays, writingStatsOpen, autoTrack, idleTimeoutMs, postSessionsToFeed },
+        defaults: { defaultMode, defaultStage, targetMode, weeklyGoalDays, writingStatsOpen, idleTimeoutMs, postSessionsToFeed },
         ...(active ? {
             active: {
                 ...active,
@@ -762,7 +759,7 @@ export class WritingSessionService {
     /**
      * Auto-track activity signal — call when real writing activity happens
      * (keystroke, cursor move, scroll, scene switch) while focused on a scene;
-     * the caller owns that focus+scene gate. No-op unless auto-track is on.
+     * the caller owns that focus+scene gate.
      *
      * Auto-track governs a session the author has already begun — it never
      * starts one. With no active session this is a no-op (opening a scene is
@@ -777,7 +774,6 @@ export class WritingSessionService {
      * sees the session already running.
      */
     async onActivity(scenePath?: string): Promise<void> {
-        if (!this.isAutoTrackEnabled()) return;
         const active = this.getActiveSession();
         if (!active) return;
         const iso = nowIso();
@@ -831,7 +827,6 @@ export class WritingSessionService {
      * a long gap even if this tick was throttled (backgrounded window).
      */
     async maybeHandleIdle(): Promise<boolean> {
-        if (!this.isAutoTrackEnabled()) return false;
         const active = this.getActiveSession();
         if (!active || active.pausedAt) return false; // already paused (manual or idle) — nothing to do
         const lastActivityMs = Date.parse(active.lastActivityAt || active.lastResumedAt);
@@ -922,18 +917,8 @@ export class WritingSessionService {
         await this.plugin.saveSettings();
     }
 
-    isAutoTrackEnabled(): boolean {
-        return this.getSettings().defaults.autoTrack === true;
-    }
-
     getIdleTimeoutMs(): number {
         return coerceIdleTimeoutMs(this.getSettings().defaults.idleTimeoutMs);
-    }
-
-    async setAutoTrack(enabled: boolean): Promise<void> {
-        const settings = this.getSettings();
-        settings.defaults.autoTrack = enabled === true;
-        await this.plugin.saveSettings();
     }
 
     /** Remembered default for the per-save "post to community feed" toggle. */

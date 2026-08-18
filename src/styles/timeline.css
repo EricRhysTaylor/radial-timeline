@@ -1595,18 +1595,6 @@
   font-size: var(--font-ui-smaller);
 }
 
-/* Auto-track option: idle-card layout (icon · title+desc) with a checkbox
-   pushed to the right edge and vertically centered by the card's align-items. */
-.ert-timeline-session-panel__option {
-  cursor: pointer;
-}
-
-.ert-timeline-session-panel__option-toggle {
-  flex: 0 0 auto;
-  margin-left: auto;
-  margin-block: 0;
-}
-
 .ert-timeline-session-panel__row {
   display: flex;
   align-items: center;
@@ -1740,18 +1728,6 @@
   color: var(--text-muted);
 }
 
-/* Auto-track card icon: larger than the inline section pencils, still muted
-   (not the accent chip used by the idle card). */
-.ert-timeline-session-panel__option-icon {
-  width: var(--size-4-6);
-  height: var(--size-4-6);
-}
-
-.ert-timeline-session-panel__option-icon .svg-icon {
-  width: var(--size-4-6);
-  height: var(--size-4-6);
-}
-
 .ert-timeline-session-panel__row--toggle {
   justify-content: space-between;
 }
@@ -1792,20 +1768,6 @@
   font-size: var(--font-ui-small);
 }
 
-.ert-timeline-session-panel__quick {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--size-2-2);
-}
-
-.ert-timeline-session-panel__quick--inline {
-  flex: 0 1 auto;
-  flex-wrap: nowrap;
-  gap: var(--size-2-2);
-  margin-inline-end: var(--size-4-3);
-}
-
 .ert-timeline-session-panel__goal-controls {
   min-width: 0;
   display: flex;
@@ -1815,7 +1777,6 @@
   flex: 0 1 auto;
 }
 
-.ert-timeline-session-panel__goal-controls.is-countdown-disabled .ert-timeline-session-panel__quick,
 .ert-timeline-session-panel__goal-controls.is-countdown-disabled .ert-timeline-session-panel__number {
   opacity: 0.62;
 }
@@ -1837,73 +1798,74 @@
   color: var(--text-normal);
 }
 
-.ert-timeline-session-panel .ert-timeline-session-panel__ratio,
-.ert-timeline-session-panel button.ert-timeline-session-panel__ratio {
+/* Begin Session: the single action of the idle panel. Centered on its own row
+   closing the Target block, wearing the same accent border that carries the
+   panel title — and switching to the social accent with the title and the
+   "Shared" pill whenever saving this session will post to the feed. */
+.ert-timeline-session-panel__begin-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-block-start: var(--size-2-2);
+}
+
+.ert-timeline-session-panel .ert-timeline-session-panel__begin,
+.ert-timeline-session-panel button.ert-timeline-session-panel__begin {
   /* explicit button reset (the 'all' property is flagged by the plugin scanner) */
   margin: 0;
   outline: none;
-  font: inherit;
   appearance: none;
   -webkit-appearance: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: auto;
-  min-width: 0;
-  min-height: 0;
-  padding: 0.125rem 0.275rem;
-  border: var(--border-width) solid var(--background-modifier-border);
+  width: auto;
+  min-width: 12ch;
+  height: var(--size-4-8);
+  padding: 0 var(--size-4-4);
+  border: 1px solid color-mix(in srgb, var(--interactive-accent) 70%, transparent);
   border-radius: var(--radius-s);
   box-shadow: none;
-  background: transparent;
-  background-color: transparent;
+  background: color-mix(in srgb, var(--interactive-accent) 14%, transparent);
   background-image: none;
   filter: none;
   text-shadow: none;
   transform: none;
-  color: var(--text-muted);
+  color: var(--text-accent);
   cursor: pointer;
-  font-family: 'Radial Timeline JetBrains Mono', var(--font-monospace);
-  font-size: var(--font-ui-medium);
-  font-weight: 100;
-  font-synthesis: none;
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: 'zero' 0, 'tnum' 1;
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-semibold);
   line-height: 1;
-  text-decoration: none;
+  transition: background-color 120ms ease, border-color 120ms ease;
 }
 
-.ert-timeline-session-panel .ert-timeline-session-panel__ratio:hover,
-.ert-timeline-session-panel button.ert-timeline-session-panel__ratio:hover {
-  color: var(--text-accent);
-  background: var(--background-modifier-hover);
-  background-color: var(--background-modifier-hover);
+.ert-timeline-session-panel .ert-timeline-session-panel__begin:hover,
+.ert-timeline-session-panel button.ert-timeline-session-panel__begin:hover {
+  border-color: var(--interactive-accent);
+  background: color-mix(in srgb, var(--interactive-accent) 26%, transparent);
   background-image: none;
-  border-color: color-mix(in srgb, var(--text-accent) 42%, var(--background-modifier-border));
   box-shadow: none;
   filter: none;
-  text-shadow: none;
   transform: none;
 }
 
-.ert-timeline-session-panel .ert-timeline-session-panel__ratio:active,
-.ert-timeline-session-panel .ert-timeline-session-panel__ratio:focus,
-.ert-timeline-session-panel button.ert-timeline-session-panel__ratio:active,
-.ert-timeline-session-panel button.ert-timeline-session-panel__ratio:focus {
-  background: transparent;
-  background-color: transparent;
-  background-image: none;
-  border-color: var(--background-modifier-border);
-  box-shadow: none;
-  filter: none;
-  text-shadow: none;
-  transform: none;
-}
-
-.ert-timeline-session-panel .ert-timeline-session-panel__ratio:focus-visible {
-  color: var(--text-accent);
+.ert-timeline-session-panel .ert-timeline-session-panel__begin:focus-visible,
+.ert-timeline-session-panel button.ert-timeline-session-panel__begin:focus-visible {
   outline: thin solid currentColor;
   outline-offset: var(--size-2-1);
+}
+
+.ert-timeline-session-panel.is-community-shared .ert-timeline-session-panel__begin,
+.ert-timeline-session-panel.is-community-shared button.ert-timeline-session-panel__begin {
+  border-color: rgba(var(--ert-social-accent-rgb-base), 0.55);
+  background: rgba(var(--ert-social-accent-rgb-base), 0.12);
+  color: var(--ert-social-accent-color-base);
+}
+
+.ert-timeline-session-panel.is-community-shared .ert-timeline-session-panel__begin:hover,
+.ert-timeline-session-panel.is-community-shared button.ert-timeline-session-panel__begin:hover {
+  border-color: var(--ert-social-accent-color-base);
+  background: rgba(var(--ert-social-accent-rgb-base), 0.22);
 }
 
 .ert-timeline-session-panel__actions {

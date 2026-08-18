@@ -1199,13 +1199,11 @@ export class RadialTimelineView extends ItemView {
         // Heartbeat: marks the running session as still alive so an app
         // crash/quit freezes elapsed time instead of counting dead time.
         void service.markActiveSessionSeen();
-        // Auto-track: pause on idle, finalize a long-abandoned session. Re-render
+        // Auto-track (always on): pause on idle, resume on activity. Re-render
         // the panel when the session state actually changes.
-        if (service.isAutoTrackEnabled()) {
-            void service.maybeHandleIdle().then(changed => {
-                if (changed) this.renderWritingSessionPanel();
-            });
-        }
+        void service.maybeHandleIdle().then(changed => {
+            if (changed) this.renderWritingSessionPanel();
+        });
         const snapshot = this.getSessionClockSnapshot();
         const shouldPulseCount = this.shouldPulseWritingSessionTitleCount(snapshot.pulseKey);
         const pulseColor = shouldPulseCount ? this.getWritingSessionPulseColor() : undefined;
@@ -1256,10 +1254,10 @@ export class RadialTimelineView extends ItemView {
         const elapsedMs = service.getActiveElapsedMs();
         // Auto-track state marker inside the disc: a dot while the session is
         // idle-suspended, a plus while activity is being tracked. Manual pauses
-        // and auto-track-off sessions show no marker.
-        const symbol = service.isAutoTrackEnabled()
-            ? (active.pausedAt ? (active.idleAuto ? 'dot' as const : undefined) : 'plus' as const)
-            : undefined;
+        // show no marker.
+        const symbol = active.pausedAt
+            ? (active.idleAuto ? 'dot' as const : undefined)
+            : 'plus' as const;
         if (this.sessionUsesWordRing(active)) {
             const goalWords = Math.max(1, Math.round(active.goalWords || 1));
             const typedWords = Math.max(0, Math.round(active.typedWords || 0));
@@ -1581,37 +1579,114 @@ export class RadialTimelineView extends ItemView {
         // logged · 400w left"). The session log below shows today's actual
         // sessions; that's where running totals belong. The intro card answers
         // one question only: "what will this session do?"
-
-        const autoTrackCard = panel.createEl('label', { cls: 'ert-timeline-session-panel__idle-card ert-timeline-session-panel__option' });
-        const autoTrackIcon = autoTrackCard.createDiv({ cls: 'ert-timeline-session-panel__section-icon ert-timeline-session-panel__option-icon' });
-        setIcon(autoTrackIcon, 'calendar-sync');
-        const autoTrackCopy = autoTrackCard.createDiv({ cls: 'ert-timeline-session-panel__idle-copy' });
-        autoTrackCopy.createDiv({ cls: 'ert-timeline-session-panel__idle-title', text: 'Auto-track' });
-        const idleTimeoutMs = service.getIdleTimeoutMs();
-        const idleTimeoutLabel = idleTimeoutMs >= 60000
-            ? `${Math.round(idleTimeoutMs / 60000)} min`
-            : `${Math.round(idleTimeoutMs / 1000)} sec`;
-        autoTrackCopy.createDiv({
-            cls: 'ert-timeline-session-panel__idle-meta',
-            text: `Once you start a session, it pauses after ${idleTimeoutLabel} idle and resumes when you return to writing.`,
-        });
-        const autoTrackToggle = autoTrackCard.createEl('input', { cls: 'ert-timeline-session-panel__toggle ert-timeline-session-panel__option-toggle' });
-        autoTrackToggle.type = 'checkbox';
-        autoTrackToggle.checked = sessionSettings.defaults.autoTrack === true;
-        this.isolateSessionPanelControl(autoTrackToggle);
-        this.registerDomEvent(autoTrackToggle, 'change', () => {
-            void service.setAutoTrack(autoTrackToggle.checked).catch(error => {
-                new Notice(error instanceof Error ? error.message : 'Could not save auto-track setting.');
-            });
-        });
+        //
+        // Auto-track is not a setting: every session paces itself on real
+        // editing activity (pauses when idle, resumes when writing resumes).
+        // The pause/resume buttons remain the author's manual override.
 
         const form = panel.createDiv({ cls: 'ert-timeline-session-panel__form' });
+
+        let modeSelect: HTMLSelectElement;
+        let stageSelect: HTMLSelectElement;
+        let targetModeSelect: HTMLSelectElement;
+        let countdownToggle: HTMLInputElement;
+        let goalInput: HTMLInputElement;
+        let wordGoalInput: HTMLInputElement;
+        let updateIdleMeta = () => undefined;
+
+        const startSession = async () => {
+            const mode = (modeSelect.value as WritingSessionMode) || 'drafting';
+            const stage = (stageSelect.value as WritingSessionStagePreference) || 'auto';
+            const targetMode = (targetModeSelect.value as WritingSessionTargetMode) || 'time';
+            const parsedGoal = Number(goalInput.value);
+            const parsedWordGoal = Number(wordGoalInput.value);
+            const goalMinutes = targetMode !== 'words' && countdownToggle.checked && Number.isFinite(parsedGoal) && parsedGoal > 0
+                ? parsedGoal
+                : undefined;
+            const goalWords = targetMode !== 'time' && Number.isFinite(parsedWordGoal) && parsedWordGoal > 0
+                ? parsedWordGoal
+                : undefined;
+            try {
+                await service.setDefaultMode(mode);
+                await service.setDefaultStage(stage);
+                await service.setDefaultTargetMode(targetMode);
+                const session = await service.start({ mode, stage, targetMode, goalMinutes, goalWords });
+                const targets = [
+                    session.goalWords ? this.formatWordCount(session.goalWords) : undefined,
+                    session.goalMinutes ? `${session.goalMinutes} min` : undefined,
+                ].filter(Boolean).join(' + ');
+                new Notice(`Started ${this.formatWritingSessionMode(session.mode)} session${targets ? ` for ${targets}` : ''}.`);
+                this.refreshWritingSessionControl();
+            } catch (error) {
+                new Notice(error instanceof Error ? error.message : 'Could not start writing session.');
+            }
+        };
+
+        // Target leads the form: what this session is aiming at is the decision
+        // the author makes every time. Mode/stage below are set-and-forget.
+        const sprintSection = form.createDiv({ cls: 'ert-timeline-session-panel__section' });
+        this.createSessionSectionTitle(sprintSection, 'target', 'Target');
+
+        const targetModeRow = sprintSection.createDiv({ cls: 'ert-timeline-session-panel__row' });
+        targetModeRow.createDiv({ cls: 'ert-timeline-session-panel__label', text: 'Type' });
+        targetModeSelect = targetModeRow.createEl('select', { cls: 'ert-input ert-input--md ert-timeline-session-panel__select' });
+        const targetModeOptions: Array<{ value: WritingSessionTargetMode; label: string }> = [
+            { value: 'time', label: 'Time' },
+            { value: 'words', label: 'Words' },
+            { value: 'both', label: 'Words + time' },
+        ];
+        targetModeOptions.forEach(option => {
+            const opt = targetModeSelect.createEl('option', { text: option.label });
+            opt.value = option.value;
+        });
+        targetModeSelect.value = defaultTargetMode;
+        this.isolateSessionPanelControl(targetModeSelect);
+
+        const countdownRow = sprintSection.createDiv({ cls: 'ert-timeline-session-panel__row ert-timeline-session-panel__row--toggle' });
+        const countdownLabel = countdownRow.createEl('label', { cls: 'ert-timeline-session-panel__toggle-label' });
+        countdownToggle = countdownLabel.createEl('input', { cls: 'ert-timeline-session-panel__toggle' });
+        countdownToggle.type = 'checkbox';
+        countdownToggle.checked = true;
+        countdownLabel.createSpan({ text: 'Countdown sprint' });
+        this.isolateSessionPanelControl(countdownToggle);
+        this.writingSessionCountdownToggle = countdownToggle;
+
+        const goalRow = sprintSection.createDiv({ cls: 'ert-timeline-session-panel__row' });
+        goalRow.createDiv({ cls: 'ert-timeline-session-panel__label', text: 'Minutes' });
+        const goalControls = goalRow.createDiv({ cls: 'ert-timeline-session-panel__goal-controls' });
+        goalInput = goalControls.createEl('input', { cls: 'ert-input ert-input--xs ert-timeline-session-panel__number' });
+        goalInput.type = 'number';
+        goalInput.min = '1';
+        goalInput.max = '600';
+        goalInput.step = '1';
+        goalInput.value = String(sessionGoalMinutes);
+        this.isolateSessionPanelControl(goalInput);
+        this.writingSessionGoalInput = goalInput;
+
+        const wordGoalRow = sprintSection.createDiv({ cls: 'ert-timeline-session-panel__row' });
+        wordGoalRow.createDiv({ cls: 'ert-timeline-session-panel__label', text: 'Words' });
+        const wordGoalControls = wordGoalRow.createDiv({ cls: 'ert-timeline-session-panel__goal-controls' });
+        wordGoalInput = wordGoalControls.createEl('input', { cls: 'ert-input ert-input--sm ert-timeline-session-panel__number' });
+        wordGoalInput.type = 'number';
+        wordGoalInput.min = '1';
+        wordGoalInput.max = '50000';
+        wordGoalInput.step = '50';
+        wordGoalInput.value = String(sessionGoalWords);
+        this.isolateSessionPanelControl(wordGoalInput);
+
+        // The one action in the panel, spelled out: a centered accent button
+        // closing the Target block, not an icon the author has to decode.
+        const beginRow = sprintSection.createDiv({ cls: 'ert-timeline-session-panel__begin-row' });
+        const beginButton = this.createSessionButton(beginRow, 'Begin Session', 'ert-timeline-session-panel__begin', startSession);
+        beginButton.setAttribute('aria-label', 'Begin writing session');
+        this.isolateSessionPanelControl(beginButton);
+
         const sessionSection = form.createDiv({ cls: 'ert-timeline-session-panel__section' });
         this.createSessionSectionTitle(sessionSection, 'pen-line', 'Session');
 
         const modeRow = sessionSection.createDiv({ cls: 'ert-timeline-session-panel__row' });
         modeRow.createDiv({ cls: 'ert-timeline-session-panel__label', text: 'Mode' });
-        const modeSelect = modeRow.createEl('select', { cls: 'ert-input ert-input--md ert-timeline-session-panel__select' });
+        modeSelect = modeRow.createEl('select', { cls: 'ert-input ert-input--md ert-timeline-session-panel__select' });
         const modeOptions: Array<{ value: WritingSessionMode; label: string }> = [
             { value: 'drafting', label: 'Fresh drafting' },
             { value: 'revising', label: 'Revision' },
@@ -1624,11 +1699,6 @@ export class RadialTimelineView extends ItemView {
         });
         modeSelect.value = defaultMode;
         this.isolateSessionPanelControl(modeSelect);
-        let stageSelect: HTMLSelectElement;
-        let targetModeSelect: HTMLSelectElement;
-        let goalInput: HTMLInputElement;
-        let wordGoalInput: HTMLInputElement;
-        let updateIdleMeta = () => undefined;
         this.registerDomEvent(modeSelect, 'change', () => {
             const mode = (modeSelect.value as WritingSessionMode) || 'drafting';
             if (mode === 'drafting') {
@@ -1669,68 +1739,6 @@ export class RadialTimelineView extends ItemView {
             });
         });
 
-        const sprintSection = form.createDiv({ cls: 'ert-timeline-session-panel__section' });
-        this.createSessionSectionTitle(sprintSection, 'target', 'Target');
-
-        const targetModeRow = sprintSection.createDiv({ cls: 'ert-timeline-session-panel__row' });
-        targetModeRow.createDiv({ cls: 'ert-timeline-session-panel__label', text: 'Type' });
-        targetModeSelect = targetModeRow.createEl('select', { cls: 'ert-input ert-input--md ert-timeline-session-panel__select' });
-        const targetModeOptions: Array<{ value: WritingSessionTargetMode; label: string }> = [
-            { value: 'time', label: 'Time' },
-            { value: 'words', label: 'Words' },
-            { value: 'both', label: 'Words + time' },
-        ];
-        targetModeOptions.forEach(option => {
-            const opt = targetModeSelect.createEl('option', { text: option.label });
-            opt.value = option.value;
-        });
-        targetModeSelect.value = defaultTargetMode;
-        this.isolateSessionPanelControl(targetModeSelect);
-
-        const countdownRow = sprintSection.createDiv({ cls: 'ert-timeline-session-panel__row ert-timeline-session-panel__row--toggle' });
-        const countdownLabel = countdownRow.createEl('label', { cls: 'ert-timeline-session-panel__toggle-label' });
-        const countdownToggle = countdownLabel.createEl('input', { cls: 'ert-timeline-session-panel__toggle' });
-        countdownToggle.type = 'checkbox';
-        countdownToggle.checked = true;
-        countdownLabel.createSpan({ text: 'Countdown sprint' });
-        this.isolateSessionPanelControl(countdownToggle);
-        this.writingSessionCountdownToggle = countdownToggle;
-
-        const goalRow = sprintSection.createDiv({ cls: 'ert-timeline-session-panel__row' });
-        goalRow.createDiv({ cls: 'ert-timeline-session-panel__label', text: 'Minutes' });
-        const goalControls = goalRow.createDiv({ cls: 'ert-timeline-session-panel__goal-controls' });
-        const quickRow = goalControls.createDiv({ cls: 'ert-timeline-session-panel__quick ert-timeline-session-panel__quick--inline' });
-        goalInput = goalControls.createEl('input', { cls: 'ert-input ert-input--xs ert-timeline-session-panel__number' });
-        goalInput.type = 'number';
-        goalInput.min = '1';
-        goalInput.max = '600';
-        goalInput.step = '1';
-        goalInput.value = String(sessionGoalMinutes);
-        this.isolateSessionPanelControl(goalInput);
-        this.writingSessionGoalInput = goalInput;
-
-        [
-            { label: '\u00BC', ariaLabel: '1/4 hour', minutes: 15 },
-            { label: '\u00BD', ariaLabel: '1/2 hour', minutes: 30 },
-            { label: '\u00BE', ariaLabel: '3/4 hour', minutes: 45 },
-        ].forEach(preset => {
-            const presetButton = this.createSessionButton(quickRow, preset.label, 'ert-timeline-session-panel__ratio', () => {
-                goalInput.value = String(preset.minutes);
-            });
-            this.isolateSessionPanelControl(presetButton);
-        });
-
-        const wordGoalRow = sprintSection.createDiv({ cls: 'ert-timeline-session-panel__row' });
-        wordGoalRow.createDiv({ cls: 'ert-timeline-session-panel__label', text: 'Words' });
-        const wordGoalControls = wordGoalRow.createDiv({ cls: 'ert-timeline-session-panel__goal-controls' });
-        wordGoalInput = wordGoalControls.createEl('input', { cls: 'ert-input ert-input--sm ert-timeline-session-panel__number' });
-        wordGoalInput.type = 'number';
-        wordGoalInput.min = '1';
-        wordGoalInput.max = '50000';
-        wordGoalInput.step = '50';
-        wordGoalInput.value = String(sessionGoalWords);
-        this.isolateSessionPanelControl(wordGoalInput);
-
         updateIdleMeta = () => {
             const parsedMinutes = Number(goalInput.value);
             const parsedWords = Number(wordGoalInput.value);
@@ -1743,45 +1751,6 @@ export class RadialTimelineView extends ItemView {
             ));
         };
 
-        this.registerDomEvent(targetModeSelect, 'change', () => {
-            syncTargetControls();
-            void service.setDefaultTargetMode((targetModeSelect.value as WritingSessionTargetMode) || 'time').catch(error => {
-                new Notice(error instanceof Error ? error.message : 'Could not save writing session target.');
-            });
-        });
-        this.registerDomEvent(goalInput, 'change', updateIdleMeta);
-        this.registerDomEvent(wordGoalInput, 'change', updateIdleMeta);
-
-        const startSession = async () => {
-            const mode = (modeSelect.value as WritingSessionMode) || 'drafting';
-            const stage = (stageSelect.value as WritingSessionStagePreference) || 'auto';
-            const targetMode = (targetModeSelect.value as WritingSessionTargetMode) || 'time';
-            const parsedGoal = Number(goalInput.value);
-            const parsedWordGoal = Number(wordGoalInput.value);
-            const goalMinutes = targetMode !== 'words' && countdownToggle.checked && Number.isFinite(parsedGoal) && parsedGoal > 0
-                ? parsedGoal
-                : undefined;
-            const goalWords = targetMode !== 'time' && Number.isFinite(parsedWordGoal) && parsedWordGoal > 0
-                ? parsedWordGoal
-                : undefined;
-            try {
-                await service.setDefaultMode(mode);
-                await service.setDefaultStage(stage);
-                await service.setDefaultTargetMode(targetMode);
-                const session = await service.start({ mode, stage, targetMode, goalMinutes, goalWords });
-                const targets = [
-                    session.goalWords ? this.formatWordCount(session.goalWords) : undefined,
-                    session.goalMinutes ? `${session.goalMinutes} min` : undefined,
-                ].filter(Boolean).join(' + ');
-                new Notice(`Started ${this.formatWritingSessionMode(session.mode)} session${targets ? ` for ${targets}` : ''}.`);
-                this.refreshWritingSessionControl();
-            } catch (error) {
-                new Notice(error instanceof Error ? error.message : 'Could not start writing session.');
-            }
-        };
-
-        const startButton = this.createSessionIconButton(goalControls, 'play', 'Start writing session', 'ert-timeline-session-panel__primary ert-timeline-session-panel__icon-action', startSession);
-
         const syncTargetControls = () => {
             const targetMode = (targetModeSelect.value as WritingSessionTargetMode) || 'time';
             const usesTime = targetMode !== 'words';
@@ -1790,12 +1759,17 @@ export class RadialTimelineView extends ItemView {
             goalRow.classList.toggle('ert-hidden', !usesTime);
             wordGoalRow.classList.toggle('ert-hidden', !usesWords);
             goalControls.classList.toggle('is-countdown-disabled', usesTime && !countdownToggle.checked);
-            const startButtonHost = usesWords ? wordGoalControls : goalControls;
-            if (startButton.parentElement !== startButtonHost) {
-                startButtonHost.appendChild(startButton);
-            }
             updateIdleMeta();
         };
+
+        this.registerDomEvent(targetModeSelect, 'change', () => {
+            syncTargetControls();
+            void service.setDefaultTargetMode((targetModeSelect.value as WritingSessionTargetMode) || 'time').catch(error => {
+                new Notice(error instanceof Error ? error.message : 'Could not save writing session target.');
+            });
+        });
+        this.registerDomEvent(goalInput, 'change', updateIdleMeta);
+        this.registerDomEvent(wordGoalInput, 'change', updateIdleMeta);
 
         countdownToggle.onchange = () => {
             syncTargetControls();

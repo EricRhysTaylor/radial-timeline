@@ -366,7 +366,7 @@ export default class RadialTimelinePlugin extends Plugin {
      */
     private signalWritingActivity(): void {
         const service = this.writingSessionService;
-        if (!service?.isAutoTrackEnabled() || !service.getActiveSession()) return;
+        if (!service?.getActiveSession()) return;
         const now = Date.now();
         if (now - this.lastWritingActivitySignalMs < 1000) return;
         this.lastWritingActivitySignalMs = now;

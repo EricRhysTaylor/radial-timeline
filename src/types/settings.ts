@@ -328,15 +328,13 @@ export interface WritingSessionDefaults {
     weeklyGoalDays?: number;
     writingStatsOpen?: boolean;
     /**
-     * When true, a session the author has begun pauses, resumes, and finalizes
-     * itself based on real editing activity (typing, cursor moves, scrolling,
-     * scene switches) instead of the author driving the pause button. Auto-track
-     * never starts a session — the author always presses play. The buttons
-     * remain a manual override.
-     */
-    autoTrack?: boolean;
-    /**
-     * Auto-track: gap (ms) with no activity after which a running session is
+     * Auto-track is always on: a session the author has begun pauses, resumes,
+     * and banks time from real editing activity (typing, cursor moves,
+     * scrolling, scene switches) instead of the author driving the pause
+     * button. It never starts a session — the author always presses Begin. The
+     * pause/resume buttons remain a manual override.
+     *
+     * Gap (ms) with no activity after which a running session is
      * paused, freezing elapsed time at the last activity. Resumes silently on
      * the next activity. Default 2 minutes.
      */

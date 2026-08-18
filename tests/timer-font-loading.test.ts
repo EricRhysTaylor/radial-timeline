@@ -33,7 +33,7 @@ describe('writing session timer font loading', () => {
         expect(bundlerSource).toContain('embedBundledFontUrls');
     });
 
-    it('keeps timer ratio links and timer buttons free of movement animation', () => {
+    it('keeps timer buttons free of movement animation', () => {
         const timelineCss = readTimelineCss();
         const indicatorsCss = readIndicatorsCss();
         const countPulseBlock = timelineCss.match(/@keyframes ert-timeline-session-count-pulse \{[\s\S]*?\n\}/)?.[0] ?? '';
@@ -48,8 +48,8 @@ describe('writing session timer font loading', () => {
         const iconOnlyButtonBlock = readRuleBlock(timelineCss, '.ert-timeline-session.clickable-icon.is-icon-only');
         const titleCountBlock = readRuleBlock(timelineCss, '.ert-timeline-session__label {');
         const clockValueBlock = readRuleBlock(timelineCss, '.ert-timeline-session-panel__clock-value');
-        const ratioBlock = readRuleBlock(timelineCss, 'button.ert-timeline-session-panel__ratio');
-        const inlineQuickBlock = readRuleBlock(timelineCss, '.ert-timeline-session-panel__quick--inline');
+        const beginBlock = readRuleBlock(timelineCss, 'button.ert-timeline-session-panel__begin {');
+        const beginRowBlock = readRuleBlock(timelineCss, '.ert-timeline-session-panel__begin-row');
         const sectionBlock = readRuleBlock(timelineCss, '.ert-timeline-session-panel__section');
         const buttonBlocks = [
             '.ert-timeline-session-panel__primary',
@@ -64,12 +64,15 @@ describe('writing session timer font loading', () => {
             '.ert-timeline-session-panel__chip:hover',
         ].map(selector => readRuleBlock(timelineCss, selector));
 
-        expect(ratioBlock).not.toContain('transition:');
-        expect(ratioBlock).toContain('padding: 0.125rem 0.275rem');
-        expect(ratioBlock).toContain('border: var(--border-width) solid var(--background-modifier-border)');
-        expect(ratioBlock).toContain('border-radius: var(--radius-s)');
-        expect(inlineQuickBlock).toContain('margin-inline-end');
-        expect(inlineQuickBlock).toContain('gap: var(--size-2-2)');
+        // Begin Session: the panel's one action — a centered, accent-bordered
+        // text button, never a bare icon and never a moving one.
+        expect(beginBlock).not.toMatch(/transition:[^;]*transform/);
+        expect(beginBlock).toContain('border: 1px solid color-mix(in srgb, var(--interactive-accent) 70%, transparent)');
+        expect(beginBlock).toContain('border-radius: var(--radius-s)');
+        expect(beginRowBlock).toContain('justify-content: center');
+        expect(timelineCss).toContain('.ert-timeline-session-panel.is-community-shared .ert-timeline-session-panel__begin');
+        expect(timelineCss).not.toContain('ert-timeline-session-panel__ratio');
+        expect(timelineCss).not.toContain('ert-timeline-session-panel__quick');
         buttonBlocks.forEach(block => expect(block).not.toMatch(/transition:[^;]*transform/));
         hoverBlocks.forEach(block => expect(block).not.toContain('translateY'));
         expect(countPulseBlock).not.toContain('transform:');

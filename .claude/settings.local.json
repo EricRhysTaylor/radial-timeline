@@ -51,7 +51,8 @@
       "Bash(npm run *)",
       "mcp__bf7c680d-5fdc-5ef4-b4a0-abadb619bf0a__send_later",
       "mcp__bf7c680d-5fdc-5ef4-b4a0-abadb619bf0a__create_trigger",
-      "Bash(git -C \"/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/radial-timeline\" status --porcelain)"
+      "Bash(git -C \"/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/radial-timeline\" status --porcelain)",
+      "Bash(git fetch *)"
     ]
   }
 }

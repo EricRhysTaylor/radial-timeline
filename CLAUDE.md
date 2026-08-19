@@ -11,6 +11,32 @@ Do NOT use git worktrees. Do NOT work from agent worktree directories (e.g. `~/.
 
 The primary branch is `main`.
 
+## GitHub issues are inbound only — never file your own
+
+**Do not open GitHub issues.** Not for bugs you find, not for design
+proposals, not for triage notes, not "filed for triage, not a commitment to
+scope." The issue tracker is where *other people* report problems and where
+we respond to them. It is not our record-keeping system.
+
+This repo is **public and has real users filing real reports** — #14 alone
+drew four outside contributors asking for local-LLM support. Agent-authored
+tickets bury those people under our own noise, and publish internal
+root-cause analysis, file paths, and unshipped design thinking to anyone
+reading.
+
+Where findings actually go:
+
+- **A bug you can fix** → fix it. The analysis belongs in the commit or PR
+  that carries the fix, attached to the change rather than floating free.
+- **A bug you should not fix unilaterally** → report it to Eric in the
+  session. He decides whether it becomes work.
+- **Design proposals and open questions** → the session, or a doc under
+  `docs/engineering/`. Never an issue.
+
+Responding to issues opened by other people is expected and welcome.
+Opening them is not. This rule was added after five agent-authored issues
+were filed on the public Editorialist repo and had to be closed.
+
 ## Git Workflow
 
 - Work directly on `main`. Do NOT create feature branches — committing

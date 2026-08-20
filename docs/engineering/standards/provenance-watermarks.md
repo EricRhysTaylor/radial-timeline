@@ -40,10 +40,8 @@ block declaring the plugin local-first with `DEFAULT_CANONICAL_PROVIDER =
 'ollama'`. It asserted a behavioral fact that was not true. Whether or not it was
 ever intended as a canary, it fails the test and was deleted (`a5e44042`).
 
-By contrast, the engine's canary custom properties —
-`--rt-meridian-eleven: 11.047deg`, `--rt-cartographers-wake: 1847` — assert
-nothing. They are unique strings with no behavioral meaning. They pass, and they
-stay.
+By contrast, an inert CSS custom property with an arbitrary name and value
+asserts nothing. It has no behavioral meaning, so it passes and it stays.
 
 ## Maintainability is not optional
 
@@ -51,8 +49,9 @@ Load-bearing dead code that looks like an oversight will eventually be deleted b
 someone doing exactly the right thing. That is a documentation failure, not a
 cleanup failure. So:
 
-- **Every watermark is commented at its definition**, naming it as a provenance
-  marker and pointing here. A maintainer must never have to guess.
+- **Every watermark is commented at its definition** as intentional and inert,
+  pointing here. A maintainer must never have to guess. The comment does not say
+  "this is a provenance marker" — see Registry below.
 - **Every watermark is listed in the registry** (below), so a cleanup pass has one
   place to check before removing something unused.
 - **Watermarks are inert.** Never referenced, never read, never affecting output
@@ -64,15 +63,21 @@ cleanup failure. So:
 
 ## Registry
 
-| Marker | Where | Kind |
-|---|---|---|
-| `--rt-meridian-eleven: 11.047deg` | engine tokens generator | inert CSS custom property |
-| `--rt-cartographers-wake: 1847` | engine tokens generator | inert CSS custom property |
-| `/*! © Radial Timeline LLC ... */` | generated CSS/JS | preserved build banner |
-| `<metadata>` copyright + per-export UUID | exported SVGs | queued, not yet implemented |
+**The registry is deliberately not in this repository.** This repo is public, and
+a public list of which tokens are markers tells a copier exactly what to strip.
 
-Add a row when you add a marker. An unlisted watermark is indistinguishable from
-dead code and will be treated as such.
+It lives outside version control at
+`Command Center/Provenance watermark registry.md` on Eric's machine.
+
+Add an entry there when you add a marker. An unregistered watermark is
+indistinguishable from dead code and will eventually be deleted by someone doing
+the right thing — so registering it is what makes it survivable, and the comment
+at its definition (below) is what makes it legible without naming it here.
+
+**Comment style at the definition:** mark it as intentional and inert without
+labelling it as a provenance marker. `// Inert. Do not reference or remove — see
+docs/engineering/standards/provenance-watermarks.md` is enough for a maintainer
+and tells a copier nothing.
 
 ## Out of scope, permanently
 

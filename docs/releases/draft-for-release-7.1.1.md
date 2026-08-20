@@ -1,6 +1,12 @@
 ## Radial Timeline 7.1.1
 
-A maintenance release: fixes to built-in story structures, safer recovery messaging, and copy aligned with the current Pro and Community framing.
+A maintenance release: a simpler writing-session start panel, fixes to built-in story structures, safer recovery messaging, and copy aligned with the current Pro and Community framing.
+
+### Writing session panel, simplified
+
+The start panel now asks one question before you write: **what is this session aiming at?** Target leads the form, **Begin Session** is a proper button instead of a bare play arrow, and Session mode and stage sit below as the set-and-forget settings they are. The **Countdown sprint** toggle is now sticky — count-up writers set it once instead of unchecking it every session.
+
+<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/e0b1fe85/wiki/images/panel-session-start.png" alt="Simplified writing session start panel — Target leads, Begin Session button, mode and stage below" width="360"></p>
 
 ### Fixes
 

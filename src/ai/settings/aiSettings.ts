@@ -17,7 +17,6 @@ export const AI_SETTINGS_SCHEMA_VERSION = 1;
 // detects a healthy local server and self-configures; authors opt into cloud
 // providers by choice, not by default.
 export const DEFAULT_CANONICAL_PROVIDER: Exclude<AIProviderId, 'none'> = 'ollama';
-export const DEFAULT_CANONICAL_MODEL_ALIAS = 'gpt-5.5';
 export const DEFAULT_CREDENTIAL_SECRET_IDS = {
     openaiSecretId: 'rt.openai.api-key',
     anthropicSecretId: 'rt.anthropic.api-key',

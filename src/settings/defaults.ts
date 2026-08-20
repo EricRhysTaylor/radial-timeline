@@ -97,7 +97,7 @@ export const DEFAULT_SETTINGS: RadialTimelineSettings = {
     completionEstimateWindowDays: 30, // Rolling window (days) for completion estimate pace
     coreCompletionPreviewExpanded: true,
     povPreviewExpanded: true,
-    enableAiSceneAnalysis: false, // AI ships OFF: new installs are AI-free until the writer opts in (owner decision 2026-07-16; existing users keep their persisted choice)
+    enableAiSceneAnalysis: false, // AI ships OFF: new installs make no AI connection until the writer opts in (owner decision 2026-07-16; existing users keep their persisted choice)
     showFullTripletAnalysis: true,
     enableZeroDraftMode: false,
     synopsisTargetWords: 200, // Target word count for generated summaries (legacy name)

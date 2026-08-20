@@ -9,7 +9,7 @@ The AI tab controls provider setup, model selection, prompt framing, cost awaren
 
 *   **Enable AI LLM features**: Turns AI-driven commands and scene-analysis UI on or off. Disabling AI hides those surfaces but does not delete existing note properties.
 
-> **Default: off.** New installs are AI-free until you enable this toggle. Existing vaults keep the setting you already chose — upgrading never flips it for you.
+> **Default: off.** New installs make no AI connection and transfer no data until you enable this toggle. Existing vaults keep the setting you already chose — upgrading never flips it for you.
 
 ## AI Strategy
 

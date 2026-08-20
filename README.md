@@ -102,7 +102,7 @@ Radial Timeline ships complete English interface text and partial interface tran
 
 - No telemetry or analytics SDKs are shipped with the plugin.
 - API keys use Obsidian secret storage when available.
-- AI ships **off by default** — new installs are AI-free until you enable **Settings → AI → Enable AI LLM features**. Existing installs keep whatever choice they already made; upgrading never flips this setting for you.
+- AI ships **off by default** — new installs make no AI connection and transfer no data until you enable **Settings → AI → Enable AI LLM features**. Existing installs keep whatever choice they already made; upgrading never flips this setting for you.
 - Vault content should only leave the vault when you explicitly use enabled external features.
 - Shell commands are run only to invoke Pandoc (and its LaTeX engine) when you export a manuscript, and to probe for those binaries with `which`/`where` during setup.
 - Files outside the vault are read or written only to save exports where you choose and to locate the Pandoc executable.

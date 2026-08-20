@@ -69,6 +69,9 @@ Location: `docs/engineering/standards/`
 - **[frontend-design.md](standards/frontend-design.md)**
   Frontend design aesthetics, UI/UX direction, and visual quality guide.
 
+- **[provenance-watermarks.md](standards/provenance-watermarks.md)**
+  How authorship of copied code is proven. Watermarks identify, never misrepresent — no marker may state a false behavioral fact. Includes the registry of live markers; check it before deleting anything that looks unused.
+
 ---
 
 ## Architecture Plans

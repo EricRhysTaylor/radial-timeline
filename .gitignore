@@ -65,7 +65,3 @@ vault-restore-point/
 
 # Generated nightly by the Model & Pricing Watch workflow
 scripts/models/pricing-watch-report.md
-
-# Deploy watcher runtime logs (Mac Studio local)
-.deploy-watch.log
-.deploy-watch.err

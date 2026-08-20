@@ -64,12 +64,14 @@ were filed on the public Editorialist repo and had to be closed.
   Studio's disk or the Obsidian vault plugin folders. A remote agent must
   never claim the local plugin is updated — its job ends at pushed/merged
   commits on origin/main.
-- The Mac Studio picks up remote merges automatically via the deploy
-  watcher: a launchd agent runs `scripts/deploy-watch.sh` every 2 minutes,
-  fast-forwards a clean `main` checkout, and rebuilds into all vault
-  folders. One-time install on the Mac: `bash scripts/install-deploy-watch.sh`.
-  After any remote merge, the new build is local within ~2 minutes; reload
-  Obsidian (toggle the plugin) to load it.
+- To receive a remote merge on the Mac Studio, run `npm run deploy` in the
+  repo — it fast-forwards `main` and rebuilds the plugin into all vault
+  folders (no commits, nothing left running). Then reload Obsidian (toggle
+  the plugin) to load the new build. This is deliberately on-demand: no
+  background watcher processes (owner's decision, 2026-07-27).
+- When a remote agent finishes a change that affects the plugin, its final
+  message must state plainly that `npm run deploy` + an Obsidian reload on
+  the Mac is required to see it — never imply the local plugin already has it.
 
 ## Audit Ownership
 

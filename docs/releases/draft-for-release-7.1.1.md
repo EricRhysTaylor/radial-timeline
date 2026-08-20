@@ -19,5 +19,5 @@ The start panel now asks one question before you write: **what is this session a
 
 ### Copy & Community
 
-- Pro is now framed as what it is: the plugin is free forever; Pro is an optional service for advanced workflows.
+- Pro is now framed as what it is: the plugin is free; Pro is an optional service for advanced workflows.
 - The Community tab leads with "Share your journey," and Community sharing enforces one campaign per book.

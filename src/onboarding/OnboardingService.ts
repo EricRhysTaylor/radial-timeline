@@ -16,6 +16,9 @@
 import { normalizePath, TFile, TFolder } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { getAIClient } from '../ai/runtime/aiClient';
+import { validateAiSettings } from '../ai/settings/validateAiSettings';
+import { getCredential } from '../ai/credentials/credentials';
+import type { AIProviderId } from '../ai/types';
 import { getLocalLlmClient } from '../ai/localLlm/client';
 import { inferLocalLlmCapability } from '../ai/localLlm/capabilityInference';
 import { createBookId, normalizeBookProfile } from '../utils/books';
@@ -88,6 +91,28 @@ export interface PreflightResult {
 
 /** The four import lanes (see the plan's "Import flows" section). */
 export type ImportFlow = 'single' | 'docx' | 'scrivener' | 'folder';
+
+/**
+ * Which AI runs the onboarding calls. `local` (default) forces the local-model
+ * path — the zero-cost author route. `cloud` drops the override so the router
+ * uses the provider configured in Settings → AI (BYO key) — frontier grade for
+ * demo-vault conversions and authors who opt in. Same pipeline either way.
+ */
+export type OnboardingEngine = 'local' | 'cloud';
+
+export interface CloudEngineStatus {
+  ok: boolean;
+  provider: AIProviderId;
+  /** Author-facing provider name ('' when no cloud provider is selected). */
+  label: string;
+  reason?: string;
+}
+
+const CLOUD_PROVIDER_LABELS: Partial<Record<AIProviderId, string>> = {
+  anthropic: 'Anthropic',
+  openai: 'OpenAI',
+  google: 'Google',
+};
 
 export interface FlowDetection {
   /** The lane the folder's contents suggest. */
@@ -188,7 +213,33 @@ function sampleEvenly<T>(items: T[], max: number): T[] {
 }
 
 export class OnboardingService {
+  private engine: OnboardingEngine = 'local';
+
   constructor(private readonly plugin: RadialTimelinePlugin) {}
+
+  setEngine(engine: OnboardingEngine): void {
+    this.engine = engine;
+  }
+
+  /** Local engine pins the local-model route; cloud defers to the configured provider. */
+  private get engineOverride(): 'ollama' | undefined {
+    return this.engine === 'cloud' ? undefined : 'ollama';
+  }
+
+  /** Can the configured Settings → AI provider serve as the cloud engine? */
+  async cloudAvailability(): Promise<CloudEngineStatus> {
+    const aiSettings = validateAiSettings(this.plugin.settings.aiSettings ?? null).value;
+    const provider = aiSettings.provider;
+    const label = CLOUD_PROVIDER_LABELS[provider] ?? '';
+    if (!label) {
+      return { ok: false, provider, label, reason: 'No cloud provider selected in Settings → AI.' };
+    }
+    const key = await getCredential(this.plugin, provider);
+    if (!key) {
+      return { ok: false, provider, label, reason: `${label} API key is not set.` };
+    }
+    return { ok: true, provider, label };
+  }
 
   /** Gate: the local model must produce strict JSON and reach capability tier >= 2. */
   async preflight(): Promise<PreflightResult> {
@@ -341,7 +392,7 @@ export class OnboardingService {
         userInput: buildOnboardingSurveyPrompt(surveyInput),
         returnType: 'json',
         responseSchema: getOnboardingSurveyJsonSchema(),
-        providerOverride: 'ollama',
+        providerOverride: this.engineOverride,
         overrides: { ...OVERRIDES },
       });
       if (result.aiStatus !== 'success' || !result.content) return null;
@@ -437,7 +488,7 @@ export class OnboardingService {
           }),
           returnType: 'json',
           responseSchema: getOnboardingSceneJsonSchema(),
-          providerOverride: 'ollama',
+          providerOverride: this.engineOverride,
           overrides: { ...OVERRIDES },
         });
         if (result.aiStatus !== 'success' || !result.content) {
@@ -533,7 +584,7 @@ export class OnboardingService {
           userInput: buildOnboardingSplitPrompt({ paragraphs: plan.paragraphs, labels: plan.labels }),
           returnType: 'json',
           responseSchema: getOnboardingSplitJsonSchema(),
-          providerOverride: 'ollama',
+          providerOverride: this.engineOverride,
           overrides: { ...OVERRIDES },
         });
         if (result.aiStatus === 'success' && result.content) {
@@ -663,7 +714,7 @@ export class OnboardingService {
           }),
           returnType: 'json',
           responseSchema: getOnboardingEntityJsonSchema(),
-          providerOverride: 'ollama',
+          providerOverride: this.engineOverride,
           overrides: { ...OVERRIDES },
         });
         if (result.aiStatus === 'success' && result.content) {

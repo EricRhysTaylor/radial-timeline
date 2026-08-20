@@ -111,6 +111,7 @@ interface OnboardingSession {
   folder: string;
   stage: 'confirm' | 'review';
   aiAvailable: boolean;
+  engine: 'local' | 'cloud';
   modelLabel: string;
   flowOverride: ImportFlow | null;
   publishStage: Stage;
@@ -159,6 +160,8 @@ export class OnboardingModal extends Modal {
    * acts) — with every AI stage skipped and its controls hidden.
    */
   private aiAvailable = false;
+  /** Which AI drives the run: local model (default) or the configured cloud provider. */
+  private engine: 'local' | 'cloud' = 'local';
   /** The split+mapping-applied model extraction actually ran against (for resume). */
   private extractModel: ManuscriptModel | null = null;
   private abortController: AbortController | null = null;
@@ -175,6 +178,7 @@ export class OnboardingModal extends Modal {
       folder: this.book?.sourceFolder ?? '', // SAFE: no book selected yet; the empty path is the "nothing chosen" state the form renders
       stage,
       aiAvailable: this.aiAvailable,
+      engine: this.engine,
       modelLabel: this.modelLabel,
       flowOverride: this.flowOverride,
       publishStage: this.publishStage,
@@ -194,6 +198,8 @@ export class OnboardingModal extends Modal {
 
   private restoreSession(session: OnboardingSession): void {
     this.aiAvailable = session.aiAvailable;
+    this.engine = session.engine;
+    this.service.setEngine(session.engine);
     this.modelLabel = session.modelLabel;
     this.flowOverride = session.flowOverride;
     this.publishStage = session.publishStage;
@@ -296,25 +302,50 @@ export class OnboardingModal extends Modal {
       ingestReason = error instanceof Error ? error.message : String(error);
     }
 
+    // Two AI engines can drive the same pipeline: the local model (zero-cost
+    // author default) and the cloud provider configured in Settings → AI (BYO
+    // key — frontier grade for demo-vault conversions). Neither → structure-only.
+    const cloud = await this.service.cloudAvailability();
+    if (this.engine === 'local' && !preflightOk && cloud.ok) this.engine = 'cloud';
+    if (this.engine === 'cloud' && !cloud.ok) this.engine = 'local';
+    this.aiAvailable = this.engine === 'cloud' ? cloud.ok : preflightOk;
+    this.modelLabel = this.engine === 'cloud' && cloud.ok ? `${cloud.label} cloud` : this.modelLabel;
+    this.service.setEngine(this.engine);
+
     const { contentEl } = this;
     contentEl.empty();
     this.renderStageHeader(1, 'Prepare', `Onboard "${book.sourceFolder}"`);
 
-    // The local model is optional: without one, onboarding runs structure-only
-    // (split titles, sidecar synopses, mapped metadata, positional acts) and
-    // every AI stage is skipped. Scrivener/Word migrations rarely need more.
-    this.aiAvailable = preflightOk;
     const status = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
     // Raw diagnostics text ("Structured JSON path not tested") is engineer-speak
     // — authors get a plain state; the tier reason stays since it is actionable.
     const notAvailable = /tier/i.test(preflightReason)
       ? `Not available — ${preflightReason}`
-      : 'Not connected — onboarding runs without AI.';
-    this.renderStatusRow(status, 'Local model', preflightOk ? `Ready — tier ${tier}` : notAvailable, preflightOk);
-    if (!preflightOk) {
+      : 'Not connected.';
+    const engineValue = this.engine === 'cloud'
+      ? `${cloud.label} (cloud, your API key)`
+      : preflightOk ? `Local model — ready, tier ${tier}` : `Local model — ${notAvailable.toLowerCase()}`;
+    this.renderStatusRow(status, 'AI engine', engineValue, this.aiAvailable);
+
+    // Offer the switch whenever the OTHER engine is also viable.
+    const engineChoices: Array<['local' | 'cloud', string]> = [];
+    if (preflightOk) engineChoices.push(['local', 'Local model (free)']);
+    if (cloud.ok) engineChoices.push(['cloud', `${cloud.label} (cloud, your API key)`]);
+    if (engineChoices.length > 1) {
+      const engineRow = status.createDiv({ cls: 'ert-row ert-onb-stagerow' });
+      engineRow.createSpan({ text: 'Run AI with: ', cls: 'ert-muted' });
+      new DropdownComponent(engineRow)
+        .addOptions(Object.fromEntries(engineChoices))
+        .setValue(this.engine)
+        .onChange((value) => {
+          this.engine = value as 'local' | 'cloud'; // SAFE: options are exactly local|cloud
+          void this.showPreflight();
+        });
+    }
+    if (!this.aiAvailable) {
       status.createDiv({
         cls: 'ert-muted',
-        text: 'You still get scenes, titles, and any carried Scrivener metadata. AI synopses, characters/places, and auto-split need a local model (Settings → AI).',
+        text: 'You still get scenes, titles, and any carried Scrivener metadata. AI synopses, characters/places, and auto-split need a local model (Settings → AI) or a cloud provider with your API key.',
       });
     }
 
@@ -358,12 +389,12 @@ export class OnboardingModal extends Modal {
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
     const canStart = !ingestReason && candidateCount > 0 && this.model !== null;
     new ButtonComponent(actions)
-      .setButtonText(preflightOk ? 'Continue' : 'Continue without AI')
+      .setButtonText(this.aiAvailable ? 'Continue' : 'Continue without AI')
       .setCta()
       .setDisabled(!canStart)
       .onClick(() => this.showSplitCheckpoint());
-    // No model? Lead with the fix — a red shortcut straight to the AI settings.
-    if (!preflightOk) {
+    // No engine at all? Lead with the fix — a red shortcut to the AI settings.
+    if (!this.aiAvailable) {
       new ButtonComponent(actions)
         .setButtonText('Set up local AI')
         .setDestructive()

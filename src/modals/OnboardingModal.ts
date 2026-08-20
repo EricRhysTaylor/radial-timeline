@@ -32,6 +32,7 @@ import {
   type ScenePlan,
 } from '../onboarding/sceneSplitting';
 import { suggestOnboardingFolderName } from '../onboarding/paths';
+import { refreshOnboardingPrompt } from '../onboarding/promptSync';
 import {
   proposeScrivenerAutomap,
   applyMetadataMappingToModel,
@@ -246,6 +247,8 @@ export class OnboardingModal extends Modal {
   // ---- Views -------------------------------------------------------------
 
   private async showPreflight(): Promise<void> {
+    // Best-effort canonical-prompt refresh (throttled daily; never blocks).
+    void refreshOnboardingPrompt(this.plugin);
     this.renderBusy('Checking the local model and reading the book folder…');
 
     const book = getActiveBook(this.plugin.settings);

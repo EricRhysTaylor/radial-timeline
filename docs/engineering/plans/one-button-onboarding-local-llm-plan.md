@@ -792,6 +792,23 @@ Doctrine fit: no new abstraction layer beyond the adapters, no fallback chains
   section hides entirely in structure-only runs with no carried entity names
   (dead checkboxes), and the Publish-stage row gained flex gap spacing.
 
+- **2026-08-20 (roadmap unification: cloud engine + Supabase prompt row)** —
+  per the "keep this moving" decision: Goal B is feature-frozen; Goal A (codified
+  demo-vault pipeline) runs the SAME shipped pipeline at frontier grade instead
+  of a parallel one. **(1) Cloud engine:** onboarding's four AI call sites now
+  take an engine-driven provider override — `local` (default, zero-cost) pins
+  the local model; `cloud` defers to the Settings → AI provider with the user's
+  own key. Prepare shows the active engine and a "Run AI with" switch whenever
+  both are viable; the choice survives resume. **(2) Supabase prompt row
+  provisioned** (the outstanding Slice-1 decision): `onboarding_prompt` table
+  {prompt_text, schema_version, updated_at} with RLS + explicit read grants,
+  seeded with the bundled snapshot at schema_version 1, served by the public
+  `onboarding-prompt` edge function (deployed, verified 200). Plugin side:
+  `promptSync.ts` best-effort daily refresh adopting remote text only at the
+  pinned ONBOARDING_SCHEMA_VERSION; `getOnboardingCanonicalPrompt` is the
+  effective-prompt accessor for the website-parity/settings-override surfaces.
+  Next per roadmap: DEMO-VAULT-PIPELINE.md + one frontier-grade Odyssey run.
+
 ## Appendix A — Canonical onboarding prompt (instruction block)
 
 Source of truth for this text is **Supabase** (see "The Onboarding Prompt —

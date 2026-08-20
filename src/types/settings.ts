@@ -1093,6 +1093,17 @@ export interface RadialTimelineSettings {
     aiSettings?: AiSettingsV1;
     aiProviderSnapshotCacheJson?: string;
     aiPricingCacheJson?: string;
+    /**
+     * Last canonical onboarding prompt adopted from Supabase (the plugin's
+     * bundled snapshot is the offline fallback). Adopted only when
+     * schemaVersion matches the plugin's pinned ONBOARDING_SCHEMA_VERSION.
+     */
+    onboardingPromptCache?: {
+        promptText: string;
+        schemaVersion: number;
+        updatedAt: string;
+        fetchedAt: string;
+    };
     enableAiSceneAnalysis: boolean;
     enableZeroDraftMode?: boolean;
     enableSceneTitleAutoExpand?: boolean;

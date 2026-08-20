@@ -15,9 +15,9 @@ The start panel now asks one question before you write: **what is this session a
 - Fixed a subplot ring ordering bug that could scramble the ring stack.
 - The Hero's Journey beat system now credits Christopher Vogler, whose twelve-stage structure it follows.
 - Local LLM requests can now be cancelled cleanly mid-generation.
-- Timeline export files land in Radial Timeline's system folder instead of loose in the vault.
+- Timeline data (JSON) exports now save to `Radial Timeline/Community/` inside the canonical plugin folder, replacing the older top-level `Radial Timeline Exports` folder.
 
 ### Copy & Community
 
-- Pro is now framed as what it is: the plugin is free; Pro is an optional service for advanced workflows.
+- Pro is now advanced workflows.
 - The Community tab leads with "Share your journey," and Community sharing enforces one campaign per book.

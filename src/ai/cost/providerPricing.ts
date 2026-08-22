@@ -72,6 +72,35 @@ export const BUILTIN_PRICING: ProviderPricingTable = {
             cacheWrite1hPer1M: 10.0,
             cacheReadPer1M: 0.5
         },
+        // Mid tier. Intro pricing $2/$10 per MTok runs to 2026-08-31, then
+        // reverts to the $3/$15 standard carried in `promo` — resolveExpired-
+        // PromoRates swaps input/output automatically, so this needs no future
+        // edit. Cache rates are quoted at the STANDARD $3 input (write 1.25×/2×,
+        // read 0.1×) because the cache fields are NOT promo-swapped: a small
+        // over-estimate during the promo, exact after it lapses. Over-estimating
+        // is the safe direction for anything that warns an author about spend.
+        'claude-sonnet-5': {
+            inputPer1M: 2.0,
+            outputPer1M: 10.0,
+            cacheWrite5mPer1M: 3.75,
+            cacheWrite1hPer1M: 6.0,
+            cacheReadPer1M: 0.3,
+            promo: {
+                label: 'Intro pricing',
+                expiresAt: '2026-09-01T00:00:00Z',
+                standardInputPer1M: 3.0,
+                standardOutputPer1M: 15.0
+            }
+        },
+        // Economy tier. Standard Anthropic cache multipliers on a $1 input:
+        // write 5m 1.25×, 1h 2×, read 0.1×.
+        'claude-haiku-4-5': {
+            inputPer1M: 1.0,
+            outputPer1M: 5.0,
+            cacheWrite5mPer1M: 1.25,
+            cacheWrite1hPer1M: 2.0,
+            cacheReadPer1M: 0.1
+        },
         // Premium always-on-thinking model. 2× Opus on input/output; cache
         // read is 2× as well ($1.00 vs $0.50). Cache-write tiers: 5m $12.50,
         // 1h $20.00 per MTok.

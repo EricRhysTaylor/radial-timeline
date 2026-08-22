@@ -7,8 +7,22 @@ const LOCAL_CAPS: Capability[] = ['jsonStrict'];
 /*
  * Minimum-viable model catalog (2026-05-22).
  *
- * Policy: one top model per provider, plus a Google fast/deep split where
- * the speed/depth tradeoff is genuinely a quality dimension (not cost).
+ * Policy: one top model per provider, plus a split where the speed/depth
+ * tradeoff is genuinely a quality dimension (not cost).
+ *
+ * Amended 2026-08-21 — task fit is a quality dimension, and it varies BY
+ * FEATURE. Onboarding makes bounded per-scene asks that a FAST-tier model
+ * answers well; Inquiry reasons across a whole manuscript and needs DEEP.
+ * A catalog holding only depth models therefore fails authors twice: it
+ * prices a one-off whole-book job like a research task, and it offers no
+ * correct answer for the cheap-and-bounded case. Anthropic accordingly
+ * carries a BALANCED and a FAST entry alongside its depth models.
+ *
+ * This is NOT licence to add models for cheapness alone. A new entry must
+ * answer a task-fit question the catalog cannot already answer, and it must
+ * be paired with tier-driven suitability guidance in the UI — a model
+ * offered without saying what it is unfit for is a trap, not a choice.
+ *
  * Picker UX infrastructure stays intact so models can be re-added later
  * via the deliberate quarterly promotion process in
  * docs/engineering/standards/model-promotion.md.
@@ -143,6 +157,69 @@ export const BUILTIN_MODELS: ModelInfo[] = [
             supportsTopP: false,
             supportsAdaptiveThinking: true,
             thinkingAlwaysOn: true
+        }
+    },
+    {
+        // Mid-tier Anthropic model. 1M context and the same request contract
+        // as Opus 5 (adaptive thinking is the only on-mode; temperature and
+        // top_p are rejected), at $3/$15 per MTok against Opus's $5/$25 —
+        // currently $2/$10 under intro pricing that lapses 2026-08-31, encoded
+        // as a promo in providerPricing.ts so the rate reverts on its own.
+        // BALANCED: strong enough for Inquiry, and the default recommendation
+        // for whole-manuscript onboarding.
+        provider: 'anthropic',
+        id: 'claude-sonnet-5',
+        alias: 'claude-sonnet-5',
+        label: 'Claude Sonnet 5',
+        line: 'claude-sonnet',
+        tier: 'BALANCED',
+        capabilities: [...DEEP_CAPS, 'streaming'],
+        personality: { reasoning: 9, writing: 9, determinism: 9 },
+        contextWindow: 1_000_000,
+        maxOutput: 128_000,
+        status: 'stable',
+        rollout: {
+            channel: 'stable',
+            status: 'stable',
+            lane: 'default'
+        },
+        constraints: {
+            supportsTemperature: false,
+            supportsTopP: false,
+            supportsAdaptiveThinking: true
+        }
+    },
+    {
+        // Economy tier — the cheapest route through a bounded whole-manuscript
+        // job such as onboarding ($1/$5 per MTok). Deliberately NOT given
+        // `reasoningStrong`: its 200K context and lighter reasoning make it
+        // unfit for Inquiry's whole-manuscript analysis, and the UI must say
+        // so wherever it can be picked. FAST tier is the signal that carries
+        // that warning.
+        // PENDING VERIFICATION: maxOutput transcribed from Anthropic's model
+        // docs, not yet confirmed by a live probe against claude-haiku-4-5.
+        provider: 'anthropic',
+        id: 'claude-haiku-4-5',
+        alias: 'claude-haiku-4-5',
+        label: 'Claude Haiku 4.5',
+        line: 'claude-haiku',
+        tier: 'FAST',
+        capabilities: [...FAST_CAPS],
+        personality: { reasoning: 6, writing: 7, determinism: 8 },
+        contextWindow: 200_000,
+        maxOutput: 64_000,
+        releasedAt: '2025-10-01',
+        status: 'stable',
+        rollout: {
+            channel: 'stable',
+            status: 'stable',
+            lane: 'default'
+        },
+        constraints: {
+            supportsTemperature: true,
+            supportsTopP: true,
+            supportsAdaptiveThinking: false,
+            supportsReasoningEffort: false
         }
     },
     {

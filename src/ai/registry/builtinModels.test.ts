@@ -128,15 +128,23 @@ describe('BUILTIN_MODELS — Google Gemini', () => {
 describe('BUILTIN_MODELS — catalog policy invariants', () => {
     it('keeps the catalog small enough to be deliberately curated (one top model per provider, plus deliberate splits)', () => {
         const cloud = BUILTIN_MODELS.filter(m => m.provider !== 'none' && m.provider !== 'ollama');
-        // Anthropic 3 (Opus 5 + 4.8 continuity + Fable 5 premium pro lane)
-        // + OpenAI 2 (5.5 + 5.4 economy) + Google 2 (3.1 Pro depth / 3.5 Flash
-        // speed) = 7 cloud models. Fable 5 was promoted under the deliberate
-        // process in docs/engineering/standards/model-promotion.md as an
-        // explicit-choice premium model (2× Opus cost), NOT an auto-default.
+        // Anthropic 5 (Opus 5 + 4.8 continuity + Fable 5 premium pro lane
+        // + Sonnet 5 BALANCED + Haiku 4.5 FAST) + OpenAI 2 (5.5 + 5.4 economy)
+        // + Google 2 (3.1 Pro depth / 3.5 Flash speed) = 9 cloud models.
+        //
+        // Fable 5 was promoted as an explicit-choice premium model (2× Opus
+        // cost), NOT an auto-default. Sonnet 5 and Haiku 4.5 were added
+        // 2026-08-21 under the amended task-fit clause in builtinModels.ts:
+        // onboarding makes bounded per-scene asks a FAST model answers well,
+        // while Inquiry needs DEEP — a depth-only Anthropic catalog had no
+        // correct answer for the cheap-and-bounded case and priced a one-off
+        // whole-book job like a research task.
+        //
         // If this assertion fails because a model was added, confirm the
-        // addition followed that promotion process before updating this
-        // expectation.
-        expect(cloud.length).toBeLessThanOrEqual(7);
+        // addition followed docs/engineering/standards/model-promotion.md and
+        // answers a task-fit question the catalog cannot already answer,
+        // before updating this expectation.
+        expect(cloud.length).toBeLessThanOrEqual(9);
     });
 
     it('does not curate experimental "*-pro" OpenAI lanes here (they would come via remote drift if needed)', () => {

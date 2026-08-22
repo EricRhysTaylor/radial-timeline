@@ -7485,6 +7485,10 @@ export class InquiryView extends ItemView {
         }
 
         const useOmnibus = engine.provider === 'google';
+        // A capability substitution silently upgrades the author to a costlier
+        // model. Carry the notice into the run summary so the swap is stated
+        // before the run, not discovered on an invoice.
+        const substitutionNotice = engine.substitution ? ` ${engine.substitution.notice}` : '';
         return {
             choice: {
                 provider: engine.provider,
@@ -7493,9 +7497,10 @@ export class InquiryView extends ItemView {
                 useOmnibus,
                 reason: useOmnibus ? undefined : 'Combined omnibus is reserved for the canonical Google Inquiry path.'
             },
-            summary: useOmnibus
+            summary: (useOmnibus
                 ? `Using canonical Inquiry engine ${engine.providerLabel} · ${engine.modelLabel} for a combined omnibus run.`
-                : `Using canonical Inquiry engine ${engine.providerLabel} · ${engine.modelLabel}. This provider will execute omnibus sequentially.`,
+                : `Using canonical Inquiry engine ${engine.providerLabel} · ${engine.modelLabel}. This provider will execute omnibus sequentially.`)
+                + substitutionNotice,
             label: useOmnibus ? `${engine.providerLabel} omnibus` : `Sequential · ${engine.providerLabel}`
         };
     }

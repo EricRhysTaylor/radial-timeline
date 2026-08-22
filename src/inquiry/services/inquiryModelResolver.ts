@@ -53,6 +53,24 @@ export interface ResolvedInquiryEngine {
     blocked?: boolean;
     /** Human-readable explanation of why the engine is blocked. */
     blockReason?: string;
+    /**
+     * Set when the author's pinned model cannot meet Inquiry's capability
+     * floor and a different model is running instead.
+     *
+     * This is NOT cosmetic. `selectModel` substitutes silently and the
+     * substitute is, by definition, a more capable — and therefore more
+     * expensive — model. An author who pins Haiku 4.5 to control cost and is
+     * quietly upgraded to Opus 5 finds out from their invoice. Every Inquiry
+     * surface that displays the engine MUST display this too.
+     */
+    substitution?: {
+        /** The alias the author actually pinned. */
+        requestedAlias: string;
+        /** Label of the model Inquiry will really use. */
+        runningLabel: string;
+        /** Author-facing sentence naming the swap and why it happened. */
+        notice: string;
+    };
 }
 
 // ── Constants ──────────────────────────────────────────────────────
@@ -205,6 +223,27 @@ export function resolveInquiryEngine(
             accessTier
         });
 
+        // A pinned alias that survives the capability filter is returned as-is;
+        // one that does not is swapped for a stronger model. Distinguish the
+        // two by asking whether the pinned alias exists in the catalog at all
+        // — a typo or a retired model is a different story from "this model
+        // is real but cannot do Inquiry", and only the latter is worth
+        // explaining in those terms.
+        const pinnedAlias = policy.type === 'pinned' ? policy.pinnedAlias : undefined;
+        const substituted = Boolean(pinnedAlias) && selection.model.alias !== pinnedAlias;
+        const pinnedModel = substituted
+            ? models.find(model => model.alias === pinnedAlias)
+            : undefined;
+        const substitution = substituted && pinnedAlias
+            ? {
+                requestedAlias: pinnedAlias,
+                runningLabel: selection.model.label,
+                notice: pinnedModel
+                    ? `${pinnedModel.label} cannot run Inquiry — it does not meet the capability floor (long context, strict JSON, strong reasoning, high output cap). Inquiry is using ${selection.model.label} instead, which costs more per run.`
+                    : `Pinned model "${pinnedAlias}" is unavailable. Inquiry is using ${selection.model.label} instead, which may cost more per run.`
+            }
+            : undefined;
+
         return {
             provider: selection.provider,
             modelId: selection.model.id,
@@ -215,7 +254,8 @@ export function resolveInquiryEngine(
             contextWindow: selection.model.contextWindow,
             maxOutput: selection.model.maxOutput,
             selectionReason: selection.reason,
-            policySource
+            policySource,
+            ...(substitution ? { substitution } : {})
         };
     } catch {
         // Provider cannot satisfy Inquiry's capability floor (e.g. ollama/local).

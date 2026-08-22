@@ -12,6 +12,7 @@
  */
 import { createHash } from 'crypto';
 import { createGeminiCache } from './geminiApi';
+import { estimateTokensFromChars, DEFAULT_CHARS_PER_TOKEN } from '../ai/estimates';
 
 interface GeminiCacheEntry {
     cacheName: string;      // e.g. "cachedContents/abc123..."
@@ -35,7 +36,10 @@ const cacheStore = new Map<string, GeminiCacheEntry>();
 /** Gemini context caching requires a minimum input token count (~32K). */
 const GEMINI_MIN_CACHE_TOKENS = 32_768;
 /** Rough chars-per-token estimate (same formula used by aiClient.estimateTokens). */
-const CHARS_PER_TOKEN = 4;
+// Alias of the canonical DEFAULT_CHARS_PER_TOKEN (ai/estimates). Kept as a
+// named re-export so existing call sites read naturally; it is NOT a second
+// value and must never be given one.
+const CHARS_PER_TOKEN = DEFAULT_CHARS_PER_TOKEN;
 
 /** Default cache TTL: 15 minutes. Long enough for multi-question sessions. */
 const DEFAULT_TTL_SECONDS = 900;
@@ -79,7 +83,7 @@ export function peekGeminiCache(
     systemPrompt: string,
     stableContent: string
 ): boolean {
-    const estimatedTokens = Math.ceil(stableContent.length / CHARS_PER_TOKEN);
+    const estimatedTokens = estimateTokensFromChars(stableContent.length, CHARS_PER_TOKEN);
     if (estimatedTokens < GEMINI_MIN_CACHE_TOKENS) return false;
     const fp = hashCacheKey(modelId, systemPrompt, stableContent);
     const hit = cacheStore.get(fp);
@@ -106,7 +110,7 @@ export async function getOrCreateGeminiCache(
     pruneGeminiCacheStore();
 
     // Guard: skip cache for small stable prefixes (below Gemini min threshold)
-    const estimatedTokens = Math.ceil(stableContent.length / CHARS_PER_TOKEN);
+    const estimatedTokens = estimateTokensFromChars(stableContent.length, CHARS_PER_TOKEN);
     if (estimatedTokens < GEMINI_MIN_CACHE_TOKENS) return null;
 
     const fp = hashCacheKey(modelId, systemPrompt ?? '', stableContent);

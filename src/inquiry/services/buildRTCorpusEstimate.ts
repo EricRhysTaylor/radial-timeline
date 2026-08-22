@@ -1,7 +1,11 @@
 import type { RTCorpusTokenEstimate } from '../../ai/types';
 import type { InquiryPayloadStats } from '../types';
+import { estimateTokensFromChars, DEFAULT_CHARS_PER_TOKEN } from '../../ai/estimates';
 
-export const RT_CORPUS_CHARS_PER_TOKEN = 4;
+// Alias of the canonical DEFAULT_CHARS_PER_TOKEN (ai/estimates). Kept as a
+// named re-export so existing call sites read naturally; it is NOT a second
+// value and must never be given one.
+export const RT_CORPUS_CHARS_PER_TOKEN = DEFAULT_CHARS_PER_TOKEN;
 
 const normalizeChars = (value: number | undefined): number => (
     typeof value === 'number' && Number.isFinite(value)
@@ -18,12 +22,12 @@ export function buildRTCorpusEstimate(payloadStats: InquiryPayloadStats): RTCorp
     const evidenceChars = breakdownCharsTotal > 0 ? breakdownCharsTotal : normalizedEvidenceChars;
     const breakdown = breakdownCharsTotal > 0
         ? {
-            scenesTokens: sceneChars > 0 ? Math.ceil(sceneChars / RT_CORPUS_CHARS_PER_TOKEN) : 0,
-            outlineTokens: outlineChars > 0 ? Math.ceil(outlineChars / RT_CORPUS_CHARS_PER_TOKEN) : 0,
-            referenceTokens: referenceChars > 0 ? Math.ceil(referenceChars / RT_CORPUS_CHARS_PER_TOKEN) : 0
+            scenesTokens: estimateTokensFromChars(sceneChars, RT_CORPUS_CHARS_PER_TOKEN),
+            outlineTokens: estimateTokensFromChars(outlineChars, RT_CORPUS_CHARS_PER_TOKEN),
+            referenceTokens: estimateTokensFromChars(referenceChars, RT_CORPUS_CHARS_PER_TOKEN)
         }
         : {
-            scenesTokens: evidenceChars > 0 ? Math.ceil(evidenceChars / RT_CORPUS_CHARS_PER_TOKEN) : 0,
+            scenesTokens: estimateTokensFromChars(evidenceChars, RT_CORPUS_CHARS_PER_TOKEN),
             outlineTokens: 0,
             referenceTokens: 0
         };

@@ -290,6 +290,46 @@ function getOutputRules(request: AIRunRequest): string {
     });
 }
 
+/**
+ * Fixed per-call prompt overhead, in characters, for a request shape.
+ *
+ * A forecast that counts only `featureModeInstructions` understates every call:
+ * `composeEnvelope` also carries the role template (name AND body), project
+ * context, output rules / JSON schema, section headings, and the cache-break
+ * delimiter. On onboarding's four call shapes that omitted content runs from
+ * several hundred to a couple of thousand characters each, before the role
+ * template is even counted — and it is charged on every one of ~95 calls.
+ *
+ * Measured by composing the real envelope with an EMPTY payload, through the
+ * same `resolveActiveRoleTemplate` → `getProjectContext` → `getOutputRules` →
+ * `composeEnvelope` path `run()` uses, so the two cannot drift in what they
+ * include. What it does NOT cover is per-call user-input structure (field
+ * labels, metadata wrappers around the prose), which varies per call and is
+ * not fixed overhead — callers must account for payload separately.
+ */
+export function measureRequestEnvelopeChars(
+    plugin: RadialTimelinePlugin,
+    request: AIRunRequest
+): number {
+    const aiSettings = validateAiSettings(plugin.settings.aiSettings ?? null).value;
+    const roleTemplate = request.bypassRoleTemplate
+        ? buildNeutralRoleTemplate(request.feature)
+        : resolveActiveRoleTemplate(plugin, aiSettings);
+    const isInquiry = request.feature.toLowerCase().includes('inquiry');
+    const envelope = composeEnvelope({
+        roleTemplateName: roleTemplate.name,
+        roleTemplateText: roleTemplate.prompt,
+        projectContext: isInquiry ? '' : getProjectContext(plugin, request),
+        featureModeInstructions: (request.featureModeInstructions ?? '').trim(),
+        userInput: '',
+        userQuestion: undefined,
+        outputRules: getOutputRules(request),
+        placeUserQuestionLast: false,
+        cacheBreakDelimiter: CACHE_BREAK_DELIMITER
+    });
+    return (envelope.finalPrompt || '').length;
+}
+
 function setLastRunAdvanced(plugin: RadialTimelinePlugin, feature: string, context: AIRunAdvancedContext): void {
     const target = plugin as PluginWithAiDebug;
     if (!target._aiLastRunAdvancedByFeature) {

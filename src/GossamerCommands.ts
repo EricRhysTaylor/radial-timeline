@@ -52,6 +52,7 @@ import { buildGossamerEvidenceDocument } from './gossamer/evidence/buildGossamer
 import { logCountingForensics } from './ai/diagnostics/countingForensics';
 import { toBeatModelMatchKey } from './utils/beatsInputNormalize';
 import { getActiveFrontmatterMappings, asBeatFrontmatter, readBeatPurpose } from './utils/frontmatter';
+import { estimateTokensFromChars } from './ai/estimates';
 
 interface ResolvedGossamerEvidence {
   evidenceDocument: Awaited<ReturnType<typeof buildGossamerEvidenceDocument>>;
@@ -866,7 +867,7 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
       return;
     }
 
-    const corpusEstimatedTokens = Math.ceil(evidenceDocument.text.length / FORECAST_CHARS_PER_TOKEN);
+    const corpusEstimatedTokens = estimateTokensFromChars(evidenceDocument.text.length, FORECAST_CHARS_PER_TOKEN);
 
     // Update modal with manuscript info
     const manuscriptInfo: ManuscriptInfo = {
@@ -1400,7 +1401,7 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
     });
     const evidenceModeLabel = resolvedEvidence.label;
     const evidenceDocument = resolvedEvidence.evidenceDocument;
-    const corpusEstimatedTokens = Math.ceil(evidenceDocument.text.length / FORECAST_CHARS_PER_TOKEN);
+    const corpusEstimatedTokens = estimateTokensFromChars(evidenceDocument.text.length, FORECAST_CHARS_PER_TOKEN);
     const providerExecutionTokens = corpusEstimatedTokens + FORECAST_PROMPT_OVERHEAD_TOKENS;
     logCountingForensics({
       path: 'gossamer',

@@ -22,8 +22,12 @@ import type { AIProviderId } from '../types';
 import { getAIClient } from '../runtime/aiClient';
 import { resolveCitationsEnabled } from '../caps/computeCaps';
 import { buildUnifiedBeatAnalysisPrompt, type UnifiedBeatInfo, getUnifiedBeatAnalysisJsonSchema } from '../prompts/unifiedBeatAnalysis';
+import { estimateTokensFromChars, DEFAULT_CHARS_PER_TOKEN } from '../estimates';
 
-export const FORECAST_CHARS_PER_TOKEN = 4;
+// Alias of the canonical DEFAULT_CHARS_PER_TOKEN (ai/estimates). Kept as a
+// named re-export so existing call sites read naturally; it is NOT a second
+// value and must never be given one.
+export const FORECAST_CHARS_PER_TOKEN = DEFAULT_CHARS_PER_TOKEN;
 export const FORECAST_PROMPT_OVERHEAD_TOKENS = 250;
 
 type InquiryEvidenceMode = 'excluded' | 'summary' | 'full' | 'mixed';
@@ -122,7 +126,7 @@ const normalizeInquiryClasses = (classes?: InquiryClassConfig[]): InquiryClassCo
 
 const estimateCorpusTokensFromChars = (chars: number): number => {
     if (!Number.isFinite(chars) || chars <= 0) return 0;
-    return Math.ceil(chars / FORECAST_CHARS_PER_TOKEN);
+    return estimateTokensFromChars(chars, FORECAST_CHARS_PER_TOKEN);
 };
 
 const estimateExecutionTokensFromChars = (

@@ -48,8 +48,14 @@ import {
   getOnboardingSplitInstructions,
   getOnboardingSceneInstructions,
   getOnboardingSurveyInstructions,
-  getOnboardingEntityInstructions
+  getOnboardingEntityInstructions,
+  getOnboardingSplitJsonSchema,
+  getOnboardingSceneJsonSchema,
+  getOnboardingSurveyJsonSchema,
+  getOnboardingEntityJsonSchema
 } from '../ai/prompts/onboarding';
+import { measureRequestEnvelopeChars } from '../ai/runtime/aiClient';
+import { resolveSpendLabel } from '../onboarding/spendLabel';
 import type { EntityKind } from '../utils/entityNotes';
 import type { BookProfile } from '../types/settings';
 
@@ -144,6 +150,15 @@ interface OnboardingSession {
   manuscriptChars: number;
   chapterCount: number;
   forecastSceneCount: number | null;
+  /**
+   * Cloud pricing identity. Persisted because resume does NOT re-run preflight
+   * — without these, buildSpendLabel() returns null on every resumed session
+   * and the price silently disappears. A missing price reads as "free", which
+   * is the most expensive thing this UI could imply.
+   */
+  costProvider: AIProviderId | null;
+  costModelId: string | null;
+  costSubstitutedFrom: string | null;
 }
 
 let activeSession: OnboardingSession | null = null;
@@ -226,6 +241,9 @@ export class OnboardingModal extends Modal {
       manuscriptChars: this.manuscriptChars,
       chapterCount: this.chapterCount,
       forecastSceneCount: this.forecastSceneCount,
+      costProvider: this.costProvider,
+      costModelId: this.costModelId,
+      costSubstitutedFrom: this.costSubstitutedFrom,
       generateSummaries: this.generateSummaries,
       metadataMapping: this.metadataMapping,
       model: this.model,
@@ -250,6 +268,9 @@ export class OnboardingModal extends Modal {
     this.manuscriptChars = session.manuscriptChars;
     this.chapterCount = session.chapterCount;
     this.forecastSceneCount = session.forecastSceneCount;
+    this.costProvider = session.costProvider;
+    this.costModelId = session.costModelId;
+    this.costSubstitutedFrom = session.costSubstitutedFrom;
     this.generateSummaries = session.generateSummaries;
     this.metadataMapping = session.metadataMapping;
     this.model = session.model;
@@ -1301,66 +1322,66 @@ export class OnboardingModal extends Modal {
   }
 
   private buildSpendLabel(): { text: string; ariaLabel: string; free: boolean } | null {
-    if (!this.aiAvailable) return null;
-    if (this.engine === 'local') {
-      return {
-        text: 'Free · local model',
-        ariaLabel: 'Estimated cost: free, this run uses your local model',
-        free: true
-      };
-    }
-    if (!this.costProvider || !this.costModelId || this.manuscriptChars <= 0) return null;
-
-    // Measure the instruction set each stage actually sends. The canonical
-    // prompt is NOT what these calls carry — runtime uses four task-specific
-    // instruction blocks, and they differ in size.
-    const promptChars = {
-      split: getOnboardingSplitInstructions().length,
-      scene: getOnboardingSceneInstructions().length,
-      survey: getOnboardingSurveyInstructions().length,
-      entity: getOnboardingEntityInstructions().length
-    };
-    const entityCount = this.estimateEntityCount();
     const priceFor = (sceneCount: number): number | null => {
+      if (!this.costProvider || !this.costModelId) return null;
       try {
         const tokens = forecastOnboardingTokens({
           manuscriptChars: this.manuscriptChars,
           chapterCount: this.chapterCount,
           sceneCount,
-          promptChars,
-          entityCount,
+          promptChars: this.measureStagePromptChars(),
+          entityCount: this.estimateEntityCount(),
           generateSummaries: this.generateSummaries
         });
-        const cost = forecastOnboardingCost(this.costProvider as AIProviderId, this.costModelId as string, tokens);
+        const cost = forecastOnboardingCost(this.costProvider, this.costModelId, tokens);
         return Number.isFinite(cost.freshCostUSD) ? cost.freshCostUSD : null;
       } catch {
-        // Pricing genuinely unavailable for this model — say nothing rather
-        // than fabricate a figure.
+        // Pricing genuinely unavailable for this model — resolveSpendLabel
+        // turns null into "render nothing", never into a zero.
         return null;
       }
     };
 
-    if (this.forecastSceneCount !== null) {
-      const exact = priceFor(this.forecastSceneCount);
-      if (exact === null) return null;
-      return {
-        text: `Est. ${formatApproxUsdCost(exact)}`,
-        ariaLabel: `Estimated cost for this run: ${formatApproxUsdCost(exact)}`,
-        free: false
-      };
-    }
+    const label = resolveSpendLabel(
+      {
+        aiAvailable: this.aiAvailable,
+        engine: this.engine,
+        costProvider: this.costProvider,
+        costModelId: this.costModelId,
+        manuscriptChars: this.manuscriptChars,
+        forecastSceneCount: this.forecastSceneCount
+      },
+      // Pre-split, resolveSpendLabel asks for one scene per chapter as the
+      // true lower bound; it passes 1 and this scales it.
+      (scenes) => priceFor(scenes === 1 ? Math.max(1, this.chapterCount) : scenes),
+      formatApproxUsdCost
+    );
+    if (label.kind === 'hidden') return null;
+    return { text: label.text, ariaLabel: label.ariaLabel, free: label.kind === 'free' };
+  }
 
-    // Before the split there is no upper bound to honestly quote: a chapter
-    // can hold any number of scenes, so an invented ceiling (say 4 per
-    // chapter) would be a guess presented as a bound — and wrong in the unsafe
-    // direction for a long-chaptered book. Quote the FLOOR and say it is one.
-    const chapters = Math.max(1, this.chapterCount);
-    const floor = priceFor(chapters);
-    if (floor === null) return null;
+  /**
+   * Fixed per-call overhead for each stage, measured through the same envelope
+   * composition the AI client uses. See measureRequestEnvelopeChars.
+   */
+  private measureStagePromptChars(): { split: number; scene: number; survey: number; entity: number } {
+    const envelopeFor = (
+      task: string,
+      instructions: string,
+      schema: unknown
+    ): number => measureRequestEnvelopeChars(this.plugin, {
+      feature: 'Onboarding',
+      task,
+      featureModeInstructions: instructions,
+      returnType: 'json',
+      responseSchema: schema
+    } as Parameters<typeof measureRequestEnvelopeChars>[1]);
+
     return {
-      text: `Est. from ${formatApproxUsdCost(floor)}`,
-      ariaLabel: `Estimated cost for this run: from ${formatApproxUsdCost(floor)}. The figure narrows once scenes are confirmed.`,
-      free: false
+      split: envelopeFor('OnboardingSplit', getOnboardingSplitInstructions(), getOnboardingSplitJsonSchema()),
+      scene: envelopeFor('OnboardingScene', getOnboardingSceneInstructions(), getOnboardingSceneJsonSchema()),
+      survey: envelopeFor('OnboardingSurvey', getOnboardingSurveyInstructions(), getOnboardingSurveyJsonSchema()),
+      entity: envelopeFor('OnboardingEntity', getOnboardingEntityInstructions(), getOnboardingEntityJsonSchema())
     };
   }
 

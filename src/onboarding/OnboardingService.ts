@@ -78,6 +78,8 @@ import {
   type ScenePlan,
 } from './sceneSplitting';
 import { basename, openingWords, sanitizeFileName, suggestOnboardingFolderName } from './paths';
+import { selectModel } from '../ai/router/selectModel';
+import { BUILTIN_MODELS } from '../ai/registry/builtinModels';
 import { buildEntityNoteContent, entityFolderFor, type EntityKind } from '../utils/entityNotes';
 import type { Stage } from '../utils/constants';
 
@@ -106,6 +108,15 @@ export interface CloudEngineStatus {
   /** Author-facing provider name ('' when no cloud provider is selected). */
   label: string;
   reason?: string;
+  /**
+   * Model the cloud engine will actually run, resolved through the same
+   * feature-profile → global-policy chain the AI client uses. Present only
+   * when `ok`. The spend forecast prices THIS model; pricing anything else
+   * would quote a number for a run that will not happen.
+   */
+  modelId?: string;
+  /** Author-facing label for that model. */
+  modelLabel?: string;
 }
 
 const CLOUD_PROVIDER_LABELS: Partial<Record<AIProviderId, string>> = {
@@ -238,7 +249,27 @@ export class OnboardingService {
     if (!key) {
       return { ok: false, provider, label, reason: `${label} API key is not set.` };
     }
-    return { ok: true, provider, label };
+    // Resolve the model the same way aiClient will: the Onboarding feature
+    // profile first (which defaults to the economy model), then the global
+    // policy. Resolution can fail when no catalog model satisfies onboarding's
+    // capability needs for this provider — that is a real answer, so it
+    // surfaces as a missing modelId rather than a substituted guess.
+    let modelId: string | undefined;
+    let modelLabel: string | undefined;
+    try {
+      const featureProfile = aiSettings.featureProfiles?.Onboarding;
+      const selection = selectModel(BUILTIN_MODELS, {
+        provider,
+        policy: featureProfile?.modelPolicy ?? aiSettings.modelPolicy,
+        requiredCapabilities: ['jsonStrict'],
+        accessTier: 1
+      });
+      modelId = selection.model.id;
+      modelLabel = selection.model.label;
+    } catch {
+      modelId = undefined;
+    }
+    return { ok: true, provider, label, modelId, modelLabel };
   }
 
   /** Gate: the local model must produce strict JSON and reach capability tier >= 2. */

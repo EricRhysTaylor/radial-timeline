@@ -41,6 +41,10 @@ import {
 import { getSupportedFrontmatterRemapTargets } from '../utils/frontmatter';
 import { getActiveBook } from '../utils/books';
 import { STAGE_ORDER, type Stage } from '../utils/constants';
+import type { AIProviderId } from '../ai/types';
+import { forecastOnboardingTokens, forecastOnboardingCost } from '../onboarding/costForecast';
+import { formatApproxUsdCost } from '../ai/cost/estimateCorpusCost';
+import { getOnboardingCanonicalPrompt } from '../onboarding/promptSync';
 import type { EntityKind } from '../utils/entityNotes';
 import type { BookProfile } from '../types/settings';
 
@@ -163,6 +167,21 @@ export class OnboardingModal extends Modal {
   private aiAvailable = false;
   /** Which AI drives the run: local model (default) or the configured cloud provider. */
   private engine: 'local' | 'cloud' = 'local';
+  /**
+   * Manuscript size and structure, captured at ingest, for the spend forecast
+   * in the header pill. Scene count stays null until the split stage has run —
+   * before that the forecast is a RANGE, because the number of extraction
+   * calls genuinely is not known yet. Inventing a point estimate there would
+   * be a guess dressed as a number.
+   */
+  private manuscriptChars = 0;
+  private chapterCount = 0;
+  private forecastSceneCount: number | null = null;
+  /** Cloud engine identity for pricing; null whenever cost does not apply. */
+  private costProvider: AIProviderId | null = null;
+  private costModelId: string | null = null;
+  /** Live handle to the spend pill so option changes update it in place. */
+  private spendEl: HTMLElement | null = null;
   /** The split+mapping-applied model extraction actually ran against (for resume). */
   private extractModel: ManuscriptModel | null = null;
   private abortController: AbortController | null = null;
@@ -300,6 +319,11 @@ export class OnboardingModal extends Modal {
         const scenes = flattenScenes(ingest.model);
         skippedCount = scenes.filter((scene) => scene.alreadyOnboarded).length;
         candidateCount = scenes.length - skippedCount;
+        // Prose actually sent to the model — the same text the adapters
+        // produced, so the forecast measures the real payload rather than the
+        // source file (which still carries markup the adapter stripped).
+        this.manuscriptChars = scenes.reduce((total, scene) => total + scene.rawText.length, 0);
+        this.chapterCount = ingest.model.chapters.length;
       }
     } catch (error) {
       ingestReason = error instanceof Error ? error.message : String(error);
@@ -311,6 +335,8 @@ export class OnboardingModal extends Modal {
     const cloud = await this.service.cloudAvailability();
     if (this.engine === 'local' && !preflightOk && cloud.ok) this.engine = 'cloud';
     if (this.engine === 'cloud' && !cloud.ok) this.engine = 'local';
+    this.costProvider = cloud.ok ? cloud.provider : null;
+    this.costModelId = cloud.ok ? (cloud.modelId ?? null) : null;
     this.aiAvailable = this.engine === 'cloud' ? cloud.ok : preflightOk;
     this.modelLabel = this.engine === 'cloud' && cloud.ok ? `${cloud.label} cloud` : this.modelLabel;
     this.service.setEngine(this.engine);
@@ -453,6 +479,8 @@ export class OnboardingModal extends Modal {
         return;
       }
       const total = plans.reduce((sum, plan) => sum + segmentCount(plan), 0);
+      // Scenes are known now, so the header pill stops quoting a range.
+      this.forecastSceneCount = total;
       totalLine.setText(
         `Will create ${total} scene note${total === 1 ? '' : 's'} from ${plans.length} chapter${plans.length === 1 ? '' : 's'}.`
       );
@@ -926,10 +954,12 @@ export class OnboardingModal extends Modal {
     this.renderCheckbox(optionsPanel, 'Create Character profiles', this.createCharacters, (checked) => {
       this.createCharacters = checked;
       syncSummaryToggle();
+      this.refreshSpendLabel();
     });
     this.renderCheckbox(optionsPanel, 'Create Place profiles', this.createPlaces, (checked) => {
       this.createPlaces = checked;
       syncSummaryToggle();
+      this.refreshSpendLabel();
     });
     const summaryToggle = this.renderCheckbox(
       optionsPanel,
@@ -937,6 +967,7 @@ export class OnboardingModal extends Modal {
       this.generateSummaries,
       (checked) => {
         this.generateSummaries = checked;
+        this.refreshSpendLabel();
       }
     );
     const syncSummaryToggle = (): void => {
@@ -1197,6 +1228,107 @@ export class OnboardingModal extends Modal {
    * (1 Prepare → 2 Confirm → 3 Review → 4 Complete), with a step indicator so
    * the author always knows where they are.
    */
+  /**
+   * Running-spend label for the header pill.
+   *
+   * Rules this obeys, in order of importance:
+   *   1. The local engine is free. Not "about $0" — free. Say so plainly.
+   *   2. Before the split has run, the number of extraction calls is unknown,
+   *      so the answer is a RANGE bounded by realistic scenes-per-chapter.
+   *      Publishing a point estimate there would dress a guess as a fact.
+   *   3. Once scenes are known, it becomes a point estimate.
+   *   4. If pricing cannot be resolved for the active model, render NOTHING.
+   *      A missing number is honest; a zero would read as "free".
+   *
+   * All arithmetic is delegated — see src/onboarding/costForecast.ts.
+   */
+  /**
+   * Update the pill in place. Ticking a profile box changes what the run will
+   * cost, and the author is looking at the number when they tick it — so it
+   * has to move then, not on the next stage.
+   */
+  private refreshSpendLabel(): void {
+    if (!this.spendEl) return;
+    const spend = this.buildSpendLabel();
+    if (!spend) {
+      this.spendEl.setText('');
+      return;
+    }
+    this.spendEl.setText(spend.text);
+    this.spendEl.setAttr('aria-label', spend.ariaLabel);
+    this.spendEl.toggleClass('is-free', spend.free);
+  }
+
+  private buildSpendLabel(): { text: string; ariaLabel: string; free: boolean } | null {
+    if (!this.aiAvailable) return null;
+    if (this.engine === 'local') {
+      return {
+        text: 'Free · local model',
+        ariaLabel: 'Estimated cost: free, this run uses your local model',
+        free: true
+      };
+    }
+    if (!this.costProvider || !this.costModelId || this.manuscriptChars <= 0) return null;
+
+    const promptChars = getOnboardingCanonicalPrompt(this.plugin).length;
+    const entityCount = this.estimateEntityCount();
+    const priceFor = (sceneCount: number): number | null => {
+      try {
+        const tokens = forecastOnboardingTokens({
+          manuscriptChars: this.manuscriptChars,
+          chapterCount: this.chapterCount,
+          sceneCount,
+          promptChars,
+          entityCount,
+          generateSummaries: this.generateSummaries
+        });
+        const cost = forecastOnboardingCost(this.costProvider as AIProviderId, this.costModelId as string, tokens);
+        return Number.isFinite(cost.freshCostUSD) ? cost.freshCostUSD : null;
+      } catch {
+        // Pricing genuinely unavailable for this model — say nothing rather
+        // than fabricate a figure.
+        return null;
+      }
+    };
+
+    if (this.forecastSceneCount !== null) {
+      const exact = priceFor(this.forecastSceneCount);
+      if (exact === null) return null;
+      return {
+        text: `Est. ${formatApproxUsdCost(exact)}`,
+        ariaLabel: `Estimated cost for this run: ${formatApproxUsdCost(exact)}`,
+        free: false
+      };
+    }
+
+    // Pre-split bounds: one scene per chapter at the low end, four at the high.
+    const chapters = Math.max(1, this.chapterCount);
+    const low = priceFor(chapters);
+    const high = priceFor(chapters * 4);
+    if (low === null || high === null) return null;
+    return {
+      text: `Est. ${formatApproxUsdCost(low)}–${formatApproxUsdCost(high).replace('~', '')}`,
+      ariaLabel: `Estimated cost for this run: between ${formatApproxUsdCost(low)} and ${formatApproxUsdCost(high)}. Narrows once scenes are confirmed.`,
+      free: false
+    };
+  }
+
+  /**
+   * Entities the run will summarise. Zero unless a profile box is ticked AND
+   * summaries are on — profiles without summaries make no model calls, so they
+   * cost nothing and must not inflate the forecast.
+   */
+  private estimateEntityCount(): number {
+    if (!this.generateSummaries) return 0;
+    if (!this.createCharacters && !this.createPlaces) return 0;
+    const scenes = this.forecastSceneCount ?? Math.max(1, this.chapterCount);
+    // Observed on the Odyssey runs: ~1.2 characters and ~1.5 places per scene
+    // survive as distinct entities. Used only when the real list is not yet
+    // known, and deliberately on the high side.
+    const perScene = (this.createCharacters ? 1.2 : 0) + (this.createPlaces ? 1.5 : 0);
+    return Math.round(scenes * perScene);
+  }
+
   private renderStageHeader(stage: number, title: string, subtitle?: string): void {
     const total = 4;
 
@@ -1205,6 +1337,14 @@ export class OnboardingModal extends Modal {
     const topbar = this.contentEl.createDiv({ cls: 'ert-onb-topbar' });
     const badgeText = this.modelLabel ? `Onboarding · ${this.modelLabel}` : 'Onboarding';
     topbar.createSpan({ cls: 'ert-modal-badge', text: badgeText });
+    const spend = this.buildSpendLabel();
+    this.spendEl = spend
+      ? topbar.createSpan({
+        cls: `ert-modal-badge ert-onb-spend${spend.free ? ' is-free' : ''}`,
+        text: spend.text,
+        attr: { 'aria-label': spend.ariaLabel }
+      })
+      : null;
     const steps = topbar.createDiv({ cls: 'ert-onb-steps', attr: { 'aria-label': `Step ${stage} of ${total}` } });
     for (let i = 1; i <= total; i++) {
       const pip = steps.createSpan({ cls: 'ert-onb-step' });

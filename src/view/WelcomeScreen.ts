@@ -77,7 +77,7 @@ const WELCOME_COPY = {
         ]
     },
     feedback: 'Take a moment to [share your experiences] using the RT and what features you would like to see next to smooth your writing workflow. Radial Timeline is expanding in every direction, and your feedback helps guide it. Happy Writing!',
-    updateNote: 'The Community is live — connect from Settings → Community and share your writing journey.'
+    updateNote: 'The Community is live — connect from Radial Timeline plugin settings → Community and share your writing journey.'
 } as const;
 
 const WELCOME_URLS = {

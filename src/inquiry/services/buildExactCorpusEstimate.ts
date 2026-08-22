@@ -4,6 +4,7 @@ import type { RTCorpusTokenBreakdown, RTCorpusTokenEstimate } from '../../ai/typ
 import type { CorpusManifestEntry } from '../runner/types';
 import { extractSummary, normalizeFrontmatterKeys } from '../../utils/frontmatter';
 import { cleanEvidenceBody } from '../utils/evidenceCleaning';
+import { estimateTokensFromChars } from '../../ai/estimates';
 
 type BuildExactCorpusEstimateParams = {
     entries: CorpusManifestEntry[];
@@ -17,9 +18,9 @@ const toBreakdown = (
     outlineChars: number,
     referenceChars: number
 ): RTCorpusTokenBreakdown => ({
-    scenesTokens: sceneChars > 0 ? Math.ceil(sceneChars / 4) : 0,
-    outlineTokens: outlineChars > 0 ? Math.ceil(outlineChars / 4) : 0,
-    referenceTokens: referenceChars > 0 ? Math.ceil(referenceChars / 4) : 0
+    scenesTokens: estimateTokensFromChars(sceneChars),
+    outlineTokens: estimateTokensFromChars(outlineChars),
+    referenceTokens: estimateTokensFromChars(referenceChars)
 });
 
 function isTFile(file: unknown): file is TFile {

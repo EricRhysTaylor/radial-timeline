@@ -619,9 +619,9 @@ export function renderAiSection(params: {
         }
     };
     const toBreakdown = (sceneChars: number, outlineChars: number, referenceChars: number): RTCorpusTokenBreakdown => ({
-        scenesTokens: sceneChars > 0 ? Math.ceil(sceneChars / 4) : 0,
-        outlineTokens: outlineChars > 0 ? Math.ceil(outlineChars / 4) : 0,
-        referenceTokens: referenceChars > 0 ? Math.ceil(referenceChars / 4) : 0
+        scenesTokens: estimateTokensFromChars(sceneChars),
+        outlineTokens: estimateTokensFromChars(outlineChars),
+        referenceTokens: estimateTokensFromChars(referenceChars)
     });
     const buildDisplayCorpusEstimateFromManifestEntries = async (entries: CorpusManifestEntry[]) => {
         let sceneCount = 0;

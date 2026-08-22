@@ -82,8 +82,14 @@ export function validateAiSettings(input?: AiSettingsV1 | null): AiSettingsValid
             ...defaults.privacy,
             ...(input?.privacy || {})
         },
+        // MERGE, not "input or defaults". The previous form meant a vault that
+        // had ever persisted `featureProfiles: {}` — i.e. every existing
+        // install — could never receive a new default profile, so a shipped
+        // default would silently apply to new users only. Author-set keys
+        // still win; defaults only fill gaps.
         featureProfiles: {
-            ...(input?.featureProfiles || defaults.featureProfiles || {})
+            ...(defaults.featureProfiles || {}),
+            ...(input?.featureProfiles || {})
         },
         roleTemplates: normalizeRoleTemplates(),
         localLlm: {

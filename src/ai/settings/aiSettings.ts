@@ -4,7 +4,8 @@ import type {
     AIRoleTemplate,
     DeclarableLocalCapability,
     LocalLlmSettings,
-    ModelPolicy
+    ModelPolicy,
+    AIFeatureProfile
 } from '../types';
 import {
     ANTHROPIC_INQUIRY_CACHE_TTL,
@@ -106,6 +107,28 @@ export function cloneDefaultLocalLlmSettings(): LocalLlmSettings {
     };
 }
 
+/**
+ * Onboarding's default model.
+ *
+ * Onboarding is a one-off whole-manuscript job made of BOUNDED per-scene asks
+ * — each call describes one scene, none reasons across the book. That is work
+ * a FAST-tier model does well, and the price gap is not marginal: a 133k-word
+ * manuscript runs about $1 on Haiku against roughly $10 on Opus 5. Defaulting
+ * to the depth model would charge authors ten times over for capability the
+ * task does not use.
+ *
+ * Only `modelPolicy` is pinned — `provider` is deliberately left unset so the
+ * author's chosen provider still wins. On a non-Anthropic provider this alias
+ * simply will not match, and selectModel falls through to that provider's
+ * latest stable model exactly as it does today; no behaviour is lost.
+ *
+ * Inquiry and Gossamer are untouched: their capability floor already excludes
+ * Haiku, so this default cannot leak into whole-manuscript analysis.
+ */
+export const DEFAULT_ONBOARDING_FEATURE_PROFILE: AIFeatureProfile = {
+    modelPolicy: { type: 'pinned', pinnedAlias: 'claude-haiku-4-5' }
+};
+
 export function buildDefaultAiSettings(): AiSettingsV1 {
     return {
         schemaVersion: AI_SETTINGS_SCHEMA_VERSION,
@@ -129,7 +152,9 @@ export function buildDefaultAiSettings(): AiSettingsV1 {
             allowProviderSnapshot: false
         },
         cacheWindows: { ...DEFAULT_CACHE_WINDOWS },
-        featureProfiles: {},
+        featureProfiles: {
+            Onboarding: { ...DEFAULT_ONBOARDING_FEATURE_PROFILE }
+        },
         credentials: {
             ...DEFAULT_CREDENTIAL_SECRET_IDS
         },

@@ -16,7 +16,8 @@ export {
     pickBestTokenEstimate,
     tokenEstimateFromMethod,
     formatTokenShorthand,
-    formatTokenHeadline
+    formatTokenHeadline,
+    estimateTokensFromChars
 } from './tokenEstimate';
 
 export {

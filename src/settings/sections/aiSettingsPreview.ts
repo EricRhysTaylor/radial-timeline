@@ -57,9 +57,9 @@ export const formatCorpusBreakdownToken = (tokens: number | null): string => (
         : `~${(Math.round((Number.isFinite(tokens) ? tokens : 0) / 100) / 10).toFixed(1).replace(/\.0$/, '')}k`
 );
 
-/** Char → estimated token count using the canonical 4-char-per-token heuristic. */
-export const estimateTokensFromChars = (chars: number): number =>
-    chars > 0 ? Math.ceil(chars / 4) : 0;
+// Canonical home is src/ai/estimates/tokenEstimate.ts — re-exported here so
+// existing settings call sites keep their import path. Do not re-implement.
+export { estimateTokensFromChars } from '../../ai/estimates';
 
 /**
  * Prompt token formatter: `'—'` for null, locale-formatted integer

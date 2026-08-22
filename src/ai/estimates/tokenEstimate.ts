@@ -84,6 +84,21 @@ export const TOKEN_ESTIMATE_DISCLOSURE: Record<TokenEstimate['source'], string |
  * sources (`provider_count`, `prior_run`) keep zero values because a real
  * zero is a meaningful observation.
  */
+/**
+ * Char → estimated token count using the canonical 4-char-per-token heuristic.
+ *
+ * This is THE chars→tokens conversion for the plugin. It lives here, beside
+ * the estimate doctrine it serves, so that every surface quoting a token
+ * number derives it the same way. A second copy anywhere is a bug: two
+ * surfaces disagreeing about the size of the same text is exactly the kind of
+ * conflict the `TokenEstimate` provenance model exists to prevent.
+ *
+ * Note the source label: anything derived from this is `local_estimate`,
+ * never `provider_count`.
+ */
+export const estimateTokensFromChars = (chars: number): number =>
+    chars > 0 ? Math.ceil(chars / 4) : 0;
+
 export function pickBestTokenEstimate(...candidates: Array<TokenEstimate | null | undefined>): TokenEstimate {
     const order: TokenEstimate['source'][] = ['prior_run', 'provider_count', 'local_estimate', 'pending'];
     for (const source of order) {

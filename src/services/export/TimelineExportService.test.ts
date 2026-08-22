@@ -3,6 +3,7 @@ import {
     applyGenericSubplotNames,
     buildBakedStyleDeclaration,
     buildTimelineDataExport,
+    wallClockWhen,
     ExportStyleClasses,
     generateExportId,
     isRuntimeChromeElement,
@@ -70,6 +71,45 @@ function makeParams(overrides: Partial<BuildTimelineDataExportParams> = {}): Bui
     };
 }
 
+describe('wallClockWhen', () => {
+    // Every Date here is built from LOCAL components, the way `parseWhenField`
+    // builds one from the author's frontmatter — so these assertions hold in
+    // any timezone, which is the whole point of the function under test.
+
+    it('keeps the author’s own clock time, not the UTC instant', () => {
+        // The report: a 7 PM scene arriving on the website as 2 AM the next
+        // day, i.e. shifted by the exporting machine's offset.
+        const when = new Date(2085, 2, 31, 19, 0, 0);
+        expect(wallClockWhen({ when })).toBe('2085-03-31T19:00:00');
+        // What JSON.stringify would have written instead, west of Greenwich.
+        expect(when.toISOString()).not.toBe('2085-03-31T19:00:00');
+    });
+
+    it('does not invent a time for a date the author left unclocked', () => {
+        // A bare `When` is parsed to local noon; serialising that as an
+        // instant printed a precise hour nobody wrote.
+        const when = new Date(1812, 8, 19, 12, 0, 0);
+        expect(wallClockWhen({ when, rawFrontmatter: { When: '1812-9-19' } })).toBe('1812-09-19');
+        expect(wallClockWhen({ when, rawFrontmatter: { When: '1812-09-19' } })).toBe('1812-09-19');
+    });
+
+    it('keeps a real noon when the author actually wrote one', () => {
+        const when = new Date(1812, 8, 19, 12, 0, 0);
+        expect(wallClockWhen({ when, rawFrontmatter: { When: '1812-09-19 12:00' } })).toBe(
+            '1812-09-19T12:00:00',
+        );
+    });
+
+    it('pads every component, and carries seconds', () => {
+        expect(wallClockWhen({ when: new Date(2085, 0, 2, 3, 4, 5) })).toBe('2085-01-02T03:04:05');
+    });
+
+    it('is undefined when there is no usable date', () => {
+        expect(wallClockWhen({})).toBeUndefined();
+        expect(wallClockWhen({ when: new Date('nonsense') })).toBeUndefined();
+    });
+});
+
 describe('buildTimelineDataExport', () => {
     it('stamps the schema version, timestamp, generator, and plugin version', () => {
         const doc = buildTimelineDataExport(makeParams());
@@ -78,6 +118,25 @@ describe('buildTimelineDataExport', () => {
         expect(doc.exportedAt).toBe('2026-07-19T12:00:00.000Z');
         expect(doc.generator).toBe('Radial Timeline');
         expect(doc.pluginVersion).toBe('6.2.6');
+    });
+
+    it('writes every item’s `when` as a wall clock, never a UTC instant', () => {
+        const items = [
+            { title: '1 Evening', path: 'Book/1.md', itemType: 'Scene' as const, when: new Date(2085, 2, 31, 19, 0, 0) },
+            { title: '2 Unclocked', path: 'Book/2.md', itemType: 'Scene' as const, when: new Date(1812, 8, 19, 12, 0, 0), rawFrontmatter: { When: '1812-9-19' } },
+            { title: '3 No date', path: 'Book/3.md', itemType: 'Scene' as const },
+        ];
+        const doc = buildTimelineDataExport(makeParams({ items }));
+        expect(doc.items.map((item) => item.when)).toEqual([
+            '2085-03-31T19:00:00',
+            '1812-09-19',
+            undefined,
+        ]);
+        // And it survives serialisation — the defect was JSON.stringify
+        // calling toISOString() on a Date the document still carried.
+        const roundTripped = JSON.parse(JSON.stringify(doc)) as { items: { when?: string }[] };
+        expect(roundTripped.items[0].when).toBe('2085-03-31T19:00:00');
+        expect(roundTripped.items[2]).not.toHaveProperty('when');
     });
 
     it('stamps the injected provenance exportId and generates one when absent', () => {

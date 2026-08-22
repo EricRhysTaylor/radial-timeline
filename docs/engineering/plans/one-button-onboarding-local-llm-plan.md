@@ -403,6 +403,7 @@ the recommendation is grounded in real runs, not spec sheets.
 | --- | --- | --- | --- | --- | --- |
 | 2026-07-14 | Qwen3-30B-A3B-Instruct-2507 (MLX 4-bit) | mlx_lm.server :8080 (OpenAI-compat) | Mac Studio, 64 GB | 3/3 scenes / accurate synopses + apt subplots / 26 selective entity notes / ~15–20 s total for survey + 3 scenes (~5 s per LLM call) | Odyssey fixture (Books I–III, ~4.1–4.7k words each). Tier 4, all checks passed. Correct null When/Duration on Books 1–2; Book 3 correctly flagged guessed act+when. LM Studio's own server fails plugin JSON validation — use mlx_lm.server. |
 | 2026-07-19 | Qwen3-30B-A3B-Instruct-2507 (MLX 4-bit) | mlx_lm.server :8080 (OpenAI-compat) | Mac Studio, 64 GB | Full-manuscript stress run from ONE Gutenberg HTML: 24 books → 93 scenes + 246 entity notes with AI summaries (~370 LLM calls). Synopses/titles good; summaries "believable, reasonable"; Main Plot healthy; guessed-When on only 5 scenes | The "whole 9 yards" run. 6 chapters used the even-split fallback (flagged). Surfaced two fixed bugs: fabricated `0000-…` When placeholders (rendered as 1900 via JS year mapping) and one-scene subplots. |
+| 2026-08-21 | Qwen3-30B-A3B-Instruct-2507 (MLX 4-bit) | mlx_lm.server :8080 (OpenAI-compat) | Mac Studio, 64 GB | Cold-start demo-vault run from ONE Gutenberg HTML: 24 books → **98 scenes**, 0 entity notes (both profile boxes left off by choice). Guessed fields on **7 scenes total** (When 4 · Duration 3) vs 5 in the prior run. 6 subplots, well-named; acts divided cleanly | **The clean-room run** — book folder held only `The Odyssey.html`, no leftovers, `flow: 'single'` auto-detected. 3 of 24 chapters used the even-split fallback (IV, X, +1), down from 6. Scene extraction still identified 118 characters / 140 places into scene frontmatter — those wikilinks are unresolved until profiles are created. Eric: “This looks solid.” |
 
 ## Architecture — module layout
 
@@ -808,6 +809,47 @@ Doctrine fit: no new abstraction layer beyond the adapters, no fallback chains
   pinned ONBOARDING_SCHEMA_VERSION; `getOnboardingCanonicalPrompt` is the
   effective-prompt accessor for the website-parity/settings-override surfaces.
   Next per roadmap: DEMO-VAULT-PIPELINE.md + one frontier-grade Odyssey run.
+
+- **2026-08-21 (demo-vault runs — two findings, one gap to fix)** — Three
+  cold-start runs of the same source (`Book Odyssey/The Odyssey.html`, book
+  folder holding the source file and nothing else, `flow: 'single'`
+  auto-detected) produced the best result yet and then exposed a real hole.
+  **(1) Best run to date:** 98 scenes from 24 chapters, only **3** chapters
+  needing the even-split fallback (vs 6 on 2026-07-19) and guessed fields on
+  just 7 scenes (When 4 · Duration 3). Six well-formed subplots. Eric: *"This
+  looks solid."* Preserved at
+  `Demo Vaults/_baselines/Odyssey — local Qwen3-30B 2026-08-21 (98 scenes)/`,
+  because **the AI auto-split is not deterministic** and a re-run is a re-roll —
+  every accepted demo-vault run gets archived before any re-run from now on.
+  **(2) No path back to profiles after the fact.** `createCharacters` /
+  `createPlaces` default to `false` (optional boxes on Review). Running without
+  them still writes full `Character:`/`Place:` wikilinks into every scene — that
+  run left **258 unresolved links** (118 characters, 140 places) — but there is
+  no way to add the profiles later: `registerBook` repoints the active book at
+  the generated `<Book> RT` folder, so re-opening onboarding targets finished
+  scenes, every note trips `alreadyOnboarded` ("all scenes created"), the Review
+  stage never renders, and its profile checkboxes are unreachable. The only
+  remedy today is deleting the book and re-running the whole manuscript. **A
+  standalone "create entity notes from existing scene links" path is the fix**
+  (the existing `CommandRegistrar` entity command creates one blank note, not a
+  bulk pass). Filed as a gap, not scope creep: the feature freeze admits bug
+  fixes from real runs, and this is one.
+  **(3) THE GAP — split degradation surfaces late, and the fallback doesn't
+  catch it.** The re-run produced roughly **one scene per book** instead of 98,
+  and per-scene extraction then failed on exactly the longest books (IV, VIII,
+  IX, X, XI, XIV, XV, XVII, XIX — the Apologoi and the Nekuia), while short
+  books passed. Failures interleave with successes, so this is per-call
+  oversize, not a dead endpoint. `mlx_lm.server` was confirmed **down** when the
+  run was inspected (no process, nothing on `:8080`, no reboot, no crash
+  report). The design intent is already written into `sceneSplitting.ts` — the
+  even-split fallback targets ~1.3k words/scene expressly to *"keep per-scene
+  extraction inside context"* — but it did not fire here, so oversized scenes
+  reached extraction and died one call at a time. **A degraded or unavailable
+  model during the SPLIT stage should fail loudly at Stage 2, not silently yield
+  chapter-sized scenes that die individually at Stage 3.** Per the no-fallback-
+  to-stabilize doctrine, the right shape is a hard preflight/liveness check on
+  the split stage plus a scene-size guard before extraction, surfacing a blocked
+  state rather than degrading. Not yet fixed.
 
 ## Appendix A — Canonical onboarding prompt (instruction block)
 

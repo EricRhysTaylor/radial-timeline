@@ -50,6 +50,14 @@ export class TimelineDataExportConsentModal extends Modal {
         header.createSpan({ cls: 'ert-modal-badge', text: t('timelineDataExportModal.badge') });
         header.createDiv({ cls: 'ert-modal-title', text: t('timelineDataExportModal.title') });
         header.createDiv({ cls: 'ert-modal-subtitle', text: t('timelineDataExportModal.subtitle') });
+        // Where the file lands belongs with what exporting means, not below
+        // the consent controls: an author reading the subtitle is asking
+        // "what does this do to my vault", and the destination is half that
+        // answer (Eric, 2026-08-22).
+        header.createDiv({
+            cls: 'ert-modal-subtitle',
+            text: t('timelineDataExportModal.destinationBody', { path: TIMELINE_COMMUNITY_EXPORT_FOLDER }),
+        });
 
         const structural = contentEl.createDiv({ cls: 'ert-glass-card ert-sub-card' });
         structural.createDiv({ cls: 'ert-sub-card-head', text: t('timelineDataExportModal.structuralHeading') });
@@ -68,13 +76,6 @@ export class TimelineDataExportConsentModal extends Modal {
                 this.genericSubplotNames = value;
             });
         toggleCard.createDiv({ cls: 'ert-sub-card-note', text: t('timelineDataExportModal.genericNamesToggleDescription') });
-
-        // Name the destination in the dialog that authorizes the write, so the
-        // author knows where the file lands before they consent to it.
-        contentEl.createDiv({
-            cls: 'ert-sub-card-note',
-            text: t('timelineDataExportModal.destinationBody', { path: TIMELINE_COMMUNITY_EXPORT_FOLDER }),
-        });
 
         const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
         new ButtonComponent(actions)

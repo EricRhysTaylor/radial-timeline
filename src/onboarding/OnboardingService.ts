@@ -117,6 +117,16 @@ export interface CloudEngineStatus {
   modelId?: string;
   /** Author-facing label for that model. */
   modelLabel?: string;
+  /**
+   * Set when the resolved model is NOT the one policy asked for.
+   *
+   * `selectModel` does not throw on an unavailable pinned alias — it falls
+   * back to the provider's latest stable model and records a warning. That
+   * warning used to be dropped here, which meant a forecast could quote one
+   * model while the run used another. Surfacing it is the difference between
+   * an estimate and a guess.
+   */
+  substitutedFromAlias?: string;
 }
 
 const CLOUD_PROVIDER_LABELS: Partial<Record<AIProviderId, string>> = {
@@ -250,26 +260,37 @@ export class OnboardingService {
       return { ok: false, provider, label, reason: `${label} API key is not set.` };
     }
     // Resolve the model the same way aiClient will: the Onboarding feature
-    // profile first (which defaults to the economy model), then the global
-    // policy. Resolution can fail when no catalog model satisfies onboarding's
-    // capability needs for this provider — that is a real answer, so it
-    // surfaces as a missing modelId rather than a substituted guess.
+    // profile first, then the global policy.
+    //
+    // Two distinct outcomes, and they must not be conflated:
+    //   - selectModel THROWS only when no catalog model satisfies the
+    //     capability floor for this provider. Then there is no model, and
+    //     modelId stays undefined.
+    //   - selectModel SUBSTITUTES when a pinned alias is merely unavailable
+    //     (e.g. a Claude alias under an OpenAI provider). It returns a
+    //     different model and records a warning. That is not a failure, but
+    //     it is also not what was asked for, so it is reported.
     let modelId: string | undefined;
     let modelLabel: string | undefined;
+    let substitutedFromAlias: string | undefined;
+    const policy = aiSettings.featureProfiles?.Onboarding?.modelPolicy ?? aiSettings.modelPolicy;
     try {
-      const featureProfile = aiSettings.featureProfiles?.Onboarding;
       const selection = selectModel(BUILTIN_MODELS, {
         provider,
-        policy: featureProfile?.modelPolicy ?? aiSettings.modelPolicy,
+        policy,
         requiredCapabilities: ['jsonStrict'],
         accessTier: 1
       });
       modelId = selection.model.id;
       modelLabel = selection.model.label;
+      const requestedAlias = policy.type === 'pinned' ? policy.pinnedAlias : undefined;
+      if (requestedAlias && selection.model.alias !== requestedAlias) {
+        substitutedFromAlias = requestedAlias;
+      }
     } catch {
       modelId = undefined;
     }
-    return { ok: true, provider, label, modelId, modelLabel };
+    return { ok: true, provider, label, modelId, modelLabel, substitutedFromAlias };
   }
 
   /** Gate: the local model must produce strict JSON and reach capability tier >= 2. */

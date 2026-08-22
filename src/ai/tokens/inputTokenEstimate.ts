@@ -9,8 +9,9 @@ import type {
 } from '../types';
 import { countAnthropicTokens } from '../../api/anthropicApi';
 import { countGeminiTokens } from '../../api/geminiApi';
+import { estimateTokensFromChars, DEFAULT_CHARS_PER_TOKEN } from '../estimates';
 
-export const DEFAULT_CHARS_PER_TOKEN = 4;
+export { DEFAULT_CHARS_PER_TOKEN };
 
 export type TokenEstimateMethod = InputTokenEstimateMethod;
 
@@ -62,13 +63,10 @@ export function describeTokenEstimateMethod(method: TokenEstimateMethod): string
     return 'Heuristic estimate';
 }
 
-export function estimateTokensFromChars(chars: number, charsPerToken = DEFAULT_CHARS_PER_TOKEN): number {
-    if (!Number.isFinite(chars) || chars <= 0) return 0;
-    const safeCharsPerToken = Number.isFinite(charsPerToken) && charsPerToken > 0
-        ? charsPerToken
-        : DEFAULT_CHARS_PER_TOKEN;
-    return Math.max(1, Math.ceil(chars / safeCharsPerToken));
-}
+// Canonical implementation lives in ai/estimates/tokenEstimate.ts — a pure
+// module with no plugin/API dependencies, so it can be shared downward without
+// dragging this file's provider clients along. Re-exported, never re-written.
+export { estimateTokensFromChars };
 
 export function estimateTokensFromText(text: string, charsPerToken = DEFAULT_CHARS_PER_TOKEN): number {
     return estimateTokensFromChars(text.length, charsPerToken);

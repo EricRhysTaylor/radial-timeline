@@ -17,7 +17,8 @@ export {
     tokenEstimateFromMethod,
     formatTokenShorthand,
     formatTokenHeadline,
-    estimateTokensFromChars
+    estimateTokensFromChars,
+    DEFAULT_CHARS_PER_TOKEN
 } from './tokenEstimate';
 
 export {

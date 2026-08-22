@@ -196,8 +196,10 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         // unfit for Inquiry's whole-manuscript analysis, and the UI must say
         // so wherever it can be picked. FAST tier is the signal that carries
         // that warning.
-        // PENDING VERIFICATION: maxOutput transcribed from Anthropic's model
-        // docs, not yet confirmed by a live probe against claude-haiku-4-5.
+        // Context window, max output and pricing are per Anthropic's published
+        // model overview (200K / 64K / $1 / $5). Not yet exercised by a live
+        // onboarding run, so runtime behaviour under this plugin's strict-JSON
+        // path is unproven — the numbers themselves are not in doubt.
         provider: 'anthropic',
         id: 'claude-haiku-4-5',
         alias: 'claude-haiku-4-5',

@@ -28,13 +28,17 @@
  *   that each carry DIFFERENT text. Scene 12's call shares nothing with scene
  *   13's.
  *
- * That difference is why `expectedPasses` must be 1 and `cacheReuseRatio` must
- * be an explicit 0. Passing the scene count as `passes` would bill the whole
- * manuscript once per scene (~95x too high). Leaving the ratio to default
- * would apply 0.75 — pricing three quarters of the input at the cache-read
- * rate and understating the bill roughly 3x. Both are wrong in ways an author
- * only discovers on an invoice, so the values are pinned and explained rather
- * than inherited.
+ * That difference is why `expectedPasses` must be 1. Passing the scene count
+ * as `passes` would bill the whole manuscript once per scene (~95x too high).
+ *
+ * `cacheReuseRatio` is an explicit 0 for a narrower and more literal reason:
+ * ONBOARDING SENDS NO CACHE BREAKPOINT. No `cache_control` is emitted on any
+ * of its calls, so no input can be billed at the cache-read rate, whatever the
+ * content overlap. Leaving the ratio to default would apply 0.75 and
+ * understate the bill roughly 3x. If onboarding ever starts sending cache
+ * control, revisit this — and note that the repeated instruction block would
+ * still have to clear the provider's minimum cacheable prefix (4,096 tokens on
+ * Haiku 4.5) before any of it is billable as a cache read.
  *
  * Where the estimate is deliberately conservative, it errs HIGH. A spend
  * forecast that undershoots is worse than useless.
@@ -61,11 +65,22 @@ export interface OnboardingWorkVolume {
     /** Scenes the extractor will describe. */
     sceneCount: number;
     /**
-     * Length of the canonical instruction block, measured at call time rather
-     * than assumed — the prompt is remote-syncable, so a constant here would
-     * silently drift out of date.
+     * Instruction-block length PER STAGE, measured from the real getters at
+     * call time.
+     *
+     * Runtime does not send one prompt. Each stage carries its own instruction
+     * set — getOnboardingSplitInstructions, ...SceneInstructions,
+     * ...SurveyInstructions, ...EntityInstructions — and they differ in size.
+     * An earlier version of this forecast measured the canonical prompt
+     * instead, which is a different string from any of them: it priced a
+     * prompt the run never sends.
      */
-    promptChars: number;
+    promptChars: {
+        split: number;
+        scene: number;
+        survey: number;
+        entity: number;
+    };
     /** Entities that will get profile notes (0 when both profile boxes are off). */
     entityCount: number;
     /** Whether the slow per-entity grounded summary pass will run. */
@@ -88,10 +103,17 @@ const OUTPUT_TOKENS_PER_ENTITY = 250;
 const SURVEY_OUTPUT_TOKENS = 2_000;
 
 /**
- * The subplot survey reads a sample, not the book. Held as a flat ceiling
- * because the sampler's exact draw is not knowable before the run.
+ * The subplot survey reads openings, not the book: OnboardingService samples
+ * `sampleEvenly(scenes, 30)` and takes `openingWords(text, 40)` from each.
+ * That is at most 30 x 40 words — roughly 6.6k characters at ~5.5 chars per
+ * word including separators — regardless of manuscript length.
+ *
+ * A previous version priced up to 160,000 characters here, overstating this
+ * stage by more than twenty-fold on a full-length book.
  */
-const SURVEY_SAMPLE_CHARS = 160_000;
+const SURVEY_SAMPLE_SCENES = 30;
+const SURVEY_WORDS_PER_SCENE = 40;
+const CHARS_PER_WORD = 5.5;
 
 /**
  * Grounding text fed to one entity-summary call. `ENTITY_GROUNDING_CHAR_BUDGET`
@@ -102,7 +124,10 @@ const ENTITY_GROUNDING_CHARS = 6_000;
 
 export function forecastOnboardingTokens(volume: OnboardingWorkVolume): OnboardingTokenForecast {
     const manuscriptTokens = estimateTokensFromChars(Math.max(0, volume.manuscriptChars));
-    const promptTokens = estimateTokensFromChars(Math.max(0, volume.promptChars));
+    const splitPromptTokens = estimateTokensFromChars(Math.max(0, volume.promptChars.split));
+    const scenePromptTokens = estimateTokensFromChars(Math.max(0, volume.promptChars.scene));
+    const surveyPromptTokens = estimateTokensFromChars(Math.max(0, volume.promptChars.survey));
+    const entityPromptTokens = estimateTokensFromChars(Math.max(0, volume.promptChars.entity));
     const chapters = Math.max(0, Math.floor(volume.chapterCount));
     const scenes = Math.max(0, Math.floor(volume.sceneCount));
     const entities = Math.max(0, Math.floor(volume.entityCount));
@@ -110,14 +135,14 @@ export function forecastOnboardingTokens(volume: OnboardingWorkVolume): Onboardi
     // Splitting reads every chapter once; the instruction block rides along on
     // each call.
     const splitting: OnboardingStageTokens = {
-        inputTokens: manuscriptTokens + promptTokens * chapters,
+        inputTokens: manuscriptTokens + splitPromptTokens * chapters,
         outputTokens: OUTPUT_TOKENS_PER_CHAPTER_SPLIT * chapters
     };
 
     // Extraction reads every scene once — the same prose again, now divided
     // differently, so the manuscript is counted a second time on purpose.
     const extraction: OnboardingStageTokens = {
-        inputTokens: manuscriptTokens + promptTokens * scenes,
+        inputTokens: manuscriptTokens + scenePromptTokens * scenes,
         outputTokens: OUTPUT_TOKENS_PER_SCENE * scenes
     };
 
@@ -125,9 +150,14 @@ export function forecastOnboardingTokens(volume: OnboardingWorkVolume): Onboardi
     // A flat output constant emitted for absent work is a fabricated cost, the
     // exact failure the estimate doctrine forbids ("0 must mean actually zero").
     const surveyRuns = manuscriptTokens > 0;
+    const sampledScenes = Math.min(scenes || SURVEY_SAMPLE_SCENES, SURVEY_SAMPLE_SCENES);
+    const surveySampleChars = Math.min(
+        volume.manuscriptChars,
+        Math.round(sampledScenes * SURVEY_WORDS_PER_SCENE * CHARS_PER_WORD)
+    );
     const survey: OnboardingStageTokens = surveyRuns
         ? {
-            inputTokens: estimateTokensFromChars(Math.min(volume.manuscriptChars, SURVEY_SAMPLE_CHARS)) + promptTokens,
+            inputTokens: estimateTokensFromChars(surveySampleChars) + surveyPromptTokens,
             outputTokens: SURVEY_OUTPUT_TOKENS
         }
         : { inputTokens: 0, outputTokens: 0 };
@@ -136,7 +166,7 @@ export function forecastOnboardingTokens(volume: OnboardingWorkVolume): Onboardi
     // from data already extracted, so this stage is genuinely free.
     const entityCalls = volume.generateSummaries ? entities : 0;
     const entities_: OnboardingStageTokens = {
-        inputTokens: entityCalls * (estimateTokensFromChars(ENTITY_GROUNDING_CHARS) + promptTokens),
+        inputTokens: entityCalls * (estimateTokensFromChars(ENTITY_GROUNDING_CHARS) + entityPromptTokens),
         outputTokens: entityCalls * OUTPUT_TOKENS_PER_ENTITY
     };
 

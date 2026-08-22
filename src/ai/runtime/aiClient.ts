@@ -43,6 +43,7 @@ import { AIRateLimiter } from './rateLimit';
 import { validateJsonResponse } from './jsonValidator';
 import { estimateInputTokens, estimateUncertaintyTokens } from '../tokens/inputTokenEstimate';
 import { extractTokenUsage } from '../usage/providerUsage';
+import { estimateTokensFromChars } from '../estimates';
 
 const DEFAULT_REMOTE_PROVIDER_SNAPSHOT_URL = 'https://raw.githubusercontent.com/ericrhystaylor/radial-timeline/HEAD/scripts/models/latest-models.json';
 const DEFAULT_REMOTE_PRICING_URL = 'https://raw.githubusercontent.com/ericrhystaylor/radial-timeline/main/scripts/models/pricing.json';
@@ -67,10 +68,8 @@ function toProviderKey(feature: string, provider: AIProviderId): string {
     return `${feature}:${provider}`;
 }
 
-function estimateTokens(text: string): number {
-    if (!text) return 0;
-    return Math.max(1, Math.ceil(text.length / 4));
-}
+// Third copy of chars/4 removed — see ai/estimates/tokenEstimate.ts.
+const estimateTokens = (text: string): number => estimateTokensFromChars(text?.length ?? 0);
 
 function ensureJsonCapability(request: AIRunRequest): Capability[] {
     if (request.returnType !== 'json') return [...request.requiredCapabilities];

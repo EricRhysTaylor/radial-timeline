@@ -108,22 +108,23 @@ export function cloneDefaultLocalLlmSettings(): LocalLlmSettings {
 }
 
 /**
- * Onboarding's default model.
+ * Onboarding's model profile — INTENTIONALLY NOT SEEDED BY DEFAULT.
  *
- * Onboarding is a one-off whole-manuscript job made of BOUNDED per-scene asks
- * — each call describes one scene, none reasons across the book. That is work
- * a FAST-tier model does well, and the price gap is not marginal: a 133k-word
- * manuscript runs about $1 on Haiku against roughly $10 on Opus 5. Defaulting
- * to the depth model would charge authors ten times over for capability the
- * task does not use.
+ * Withdrawn 2026-08-21 after review. Seeding this shipped a cross-provider
+ * defect: `AIFeatureProfile.modelPolicy` REPLACES the author's global policy,
+ * and a pinned Claude alias cannot resolve on OpenAI or Google. `selectModel`
+ * does not fail there — it substitutes that provider's latest stable model
+ * (GPT-5.5, Gemini 3.5 Flash) and records a warning. So an OpenAI author who
+ * had deliberately pinned GPT-5.4 would have been moved to GPT-5.5 by a
+ * default that was never meant to touch them.
  *
- * Only `modelPolicy` is pinned — `provider` is deliberately left unset so the
- * author's chosen provider still wins. On a non-Anthropic provider this alias
- * simply will not match, and selectModel falls through to that provider's
- * latest stable model exactly as it does today; no behaviour is lost.
+ * Pinning `provider` as well would be worse — it would hijack the provider
+ * outright. A correct default has to be provider-aware, and it should not
+ * land before one representative onboarding run on the economy model has been
+ * measured against quality criteria. Haiku 4.5 remains selectable; it is
+ * simply not automatic.
  *
- * Inquiry and Gossamer are untouched: their capability floor already excludes
- * Haiku, so this default cannot leak into whole-manuscript analysis.
+ * Exported so the eventual provider-aware default has one obvious home.
  */
 export const DEFAULT_ONBOARDING_FEATURE_PROFILE: AIFeatureProfile = {
     modelPolicy: { type: 'pinned', pinnedAlias: 'claude-haiku-4-5' }
@@ -152,9 +153,7 @@ export function buildDefaultAiSettings(): AiSettingsV1 {
             allowProviderSnapshot: false
         },
         cacheWindows: { ...DEFAULT_CACHE_WINDOWS },
-        featureProfiles: {
-            Onboarding: { ...DEFAULT_ONBOARDING_FEATURE_PROFILE }
-        },
+        featureProfiles: {},
         credentials: {
             ...DEFAULT_CREDENTIAL_SECRET_IDS
         },

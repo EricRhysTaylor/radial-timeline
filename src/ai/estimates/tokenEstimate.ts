@@ -96,8 +96,19 @@ export const TOKEN_ESTIMATE_DISCLOSURE: Record<TokenEstimate['source'], string |
  * Note the source label: anything derived from this is `local_estimate`,
  * never `provider_count`.
  */
-export const estimateTokensFromChars = (chars: number): number =>
-    chars > 0 ? Math.ceil(chars / 4) : 0;
+export const DEFAULT_CHARS_PER_TOKEN = 4;
+
+export function estimateTokensFromChars(
+    chars: number,
+    charsPerToken: number = DEFAULT_CHARS_PER_TOKEN
+): number {
+    if (!Number.isFinite(chars) || chars <= 0) return 0;
+    const safeCharsPerToken = Number.isFinite(charsPerToken) && charsPerToken > 0
+        ? charsPerToken
+        : DEFAULT_CHARS_PER_TOKEN;
+    return Math.max(1, Math.ceil(chars / safeCharsPerToken));
+}
+
 
 export function pickBestTokenEstimate(...candidates: Array<TokenEstimate | null | undefined>): TokenEstimate {
     const order: TokenEstimate['source'][] = ['prior_run', 'provider_count', 'local_estimate', 'pending'];

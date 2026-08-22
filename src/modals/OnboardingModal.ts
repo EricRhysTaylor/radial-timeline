@@ -44,7 +44,12 @@ import { STAGE_ORDER, type Stage } from '../utils/constants';
 import type { AIProviderId } from '../ai/types';
 import { forecastOnboardingTokens, forecastOnboardingCost } from '../onboarding/costForecast';
 import { formatApproxUsdCost } from '../ai/cost/estimateCorpusCost';
-import { getOnboardingCanonicalPrompt } from '../onboarding/promptSync';
+import {
+  getOnboardingSplitInstructions,
+  getOnboardingSceneInstructions,
+  getOnboardingSurveyInstructions,
+  getOnboardingEntityInstructions
+} from '../ai/prompts/onboarding';
 import type { EntityKind } from '../utils/entityNotes';
 import type { BookProfile } from '../types/settings';
 
@@ -131,6 +136,14 @@ interface OnboardingSession {
   survey: SurveyResult | null;
   proposals: SceneProposal[];
   entityProposals: EntityProposal[];
+  /**
+   * Spend-forecast inputs. Persisted because they are derived at ingest and
+   * from the split — a resumed session that dropped them would silently lose
+   * the cost display, and a missing price reads as "free".
+   */
+  manuscriptChars: number;
+  chapterCount: number;
+  forecastSceneCount: number | null;
 }
 
 let activeSession: OnboardingSession | null = null;
@@ -182,6 +195,12 @@ export class OnboardingModal extends Modal {
   private costModelId: string | null = null;
   /** Live handle to the spend pill so option changes update it in place. */
   private spendEl: HTMLElement | null = null;
+  /**
+   * Alias the policy asked for when the resolver had to substitute. Non-null
+   * means the run will NOT use the model the author's settings name — most
+   * often a Claude alias pinned under a non-Claude provider.
+   */
+  private costSubstitutedFrom: string | null = null;
   /** The split+mapping-applied model extraction actually ran against (for resume). */
   private extractModel: ManuscriptModel | null = null;
   private abortController: AbortController | null = null;
@@ -204,6 +223,9 @@ export class OnboardingModal extends Modal {
       publishStage: this.publishStage,
       createCharacters: this.createCharacters,
       createPlaces: this.createPlaces,
+      manuscriptChars: this.manuscriptChars,
+      chapterCount: this.chapterCount,
+      forecastSceneCount: this.forecastSceneCount,
       generateSummaries: this.generateSummaries,
       metadataMapping: this.metadataMapping,
       model: this.model,
@@ -225,6 +247,9 @@ export class OnboardingModal extends Modal {
     this.publishStage = session.publishStage;
     this.createCharacters = session.createCharacters;
     this.createPlaces = session.createPlaces;
+    this.manuscriptChars = session.manuscriptChars;
+    this.chapterCount = session.chapterCount;
+    this.forecastSceneCount = session.forecastSceneCount;
     this.generateSummaries = session.generateSummaries;
     this.metadataMapping = session.metadataMapping;
     this.model = session.model;
@@ -338,7 +363,13 @@ export class OnboardingModal extends Modal {
     this.costProvider = cloud.ok ? cloud.provider : null;
     this.costModelId = cloud.ok ? (cloud.modelId ?? null) : null;
     this.aiAvailable = this.engine === 'cloud' ? cloud.ok : preflightOk;
-    this.modelLabel = this.engine === 'cloud' && cloud.ok ? `${cloud.label} cloud` : this.modelLabel;
+    // Name the MODEL, not just the provider. "Anthropic cloud" does not tell an
+    // author whether they are about to spend a dollar or ten, and the pill sits
+    // right beside a figure derived from that exact model.
+    this.modelLabel = this.engine === 'cloud' && cloud.ok
+        ? (cloud.modelLabel ? `${cloud.label} ${cloud.modelLabel}` : `${cloud.label} cloud`)
+        : this.modelLabel;
+    this.costSubstitutedFrom = cloud.ok ? (cloud.substitutedFromAlias ?? null) : null;
     this.service.setEngine(this.engine);
 
     const { contentEl } = this;
@@ -370,6 +401,12 @@ export class OnboardingModal extends Modal {
           this.engine = value as 'local' | 'cloud'; // SAFE: options are exactly local|cloud
           void this.showPreflight();
         });
+    }
+    if (this.engine === 'cloud' && this.costSubstitutedFrom) {
+      status.createDiv({
+        cls: 'ert-warning',
+        text: `Your settings pin "${this.costSubstitutedFrom}", which this provider does not offer. Onboarding will run ${cloud.modelLabel ?? 'a different model'} instead — the estimate below prices that model, not the pinned one.`,
+      });
     }
     if (!this.aiAvailable) {
       status.createDiv({
@@ -479,8 +516,12 @@ export class OnboardingModal extends Modal {
         return;
       }
       const total = plans.reduce((sum, plan) => sum + segmentCount(plan), 0);
-      // Scenes are known now, so the header pill stops quoting a range.
+      // Scenes are known now, so the pill stops quoting a floor and becomes a
+      // point estimate. This assignment happens AFTER renderStageHeader has
+      // already drawn the pill, so it must refresh in place — otherwise the
+      // header keeps showing "from ~$X" for the rest of the stage.
       this.forecastSceneCount = total;
+      this.refreshSpendLabel();
       totalLine.setText(
         `Will create ${total} scene note${total === 1 ? '' : 's'} from ${plans.length} chapter${plans.length === 1 ? '' : 's'}.`
       );
@@ -1270,7 +1311,15 @@ export class OnboardingModal extends Modal {
     }
     if (!this.costProvider || !this.costModelId || this.manuscriptChars <= 0) return null;
 
-    const promptChars = getOnboardingCanonicalPrompt(this.plugin).length;
+    // Measure the instruction set each stage actually sends. The canonical
+    // prompt is NOT what these calls carry — runtime uses four task-specific
+    // instruction blocks, and they differ in size.
+    const promptChars = {
+      split: getOnboardingSplitInstructions().length,
+      scene: getOnboardingSceneInstructions().length,
+      survey: getOnboardingSurveyInstructions().length,
+      entity: getOnboardingEntityInstructions().length
+    };
     const entityCount = this.estimateEntityCount();
     const priceFor = (sceneCount: number): number | null => {
       try {
@@ -1301,14 +1350,16 @@ export class OnboardingModal extends Modal {
       };
     }
 
-    // Pre-split bounds: one scene per chapter at the low end, four at the high.
+    // Before the split there is no upper bound to honestly quote: a chapter
+    // can hold any number of scenes, so an invented ceiling (say 4 per
+    // chapter) would be a guess presented as a bound — and wrong in the unsafe
+    // direction for a long-chaptered book. Quote the FLOOR and say it is one.
     const chapters = Math.max(1, this.chapterCount);
-    const low = priceFor(chapters);
-    const high = priceFor(chapters * 4);
-    if (low === null || high === null) return null;
+    const floor = priceFor(chapters);
+    if (floor === null) return null;
     return {
-      text: `Est. ${formatApproxUsdCost(low)}–${formatApproxUsdCost(high).replace('~', '')}`,
-      ariaLabel: `Estimated cost for this run: between ${formatApproxUsdCost(low)} and ${formatApproxUsdCost(high)}. Narrows once scenes are confirmed.`,
+      text: `Est. from ${formatApproxUsdCost(floor)}`,
+      ariaLabel: `Estimated cost for this run: from ${formatApproxUsdCost(floor)}. The figure narrows once scenes are confirmed.`,
       free: false
     };
   }

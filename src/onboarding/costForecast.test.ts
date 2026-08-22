@@ -9,7 +9,7 @@ const ODYSSEY = {
     manuscriptChars: 699_512,
     chapterCount: 24,
     sceneCount: 95,
-    promptChars: 6_000,
+    promptChars: { split: 3_000, scene: 4_000, survey: 2_500, entity: 2_000 },
     entityCount: 258,
     generateSummaries: true
 };
@@ -23,7 +23,13 @@ describe('forecastOnboardingTokens', () => {
         // Extraction carries more prompt overhead only because it makes more
         // calls (95 scenes vs 24 chapters) — not because it re-reads prose.
         const manuscriptOnly = f.stages.extraction.inputTokens - f.stages.splitting.inputTokens;
-        expect(manuscriptOnly).toBe(Math.ceil(ODYSSEY.promptChars / 4) * (95 - 24));
+        // Splitting and extraction carry DIFFERENT instruction blocks, so the
+        // gap is not one prompt times a scene delta — assert the composition
+        // directly instead.
+        const perStage = ODYSSEY.promptChars;
+        expect(f.stages.splitting.inputTokens - f.stages.extraction.inputTokens).toBe(
+            Math.ceil(perStage.split / 4) * 24 - Math.ceil(perStage.scene / 4) * 95
+        );
     });
 
     it('charges nothing for profiles when summaries are off — those notes need no model', () => {
@@ -40,17 +46,24 @@ describe('forecastOnboardingTokens', () => {
         expect(pruned.stages.entities.inputTokens).toBeLessThan(all.stages.entities.inputTokens);
     });
 
-    it('caps the subplot survey — it samples, it does not read the book', () => {
-        const small = forecastOnboardingTokens({ ...ODYSSEY, manuscriptChars: 20_000 });
+    it('prices the survey at what it actually samples: 30 openings x 40 words', () => {
         const large = forecastOnboardingTokens({ ...ODYSSEY, manuscriptChars: 2_000_000 });
-        // A 100x longer book does not make the survey 100x more expensive.
-        expect(large.stages.survey.inputTokens).toBeLessThan(small.stages.survey.inputTokens * 20);
+        // Runtime does sampleEvenly(scenes, 30) + openingWords(text, 40).
+        // That is ~6.6k chars (~1.7k tokens) plus the survey instructions —
+        // NOT a fraction of the manuscript. A regression here would restore
+        // the 160k-char ceiling that overstated this stage twenty-fold.
+        const promptTokens = Math.ceil(ODYSSEY.promptChars.survey / 4);
+        expect(large.stages.survey.inputTokens - promptTokens).toBeLessThan(2_500);
+        // And it must not scale with book length at all.
+        const small = forecastOnboardingTokens({ ...ODYSSEY, manuscriptChars: 500_000 });
+        expect(large.stages.survey.inputTokens).toBe(small.stages.survey.inputTokens);
     });
 
     it('handles an empty manuscript without producing negative or NaN tokens', () => {
         const f = forecastOnboardingTokens({
             manuscriptChars: 0, chapterCount: 0, sceneCount: 0,
-            promptChars: 0, entityCount: 0, generateSummaries: false
+            promptChars: { split: 0, scene: 0, survey: 0, entity: 0 },
+            entityCount: 0, generateSummaries: false
         });
         expect(f.inputTokens).toBe(0);
         expect(f.outputTokens).toBe(0);
@@ -75,7 +88,7 @@ describe('forecastOnboardingCost — single-source discipline', () => {
         expect(opus.freshCostUSD).toBeGreaterThan(haiku.freshCostUSD * 3);
     });
 
-    it('assumes NO cache reuse — onboarding calls never share input', () => {
+    it('assumes NO cache reuse — onboarding sends no cache breakpoint', () => {
         const f = forecastOnboardingTokens(ODYSSEY);
         const cost = forecastOnboardingCost('anthropic', 'claude-opus-5', f);
         expect(cost.cacheReuseRatio).toBe(0);

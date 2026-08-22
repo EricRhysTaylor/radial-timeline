@@ -144,7 +144,7 @@ export interface TranslationKeys {
             };
             strategy: { title: string; desc: string; };
             costEstimate: { title: string; desc: string; corpusCalculating: string; corpusScanning: string; };
-            provider: { name: string; desc: string; optionAnthropic: string; optionOpenai: string; optionGoogle: string; optionLocalLlm: string; };
+            provider: { name: string; desc: string; disclosureCloud: string; disclosureLocal: string; optionAnthropic: string; optionOpenai: string; optionGoogle: string; optionLocalLlm: string; };
             modelOverride: { name: string; desc: string; };
             accessTier: { name: string; desc: string; tier1: string; tier2: string; tier3: string; tier4: string; };
             largeHandling: { name: string; };
@@ -1918,6 +1918,13 @@ export const en: TranslationKeys = {
             provider: {
                 name: 'Provider',
                 desc: 'The AI provider used for Inquiry and other AI features.',
+                // The disclosure sits HERE, on the choice that decides whether
+                // manuscript text leaves this computer at all — not buried in a
+                // policy page. It names the provider's terms rather than making
+                // a promise on their behalf: Radial Timeline is a link in that
+                // chain, not the end of it.
+                disclosureCloud: 'Your manuscript text goes to {{provider}}, under {{provider}}\u2019s terms. Radial Timeline passes it along \u2014 what they do with it is their agreement with you, not ours.',
+                disclosureLocal: 'Nothing leaves this computer. The model runs on your own machine.',
                 optionAnthropic: 'Anthropic',
                 optionOpenai: 'OpenAI',
                 optionGoogle: 'Google',
@@ -4097,7 +4104,7 @@ export const en: TranslationKeys = {
                 cancel: 'Cancel',
                 stats: '{{flagged}} flagged • {{processable}} processable • {{total}} total',
                 infoLocalLlm: 'Local LLM mode: Valid results update scene hover fields automatically. Invalid results are logged and marked for review.',
-                infoCloud: 'Your manuscript will be sent to the AI for pulse analysis of the selected scenes.',
+                infoCloud: 'The selected scenes will be sent to your AI provider for pulse analysis, under that provider\u2019s terms.',
                 infoLine: 'Process pulse using {{model}} for the subplot "{{name}}".',
                 noOptions: 'No subplot options available.',
                 unknownSelection: 'Unknown subplot selection: {{name}}',

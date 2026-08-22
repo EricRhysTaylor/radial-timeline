@@ -976,6 +976,28 @@ export function renderAiSection(params: {
         .setName(t('settings.ai.provider.name'))
         .setDesc(t('settings.ai.provider.desc'));
     providerSetting.settingEl.setAttr('data-ert-role', 'ai-setting:provider');
+
+    /**
+     * Say where the author's manuscript actually goes, on the control that
+     * decides it.
+     *
+     * A local model is a different privacy fact from a hosted one, and the
+     * dropdown is the only place that difference is chosen — so the sentence
+     * follows the selection rather than sitting in a policy page nobody reads
+     * at the moment it matters. The cloud wording names the PROVIDER'S terms
+     * instead of promising anything on their behalf: manuscript text sent to
+     * an API is governed by an agreement Radial Timeline is not a party to,
+     * and a plugin that implied otherwise would be asserting a fact about
+     * someone else's conduct.
+     */
+    const refreshProviderDisclosure = (provider: string): void => {
+        const label = providerOptionBaseLabels[provider] ?? provider;
+        providerSetting.setDesc(
+            provider === 'ollama'
+                ? t('settings.ai.provider.disclosureLocal')
+                : t('settings.ai.provider.disclosureCloud', { provider: label })
+        );
+    };
     let providerDropdown: DropdownComponent | null = null;
     providerSetting.addDropdown(dropdown => {
         providerDropdown = dropdown;
@@ -990,6 +1012,7 @@ export function renderAiSection(params: {
             const aiSettings = ensureCanonicalAiSettings();
             const nextProvider = value as AIProviderId;
             aiSettings.provider = nextProvider;
+            refreshProviderDisclosure(nextProvider);
 
             if (aiSettings.modelPolicy.type === 'pinned') {
                 const allowed = new Set(getProviderAllowedAliases(nextProvider));
@@ -2317,6 +2340,7 @@ export function renderAiSection(params: {
         isSyncingRoutingUi = true;
         try {
             setDropdownValueSafe(providerDropdown, provider, 'openai');
+            refreshProviderDisclosure(provider);
 
             if (modelOverrideDropdown) {
                 modelOverrideDropdown.selectEl.empty();

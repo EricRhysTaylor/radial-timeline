@@ -394,7 +394,10 @@ describe('AI settings models table', () => {
 
     it('uses Local LLM as the provider label and keeps backend names inside the Local LLM section only', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
-        expect(source.includes("dropdown.addOption('ollama', t('settings.ai.provider.optionLocalLlm'))")).toBe(true);
+        // The option label now flows through providerOptionBaseLabels so the
+        // credential-state suffix ("(No key)" / "(Not connected)") can be
+        // appended without losing the i18n base string.
+        expect(source.includes("dropdown.addOption('ollama', providerOptionBaseLabels.ollama)")).toBe(true);
         expect(source.includes("addOption('ollama', t('settings.ai.localLlmConfig.optionOllama'))")).toBe(true);
         expect(source.includes("t('settings.ai.localLlm.configTitle')")).toBe(true);
         expect(source.includes("setName(t('settings.ai.localLlm.serverName'))")).toBe(true);

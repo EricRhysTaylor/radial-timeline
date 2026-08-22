@@ -911,10 +911,57 @@ export function renderAiSection(params: {
     };
 
     const providerKeyStates: Record<string, string> = {};
+    /**
+     * Credential state as WORDS, not just colour.
+     *
+     * The colour classes below are a redundant cue; they cannot be the only
+     * one. Two reasons: colour alone fails WCAG 1.4.1 (use of colour), and an
+     * author who cannot see why a provider is unusable has no way to act on
+     * it. `ollama` is local — it needs a reachable server, never an API key —
+     * so it gets connection wording rather than key wording.
+     */
+    const PROVIDER_KEY_SUFFIX: Record<string, string> = {
+        ready: '',
+        not_configured: ' (No key)',
+        rejected: ' (Key rejected)',
+        network_blocked: ' (Network blocked)',
+        checking: ' (Checking…)'
+    };
+    const LOCAL_KEY_SUFFIX: Record<string, string> = {
+        ready: '',
+        not_configured: ' (Not connected)',
+        rejected: ' (Not connected)',
+        network_blocked: ' (Not reachable)',
+        checking: ' (Checking…)'
+    };
+    const providerOptionBaseLabels: Record<string, string> = {
+        anthropic: t('settings.ai.provider.optionAnthropic'),
+        openai: t('settings.ai.provider.optionOpenai'),
+        google: t('settings.ai.provider.optionGoogle'),
+        ollama: t('settings.ai.provider.optionLocalLlm')
+    };
+
+    const describeProviderKeyState = (provider: string, state: string | undefined): string => {
+        if (!state) return '';
+        const table = provider === 'ollama' ? LOCAL_KEY_SUFFIX : PROVIDER_KEY_SUFFIX;
+        return table[state] ?? '';
+    };
+
     const refreshDropdownKeyIndicators = (): void => {
         if (!providerDropdown) return;
         const selectEl = providerDropdown.selectEl;
         const selectedState = providerKeyStates[selectEl.value];
+
+        // Every option carries its own state, so the closed dropdown names the
+        // active provider's state and the open list shows which alternatives
+        // are actually usable — without opening Settings further.
+        for (let i = 0; i < selectEl.options.length; i++) {
+            const option = selectEl.options[i];
+            const base = providerOptionBaseLabels[option.value];
+            if (!base) continue;
+            option.text = `${base}${describeProviderKeyState(option.value, providerKeyStates[option.value])}`;
+        }
+
         selectEl.removeClass('is-ready', 'is-warning', 'is-muted');
         if (selectedState === 'ready') {
             selectEl.addClass('is-ready');
@@ -933,10 +980,11 @@ export function renderAiSection(params: {
     providerSetting.addDropdown(dropdown => {
         providerDropdown = dropdown;
         dropdown.selectEl.addClass('ert-input', 'ert-input--md', 'ert-ai-strategy-select');
-        dropdown.addOption('anthropic', t('settings.ai.provider.optionAnthropic'));
-        dropdown.addOption('openai', t('settings.ai.provider.optionOpenai'));
-        dropdown.addOption('google', t('settings.ai.provider.optionGoogle'));
-        dropdown.addOption('ollama', t('settings.ai.provider.optionLocalLlm'));
+        dropdown.addOption('anthropic', providerOptionBaseLabels.anthropic);
+        dropdown.addOption('openai', providerOptionBaseLabels.openai);
+        dropdown.addOption('google', providerOptionBaseLabels.google);
+        dropdown.addOption('ollama', providerOptionBaseLabels.ollama);
+        refreshDropdownKeyIndicators();
         dropdown.onChange(async value => {
             if (isSyncingRoutingUi) return;
             const aiSettings = ensureCanonicalAiSettings();

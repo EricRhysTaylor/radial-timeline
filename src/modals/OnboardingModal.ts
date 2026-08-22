@@ -56,6 +56,7 @@ import {
 } from '../ai/prompts/onboarding';
 import { measureRequestEnvelopeChars } from '../ai/runtime/aiClient';
 import { resolveSpendLabel } from '../onboarding/spendLabel';
+import { captureSpendFields, applySpendFields } from '../onboarding/sessionSpend';
 import type { EntityKind } from '../utils/entityNotes';
 import type { BookProfile } from '../types/settings';
 
@@ -202,12 +203,14 @@ export class OnboardingModal extends Modal {
    * calls genuinely is not known yet. Inventing a point estimate there would
    * be a guess dressed as a number.
    */
-  private manuscriptChars = 0;
-  private chapterCount = 0;
-  private forecastSceneCount: number | null = null;
   /** Cloud engine identity for pricing; null whenever cost does not apply. */
-  private costProvider: AIProviderId | null = null;
-  private costModelId: string | null = null;
+  // These six fields are the SpendSessionFields slice; captureSpendFields /
+  // applySpendFields read and write them by name.
+  manuscriptChars = 0;
+  chapterCount = 0;
+  forecastSceneCount: number | null = null;
+  costProvider: AIProviderId | null = null;
+  costModelId: string | null = null;
   /** Live handle to the spend pill so option changes update it in place. */
   private spendEl: HTMLElement | null = null;
   /**
@@ -215,7 +218,7 @@ export class OnboardingModal extends Modal {
    * means the run will NOT use the model the author's settings name — most
    * often a Claude alias pinned under a non-Claude provider.
    */
-  private costSubstitutedFrom: string | null = null;
+  costSubstitutedFrom: string | null = null;
   /** The split+mapping-applied model extraction actually ran against (for resume). */
   private extractModel: ManuscriptModel | null = null;
   private abortController: AbortController | null = null;
@@ -238,12 +241,9 @@ export class OnboardingModal extends Modal {
       publishStage: this.publishStage,
       createCharacters: this.createCharacters,
       createPlaces: this.createPlaces,
-      manuscriptChars: this.manuscriptChars,
-      chapterCount: this.chapterCount,
-      forecastSceneCount: this.forecastSceneCount,
-      costProvider: this.costProvider,
-      costModelId: this.costModelId,
-      costSubstitutedFrom: this.costSubstitutedFrom,
+      // Spend slice is captured as a unit — see sessionSpend.ts. Listing these
+      // by hand in two places is how the resume defect got in.
+      ...captureSpendFields(this),
       generateSummaries: this.generateSummaries,
       metadataMapping: this.metadataMapping,
       model: this.model,
@@ -265,12 +265,7 @@ export class OnboardingModal extends Modal {
     this.publishStage = session.publishStage;
     this.createCharacters = session.createCharacters;
     this.createPlaces = session.createPlaces;
-    this.manuscriptChars = session.manuscriptChars;
-    this.chapterCount = session.chapterCount;
-    this.forecastSceneCount = session.forecastSceneCount;
-    this.costProvider = session.costProvider;
-    this.costModelId = session.costModelId;
-    this.costSubstitutedFrom = session.costSubstitutedFrom;
+    applySpendFields(this, session);
     this.generateSummaries = session.generateSummaries;
     this.metadataMapping = session.metadataMapping;
     this.model = session.model;

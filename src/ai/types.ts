@@ -261,6 +261,16 @@ export interface AiSettingsV1 {
     connections?: AIProviderConnectionSettings;
     citationsEnabled?: boolean;
     migrationWarnings?: string[];
+    /**
+     * Ids of one-time settings migrations already applied to this vault.
+     *
+     * Provenance, not bookkeeping. A migration that deletes an author's
+     * setting cannot tell a value we seeded from an identical value the author
+     * chose — shape alone does not carry intent. Recording that the migration
+     * has run means it runs ONCE: if the author deliberately re-creates the
+     * same profile afterwards, it survives every subsequent load.
+     */
+    appliedMigrations?: string[];
     upgradedBannerPending?: boolean;
     lastThroughputCheck?: AIThroughputCheckResult;
 }

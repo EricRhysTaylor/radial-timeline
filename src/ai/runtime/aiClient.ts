@@ -291,41 +291,72 @@ function getOutputRules(request: AIRunRequest): string {
 }
 
 /**
+ * The one place a request envelope is assembled.
+ *
+ * Execution and measurement both call this, so a change to what the envelope
+ * carries reaches the forecast automatically. An earlier version had the
+ * measurement repeat the assembly and claimed "the two cannot drift" — they
+ * used the same lower-level helpers but were two orchestrations, and only
+ * agreed by coincidence of the current shape.
+ */
+export function buildRequestEnvelope(
+    plugin: RadialTimelinePlugin,
+    aiSettings: AiSettingsV1,
+    request: AIRunRequest,
+    parts: {
+        featureModeInstructions: string;
+        userInput: string;
+        userQuestion?: string;
+        placeUserQuestionLast: boolean;
+        cacheBreakDelimiter?: string;
+    }
+): ReturnType<typeof composeEnvelope> {
+    const roleTemplate = request.bypassRoleTemplate
+        ? buildNeutralRoleTemplate(request.feature)
+        : resolveActiveRoleTemplate(plugin, aiSettings);
+    const isInquiry = request.feature.toLowerCase().includes('inquiry');
+    return composeEnvelope({
+        roleTemplateName: roleTemplate.name,
+        roleTemplateText: roleTemplate.prompt,
+        projectContext: isInquiry ? '' : getProjectContext(plugin, request),
+        featureModeInstructions: parts.featureModeInstructions,
+        userInput: parts.userInput,
+        userQuestion: parts.userQuestion,
+        outputRules: getOutputRules(request),
+        placeUserQuestionLast: parts.placeUserQuestionLast,
+        cacheBreakDelimiter: parts.cacheBreakDelimiter
+    });
+}
+
+/**
  * Fixed per-call prompt overhead, in characters, for a request shape.
  *
- * A forecast that counts only `featureModeInstructions` understates every call:
- * `composeEnvelope` also carries the role template (name AND body), project
- * context, output rules / JSON schema, section headings, and the cache-break
- * delimiter. On onboarding's four call shapes that omitted content runs from
- * several hundred to a couple of thousand characters each, before the role
- * template is even counted — and it is charged on every one of ~95 calls.
+ * A forecast counting only `featureModeInstructions` understates every call:
+ * the envelope also carries the role template (name AND body), project
+ * context, output rules / JSON schema and section headings. On onboarding's
+ * four call shapes that is several hundred to a couple of thousand characters
+ * each, charged on every one of ~95 calls.
  *
- * Measured by composing the real envelope with an EMPTY payload, through the
- * same `resolveActiveRoleTemplate` → `getProjectContext` → `getOutputRules` →
- * `composeEnvelope` path `run()` uses, so the two cannot drift in what they
- * include. What it does NOT cover is per-call user-input structure (field
- * labels, metadata wrappers around the prose), which varies per call and is
- * not fixed overhead — callers must account for payload separately.
+ * Measured by building the REAL envelope with an empty payload through
+ * `buildRequestEnvelope` — the same function execution uses.
+ *
+ * Excluded, deliberately and by definition: per-call user-input structure
+ * (field labels, metadata wrappers around the prose). That is payload, not
+ * fixed overhead. Callers must account for it separately, so this is a LOWER
+ * BOUND on prompt size.
+ *
+ * Note it passes no cache-break delimiter: `composeEnvelope` only emits one
+ * when a user question is placed last, which no onboarding call does.
  */
 export function measureRequestEnvelopeChars(
     plugin: RadialTimelinePlugin,
     request: AIRunRequest
 ): number {
     const aiSettings = validateAiSettings(plugin.settings.aiSettings ?? null).value;
-    const roleTemplate = request.bypassRoleTemplate
-        ? buildNeutralRoleTemplate(request.feature)
-        : resolveActiveRoleTemplate(plugin, aiSettings);
-    const isInquiry = request.feature.toLowerCase().includes('inquiry');
-    const envelope = composeEnvelope({
-        roleTemplateName: roleTemplate.name,
-        roleTemplateText: roleTemplate.prompt,
-        projectContext: isInquiry ? '' : getProjectContext(plugin, request),
+    const envelope = buildRequestEnvelope(plugin, aiSettings, request, {
         featureModeInstructions: (request.featureModeInstructions ?? '').trim(),
         userInput: '',
-        userQuestion: undefined,
-        outputRules: getOutputRules(request),
-        placeUserQuestionLast: false,
-        cacheBreakDelimiter: CACHE_BREAK_DELIMITER
+        placeUserQuestionLast: false
     });
     return (envelope.finalPrompt || '').length;
 }
@@ -564,14 +595,10 @@ export class AIClient {
         // Inquiry; any feature can opt in via request.placeUserQuestionLast to make
         // its stable corpus reusable across provider prompt-cache windows (Gossamer).
         const placeUserQuestionLast = (request.placeUserQuestionLast ?? isInquiry) && hasUserQuestion;
-        const envelope = composeEnvelope({
-            roleTemplateName: roleTemplate.name,
-            roleTemplateText: roleTemplate.prompt,
-            projectContext: isInquiry ? '' : getProjectContext(this.plugin, request),
+        const envelope = buildRequestEnvelope(this.plugin, aiSettings, request, {
             featureModeInstructions,
             userInput: request.userInput ?? compiledPrompt.userPrompt ?? request.promptText ?? '',
             userQuestion: request.userQuestion,
-            outputRules: getOutputRules(request),
             placeUserQuestionLast,
             cacheBreakDelimiter: (provider === 'anthropic' || provider === 'google' || provider === 'openai')
                 ? CACHE_BREAK_DELIMITER : undefined

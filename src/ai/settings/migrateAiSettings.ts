@@ -1,5 +1,7 @@
 import type { RadialTimelineSettings } from '../../types';
-import type { AIProviderId, AiSettingsV1, AIRoleTemplate } from '../types';
+import type { AIProviderId, AiSettingsV1, AIRoleTemplate,
+    AIFeatureProfile
+} from '../types';
 import {
     buildDefaultAiSettings,
     cloneBuiltInRoleTemplates,
@@ -126,14 +128,96 @@ export function hasLegacyAiKeys(settings: RadialTimelineSettings): boolean {
     ].some(value => typeof value === 'string' && value.trim().length > 0);
 }
 
+/**
+ * One-time removal of the onboarding model pin that shipped briefly on
+ * 2026-08-21.
+ *
+ * Why it must be removed: `AIFeatureProfile.modelPolicy` REPLACES the author's
+ * global policy, and a Claude alias cannot resolve under OpenAI or Google —
+ * `selectModel` silently substitutes that provider's latest stable model. An
+ * author who had deliberately pinned GPT-5.4 would have been moved off it by a
+ * default meant for Anthropic users.
+ *
+ * Why it lives here and not in validation: validation runs on every load and
+ * must never delete an author's data. A migration runs once and is recorded.
+ *
+ * **The honest limit.** Shape does not carry intent. A profile the author chose
+ * that happens to match what we seeded is indistinguishable from the seeded
+ * one, and this migration will remove it — once. Recording the migration id is
+ * what bounds the damage: re-create it and it survives from then on. Without a
+ * provenance marker written at seeding time (which never existed, because the
+ * default shipped and was withdrawn the same day) no predicate can do better,
+ * and claiming otherwise would be false.
+ */
+export const WITHDRAWN_ONBOARDING_PIN_MIGRATION = 'withdraw-onboarding-haiku-pin-2026-08-21';
+
+const SEEDED_ONBOARDING_PROFILE = {
+    modelPolicy: { type: 'pinned', pinnedAlias: 'claude-haiku-4-5' }
+};
+
+/**
+ * Deep structural equality against the seeded object.
+ *
+ * An earlier version counted the OUTER keys only, so a profile carrying extra
+ * keys INSIDE `modelPolicy` was deleted despite plainly being author-edited.
+ * Serialising with sorted keys compares the whole shape, not its first level.
+ */
+function isExactSeededProfile(profile: AIFeatureProfile | undefined): boolean {
+    if (!profile) return false;
+    const canonical = (value: unknown): string => JSON.stringify(value, (_key, val) => {
+        if (val && typeof val === 'object' && !Array.isArray(val)) {
+            return Object.keys(val).sort().reduce<Record<string, unknown>>((acc, key) => {
+                acc[key] = (val as Record<string, unknown>)[key];
+                return acc;
+            }, {});
+        }
+        return val;
+    });
+    return canonical(profile) === canonical(SEEDED_ONBOARDING_PROFILE);
+}
+
+/**
+ * Returns the settings with the withdrawn pin removed, plus whether anything
+ * changed. Idempotent: once the migration id is recorded it never fires again.
+ */
+export function applyWithdrawnOnboardingPinMigration(
+    aiSettings: AiSettingsV1
+): { aiSettings: AiSettingsV1; changed: boolean } {
+    const applied = aiSettings.appliedMigrations ?? [];
+    if (applied.includes(WITHDRAWN_ONBOARDING_PIN_MIGRATION)) {
+        return { aiSettings, changed: false };
+    }
+
+    const profiles = aiSettings.featureProfiles ?? {};
+    const shouldRemove = isExactSeededProfile(profiles.Onboarding);
+
+    // The id is recorded whether or not anything was removed — the migration
+    // has been considered for this vault, and it must not reconsider later and
+    // delete a profile the author creates in the meantime.
+    const next: AiSettingsV1 = {
+        ...aiSettings,
+        appliedMigrations: [...applied, WITHDRAWN_ONBOARDING_PIN_MIGRATION]
+    };
+    if (shouldRemove) {
+        const { Onboarding: _removed, ...rest } = profiles;
+        next.featureProfiles = rest;
+    }
+    return { aiSettings: next, changed: true };
+}
+
 export function migrateAiSettings(settings: RadialTimelineSettings): MigrationResult {
     const legacy = readLegacy(settings);
     const existing = settings.aiSettings;
     if (existing && typeof existing === 'object' && existing.schemaVersion === 1) {
         const validated = validateAiSettings(existing);
+        const migrated = applyWithdrawnOnboardingPinMigration(validated.value);
         return {
-            aiSettings: validated.value,
-            changed: JSON.stringify(validated.value) !== JSON.stringify(existing),
+            aiSettings: migrated.aiSettings,
+            // Deep comparison against the ORIGINAL input, so any normalisation
+            // or migration that altered the settings drives the startup save.
+            // main.ts persists on `changed`, so a migration that does not
+            // report one would be applied in memory and lost on every load.
+            changed: JSON.stringify(migrated.aiSettings) !== JSON.stringify(existing),
             warnings: validated.warnings
         };
     }

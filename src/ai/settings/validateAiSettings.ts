@@ -25,42 +25,6 @@ function hasAlias(alias?: string): boolean {
     return BUILTIN_MODELS.some(model => model.alias === alias);
 }
 
-/**
- * Remove the onboarding model pin that shipped briefly on 2026-08-21.
- *
- * That default was withdrawn the same day because `AIFeatureProfile.modelPolicy`
- * REPLACES the author's global policy, and a Claude alias cannot resolve under
- * OpenAI or Google — `selectModel` silently substitutes that provider's latest
- * stable model instead. Withdrawing it from `buildDefaultAiSettings` stopped
- * NEW vaults receiving it, but did nothing for vaults that had already loaded
- * once and written it to disk. Those vaults keep overriding the author's model
- * the moment they switch to a cloud provider.
- *
- * Strictly scoped: the entry is removed ONLY when it is byte-identical to the
- * object that was seeded. A profile the author has edited — different alias,
- * different policy type, an added provider or overrides — is theirs and is left
- * untouched. Deleting a deliberate choice to clean up our own mistake would be
- * the worse error.
- */
-const WITHDRAWN_ONBOARDING_PIN = 'claude-haiku-4-5';
-
-function stripWithdrawnOnboardingPin(
-    profiles: Record<string, AIFeatureProfile>
-): Record<string, AIFeatureProfile> {
-    const onboarding = profiles.Onboarding;
-    if (!onboarding) return profiles;
-    const policy = onboarding.modelPolicy;
-    const isExactSeededShape = Boolean(policy)
-        && policy?.type === 'pinned'
-        && policy.pinnedAlias === WITHDRAWN_ONBOARDING_PIN
-        && onboarding.provider === undefined
-        && onboarding.overrides === undefined
-        && Object.keys(onboarding).length === 1;
-    if (!isExactSeededShape) return profiles;
-    const { Onboarding: _removed, ...rest } = profiles;
-    return rest;
-}
-
 export function validateAiSettings(input?: AiSettingsV1 | null): AiSettingsValidationResult {
     const warnings: string[] = [];
     const defaults = buildDefaultAiSettings();
@@ -125,10 +89,13 @@ export function validateAiSettings(input?: AiSettingsV1 | null): AiSettingsValid
         // install — could never receive a new default profile, so a shipped
         // default would silently apply to new users only. Author-set keys
         // still win; defaults only fill gaps.
-        featureProfiles: stripWithdrawnOnboardingPin({
+        featureProfiles: {
             ...(defaults.featureProfiles || {}),
             ...(input?.featureProfiles || {})
-        }),
+        },
+        appliedMigrations: Array.isArray(input?.appliedMigrations)
+            ? input.appliedMigrations.filter((id): id is string => typeof id === 'string')
+            : [],
         roleTemplates: normalizeRoleTemplates(),
         localLlm: {
             ...defaults.localLlm,

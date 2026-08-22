@@ -60,6 +60,28 @@
   margin-bottom: 0;
 }
 
+/*
+ * Spend forecast pill. Sits immediately beside the model pill because the two
+ * facts belong together — which model is running, and what running it costs.
+ * The step pips are pushed hard right so a second badge does not spread the row.
+ */
+.ert-ui .ert-onb-topbar .ert-onb-steps {
+  margin-left: auto;
+}
+
+.ert-ui .ert-onb-spend {
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+/*
+ * Free is a different KIND of answer from a dollar figure, not a cheaper one,
+ * so it reads in the affirmative colour rather than as muted cost text.
+ */
+.ert-ui .ert-onb-spend.is-free {
+  color: var(--ert-color-success, var(--text-success, var(--text-muted)));
+}
+
 .ert-ui .ert-onb-steps {
   flex: 0 0 auto;
   display: flex;

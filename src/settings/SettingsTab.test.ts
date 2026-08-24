@@ -66,7 +66,29 @@ describe('settings section navigation anchors', () => {
 
         expect(settingsSource.includes("if (tab === 'ai') this._aiTabActivationHandler?.();")).toBe(true);
         expect(settingsSource.includes("isAiTabActive: () => this._activeTab === 'ai'")).toBe(true);
-        expect(aiSource.includes('params.setAiTabActivationHandler(autoValidateActiveLocalLlm);')).toBe(true);
-        expect(aiSource.includes('if (params.isAiTabActive()) autoValidateActiveLocalLlm();')).toBe(true);
+        expect(aiSource.includes('params.setAiTabActivationHandler(onAiTabActivated);')).toBe(true);
+        expect(aiSource.includes('if (params.isAiTabActive()) onAiTabActivated();')).toBe(true);
+    });
+
+    it('re-checks cloud provider keys on AI tab activation and on provider switch', () => {
+        const aiSource = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
+
+        // A key verdict captured once at Settings-open goes stale; the dropdown
+        // must not replay it as current when the author switches providers.
+        expect(aiSource.includes('const providerKeyRefreshers: Record<string, () => Promise<void>> = {};')).toBe(true);
+        expect(aiSource.includes('providerKeyRefreshers[options.provider] = async () => {')).toBe(true);
+        expect(aiSource.includes('void providerKeyRefreshers[nextProvider]?.();')).toBe(true);
+        expect(aiSource.includes('Object.values(providerKeyRefreshers).forEach(refresh => { void refresh(); });')).toBe(true);
+    });
+
+    it('gives the Local LLM option its own dropdown state and never claims an unchecked server failed', () => {
+        const aiSource = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
+
+        expect(aiSource.includes('const buildLocalProviderKeyState = (): string => {')).toBe(true);
+        expect(aiSource.includes('providerKeyStates.ollama = buildLocalProviderKeyState();')).toBe(true);
+        expect(aiSource.includes("if (!localLlmDetectedServers.length) return localLlmServerDetectionError ? 'network_blocked' : '';")).toBe(true);
+        // A local check that finishes after the author moved to a cloud provider
+        // must not reset the preview they are already reading.
+        expect(aiSource.includes("if (ensureCanonicalAiSettings().provider === 'ollama') void refreshRoutingUi();")).toBe(true);
     });
 });

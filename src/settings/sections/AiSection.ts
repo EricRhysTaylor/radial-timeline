@@ -912,6 +912,19 @@ export function renderAiSection(params: {
 
     const providerKeyStates: Record<string, string> = {};
     /**
+     * Re-check the selected provider's key when the author is actually looking.
+     *
+     * A verdict captured once, when Settings opened, goes stale: a check that
+     * failed transiently (or was still in flight) would keep reporting an
+     * unusable provider for the life of the pane, and switching providers would
+     * repaint that old verdict as if it were current. These re-run the same
+     * check on the moments that matter — opening the AI tab, and picking a
+     * different provider — so the dropdown states what is true now.
+     */
+    const providerKeyRefreshers: Record<string, () => Promise<void>> = {};
+    /** A verdict this recent is still current; re-asking would only burn a request. */
+    const PROVIDER_KEY_STATE_FRESHNESS_MS = 10_000;
+    /**
      * Credential state as WORDS, not just colour.
      *
      * The colour classes below are a redundant cue; they cannot be the only
@@ -1027,6 +1040,11 @@ export function renderAiSection(params: {
             if (nextProvider === 'ollama') {
                 markLocalLlmConfigurationDirty();
                 queueLocalLlmAutoValidation();
+            } else {
+                // The author just chose this provider — say whether its key
+                // works now, rather than replaying the verdict from whenever
+                // Settings happened to open.
+                void providerKeyRefreshers[nextProvider]?.();
             }
         });
     });
@@ -2879,7 +2897,22 @@ export function renderAiSection(params: {
             params.refreshProviderDimming();
         };
 
+        let keyStateCheckedAt = 0;
+        let keyStateInFlight: Promise<void> | null = null;
         const refreshProviderKeyState = async (): Promise<void> => {
+            if (keyStateInFlight) return keyStateInFlight;
+            keyStateInFlight = runProviderKeyStateCheck().finally(() => {
+                keyStateInFlight = null;
+                keyStateCheckedAt = Date.now();
+            });
+            return keyStateInFlight;
+        };
+        providerKeyRefreshers[options.provider] = async () => {
+            if (!keyStateInFlight && Date.now() - keyStateCheckedAt < PROVIDER_KEY_STATE_FRESHNESS_MS) return;
+            await refreshProviderKeyState();
+        };
+
+        async function runProviderKeyStateCheck(): Promise<void> {
             const ai = ensureCanonicalAiSettings();
             if (secretStorageAvailable) {
                 const savedKeyName = getCredentialSecretId(ai, options.provider).trim();
@@ -2911,7 +2944,7 @@ export function renderAiSection(params: {
             replaceRequested = false;
             revealSecretName = false;
             setProviderState('not_configured');
-        };
+        }
         secretIdSetting.addText(text => {
             const aiSettings = ensureCanonicalAiSettings();
             text.inputEl.addClass('ert-input--full');
@@ -3299,7 +3332,11 @@ export function renderAiSection(params: {
             localLlmServerDetectionPromise = null;
             renderLocalLlmModelList();
             renderLocalLlmStatus();
-            void refreshRoutingUi();
+            // Only the local provider's card is waiting on this. If the author
+            // has since switched to a cloud provider, their preview is already
+            // resolved — recomputing it here would throw it back to
+            // "Calculating…" long after they moved on.
+            if (ensureCanonicalAiSettings().provider === 'ollama') void refreshRoutingUi();
         });
         return localLlmServerDetectionPromise;
     }
@@ -3598,6 +3635,30 @@ export function renderAiSection(params: {
         return 'Connected';
     };
 
+    /**
+     * The same branches as {@link buildLocalStatusValue}, as a dropdown state.
+     *
+     * Without this the Local LLM option was the one entry that never said
+     * anything: while its (slow) server check ran, the three cloud providers
+     * each read "(Checking…)" and local read as plain text, so the open list
+     * looked like nothing was available except the provider that was silent.
+     * Kept adjacent to, and branch-for-branch with, the status copy so the two
+     * cannot drift into disagreeing about the same server.
+     */
+    const buildLocalProviderKeyState = (): string => {
+        const currentLocalLlm = getLocalLlmSettings(ensureCanonicalAiSettings());
+        if (!currentLocalLlm.enabled) return 'not_configured';
+        if (localLlmServerDetectionPending || localLlmModelLoadPending) return 'checking';
+        if (localLlmValidationPending) return 'checking';
+        // Nothing has been asked of the server yet (the panel only probes when
+        // local is the active provider). Say nothing rather than claim it is
+        // unreachable — an unchecked server is not a failed one.
+        if (!localLlmDetectedServers.length) return localLlmServerDetectionError ? 'network_blocked' : '';
+        if (localLlmValidationError) return 'rejected';
+        if (localLlmValidationReport && !localLlmValidationReport.reachable.ok) return 'network_blocked';
+        return 'ready';
+    };
+
     const buildLocalCheckValue = (
         label: 'Connection' | 'Model availability' | 'Basic validation' | 'Structured validation' | 'Repair validation',
         check: { ok: boolean; message: string } | null,
@@ -3639,6 +3700,8 @@ export function renderAiSection(params: {
     };
 
     const renderLocalLlmStatus = (): void => {
+        providerKeyStates.ollama = buildLocalProviderKeyState();
+        refreshDropdownKeyIndicators();
         const localLlm = getLocalLlmSettings(ensureCanonicalAiSettings());
         const selectedModelId = localLlm.defaultModelId.trim();
         const selectedExists = localLlmLoadedModels.some(model =>
@@ -3823,8 +3886,10 @@ export function renderAiSection(params: {
                 localLlmValidationPromise = null;
                 renderLocalLlmStatus();
                 // The preview card mirrors validation state — refresh it so
-                // "Connected & validated" lands there too, not only in the panel.
-                void refreshRoutingUi();
+                // "Connected & validated" lands there too, not only in the
+                // panel. Only while local is still the active provider: a late
+                // finish must not reset a cloud preview the author moved to.
+                if (ensureCanonicalAiSettings().provider === 'ollama') void refreshRoutingUi();
             }
         })();
         return localLlmValidationPromise;
@@ -4075,14 +4140,18 @@ export function renderAiSection(params: {
 
     // Apply provider dimming on first render
     params.refreshProviderDimming();
-    const autoValidateActiveLocalLlm = (): void => {
+    const onAiTabActivated = (): void => {
+        // Both halves of the panel re-check on arrival: the local server (when
+        // it is the active provider) and every cloud key. Whichever the author
+        // is about to switch to, the dropdown they read is current.
         if (ensureCanonicalAiSettings().provider === 'ollama') {
             queueLocalLlmAutoValidation();
         }
+        Object.values(providerKeyRefreshers).forEach(refresh => { void refresh(); });
     };
-    params.setAiTabActivationHandler(autoValidateActiveLocalLlm);
+    params.setAiTabActivationHandler(onAiTabActivated);
     void refreshRoutingUi().then(() => {
-        if (params.isAiTabActive()) autoValidateActiveLocalLlm();
+        if (params.isAiTabActive()) onAiTabActivated();
     });
 
     // Set initial visibility state

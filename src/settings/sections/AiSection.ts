@@ -1159,6 +1159,34 @@ export function renderAiSection(params: {
         cls: 'ert-ai-resolved-preview-provider',
         text: t('settings.ai.preview.providerPlaceholder')
     });
+    /**
+     * A heartbeat for checks the author cannot see.
+     *
+     * Resolving a local server takes ten seconds or more — a probe, a model
+     * list, then real generations against the model. For that whole stretch
+     * the card held one motionless line of text, which reads as a panel that
+     * has hung rather than one that is working. These dots say "still going",
+     * so the wait is legible as progress instead of breakage. Decorative:
+     * the card's own copy already carries the meaning for screen readers.
+     */
+    const resolvedPreviewBusy = resolvedPreviewFrame.createDiv({
+        cls: 'ert-ai-resolved-preview-busy ert-settings-hidden',
+        attr: { 'aria-hidden': 'true' }
+    });
+    for (let dot = 0; dot < 3; dot += 1) {
+        resolvedPreviewBusy.createSpan({ cls: 'ert-ai-resolved-preview-busy-dot' });
+    }
+    /** Depth, not a flag: overlapping resolves must not switch the dots off early. */
+    let routingUiRunCount = 0;
+    const refreshResolvedPreviewBusy = (): void => {
+        const activeProvider = ensureCanonicalAiSettings().provider;
+        // One source of truth with the provider dropdown: whatever makes an
+        // option read "(Checking…)" is what makes this card pulse.
+        const busy = routingUiRunCount > 0 || providerKeyStates[activeProvider] === 'checking';
+        resolvedPreviewBusy.toggleClass('ert-settings-hidden', !busy);
+        resolvedPreviewFrame.toggleClass('is-checking', busy);
+    };
+
     const resolvedPreviewComparator = resolvedPreviewFrame.createDiv({
         cls: 'ert-ai-resolved-preview-comparator ert-settings-hidden'
     });
@@ -2338,7 +2366,7 @@ export function renderAiSection(params: {
         transformTokens: b.transformTokens ?? 0
     });
 
-    const refreshRoutingUi = async (): Promise<void> => {
+    const runRefreshRoutingUi = async (): Promise<void> => {
         const aiSettings = ensureCanonicalAiSettings();
         const provider = aiSettings.provider === 'none' ? 'openai' : aiSettings.provider;
         const providerAllowedAliases = getProviderAllowedAliases(provider);
@@ -2653,6 +2681,21 @@ export function renderAiSection(params: {
 
     };
 
+    /**
+     * The pulse belongs to the whole resolve, not to the repaints inside it.
+     * Wrapping is what guarantees the dots stop on the failure path too.
+     */
+    const refreshRoutingUi = async (): Promise<void> => {
+        routingUiRunCount += 1;
+        refreshResolvedPreviewBusy();
+        try {
+            await runRefreshRoutingUi();
+        } finally {
+            routingUiRunCount -= 1;
+            refreshResolvedPreviewBusy();
+        }
+    };
+
     // Provider sections
     const anthropicSection = configurationBody.createDiv({
         cls: ['ert-provider-section', 'ert-provider-anthropic', ERT_CLASSES.STACK]
@@ -2811,6 +2854,7 @@ export function renderAiSection(params: {
             providerState = next;
             providerKeyStates[options.provider] = next;
             refreshDropdownKeyIndicators();
+            refreshResolvedPreviewBusy();
             refreshActiveCostComparisonRowState(options.provider, next);
             const ai = ensureCanonicalAiSettings();
             const secretId = getCredentialSecretId(ai, options.provider).trim();
@@ -3702,6 +3746,7 @@ export function renderAiSection(params: {
     const renderLocalLlmStatus = (): void => {
         providerKeyStates.ollama = buildLocalProviderKeyState();
         refreshDropdownKeyIndicators();
+        refreshResolvedPreviewBusy();
         const localLlm = getLocalLlmSettings(ensureCanonicalAiSettings());
         const selectedModelId = localLlm.defaultModelId.trim();
         const selectedExists = localLlmLoadedModels.some(model =>

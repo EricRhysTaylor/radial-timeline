@@ -3420,6 +3420,62 @@
   white-space: normal;
 }
 
+/* Active-check heartbeat ─────────────────────────────────────────────────
+   Local server resolution runs for ten seconds or more. Without motion the
+   card reads as hung, so the author gets three staggered dots under the
+   headline for exactly as long as a check is actually in flight. */
+/* :not() rather than a bare `display: flex` — the hidden utility carries the
+   same specificity and is declared earlier, so an unqualified rule here would
+   quietly win and the dots would never switch off. */
+.ert-ui.ert-scope--settings .ert-ai-resolved-preview-busy:not(.ert-settings-hidden) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ert-gap-sm);
+  height: 10px;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-resolved-preview-busy-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--interactive-accent);
+  animation: ert-ai-preview-busy-pulse 1.2s ease-in-out infinite;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-resolved-preview-busy-dot:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-resolved-preview-busy-dot:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-resolved-preview.is-checking {
+  border-color: color-mix(in srgb, var(--interactive-accent) 34%, var(--ert-previewFrame-border));
+}
+
+@keyframes ert-ai-preview-busy-pulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.72);
+  }
+
+  45% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+/* Motion is the message here, so the reduced-motion fallback keeps the dots
+   visible and simply stops them moving. */
+@media (prefers-reduced-motion: reduce) {
+  .ert-ui.ert-scope--settings .ert-ai-resolved-preview-busy-dot {
+    animation: none;
+    opacity: 0.75;
+  }
+}
+
 .ert-ui.ert-scope--settings .ert-ai-resolved-preview-comparator {
   display: flex;
   flex-direction: column;

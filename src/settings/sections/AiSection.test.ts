@@ -54,6 +54,23 @@ describe('AI settings models table', () => {
         expect(previewSource.includes("'References — none'")).toBe(true);
     });
 
+    it('pulses the preview card for exactly as long as a check is in flight', () => {
+        const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
+        const css = readFileSync(resolve(process.cwd(), 'src/styles/rt-ui.css'), 'utf8');
+
+        // A ten-second local probe with no motion reads as a hung panel.
+        expect(source.includes("cls: 'ert-ai-resolved-preview-busy ert-settings-hidden'")).toBe(true);
+        expect(source.includes("const busy = routingUiRunCount > 0 || providerKeyStates[activeProvider] === 'checking';")).toBe(true);
+        // Wrapped so the dots stop on the failure path, not only on success.
+        expect(source.includes('await runRefreshRoutingUi();')).toBe(true);
+        expect(source.includes('routingUiRunCount -= 1;')).toBe(true);
+        // The hidden utility shares this rule's specificity and is declared
+        // first, so an unqualified display would strand the dots on screen.
+        expect(css.includes('.ert-ai-resolved-preview-busy:not(.ert-settings-hidden)')).toBe(true);
+        expect(css.includes('@keyframes ert-ai-preview-busy-pulse')).toBe(true);
+        expect(css.includes('@media (prefers-reduced-motion: reduce)')).toBe(true);
+    });
+
     it('renders active model preview with author-facing pill signals only', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
         expect(source.includes("t('settings.ai.preview.kicker')")).toBe(true);

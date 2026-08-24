@@ -1,6 +1,5 @@
 import { App, TFile, getFrontMatterInfo } from 'obsidian';
 import type { RadialTimelineSettings, TimelineItem } from '../types';
-import { applySceneNumberUpdates, type RippleRenamePlan, type SceneReorderProgress, type SceneUpdate } from './SceneReorderService';
 import { getTemplateParts } from '../utils/yamlTemplateNormalize';
 import { generateSceneContent } from '../utils/sceneGenerator';
 import { ensureSceneTemplateFrontmatter } from '../utils/sceneIds';
@@ -18,34 +17,20 @@ export interface SceneInsertOptions {
 }
 
 export interface SceneInsertResult {
-    initialPath: string;
-    finalPath: string;
+    path: string;
     filename: string;
-    usedRippleRename: boolean;
-    renameCount: number;
-}
-
-export interface SceneRenamePreview {
-    fromPath: string;
-    toPath: string;
 }
 
 export interface SceneInsertionPlan {
     anchorPath: string;
     anchorBasename: string;
-    initialPath: string;
-    finalPath: string;
+    path: string;
     filename: string;
     actNumber: number;
     when: string;
     subplotLabel: string;
     yamlMode: 'Basic' | 'Advanced';
-    numberingMode: 'Decimal insert' | 'Ripple renumber';
-    usedRippleRename: boolean;
-    renameCount: number;
-    renamePreviews: SceneRenamePreview[];
     frontmatter: string;
-    ripplePlan?: RippleRenamePlan;
 }
 
 interface InsertionCandidate {
@@ -54,10 +39,6 @@ interface InsertionCandidate {
     basename: string;
     actNumber: number;
     sourceIndex: number;
-}
-
-interface OrderedInsertionCandidate extends InsertionCandidate {
-    inserted?: boolean;
 }
 
 const NEW_SCENE_LABEL = 'New Scene';
@@ -81,15 +62,6 @@ function parentPathFor(file: TFile): string {
 
 function joinVaultPath(parentPath: string, filename: string): string {
     return parentPath ? `${parentPath}/${filename}` : filename;
-}
-
-function buildRenamedBasename(basename: string, newNumber: string): string {
-    const match = basename.match(/^\s*(\d+(?:\.\d+)?)\s+(.*)$/);
-    if (match) {
-        const rest = match[2]?.trim() ?? '';
-        return `${newNumber} ${rest}`.trim();
-    }
-    return `${newNumber} ${basename}`.trim();
 }
 
 function formatPrefixNumber(value: number): string {
@@ -211,64 +183,6 @@ export function buildDecimalSceneInsertionPrefix(
     return formatPrefixNumber(fallback);
 }
 
-export function buildSceneInsertionRippleRenamePlan(params: {
-    items: TimelineItem[];
-    anchorPath: string;
-    insertedPath: string;
-    insertedActNumber: number;
-    beatModel?: string;
-}): RippleRenamePlan {
-    const ordered = sortCandidatesByManuscriptOrder(collectCandidates(params.items, params.beatModel));
-    const inserted: OrderedInsertionCandidate = {
-        path: params.insertedPath,
-        itemType: 'Scene',
-        basename: basenameFromPath(params.insertedPath),
-        actNumber: params.insertedActNumber,
-        sourceIndex: Number.MAX_SAFE_INTEGER,
-        inserted: true
-    };
-
-    const insertionIndex = findInsertionIndexAfterSceneBeatGap(ordered, params.anchorPath);
-    const withInserted: OrderedInsertionCandidate[] = [...ordered];
-    withInserted.splice(insertionIndex, 0, inserted);
-
-    const updates: SceneUpdate[] = [];
-    const expectedNumbersByPath: Record<string, string> = {};
-    const beatMinorByMajor = new Map<string, number>();
-    let nextSceneNumber = 1;
-    let currentScenePrefix = '0';
-
-    withInserted.forEach((entry) => {
-        const newNumber = entry.itemType === 'Scene'
-            ? (() => {
-                const prefix = String(nextSceneNumber);
-                currentScenePrefix = prefix;
-                beatMinorByMajor.set(prefix, 0);
-                nextSceneNumber += 1;
-                return prefix;
-            })()
-            : (() => {
-                const nextMinor = (beatMinorByMajor.get(currentScenePrefix) ?? 0) + 1;
-                beatMinorByMajor.set(currentScenePrefix, nextMinor);
-                return `${currentScenePrefix}.${String(nextMinor).padStart(2, '0')}`;
-            })();
-        expectedNumbersByPath[entry.path] = newNumber;
-        const currentBasename = entry.basename;
-        const finalBasename = buildRenamedBasename(currentBasename, newNumber);
-        if (entry.inserted || finalBasename !== currentBasename) {
-            updates.push({ path: entry.path, newNumber });
-        }
-    });
-
-    return {
-        updates,
-        checked: withInserted.length,
-        needRename: updates.length,
-        orderedPaths: withInserted.map((entry) => entry.path),
-        expectedNumbersByPath
-    };
-}
-
 function escapeRegExp(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -349,33 +263,18 @@ function buildUniqueScenePath(app: App, parentPath: string, prefix: string): { p
     return { path: joinVaultPath(parentPath, filename), filename };
 }
 
-function finalPathAfterRename(initialPath: string, newNumber: string): string {
-    const segments = initialPath.split('/');
-    const fileName = segments.pop() ?? initialPath;
-    const extensionMatch = fileName.match(/\.([^.]+)$/);
-    const extension = extensionMatch?.[0] ?? '';
-    const basename = extension ? fileName.slice(0, -extension.length) : fileName;
-    const finalBasename = buildRenamedBasename(basename, newNumber);
-    return [...segments, `${finalBasename}${extension}`].filter(Boolean).join('/');
-}
-
-function buildRenamePreviews(updates: SceneUpdate[]): SceneRenamePreview[] {
-    return updates
-        .map((update) => ({
-            fromPath: update.path,
-            toPath: finalPathAfterRename(update.path, update.newNumber)
-        }))
-        .filter((preview) => preview.fromPath !== preview.toPath);
-}
-
 export async function planSceneInsertion(options: SceneInsertOptions): Promise<SceneInsertionPlan> {
     const anchorPath = options.anchorFile.path;
     const sceneData = await options.getSceneData();
     const actNumber = await resolveAnchorActNumber(sceneData, anchorPath, options.app, options.anchorFile);
     const when = await readAnchorWhen(options.app, options.settings, options.anchorFile);
-    const initialPrefix = buildDecimalSceneInsertionPrefix(sceneData, anchorPath, options.beatModel);
+    // Adding a scene always inserts a decimal between the anchor and the next
+    // scene, so nothing else in the manuscript moves. Ripple renumbering is a
+    // drag-reorder concern (`enableManuscriptRippleRename`) and deliberately
+    // does not reach this path.
+    const prefix = buildDecimalSceneInsertionPrefix(sceneData, anchorPath, options.beatModel);
     const parentPath = parentPathFor(options.anchorFile);
-    const { path: initialPath, filename } = buildUniqueScenePath(options.app, parentPath, initialPrefix);
+    const { path, filename } = buildUniqueScenePath(options.app, parentPath, prefix);
     const templateParts = getTemplateParts('Scene', options.settings);
     const useAdvanced = options.settings.sceneAdvancedPropertiesEnabled ?? true;
     const template = useAdvanced ? templateParts.merged : templateParts.base;
@@ -384,103 +283,30 @@ export async function planSceneInsertion(options: SceneInsertOptions): Promise<S
         act: actNumber,
         when,
         due: getLocalDateString(),
-        sceneNumber: initialPrefix,
+        sceneNumber: prefix,
         subplots,
         character: '',
         place: '',
         characterList: [],
         placeList: []
     });
-    const finalFrontmatter = ensureSceneTemplateFrontmatter(content).frontmatter;
-
-    if (!options.settings.enableManuscriptRippleRename) {
-        return {
-            anchorPath,
-            anchorBasename: options.anchorFile.basename,
-            initialPath,
-            finalPath: initialPath,
-            filename,
-            actNumber,
-            when,
-            subplotLabel: subplots[0] ?? 'Main Plot',
-            yamlMode: useAdvanced ? 'Advanced' : 'Basic',
-            numberingMode: 'Decimal insert',
-            usedRippleRename: false,
-            renameCount: 0,
-            renamePreviews: [],
-            frontmatter: finalFrontmatter
-        };
-    }
-
-    const plan = buildSceneInsertionRippleRenamePlan({
-        items: sceneData,
-        anchorPath,
-        insertedPath: initialPath,
-        insertedActNumber: actNumber,
-        beatModel: options.beatModel
-    });
-
-    const insertedNumber = plan.expectedNumbersByPath[initialPath] ?? initialPrefix;
-    const finalPath = finalPathAfterRename(initialPath, insertedNumber);
-    const renamePreviews = buildRenamePreviews(plan.updates);
 
     return {
         anchorPath,
         anchorBasename: options.anchorFile.basename,
-        initialPath,
-        finalPath,
+        path,
         filename,
         actNumber,
         when,
         subplotLabel: subplots[0] ?? 'Main Plot',
         yamlMode: useAdvanced ? 'Advanced' : 'Basic',
-        numberingMode: 'Ripple renumber',
-        usedRippleRename: true,
-        renameCount: renamePreviews.length,
-        renamePreviews,
-        frontmatter: finalFrontmatter,
-        ripplePlan: plan
+        frontmatter: ensureSceneTemplateFrontmatter(content).frontmatter
     };
 }
 
-export interface ApplySceneInsertionPlanOptions {
-    onProgress?: (progress: SceneReorderProgress) => void;
-}
-
-export async function applySceneInsertionPlan(
-    app: App,
-    plan: SceneInsertionPlan,
-    options?: ApplySceneInsertionPlanOptions
-): Promise<SceneInsertResult> {
-    await app.vault.create(plan.initialPath, `---\n${plan.frontmatter}\n---\n\n`);
-
-    if (!plan.ripplePlan) {
-        return {
-            initialPath: plan.initialPath,
-            finalPath: plan.finalPath,
-            filename: plan.filename,
-            usedRippleRename: false,
-            renameCount: 0
-        };
-    }
-
-    await applySceneNumberUpdates(app, plan.ripplePlan.updates, {
-        onProgress: options?.onProgress,
-        verification: {
-            expectedOrderedPaths: plan.ripplePlan.orderedPaths,
-            expectedNumbersByPath: plan.ripplePlan.expectedNumbersByPath,
-            movedItemPath: plan.initialPath,
-            expectedMovedIndex: plan.ripplePlan.orderedPaths.indexOf(plan.initialPath)
-        }
-    });
-
-    return {
-        initialPath: plan.initialPath,
-        finalPath: plan.finalPath,
-        filename: plan.filename,
-        usedRippleRename: true,
-        renameCount: plan.renameCount
-    };
+export async function applySceneInsertionPlan(app: App, plan: SceneInsertionPlan): Promise<SceneInsertResult> {
+    await app.vault.create(plan.path, `---\n${plan.frontmatter}\n---\n\n`);
+    return { path: plan.path, filename: plan.filename };
 }
 
 export async function insertSceneAfterAnchor(options: SceneInsertOptions): Promise<SceneInsertResult> {

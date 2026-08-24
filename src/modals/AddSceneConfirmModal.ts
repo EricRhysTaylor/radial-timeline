@@ -63,33 +63,16 @@ export class AddSceneConfirmModal extends ErtModal {
         const summarySection = listDiv.createDiv({ cls: 'ert-drag-confirm-section' });
         summarySection.createDiv({ cls: 'ert-drag-confirm-section-title', text: 'Scene insert summary' });
 
-        this.addSummaryRow(summarySection, 'file-plus-2', `Add ${basename(this.plan.finalPath)} after ${this.plan.anchorBasename}`);
+        this.addSummaryRow(summarySection, 'file-plus-2', `Add ${basename(this.plan.path)} after ${this.plan.anchorBasename}`);
 
         const impactGrid = summarySection.createDiv({ cls: 'ert-drag-confirm-impact-grid' });
         this.createImpactCard(impactGrid, 'When', this.plan.when || 'Blank', 'calendar-clock');
         this.createImpactCard(impactGrid, 'Subplot', this.plan.subplotLabel, 'orbit');
         this.createImpactCard(impactGrid, 'YAML', this.plan.yamlMode, 'braces');
-        this.createImpactCard(impactGrid, 'Numbering', this.plan.numberingMode, this.plan.usedRippleRename ? 'waves' : 'list-plus');
 
-        const renameSection = listDiv.createDiv({ cls: 'ert-drag-confirm-section' });
-        renameSection.createDiv({ cls: 'ert-drag-confirm-section-title', text: 'Filename impact' });
-        if (this.plan.renamePreviews.length === 0) {
-            this.addSummaryRow(renameSection, 'list-ordered', 'No existing scene or beat filenames will be renamed.');
-        } else {
-            this.addSummaryRow(renameSection, 'list-ordered', `${this.plan.renamePreviews.length} file${this.plan.renamePreviews.length === 1 ? '' : 's'} will be renamed.`);
-            const frame = renameSection.createDiv({ cls: 'ert-drag-confirm-history-frame' });
-            const list = frame.createDiv({ cls: 'ert-drag-confirm-history-list' });
-            this.plan.renamePreviews.forEach((preview) => {
-                const row = list.createDiv({ cls: 'ert-drag-confirm-history-item' });
-                const rowHeader = row.createDiv({ cls: 'ert-drag-confirm-history-header' });
-                const rowIcon = rowHeader.createDiv({ cls: 'ert-drag-confirm-history-icon ert-drag-confirm-row-icon' });
-                setIcon(rowIcon, 'arrow-right-to-line');
-                rowHeader.createDiv({
-                    cls: 'ert-drag-confirm-history-summary',
-                    text: `${basename(preview.fromPath)} -> ${basename(preview.toPath)}`
-                });
-            });
-        }
+        // The new scene takes a decimal between its neighbours, so no other
+        // scene or beat filename changes.
+        this.addSummaryRow(summarySection, 'list-ordered', 'No existing scene or beat filenames will be renamed.');
 
         const statusRow = listDiv.createDiv({ cls: 'ert-drag-confirm-row is-status-row is-hidden' });
         const statusIcon = statusRow.createDiv({ cls: 'ert-drag-confirm-row-icon' });

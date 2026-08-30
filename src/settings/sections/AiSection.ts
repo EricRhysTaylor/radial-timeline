@@ -67,6 +67,7 @@ import {
 import { inferLocalLlmCapability } from '../../ai/localLlm/capabilityInference';
 import type { LocalLlmCapabilityAssessment, LocalLlmFeatureSupport } from '../../ai/localLlm/capabilityInference';
 import type { LocalLlmModelEntry } from '../../ai/localLlm/transport';
+import { withTimeout } from '../../ai/localLlm/transport';
 import type { LocalLlmBackendId, LocalLlmJsonMode } from '../../ai/types';
 import {
     CACHE_ARMED_PILL_TEXT,
@@ -3904,16 +3905,32 @@ export function renderAiSection(params: {
         return localLlmModelLoadPromise;
     }
 
+    // Ceiling for the whole detect -> load-models -> diagnose chain. Generous enough
+    // that a cold large-model load (30-60s) is not mistaken for a hang, short enough
+    // that a genuinely dead socket reports instead of spinning indefinitely.
+    const LOCAL_LLM_VALIDATION_DEADLINE_MS = 60_000;
+
     async function validateLocalLlm(options: { quiet?: boolean } = {}): Promise<void> {
         if (localLlmValidationPromise) return localLlmValidationPromise;
         localLlmValidationPending = true;
         localLlmValidationError = null;
         renderLocalLlmStatus();
         localLlmValidationPromise = (async () => {
-            await detectLocalLlmServers({ quiet: true });
-            await loadLocalLlmModels({ quiet: true });
             try {
-                localLlmValidationReport = await getLocalLlmClient(plugin).runDiagnostics(getLocalLlmUiOverrides());
+                // Each transport call has its own timeout, but the chain as a whole had
+                // none: a socket that accepts and never answers leaves this pending
+                // forever with the panel stuck on "Validating". The commonest cause is a
+                // server bound IPv4-only while the base URL says `localhost`, which
+                // macOS may resolve to ::1. Fail with a ceiling and say what to check.
+                localLlmValidationReport = await withTimeout(
+                    (async () => {
+                        await detectLocalLlmServers({ quiet: true });
+                        await loadLocalLlmModels({ quiet: true });
+                        return getLocalLlmClient(plugin).runDiagnostics(getLocalLlmUiOverrides());
+                    })(),
+                    LOCAL_LLM_VALIDATION_DEADLINE_MS,
+                    t('settings.ai.localLlm.validationDeadline')
+                );
                 localLlmValidationError = null;
                 localLlmLastValidatedAt = new Date().toISOString();
                 if (!options.quiet) {

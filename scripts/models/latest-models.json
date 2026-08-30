@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-20T01:06:43.972Z",
+  "generatedAt": "2026-08-30T15:42:13.626Z",
   "summary": {
     "openai": 120,
-    "anthropic": 11,
+    "anthropic": 10,
     "google": 55
   },
   "models": [
@@ -1475,81 +1475,6 @@
       },
       "label": "Claude Haiku 4.5",
       "createdAt": "2025-10-15T00:00:00Z"
-    },
-    {
-      "provider": "anthropic",
-      "id": "claude-opus-4-1-20250805",
-      "raw": {
-        "type": "model",
-        "id": "claude-opus-4-1-20250805",
-        "display_name": "Claude Opus 4.1",
-        "created_at": "2025-08-05T00:00:00Z",
-        "max_input_tokens": 200000,
-        "max_tokens": 32000,
-        "capabilities": {
-          "batch": {
-            "supported": true
-          },
-          "citations": {
-            "supported": true
-          },
-          "code_execution": {
-            "supported": false
-          },
-          "context_management": {
-            "supported": true,
-            "clear_tool_uses_20250919": {
-              "supported": true
-            },
-            "clear_thinking_20251015": {
-              "supported": true
-            },
-            "compact_20260112": {
-              "supported": false
-            }
-          },
-          "effort": {
-            "supported": false,
-            "low": {
-              "supported": false
-            },
-            "medium": {
-              "supported": false
-            },
-            "high": {
-              "supported": false
-            },
-            "xhigh": {
-              "supported": false
-            },
-            "max": {
-              "supported": false
-            }
-          },
-          "image_input": {
-            "supported": true
-          },
-          "pdf_input": {
-            "supported": true
-          },
-          "structured_outputs": {
-            "supported": true
-          },
-          "thinking": {
-            "supported": true,
-            "types": {
-              "enabled": {
-                "supported": true
-              },
-              "adaptive": {
-                "supported": false
-              }
-            }
-          }
-        }
-      },
-      "label": "Claude Opus 4.1",
-      "createdAt": "2025-08-05T00:00:00Z"
     },
     {
       "provider": "anthropic",

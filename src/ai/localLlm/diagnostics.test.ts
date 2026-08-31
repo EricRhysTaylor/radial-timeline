@@ -43,6 +43,34 @@ describe('runLocalLlmDiagnostics', () => {
         expect(report.modelAvailable.ok).toBe(false);
     });
 
+    // The settings panel passes a SHORT timeout so the cheap checks cannot hang the
+    // UI. Applying it to the generation probes orphaned work on the server -- a
+    // local timeout cannot abort the request, generation serialises, and the orphan
+    // blocked the next probe. That is why repeat validations appeared to hang while
+    // the first one after a restart succeeded.
+    it('gives generation probes the configured timeout, not the short UI override', async () => {
+        listModels.mockResolvedValue([{ id: 'local-model' }]);
+        complete.mockResolvedValue({
+            success: true,
+            content: 'READY',
+            responseData: {},
+            requestPayload: {}
+        });
+        const { runLocalLlmDiagnostics } = await import('./diagnostics');
+        const base = (await import('../settings/aiSettings')).buildDefaultAiSettings();
+        base.localLlm = { ...base.localLlm, defaultModelId: 'local-model', timeoutMs: 45_000 };
+
+        await runLocalLlmDiagnostics(
+            { app: {}, settings: { aiSettings: base } } as any,
+            { timeoutMs: 10_000 } // what the settings panel passes
+        );
+
+        expect(complete).toHaveBeenCalled();
+        for (const call of complete.mock.calls) {
+            expect(call[0].timeoutMs).toBe(45_000);
+        }
+    });
+
     it('reports missing model when backend is reachable', async () => {
         listModels.mockResolvedValue([{ id: 'other-model' }]);
         complete.mockResolvedValue({

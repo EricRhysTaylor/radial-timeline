@@ -55,9 +55,24 @@ export async function runLocalLlmDiagnostics(
     const localLlm = resolveSettings(plugin, overrides);
     const backend = getLocalLlmBackend(localLlm.backend);
     const apiKey = await getCredential(plugin, 'ollama');
+
+    // Two budgets, deliberately different.
+    //
+    // The settings panel passes a short timeout so the CHEAP checks (reachability,
+    // model list) cannot hang the UI. Applying that same short budget to the two
+    // GENERATION probes is what wedged repeat validations: withTimeout rejects
+    // locally but cannot abort the request, so a large model that needs longer than
+    // the UI budget keeps generating for an answer nobody collects. Generation
+    // serialises on the server, so that orphan blocks the next probe -- and the
+    // next click stacks more behind it. The first validation after a restart
+    // succeeded (idle server) and every one after it appeared to hang.
+    //
+    // Generation probes therefore use the author's CONFIGURED timeout, not the UI
+    // override, so they finish rather than orphaning work on the server.
+    const configuredTimeoutMs = getCanonicalLocalLlmSettings(plugin).timeoutMs;
     const transport = {
         baseUrl: localLlm.baseUrl,
-        timeoutMs: localLlm.timeoutMs,
+        timeoutMs: Math.max(localLlm.timeoutMs, configuredTimeoutMs),
         apiKey
     };
 

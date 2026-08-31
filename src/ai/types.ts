@@ -236,12 +236,6 @@ export interface LocalLlmSettings {
      * can do more than emit strict JSON until the operator says so.
      */
     declaredCapabilities: DeclarableLocalCapability[];
-    /**
-     * Model identity whose tier last seeded `declaredCapabilities`. Seeding runs
-     * once per model: after that the author's toggles stand, including turning
-     * everything back off. Null means nothing has been seeded yet.
-     */
-    capabilitiesSeededFor: string | null;
 }
 
 export interface AIRoleTemplate {

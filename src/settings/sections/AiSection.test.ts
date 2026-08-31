@@ -507,14 +507,6 @@ describe('AI settings models table', () => {
         expect(source.includes('localLlmValidationPromise = null;')).toBe(true);
     });
 
-    it('seeds Local LLM capability declarations from the validated tier, once per model', () => {
-        const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
-        expect(source.includes('seedDeclaredCapabilitiesFromTier')).toBe(true);
-        expect(source.includes('capabilitiesForTier(')).toBe(true);
-        // Seeding is keyed to a model identity so a later manual toggle stands.
-        expect(source.includes('capabilitiesSeededFor === identity')).toBe(true);
-    });
-
     it('uses the AI Strategy model dropdown as the active Local LLM model selector', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
         expect(source.includes("modelOverrideDropdown.addOption('—', '—');")).toBe(false);

@@ -64,7 +64,7 @@ import {
     LOCAL_LLM_JSON_MODE_LABEL_KEYS,
     normalizeLocalLlmServerBaseUrl
 } from '../../ai/localLlm/settings';
-import { capabilitiesForTier, inferLocalLlmCapability } from '../../ai/localLlm/capabilityInference';
+import { inferLocalLlmCapability } from '../../ai/localLlm/capabilityInference';
 import type { LocalLlmCapabilityAssessment, LocalLlmFeatureSupport } from '../../ai/localLlm/capabilityInference';
 import type { LocalLlmModelEntry } from '../../ai/localLlm/transport';
 import { withTimeout } from '../../ai/localLlm/transport';
@@ -3923,35 +3923,6 @@ export function renderAiSection(params: {
         return localLlmModelLoadPromise;
     }
 
-    /**
-     * Seed the capability declarations from the validated tier, once per model.
-     *
-     * RT infers a tier from the model id and diagnostics but used to make the
-     * author declare capabilities by hand, from the same evidence — so connecting
-     * an 80B landed on "Not usable" with every switch off and nothing explaining
-     * why. Seeding closes that gap without taking the decision away: it runs only
-     * when this model identity has not been seeded before, so any later toggle,
-     * including turning everything back off, stands.
-     */
-    async function seedDeclaredCapabilitiesFromTier(): Promise<boolean> {
-        const modelId = getOllamaModelId().trim();
-        if (!modelId) return false;
-        const aiSettings = ensureCanonicalAiSettings();
-        const current = getLocalLlmSettings(aiSettings);
-        const identity = buildLocalLlmModelIdentity(current.backend, current.baseUrl, modelId);
-        if (current.capabilitiesSeededFor === identity) return false;
-
-        const liveEntry = localLlmLoadedModels.find(model => model.id === modelId) ?? null;
-        const seeded = capabilitiesForTier(getLocalCapabilityAssessment(modelId, liveEntry).tier);
-        aiSettings.localLlm = {
-            ...current,
-            declaredCapabilities: seeded,
-            capabilitiesSeededFor: identity
-        };
-        await persistCanonical();
-        return true;
-    }
-
     // Ceiling for the whole detect -> load-models -> diagnose chain. Generous enough
     // that a cold large-model load (30-60s) is not mistaken for a hang, short enough
     // that a genuinely dead socket reports instead of spinning indefinitely.
@@ -3980,11 +3951,8 @@ export function renderAiSection(params: {
                 );
                 localLlmValidationError = null;
                 localLlmLastValidatedAt = new Date().toISOString();
-                const seeded = await seedDeclaredCapabilitiesFromTier();
                 if (!options.quiet) {
-                    new Notice(seeded
-                        ? 'Local LLM validation complete. Capabilities set from the detected tier — adjust them if the model differs.'
-                        : 'Local LLM validation complete.');
+                    new Notice('Local LLM validation complete.');
                 }
             } catch (error) {
                 localLlmValidationReport = null;

@@ -443,3 +443,51 @@ export function buildModelDriftReport(input) {
         }),
     };
 }
+
+/**
+ * Keys that record WHEN a snapshot ran rather than WHAT it found.
+ *
+ * Every generator stamps these fresh on each run, so writing unconditionally made
+ * each build produce a diff in four tracked JSON files even when no model, alias,
+ * price, or capability had changed. That turned the git history into noise and,
+ * with the auto-backup build, generated a commit per build.
+ */
+export const SNAPSHOT_TIMESTAMP_KEYS = new Set([
+    'generatedAt',
+    'checkedAt',
+    'snapshotGeneratedAt',
+    'detectedAt',
+]);
+
+function stripTimestamps(value, keys) {
+    if (Array.isArray(value)) return value.map(entry => stripTimestamps(entry, keys));
+    if (value && typeof value === 'object') {
+        const out = {};
+        for (const [key, entry] of Object.entries(value)) {
+            if (keys.has(key)) continue;
+            out[key] = stripTimestamps(entry, keys);
+        }
+        return out;
+    }
+    return value;
+}
+
+/**
+ * True when `next` differs from the snapshot already on disk in any way that is
+ * not purely a timestamp. Callers keep their own write and formatting:
+ *
+ *     if (snapshotContentChanged(file, payload)) await writeJson(file, payload);
+ *
+ * A missing or unreadable file counts as changed, so a first run always writes.
+ */
+export function snapshotContentChanged(previousRaw, next, keys = SNAPSHOT_TIMESTAMP_KEYS) {
+    if (typeof previousRaw !== 'string' || !previousRaw.trim()) return true;
+    let previous;
+    try {
+        previous = JSON.parse(previousRaw);
+    } catch {
+        return true;
+    }
+    return JSON.stringify(stripTimestamps(previous, keys))
+        !== JSON.stringify(stripTimestamps(next, keys));
+}

@@ -21,6 +21,7 @@ import fs from 'fs';
 import path from 'path';
 import process from 'process';
 import { fileURLToPath } from 'url';
+import { snapshotContentChanged } from './modelSnapshotUtils.mjs';
 
 // ── Paths ──────────────────────────────────────────────────────────────────────
 
@@ -853,7 +854,14 @@ function writeAuditReport(analytics, sourceFindings, validationErrors, validatio
 
     const dir = path.dirname(AUDIT_REPORT_FILE);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(AUDIT_REPORT_FILE, JSON.stringify(report, null, 2), 'utf8');
+    // Only rewrite when a finding actually changed: generatedAt alone moving every
+    // run made this file dirty on every build for no informational gain.
+    const existing = fs.existsSync(AUDIT_REPORT_FILE)
+        ? fs.readFileSync(AUDIT_REPORT_FILE, 'utf8')
+        : null;
+    if (snapshotContentChanged(existing, report)) {
+        fs.writeFileSync(AUDIT_REPORT_FILE, JSON.stringify(report, null, 2), 'utf8');
+    }
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────────

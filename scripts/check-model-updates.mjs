@@ -15,6 +15,7 @@ import {
     hasProviderDiff,
     parseCanonicalSnapshot,
     parseLatestAliasTracking,
+    snapshotContentChanged,
 } from './modelSnapshotUtils.mjs';
 
 const MODELS_FILE = path.resolve('scripts/models/latest-models.json');
@@ -32,6 +33,14 @@ async function readJson(filePath) {
     try {
         const raw = await fs.readFile(filePath, 'utf8');
         return JSON.parse(raw);
+    } catch {
+        return null;
+    }
+}
+
+async function readIfExists(filePath) {
+    try {
+        return await fs.readFile(filePath, 'utf8');
     } catch {
         return null;
     }
@@ -200,8 +209,15 @@ export async function runModelUpdateCheck(options = {}) {
         actionable,
     });
 
-    await writeJson(latestTrackingFile, nextTracking);
-    await writeJson(driftReportFile, report);
+    // Write only on a real change. Both payloads carry a fresh checkedAt on every
+    // run, so writing unconditionally produced a diff (and, with the auto-backup
+    // build, a commit) on every build even when nothing about the models moved.
+    if (snapshotContentChanged(await readIfExists(latestTrackingFile), nextTracking)) {
+        await writeJson(latestTrackingFile, nextTracking);
+    }
+    if (snapshotContentChanged(await readIfExists(driftReportFile), report)) {
+        await writeJson(driftReportFile, report);
+    }
 
     const summary = buildSummaryMessage(report, driftReportFile);
     if (!quiet || report.hasActionableChanges || (shouldRefresh && !refreshResult.ok)) {

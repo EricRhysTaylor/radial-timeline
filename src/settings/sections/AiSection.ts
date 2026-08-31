@@ -112,6 +112,10 @@ type DetectedLocalServer = {
     detectedAt: string;
 };
 
+export type AiSectionLifecycle = {
+    dispose: () => void;
+};
+
 export function renderAiSection(params: {
     app: App;
     plugin: RadialTimelinePlugin;
@@ -125,7 +129,7 @@ export function renderAiSection(params: {
     setOllamaConnectionInputs: (refs: { baseInput?: HTMLInputElement; modelInput?: HTMLInputElement }) => void;
     isAiTabActive: () => boolean;
     setAiTabActivationHandler: (handler: () => void) => void;
-}): void {
+}): AiSectionLifecycle {
     const { app, plugin, containerEl } = params;
     containerEl.classList.add(ERT_CLASSES.STACK);
 
@@ -432,6 +436,15 @@ export function renderAiSection(params: {
     const getLocalLlmUiTimeoutMs = (): number => (
         Math.max(4000, Math.min(getLocalLlmSettings(ensureCanonicalAiSettings()).timeoutMs, 10000))
     );
+    const getLocalLlmValidationDeadlineMs = (): number => {
+        const configured = getLocalLlmSettings(ensureCanonicalAiSettings()).timeoutMs;
+        // Detect, load, and the diagnostics availability probe are each cheap but
+        // separately bounded by the UI timeout. Diagnostics then performs one
+        // generation with the configured timeout. The overall ceiling must be
+        // larger than that complete sequential budget or it can abandon a healthy
+        // in-flight generation.
+        return Math.max(60_000, configured + (3 * getLocalLlmUiTimeoutMs()) + 5_000);
+    };
     const getLocalLlmUiOverrides = (): Partial<LocalLlmSettings> => ({
         timeoutMs: getLocalLlmUiTimeoutMs()
     });
@@ -3117,6 +3130,14 @@ export function renderAiSection(params: {
     let localLlmValidationPending = false;
     let localLlmValidationPromise: Promise<void> | null = null;
     let localLlmAutoValidationTimer: number | null = null;
+    let aiSectionDisposed = false;
+
+    const clearLocalLlmAutoValidation = (): void => {
+        if (localLlmAutoValidationTimer !== null) {
+            window.clearTimeout(localLlmAutoValidationTimer);
+            localLlmAutoValidationTimer = null;
+        }
+    };
 
     const getDetectedLocalServerCandidates = (): Array<{ backend: LocalLlmBackendId; baseUrl: string; label: string }> => {
         const configured = getLocalLlmSettings(ensureCanonicalAiSettings());
@@ -3378,7 +3399,7 @@ export function renderAiSection(params: {
                         : 'No healthy local servers detected automatically.'
                 );
             }
-        })(), LOCAL_LLM_VALIDATION_DEADLINE_MS, t('settings.ai.localLlm.validationDeadline')).catch((error: unknown) => {
+        })(), LOCAL_LLM_GUARD_DEADLINE_MS, t('settings.ai.localLlm.validationDeadline')).catch((error: unknown) => {
             localLlmServerDetectionError = error instanceof Error ? error.message : String(error);
             localLlmDetectedServers = [];
         }).finally(() => {
@@ -3396,6 +3417,7 @@ export function renderAiSection(params: {
     }
 
     function queueLocalLlmAutoValidation(): void {
+        if (aiSectionDisposed) return;
         const aiSettings = ensureCanonicalAiSettings();
         if (aiSettings.provider !== 'ollama' || !getLocalLlmSettings(aiSettings).enabled) return;
         if (localLlmAutoValidationTimer !== null) {
@@ -3403,7 +3425,7 @@ export function renderAiSection(params: {
         }
         localLlmAutoValidationTimer = window.setTimeout(() => {
             localLlmAutoValidationTimer = null;
-            if (ensureCanonicalAiSettings().provider !== 'ollama') return;
+            if (aiSectionDisposed || ensureCanonicalAiSettings().provider !== 'ollama') return;
             void detectLocalLlmServers({ quiet: true }).then(() => validateLocalLlm({ quiet: true }));
         }, 150);
     }
@@ -3822,12 +3844,21 @@ export function renderAiSection(params: {
             && checks.every(([, check]) => check?.ok)
             && !localLlmValidationError
             && !localLlmServerDetectionError;
-        const appendChecksRollup = (text: string): void => {
-            localLlmChecksDetail.createDiv({ cls: 'ert-field-note ert-ai-local-llm-checks-rollup', text });
+        const appendChecksRollup = (text: string, busy = false): void => {
+            const rollup = localLlmChecksDetail.createDiv({ cls: 'ert-field-note ert-ai-local-llm-checks-rollup' });
+            rollup.createSpan({ text });
+            if (!busy) return;
+            const dots = rollup.createSpan({
+                cls: 'ert-ai-local-validation-dots',
+                attr: { 'aria-hidden': 'true' }
+            });
+            for (let dot = 0; dot < 3; dot += 1) {
+                dots.createSpan({ cls: 'ert-ai-local-validation-dot' });
+            }
         };
 
         if (localLlmValidationPending) {
-            appendChecksRollup('Running validation checks...');
+            appendChecksRollup('Running validation checks...', true);
         } else if (allChecksPassed) {
             appendChecksRollup('All checks passed — connection · model availability · basic · structured · repair.');
             // The one finding that matters BECAUSE nothing is broken. Collapsing
@@ -3913,7 +3944,7 @@ export function renderAiSection(params: {
                     new Notice(`Unable to load local models: ${localLlmModelLoadError}`);
                 }
             }
-        })(), LOCAL_LLM_VALIDATION_DEADLINE_MS, t('settings.ai.localLlm.validationDeadline')).catch((error: unknown) => {
+        })(), LOCAL_LLM_GUARD_DEADLINE_MS, t('settings.ai.localLlm.validationDeadline')).catch((error: unknown) => {
             localLlmLoadedModels = [];
             localLlmModelLoadError = error instanceof Error ? error.message : String(error);
         }).finally(() => {
@@ -3929,9 +3960,10 @@ export function renderAiSection(params: {
     // Ceiling for the whole detect -> load-models -> diagnose chain. Generous enough
     // that a cold large-model load (30-60s) is not mistaken for a hang, short enough
     // that a genuinely dead socket reports instead of spinning indefinitely.
-    const LOCAL_LLM_VALIDATION_DEADLINE_MS = 60_000;
+    const LOCAL_LLM_GUARD_DEADLINE_MS = 60_000;
 
     async function validateLocalLlm(options: { quiet?: boolean } = {}): Promise<void> {
+        if (aiSectionDisposed) return;
         if (localLlmValidationPromise) return localLlmValidationPromise;
         localLlmValidationPending = true;
         localLlmValidationError = null;
@@ -3949,7 +3981,7 @@ export function renderAiSection(params: {
                         await loadLocalLlmModels({ quiet: true });
                         return getLocalLlmClient(plugin).runDiagnostics(getLocalLlmUiOverrides());
                     })(),
-                    LOCAL_LLM_VALIDATION_DEADLINE_MS,
+                    getLocalLlmValidationDeadlineMs(),
                     t('settings.ai.localLlm.validationDeadline')
                 );
                 localLlmValidationError = null;
@@ -3967,6 +3999,7 @@ export function renderAiSection(params: {
             } finally {
                 localLlmValidationPending = false;
                 localLlmValidationPromise = null;
+                if (aiSectionDisposed) return;
                 renderLocalLlmStatus();
                 // The preview card mirrors validation state — refresh it so
                 // "Connected & validated" lands there too, not only in the
@@ -4239,4 +4272,11 @@ export function renderAiSection(params: {
 
     // Set initial visibility state
     params.toggleAiSettingsVisibility(plugin.settings.enableAiSceneAnalysis ?? true);
+
+    return {
+        dispose: () => {
+            aiSectionDisposed = true;
+            clearLocalLlmAutoValidation();
+        }
+    };
 }

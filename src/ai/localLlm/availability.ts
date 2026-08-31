@@ -8,9 +8,9 @@
  * "Is there a local model I can actually use right now?"
  *
  * A lightweight probe for UI affordances — it lists models and stops. The deep
- * checks in `diagnostics.ts` run two real completions, which is right for a
- * settings panel the author is staring at and far too slow for a control that
- * has to resolve while a search box is opening.
+ * checks in `diagnostics.ts` run one real structured completion, which is right
+ * for a settings panel the author is staring at and far too slow for a control
+ * that has to resolve while a search box is opening.
  *
  * The two are not independent: `runLocalLlmDiagnostics` calls this first and
  * continues from its result, so Settings → AI and the search panel cannot

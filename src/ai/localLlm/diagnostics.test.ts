@@ -43,16 +43,11 @@ describe('runLocalLlmDiagnostics', () => {
         expect(report.modelAvailable.ok).toBe(false);
     });
 
-    // The settings panel passes a SHORT timeout so the cheap checks cannot hang the
-    // UI. Applying it to the generation probes orphaned work on the server -- a
-    // local timeout cannot abort the request, generation serialises, and the orphan
-    // blocked the next probe. That is why repeat validations appeared to hang while
-    // the first one after a restart succeeded.
-    it('gives generation probes the configured timeout, not the short UI override', async () => {
+    it('uses one structured probe with the configured timeout', async () => {
         listModels.mockResolvedValue([{ id: 'local-model' }]);
         complete.mockResolvedValue({
             success: true,
-            content: 'READY',
+            content: '{"status":"ok"}',
             responseData: {},
             requestPayload: {}
         });
@@ -60,15 +55,18 @@ describe('runLocalLlmDiagnostics', () => {
         const base = (await import('../settings/aiSettings')).buildDefaultAiSettings();
         base.localLlm = { ...base.localLlm, defaultModelId: 'local-model', timeoutMs: 45_000 };
 
-        await runLocalLlmDiagnostics(
+        const report = await runLocalLlmDiagnostics(
             { app: {}, settings: { aiSettings: base } } as any,
-            { timeoutMs: 10_000 } // what the settings panel passes
+            { timeoutMs: 10_000 }
         );
 
-        expect(complete).toHaveBeenCalled();
-        for (const call of complete.mock.calls) {
-            expect(call[0].timeoutMs).toBe(45_000);
-        }
+        expect(report.basicCompletion.ok).toBe(true);
+        expect(report.structuredJson.ok).toBe(true);
+        expect(complete).toHaveBeenCalledTimes(1);
+        expect(complete.mock.calls[0][0]).toMatchObject({
+            timeoutMs: 45_000,
+            maxOutputTokens: 64
+        });
     });
 
     it('reports missing model when backend is reachable', async () => {
@@ -117,17 +115,25 @@ describe('structured JSON mode is measured, not assumed', () => {
 
     const ok = (content: string) => ({ success: true, content, responseData: {}, error: undefined });
 
-    it('makes exactly one structured call — never a second probe', async () => {
-        // Probing the other mode too meant one guaranteed slow call per
-        // validation, and withTimeout rejects locally without aborting the
-        // request — so the server kept generating for an answer nobody would
-        // collect. Those orphans accumulate and wedge it.
+    it('makes exactly one generation call per validation', async () => {
         complete.mockResolvedValue(ok('{"status":"ok"}'));
 
         const { runLocalLlmDiagnostics } = await import('./diagnostics');
         await runLocalLlmDiagnostics(await plugin());
 
-        // One basic completion, one structured. Nothing speculative.
+        expect(complete).toHaveBeenCalledTimes(1);
+    });
+
+    it('can validate twice consecutively without carrying work between runs', async () => {
+        complete.mockResolvedValue(ok('{"status":"ok"}'));
+        const { runLocalLlmDiagnostics } = await import('./diagnostics');
+        const target = await plugin();
+
+        const first = await runLocalLlmDiagnostics(target);
+        const second = await runLocalLlmDiagnostics(target);
+
+        expect(first.structuredJson.ok).toBe(true);
+        expect(second.structuredJson.ok).toBe(true);
         expect(complete).toHaveBeenCalledTimes(2);
     });
 

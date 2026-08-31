@@ -2,10 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { callOpenAiCompatibleLocalCompletion, LOCAL_LLM_CANCELLED } from './transport';
 
 /**
- * A caller giving up must stop the server too. Without an abort, `requestUrl`
- * keeps the connection open and the model keeps generating an answer nobody
- * will collect — those orphans accumulate across the server's parallel slots
- * until it is wedged.
+ * A caller giving up must release its HTTP request. The server may not observe
+ * that disconnect until its next write, so higher-level model jobs are also
+ * serialized by LocalLlmClient.
  */
 
 const originalFetch = globalThis.fetch;
@@ -63,9 +62,9 @@ describe('local completion abort', () => {
         // orphan again.
         const controller = new AbortController();
         const fetchMock = vi.fn((_url: unknown, init?: RequestInit) => new Promise((_res, rej) => {
-            // No DOM element and no Component here, and the stub dies with the test.
-            // SAFE: an AbortSignal cannot be bound by registerDomEvent.
-            init?.signal?.addEventListener('abort', () => rej(new DOMException('Aborted', 'AbortError')));
+            if (init?.signal) {
+                init.signal.onabort = () => rej(new DOMException('Aborted', 'AbortError'));
+            }
         }));
         globalThis.fetch = fetchMock as never;
 
@@ -82,9 +81,9 @@ describe('local completion abort', () => {
 
     it('times out without leaving the request running', async () => {
         globalThis.fetch = vi.fn((_url: unknown, init?: RequestInit) => new Promise((_res, rej) => {
-            // No DOM element and no Component here, and the stub dies with the test.
-            // SAFE: an AbortSignal cannot be bound by registerDomEvent.
-            init?.signal?.addEventListener('abort', () => rej(new DOMException('Aborted', 'AbortError')));
+            if (init?.signal) {
+                init.signal.onabort = () => rej(new DOMException('Aborted', 'AbortError'));
+            }
         })) as never;
 
         const result = await callOpenAiCompatibleLocalCompletion({

@@ -70,6 +70,17 @@ describe('settings section navigation anchors', () => {
         expect(aiSource.includes('if (params.isAiTabActive()) onAiTabActivated();')).toBe(true);
     });
 
+    it('disposes AI-section UI work when settings is redrawn, hidden, or unloaded', () => {
+        const settingsSource = readFileSync(resolve(process.cwd(), 'src/settings/SettingsTab.ts'), 'utf8');
+
+        expect(settingsSource.includes('this._aiSectionLifecycle?.dispose();')).toBe(true);
+        expect(settingsSource.includes('this.disposeAiSection();\n        containerEl.empty();')).toBe(true);
+        expect(settingsSource.includes('hide(): void {\n        this.disposeAsyncWork();')).toBe(true);
+        expect(settingsSource.includes('public disposeAsyncWork(): void {')).toBe(true);
+        const mainSource = readFileSync(resolve(process.cwd(), 'src/main.ts'), 'utf8');
+        expect(mainSource.includes('this.settingsTab?.disposeAsyncWork();')).toBe(true);
+    });
+
     it('re-checks cloud provider keys on AI tab activation and on provider switch', () => {
         const aiSource = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
 

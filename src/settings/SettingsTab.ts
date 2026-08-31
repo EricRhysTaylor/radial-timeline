@@ -12,7 +12,7 @@ import { fetchOpenAiModels } from '../api/openaiApi';
 import RadialTimelinePlugin from '../main';
 import { renderColorsSection } from './sections/ColorsSection';
 import { renderConfigurationSection } from './sections/ConfigurationSection';
-import { renderAiSection } from './sections/AiSection';
+import { renderAiSection, type AiSectionLifecycle } from './sections/AiSection';
 import { renderReleaseNotesSection } from './sections/ReleaseNotesSection';
 import { renderPovSection } from './sections/PovSection';
 import { renderPlanetaryTimeSection } from './sections/PlanetaryTimeSection';
@@ -47,11 +47,23 @@ import { CORE_ALERTS_SECTION_KEY, type RadialTimelineSettingsTabId } from './set
 
 export class RadialTimelineSettingsTab extends PluginSettingTab {
     private releaseNotesComponent: Component | null = null;
+    private _aiSectionLifecycle: AiSectionLifecycle | null = null;
+
+    private disposeAiSection(): void {
+        this._aiSectionLifecycle?.dispose();
+        this._aiSectionLifecycle = null;
+    }
+
+    /** Stop settings-owned async work when the plugin itself is reloaded. */
+    public disposeAsyncWork(): void {
+        this.disposeAiSection();
+        this._aiTabActivationHandler = null;
+    }
 
     hide(): void {
+        this.disposeAsyncWork();
         this.releaseNotesComponent?.unload();
         this.releaseNotesComponent = null;
-        this._aiTabActivationHandler = null;
         super.hide();
     }
 
@@ -879,6 +891,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
 
     display(): void {
         const { containerEl } = this;
+        this.disposeAiSection();
         containerEl.empty();
         containerEl.addClass('ert-ui', 'ert-settings-root', 'ert-scope--settings');
         containerEl.closest('.vertical-tab-content')?.classList.add('ert-settings-scroll-host');
@@ -1174,7 +1187,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
 
         const aiSection = aiContent.createDiv({ attr: { [ERT_DATA.SECTION]: 'ai' } });
         try {
-            renderAiSection({
+            this._aiSectionLifecycle = renderAiSection({
                 app: this.app,
                 plugin: this.plugin,
                 containerEl: aiSection,

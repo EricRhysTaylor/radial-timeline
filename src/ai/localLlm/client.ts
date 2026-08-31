@@ -44,6 +44,8 @@ function mergeLiveLocalModelInfo(base: ModelInfo, liveEntry?: Partial<LocalLlmMo
 
 export class LocalLlmClient {
     private liveSelectionCache = new Map<string, { expiresAt: number; selection: ModelSelectionResult }>();
+    private diagnosticsQueue: Promise<unknown> = Promise.resolve();
+    private diagnosticsByConfiguration = new Map<string, Promise<Awaited<ReturnType<typeof runLocalLlmDiagnostics>>>>();
 
     constructor(private plugin: RadialTimelinePlugin) {}
 
@@ -108,8 +110,35 @@ export class LocalLlmClient {
         }
     }
 
-    async runDiagnostics(overrides?: Partial<LocalLlmSettings>) {
-        return runLocalLlmDiagnostics(this.plugin, overrides);
+    runDiagnostics(overrides?: Partial<LocalLlmSettings>) {
+        const localLlm = {
+            ...getCanonicalLocalLlmSettings(this.plugin),
+            ...(overrides || {})
+        };
+        const key = JSON.stringify({
+            backend: localLlm.backend,
+            baseUrl: localLlm.baseUrl,
+            defaultModelId: localLlm.defaultModelId,
+            maxRetries: localLlm.maxRetries,
+            jsonMode: localLlm.jsonMode
+        });
+        const existing = this.diagnosticsByConfiguration.get(key);
+        if (existing) return existing;
+
+        // MLX can continue computing after its HTTP client disconnects. Keep one
+        // plugin-owned queue so closing/reopening Settings attaches to the same
+        // generation instead of launching competing work against the model.
+        const promise = this.diagnosticsQueue
+            .catch(() => undefined)
+            .then(() => runLocalLlmDiagnostics(this.plugin, overrides));
+        this.diagnosticsQueue = promise;
+        this.diagnosticsByConfiguration.set(key, promise);
+        void promise.finally(() => {
+            if (this.diagnosticsByConfiguration.get(key) === promise) {
+                this.diagnosticsByConfiguration.delete(key);
+            }
+        }).catch(() => undefined);
+        return promise;
     }
 
     async generateText(req: GenerateTextRequest): Promise<ProviderExecutionResult> {

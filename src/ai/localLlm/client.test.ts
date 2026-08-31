@@ -5,6 +5,7 @@ const getCredential = vi.fn();
 const fetchOllamaModelDetails = vi.fn();
 const resolveLocalLlmSelection = vi.fn();
 const getCanonicalLocalLlmSettings = vi.fn();
+const runLocalLlmDiagnostics = vi.fn();
 
 vi.mock('./backends', () => ({
     getLocalLlmBackend: () => ({
@@ -35,6 +36,10 @@ vi.mock('./settings', () => ({
     resolveLocalLlmSelection
 }));
 
+vi.mock('./diagnostics', () => ({
+    runLocalLlmDiagnostics
+}));
+
 describe('LocalLlmClient live model selection', () => {
     beforeEach(() => {
         listModels.mockReset();
@@ -42,6 +47,7 @@ describe('LocalLlmClient live model selection', () => {
         fetchOllamaModelDetails.mockReset();
         resolveLocalLlmSelection.mockReset();
         getCanonicalLocalLlmSettings.mockReset();
+        runLocalLlmDiagnostics.mockReset();
 
         getCredential.mockResolvedValue('');
         getCanonicalLocalLlmSettings.mockReturnValue({
@@ -94,5 +100,42 @@ describe('LocalLlmClient live model selection', () => {
 
         expect(selection.model.contextWindow).toBe(32000);
         expect(selection.model.maxOutput).toBe(4000);
+    });
+
+    it('reuses one in-flight diagnostics run across settings render instances', async () => {
+        let finish!: (value: { ok: true }) => void;
+        runLocalLlmDiagnostics.mockReturnValue(new Promise(resolve => { finish = resolve; }));
+        const plugin = { settings: { aiSettings: {} } } as any;
+        const { getLocalLlmClient } = await import('./client');
+        const client = getLocalLlmClient(plugin);
+
+        const first = client.runDiagnostics({ timeoutMs: 10_000 });
+        const reopenedPanel = client.runDiagnostics({ timeoutMs: 4_000 });
+
+        expect(first).toBe(reopenedPanel);
+        await vi.waitFor(() => expect(runLocalLlmDiagnostics).toHaveBeenCalledTimes(1));
+        finish({ ok: true });
+        await expect(first).resolves.toEqual({ ok: true });
+    });
+
+    it('serializes diagnostics for different Local LLM configurations', async () => {
+        let finishFirst!: (value: { id: string }) => void;
+        runLocalLlmDiagnostics
+            .mockReturnValueOnce(new Promise(resolve => { finishFirst = resolve; }))
+            .mockResolvedValueOnce({ id: 'second' });
+        const plugin = { settings: { aiSettings: {} } } as any;
+        const { getLocalLlmClient } = await import('./client');
+        const client = getLocalLlmClient(plugin);
+
+        const first = client.runDiagnostics({ baseUrl: 'http://localhost:8080/v1' });
+        await Promise.resolve();
+        const second = client.runDiagnostics({ baseUrl: 'http://localhost:1234/v1' });
+        await Promise.resolve();
+
+        expect(runLocalLlmDiagnostics).toHaveBeenCalledTimes(1);
+        finishFirst({ id: 'first' });
+        await expect(first).resolves.toEqual({ id: 'first' });
+        await expect(second).resolves.toEqual({ id: 'second' });
+        expect(runLocalLlmDiagnostics).toHaveBeenCalledTimes(2);
     });
 });

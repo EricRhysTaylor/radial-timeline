@@ -1479,6 +1479,11 @@ export default class RadialTimelinePlugin extends Plugin {
     }
 
     onunload() {
+        // Settings can own a live local-model generation even when Obsidian
+        // reloads the plugin without first calling PluginSettingTab.hide().
+        // Dispose its UI timers before the old instance loses those hooks; the
+        // client-owned diagnostic itself is allowed to settle normally.
+        this.settingsTab?.disposeAsyncWork();
         // Tear down registered services first; failures are caught per-item
         // so one bad cleanup cannot leak the rest.
         this.disposables.disposeAll();

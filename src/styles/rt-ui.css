@@ -3470,7 +3470,8 @@
 /* Motion is the message here, so the reduced-motion fallback keeps the dots
    visible and simply stops them moving. */
 @media (prefers-reduced-motion: reduce) {
-  .ert-ui.ert-scope--settings .ert-ai-resolved-preview-busy-dot {
+  .ert-ui.ert-scope--settings .ert-ai-resolved-preview-busy-dot,
+  .ert-ui.ert-scope--settings .ert-ai-local-validation-dot {
     animation: none;
     opacity: 0.75;
   }
@@ -3767,6 +3768,32 @@
 /* Single-line rollup ("All checks passed — ...") spans the full checks grid. */
 .ert-ui.ert-scope--settings .ert-ai-local-llm-checks-rollup {
   grid-column: 1 / -1;
+}
+
+/* A large local-model check can legitimately take close to a minute. Keep a small
+   heartbeat beside the status copy so a long run is visibly still alive. */
+.ert-ui.ert-scope--settings .ert-ai-local-validation-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-4-1);
+  margin-inline-start: var(--size-4-2);
+  vertical-align: middle;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-local-validation-dot {
+  width: var(--size-2-3);
+  height: var(--size-2-3);
+  border-radius: 50%;
+  background: var(--interactive-accent);
+  animation: ert-ai-preview-busy-pulse 1.2s ease-in-out infinite;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-local-validation-dot:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-local-validation-dot:nth-child(3) {
+  animation-delay: 0.32s;
 }
 
 .ert-ui.ert-scope--settings .ert-ai-local-llm-model-list {

@@ -507,6 +507,18 @@ describe('AI settings models table', () => {
         expect(source.includes('localLlmValidationPromise = null;')).toBe(true);
     });
 
+    it('shows an animated validation heartbeat and clears UI-owned timers when the section leaves', () => {
+        const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
+        const css = readFileSync(resolve(process.cwd(), 'src/styles/rt-ui.css'), 'utf8');
+
+        expect(source.includes("appendChecksRollup('Running validation checks...', true)")).toBe(true);
+        expect(source.includes("cls: 'ert-ai-local-validation-dots'")).toBe(true);
+        expect(source.includes('clearLocalLlmAutoValidation();')).toBe(true);
+        expect(source.includes('dispose: () => {')).toBe(true);
+        expect(css.includes('.ert-ai-local-validation-dot:nth-child(3)')).toBe(true);
+        expect(css.includes('.ert-ai-local-validation-dot {')).toBe(true);
+    });
+
     it('uses the AI Strategy model dropdown as the active Local LLM model selector', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
         expect(source.includes("modelOverrideDropdown.addOption('—', '—');")).toBe(false);

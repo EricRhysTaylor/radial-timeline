@@ -5,11 +5,11 @@ export interface LocalLlmTransportRequest {
     timeoutMs: number;
     apiKey?: string;
     /**
-     * Cancels the request AND the work behind it.
+     * Cancels the client request.
      *
-     * Without this a caller giving up only stops listening: the server keeps
-     * generating an answer nobody will collect, and those orphans accumulate
-     * across its parallel slots until it is wedged.
+     * A local server may continue compute until its next write observes the
+     * disconnect. Callers must still serialize model jobs rather than treating
+     * an HTTP abort as proof that the model is idle.
      */
     signal?: AbortSignal;
 }
@@ -389,7 +389,7 @@ export async function fetchOllamaModelDetails(
 }
 
 /**
- * Genuinely abortable completion.
+ * Genuinely abortable HTTP completion.
  *
  * Returns null when the connection could not be established at all, so the
  * caller can try the CORS-safe path. Aborts — timeout or caller cancel — are
@@ -489,7 +489,8 @@ export async function callOpenAiCompatibleLocalCompletion(input: {
     };
 
     try {
-        // Abortable first, so a timeout or a cancel actually stops the server.
+        // Abortable first so the client releases the connection on timeout. The
+        // local server may not observe that disconnect until its next write.
         const direct = await fetchCompletionAbortable(url, requestPayload, input.transport);
         if (direct) {
             let responseData: unknown;

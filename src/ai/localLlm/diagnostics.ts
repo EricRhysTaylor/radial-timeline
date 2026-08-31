@@ -59,15 +59,12 @@ export async function runLocalLlmDiagnostics(
     // Two budgets, deliberately different.
     //
     // The settings panel passes a short timeout so the CHEAP checks (reachability,
-    // model list) cannot hang the UI. Applying that same short budget to the two
-    // GENERATION probes is what wedged repeat validations: withTimeout rejects
-    // locally but cannot abort the request, so a large model that needs longer than
-    // the UI budget keeps generating for an answer nobody collects. Generation
-    // serialises on the server, so that orphan blocks the next probe -- and the
-    // next click stacks more behind it. The first validation after a restart
-    // succeeded (idle server) and every one after it appeared to hang.
+    // model list) cannot hang the UI. Applying that same short budget to the
+    // GENERATION probe is what wedged repeat validations when two settings-panel
+    // instances launched it at once. LocalLlmClient owns and serializes that work;
+    // closing and reopening Settings now reuses the same in-flight promise.
     //
-    // Generation probes therefore use the author's CONFIGURED timeout, not the UI
+    // The generation probe therefore uses the author's CONFIGURED timeout, not the UI
     // override, so they finish rather than orphaning work on the server.
     const configuredTimeoutMs = getCanonicalLocalLlmSettings(plugin).timeoutMs;
     const transport = {
@@ -118,52 +115,54 @@ export async function runLocalLlmDiagnostics(
         };
     }
 
-    const basic = await backend.complete({
-        ...transport,
-        modelId: localLlm.defaultModelId,
-        systemPrompt: 'Reply with the single word READY.',
-        userPrompt: 'Return READY.',
-        maxOutputTokens: 16
-    });
-    basicCompletion = basic.success && basic.content?.toUpperCase().includes('READY')
-        ? { ok: true, message: 'Basic completion succeeded.' }
-        : { ok: false, message: basic.error || 'Backend did not return the expected READY response.' };
-
-    // Only the CONFIGURED mode is exercised.
+    // One structured generation proves both basic completion and the configured
+    // structured path. The former two-probe sequence doubled the opportunity for
+    // queued work and made the outer validation budget contradict the inner ones.
     //
-    // An earlier version probed both so it could report which was faster. That
-    // guaranteed one slow call per validation — and `withTimeout` rejects
-    // locally without aborting the request, so the server kept generating for
-    // an answer nobody was waiting for. Those orphans accumulate across the
-    // server's parallel slots and wedge it. A settings hint is not worth
-    // leaving work running that no one will collect.
+    // An earlier version also probed the alternate JSON mode so it could report
+    // which was faster. That guaranteed a second slow model job per validation;
+    // a settings hint is not worth doubling work on a serialized local runtime.
     const schema = {
         type: 'object',
         properties: { status: { type: 'string' } },
         required: ['status']
     };
     const startedAt = Date.now();
+    const generation = {
+        attempt: null as Awaited<ReturnType<typeof backend.complete>> | null
+    };
     const structured = await runStructuredJsonPipeline({
         providerLabel: LOCAL_LLM_BACKEND_LABELS[localLlm.backend],
         schema,
         jsonMode: localLlm.jsonMode,
         maxRetries: localLlm.maxRetries,
         runner: {
-            run: ({ systemPrompt, userPrompt, useResponseFormat }) => backend.complete({
-                ...transport,
-                modelId: localLlm.defaultModelId,
-                systemPrompt,
-                userPrompt,
-                maxOutputTokens: 64,
-                responseFormat: useResponseFormat
-                    ? { type: 'json_object', schema, schemaName: 'diagnostic' }
-                    : undefined
-            })
+            run: async ({ systemPrompt, userPrompt, useResponseFormat }) => {
+                generation.attempt = await backend.complete({
+                    ...transport,
+                    modelId: localLlm.defaultModelId,
+                    systemPrompt,
+                    userPrompt,
+                    maxOutputTokens: 64,
+                    responseFormat: useResponseFormat
+                        ? { type: 'json_object', schema, schemaName: 'diagnostic' }
+                        : undefined
+                });
+                return generation.attempt;
+            }
         },
         systemPrompt: 'Return only JSON.',
         userPrompt: 'Return {"status":"ok"} as valid JSON, with no other keys.'
     });
     const elapsedMs = Date.now() - startedAt;
+
+    const generationAttempt = generation.attempt;
+    basicCompletion = generationAttempt && !generationAttempt.error && generationAttempt.content
+        ? { ok: true, message: 'Basic completion succeeded.' }
+        : {
+            ok: false,
+            message: generationAttempt?.error || 'Backend did not return completion content.'
+        };
 
     const modeLabel = (mode: LocalLlmJsonMode) =>
         mode === 'response_format' ? 'Response format' : 'Prompt only';

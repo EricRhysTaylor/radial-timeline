@@ -91,7 +91,7 @@ function parseModelSizeHint(modelId: string): number | null {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
-function hasTimeoutSignal(diagnostics: LocalLlmDiagnosticsReport): boolean {
+export function hasTimeoutSignal(diagnostics: LocalLlmDiagnosticsReport): boolean {
     const combined = [
         diagnostics.reachable.message,
         diagnostics.modelAvailable.message,

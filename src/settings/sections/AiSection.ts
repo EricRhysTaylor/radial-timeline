@@ -60,7 +60,7 @@ import {
     buildLocalLlmServerKey,
     getLocalLlmSettings,
     LOCAL_LLM_BACKEND_LABELS,
-    LOCAL_LLM_CAPABILITY_GROUPS,
+    LOCAL_LLM_CAPABILITY_LABEL_KEYS,
     LOCAL_LLM_JSON_MODE_LABEL_KEYS,
     normalizeLocalLlmServerBaseUrl
 } from '../../ai/localLlm/settings';
@@ -3536,24 +3536,24 @@ export function renderAiSection(params: {
         text: t('settings.ai.localLlmConfig.capabilitiesDesc')
     });
 
-    // Presented as GROUPS, not one toggle per capability. longContext and
-    // highOutputCap are never required apart, so separate switches only ever
-    // moved together — see LOCAL_LLM_CAPABILITY_GROUPS. Storage still keeps the
-    // individual ids; only the declaration UI collapses.
-    for (const group of LOCAL_LLM_CAPABILITY_GROUPS) {
+    // One toggle per capability, deliberately NOT collapsed. longContext and
+    // highOutputCap look interchangeable in the requiredCapabilities gates, but
+    // longContext has independent runtime consumers that read it alone:
+    // ConceptSearchService.chunkBudgetFor() doubles the per-chunk input budget on
+    // it, and engineCapabilities grades an engine 'standard' on it. Combining the
+    // two would force an author who only wants larger concept-search chunks to
+    // also declare an output ceiling they may not have verified.
+    for (const capability of DECLARABLE_LOCAL_CAPABILITIES) {
         const capabilitySetting = new Settings(localLlmConfigSection)
-            .setName(t(group.nameKey))
-            .setDesc(t(group.descKey))
+            .setName(t(LOCAL_LLM_CAPABILITY_LABEL_KEYS[capability].name))
+            .setDesc(t(LOCAL_LLM_CAPABILITY_LABEL_KEYS[capability].desc))
             .addToggle(toggle => toggle
-                .setValue(group.capabilities.every(entry =>
-                    getLocalLlmSettings(ensureCanonicalAiSettings()).declaredCapabilities.includes(entry)))
+                .setValue(getLocalLlmSettings(ensureCanonicalAiSettings()).declaredCapabilities.includes(capability))
                 .onChange(async (value) => {
                     const aiSettings = ensureCanonicalAiSettings();
                     const current = getLocalLlmSettings(aiSettings);
                     const next = new Set(current.declaredCapabilities);
-                    for (const entry of group.capabilities) {
-                        if (value) next.add(entry); else next.delete(entry);
-                    }
+                    if (value) next.add(capability); else next.delete(capability);
                     aiSettings.localLlm = {
                         ...current,
                         declaredCapabilities: DECLARABLE_LOCAL_CAPABILITIES.filter(entry => next.has(entry))

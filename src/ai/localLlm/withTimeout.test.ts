@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { withTimeout } from './transport';
+import { hasTimeoutSignal } from './capabilityInference';
+import { en } from '../../i18n/locales/en';
 
 /**
  * The Local LLM settings panel keeps three module-level promises as re-entrancy
@@ -47,17 +49,34 @@ describe('withTimeout', () => {
         clearSpy.mockRestore();
     });
 
-    it('carries a timeout marker the tier logic recognises', async () => {
-        // capabilityInference.hasTimeoutSignal() scans diagnostic messages for
-        // 'timeout' / 'timed out' / 'deadline exceeded' to suppress a misleading
-        // tier. A deadline message that misses those words would report a healthy
-        // tier for a server that never answered.
-        const message = 'Local LLM validation timed out after 60s.';
-        const combined = message.toLowerCase();
-        expect(
-            combined.includes('timeout')
-            || combined.includes('timed out')
-            || combined.includes('deadline exceeded')
-        ).toBe(true);
+    it('produces a message the production timeout detector recognises', () => {
+        // capabilityInference.hasTimeoutSignal() scans diagnostic messages to
+        // suppress a misleading tier when the server never answered. Asserting the
+        // marker words by hand would only restate the deadline string; this runs
+        // the real detector over a report carrying that message.
+        const message = en.settings.ai.localLlm.validationDeadline;
+        const check = (ok: boolean, text: string) => ({ ok, message: text });
+        const report = {
+            modelId: 'local-model',
+            reachable: check(true, 'responded with 1 models.'),
+            modelAvailable: check(true, 'model present.'),
+            basicCompletion: check(false, message),
+            structuredJson: check(false, message),
+            repairPath: check(true, 'no repair fallback enabled.')
+        } as unknown as Parameters<typeof hasTimeoutSignal>[0];
+        expect(hasTimeoutSignal(report)).toBe(true);
+    });
+
+    it('does not flag an ordinary failure as a timeout', () => {
+        const check = (ok: boolean, text: string) => ({ ok, message: text });
+        const report = {
+            modelId: 'local-model',
+            reachable: check(false, 'Connection refused.'),
+            modelAvailable: check(false, 'Model check skipped because backend is unreachable.'),
+            basicCompletion: check(false, 'Malformed JSON in reply.'),
+            structuredJson: check(false, 'Malformed JSON in reply.'),
+            repairPath: check(true, 'no repair fallback enabled.')
+        } as unknown as Parameters<typeof hasTimeoutSignal>[0];
+        expect(hasTimeoutSignal(report)).toBe(false);
     });
 });

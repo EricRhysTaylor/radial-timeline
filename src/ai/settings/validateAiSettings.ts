@@ -155,6 +155,10 @@ export function validateAiSettings(input?: AiSettingsV1 | null): AiSettingsValid
         value.localLlm.timeoutMs = Math.max(1000, Math.min(120000, Math.floor(value.localLlm.timeoutMs)));
     }
 
+    if (typeof value.localLlm.capabilitiesSeededFor !== 'string') {
+        value.localLlm.capabilitiesSeededFor = null;
+    }
+
     if (typeof value.localLlm.maxRetries !== 'number' || !Number.isFinite(value.localLlm.maxRetries)) {
         value.localLlm.maxRetries = defaults.localLlm.maxRetries;
     } else {

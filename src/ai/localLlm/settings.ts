@@ -35,6 +35,35 @@ export const LOCAL_LLM_CAPABILITY_LABEL_KEYS: Record<
     }
 };
 
+/**
+ * How the declarations are presented. `longContext` and `highOutputCap` are never
+ * required apart — every feature that asks for one asks for the other, and no call
+ * site in the plugin requests highOutputCap alone — so splitting them gave the
+ * author two switches that could only ever be set together. They are declared as
+ * one "manuscript-scale" choice. Storage keeps all three ids: the capability
+ * vocabulary is shared with cloud providers, where they DO differ (OpenAI declares
+ * longContext without highOutputCap).
+ */
+export const LOCAL_LLM_CAPABILITY_GROUPS: ReadonlyArray<{
+    id: string;
+    capabilities: DeclarableLocalCapability[];
+    nameKey: string;
+    descKey: string;
+}> = [
+    {
+        id: 'reasoning',
+        capabilities: ['reasoningStrong'],
+        nameKey: 'settings.ai.localLlmConfig.capabilityReasoningStrongName',
+        descKey: 'settings.ai.localLlmConfig.capabilityReasoningStrongDesc'
+    },
+    {
+        id: 'manuscriptScale',
+        capabilities: ['longContext', 'highOutputCap'],
+        nameKey: 'settings.ai.localLlmConfig.capabilityManuscriptScaleName',
+        descKey: 'settings.ai.localLlmConfig.capabilityManuscriptScaleDesc'
+    }
+];
+
 export function normalizeLocalLlmServerBaseUrl(baseUrl: string): string {
     return baseUrl.trim().replace(/\/+$/, '');
 }

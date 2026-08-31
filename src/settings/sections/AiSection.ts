@@ -60,11 +60,11 @@ import {
     buildLocalLlmServerKey,
     getLocalLlmSettings,
     LOCAL_LLM_BACKEND_LABELS,
-    LOCAL_LLM_CAPABILITY_LABEL_KEYS,
+    LOCAL_LLM_CAPABILITY_GROUPS,
     LOCAL_LLM_JSON_MODE_LABEL_KEYS,
     normalizeLocalLlmServerBaseUrl
 } from '../../ai/localLlm/settings';
-import { inferLocalLlmCapability } from '../../ai/localLlm/capabilityInference';
+import { capabilitiesForTier, inferLocalLlmCapability } from '../../ai/localLlm/capabilityInference';
 import type { LocalLlmCapabilityAssessment, LocalLlmFeatureSupport } from '../../ai/localLlm/capabilityInference';
 import type { LocalLlmModelEntry } from '../../ai/localLlm/transport';
 import { withTimeout } from '../../ai/localLlm/transport';
@@ -3300,7 +3300,12 @@ export function renderAiSection(params: {
         localLlmServerDetectionError = null;
         renderLocalLlmModelList();
         renderLocalLlmStatus();
-        localLlmServerDetectionPromise = (async () => {
+        // Bounded like the validation chain. This one matters more: the auto-validation
+        // timer calls it directly, so a detection that never settles leaves
+        // localLlmServerDetectionPending true forever -- the busy UI reads that flag,
+        // not the validation one -- and the guard above then hands the same stuck
+        // promise to every later caller, wedging the panel until Settings is reopened.
+        localLlmServerDetectionPromise = withTimeout((async () => {
             const candidates = getDetectedLocalServerCandidates();
             const settled = await Promise.allSettled(candidates.map(async candidate => {
                 const models = await getLocalLlmClient(plugin).listModels({
@@ -3372,7 +3377,10 @@ export function renderAiSection(params: {
                         : 'No healthy local servers detected automatically.'
                 );
             }
-        })().finally(() => {
+        })(), LOCAL_LLM_VALIDATION_DEADLINE_MS, t('settings.ai.localLlm.validationDeadline')).catch((error: unknown) => {
+            localLlmServerDetectionError = error instanceof Error ? error.message : String(error);
+            localLlmDetectedServers = [];
+        }).finally(() => {
             localLlmServerDetectionPending = false;
             localLlmServerDetectionPromise = null;
             renderLocalLlmModelList();
@@ -3528,17 +3536,24 @@ export function renderAiSection(params: {
         text: t('settings.ai.localLlmConfig.capabilitiesDesc')
     });
 
-    for (const capability of DECLARABLE_LOCAL_CAPABILITIES) {
+    // Presented as GROUPS, not one toggle per capability. longContext and
+    // highOutputCap are never required apart, so separate switches only ever
+    // moved together — see LOCAL_LLM_CAPABILITY_GROUPS. Storage still keeps the
+    // individual ids; only the declaration UI collapses.
+    for (const group of LOCAL_LLM_CAPABILITY_GROUPS) {
         const capabilitySetting = new Settings(localLlmConfigSection)
-            .setName(t(LOCAL_LLM_CAPABILITY_LABEL_KEYS[capability].name))
-            .setDesc(t(LOCAL_LLM_CAPABILITY_LABEL_KEYS[capability].desc))
+            .setName(t(group.nameKey))
+            .setDesc(t(group.descKey))
             .addToggle(toggle => toggle
-                .setValue(getLocalLlmSettings(ensureCanonicalAiSettings()).declaredCapabilities.includes(capability))
+                .setValue(group.capabilities.every(entry =>
+                    getLocalLlmSettings(ensureCanonicalAiSettings()).declaredCapabilities.includes(entry)))
                 .onChange(async (value) => {
                     const aiSettings = ensureCanonicalAiSettings();
                     const current = getLocalLlmSettings(aiSettings);
                     const next = new Set(current.declaredCapabilities);
-                    if (value) next.add(capability); else next.delete(capability);
+                    for (const entry of group.capabilities) {
+                        if (value) next.add(entry); else next.delete(entry);
+                    }
                     aiSettings.localLlm = {
                         ...current,
                         declaredCapabilities: DECLARABLE_LOCAL_CAPABILITIES.filter(entry => next.has(entry))
@@ -3867,7 +3882,7 @@ export function renderAiSection(params: {
         localLlmModelLoadError = null;
         renderLocalLlmModelList();
         renderLocalLlmStatus();
-        localLlmModelLoadPromise = (async () => {
+        localLlmModelLoadPromise = withTimeout((async () => {
             try {
                 const detectedServer = getDetectedLocalServerByKey(getConfiguredLocalServerKey());
                 if (detectedServer) {
@@ -3894,15 +3909,47 @@ export function renderAiSection(params: {
                 if (!options.quiet) {
                     new Notice(`Unable to load local models: ${localLlmModelLoadError}`);
                 }
-            } finally {
-                localLlmModelLoadPending = false;
-                localLlmModelLoadPromise = null;
-                renderLocalLlmModelList();
-                renderLocalLlmStatus();
-                void refreshRoutingUi();
             }
-        })();
+        })(), LOCAL_LLM_VALIDATION_DEADLINE_MS, t('settings.ai.localLlm.validationDeadline')).catch((error: unknown) => {
+            localLlmLoadedModels = [];
+            localLlmModelLoadError = error instanceof Error ? error.message : String(error);
+        }).finally(() => {
+            localLlmModelLoadPending = false;
+            localLlmModelLoadPromise = null;
+            renderLocalLlmModelList();
+            renderLocalLlmStatus();
+            void refreshRoutingUi();
+        });
         return localLlmModelLoadPromise;
+    }
+
+    /**
+     * Seed the capability declarations from the validated tier, once per model.
+     *
+     * RT infers a tier from the model id and diagnostics but used to make the
+     * author declare capabilities by hand, from the same evidence — so connecting
+     * an 80B landed on "Not usable" with every switch off and nothing explaining
+     * why. Seeding closes that gap without taking the decision away: it runs only
+     * when this model identity has not been seeded before, so any later toggle,
+     * including turning everything back off, stands.
+     */
+    async function seedDeclaredCapabilitiesFromTier(): Promise<boolean> {
+        const modelId = getOllamaModelId().trim();
+        if (!modelId) return false;
+        const aiSettings = ensureCanonicalAiSettings();
+        const current = getLocalLlmSettings(aiSettings);
+        const identity = buildLocalLlmModelIdentity(current.backend, current.baseUrl, modelId);
+        if (current.capabilitiesSeededFor === identity) return false;
+
+        const liveEntry = localLlmLoadedModels.find(model => model.id === modelId) ?? null;
+        const seeded = capabilitiesForTier(getLocalCapabilityAssessment(modelId, liveEntry).tier);
+        aiSettings.localLlm = {
+            ...current,
+            declaredCapabilities: seeded,
+            capabilitiesSeededFor: identity
+        };
+        await persistCanonical();
+        return true;
     }
 
     // Ceiling for the whole detect -> load-models -> diagnose chain. Generous enough
@@ -3933,8 +3980,11 @@ export function renderAiSection(params: {
                 );
                 localLlmValidationError = null;
                 localLlmLastValidatedAt = new Date().toISOString();
+                const seeded = await seedDeclaredCapabilitiesFromTier();
                 if (!options.quiet) {
-                    new Notice('Local LLM validation complete.');
+                    new Notice(seeded
+                        ? 'Local LLM validation complete. Capabilities set from the detected tier — adjust them if the model differs.'
+                        : 'Local LLM validation complete.');
                 }
             } catch (error) {
                 localLlmValidationReport = null;

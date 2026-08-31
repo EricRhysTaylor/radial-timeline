@@ -55,7 +55,8 @@ export const DEFAULT_LOCAL_LLM_SETTINGS: LocalLlmSettings = {
     timeoutMs: 45000,
     maxRetries: 1,
     jsonMode: 'response_format',
-    declaredCapabilities: []
+    declaredCapabilities: [],
+    capabilitiesSeededFor: null
 };
 export const BUILTIN_ROLE_TEMPLATES: AIRoleTemplate[] = [
     {

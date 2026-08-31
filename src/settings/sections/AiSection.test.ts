@@ -491,6 +491,30 @@ describe('AI settings models table', () => {
         expect(source.includes('Math.max(4000, Math.min(getLocalLlmSettings(ensureCanonicalAiSettings()).timeoutMs, 10000))')).toBe(true);
     });
 
+    // Every one of the three Local LLM operations keeps a module-level promise as a
+    // re-entrancy guard (`if (xPromise) return xPromise`). A promise that never
+    // settles therefore wedges that operation for the life of the settings tab, and
+    // the busy UI reads the detection/model-load flags -- not the validation one --
+    // so bounding only the validation chain left the spinner running forever.
+    it('bounds all three Local LLM guarded operations so none can wedge the panel', () => {
+        const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
+        expect(source.includes('localLlmServerDetectionPromise = withTimeout(')).toBe(true);
+        expect(source.includes('localLlmModelLoadPromise = withTimeout(')).toBe(true);
+        expect(source.includes('localLlmValidationReport = await withTimeout(')).toBe(true);
+        // Each bounded chain must also clear its guard, or the ceiling buys nothing.
+        expect(source.includes('localLlmServerDetectionPromise = null;')).toBe(true);
+        expect(source.includes('localLlmModelLoadPromise = null;')).toBe(true);
+        expect(source.includes('localLlmValidationPromise = null;')).toBe(true);
+    });
+
+    it('seeds Local LLM capability declarations from the validated tier, once per model', () => {
+        const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
+        expect(source.includes('seedDeclaredCapabilitiesFromTier')).toBe(true);
+        expect(source.includes('capabilitiesForTier(')).toBe(true);
+        // Seeding is keyed to a model identity so a later manual toggle stands.
+        expect(source.includes('capabilitiesSeededFor === identity')).toBe(true);
+    });
+
     it('uses the AI Strategy model dropdown as the active Local LLM model selector', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
         expect(source.includes("modelOverrideDropdown.addOption('—', '—');")).toBe(false);

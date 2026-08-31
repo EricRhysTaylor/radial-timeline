@@ -84,6 +84,25 @@ export const LOCAL_LLM_TIER_FEATURES: Record<LocalLlmCapabilityTier, LocalLlmCap
     4: { summary: 'yes', pulses: 'yes', gossamer: 'yes', inquiry: 'yes' }
 };
 
+/**
+ * What a tier implies the author could honestly declare. Reads the same
+ * FEATURE_CAPABILITY_REQUIREMENTS the runtime gate uses, so a seed can never
+ * contradict the tier pills beside it: every feature the tier fully supports
+ * contributes the capabilities that feature requires.
+ */
+export function capabilitiesForTier(tier: LocalLlmCapabilityTier): DeclarableLocalCapability[] {
+    const features = LOCAL_LLM_TIER_FEATURES[tier];
+    const declared = new Set<DeclarableLocalCapability>();
+    for (const [feature, support] of Object.entries(features) as [keyof LocalLlmCapabilityFeatureMap, string][]) {
+        if (support !== 'yes') continue;
+        for (const capability of FEATURE_CAPABILITY_REQUIREMENTS[feature]) declared.add(capability);
+    }
+    return DECLARABLE_ORDER.filter(entry => declared.has(entry));
+}
+
+/** Stable order so a seeded declaration compares equal across runs. */
+const DECLARABLE_ORDER: DeclarableLocalCapability[] = ['reasoningStrong', 'longContext', 'highOutputCap'];
+
 function parseModelSizeHint(modelId: string): number | null {
     const match = modelId.toLowerCase().match(/(\d+(?:\.\d+)?)b\b/);
     if (!match) return null;

@@ -3631,7 +3631,10 @@
   --ert-local-llm-tier1-accent: color-mix(in srgb, var(--color-orange) 70%, var(--text-normal));
   --ert-local-llm-tier2-accent: color-mix(in srgb, var(--color-yellow) 65%, var(--text-normal));
   --ert-local-llm-tier3-accent: color-mix(in srgb, var(--color-green) 66%, var(--text-normal));
-  --ert-local-llm-tier4-accent: color-mix(in srgb, var(--color-cyan) 68%, var(--text-normal));
+  /* Inquiry-eligible is the Pro-tier rung, so it takes the canonical Pro magenta
+     rather than cyan: against tier3's green, cyan read as the same state at a
+     glance, and magenta already means Pro everywhere else in the plugin. */
+  --ert-local-llm-tier4-accent: color-mix(in srgb, var(--rt-pro-color-base) 72%, var(--text-normal));
 }
 
 .ert-ui.ert-scope--settings .ert-ai-local-model-pill.ert-ai-local-model-pill--tier0 {
@@ -3664,8 +3667,8 @@
 
 .ert-ui.ert-scope--settings .ert-ai-local-model-pill.ert-ai-local-model-pill--tier4 {
   --ert-local-llm-tier-accent: var(--ert-local-llm-tier4-accent);
-  border-color: color-mix(in srgb, var(--color-cyan) 78%, transparent);
-  background: color-mix(in srgb, var(--color-cyan) 12%, transparent);
+  border-color: color-mix(in srgb, var(--rt-pro-color-base) 78%, transparent);
+  background: color-mix(in srgb, var(--rt-pro-color-base) 12%, transparent);
   color: var(--ert-local-llm-tier4-accent);
 }
 

@@ -27,7 +27,10 @@ import {
 } from '../../ai/credentials/credentials';
 import { hasSecret, isSecretStorageAvailable, setSecret } from '../../ai/credentials/secretStorage';
 import type { AccessTier, AIProviderId, Capability, LocalLlmConfigurationMode, LocalLlmSettings, ModelInfo, RTCorpusTokenBreakdown } from '../../ai/types';
-import type { LocalLlmDiagnosticsReport } from '../../ai/localLlm/diagnostics';
+import {
+    getLocalLlmDiagnosticTimeoutMs,
+    type LocalLlmDiagnosticsReport
+} from '../../ai/localLlm/diagnostics';
 import {
     buildCanonicalExecutionEstimate,
     estimateGossamerTokens
@@ -440,10 +443,10 @@ export function renderAiSection(params: {
         const configured = getLocalLlmSettings(ensureCanonicalAiSettings()).timeoutMs;
         // Detect, load, and the diagnostics availability probe are each cheap but
         // separately bounded by the UI timeout. Diagnostics then performs one
-        // generation with the configured timeout. The overall ceiling must be
+        // generation with its cold-start allowance. The overall ceiling must be
         // larger than that complete sequential budget or it can abandon a healthy
         // in-flight generation.
-        return Math.max(60_000, configured + (3 * getLocalLlmUiTimeoutMs()) + 5_000);
+        return getLocalLlmDiagnosticTimeoutMs(configured) + (3 * getLocalLlmUiTimeoutMs()) + 5_000;
     };
     const getLocalLlmUiOverrides = (): Partial<LocalLlmSettings> => ({
         timeoutMs: getLocalLlmUiTimeoutMs()
@@ -3745,7 +3748,7 @@ export function renderAiSection(params: {
     };
 
     const buildLocalCheckValue = (
-        label: 'Connection' | 'Model availability' | 'Basic validation' | 'Structured validation' | 'Repair validation',
+        label: 'Connection' | 'Model availability' | 'Basic validation' | 'Structured validation',
         check: { ok: boolean; message: string } | null,
         selectedExists: boolean
     ): string => {
@@ -3756,7 +3759,6 @@ export function renderAiSection(params: {
         }
         if (!hasHealthyServer) {
             if (label === 'Connection') return 'No local server detected.';
-            if (label === 'Repair validation') return 'Available once a local server responds.';
             return 'Waiting for a local server.';
         }
         if (label === 'Model availability') {
@@ -3774,9 +3776,6 @@ export function renderAiSection(params: {
         }
         if (label === 'Connection') {
             return check.ok ? 'Connected.' : formatLocalLlmUiError(check.message);
-        }
-        if (label === 'Repair validation' && !check.ok) {
-            return 'Repair path needs review.';
         }
         if (!check.ok) {
             return formatLocalLlmUiError(check.message);
@@ -3834,8 +3833,7 @@ export function renderAiSection(params: {
             ['Connection', localLlmValidationReport?.reachable ?? null],
             ['Model availability', localLlmValidationReport?.modelAvailable ?? null],
             ['Basic validation', localLlmValidationReport?.basicCompletion ?? null],
-            ['Structured validation', localLlmValidationReport?.structuredJson ?? null],
-            ['Repair validation', localLlmValidationReport?.repairPath ?? null]
+            ['Structured validation', localLlmValidationReport?.structuredJson ?? null]
         ];
         const hasHealthyServer = localLlmDetectedServers.length > 0;
         const modelReady = !localLlmModelLoadPending && !localLlmModelLoadError
@@ -3881,7 +3879,7 @@ export function renderAiSection(params: {
                 : 'Checks run once a local server is detected.');
         } else {
             checks.forEach(([label, check]) => {
-                const value = buildLocalCheckValue(label as 'Connection' | 'Model availability' | 'Basic validation' | 'Structured validation' | 'Repair validation', check, selectedExists);
+                const value = buildLocalCheckValue(label as 'Connection' | 'Model availability' | 'Basic validation' | 'Structured validation', check, selectedExists);
                 appendStatusItem(localLlmChecksDetail, label, value);
             });
             if (localLlmValidationError) {

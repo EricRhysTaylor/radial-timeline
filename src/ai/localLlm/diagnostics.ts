@@ -9,6 +9,17 @@ import type { LocalLlmJsonMode, LocalLlmSettings } from '../types';
 /** Above this, server-enforced JSON is slow enough to be worth mentioning. */
 const SLOW_STRUCTURED_MS = 2_500;
 
+/**
+ * Validation doubles as the first cold-model warm-up. Large MLX models can spend
+ * longer compiling that first request than their normal configured request
+ * timeout, even though the same probe completes in seconds once warm.
+ */
+export const MIN_LOCAL_LLM_DIAGNOSTIC_TIMEOUT_MS = 90_000;
+
+export function getLocalLlmDiagnosticTimeoutMs(configuredTimeoutMs: number): number {
+    return Math.max(configuredTimeoutMs, MIN_LOCAL_LLM_DIAGNOSTIC_TIMEOUT_MS);
+}
+
 export interface LocalLlmDiagnosticCheck {
     ok: boolean;
     message: string;
@@ -64,12 +75,13 @@ export async function runLocalLlmDiagnostics(
     // instances launched it at once. LocalLlmClient owns and serializes that work;
     // closing and reopening Settings now reuses the same in-flight promise.
     //
-    // The generation probe therefore uses the author's CONFIGURED timeout, not the UI
-    // override, so they finish rather than orphaning work on the server.
+    // The generation probe therefore uses a cold-start allowance of at least 90s.
+    // Runtime requests retain the author's configured timeout; this larger budget
+    // is specific to the diagnostic that warms and validates the loaded model.
     const configuredTimeoutMs = getCanonicalLocalLlmSettings(plugin).timeoutMs;
     const transport = {
         baseUrl: localLlm.baseUrl,
-        timeoutMs: Math.max(localLlm.timeoutMs, configuredTimeoutMs),
+        timeoutMs: getLocalLlmDiagnosticTimeoutMs(Math.max(localLlm.timeoutMs, configuredTimeoutMs)),
         apiKey
     };
 

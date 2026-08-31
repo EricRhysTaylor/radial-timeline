@@ -472,7 +472,7 @@ describe('AI settings models table', () => {
         expect(source.includes("['Model availability', localLlmValidationReport?.modelAvailable ?? null]")).toBe(true);
         expect(source.includes("['Basic validation', localLlmValidationReport?.basicCompletion ?? null]")).toBe(true);
         expect(source.includes("['Structured validation', localLlmValidationReport?.structuredJson ?? null]")).toBe(true);
-        expect(source.includes("['Repair validation', localLlmValidationReport?.repairPath ?? null]")).toBe(true);
+        expect(source.includes("['Repair validation', localLlmValidationReport?.repairPath ?? null]")).toBe(false);
         expect(source.includes("const localLlmStatusGrid = localLlmStatusSection.createDiv({ cls: 'ert-ai-local-llm-status-grid' });")).toBe(true);
         expect(source.includes('const buildLocalStatusValue = (): string => {')).toBe(true);
         expect(source.includes('const buildLocalCheckValue = (')).toBe(true);
@@ -489,6 +489,7 @@ describe('AI settings models table', () => {
         expect(source.includes('markLocalLlmConfigurationDirty();')).toBe(true);
         expect(source.includes('getLocalLlmUiOverrides()')).toBe(true);
         expect(source.includes('Math.max(4000, Math.min(getLocalLlmSettings(ensureCanonicalAiSettings()).timeoutMs, 10000))')).toBe(true);
+        expect(source.includes('getLocalLlmDiagnosticTimeoutMs(configured) + (3 * getLocalLlmUiTimeoutMs()) + 5_000')).toBe(true);
     });
 
     // Every one of the three Local LLM operations keeps a module-level promise as a

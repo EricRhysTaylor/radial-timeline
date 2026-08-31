@@ -43,7 +43,7 @@ describe('runLocalLlmDiagnostics', () => {
         expect(report.modelAvailable.ok).toBe(false);
     });
 
-    it('uses one structured probe with the configured timeout', async () => {
+    it('uses one structured probe with a cold-start allowance above the configured timeout', async () => {
         listModels.mockResolvedValue([{ id: 'local-model' }]);
         complete.mockResolvedValue({
             success: true,
@@ -64,9 +64,29 @@ describe('runLocalLlmDiagnostics', () => {
         expect(report.structuredJson.ok).toBe(true);
         expect(complete).toHaveBeenCalledTimes(1);
         expect(complete.mock.calls[0][0]).toMatchObject({
-            timeoutMs: 45_000,
+            timeoutMs: 90_000,
             maxOutputTokens: 64
         });
+    });
+
+    it('preserves a configured timeout that is already above the cold-start floor', async () => {
+        listModels.mockResolvedValue([{ id: 'local-model' }]);
+        complete.mockResolvedValue({
+            success: true,
+            content: '{"status":"ok"}',
+            responseData: {},
+            requestPayload: {}
+        });
+        const { runLocalLlmDiagnostics } = await import('./diagnostics');
+        const base = (await import('../settings/aiSettings')).buildDefaultAiSettings();
+        base.localLlm = { ...base.localLlm, defaultModelId: 'local-model', timeoutMs: 120_000 };
+
+        await runLocalLlmDiagnostics(
+            { app: {}, settings: { aiSettings: base } } as any,
+            { timeoutMs: 10_000 }
+        );
+
+        expect(complete.mock.calls[0][0]).toMatchObject({ timeoutMs: 120_000 });
     });
 
     it('reports missing model when backend is reachable', async () => {

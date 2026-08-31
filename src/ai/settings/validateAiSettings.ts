@@ -3,6 +3,7 @@ import type { AiSettingsV1, AIProviderId, AnthropicCacheTtl, DeclarableLocalCapa
 } from '../types';
 import { ANTHROPIC_REQUESTED_CACHE_TTL, buildDefaultAiSettings, cloneBuiltInRoleTemplates, DECLARABLE_LOCAL_CAPABILITIES } from './aiSettings';
 import { BUILTIN_MODELS } from '../registry/builtinModels';
+import { buildLocalLlmModelIdentity } from '../localLlm/identity';
 import {
     GEMINI_CACHE_TTL_DEFAULT_SECONDS,
     normalizeGeminiCacheTtlSeconds,
@@ -181,6 +182,32 @@ export function validateAiSettings(input?: AiSettingsV1 | null): AiSettingsValid
             warnings.push(`Ignoring unknown declared Local LLM capabilit${unknown.length === 1 ? 'y' : 'ies'}: ${unknown.join(', ')}.`);
         }
         value.localLlm.declaredCapabilities = DECLARABLE_LOCAL_CAPABILITIES.filter(cap => seen.has(cap));
+    }
+
+    // Declarations are scoped per model identity. Normalise the map, then migrate:
+    // a vault saved before scoping existed has declarations but no map, and those
+    // were made for whatever model was selected at the time -- so they are adopted
+    // for the CURRENT identity rather than discarded, and never leak to another.
+    if (!value.localLlm.capabilitiesByModel || typeof value.localLlm.capabilitiesByModel !== 'object'
+        || Array.isArray(value.localLlm.capabilitiesByModel)) {
+        value.localLlm.capabilitiesByModel = {};
+    }
+    for (const [identity, declared] of Object.entries(value.localLlm.capabilitiesByModel)) {
+        if (!Array.isArray(declared)) {
+            delete value.localLlm.capabilitiesByModel[identity];
+            continue;
+        }
+        const scoped = new Set(declared.filter((entry): entry is DeclarableLocalCapability =>
+            (DECLARABLE_LOCAL_CAPABILITIES as string[]).includes(entry as string)));
+        value.localLlm.capabilitiesByModel[identity] = DECLARABLE_LOCAL_CAPABILITIES.filter(cap => scoped.has(cap));
+    }
+    if (!Object.keys(value.localLlm.capabilitiesByModel).length && value.localLlm.declaredCapabilities.length) {
+        const identity = buildLocalLlmModelIdentity(
+            value.localLlm.backend,
+            value.localLlm.baseUrl,
+            value.localLlm.defaultModelId
+        );
+        value.localLlm.capabilitiesByModel[identity] = [...value.localLlm.declaredCapabilities];
     }
 
     if (typeof value.roleTemplateId !== 'string' || !value.roleTemplateId.trim()) {

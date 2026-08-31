@@ -62,6 +62,7 @@ import {
     LOCAL_LLM_BACKEND_LABELS,
     LOCAL_LLM_CAPABILITY_LABEL_KEYS,
     LOCAL_LLM_JSON_MODE_LABEL_KEYS,
+    withDeclaredCapabilitiesForActiveModel,
     normalizeLocalLlmServerBaseUrl
 } from '../../ai/localLlm/settings';
 import { inferLocalLlmCapability } from '../../ai/localLlm/capabilityInference';
@@ -3554,10 +3555,12 @@ export function renderAiSection(params: {
                     const current = getLocalLlmSettings(aiSettings);
                     const next = new Set(current.declaredCapabilities);
                     if (value) next.add(capability); else next.delete(capability);
-                    aiSettings.localLlm = {
-                        ...current,
-                        declaredCapabilities: DECLARABLE_LOCAL_CAPABILITIES.filter(entry => next.has(entry))
-                    };
+                    // Scoped to the active model: reads resolve from capabilitiesByModel,
+                    // so assigning declaredCapabilities directly would be discarded.
+                    aiSettings.localLlm = withDeclaredCapabilitiesForActiveModel(
+                        current,
+                        DECLARABLE_LOCAL_CAPABILITIES.filter(entry => next.has(entry))
+                    );
                     await persistCanonical();
                     // The tier pills and their feature tooltips report what RT
                     // will actually run, so they have to re-read the declaration.

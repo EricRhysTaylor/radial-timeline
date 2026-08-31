@@ -3,6 +3,7 @@ import type { AiSettingsV1, Capability, DeclarableLocalCapability, LocalLlmBacke
 import { buildDefaultAiSettings, cloneDefaultLocalLlmSettings } from '../settings/aiSettings';
 import { validateAiSettings } from '../settings/validateAiSettings';
 import { BUILTIN_MODELS } from '../registry/builtinModels';
+import { buildLocalLlmModelIdentity } from './identity';
 
 export const LOCAL_LLM_BACKEND_LABELS: Record<LocalLlmBackendId, string> = {
     ollama: 'Ollama',
@@ -35,30 +36,47 @@ export const LOCAL_LLM_CAPABILITY_LABEL_KEYS: Record<
     }
 };
 
-export function normalizeLocalLlmServerBaseUrl(baseUrl: string): string {
-    return baseUrl.trim().replace(/\/+$/, '');
-}
+export { normalizeLocalLlmServerBaseUrl, buildLocalLlmServerKey, buildLocalLlmModelIdentity } from './identity';
 
-export function buildLocalLlmServerKey(backend: LocalLlmBackendId, baseUrl: string): string {
-    return `${backend}|${normalizeLocalLlmServerBaseUrl(baseUrl)}`;
-}
-
-export function buildLocalLlmModelIdentity(
-    backend: LocalLlmBackendId,
-    baseUrl: string,
-    modelId: string
-): string {
-    return `${buildLocalLlmServerKey(backend, baseUrl)}::${modelId.trim()}`;
+/**
+ * Resolve `declaredCapabilities` for whichever model is currently selected.
+ *
+ * This is the single seam every consumer reads through -- ConceptSearch's chunk
+ * budget, engine grading, the model resolver, the settings panel -- so scoping it
+ * here means none of them can act on a declaration made for a different model.
+ * The stored `declaredCapabilities` array is only a cache of the active entry.
+ */
+function withScopedCapabilities(localLlm: LocalLlmSettings): LocalLlmSettings {
+    const identity = buildLocalLlmModelIdentity(localLlm.backend, localLlm.baseUrl, localLlm.defaultModelId);
+    const scoped = localLlm.capabilitiesByModel[identity] ?? [];
+    return { ...localLlm, declaredCapabilities: [...scoped] };
 }
 
 export function getCanonicalLocalLlmSettings(plugin: RadialTimelinePlugin): LocalLlmSettings {
     const validated = validateAiSettings(plugin.settings.aiSettings ?? buildDefaultAiSettings());
     plugin.settings.aiSettings = validated.value;
-    return validated.value.localLlm;
+    return withScopedCapabilities(validated.value.localLlm);
 }
 
 export function getLocalLlmSettings(aiSettings: AiSettingsV1): LocalLlmSettings {
-    return validateAiSettings(aiSettings).value.localLlm;
+    return withScopedCapabilities(validateAiSettings(aiSettings).value.localLlm);
+}
+
+/**
+ * Record a declaration against the ACTIVE model identity. Callers must use this
+ * rather than assigning `declaredCapabilities`, which reads resolve from the map
+ * and would therefore discard.
+ */
+export function withDeclaredCapabilitiesForActiveModel(
+    localLlm: LocalLlmSettings,
+    declared: DeclarableLocalCapability[]
+): LocalLlmSettings {
+    const identity = buildLocalLlmModelIdentity(localLlm.backend, localLlm.baseUrl, localLlm.defaultModelId);
+    return {
+        ...localLlm,
+        declaredCapabilities: [...declared],
+        capabilitiesByModel: { ...localLlm.capabilitiesByModel, [identity]: [...declared] }
+    };
 }
 
 function buildCustomLocalModelInfo(modelId: string): ModelInfo {

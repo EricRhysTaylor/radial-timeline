@@ -4,7 +4,7 @@ Manuscript onboarding for everyone.
 
 ### Onboarding: cloud engine, cost forecast, or local on an 80B
 
-- **Cloud engine option** — manuscript onboarding can now run on a cloud model: the same pipeline, frontier grade. The local-LLM path remains.
+- **Cloud engine option** — manuscript onboarding can now run on a cloud model: the same pipeline, frontier-grade. The local-LLM path remains.
 - **Live spend forecast** — when onboarding uses a paid model, a forecast pill in the header shows what the run is expected to cost, updating live as it works. The shared estimator carries the same forecast, and onboarding defaults to **Haiku** — the economical lane — unless you choose otherwise.
 - **Local model: tested on Qwen3-Next-80B** — local onboarding is now tested and verified with **Qwen3-Next-80B-A3B-Instruct (4-bit)**, the recommended model. The previously verified **Qwen3-30B-A3B-2507 (4-bit)** still performs, though results are not as strong. Suggested 64GB RAM configuration.
 

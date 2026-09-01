@@ -61,10 +61,8 @@ export type LocalLlmWireResponseFormat =
 
 /**
  * Bound a promise with a wall-clock deadline. Exported so the settings panel can
- * put an overall ceiling on the multi-step validation chain: each transport call
- * already has its own timeout, but a socket that accepts and never answers (e.g. a
- * server bound IPv4-only behind an IPv6 `localhost`) leaves the chain hanging with
- * no ceiling of its own.
+ * put an overall ceiling on the multi-step validation chain in addition to each
+ * transport call's own timeout.
  */
 export function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
     return new Promise((resolve, reject) => {

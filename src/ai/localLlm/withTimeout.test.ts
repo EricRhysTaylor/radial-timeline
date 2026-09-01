@@ -62,7 +62,6 @@ describe('withTimeout', () => {
             modelAvailable: check(true, 'model present.'),
             basicCompletion: check(false, message),
             structuredJson: check(false, message),
-            repairPath: check(true, 'no repair fallback enabled.')
         } as unknown as Parameters<typeof hasTimeoutSignal>[0];
         expect(hasTimeoutSignal(report)).toBe(true);
     });
@@ -75,7 +74,6 @@ describe('withTimeout', () => {
             modelAvailable: check(false, 'Model check skipped because backend is unreachable.'),
             basicCompletion: check(false, 'Malformed JSON in reply.'),
             structuredJson: check(false, 'Malformed JSON in reply.'),
-            repairPath: check(true, 'no repair fallback enabled.')
         } as unknown as Parameters<typeof hasTimeoutSignal>[0];
         expect(hasTimeoutSignal(report)).toBe(false);
     });

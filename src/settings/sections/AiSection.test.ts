@@ -443,7 +443,7 @@ describe('AI settings models table', () => {
         expect(source.includes("const localLlmServerSetting = new Settings(localLlmStatusSection)")).toBe(true);
         expect(source.includes("setName(t('settings.ai.localLlm.serverName'))")).toBe(true);
         expect(source.includes('shouldRevealLocalLlmActionRow')).toBe(true);
-        expect(source.includes('All checks passed — connection · model availability · basic · structured · repair.')).toBe(true);
+        expect(source.includes('All checks passed — connection · model availability · basic · structured.')).toBe(true);
         expect(source.includes("t('settings.ai.localLlm.legendNotUsable')")).toBe(true);
         expect(source.includes("t('settings.ai.localLlm.legendLimited')")).toBe(true);
         expect(source.includes("t('settings.ai.localLlm.legendStrong')")).toBe(true);
@@ -490,6 +490,8 @@ describe('AI settings models table', () => {
         expect(source.includes('getLocalLlmUiOverrides()')).toBe(true);
         expect(source.includes('Math.max(4000, Math.min(getLocalLlmSettings(ensureCanonicalAiSettings()).timeoutMs, 10000))')).toBe(true);
         expect(source.includes('getLocalLlmDiagnosticTimeoutMs(configured) + (3 * getLocalLlmUiTimeoutMs()) + 5_000')).toBe(true);
+        expect(source.includes('void detectLocalLlmServers({ quiet: true }).then(() => validateLocalLlm({ quiet: true }))')).toBe(false);
+        expect(source.includes('void validateLocalLlm({ quiet: true });')).toBe(true);
     });
 
     // Every one of the three Local LLM operations keeps a module-level promise as a
@@ -506,6 +508,16 @@ describe('AI settings models table', () => {
         expect(source.includes('localLlmServerDetectionPromise = null;')).toBe(true);
         expect(source.includes('localLlmModelLoadPromise = null;')).toBe(true);
         expect(source.includes('localLlmValidationPromise = null;')).toBe(true);
+    });
+
+    it('does not return Obsidian ButtonComponent from the validation promise finalizer', () => {
+        const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
+
+        // ButtonComponent is thenable and setDisabled() returns itself. If that
+        // value escapes from finally(), Promise resolution loops forever.
+        expect(source.includes('finally(() => button.setDisabled(false))')).toBe(false);
+        expect(source.includes('void validateLocalLlm().finally(() => {')).toBe(true);
+        expect(source.includes('button.setDisabled(false);')).toBe(true);
     });
 
     it('shows an animated validation heartbeat and clears UI-owned timers when the section leaves', () => {

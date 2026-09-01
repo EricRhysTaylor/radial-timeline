@@ -33,8 +33,6 @@ export interface LocalLlmDiagnosticsReport {
     modelAvailable: LocalLlmDiagnosticCheck;
     basicCompletion: LocalLlmDiagnosticCheck;
     structuredJson: LocalLlmDiagnosticCheck;
-    /** Compatibility field: RT no longer auto-repairs malformed JSON at runtime. */
-    repairPath: LocalLlmDiagnosticCheck;
     /**
      * Set when the configured JSON mode was measurably slow on this machine.
      *
@@ -70,10 +68,9 @@ export async function runLocalLlmDiagnostics(
     // Two budgets, deliberately different.
     //
     // The settings panel passes a short timeout so the CHEAP checks (reachability,
-    // model list) cannot hang the UI. Applying that same short budget to the
-    // GENERATION probe is what wedged repeat validations when two settings-panel
-    // instances launched it at once. LocalLlmClient owns and serializes that work;
-    // closing and reopening Settings now reuses the same in-flight promise.
+    // model list) cannot hang the UI. A generation needs a larger cold-start
+    // allowance, and LocalLlmClient serializes diagnostics so two settings-panel
+    // instances cannot launch competing model work.
     //
     // The generation probe therefore uses a cold-start allowance of at least 90s.
     // Runtime requests retain the author's configured timeout; this larger budget
@@ -119,11 +116,7 @@ export async function runLocalLlmDiagnostics(
             reachable,
             modelAvailable,
             basicCompletion,
-            structuredJson,
-            repairPath: {
-                ok: true,
-                message: 'No runtime JSON repair fallback is enabled; malformed JSON fails explicitly.'
-            }
+            structuredJson
         };
     }
 
@@ -199,11 +192,6 @@ export async function runLocalLlmDiagnostics(
         };
     }
 
-    const repairPath: LocalLlmDiagnosticCheck = {
-        ok: true,
-        message: 'No runtime JSON repair fallback is enabled; malformed JSON fails explicitly.'
-    };
-
     return {
         backend: LOCAL_LLM_BACKEND_LABELS[localLlm.backend],
         baseUrl: localLlm.baseUrl,
@@ -212,7 +200,6 @@ export async function runLocalLlmDiagnostics(
         modelAvailable,
         basicCompletion,
         structuredJson,
-        repairPath,
         jsonModeTiming
     };
 }

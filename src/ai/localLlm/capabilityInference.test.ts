@@ -10,7 +10,6 @@ const buildDiagnostics = (overrides: Partial<LocalLlmDiagnosticsReport> = {}): L
     modelAvailable: { ok: true, message: 'Model "mistral-nemo:12b" is available.' },
     basicCompletion: { ok: true, message: 'Basic completion succeeded.' },
     structuredJson: { ok: true, message: 'Structured JSON path succeeded.' },
-    repairPath: { ok: true, message: 'Repair path self-check succeeded.' },
     ...overrides
 });
 

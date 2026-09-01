@@ -3193,8 +3193,7 @@ export function renderAiSection(params: {
         return !localLlmValidationReport.reachable.ok
             || !localLlmValidationReport.modelAvailable.ok
             || !localLlmValidationReport.basicCompletion.ok
-            || !localLlmValidationReport.structuredJson.ok
-            || !localLlmValidationReport.repairPath.ok;
+            || !localLlmValidationReport.structuredJson.ok;
     };
     const getLocalCapabilityAssessment = (
         modelId: string,
@@ -3429,7 +3428,8 @@ export function renderAiSection(params: {
         localLlmAutoValidationTimer = window.setTimeout(() => {
             localLlmAutoValidationTimer = null;
             if (aiSectionDisposed || ensureCanonicalAiSettings().provider !== 'ollama') return;
-            void detectLocalLlmServers({ quiet: true }).then(() => validateLocalLlm({ quiet: true }));
+            // validateLocalLlm owns the complete detect -> load -> diagnose chain.
+            void validateLocalLlm({ quiet: true });
         }, 150);
     }
 
@@ -3858,7 +3858,7 @@ export function renderAiSection(params: {
         if (localLlmValidationPending) {
             appendChecksRollup('Running validation checks...', true);
         } else if (allChecksPassed) {
-            appendChecksRollup('All checks passed — connection · model availability · basic · structured · repair.');
+            appendChecksRollup('All checks passed — connection · model availability · basic · structured.');
             // The one finding that matters BECAUSE nothing is broken. Collapsing
             // it with the rest of the detail would hide the only actionable
             // result of a green run.
@@ -3955,9 +3955,9 @@ export function renderAiSection(params: {
         return localLlmModelLoadPromise;
     }
 
-    // Ceiling for the whole detect -> load-models -> diagnose chain. Generous enough
-    // that a cold large-model load (30-60s) is not mistaken for a hang, short enough
-    // that a genuinely dead socket reports instead of spinning indefinitely.
+    // Safety ceiling for the separately guarded detection and model-list calls.
+    // Their transports have shorter deadlines; this guarantees the UI guard also
+    // settles if a lower layer regresses or never resolves.
     const LOCAL_LLM_GUARD_DEADLINE_MS = 60_000;
 
     async function validateLocalLlm(options: { quiet?: boolean } = {}): Promise<void> {
@@ -3968,11 +3968,9 @@ export function renderAiSection(params: {
         renderLocalLlmStatus();
         localLlmValidationPromise = (async () => {
             try {
-                // Each transport call has its own timeout, but the chain as a whole had
-                // none: a socket that accepts and never answers leaves this pending
-                // forever with the panel stuck on "Validating". The commonest cause is a
-                // server bound IPv4-only while the base URL says `localhost`, which
-                // macOS may resolve to ::1. Fail with a ceiling and say what to check.
+                // Keep an aggregate ceiling above the individually bounded steps so
+                // the UI always reaches a terminal state even if a lower layer stops
+                // settling its promise.
                 localLlmValidationReport = await withTimeout(
                     (async () => {
                         await detectLocalLlmServers({ quiet: true });
@@ -4036,7 +4034,12 @@ export function renderAiSection(params: {
         .setCta()
         .onClick(() => {
             button.setDisabled(true);
-            void validateLocalLlm().finally(() => button.setDisabled(false));
+            void validateLocalLlm().finally(() => {
+                // Obsidian ButtonComponent is thenable and setDisabled() returns
+                // the component. Returning it from finally() creates an endless
+                // self-resolution microtask loop that freezes the renderer.
+                button.setDisabled(false);
+            });
         }));
 
     renderLocalLlmModelList();

@@ -8,7 +8,7 @@ Manuscript onboarding for everyone.
 - **Live spend forecast** — when onboarding uses a paid model, a forecast pill in the header shows what the run is expected to cost, updating live as it works. The shared estimator carries the same forecast, and onboarding defaults to **Haiku** — the economical lane — unless you choose otherwise.
 - **Local model: tested on Qwen3-Next-80B** — local onboarding is now tested and verified with **Qwen3-Next-80B-A3B-Instruct (4-bit)**, the recommended model. The previously verified **Qwen3-30B-A3B-2507 (4-bit)** still performs, though results are not as strong. Suggested 64GB RAM configuration.
 
-<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/bc9a1dbe/wiki/images/preview-80B-local.png" alt="Local LLM preview card validating Qwen3-Next-80B-A3B-Instruct 4-bit" width="600"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/EricRhysTaylor/Radial-Timeline/52683175/wiki/images/preview-80B-local.png" alt="Local LLM preview card validating Qwen3-Next-80B-A3B-Instruct 4-bit" width="600"></p>
 
 ### Model support
 

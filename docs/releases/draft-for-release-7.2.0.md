@@ -19,7 +19,7 @@ Manuscript onboarding for everyone — with the price on the label.
 
 - The AI preview card shows a heartbeat while a connection check is running, and the provider dropdown reflects what is true now rather than when Settings opened.
 - Credential states are named in words, not color alone.
-- Copy clarity pass: the control that decides where your manuscript goes says so, export destinations sit with the export descriptions, and the Welcome screen names the plugin's own Community tab.
+- Copy clarity pass: the AI provider dropdown now states where your manuscript goes for the selected provider (nothing leaves your machine on Local LLM; a cloud provider receives it under that provider's terms), export destinations sit with the export descriptions, and the Welcome screen names the plugin's own Community tab.
 
 ### Fixes
 

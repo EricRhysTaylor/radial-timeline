@@ -28,6 +28,11 @@ const primaryAudit = isFriday(now) ? 'auditFriday' : 'auditDaily';
 // how GH #34 reached a user — the emitted .tex looked right and would not
 // compile. Requires Pandoc/XeLaTeX/Poppler; a missing toolchain stops the
 // release rather than skipping.
+// Cheap and fail-closed: a stranded draft release (tag + assets uploaded,
+// never published) is invisible to Obsidian — 7.1.1 sat that way for 12
+// days while users stayed on 7.1.0.
+run('node scripts/check-unpublished-releases.mjs', 'Checking for stranded draft releases');
+
 run('npm run publish:pdf-smoke', 'Compiling bundled PDF layouts against packaged fonts');
 
 run(`npm run ${primaryAudit}`, `Running ${primaryAudit}`);

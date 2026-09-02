@@ -166,7 +166,8 @@ export function applyBookMetaFieldUpdate(
 ): void {
     const definition = BOOK_META_FIELD_DEFINITIONS[field];
     const [groupKey, fieldKey] = definition.path;
-    const currentGroup = isRecord(frontmatter[groupKey]) ? frontmatter[groupKey] as Record<string, unknown> : {};
+    const existingGroup = frontmatter[groupKey];
+    const currentGroup = isRecord(existingGroup) ? existingGroup : {};
 
     if (normalizedValue === null) {
         delete currentGroup[fieldKey];

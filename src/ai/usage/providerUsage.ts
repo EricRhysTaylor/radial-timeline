@@ -16,7 +16,7 @@ function readUsageNumber(value: unknown): number | undefined {
 
 function sumUsageNumbers(value: unknown): number | undefined {
     if (!value || typeof value !== 'object') return undefined;
-    const numbers = Object.values(value as Record<string, unknown>)
+    const numbers = Object.values(value)
         .map(entry => readUsageNumber(entry))
         .filter((entry): entry is number => typeof entry === 'number');
     if (!numbers.length) return undefined;

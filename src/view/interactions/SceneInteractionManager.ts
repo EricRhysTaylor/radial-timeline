@@ -60,7 +60,7 @@ export class SceneInteractionManager {
         this.registerFn = view.register.bind(view);
         
         // Create reusable text measurement element
-        this.measurementText = svg.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'text');
+        this.measurementText = svg.ownerDocument.win.createSvg('text');
         this.measurementText.classList.add('rt-measure-text');
         svg.appendChild(this.measurementText);
         

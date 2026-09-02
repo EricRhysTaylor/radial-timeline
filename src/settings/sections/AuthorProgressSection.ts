@@ -738,7 +738,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
     const bookTitleColorFallback = plugin.settings.publishStageColors?.Press || '#6FB971';
 
     // Font availability check — canvas measurement against monospace baseline
-    const fontCheckCtx = containerEl.ownerDocument.createElement('canvas').getContext('2d') ?? null;
+    const fontCheckCtx = containerEl.ownerDocument.win.createEl('canvas').getContext('2d') ?? null;
     const fontCheckSample = 'abcdefghijklmnopqrstuvwxyz0123456789';
     let fontCheckBaseline: number | null = null;
     const isFontAvailable = (fontName: string): boolean => {
@@ -908,7 +908,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
             return !FONT_OPTIONS.some(opt => opt.value === normalizedValue) && normalizedValue !== 'default';
         };
         const doc = drop.selectEl.ownerDocument;
-        const fontCanvas = doc.createElement('canvas');
+        const fontCanvas = doc.win.createEl('canvas');
         const fontContext = fontCanvas?.getContext('2d') ?? null;
         const fontSample = 'abcdefghijklmnopqrstuvwxyz0123456789';
         const isFontLoaded = (value: string): boolean => {
@@ -1809,7 +1809,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
 
                     // Add value label above the slider thumb
                     const sliderEl = slider.sliderEl;
-                    const valueLabel = sliderEl.parentElement?.createEl('span', {
+                    const valueLabel = sliderEl.parentElement?.createSpan({
                         cls: 'ert-sliderValueLabel',
                         text: String(currentDays)
                     });

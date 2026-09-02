@@ -812,6 +812,7 @@ export class OnboardingService {
 
     for (const proposal of proposals) {
       if (!proposal.frontmatter) continue;
+      const sceneFrontmatter = proposal.frontmatter;
       index += 1;
       const noteName = sanitizeFileName(`${String(index).padStart(2, '0')} ${proposal.title || 'Scene'}`); // SAFE: filenames must be non-empty; the index prefix still disambiguates an untitled scene
       const path = normalizePath(`${destFolder}/${noteName}.md`);
@@ -819,7 +820,7 @@ export class OnboardingService {
         const file = await vault.create(path, proposal.body ? `\n${proposal.body}\n` : '\n');
         await this.plugin.app.fileManager.processFrontMatter(file, (frontmatter) => {
           const target = frontmatter as Record<string, unknown>;
-          for (const [key, value] of Object.entries(proposal.frontmatter as Record<string, unknown>)) {
+          for (const [key, value] of Object.entries(sceneFrontmatter)) {
             target[key] = value;
           }
         });

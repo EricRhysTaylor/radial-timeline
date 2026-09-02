@@ -66,7 +66,7 @@ export function applySearchTermHighlightsInRoot(root: ParentNode, searchTerm: st
             if (match.index > lastIndex) {
                 tspan.appendChild(doc.createTextNode(originalText.substring(lastIndex, match.index)));
             }
-            const highlightSpan = doc.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+            const highlightSpan = doc.win.createSvg('tspan');
             highlightSpan.setAttribute('class', 'rt-search-term');
             if (fillColor) highlightSpan.setAttribute('fill', fillColor);
             highlightSpan.textContent = match[0];
@@ -136,7 +136,7 @@ export function applySearchTermHighlightsInRoot(root: ParentNode, searchTerm: st
             if (match.index > lastIndex) {
                 textEl.appendChild(doc.createTextNode(originalText.substring(lastIndex, match.index)));
             }
-            const highlightSpan = doc.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+            const highlightSpan = doc.win.createSvg('tspan');
             highlightSpan.setAttribute('class', 'rt-search-term');
             if (fillColor) highlightSpan.setAttribute('fill', fillColor);
             highlightSpan.textContent = match[0];

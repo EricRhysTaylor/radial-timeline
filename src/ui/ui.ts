@@ -77,10 +77,10 @@ export function section(parent: HTMLElement, opts: SectionOpts, buildFn?: (bodyE
   }
 
   if (opts.title) {
-    sectionEl.createEl('div', { cls: ERT_CLASSES.SECTION_TITLE, text: opts.title });
+    sectionEl.createDiv({ cls: ERT_CLASSES.SECTION_TITLE, text: opts.title });
   }
   if (opts.desc) {
-    sectionEl.createEl('div', { cls: ERT_CLASSES.SECTION_DESC, text: opts.desc });
+    sectionEl.createDiv({ cls: ERT_CLASSES.SECTION_DESC, text: opts.desc });
   }
 
   if (opts.actions) {

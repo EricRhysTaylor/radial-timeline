@@ -89,23 +89,23 @@ export function setupSubplotKeyController(
     trigger.hidden = false;
     trigger.setAttribute('aria-expanded', 'false');
 
-    const panel = doc.createElement('div');
+    const panel = doc.win.createDiv();
     panel.className = 'ert-timeline-subplot-key';
 
-    const surface = doc.createElement('div');
+    const surface = doc.win.createDiv();
     surface.className = 'ert-timeline-subplot-key__surface';
     panel.appendChild(surface);
 
-    const header = doc.createElement('div');
+    const header = doc.win.createDiv();
     header.className = 'ert-timeline-subplot-key__header';
     header.textContent = 'Ring key';
-    const headerHint = doc.createElement('span');
+    const headerHint = doc.win.createSpan();
     headerHint.className = 'ert-timeline-subplot-key__hint';
     headerHint.textContent = 'Outer → inner';
     header.appendChild(headerHint);
     surface.appendChild(header);
 
-    const rows = doc.createElement('div');
+    const rows = doc.win.createDiv();
     rows.className = 'ert-timeline-subplot-key__rows';
     surface.appendChild(rows);
 
@@ -145,20 +145,20 @@ export function setupSubplotKeyController(
     entries.forEach((entry, i) => {
         // Plain div, not <button>: rows are hover targets, and button chrome
         // (theme bevel/background) fights the flat panel look.
-        const row = doc.createElement('div');
+        const row = doc.win.createDiv();
         row.className = 'ert-timeline-subplot-key__row';
 
-        const num = doc.createElement('span');
+        const num = doc.win.createSpan();
         num.className = 'ert-timeline-subplot-key__num';
         num.textContent = String(i + 1);
         row.appendChild(num);
 
-        const swatch = doc.createElement('span');
+        const swatch = doc.win.createSpan();
         swatch.className = 'ert-timeline-subplot-key__swatch';
         swatch.style.setProperty('--ert-subplot-key-swatch', `var(--rt-subplot-colors-${entry.colorIndex})`);
         row.appendChild(swatch);
 
-        const name = doc.createElement('span');
+        const name = doc.win.createSpan();
         name.className = 'ert-timeline-subplot-key__name';
         // Outer ring keeps its on-ring label ("ALL SCENES" / "MAIN PLOT");
         // subplot rings show the author's subplot name in its original casing.

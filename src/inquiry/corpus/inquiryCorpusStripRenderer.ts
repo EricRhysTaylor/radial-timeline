@@ -888,9 +888,9 @@ export function renderInquiryCorpusStrip(args: {
         if (digitMatch) {
             header.text.textContent = '';
             const doc = header.text.ownerDocument;
-            const letterSpan = doc.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+            const letterSpan = doc.win.createSvg('tspan');
             letterSpan.textContent = digitMatch[1];
-            const countSpan = doc.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+            const countSpan = doc.win.createSvg('tspan');
             countSpan.textContent = digitMatch[2];
             countSpan.classList.add('ert-inquiry-cc-class-label-count');
             header.text.appendChild(letterSpan);

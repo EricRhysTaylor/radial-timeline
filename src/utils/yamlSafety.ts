@@ -114,7 +114,7 @@ function measureDepth(value: unknown, current = 0): number {
     }
     if (value !== null && typeof value === 'object') {
         let max = current;
-        for (const v of Object.values(value as Record<string, unknown>)) {
+        for (const v of Object.values(value)) {
             max = Math.max(max, measureDepth(v, current + 1));
         }
         return max;

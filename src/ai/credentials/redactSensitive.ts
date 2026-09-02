@@ -89,7 +89,7 @@ function cloneAndRedact(value: unknown, seen: WeakMap<object, unknown>): unknown
         };
         if (value.stack) next.stack = redactSensitiveValue(value.stack);
         seen.set(value, next);
-        Object.entries(value as unknown as Record<string, unknown>).forEach(([key, nested]) => {
+        Object.entries(value).forEach(([key, nested]) => {
             if (isSensitiveFieldName(key)) {
                 next[key] = REDACTED;
             } else {
@@ -101,7 +101,7 @@ function cloneAndRedact(value: unknown, seen: WeakMap<object, unknown>): unknown
 
     const output: Record<string, unknown> = {};
     seen.set(value, output);
-    Object.entries(value as Record<string, unknown>).forEach(([key, nested]) => {
+    Object.entries(value).forEach(([key, nested]) => {
         if (isSensitiveFieldName(key)) {
             output[key] = REDACTED;
             return;

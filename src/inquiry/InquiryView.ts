@@ -2853,7 +2853,7 @@ export class InquiryView extends ItemView {
     }
 
     private createIconSymbol(defs: SVGDefsElement, iconName: string): string | null {
-        const holder = defs.ownerDocument.createElement('span');
+        const holder = defs.ownerDocument.win.createSpan();
         setIcon(holder, iconName);
         const source = holder.querySelector('svg');
         if (!source) {
@@ -10225,7 +10225,7 @@ export class InquiryView extends ItemView {
         const existing = this.previewHero.querySelector('title');
         if (existing) existing.remove();
         if ((result.refNormalizationCount ?? 0) > 0) { // SAFE: older results lack the count — 0 hides the normalization tooltip
-            const title = this.previewHero.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'title');
+            const title = this.previewHero.ownerDocument.win.createSvg('title');
             title.textContent = t('inquiry.findings.referencesNormalized');
             this.previewHero.appendChild(title);
         }

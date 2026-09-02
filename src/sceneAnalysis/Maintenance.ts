@@ -235,7 +235,7 @@ class PurgeConfirmationModal extends Modal {
         messageEl.setText(this.message);
 
         const detailsEl = card.createDiv({ cls: 'ert-purge-details' });
-        detailsEl.createEl('div', { text: t('sceneAnalysis.maintenance.purge.dangerHeader'), cls: 'ert-purge-danger' });
+        detailsEl.createDiv({ text: t('sceneAnalysis.maintenance.purge.dangerHeader'), cls: 'ert-purge-danger' });
         const listEl = detailsEl.createEl('ul', { cls: 'ert-purge-list' });
         this.details.forEach(detail => {
             const li = listEl.createEl('li');

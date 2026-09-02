@@ -1375,7 +1375,7 @@ export class DesignedStyleWizardModal extends Modal {
                     // Build the Notice body as a DocumentFragment with a wrapper
                     // div — DocumentFragment itself doesn't expose Obsidian's
                     // createDiv/createEl helpers, but its child HTMLElement does.
-                    const fragment = installBtn.ownerDocument.createDocumentFragment();
+                    const fragment = installBtn.ownerDocument.win.createFragment();
                     const wrapper = fragment.createDiv();
                     wrapper.createDiv({
                         text: `${diag.primaryFontName}: ${hint?.message ?? 'Install instructions unavailable.'}`,

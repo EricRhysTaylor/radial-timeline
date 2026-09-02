@@ -81,7 +81,12 @@ if (isReleaseBuild) {
 		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Obsidian Vault The Faerie Queene Demo/.obsidian/plugins/radial-timeline", name: "Faerie Queene Demo" },
 		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Obsidian Vault Odyssey Demo/.obsidian/plugins/radial-timeline", name: "Odyssey Demo" },
 		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Scrivener Onboarding Test/.obsidian/plugins/radial-timeline", name: "Scrivener" },
-		{ path: "./release", name: "release" }
+		{ path: "./release", name: "release" },
+		// Obsidian's plugin review runs a plain `npm run build` (no CI /
+		// RT_RELEASE_BUILD env) and looks for main.js in ./build, ./dist,
+		// ./out, or the repo root. Keep ./build in every mode so that
+		// verification finds the artifact.
+		{ path: "./build", name: "build" }
 	];
 }
 

@@ -529,7 +529,7 @@ export function renderInquirySection(params: SectionParams): void {
 
     const renderClassTable = (configs: InquiryClassConfig[], counts: Record<string, number>, classSources?: Record<string, Set<string>>) => {
         // Build into a temporary container then replace in one go to avoid empty-then-rebuild flicker.
-        const container = classTableWrap.ownerDocument.createElement('div');
+        const container = classTableWrap.ownerDocument.win.createDiv();
         container.className = classTableWrap.className;
         const buildRow = (extraClasses: string[] = []) =>
             container.createDiv({ cls: ['ert-controlGroup__row', ...extraClasses] });
@@ -564,7 +564,7 @@ export function renderInquirySection(params: SectionParams): void {
             const sources = classSources?.[config.className];
             if (sources?.size) {
                 const sourceLabel = Array.from(sources).sort().join(', ');
-                nameCell.createEl('span', {
+                nameCell.createSpan({
                     cls: 'ert-controlGroup__cell--meta ert-controlGroup__cell--faint',
                     text: `from ${sourceLabel}`
                 });
@@ -739,7 +739,7 @@ export function renderInquirySection(params: SectionParams): void {
         resolution: InquiryBookResolution,
         containerClassCounts: Record<string, Record<string, number>>
     ) => {
-        const container = booksForInquiryList.ownerDocument.createElement('div');
+        const container = booksForInquiryList.ownerDocument.win.createDiv();
         container.className = booksForInquiryList.className;
         const header = container.createDiv({ cls: ['ert-controlGroup__row', 'ert-controlGroup__row--header'] });
         header.createDiv({ cls: 'ert-controlGroup__cell', text: t('settings.inquiry.booksTable.sequence') });
@@ -1717,10 +1717,10 @@ export function renderInquirySection(params: SectionParams): void {
 
         const doc = table.ownerDocument;
         const inputs: Record<keyof InquiryCorpusThresholds, HTMLInputElement> = {
-            emptyMax: doc.createElement('input'),
-            sketchyMin: doc.createElement('input'),
-            mediumMin: doc.createElement('input'),
-            substantiveMin: doc.createElement('input')
+            emptyMax: doc.win.createEl('input'),
+            sketchyMin: doc.win.createEl('input'),
+            mediumMin: doc.win.createEl('input'),
+            substantiveMin: doc.win.createEl('input')
         };
 
         const renderRow = (label: string, key: keyof InquiryCorpusThresholds, operator = '>=') => {

@@ -292,17 +292,17 @@ export class RadialTimelineView extends ItemView {
         if (!this.bookSwitcherEl) {
             const doc = headerEl.ownerDocument;
             const actionsEl = headerEl.querySelector('.view-actions');
-            const wrapper = doc.createElement('div');
+            const wrapper = doc.win.createDiv();
             wrapper.className = 'rt-book-switcher';
 
-            const searchShell = doc.createElement('div');
+            const searchShell = doc.win.createDiv();
             searchShell.className = 'ert-timeline-search';
 
-            const searchBtn = doc.createElement('button');
+            const searchBtn = doc.win.createEl('button');
             searchBtn.className = 'ert-timeline-search__button clickable-icon';
             searchBtn.type = 'button';
 
-            const searchInput = doc.createElement('input');
+            const searchInput = doc.win.createEl('input');
             searchInput.className = 'ert-timeline-search__input';
             searchInput.type = 'search';
             searchInput.placeholder = 'Search timeline';
@@ -346,26 +346,26 @@ export class RadialTimelineView extends ItemView {
                 }
             });
 
-            const legendBtn = doc.createElement('button');
+            const legendBtn = doc.win.createEl('button');
             legendBtn.className = 'ert-timeline-legend__trigger clickable-icon';
             legendBtn.type = 'button';
             legendBtn.setAttribute('aria-expanded', 'false');
             setIcon(legendBtn, 'asterisk');
 
-            const legendPanel = doc.createElement('div');
+            const legendPanel = doc.win.createDiv();
             legendPanel.className = 'ert-timeline-legend';
             legendPanel.setAttribute('role', 'tooltip');
 
             // Book selector, badged with a book icon so the control reads
             // unambiguously as "which book / Saga" (not a generic dropdown).
-            const booksGroup = doc.createElement('div');
+            const booksGroup = doc.win.createDiv();
             booksGroup.className = 'rt-book-switcher__books';
-            const booksIcon = doc.createElement('span');
+            const booksIcon = doc.win.createSpan();
             booksIcon.className = 'rt-book-switcher__icon';
             booksIcon.setAttribute('aria-hidden', 'true');
             setIcon(booksIcon, 'book');
 
-            const select = doc.createElement('select');
+            const select = doc.win.createEl('select');
             select.className = 'rt-book-switcher__select';
             select.setAttribute('aria-label', 'Book selector');
             this.registerDomEvent(select, 'change', async () => {
@@ -384,7 +384,7 @@ export class RadialTimelineView extends ItemView {
                 this.updateViewTitle();
             });
 
-            const manageBtn = doc.createElement('button');
+            const manageBtn = doc.win.createEl('button');
             manageBtn.className = 'rt-book-switcher__manage ert-timeline-title-action clickable-icon';
             manageBtn.type = 'button';
             manageBtn.setAttribute('aria-label', 'Manage books');
@@ -401,7 +401,7 @@ export class RadialTimelineView extends ItemView {
                 }
             });
 
-            const commandPaletteBtn = doc.createElement('button');
+            const commandPaletteBtn = doc.win.createEl('button');
             commandPaletteBtn.className = 'ert-timeline-title-action clickable-icon';
             commandPaletteBtn.type = 'button';
             commandPaletteBtn.setAttribute('aria-label', 'Radial Timeline commands');
@@ -413,7 +413,7 @@ export class RadialTimelineView extends ItemView {
                 this.openRadialTimelineCommands();
             });
 
-            const exportBtn = doc.createElement('button');
+            const exportBtn = doc.win.createEl('button');
             exportBtn.className = 'ert-timeline-title-action clickable-icon';
             exportBtn.type = 'button';
             exportBtn.setAttribute('aria-label', 'Manuscript export');
@@ -428,7 +428,7 @@ export class RadialTimelineView extends ItemView {
             // Bug report — direct entry point in the title bar. Same action as
             // the version-indicator fallback; ModeManager/version state are not
             // duplicated, only this one trigger.
-            const bugBtn = doc.createElement('button');
+            const bugBtn = doc.win.createEl('button');
             bugBtn.className = 'ert-timeline-title-action clickable-icon';
             bugBtn.type = 'button';
             bugBtn.setAttribute('aria-label', 'Report a bug');
@@ -440,11 +440,11 @@ export class RadialTimelineView extends ItemView {
                 new BugReportModal(this.app, this.plugin, 'rt').open();
             });
 
-            const sessionBtn = doc.createElement('button');
+            const sessionBtn = doc.win.createEl('button');
             sessionBtn.className = 'ert-timeline-session clickable-icon';
             sessionBtn.type = 'button';
             sessionBtn.setAttribute('aria-label', 'Start writing session');
-            const sessionLabel = doc.createElement('span');
+            const sessionLabel = doc.win.createSpan();
             sessionLabel.className = 'ert-timeline-session__label';
             this.renderWritingSessionIdleIcon(sessionLabel);
             sessionBtn.appendChild(sessionLabel);
@@ -454,7 +454,7 @@ export class RadialTimelineView extends ItemView {
                 this.toggleWritingSessionPanel();
             });
 
-            const sessionPanel = doc.createElement('div');
+            const sessionPanel = doc.win.createDiv();
             sessionPanel.className = 'ert-timeline-session-panel ert-hidden';
             sessionPanel.setAttribute('role', 'dialog');
             doc.body.appendChild(sessionPanel);
@@ -563,7 +563,7 @@ export class RadialTimelineView extends ItemView {
             // Discord chip lives in the title bar beside the session control —
             // muted "Discord" link normally, green when Eric is online (per the
             // discord-presence endpoint). Persistent host; state on the controller.
-            const discordChipHost = doc.createElement('span');
+            const discordChipHost = doc.win.createSpan();
             discordChipHost.className = 'ert-timeline-discord-chip-host';
             sessionBtn.parentElement?.insertBefore(discordChipHost, sessionBtn.nextSibling);
             this.discordChip?.mount(discordChipHost);
@@ -571,7 +571,7 @@ export class RadialTimelineView extends ItemView {
             // Subplot ring key trigger — action icon slot right of the Discord
             // chip. Hidden until SubplotKeyController wires it to a rendered
             // timeline with 2+ subplot rings; no tooltip by design.
-            const subplotKeyBtn = doc.createElement('button');
+            const subplotKeyBtn = doc.win.createEl('button');
             subplotKeyBtn.className = 'ert-timeline-subplot-key__trigger clickable-icon';
             subplotKeyBtn.type = 'button';
             subplotKeyBtn.hidden = true;
@@ -587,7 +587,7 @@ export class RadialTimelineView extends ItemView {
             // Inserted as a DIRECT child of .view-header (not nested with the
             // left cluster inside .view-header-left) so its auto side-margins
             // resolve against the whole bar's free space and truly center it.
-            const modeNav = doc.createElement('div');
+            const modeNav = doc.win.createDiv();
             modeNav.className = 'ert-timeline-mode-nav';
             modeNav.setAttribute('role', 'tablist');
             modeNav.setAttribute('aria-label', 'Timeline mode');
@@ -597,7 +597,7 @@ export class RadialTimelineView extends ItemView {
                 const modeKey = `timeline.modes.${mode.id}.name`;
                 const translated = t(modeKey);
                 const label = translated && !translated.startsWith('[missing:') ? translated : mode.name;
-                const btn = doc.createElement('button');
+                const btn = doc.win.createEl('button');
                 btn.className = 'ert-timeline-mode-nav__btn';
                 btn.type = 'button';
                 btn.dataset.mode = mode.id;
@@ -606,11 +606,11 @@ export class RadialTimelineView extends ItemView {
                 // Numeral prefix = the keyboard shortcut, taken from the same
                 // getToggleableModes() index the handler uses (never hardcoded).
                 // Styled as a subtle mono hint, distinct from the mode name.
-                const num = doc.createElement('span');
+                const num = doc.win.createSpan();
                 num.className = 'ert-timeline-mode-nav__num';
                 num.setAttribute('aria-hidden', 'true');
                 num.textContent = String(index + 1);
-                const labelSpan = doc.createElement('span');
+                const labelSpan = doc.win.createSpan();
                 labelSpan.className = 'ert-timeline-mode-nav__label';
                 labelSpan.textContent = label;
                 btn.appendChild(num);
@@ -724,19 +724,19 @@ export class RadialTimelineView extends ItemView {
      * there is no "which of these two is on?" to decode.
      */
     private buildAlignmentToggle(doc: Document, modeNav: HTMLElement): void {
-        const group = doc.createElement('div');
+        const group = doc.win.createDiv();
         group.className = 'ert-timeline-subnav ert-timeline-alignment-toggle';
         group.setAttribute('role', 'group');
         group.setAttribute('aria-label', t('timeline.subplotAlignment.groupLabel'));
         group.hidden = true;
 
-        const btn = doc.createElement('button');
+        const btn = doc.win.createEl('button');
         btn.className = 'ert-timeline-subnav__btn';
         btn.type = 'button';
-        const glyphEl = doc.createElement('span');
+        const glyphEl = doc.win.createSpan();
         glyphEl.className = 'ert-timeline-subnav__glyph';
         glyphEl.setAttribute('aria-hidden', 'true');
-        const labelEl = doc.createElement('span');
+        const labelEl = doc.win.createSpan();
         labelEl.className = 'ert-timeline-subnav__label';
         btn.appendChild(glyphEl);
         btn.appendChild(labelEl);
@@ -796,7 +796,7 @@ export class RadialTimelineView extends ItemView {
         this.plugin.settings.subplotAlignment = alignment;
         await this.plugin.saveSettings();
         this.syncAlignmentToggle();
-        await this.refreshTimeline();
+        this.refreshTimeline();
     }
 
     /**
@@ -807,24 +807,24 @@ export class RadialTimelineView extends ItemView {
      * physical Shift/CapsLock/Alt and the RT click keep working untouched.
      */
     private buildChronologueSubNav(doc: Document, modeNav: HTMLElement, anchorBtn?: HTMLButtonElement): void {
-        const subNav = doc.createElement('div');
+        const subNav = doc.win.createDiv();
         subNav.className = 'ert-timeline-subnav';
         subNav.setAttribute('role', 'group');
         subNav.setAttribute('aria-label', 'Chronologue sub-modes');
         subNav.hidden = true;
 
         const makeBtn = (submode: 'shift' | 'alt' | 'runtime', label: string, glyph: string, aria: string): HTMLButtonElement => {
-            const btn = doc.createElement('button');
+            const btn = doc.win.createEl('button');
             btn.className = 'ert-timeline-subnav__btn';
             btn.type = 'button';
             btn.dataset.submode = submode;
             btn.setAttribute('aria-pressed', 'false');
             btn.setAttribute('aria-label', aria);
-            const glyphEl = doc.createElement('span');
+            const glyphEl = doc.win.createSpan();
             glyphEl.className = 'ert-timeline-subnav__glyph';
             glyphEl.setAttribute('aria-hidden', 'true');
             glyphEl.textContent = glyph;
-            const labelEl = doc.createElement('span');
+            const labelEl = doc.win.createSpan();
             labelEl.className = 'ert-timeline-subnav__label';
             labelEl.textContent = label;
             btn.appendChild(glyphEl);
@@ -1335,7 +1335,7 @@ export class RadialTimelineView extends ItemView {
         }
 
         const doc = target.ownerDocument;
-        const svg = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        const svg = doc.win.createSvg('svg');
         svg.classList.add('svg-icon', 'lucide', 'lucide-metronome-icon', 'lucide-metronome', 'ert-timeline-session__icon');
         svg.setAttribute('viewBox', '0 0 24 24');
         svg.setAttribute('aria-hidden', 'true');
@@ -1350,12 +1350,12 @@ export class RadialTimelineView extends ItemView {
             'm12 17 6.59-6.59',
             'm15.05 5.7-.218-.691a3 3 0 0 0-5.663 0L4.418 19.695A1 1 0 0 0 5.37 21h13.253a1 1 0 0 0 .951-1.31L18.45 16.2',
         ].forEach((d) => {
-            const path = doc.createElementNS('http://www.w3.org/2000/svg', 'path');
+            const path = doc.win.createSvg('path');
             path.setAttribute('d', d);
             svg.appendChild(path);
         });
 
-        const circle = doc.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        const circle = doc.win.createSvg('circle');
         circle.setAttribute('cx', '20');
         circle.setAttribute('cy', '9');
         circle.setAttribute('r', '2');
@@ -2246,15 +2246,15 @@ export class RadialTimelineView extends ItemView {
         this.timelineLegendPanel.empty();
 
         const doc = this.timelineLegendPanel.ownerDocument;
-        const surface = doc.createElement('div');
+        const surface = doc.win.createDiv();
         surface.className = 'ert-timeline-legend__surface';
 
-        const header = doc.createElement('div');
+        const header = doc.win.createDiv();
         header.className = 'ert-timeline-legend__header';
-        const title = doc.createElement('div');
+        const title = doc.win.createDiv();
         title.className = 'ert-timeline-legend__title';
         title.textContent = 'Timeline keys';
-        const badge = doc.createElement('div');
+        const badge = doc.win.createDiv();
         badge.className = 'ert-timeline-legend__mode';
         badge.textContent = this.getTimelineLegendModeLabel(mode);
         header.appendChild(title);
@@ -2262,23 +2262,23 @@ export class RadialTimelineView extends ItemView {
         surface.appendChild(header);
 
         this.getTimelineLegendSections(mode).forEach(section => {
-            const sectionEl = doc.createElement('section');
+            const sectionEl = doc.win.createEl('section');
             sectionEl.className = 'ert-timeline-legend__section';
 
-            const sectionTitle = doc.createElement('div');
+            const sectionTitle = doc.win.createDiv();
             sectionTitle.className = 'ert-timeline-legend__section-title';
             sectionTitle.textContent = section.title;
             sectionEl.appendChild(sectionTitle);
 
             section.rows.forEach(row => {
-                const rowEl = doc.createElement('div');
+                const rowEl = doc.win.createDiv();
                 rowEl.className = 'ert-timeline-legend__row';
 
-                const iconEl = doc.createElement('span');
+                const iconEl = doc.win.createSpan();
                 iconEl.className = 'ert-timeline-legend__icon';
                 if (row.swatch) {
                     iconEl.classList.add('ert-timeline-legend__icon--swatch');
-                    const swatchEl = doc.createElement('span');
+                    const swatchEl = doc.win.createSpan();
                     swatchEl.className = 'ert-timeline-legend__swatch';
                     if (row.swatch.fill) swatchEl.style.setProperty('--ert-legend-swatch-fill', row.swatch.fill);
                     if (row.swatch.stroke) swatchEl.style.setProperty('--ert-legend-swatch-stroke', row.swatch.stroke);
@@ -2289,15 +2289,15 @@ export class RadialTimelineView extends ItemView {
                     setIcon(iconEl, row.icon);
                 }
 
-                const copyEl = doc.createElement('span');
+                const copyEl = doc.win.createSpan();
                 copyEl.className = 'ert-timeline-legend__copy';
-                const labelEl = doc.createElement('span');
+                const labelEl = doc.win.createSpan();
                 labelEl.className = 'ert-timeline-legend__label';
                 labelEl.textContent = row.label;
                 copyEl.appendChild(labelEl);
 
                 if (row.detail) {
-                    const detailEl = doc.createElement('span');
+                    const detailEl = doc.win.createSpan();
                     detailEl.className = 'ert-timeline-legend__detail';
                     if (row.detailSegments) {
                         row.detailSegments.forEach(segment => {
@@ -2459,14 +2459,14 @@ export class RadialTimelineView extends ItemView {
         const sagaAvailable = isSagaScopeAvailable(this.plugin.settings);
         const doc = select.ownerDocument;
         if (sagaAvailable) {
-            const sagaOption = doc.createElement('option');
+            const sagaOption = doc.win.createEl('option');
             sagaOption.value = SAGA_SCOPE_OPTION;
             sagaOption.textContent = 'Saga';
             select.appendChild(sagaOption);
         }
 
         books.forEach(book => {
-            const option = doc.createElement('option');
+            const option = doc.win.createEl('option');
             option.value = book.id;
             option.textContent = book.title?.trim() || DEFAULT_BOOK_TITLE;
             select.appendChild(option);
@@ -2748,7 +2748,7 @@ export class RadialTimelineView extends ItemView {
                 }
                 
                 // Full render
-                const loadingEl = container.createEl("div", {
+                const loadingEl = container.createDiv({
                     cls: "rt-loading-message",
                     text: t('timeline.loadingData')
                 });
@@ -2777,7 +2777,7 @@ export class RadialTimelineView extends ItemView {
 
             })
             .catch(error => {
-                container.createEl("div", {
+                container.createDiv({
                     cls: "rt-error-message",
                     text: `Error: ${error.message}`
                 });
@@ -2957,8 +2957,8 @@ export class RadialTimelineView extends ItemView {
 
         // Performance optimization: Create DocumentFragment to minimize reflows
         const doc = container.ownerDocument;
-        const fragment = doc.createDocumentFragment();
-        const timelineContainer = doc.createElement("div");
+        const fragment = doc.win.createFragment();
+        const timelineContainer = doc.win.createDiv();
         timelineContainer.className = "radial-timeline-container";
         fragment.appendChild(timelineContainer);
         
@@ -3239,7 +3239,7 @@ export class RadialTimelineView extends ItemView {
             
         } catch (error) {
             console.error("Error rendering timeline:", error);
-            container.createEl("div", {
+            container.createDiv({
                 text: t('timeline.renderError')
             });
         }

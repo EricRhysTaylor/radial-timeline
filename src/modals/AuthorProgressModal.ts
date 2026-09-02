@@ -658,7 +658,7 @@ export class AuthorProgressModal extends Modal {
             const alert = container.createDiv({ cls: ERT_CLASSES.INLINE });
             const alertIcon = alert.createSpan({ cls: ERT_CLASSES.ICON_BADGE });
             setIcon(alertIcon, 'alert-triangle');
-            alert.createEl('span', {
+            alert.createSpan({
                 text: `Campaign "${campaign.name}" is ${ageLabel} days old. Time to refresh!`,
                 cls: 'ert-section-desc ert-section-desc--alert'
             });
@@ -671,7 +671,7 @@ export class AuthorProgressModal extends Modal {
         const alert = container.createDiv({ cls: ERT_CLASSES.INLINE });
         const alertIcon = alert.createSpan({ cls: ERT_CLASSES.ICON_BADGE });
         setIcon(alertIcon, 'alert-triangle');
-        alert.createEl('span', {
+        alert.createSpan({
             text: `Your report is ${ageLabel} days old. Time to refresh!`,
             cls: 'ert-section-desc ert-section-desc--alert'
         });

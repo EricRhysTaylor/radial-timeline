@@ -464,7 +464,7 @@ export class InquiryBriefingModal extends Modal {
     private buildSceneReferenceNode(label: string, anchorId?: string, style: 'callout' | 'headline' = 'callout'): HTMLElement {
         const doc = this.contentEl.ownerDocument;
         if (style === 'headline') {
-            const textEl = doc.createElement('span');
+            const textEl = doc.win.createSpan();
             textEl.className = 'ert-briefing-scene-inline';
             textEl.textContent = label;
             return textEl;
@@ -472,7 +472,7 @@ export class InquiryBriefingModal extends Modal {
         const [numberPart, ...titleParts] = label.split(' ');
         const titlePart = titleParts.join(' ').trim();
         const interactive = !!anchorId;
-        const el = doc.createElement(interactive ? 'a' : 'span');
+        const el = doc.win.createEl(interactive ? 'a' : 'span');
         el.className = 'ert-briefing-scene-ref';
         if (interactive && el instanceof HTMLAnchorElement) {
             el.href = '#';
@@ -482,12 +482,12 @@ export class InquiryBriefingModal extends Modal {
             });
             el.setAttribute('aria-label', `Jump to ${label}`);
         }
-        const numberEl = doc.createElement('span');
+        const numberEl = doc.win.createSpan();
         numberEl.className = 'ert-briefing-scene-ref-num';
         numberEl.textContent = numberPart;
         el.append(numberEl);
         if (titlePart) {
-            const titleEl = doc.createElement('span');
+            const titleEl = doc.win.createSpan();
             titleEl.className = 'ert-briefing-scene-ref-title';
             titleEl.textContent = titlePart;
             el.append(titleEl);
@@ -498,14 +498,14 @@ export class InquiryBriefingModal extends Modal {
     private buildUnresolvedSceneReferenceNode(rawRef: string, style: 'callout' | 'headline' = 'callout'): HTMLElement {
         const doc = this.contentEl.ownerDocument;
         if (style === 'headline') {
-            const textEl = doc.createElement('span');
+            const textEl = doc.win.createSpan();
             textEl.className = 'ert-briefing-scene-inline ert-briefing-scene-inline--unresolved';
             textEl.textContent = rawRef;
             return textEl;
         }
-        const el = doc.createElement('span');
+        const el = doc.win.createSpan();
         el.className = 'ert-briefing-scene-ref ert-briefing-scene-ref--unresolved';
-        const textEl = doc.createElement('span');
+        const textEl = doc.win.createSpan();
         textEl.className = 'ert-briefing-scene-ref-title';
         textEl.textContent = rawRef;
         el.append(textEl);
@@ -513,7 +513,7 @@ export class InquiryBriefingModal extends Modal {
     }
 
     private buildQuoteNode(text: string, mode: 'single' | 'double'): HTMLElement {
-        const el = this.contentEl.ownerDocument.createElement('span');
+        const el = this.contentEl.ownerDocument.win.createSpan();
         el.className = `ert-briefing-quote ert-briefing-quote--${mode}`;
         el.textContent = text;
         return el;
@@ -569,7 +569,7 @@ export class InquiryBriefingModal extends Modal {
     }
 
     private createPrintHost(): HTMLElement {
-        const host = this.contentEl.ownerDocument.createElement('div');
+        const host = this.contentEl.ownerDocument.win.createDiv();
         host.className = 'print ert-briefing-print-root';
         host.setAttribute('aria-hidden', 'true');
 

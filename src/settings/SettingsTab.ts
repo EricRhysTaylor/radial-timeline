@@ -1005,7 +1005,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         const proEntitlement = getProEntitlement(this.plugin);
         proTab.toggleClass('is-pro-active', proEntitlement.isProActive);
         proTab.toggleClass('is-pro-disabled', !proEntitlement.isProActive);
-        const refreshProDependentSections = () => this.display();
+        const refreshProDependentSections = () => this.update();
 
         const coreStack = coreContent.createDiv({ cls: ERT_CLASSES.STACK });
         this.renderCoreHero(coreStack);

@@ -133,7 +133,9 @@ export class AuthorProgressRenderService {
         const fontFaces = selectFontFacesForFamilies(collectSelfContainedFontFaces(activeDocument), usedFontFamilies);
         if (fontFaces.length === 0) return svgString;
 
-        const styleEl = parsed.createElementNS('http://www.w3.org/2000/svg', 'style');
+        // The parsed document carries no Obsidian window; the main-window
+        // element is adopted by `root` on insert and serializes identically.
+        const styleEl = createSvg('style');
         styleEl.textContent = buildFontFaceCss(fontFaces);
         root.insertBefore(styleEl, root.firstChild);
         return new XMLSerializer().serializeToString(root);
@@ -513,7 +515,7 @@ export class AuthorProgressRenderService {
 
             const targetWidth = Math.max(1, Math.round(width));
             const targetHeight = Math.max(1, Math.round(height));
-            const canvas = activeDocument.createElement('canvas');
+            const canvas = activeWindow.createEl('canvas');
             canvas.width = targetWidth;
             canvas.height = targetHeight;
             const ctx = canvas.getContext('2d');

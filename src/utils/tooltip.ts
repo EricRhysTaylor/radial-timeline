@@ -407,7 +407,7 @@ function ensureCustomTooltip(doc: Document) {
     if (customTooltipEl?.ownerDocument === doc) return;
 
     customTooltipEl?.remove();
-    customTooltipEl = doc.createElement('div');
+    customTooltipEl = doc.win.createDiv();
     customTooltipEl.classList.add('rt-tooltip');
     doc.body.appendChild(customTooltipEl);
 }

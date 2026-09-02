@@ -101,7 +101,7 @@ export class AprPaletteModal extends Modal {
         
         presets.forEach(palette => {
             const paletteCard = presetsGrid.createDiv({ cls: 'ert-panel ert-apr-palette-card' });
-            paletteCard.createEl('div', { text: palette.name, cls: 'ert-apr-palette-name' });
+            paletteCard.createDiv({ text: palette.name, cls: 'ert-apr-palette-name' });
             
             const swatches = paletteCard.createDiv({ cls: 'ert-apr-palette-swatches' });
             [palette.bookTitle, palette.authorName, palette.percentNumber, palette.percentSymbol].forEach(color => {

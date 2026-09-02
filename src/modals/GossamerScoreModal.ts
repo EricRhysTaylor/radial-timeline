@@ -299,7 +299,7 @@ export class GossamerScoreModal extends Modal {
   // Helper to create Lucide circle-x SVG icon
   private createCircleXIcon(): SVGElement {
     const doc = this.contentEl.ownerDocument;
-    const svg = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const svg = doc.win.createSvg('svg');
     svg.setAttribute('width', '14');
     svg.setAttribute('height', '14');
     svg.setAttribute('viewBox', '0 0 24 24');
@@ -309,21 +309,21 @@ export class GossamerScoreModal extends Modal {
     svg.setAttribute('stroke-linecap', 'round');
     svg.setAttribute('stroke-linejoin', 'round');
 
-    const circle = doc.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    const circle = doc.win.createSvg('circle');
     circle.setAttribute('cx', '12');
     circle.setAttribute('cy', '12');
     circle.setAttribute('r', '10');
     circle.setAttribute('stroke-width', '2');
     svg.appendChild(circle);
 
-    const line1 = doc.createElementNS('http://www.w3.org/2000/svg', 'line');
+    const line1 = doc.win.createSvg('line');
     line1.setAttribute('x1', '15');
     line1.setAttribute('y1', '9');
     line1.setAttribute('x2', '9');
     line1.setAttribute('y2', '15');
     svg.appendChild(line1);
 
-    const line2 = doc.createElementNS('http://www.w3.org/2000/svg', 'line');
+    const line2 = doc.win.createSvg('line');
     line2.setAttribute('x1', '9');
     line2.setAttribute('y1', '9');
     line2.setAttribute('x2', '15');
@@ -414,7 +414,7 @@ export class GossamerScoreModal extends Modal {
 
     // Show warning if no beats match
     if (actualCount === 0) {
-      const noBeatsWarning = contentEl.createEl('div', {
+      const noBeatsWarning = contentEl.createDiv({
         text: !selectedBeatModel
           ? t('gossamer.scoreModal.noActiveBeatSystem', { signal: signalMeta.label.toLowerCase() })
           : settingsSystem === 'Custom'
@@ -423,7 +423,7 @@ export class GossamerScoreModal extends Modal {
       });
       noBeatsWarning.addClass('ert-gossamer-warning');
     } else if (countMismatch && plotSystemTemplate) {
-      const warningEl = contentEl.createEl('div', {
+      const warningEl = contentEl.createDiv({
         text: t('gossamer.scoreModal.countMismatch', { expected: plotSystemTemplate.beatCount, label: beatModelLabel, actual: actualCount })
       });
       warningEl.addClass('ert-gossamer-warning');
@@ -459,11 +459,11 @@ export class GossamerScoreModal extends Modal {
 
       // 1. Left side: Beat title with range
       const titleContainer = firstRow.createDiv('ert-gossamer-beat-title-container');
-      const beatTitleEl = titleContainer.createEl('span', { text: entry.beatTitle });
+      const beatTitleEl = titleContainer.createSpan({ text: entry.beatTitle });
       beatTitleEl.addClass('ert-gossamer-beat-title');
 
       if (entry.range) {
-        const rangeEl = titleContainer.createEl('span', { text: ` (${entry.range})` });
+        const rangeEl = titleContainer.createSpan({ text: ` (${entry.range})` });
         rangeEl.addClass('ert-gossamer-beat-range');
       }
 
@@ -587,7 +587,7 @@ export class GossamerScoreModal extends Modal {
 
     // Group 1: Maintenance (bordered container — demoted, rarely used)
     const maintenanceGroup = footer.createDiv({ cls: 'ert-gossamer-footer__group ert-gossamer-footer__group--maintenance' });
-    maintenanceGroup.createEl('span', { text: t('gossamer.scoreModal.groupMaintenance'), cls: 'ert-gossamer-footer__group-label' });
+    maintenanceGroup.createSpan({ text: t('gossamer.scoreModal.groupMaintenance'), cls: 'ert-gossamer-footer__group-label' });
     const maintenanceRow = maintenanceGroup.createDiv({ cls: 'ert-row' });
     const hasNormalizationWork = this.collectNormalizationIssues().length > 0;
     const normalizeBtn = new ButtonComponent(maintenanceRow)
@@ -622,7 +622,7 @@ export class GossamerScoreModal extends Modal {
     // Group 2: AI workflow (bordered container — primary path; both workflow
     // actions live here so Copy → Paste reads as one continuous workflow.)
     const aiGroup = footer.createDiv({ cls: 'ert-gossamer-footer__group ert-gossamer-footer__group--ai' });
-    aiGroup.createEl('span', { text: t('gossamer.scoreModal.groupAi'), cls: 'ert-gossamer-footer__group-label' });
+    aiGroup.createSpan({ text: t('gossamer.scoreModal.groupAi'), cls: 'ert-gossamer-footer__group-label' });
     const aiRow = aiGroup.createDiv({ cls: 'ert-row' });
     // Neither Copy nor Paste use setCta(): the CTA class forces taller padding
     // than regular footer buttons, visually "distorting" them relative to Save

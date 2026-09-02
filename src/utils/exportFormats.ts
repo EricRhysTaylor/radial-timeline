@@ -1342,7 +1342,8 @@ export function buildOutlineExport(
                 : ['Scene', 'Title', 'When', 'Subplot', 'Runtime', 'Words', 'Path'];
             const rows = titles.map((title, idx) => {
                 const sceneLabel = sceneNumbers[idx] || idx + 1;
-                const rt = runtimes[idx] ? formatRuntimeValue(runtimes[idx]!) : '';
+                const runtime = runtimes[idx];
+                const rt = runtime ? formatRuntimeValue(runtime) : '';
                 const wc = wordCounts[idx] || 0;
                 
                 const base = [
@@ -1422,7 +1423,8 @@ export function buildOutlineExport(
             titles.forEach((title, idx) => {
                 const sceneLabel = sceneNumbers[idx] || idx + 1;
                 const when = whenDates[idx] ? ` · ${whenDates[idx]}` : '';
-                const rt = runtimes[idx] ? ` [${formatRuntimeValue(runtimes[idx]!)}]` : '';
+                const runtime = runtimes[idx];
+                const rt = runtime ? ` [${formatRuntimeValue(runtime)}]` : '';
                 
                 lines.push(`${sceneLabel}. ${title}${when}${rt}`);
                 if (includeSynopsis && synopses[idx]) {
@@ -1439,7 +1441,8 @@ export function buildOutlineExport(
             const lines = [...header];
             titles.forEach((title, idx) => {
                 const sceneLabel = sceneNumbers[idx] || idx + 1;
-                const rt = runtimes[idx] ? formatRuntimeValue(runtimes[idx]!) : '—';
+                const runtime = runtimes[idx];
+                const rt = runtime ? formatRuntimeValue(runtime) : '—';
                 
                 if (includeSynopsis) {
                     const synopsis = (synopses[idx] || '—').replace(/\|/g, '\\|'); // Escape pipes for markdown table

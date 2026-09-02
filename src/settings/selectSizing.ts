@@ -3,7 +3,7 @@ const measurementCanvasByDocument = new WeakMap<Document, HTMLCanvasElement>();
 function getMeasurementContext(doc: Document): CanvasRenderingContext2D | null {
     let canvas = measurementCanvasByDocument.get(doc);
     if (!canvas) {
-        canvas = doc.createElement('canvas');
+        canvas = doc.win.createEl('canvas');
         measurementCanvasByDocument.set(doc, canvas);
     }
     return canvas.getContext('2d');

@@ -13,7 +13,7 @@ function getRequired(schema?: Record<string, unknown>): string[] {
     if (!schema) return [];
     const required = schema.required;
     if (!Array.isArray(required)) return [];
-    return required.filter(item => typeof item === 'string') as string[];
+    return required.filter((item): item is string => typeof item === 'string');
 }
 
 /**

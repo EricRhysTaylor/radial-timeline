@@ -46,7 +46,7 @@ let aprMetricsCanvas: HTMLCanvasElement | null | undefined;
 function getAprMetricsContext(): CanvasRenderingContext2D | null {
     if (typeof document === 'undefined') return null;
     if (aprMetricsCanvas === undefined) {
-        aprMetricsCanvas = activeDocument.createElement('canvas');
+        aprMetricsCanvas = activeWindow.createEl('canvas');
     }
     return aprMetricsCanvas?.getContext('2d') ?? null;
 }
@@ -217,7 +217,7 @@ export function renderAprBranding(options: AprBrandingOptions): string {
     if (canMeasure) {
         try {
             const doc = activeDocument;
-            const span = doc.createElement('span');
+            const span = doc.win.createSpan();
             const inlineStyle = [
                 'position:absolute',
                 'visibility:hidden',

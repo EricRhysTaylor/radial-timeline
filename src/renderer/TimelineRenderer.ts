@@ -15,7 +15,7 @@ import {
 import { renderRings, type RingRenderContext } from './renderers/RingRenderer';
 import { computeGridData } from './utils/GridData';
 import { renderNumberSquares, type NumberSquareRenderContext } from './renderers/NumberSquareRenderer';
-import type { BookPublishingPreferences, ExportProfile, PandocLayoutTemplate, RadialTimelineSettings, LegacyPersistedSettings, TimelineItem } from '../types';
+import type { PandocLayoutTemplate, RadialTimelineSettings, TimelineItem } from '../types';
 import { dateToAngle } from '../utils/date';
 import {
     extractGradeFromScene,
@@ -511,8 +511,6 @@ export function createTimelineSVG(
         // Get the scenes for this act and subplot to determine correct index
         // When using When date sorting, all scenes are in act 0
         // When using manuscript order, use the scene's actual act
-        const currentMode = settings.currentMode || 'narrative';
-        const isChronologueMode = currentMode === 'chronologue';
         const sortByWhen = usesWhenOrdering(settings);
 
         const sceneActNumber = scene.actNumber !== undefined ? scene.actNumber : 1;

@@ -70,7 +70,7 @@ export class TimelineImageExportModal extends Modal {
         const panel = contentEl.createDiv({ cls: 'ert-panel ert-panel--glass ert-stack' });
         const grid = panel.createDiv({ cls: 'ert-note-creator-grid' });
         for (const option of EXPORT_OPTIONS) {
-            const button = grid.ownerDocument.createElement('button');
+            const button = grid.ownerDocument.win.createEl('button');
             button.className = 'ert-modal-choice ert-note-creator-option';
             button.type = 'button';
             const body = button.createDiv({ cls: 'ert-note-creator-option__body' });

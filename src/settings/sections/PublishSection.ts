@@ -47,7 +47,6 @@ import {
     acknowledgeHotfixHistory,
     ensureBundledLayoutInstalledForExport,
     ensureBundledPandocLayoutsRegistered,
-    formatBundledFontInstallSummary,
     formatFontFileSize,
     getBundledPandocLayouts,
     installBundledPandocLayouts,
@@ -130,7 +129,7 @@ function buildFontPillsNotice(ownerDoc: Document, headline: string, fonts: Bundl
     const families = [...fonts.installed, ...fonts.alreadyPresent].filter(f => f.files.length > 0);
     if (families.length === 0) return headline;
 
-    const fragment = ownerDoc.createDocumentFragment();
+    const fragment = ownerDoc.win.createFragment();
     const wrapper = fragment.createDiv();
     wrapper.createDiv({ text: headline });
     const row = wrapper.createDiv({ cls: 'ert-font-pill-row' });
@@ -1635,9 +1634,6 @@ async function generateSampleTemplates(
     const bundledInstall = await installBundledPandocLayouts(plugin);
     if (bundledInstall.fonts.failed.length > 0) {
         console.warn(`[Radial Timeline] Bundled font install failed for: ${bundledInstall.fonts.failed.join(', ')}. PDF export will fall back to system fonts where available.`);
-    } else {
-        const fontSummary = formatBundledFontInstallSummary(bundledInstall.fonts);
-        if (fontSummary) console.info(`[Radial Timeline] Bundled fonts verified on disk —\n${fontSummary}`);
     }
     const installedBundledFilenames = getBundledPandocLayouts()
         .filter(layout => bundledInstall.installed.includes(layout.name))
@@ -2635,7 +2631,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     installBtn.addEventListener('click', (ev) => {
                         ev.preventDefault();
                         const hint = fontDiag.installHint;
-                        const fragment = installBtn.ownerDocument.createDocumentFragment();
+                        const fragment = installBtn.ownerDocument.win.createFragment();
                         const wrapper = fragment.createDiv();
                         wrapper.createDiv({
                             text: `${fontDiag.primaryFontName}: ${hint?.message ?? 'Install instructions unavailable.'}`,

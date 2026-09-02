@@ -1,6 +1,4 @@
-import type { AiSettingsV1, AIProviderId, AnthropicCacheTtl, DeclarableLocalCapability, LocalLlmBackendId, LocalLlmConfigurationMode, LocalLlmJsonMode,
-    AIFeatureProfile
-} from '../types';
+import type { AiSettingsV1, AIProviderId, AnthropicCacheTtl, DeclarableLocalCapability, LocalLlmBackendId, LocalLlmConfigurationMode, LocalLlmJsonMode } from '../types';
 import { ANTHROPIC_REQUESTED_CACHE_TTL, buildDefaultAiSettings, cloneBuiltInRoleTemplates, DECLARABLE_LOCAL_CAPABILITIES } from './aiSettings';
 import { BUILTIN_MODELS } from '../registry/builtinModels';
 import { buildLocalLlmModelIdentity } from '../localLlm/identity';

@@ -263,7 +263,7 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
     if (patternDesc) {
         patternDesc.addClass('ert-color-section-desc');
         patternDesc.setText('Patterns are used for ');
-        const pill = patternDesc.createEl('span', { cls: 'ert-yaml-pill', text: '"Working"' });
+        const pill = patternDesc.createSpan({ cls: 'ert-yaml-pill', text: '"Working"' });
         pill.setAttr('aria-label', 'Working status');
         patternDesc.appendText(' scenes. Thanks to ');
         const link = patternDesc.createEl('a', { text: 'heropatterns.com', href: 'https://heropatterns.com' });

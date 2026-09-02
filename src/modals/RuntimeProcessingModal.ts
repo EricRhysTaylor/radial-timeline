@@ -261,7 +261,7 @@ export class RuntimeProcessingModal extends ErtModal {
         });
 
         const labelContainer = overrideRow.createDiv({ cls: 'ert-runtime-override-label' });
-        labelContainer.createEl('span', { text: t('sceneAnalysis.runtimeModal.override.recalculate') });
+        labelContainer.createSpan({ text: t('sceneAnalysis.runtimeModal.override.recalculate') });
         labelContainer.createDiv({ cls: 'ert-runtime-field-hint', text: t('sceneAnalysis.runtimeModal.override.recalculateHint') });
 
         // ===== SETTINGS ACCORDION =====

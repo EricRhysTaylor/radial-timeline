@@ -452,7 +452,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
 
                         while (textPath.firstChild) textPath.removeChild(textPath.firstChild);
                         alienLines.forEach((line, i) => {
-                            const tspan = doc.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+                            const tspan = doc.win.createSvg('tspan');
                             tspan.setAttribute('x', '0');
                             tspan.setAttribute('dy', i === 0 ? '0' : '0.9em');
                             tspan.textContent = line;
@@ -473,7 +473,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
                     while (textPath.firstChild) textPath.removeChild(textPath.firstChild);
                     if (earthLabel.includes('\n')) {
                         earthLabel.split('\n').forEach((line, i) => {
-                            const tspan = doc.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+                            const tspan = doc.win.createSvg('tspan');
                             tspan.setAttribute('x', '0');
                             tspan.setAttribute('dy', i === 0 ? '0' : '0.9em');
                             tspan.textContent = line;
@@ -560,7 +560,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
                 if (isFirst) {
                     // First label shows "00:00"
                     while (textPath.firstChild) textPath.removeChild(textPath.firstChild);
-                    const tspan = doc.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+                    const tspan = doc.win.createSvg('tspan');
                     tspan.setAttribute('x', '0');
                     tspan.setAttribute('dy', '0');
                     tspan.textContent = '00:00';
@@ -568,7 +568,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
                 } else if (isLast) {
                     // Last label shows total runtime
                     while (textPath.firstChild) textPath.removeChild(textPath.firstChild);
-                    const tspan = doc.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+                    const tspan = doc.win.createSvg('tspan');
                     tspan.setAttribute('x', '0');
                     tspan.setAttribute('dy', '0');
                     tspan.textContent = totalRuntimeLabel;
@@ -581,7 +581,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
                         : 0;
                     const runtimeLabel = formatRuntimeValue(cumulativeBeforeScene);
                     while (textPath.firstChild) textPath.removeChild(textPath.firstChild);
-                    const tspan = doc.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+                    const tspan = doc.win.createSvg('tspan');
                     tspan.setAttribute('x', '0');
                     tspan.setAttribute('dy', '0');
                     tspan.textContent = runtimeLabel;
@@ -599,7 +599,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
                     while (textPath.firstChild) textPath.removeChild(textPath.firstChild);
                     if (earthLabel.includes('\n')) {
                         earthLabel.split('\n').forEach((line, i) => {
-                            const tspan = doc.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+                            const tspan = doc.win.createSvg('tspan');
                             tspan.setAttribute('x', '0');
                             tspan.setAttribute('dy', i === 0 ? '0' : '0.9em');
                             tspan.textContent = line;
@@ -1122,14 +1122,14 @@ function createShiftButtonShape(): string {
  * Create the shift button element
  */
 function createShiftButton(): SVGGElement {
-    const button = activeDocument.createElementNS('http://www.w3.org/2000/svg', 'g');
+    const button = activeWindow.createSvg('g');
     button.setAttribute('class', 'rt-shift-mode-button');
     button.setAttribute('id', 'shift-mode-toggle');
 
     button.setAttribute('transform', `translate(${SHIFT_BUTTON_POS_X}, ${SHIFT_BUTTON_POS_Y})`);
 
     // Create path element
-    const path = activeDocument.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const path = activeWindow.createSvg('path');
     path.setAttribute('d', createShiftButtonShape());
     path.setAttribute('class', 'rt-shift-button-bg');
     path.setAttribute('fill', 'var(--interactive-normal)');
@@ -1137,7 +1137,7 @@ function createShiftButton(): SVGGElement {
     path.setAttribute('stroke-width', '2');
 
     // Create text element with up arrow
-    const text = activeDocument.createElementNS('http://www.w3.org/2000/svg', 'text');
+    const text = activeWindow.createSvg('text');
     text.setAttribute('x', '48.5'); // Center of button (97/2)
     text.setAttribute('y', '45'); // Near bottom like page icons (55 - 12 + 2px offset)
     text.setAttribute('text-anchor', 'middle');
@@ -1179,7 +1179,7 @@ function updateShiftButtonState(button: SVGGElement, active: boolean): void {
  * Create the ALT button element (Left of Shift)
  */
 function createAltButton(): SVGGElement {
-    const button = activeDocument.createElementNS('http://www.w3.org/2000/svg', 'g');
+    const button = activeWindow.createSvg('g');
     button.setAttribute('class', 'rt-shift-mode-button rt-alt-button');
     button.setAttribute('id', 'alt-mode-toggle');
 
@@ -1195,7 +1195,7 @@ function createAltButton(): SVGGElement {
     button.setAttribute('transform', `translate(${posX}, ${posY})`);
 
     // Create path element
-    const path = activeDocument.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const path = activeWindow.createSvg('path');
     path.setAttribute('d', createAltButtonShape());
     path.setAttribute('class', 'rt-shift-button-bg');
     path.setAttribute('fill', 'var(--interactive-normal)');
@@ -1203,7 +1203,7 @@ function createAltButton(): SVGGElement {
     path.setAttribute('stroke-width', '2');
 
     // Create text element
-    const text = activeDocument.createElementNS('http://www.w3.org/2000/svg', 'text');
+    const text = activeWindow.createSvg('text');
     text.setAttribute('x', '21.5'); // Center of 43
     text.setAttribute('y', '36'); // Near bottom like page icons (46 - 12 + 2px offset)
     text.setAttribute('text-anchor', 'middle');
@@ -1282,7 +1282,7 @@ function createRtButtonShape(): string {
  * @param noData - if true, button shows warning state (no Runtime YAML data found)
  */
 function createRtButton(contentType: RuntimeContentType, noData: boolean = false): SVGGElement {
-    const button = activeDocument.createElementNS('http://www.w3.org/2000/svg', 'g');
+    const button = activeWindow.createSvg('g');
     button.setAttribute('class', 'rt-shift-mode-button rt-runtime-button');
     button.setAttribute('id', 'runtime-mode-toggle');
 
@@ -1307,7 +1307,7 @@ function createRtButton(contentType: RuntimeContentType, noData: boolean = false
     button.setAttribute('data-base-y', String(basePosY));
 
     // Create rounded rect background (same style as SHIFT/ALT buttons)
-    const bg = activeDocument.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const bg = activeWindow.createSvg('path');
     bg.setAttribute('d', createRtButtonShape());
     bg.setAttribute('class', 'rt-shift-button-bg rt-runtime-icon-bg');
     bg.setAttribute('fill', 'var(--interactive-normal)');
@@ -1317,7 +1317,7 @@ function createRtButton(contentType: RuntimeContentType, noData: boolean = false
     // Create foreignObject to embed the Lucide icon
     // pointer-events: none ensures hover/click events go to the parent SVG group
     // which has the tooltip target class - prevents tooltip getting stuck
-    const foreignObject = activeDocument.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+    const foreignObject = activeWindow.createSvg('foreignObject');
     foreignObject.setAttribute('x', '0');
     foreignObject.setAttribute('y', '0');
     foreignObject.setAttribute('width', String(RT_SIZE));
@@ -1326,7 +1326,7 @@ function createRtButton(contentType: RuntimeContentType, noData: boolean = false
     foreignObject.classList.add('ert-pointer-events-none');
 
     // Create the icon wrapper div
-    const iconWrapper = activeDocument.createElement('div');
+    const iconWrapper = activeWindow.createDiv();
     iconWrapper.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
     iconWrapper.className = 'rt-runtime-icon-wrapper';
     iconWrapper.style.cssText = `
@@ -1637,9 +1637,9 @@ function showElapsedTime(
         const arcPath = `M ${x1} ${y1} A ${arcRadius} ${arcRadius} 0 ${largeArcFlag} ${sweepFlag} ${x2} ${y2}`;
 
         const doc = svg.ownerDocument;
-        const arcGroup = doc.createElementNS('http://www.w3.org/2000/svg', 'g');
+        const arcGroup = doc.win.createSvg('g');
         arcGroup.setAttribute('class', 'rt-elapsed-time-arc');
-        const arcPathElement = doc.createElementNS('http://www.w3.org/2000/svg', 'path');
+        const arcPathElement = doc.win.createSvg('path');
         arcPathElement.setAttribute('d', arcPath);
         arcPathElement.setAttribute('class', 'rt-elapsed-arc-path');
         arcGroup.appendChild(arcPathElement);
@@ -1652,7 +1652,7 @@ function showElapsedTime(
             const innerY = innerRadius * Math.sin(angle);
             const outerX = outerRadius * Math.cos(angle);
             const outerY = outerRadius * Math.sin(angle);
-            const marker = doc.createElementNS('http://www.w3.org/2000/svg', 'line');
+            const marker = doc.win.createSvg('line');
             marker.setAttribute('x1', `${innerX}`);
             marker.setAttribute('y1', `${innerY}`);
             marker.setAttribute('x2', `${outerX}`);
@@ -1705,10 +1705,10 @@ function showElapsedTime(
 }
 
 function createElapsedTimeLabel(x: number, y: number, value: string, midpointAngle?: number): SVGGElement {
-    const labelGroup = activeDocument.createElementNS('http://www.w3.org/2000/svg', 'g');
+    const labelGroup = activeWindow.createSvg('g');
     labelGroup.setAttribute('class', 'rt-elapsed-time-group');
 
-    const labelText = activeDocument.createElementNS('http://www.w3.org/2000/svg', 'text');
+    const labelText = activeWindow.createSvg('text');
     labelText.setAttribute('y', `${y}`);
     labelText.setAttribute('dominant-baseline', 'middle');
     labelText.setAttribute('fill', 'var(--interactive-accent)');

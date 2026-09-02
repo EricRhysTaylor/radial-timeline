@@ -2832,10 +2832,10 @@ export function renderAiSection(params: {
         docsUrl: string;
     }): void => {
         const doc = options.section.ownerDocument;
-        const providerDesc = doc.createDocumentFragment();
-        const span = doc.createElement('span');
+        const providerDesc = doc.win.createFragment();
+        const span = doc.win.createSpan();
         span.textContent = `Choose a name to store your ${options.providerName} API key in this vault's secret storage. `;
-        const link = doc.createElement('a');
+        const link = doc.win.createEl('a');
         link.href = options.docsUrl;
         link.textContent = 'Get key';
         link.target = '_blank';
@@ -2876,9 +2876,9 @@ export function renderAiSection(params: {
             refreshActiveCostComparisonRowState(options.provider, next);
             const ai = ensureCanonicalAiSettings();
             const secretId = getCredentialSecretId(ai, options.provider).trim();
-            const desc = doc.createDocumentFragment();
+            const desc = doc.win.createFragment();
 
-            const stateBlock = doc.createElement('div');
+            const stateBlock = doc.win.createDiv();
             stateBlock.className = `ert-ai-provider-key-state is-${next}`;
             const icon = stateBlock.createSpan({ cls: 'ert-ai-provider-key-state__icon' });
             setIcon(icon, next === 'ready' ? 'shield-check' : 'shield-alert');
@@ -2916,7 +2916,7 @@ export function renderAiSection(params: {
             if ((next === 'ready' || next === 'network_blocked') && secretStorageAvailable) {
                 const actions = body.createSpan({ cls: 'ert-ai-provider-key-actions' });
 
-                const replaceBtn = doc.createElement('button');
+                const replaceBtn = doc.win.createEl('button');
                 replaceBtn.className = 'ert-ai-provider-key-action';
                 replaceBtn.type = 'button';
                 replaceBtn.textContent = t('settings.ai.credential.replaceKeyButton');
@@ -2928,7 +2928,7 @@ export function renderAiSection(params: {
                 actions.appendChild(replaceBtn);
 
                 if (secretId) {
-                    const copyBtn = doc.createElement('button');
+                    const copyBtn = doc.win.createEl('button');
                     copyBtn.className = 'ert-ai-provider-key-action';
                     copyBtn.type = 'button';
                     copyBtn.textContent = t('settings.ai.credential.copyKeyNameButton');
@@ -3995,13 +3995,14 @@ export function renderAiSection(params: {
             } finally {
                 localLlmValidationPending = false;
                 localLlmValidationPromise = null;
-                if (aiSectionDisposed) return;
-                renderLocalLlmStatus();
-                // The preview card mirrors validation state — refresh it so
-                // "Connected & validated" lands there too, not only in the
-                // panel. Only while local is still the active provider: a late
-                // finish must not reset a cloud preview the author moved to.
-                if (ensureCanonicalAiSettings().provider === 'ollama') void refreshRoutingUi();
+                if (!aiSectionDisposed) {
+                    renderLocalLlmStatus();
+                    // The preview card mirrors validation state — refresh it so
+                    // "Connected & validated" lands there too, not only in the
+                    // panel. Only while local is still the active provider: a late
+                    // finish must not reset a cloud preview the author moved to.
+                    if (ensureCanonicalAiSettings().provider === 'ollama') void refreshRoutingUi();
+                }
             }
         })();
         return localLlmValidationPromise;

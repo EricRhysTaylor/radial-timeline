@@ -18,9 +18,9 @@ export function decodeHtmlEntities(text: string): string {
     const span = doc.querySelector('span');
     return span?.textContent ?? '';
   } catch {
-    const span = activeDocument.createElement('span');
-    span.textContent = text;
-    return span.textContent ?? '';
+    // DOMParser is always present in Obsidian; only DOM-less test hosts land
+    // here, and they get the text back undecoded.
+    return text;
   }
 }
 
@@ -95,8 +95,8 @@ export function renderSceneTitleFragment(
   title: string,
   searchTerm: string
 ): DocumentFragment {
-  const fragment = activeDocument.createDocumentFragment();
-  const main = activeDocument.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+  const fragment = activeWindow.createFragment();
+  const main = activeWindow.createSvg('tspan');
   main.setAttribute('class', 'rt-scene-title-bold');
   main.setAttribute('data-item-type', 'title');
 
@@ -106,7 +106,7 @@ export function renderSceneTitleFragment(
     let m: RegExpExecArray | null;
     while ((m = regex.exec(title))) {
       if (m.index > last) main.appendChild(activeDocument.createTextNode(title.slice(last, m.index)));
-      const hl = activeDocument.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+      const hl = activeWindow.createSvg('tspan');
       hl.setAttribute('class', 'rt-search-term');
       // No fill attribute; inherit from parent via --rt-dynamic-color
       hl.textContent = m[0];

@@ -1457,10 +1457,10 @@ async function renderTeaserStagesPreviews(
             });
 
             if (!mountSvgMarkup(svgContainer, svgString)) {
-                svgContainer.createEl('span', { text: '⚠', cls: 'ert-stageCard__error' });
+                svgContainer.createSpan({ text: '⚠', cls: 'ert-stageCard__error' });
             }
         } catch {
-            svgContainer.createEl('span', { text: '⚠', cls: 'ert-stageCard__error' });
+            svgContainer.createSpan({ text: '⚠', cls: 'ert-stageCard__error' });
         }
 
         // Disabled overlay

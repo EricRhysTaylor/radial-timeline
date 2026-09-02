@@ -73,7 +73,7 @@ export class SearchPanelController {
         const doc = shell.ownerDocument;
         const panelId = `rt-search-panel-${++panelInstanceCounter}`;
 
-        this.panel = doc.createElement('div');
+        this.panel = doc.win.createDiv();
         this.panel.className = 'ert-timeline-search-panel';
         this.panel.id = panelId;
         this.panel.setAttribute('role', 'group');
@@ -84,9 +84,9 @@ export class SearchPanelController {
         input.setAttribute('aria-controls', panelId);
 
         // --- Scope group -----------------------------------------------------
-        const fieldset = doc.createElement('fieldset');
+        const fieldset = doc.win.createEl('fieldset');
         fieldset.className = 'ert-timeline-search-panel__scope';
-        const legend = doc.createElement('legend');
+        const legend = doc.win.createEl('legend');
         legend.className = 'ert-timeline-search-panel__legend';
         legend.textContent = t('timeline.search.scopeLegend');
         fieldset.appendChild(legend);
@@ -112,7 +112,7 @@ export class SearchPanelController {
         this.panel.appendChild(fieldset);
 
         // --- Assist ----------------------------------------------------------
-        const assistWrap = doc.createElement('div');
+        const assistWrap = doc.win.createDiv();
         assistWrap.className = 'ert-timeline-search-panel__assist';
         const assistRow = this.buildCheckRow(
             assistWrap,
@@ -125,16 +125,16 @@ export class SearchPanelController {
         this.panel.appendChild(assistWrap);
 
         // --- Status ----------------------------------------------------------
-        this.statusEl = doc.createElement('div');
+        this.statusEl = doc.win.createDiv();
         this.statusEl.className = 'ert-timeline-search-panel__status';
         this.statusEl.setAttribute('role', 'status');
         this.statusEl.setAttribute('aria-live', 'polite');
 
-        this.statusText = doc.createElement('span');
+        this.statusText = doc.win.createSpan();
         this.statusText.className = 'ert-timeline-search-panel__status-text';
         this.statusEl.appendChild(this.statusText);
 
-        this.cancelButton = doc.createElement('button');
+        this.cancelButton = doc.win.createEl('button');
         this.cancelButton.type = 'button';
         this.cancelButton.className = 'ert-timeline-search-panel__cancel';
         this.cancelButton.textContent = t('timeline.search.cancelAction');
@@ -160,20 +160,20 @@ export class SearchPanelController {
         disabled: boolean
     ): { checkbox: HTMLInputElement; hint: HTMLElement } {
         const doc = parent.ownerDocument;
-        const row = doc.createElement('label');
+        const row = doc.win.createEl('label');
         row.className = 'ert-timeline-search-panel__row';
         if (disabled) row.classList.add('is-disabled');
 
-        const checkbox = doc.createElement('input');
+        const checkbox = doc.win.createEl('input');
         checkbox.type = 'checkbox';
         checkbox.className = 'ert-timeline-search-panel__checkbox';
         checkbox.disabled = disabled;
 
-        const text = doc.createElement('span');
+        const text = doc.win.createSpan();
         text.className = 'ert-timeline-search-panel__row-label';
         text.textContent = label;
 
-        const hintEl = doc.createElement('span');
+        const hintEl = doc.win.createSpan();
         hintEl.className = 'ert-timeline-search-panel__row-hint';
         hintEl.textContent = hint;
         hintEl.id = `${this.panel.id}-hint-${parent.childElementCount}`;

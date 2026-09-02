@@ -108,7 +108,7 @@ function createActiveDocumentShape(): string {
  * Create the mode selector grid element
  */
 function createModeSelectorGrid(view: RadialTimelineView, doc: Document): SVGGElement {
-    const grid = doc.createElementNS('http://www.w3.org/2000/svg', 'g');
+    const grid = doc.win.createSvg('g');
     grid.setAttribute('class', 'rt-mode-selector-grid');
     grid.setAttribute('id', 'mode-selector');
 
@@ -121,22 +121,22 @@ function createModeSelectorGrid(view: RadialTimelineView, doc: Document): SVGGEl
         const x = startX + index * spacePerIcon;
 
         // Create outer group for positioning (translate only)
-        const optionGroup = doc.createElementNS('http://www.w3.org/2000/svg', 'g');
+        const optionGroup = doc.win.createSvg('g');
         optionGroup.setAttribute('class', 'rt-mode-option');
         optionGroup.setAttribute('data-mode', mode.id);
         optionGroup.setAttribute('transform', `translate(${x}, ${MODE_SELECTOR_POS_Y})`);
 
         // Create inner group for hover scaling (CSS transform will apply here)
-        const innerGroup = doc.createElementNS('http://www.w3.org/2000/svg', 'g');
+        const innerGroup = doc.win.createSvg('g');
         innerGroup.setAttribute('class', 'rt-mode-option-content');
 
         // Create path element - scaled to inactive size (native)
-        const path = doc.createElementNS('http://www.w3.org/2000/svg', 'path');
+        const path = doc.win.createSvg('path');
         path.setAttribute('class', 'rt-document-bg');
         path.setAttribute('d', createInactiveDocumentShape());
 
         // Acronym letter in bottom-left, mirroring the top-left number label
-        const letter = doc.createElementNS('http://www.w3.org/2000/svg', 'text');
+        const letter = doc.win.createSvg('text');
         letter.setAttribute('class', 'rt-mode-acronym-text');
         letter.setAttribute('x', String(LETTER_X));
         letter.setAttribute('y', String(LETTER_Y));
@@ -145,7 +145,7 @@ function createModeSelectorGrid(view: RadialTimelineView, doc: Document): SVGGEl
         letter.textContent = mode.acronym;
 
         // Create number label (1, 2, 3, 4) at top left corner - Native Size
-        const numberLabel = doc.createElementNS('http://www.w3.org/2000/svg', 'text');
+        const numberLabel = doc.win.createSvg('text');
         numberLabel.setAttribute('class', 'rt-mode-number-label');
         numberLabel.setAttribute('x', String(ICON_NUMBER_X));
         numberLabel.setAttribute('y', String(ICON_NUMBER_Y));
@@ -161,7 +161,7 @@ function createModeSelectorGrid(view: RadialTimelineView, doc: Document): SVGGEl
     });
 
     // Add mode title text above the first icon
-    const titleText = doc.createElementNS('http://www.w3.org/2000/svg', 'text');
+    const titleText = doc.win.createSvg('text');
     titleText.setAttribute('class', 'rt-mode-title-text');
     titleText.setAttribute('x', String(MODE_TITLE_POS_X));
     titleText.setAttribute('y', String(MODE_TITLE_POS_Y));

@@ -95,14 +95,14 @@ export function ensureNumberSquareCache(fontScale: number = 1): void {
 function measureWithTemporarySvg(config: FontMetricsCacheConfig, chars: string): CachedMetrics {
     // Create temporary SVG container (hidden, used only for measurement)
     const doc = activeDocument;
-    const svg = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const svg = doc.win.createSvg('svg');
     svg.setAttribute('width', '0');
     svg.setAttribute('height', '0');
     svg.classList.add('ert-offscreen-measure');
     doc.body.appendChild(svg);
 
     // Create measurement text element with dynamic font config
-    const text = doc.createElementNS('http://www.w3.org/2000/svg', 'text');
+    const text = doc.win.createSvg('text');
     text.style.fontFamily = config.fontFamily; // SAFE: inline style used for dynamic font measurement
     text.style.fontSize = `${config.fontSize}px`; // SAFE: inline style used for dynamic font measurement
     text.style.fontWeight = String(config.fontWeight); // SAFE: inline style used for dynamic font measurement

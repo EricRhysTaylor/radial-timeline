@@ -1447,7 +1447,7 @@ function applyShiftModeToAllScenes(svg: SVGSVGElement): void {
     // Just ensure all shift classes are removed initially
     const allSceneGroups = svg.querySelectorAll('.rt-scene-group[data-item-type="Scene"]');
     allSceneGroups.forEach(group => {
-        group.classList.remove('rt-shift-hover');
+        group.classList.remove('rt-shift-hover', 'rt-shift-locked');
         const path = group.querySelector('.rt-scene-path');
         if (path) {
             path.classList.remove('rt-shift-locked', 'rt-shift-selected');
@@ -1461,7 +1461,7 @@ function applyShiftModeToAllScenes(svg: SVGSVGElement): void {
 function removeShiftModeFromAllScenes(svg: SVGSVGElement): void {
     const allSceneGroups = svg.querySelectorAll('.rt-scene-group[data-item-type="Scene"]');
     allSceneGroups.forEach(group => {
-        group.classList.remove('rt-shift-hover');
+        group.classList.remove('rt-shift-hover', 'rt-shift-locked');
         const path = group.querySelector('.rt-scene-path');
         if (path) {
             path.classList.remove('rt-shift-locked', 'rt-shift-selected', 'rt-shift-non-select');
@@ -1489,6 +1489,7 @@ function updateSceneSelection(
     // Remove existing locked highlights
     const allSceneGroups = svg.querySelectorAll('.rt-scene-group[data-item-type="Scene"]');
     allSceneGroups.forEach(group => {
+        group.classList.remove('rt-shift-locked');
         const path = group.querySelector('.rt-scene-path');
         if (path) {
             path.classList.remove('rt-shift-locked', 'rt-shift-selected');
@@ -1518,6 +1519,9 @@ function updateSceneSelection(
                 // Activate matching number square/text
                 setNumberSquareActiveBySceneId((path as SVGElement).id, true, numberSquareBySceneId, numberTextBySceneId, sceneSubplotIndexBySceneId, subplotColors);
             }
+            // The group carries the locked flag as well so timeline.css can
+            // style the whole scene without a :has() lookup into its children.
+            sceneGroup.classList.add('rt-shift-locked');
             // Remove hover state since it's now locked
             sceneGroup.classList.remove('rt-shift-hover');
         }
@@ -1534,7 +1538,7 @@ function removeSceneHighlights(svg: SVGSVGElement): void {
         if (path) {
             path.classList.remove('rt-shift-selected', 'rt-shift-locked');
         }
-        group.classList.remove('rt-shift-hover');
+        group.classList.remove('rt-shift-hover', 'rt-shift-locked');
     });
     // Also clear any number square active classes
     svg.querySelectorAll('.rt-number-square.rt-shift-active').forEach(el => el.classList.remove('rt-shift-active'));

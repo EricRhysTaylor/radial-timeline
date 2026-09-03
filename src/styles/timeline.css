@@ -458,7 +458,7 @@
 /* Shift mode: Hover/selected scenes restore full opacity and disable transition */
 .radial-timeline-svg[data-shift-mode="active"] .rt-scene-group[data-item-type="Scene"]:hover,
 .radial-timeline-svg[data-shift-mode="active"] .rt-scene-group[data-item-type="Scene"].rt-shift-hover,
-.radial-timeline-svg[data-shift-mode="active"] .rt-scene-group[data-item-type="Scene"]:has(.rt-shift-locked) {
+.radial-timeline-svg[data-shift-mode="active"] .rt-scene-group[data-item-type="Scene"].rt-shift-locked {
   opacity: 1;
   transition: none;
   /* Override parent transition for instant hover */
@@ -700,7 +700,7 @@
 /* 6. Hover State: Full Opacity, Brighter Red */
 .radial-timeline-svg[data-shift-mode="alien"] .rt-scene-group[data-item-type="Scene"]:hover,
 .radial-timeline-svg[data-shift-mode="alien"] .rt-scene-group[data-item-type="Scene"].rt-shift-hover,
-.radial-timeline-svg[data-shift-mode="alien"] .rt-scene-group[data-item-type="Scene"]:has(.rt-shift-locked) {
+.radial-timeline-svg[data-shift-mode="alien"] .rt-scene-group[data-item-type="Scene"].rt-shift-locked {
   opacity: 1;
   transition: none;
 }
@@ -936,7 +936,7 @@
 /* 6. Hover State: Full Opacity, Brighter Blue with glow (matches ALT red glow pattern) */
 .radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"]:hover,
 .radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"].rt-shift-hover,
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"]:has(.rt-shift-locked) {
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"].rt-shift-locked {
   opacity: 1;
   transition: none;
 }

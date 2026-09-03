@@ -2258,42 +2258,37 @@
 
 /* RT view only: the centered view title is redundant — the book selector and
    the Obsidian tab title both show the current book / Saga, and they update
-   together. Hide the in-header title (scoped to our view via :has), while
+   together. TimeLineView stamps .ert-timeline-header on the header when it
+   mounts the book switcher (a class, not :has(), so the rule never forces
+   ancestor re-matching on hover). Hide the in-header title, while
    updateViewTitle() keeps updating the hidden node and the tab header. */
-.view-header:has(.rt-book-switcher) {
+.view-header.ert-timeline-header {
   position: relative;
 }
 
-.view-header:has(.rt-book-switcher) .view-header-title-container {
+.view-header.ert-timeline-header .view-header-title-container {
   display: none;
 }
 
-/* Three true clusters. Obsidian wraps the left controls in .view-header-left;
-   grow it and the right cluster (.rt-book-switcher) by an equal flex basis so
-   the center mode nav lands at the real center of the bar rather than trailing
-   the left cluster. Left stays left-justified (its own justify-content), the
-   right cluster is right-justified against the native "…" actions, and the mode
-   nav keeps its natural width in the middle. */
-.view-header:has(.rt-book-switcher):has(.view-header-left) .view-header-left {
+/* Three true clusters. Obsidian always wraps the left controls in
+   .view-header-left; grow it and the right cluster (.rt-book-switcher) by an
+   equal flex basis so the center mode nav lands at the real center of the bar
+   rather than trailing the left cluster. Left stays left-justified (its own
+   justify-content), the right cluster is right-justified against the native
+   "…" actions, and the mode nav keeps its natural width in the middle. */
+.view-header.ert-timeline-header .view-header-left {
   flex: 1 1 0;
   min-width: 0;
 }
 
-.view-header:has(.rt-book-switcher):has(.view-header-left) .rt-book-switcher {
+.view-header.ert-timeline-header .rt-book-switcher {
   flex: 1 1 0;
   min-width: 0;
   justify-content: flex-end;
 }
 
-.view-header:has(.rt-book-switcher):has(.view-header-left) .ert-timeline-mode-nav {
+.view-header.ert-timeline-header .ert-timeline-mode-nav {
   flex: 0 0 auto;
-}
-
-/* Fallback for any header layout without a .view-header-left wrapper: center
-   the mode nav in the free space via balanced auto margins (this also anchors
-   the right cluster to the end of the bar). */
-.view-header:has(.rt-book-switcher):not(:has(.view-header-left)) .ert-timeline-mode-nav {
-  margin-inline: auto;
 }
 
 .ert-timeline-legend.is-visible {

@@ -585,8 +585,9 @@ export class RadialTimelineView extends ItemView {
             // Active state is kept in sync through the currentMode setter, so
             // keyboard, click, and saga-forced switches all reflect here.
             // Inserted as a DIRECT child of .view-header (not nested with the
-            // left cluster inside .view-header-left) so its auto side-margins
-            // resolve against the whole bar's free space and truly center it.
+            // left cluster inside .view-header-left) so the header's three
+            // flex clusters (.view-header-left / mode nav / .rt-book-switcher)
+            // center it against the whole bar.
             const modeNav = doc.win.createDiv();
             modeNav.className = 'ert-timeline-mode-nav';
             modeNav.setAttribute('role', 'tablist');
@@ -627,6 +628,10 @@ export class RadialTimelineView extends ItemView {
                 if (mode.id === TimelineMode.CHRONOLOGUE) chronologueModeBtn = btn;
             });
             headerEl.insertBefore(modeNav, wrapper);
+            // Scopes the header layout rules in timeline.css to this view
+            // without a :has() selector; the header dies with the view, so
+            // there is nothing to remove.
+            headerEl.classList.add('ert-timeline-header');
             this.modeNavButtons = modeButtons;
             this.buildChronologueSubNav(doc, modeNav, chronologueModeBtn);
             this.buildAlignmentToggle(doc, modeNav);

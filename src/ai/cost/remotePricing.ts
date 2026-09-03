@@ -113,7 +113,7 @@ function parseRemotePayload(payload: unknown): ProviderPricingTable | null {
     for (const entry of entries) {
         const provider = entry.provider as AIProviderId;
         if (!table[provider]) table[provider] = {};
-        table[provider]![entry.modelId] = toModelPricing(entry);
+        table[provider][entry.modelId] = toModelPricing(entry);
     }
     return table;
 }

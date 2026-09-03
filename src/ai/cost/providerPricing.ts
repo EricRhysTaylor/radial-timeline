@@ -224,7 +224,7 @@ export function mergeRemotePricing(remote: ProviderPricingTable, source: Pricing
         if (!remoteModels) continue;
         if (!merged[provider]) merged[provider] = {};
         for (const [modelId, pricing] of Object.entries(remoteModels)) {
-            merged[provider]![modelId] = mergeModelPricing(merged[provider]![modelId], pricing);
+            merged[provider][modelId] = mergeModelPricing(merged[provider][modelId], pricing);
         }
     }
     activePricing = merged;

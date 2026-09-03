@@ -1,6 +1,6 @@
 {
-  "checkedAt": "2026-08-31T16:07:42.475Z",
-  "snapshotGeneratedAt": "2026-08-31T15:48:50.407Z",
+  "checkedAt": "2026-09-02T20:53:34.652Z",
+  "snapshotGeneratedAt": "2026-09-02T20:53:34.613Z",
   "tokenLimits": {
     "gemini-pro-latest": 65536,
     "gemini-flash-latest": 65536
@@ -31,9 +31,9 @@
   },
   "anthropic": {
     "newestModel": {
-      "id": "claude-opus-5",
-      "displayName": "Claude Opus 5",
-      "createdAt": "2026-07-24T00:00:00Z"
+      "id": "claude-fable-5-1",
+      "displayName": "Claude Fable 5.1",
+      "createdAt": "2026-08-28T00:00:00Z"
     }
   }
 }

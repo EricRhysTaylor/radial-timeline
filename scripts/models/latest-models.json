@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-01T15:50:04.718Z",
+  "generatedAt": "2026-09-02T20:53:34.613Z",
   "summary": {
     "openai": 120,
-    "anthropic": 10,
+    "anthropic": 11,
     "google": 55
   },
   "models": [
@@ -1400,6 +1400,81 @@
       },
       "label": "Claude Fable 5",
       "createdAt": "2026-06-07T00:00:00Z"
+    },
+    {
+      "provider": "anthropic",
+      "id": "claude-fable-5-1",
+      "raw": {
+        "type": "model",
+        "id": "claude-fable-5-1",
+        "display_name": "Claude Fable 5.1",
+        "created_at": "2026-08-28T00:00:00Z",
+        "max_input_tokens": 1000000,
+        "max_tokens": 128000,
+        "capabilities": {
+          "batch": {
+            "supported": true
+          },
+          "citations": {
+            "supported": true
+          },
+          "code_execution": {
+            "supported": true
+          },
+          "context_management": {
+            "supported": true,
+            "clear_tool_uses_20250919": {
+              "supported": true
+            },
+            "clear_thinking_20251015": {
+              "supported": true
+            },
+            "compact_20260112": {
+              "supported": true
+            }
+          },
+          "effort": {
+            "supported": true,
+            "low": {
+              "supported": true
+            },
+            "medium": {
+              "supported": true
+            },
+            "high": {
+              "supported": true
+            },
+            "xhigh": {
+              "supported": true
+            },
+            "max": {
+              "supported": true
+            }
+          },
+          "image_input": {
+            "supported": true
+          },
+          "pdf_input": {
+            "supported": true
+          },
+          "structured_outputs": {
+            "supported": true
+          },
+          "thinking": {
+            "supported": true,
+            "types": {
+              "enabled": {
+                "supported": false
+              },
+              "adaptive": {
+                "supported": true
+              }
+            }
+          }
+        }
+      },
+      "label": "Claude Fable 5.1",
+      "createdAt": "2026-08-28T00:00:00Z"
     },
     {
       "provider": "anthropic",

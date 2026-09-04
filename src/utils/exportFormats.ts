@@ -30,19 +30,6 @@ export type ExportFormat = 'markdown' | 'pdf' | 'docx' | 'csv' | 'json';
 // Pandoc Layout Helpers
 // ════════════════════════════════════════════════════════════════════════════
 
-/**
- * Strip/replace unsafe filename characters and collapse whitespace to hyphens.
- * Produces a clean stem suitable for PDF filenames.
- */
-export function slugifyToFileStem(title: string): string {
-    return title
-        .replace(/[/\\:*?"<>|]+/g, '')   // strip forbidden chars
-        .replace(/\s+/g, '-')            // spaces -> hyphens
-        .replace(/-{2,}/g, '-')          // collapse runs
-        .replace(/^-|-$/g, '')           // trim leading/trailing hyphens
-        || 'Manuscript';                  // fallback
-}
-
 /** Look up a layout by its unique ID. */
 export function getLayoutById(plugin: RadialTimelinePlugin, id: string | undefined): PandocLayoutTemplate | undefined {
     if (!id) return undefined;

@@ -4,12 +4,11 @@
  */
 
 import { normalizePath } from 'obsidian';
+import { basename as lastSegment } from '../utils/paths';
 
 /** Base file/folder name from a vault path. */
 export function basename(path: string): string {
-  const norm = normalizePath(path);
-  const idx = norm.lastIndexOf('/');
-  return idx === -1 ? norm : norm.slice(idx + 1);
+  return lastSegment(normalizePath(path));
 }
 
 /** Parent folder path ('' for a top-level entry). */

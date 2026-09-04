@@ -511,7 +511,7 @@ export class SceneInteractionManager {
         const textWidth = textBBox.width;
         
         // Check if expansion is needed
-        if (!needsExpansion(textWidth, currentArcPx, hoveredTitleR)) {
+        if (!needsExpansion(textWidth, currentArcPx)) {
             return; // Text already fits
         }
 

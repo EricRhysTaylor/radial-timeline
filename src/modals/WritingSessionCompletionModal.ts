@@ -2,6 +2,7 @@ import { ButtonComponent, Modal, Setting, TextAreaComponent, TextComponent } fro
 import type { App } from 'obsidian';
 import type { ActiveWritingSession } from '../types/settings';
 import type { WritingSessionCompletionInput, WritingSessionSceneSuggestion } from '../services/WritingSessionService';
+import { formatLocalDateKey } from '../utils/date';
 
 export interface WritingSessionCompletionResult extends WritingSessionCompletionInput {
     elapsedMinutes: number;
@@ -45,16 +46,9 @@ function formatActiveDuration(ms: number): string {
     return rest > 0 ? `${hours}h ${rest}m` : `${hours}h`;
 }
 
-function localDateString(date = new Date()): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
-
 function sessionDateFromStartedAt(startedAt: string): string {
     const parsed = new Date(startedAt);
-    return Number.isNaN(parsed.getTime()) ? localDateString() : localDateString(parsed);
+    return Number.isNaN(parsed.getTime()) ? formatLocalDateKey() : formatLocalDateKey(parsed);
 }
 
 function isDateKey(value: string): boolean {

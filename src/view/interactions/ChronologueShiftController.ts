@@ -14,6 +14,7 @@ import { getActivePlanetaryProfile, validatePlanetaryProfile, convertFromEarth, 
 import { parseWhenField, formatElapsedTime } from '../../utils/date';
 import { parseRuntimeField, formatRuntimeValue } from '../../utils/runtimeEstimator';
 import { addTooltipData } from '../../utils/tooltip';
+import { normalizeAngleSigned, normalizeAngleUnsigned } from '../../renderer/utils/angles';
 import {
     ELAPSED_ARC_RADIUS,
     ELAPSED_TICK_LENGTH,
@@ -1682,7 +1683,7 @@ function showElapsedTime(
         //   - DECREASE = closer to center (inward, toward arc)
         //   - arcRadius is ~766px, adding 24 puts label outside the arc
         //
-        const midpointAngle = normalizeAngle(arcStartAngle + sweep / 2);
+        const midpointAngle = normalizeAngleUnsigned(arcStartAngle + sweep / 2);
         const labelRadius = arcRadius + 24; // 24px outside the elapsed arc
         const labelX = labelRadius * Math.cos(midpointAngle);
         const labelY = labelRadius * Math.sin(midpointAngle);
@@ -1746,15 +1747,6 @@ function createElapsedTimeLabel(x: number, y: number, value: string, midpointAng
     return labelGroup;
 }
 
-function normalizeAngle(angle: number): number {
-    const twoPi = Math.PI * 2;
-    let normalized = angle % twoPi;
-    if (normalized < 0) {
-        normalized += twoPi;
-    }
-    return normalized;
-}
-
 /**
  * Remove elapsed time arc and label
  */
@@ -1791,17 +1783,9 @@ function hideOverlappingTicks(svg: SVGSVGElement, angle1: number, angle2: number
         // Calculate angle from coordinates
         const tickAngle = Math.atan2(y1, x1);
 
-        // Normalize angles to [-π, π] range for comparison
-        const normalizeAngle = (angle: number): number => {
-            let normalized = angle;
-            while (normalized > Math.PI) normalized -= 2 * Math.PI;
-            while (normalized < -Math.PI) normalized += 2 * Math.PI;
-            return normalized;
-        };
-
-        const normalizedTickAngle = normalizeAngle(tickAngle);
-        const normalizedAngle1 = normalizeAngle(angle1);
-        const normalizedAngle2 = normalizeAngle(angle2);
+        const normalizedTickAngle = normalizeAngleSigned(tickAngle);
+        const normalizedAngle1 = normalizeAngleSigned(angle1);
+        const normalizedAngle2 = normalizeAngleSigned(angle2);
 
         // Check if tick angle matches either of the endpoint angles
         const matchesAngle1 = Math.abs(normalizedTickAngle - normalizedAngle1) < ANGLE_TOLERANCE;

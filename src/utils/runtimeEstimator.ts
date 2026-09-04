@@ -8,6 +8,7 @@
  */
 
 import type { RadialTimelineSettings, RuntimeContentType, RuntimeRateProfile } from '../types';
+import { countWords } from './text';
 
 export interface RuntimeEstimateResult {
     totalSeconds: number;
@@ -51,10 +52,11 @@ function selectRuntimeProfile(settings: RadialTimelineSettings, profileId?: stri
     return null;
 }
 
-function legacyProfile(settings: RadialTimelineSettings): RuntimeRateProfile {
+export type RuntimeRates = Pick<RuntimeRateProfile, 'contentType' | 'dialogueWpm' | 'actionWpm' | 'narrationWpm' | 'beatSeconds' | 'pauseSeconds' | 'longPauseSeconds' | 'momentSeconds' | 'silenceSeconds'>;
+
+/** The flat per-vault runtime rate settings as one rates object; the only place their defaults live. */
+export function runtimeRatesFromSettings(settings: RadialTimelineSettings): RuntimeRates {
     return {
-        id: 'legacy-runtime-default',
-        label: 'Legacy default',
         contentType: settings.runtimeContentType || 'novel',
         dialogueWpm: settings.runtimeDialogueWpm || 160,
         actionWpm: settings.runtimeActionWpm || 100,
@@ -64,6 +66,14 @@ function legacyProfile(settings: RadialTimelineSettings): RuntimeRateProfile {
         longPauseSeconds: settings.runtimeLongPauseSeconds || 5,
         momentSeconds: settings.runtimeMomentSeconds || 4,
         silenceSeconds: settings.runtimeSilenceSeconds || 5,
+    };
+}
+
+function legacyProfile(settings: RadialTimelineSettings): RuntimeRateProfile {
+    return {
+        id: 'legacy-runtime-default',
+        label: 'Legacy default',
+        ...runtimeRatesFromSettings(settings)
     };
 }
 
@@ -84,14 +94,6 @@ export function getRuntimeSettings(settings: RadialTimelineSettings, profileId?:
         silenceSeconds: profile.silenceSeconds ?? settings.runtimeSilenceSeconds ?? 5,
         sessionPlanning: profile.sessionPlanning
     };
-}
-
-/**
- * Count words in a string
- */
-function countWords(text: string): number {
-    if (!text || text.trim().length === 0) return 0;
-    return text.trim().split(/\s+/).filter(w => w.length > 0).length;
 }
 
 /**

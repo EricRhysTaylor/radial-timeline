@@ -6,6 +6,9 @@ import { ensureSceneTemplateFrontmatter } from '../utils/sceneIds';
 import { comparePrefixTokens, extractPrefixToken } from '../utils/prefixOrder';
 import { filterBeatsBySystem } from '../utils/gossamer';
 import { getActiveFrontmatterMappings } from '../utils/frontmatter';
+import { formatLocalDateKey } from '../utils/date';
+import { escapeRegExp } from '../utils/regex';
+import { fileStem } from '../utils/paths';
 
 export interface SceneInsertOptions {
     app: App;
@@ -42,19 +45,6 @@ interface InsertionCandidate {
 }
 
 const NEW_SCENE_LABEL = 'New Scene';
-
-function getLocalDateString(date = new Date()): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
-
-function basenameFromPath(path: string): string {
-    const fileName = path.split('/').pop() ?? path;
-    const extensionMatch = fileName.match(/\.([^.]+)$/);
-    return extensionMatch ? fileName.slice(0, -(extensionMatch[0].length)) : fileName;
-}
 
 function parentPathFor(file: TFile): string {
     return file.parent?.path ?? '';
@@ -115,7 +105,7 @@ function collectCandidates(items: TimelineItem[], beatModel?: string): Insertion
         byPath.set(item.path, {
             path: item.path,
             itemType: item.itemType,
-            basename: basenameFromPath(item.path),
+            basename: fileStem(item.path),
             actNumber: getActNumber(item),
             sourceIndex
         });
@@ -181,10 +171,6 @@ export function buildDecimalSceneInsertionPrefix(
 
     const fallback = anchorIndex >= 0 ? anchorIndex + 2 : ordered.length + 1;
     return formatPrefixNumber(fallback);
-}
-
-function escapeRegExp(value: string): string {
-    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function extractRawFrontmatterScalar(frontmatter: string, keys: string[]): string {
@@ -282,7 +268,7 @@ export async function planSceneInsertion(options: SceneInsertOptions): Promise<S
     const content = generateSceneContent(template, {
         act: actNumber,
         when,
-        due: getLocalDateString(),
+        due: formatLocalDateKey(),
         sceneNumber: prefix,
         subplots,
         character: '',

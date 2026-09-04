@@ -1,4 +1,5 @@
 import { formatNumber } from '../../utils/svg';
+import { clamp } from '../../utils/math';
 
 export interface SessionTimerRingState {
     radius: number;
@@ -7,10 +8,6 @@ export interface SessionTimerRingState {
     colorProgress: number;
     direction: 'clockwise' | 'counterclockwise';
     paused: boolean;
-}
-
-function clamp(value: number, min: number, max: number): number {
-    return Math.min(max, Math.max(min, value));
 }
 
 export function buildSessionTimerRingState(params: {

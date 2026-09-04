@@ -15,6 +15,7 @@ import { summarizeValidationIssues } from '../services/PublishingValidationServi
 import type { DetectedTemplateProfile } from '../publishing/templateDetection';
 import { detectImportedTemplateStyle } from '../publishing/templateDetection';
 import { describeRtPartArityIssue } from '../publishing/rttsValidation';
+import { basename } from './paths';
 
 export interface ImportedTemplateCandidate {
     layout: PandocLayoutTemplate;
@@ -77,10 +78,6 @@ export function isAbsolutePath(value: string): boolean {
     return value.startsWith('/') || /^[A-Za-z]:[\\/]/.test(value);
 }
 
-function basenameOfPath(value: string): string {
-    return value.split(/[\\/]/).pop() || value;
-}
-
 export function compactTemplatePathForStorage(plugin: RadialTimelinePlugin, rawPath: string): string {
     const trimmed = rawPath.trim();
     if (!trimmed) return '';
@@ -117,7 +114,7 @@ export async function buildImportedTemplateCandidate(
     const issues: ValidationIssue[] = [];
     const rawPath = input.sourcePath.trim();
     const storedPath = compactTemplatePathForStorage(plugin, rawPath);
-    const fileName = basenameOfPath(storedPath || rawPath || 'imported-template.tex');
+    const fileName = basename(storedPath || rawPath || 'imported-template.tex');
     const inferredName = input.name?.trim() || stripTemplateExtension(fileName) || 'Imported Template';
 
     if (!rawPath) {

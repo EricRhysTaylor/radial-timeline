@@ -1,4 +1,5 @@
 import type { ValidationIssue } from '../types';
+import { escapeRegExp } from '../utils/regex';
 
 export type RttsValidationLevel = 'invalid' | 'legacy' | 'compatible';
 
@@ -36,7 +37,7 @@ const CAPABILITY_HOOKS: Record<string, string[]> = {
 };
 
 function hasPandocVariable(content: string, variable: string): boolean {
-    const escaped = variable.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escaped = escapeRegExp(variable);
     return new RegExp(`\\$${escaped}\\$|\\$if\\(${escaped}\\)\\$`, 'i').test(content);
 }
 

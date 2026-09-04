@@ -15,6 +15,7 @@ import { DEFAULT_SETTINGS } from '../../settings/defaults';
 import { DEFAULT_BOOK_TITLE } from '../../utils/books';
 import { renderAprBadges, renderAprBranding, renderAprCenterPercent } from './AprBranding';
 import { STAGE_ORDER } from '../../utils/constants';
+import { escapeXml } from '../../utils/svg';
 
 export interface AprRenderOptions {
     size: AprSize;
@@ -113,12 +114,6 @@ const resolveStageColors = (
         Press: normalizeOptionalColor(stageColors.Press) ?? defaults.Press
     };
 };
-
-const escapeXmlText = (value: string): string =>
-    value
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
 
 export function createAprSVG(scenes: TimelineItem[], opts: AprRenderOptions): AprRenderResult {
     const {
@@ -405,7 +400,7 @@ export function createAprSVG(scenes: TimelineItem[], opts: AprRenderOptions): Ap
     });
 
     if (debugLabel) {
-        svg += `<text x="${half - 10}" y="${half - 10}" text-anchor="end" font-family="sans-serif" font-size="10" fill="#ef4444" font-weight="bold">${escapeXmlText(debugLabel)}</text>`;
+        svg += `<text x="${half - 10}" y="${half - 10}" text-anchor="end" font-family="sans-serif" font-size="10" fill="#ef4444" font-weight="bold">${escapeXml(debugLabel)}</text>`;
     }
 
     svg += `</svg>`;

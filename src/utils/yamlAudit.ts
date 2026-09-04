@@ -29,6 +29,7 @@ import { explainScope, resolveBookScopedFiles } from '../services/NoteScopeResol
 import { readReferenceId } from './sceneIds';
 import { getActiveLoadedBeatTab, getLoadedBeatTabWorkspaceSystemId } from '../storyBeats/workspaceState';
 import { getSynopsisGenerationWordLimit } from './synopsisLimits';
+import { countWords } from './text';
 
 // ─── Types ──────────────────────────────────────────────────────────────
 
@@ -103,11 +104,6 @@ function getStringField(fm: Record<string, unknown>, key: string): string | unde
     if (typeof value !== 'string') return undefined;
     const trimmed = value.trim();
     return trimmed.length > 0 ? trimmed : undefined;
-}
-
-function countWords(value: string): number {
-    const normalized = value.replace(/\s+/g, ' ').trim();
-    return normalized ? normalized.split(' ').length : 0;
 }
 
 function stripSceneNumberPrefix(title: string): string {

@@ -4,6 +4,7 @@
 import type { TimelineItem } from '../types';
 import { GossamerRun, extractPresentBeatScores, extractBeatOrder } from '../utils/gossamer';
 import { getMostAdvancedStageColor, lightenColor, getRunColorWithSaturation } from '../utils/colour';
+import { escapeXml } from '../utils/svg';
 
 export interface PolarConfig {
   innerRadius: number;
@@ -113,14 +114,14 @@ export function renderGossamerLayer(
     const sy2 = spokeEnd * Math.sin(angle);
     
     // Base spoke: render with beat-specific or most advanced color
-    spokes.push(`<line class="rt-gossamer-spoke" data-beat="${escapeAttr(name)}" x1="${fmt(sx1)}" y1="${fmt(sy1)}" x2="${fmt(sx2)}" y2="${fmt(sy2)}" stroke="${beatColor}"/>`);
+    spokes.push(`<line class="rt-gossamer-spoke" data-beat="${escapeXml(name)}" x1="${fmt(sx1)}" y1="${fmt(sy1)}" x2="${fmt(sx2)}" y2="${fmt(sy2)}" stroke="${beatColor}"/>`);
     
     // ALWAYS render beat slice outline if we have slice info
     if (beatSlicesByName) {
       const sliceInfo = beatSlicesByName.get(name);
       if (sliceInfo) {
         const arcPath = buildCellArcPath(sliceInfo.innerR, sliceInfo.outerR, sliceInfo.startAngle, sliceInfo.endAngle);
-        beatOutlines.push(`<path class="rt-gossamer-beat-outline" d="${arcPath}" stroke="${beatColor}" data-beat="${escapeAttr(name)}"/>`);
+        beatOutlines.push(`<path class="rt-gossamer-beat-outline" d="${arcPath}" stroke="${beatColor}" data-beat="${escapeXml(name)}"/>`);
       }
     }
     
@@ -137,11 +138,11 @@ export function renderGossamerLayer(
       
       // Draw ideal range segment (between min and max)
       const idealRangeWidth = getCSSVar('--rt-gossamer-ideal-range-width', '6px');
-      spokes.push(`<line class="rt-gossamer-ideal-range" data-beat="${escapeAttr(name)}" x1="${fmt(rangeMinX)}" y1="${fmt(rangeMinY)}" x2="${fmt(rangeMaxX)}" y2="${fmt(rangeMaxY)}" stroke="${beatColor}" stroke-width="${idealRangeWidth}"/>`);
+      spokes.push(`<line class="rt-gossamer-ideal-range" data-beat="${escapeXml(name)}" x1="${fmt(rangeMinX)}" y1="${fmt(rangeMinY)}" x2="${fmt(rangeMaxX)}" y2="${fmt(rangeMaxY)}" stroke="${beatColor}" stroke-width="${idealRangeWidth}"/>`);
       
       // Range boundary text values
-      rangeSquares.push(`<text class="rt-gossamer-range-value" data-beat="${escapeAttr(name)}" x="${fmt(rangeMinX)}" y="${fmt(rangeMinY + 1)}">${range.min}</text>`);
-      rangeSquares.push(`<text class="rt-gossamer-range-value" data-beat="${escapeAttr(name)}" x="${fmt(rangeMaxX)}" y="${fmt(rangeMaxY + 1)}">${range.max}</text>`);
+      rangeSquares.push(`<text class="rt-gossamer-range-value" data-beat="${escapeXml(name)}" x="${fmt(rangeMinX)}" y="${fmt(rangeMinY + 1)}">${range.min}</text>`);
+      rangeSquares.push(`<text class="rt-gossamer-range-value" data-beat="${escapeXml(name)}" x="${fmt(rangeMaxX)}" y="${fmt(rangeMaxY + 1)}">${range.max}</text>`);
     }
     
     // Render SCORE TEXT if score exists OR if it's missing in sequence (show as 0 in red)
@@ -159,7 +160,7 @@ export function renderGossamerLayer(
       
       const path = beatPathByName?.get(name) || '';
       const encodedPath = path ? encodeURIComponent(path) : '';
-      const data = `data-beat="${escapeAttr(name)}" data-score="${String(displayScore)}"${encodedPath ? ` data-path="${escapeAttr(encodedPath)}"` : ''}${run?.meta?.label ? ` data-label="${escapeAttr(run.meta.label)}"` : ''}`;
+      const data = `data-beat="${escapeXml(name)}" data-score="${String(displayScore)}"${encodedPath ? ` data-path="${escapeXml(encodedPath)}"` : ''}${run?.meta?.label ? ` data-label="${escapeXml(run.meta.label)}"` : ''}`;
       
       // Render score text with dedicated class for interaction - use missing-data class for 0 scores from missing beats
       scoreTexts.push(`<text class="rt-gossamer-score-text${isMissingInSequence ? ' rt-gossamer-missing-data' : ''}" x="${fmt(x)}" y="${fmt(y + 1)}" ${data}>${displayScore}</text>`);
@@ -215,7 +216,7 @@ export function renderGossamerLayer(
           segmentClass = 'rt-gossamer-range-segment rt-below-range';
         }
         
-        spokes.push(`<line class="${segmentClass}" data-beat="${escapeAttr(name)}" x1="${fmt(segX1)}" y1="${fmt(segY1)}" x2="${fmt(segX2)}" y2="${fmt(segY2)}"/>`);
+        spokes.push(`<line class="${segmentClass}" data-beat="${escapeXml(name)}" x1="${fmt(segX1)}" y1="${fmt(segY1)}" x2="${fmt(segX2)}" y2="${fmt(segY2)}"/>`);
       }
     }
   });
@@ -374,7 +375,7 @@ export function renderGossamerLayer(
           const errorColor = getCSSVar('--rt-gossamer-error-color', '#ff4444');
           const dotColor = point.score === 0 ? errorColor : runColor;
           // Historical dots: use CSS variable for size
-          overlayDots.push(`<circle class="rt-gossamer-dot-historical" cx="${fmt(x)}" cy="${fmt(y)}" r="${historicalDotRadius}" fill="${dotColor}" data-beat="${escapeAttr(point.beat)}" pointer-events="none"/>`);
+          overlayDots.push(`<circle class="rt-gossamer-dot-historical" cx="${fmt(x)}" cy="${fmt(y)}" r="${historicalDotRadius}" fill="${dotColor}" data-beat="${escapeXml(point.beat)}" pointer-events="none"/>`);
         }
       });
     });
@@ -630,9 +631,6 @@ function buildOverlayPath(points: { beat: string; score: number }[], angles: Map
   const pts = toPoints(points, angles, inner, outer);
   if (pts.length < 2) return null;
   return buildBezierPath(pts, true);
-}
-function escapeAttr(s: string): string {
-  return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 // Helper to build arc path for beat slices

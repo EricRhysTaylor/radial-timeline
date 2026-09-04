@@ -71,9 +71,8 @@ describe('scene title start gap', () => {
     it('needs the same arc length for a title regardless of ring radius', () => {
         const width = 100;
         const needed = width + PADDING_PX + TEXTPATH_START_OFFSET_PX + TEXTPATH_START_NUDGE_PX;
-        expect(needsExpansion(width, needed, 200)).toBe(false);
-        expect(needsExpansion(width, needed, 720)).toBe(false);
-        expect(needsExpansion(width, needed - 1, 720)).toBe(true);
+        expect(needsExpansion(width, needed)).toBe(false);
+        expect(needsExpansion(width, needed - 1)).toBe(true);
         expect(calculateTargetSize(width, 720) * 720).toBeCloseTo(needed * HOVER_EXPAND_FACTOR, 6);
     });
 });

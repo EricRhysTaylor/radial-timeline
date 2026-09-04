@@ -10,6 +10,7 @@ import { buildInquirySourcesViewModel } from '../services/inquirySources';
 import { BUILTIN_MODELS } from '../../ai/registry/builtinModels';
 import { getModelUiSignals } from '../../ai/caps/engineCapabilities';
 import { CACHE_BREAK_DELIMITER } from '../../ai/prompts/composeEnvelope';
+import { fnv1a32HexUnpadded } from '../../utils/hash';
 import {
     buildLogOverrideLabel,
     buildLogSourceResultDetail,
@@ -76,12 +77,7 @@ function extractRequestPromptText(
 
 /** Stable, non-cryptographic FNV-1a hash for comparing prefixes across runs. */
 function prefixFingerprint(text: string): string {
-    let hash = 2166136261;
-    for (let i = 0; i < text.length; i += 1) {
-        hash ^= text.charCodeAt(i);
-        hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
-    }
-    return (hash >>> 0).toString(16);
+    return fnv1a32HexUnpadded(text);
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {

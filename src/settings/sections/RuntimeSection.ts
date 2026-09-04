@@ -14,6 +14,7 @@ import { t } from '../../i18n';
 import { hasProFeatureAccess } from '../featureGate';
 import { ERT_CLASSES } from '../../ui/classes';
 import { fitSelectToSelectedLabel } from '../selectSizing';
+import { runtimeRatesFromSettings } from '../../utils/runtimeEstimator';
 
 interface SectionParams {
     app: App;
@@ -27,15 +28,7 @@ export function renderRuntimeSection({ plugin, containerEl }: SectionParams): vo
     const buildProfileFromLegacy = () => ({
         id: 'default',
         label: 'Default',
-        contentType: plugin.settings.runtimeContentType || 'novel',
-        dialogueWpm: plugin.settings.runtimeDialogueWpm || 160,
-        actionWpm: plugin.settings.runtimeActionWpm || 100,
-        narrationWpm: plugin.settings.runtimeNarrationWpm || 150,
-        beatSeconds: plugin.settings.runtimeBeatSeconds || 2,
-        pauseSeconds: plugin.settings.runtimePauseSeconds || 3,
-        longPauseSeconds: plugin.settings.runtimeLongPauseSeconds || 5,
-        momentSeconds: plugin.settings.runtimeMomentSeconds || 4,
-        silenceSeconds: plugin.settings.runtimeSilenceSeconds || 5,
+        ...runtimeRatesFromSettings(plugin.settings),
         sessionPlanning: {
             draftingWpm: undefined,
             recordingWpm: undefined,

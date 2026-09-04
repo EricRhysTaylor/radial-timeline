@@ -1,17 +1,13 @@
 import type { InquiryScope } from '../state';
 import type { CorpusManifestEntry } from '../runner/types';
+import { fnv1a32Hex } from '../../utils/hash';
 
 const isInFocusedBook = (path: string, activeBookId: string): boolean =>
     path === activeBookId || path.startsWith(`${activeBookId}/`);
 
 export function buildInquiryBookAnchorId(rootPath: string): string {
     const normalized = (rootPath || '').trim().toLowerCase();
-    let h = 0x811c9dc5;
-    for (let i = 0; i < normalized.length; i += 1) {
-        h ^= normalized.charCodeAt(i);
-        h = Math.imul(h, 0x01000193);
-    }
-    return `book_${(h >>> 0).toString(16).padStart(8, '0')}`;
+    return `book_${fnv1a32Hex(normalized)}`;
 }
 
 const dedupeEntries = (entries: CorpusManifestEntry[]): CorpusManifestEntry[] => {

@@ -1,15 +1,6 @@
 import { escapeRegExp } from '../../utils/regex';
 import { shouldHighlightMetadataTerm, type TimelineSearchState } from '../../services/searchState';
-
-/**
- * CSS-escape a value for use in attribute selectors
- */
-function cssEscape(value: string): string {
-    if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
-        return CSS.escape(value);
-    }
-    return value.replace(/[^a-zA-Z0-9_-]/g, '\\$&');
-}
+import { cssEscape } from './dragGeometry';
 
 interface SearchView {
     contentEl: HTMLElement;

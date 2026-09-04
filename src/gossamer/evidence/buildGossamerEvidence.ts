@@ -2,6 +2,7 @@ import type { MetadataCache, TFile, Vault } from 'obsidian';
 import { normalizeFrontmatterKeys } from '../../utils/frontmatter';
 import { readSceneId, resolveSceneReferenceId } from '../../utils/sceneIds';
 import { cleanEvidenceBody } from '../../inquiry/utils/evidenceCleaning';
+import { countWords } from '../../utils/text';
 
 export interface GossamerEvidenceDocument {
     text: string;
@@ -15,9 +16,6 @@ interface SceneEvidenceEntry {
     sceneId: string;
     content: string;
 }
-
-const countWords = (text: string): number =>
-    text.split(/\s+/).map(word => word.trim()).filter(Boolean).length;
 
 const getNormalizedFrontmatter = (
     metadataCache: MetadataCache,

@@ -12,6 +12,7 @@
  */
 
 import { TFile, type App } from 'obsidian';
+import { normalizeAngleSigned } from '../../renderer/utils/angles';
 import {
     DRAG_DROP_ARC_RADIUS,
     DRAG_DROP_TICK_OUTER_RADIUS,
@@ -196,7 +197,7 @@ export class DragOverlays {
         const offset = getRotationOffsetRad(this.svg);
         const a0 = startAngle + offset;
         const a1 = endAngle + offset;
-        const delta = normalizeAngle(a1 - a0);
+        const delta = normalizeAngleSigned(a1 - a0);
         const largeArc = Math.abs(delta) > Math.PI ? 1 : 0;
         const sweep = delta >= 0 ? 1 : 0;
         arc.setAttribute(
@@ -261,11 +262,4 @@ function applyStroke(element: SVGPathElement, color: string | undefined): void {
         element.style.removeProperty('--rt-drag-stroke-color');
         element.removeAttribute('stroke');
     }
-}
-
-function normalizeAngle(angle: number): number {
-    let value = angle;
-    while (value < -Math.PI) value += Math.PI * 2;
-    while (value > Math.PI) value -= Math.PI * 2;
-    return value;
 }

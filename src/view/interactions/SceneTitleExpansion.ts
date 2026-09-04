@@ -13,7 +13,7 @@
  * Separated from DOM manipulation to enable unit testing and reuse.
  */
 
-import { SCENE_TITLE_INSET, TEXTPATH_START_NUDGE_PX, TEXTPATH_START_OFFSET_PX } from '../../renderer/layout/LayoutConstants';
+import { TEXTPATH_START_NUDGE_PX, TEXTPATH_START_OFFSET_PX } from '../../renderer/layout/LayoutConstants';
 
 export const HOVER_EXPAND_FACTOR = 1.05;
 export const PADDING_PX = 8;
@@ -36,11 +36,7 @@ export interface RedistributionResult {
 /**
  * Calculate if a scene title needs expansion
  */
-export function needsExpansion(
-    textWidth: number,
-    currentArcLength: number,
-    midRadius: number
-): boolean {
+export function needsExpansion(textWidth: number, currentArcLength: number): boolean {
     const requiredArcPx = textWidth + PADDING_PX + TEXTPATH_START_OFFSET_PX + TEXTPATH_START_NUDGE_PX;
     return currentArcLength < requiredArcPx;
 }

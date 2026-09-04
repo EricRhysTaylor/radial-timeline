@@ -244,3 +244,8 @@ export function truncateToWordLimit(text: string, maxWords: number = 100): strin
   if (words.length <= maxWords) return text;
   return words.slice(0, maxWords).join(' ') + '...';
 }
+
+/** Whitespace-delimited word count; the one definition every counter and estimate uses. */
+export function countWords(text: string): number {
+    return text.split(/\s+/).filter(word => word.length > 0).length;
+}

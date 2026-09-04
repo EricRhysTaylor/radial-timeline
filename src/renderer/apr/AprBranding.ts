@@ -8,6 +8,12 @@ import { APR_TEXT_COLORS, APR_BRANDING_TUNING, APR_CENTER_METRIC } from './AprCo
 import { computeAprLayout, type AprLayoutSpec } from './aprLayout';
 import { getAprPreset, type AprSize } from './aprPresets';
 import { RT_LOGO_PATHS, RT_LOGO_VIEWBOX } from '../../branding/rtLogo';
+import { escapeXml } from '../../utils/svg';
+
+type TextBoxMetrics = {
+    ascent: number;
+    descent: number;
+};
 
 const cssVar = (name: string, fallback: string) => `var(${name}-override, var(${name}, ${fallback}))`;
 const italicAttr = (isItalic?: boolean) => (isItalic ? 'font-style="italic"' : ''); // SAFE: inline style used for SVG font-style attribute
@@ -22,24 +28,6 @@ const resolveOpacity = (portable: boolean) =>
         portable ? fallback : varExpr;
 
 const APR_DEFAULT_FONT_STACK = '"Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
-
-const escapeXmlAttr = (value: string): string =>
-    value
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-
-const escapeXmlText = (value: string): string =>
-    value
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-
-type TextBoxMetrics = {
-    ascent: number;
-    descent: number;
-};
 
 let aprMetricsCanvas: HTMLCanvasElement | null | undefined;
 
@@ -186,9 +174,9 @@ export function renderAprBranding(options: AprBrandingOptions): string {
     const separator = ' ~ ';
     const bookTitleUpper = bookTitle.toUpperCase();
     const authorNameUpper = authorName?.toUpperCase() || '';
-    const bookTitleEscaped = escapeXmlText(bookTitleUpper);
-    const authorNameEscaped = escapeXmlText(authorNameUpper);
-    const separatorEscaped = escapeXmlText(separator);
+    const bookTitleEscaped = escapeXml(bookTitleUpper);
+    const authorNameEscaped = escapeXml(authorNameUpper);
+    const separatorEscaped = escapeXml(separator);
 
     // Calculate exact circumference
     const circumference = 2 * Math.PI * brandingRadius;
@@ -289,8 +277,8 @@ export function renderAprBranding(options: AprBrandingOptions): string {
 
     // Construct the seamless text content
     let textContent = '';
-    const bookTspanStart = `<tspan fill="${color('--apr-book-title-color', bookColor)}" font-family="${escapeXmlAttr(resolvedBookTitleFontFamily)}" font-weight="${bookTitleFontWeight}" font-size="${bookTitleSize}" ${italicAttr(bookTitleFontItalic)}>`;
-    const authorTspanStart = `<tspan fill="${color('--apr-author-color', authColor)}" font-family="${escapeXmlAttr(resolvedAuthorNameFontFamily)}" font-weight="${authorNameFontWeight}" font-size="${authorNameSize}" ${italicAttr(authorNameFontItalic)}>`;
+    const bookTspanStart = `<tspan fill="${color('--apr-book-title-color', bookColor)}" font-family="${escapeXml(resolvedBookTitleFontFamily)}" font-weight="${bookTitleFontWeight}" font-size="${bookTitleSize}" ${italicAttr(bookTitleFontItalic)}>`;
+    const authorTspanStart = `<tspan fill="${color('--apr-author-color', authColor)}" font-family="${escapeXml(resolvedAuthorNameFontFamily)}" font-weight="${authorNameFontWeight}" font-size="${authorNameSize}" ${italicAttr(authorNameFontItalic)}>`;
     const endTspan = `</tspan>`;
 
     for (let i = 0; i < repeats; i += 1) {
@@ -304,7 +292,7 @@ export function renderAprBranding(options: AprBrandingOptions): string {
 
     // Build the SVG text element - IMPORTANT: minimize whitespace since xml:space="preserve"
     // causes all whitespace to be rendered as actual space characters on the path
-    const brandingText = `<text font-family="${escapeXmlAttr(resolvedBookTitleFontFamily)}" font-size="${avgFontSize}" font-weight="${bookTitleFontWeight}" ${italicAttr(bookTitleFontItalic)} letter-spacing="${adjustedLetterSpacing}" xml:space="preserve"><textPath href="#${circlePathId}" startOffset="${startOffset}">${textContent}</textPath></text>`;
+    const brandingText = `<text font-family="${escapeXml(resolvedBookTitleFontFamily)}" font-size="${avgFontSize}" font-weight="${bookTitleFontWeight}" ${italicAttr(bookTitleFontItalic)} letter-spacing="${adjustedLetterSpacing}" xml:space="preserve"><textPath href="#${circlePathId}" startOffset="${startOffset}">${textContent}</textPath></text>`;
 
     return `
         <g class="apr-branding">
@@ -396,7 +384,7 @@ export function renderAprBadges(options: AprBadgeOptions): string {
     const half = resolvedLayout.outerPx / 2;
     const badgeSize = rtBadgeFontSize ?? resolvedLayout.badge.fontSize;
     const stageText = getStageBadgeText(resolvedLayout, stageLabel);
-    const stageTextEscaped = escapeXmlText(stageText);
+    const stageTextEscaped = escapeXml(stageText);
     const stageLetterSpacing = resolvedLayout.badge.letterSpacing;
     const countdownLetterSpacing = resolvedLayout.badge.countdownLetterSpacing;
 
@@ -415,7 +403,7 @@ export function renderAprBadges(options: AprBadgeOptions): string {
     const countdownOpacity = opacity('var(--apr-countdown-opacity, 0.7)', '0.7');
     const rtFill = color('--apr-rt-attrib-color', rtAttributionColor || badgeColor || APR_TEXT_COLORS.primary);
     const rtOpacity = opacity('var(--apr-rt-attrib-opacity, 1)', '1');
-    const badgeFontFamilyEscaped = escapeXmlAttr(resolveAprFontFamily(rtBadgeFontFamily));
+    const badgeFontFamilyEscaped = escapeXml(resolveAprFontFamily(rtBadgeFontFamily));
 
     const stageBadge = showStageBadge ? `
         <text 
@@ -529,7 +517,7 @@ export function renderAprCenterPercent(
     const percentOffsetPx = ((numberWidthPx / 2) + percentGapPx) * APR_CENTER_METRIC.percentAnchorFactor;
     const percentX = numberX + percentOffsetPx;
     const fontFamily = APR_CENTER_METRIC.fontFamily;
-    const fontFamilyEscaped = escapeXmlAttr(fontFamily);
+    const fontFamilyEscaped = escapeXml(fontFamily);
     const numberY = resolvePortableBaselineY(
         centerDy + APR_CENTER_METRIC.numberDyPx,
         valueText,

@@ -1,21 +1,15 @@
 import type { TimelineItem } from '../../types';
 import { isBeatNote, type PluginRendererFacade } from '../../utils/sceneHelpers';
-import { splitIntoBalancedLinesOptimal } from '../../utils/text';
+import { splitIntoBalancedLinesOptimal, countWords } from '../../utils/text';
 import { resolveScenePov } from '../../utils/pov';
 import { getReadabilityMultiplier } from '../../utils/readability';
 import { getSynopsisGenerationWordLimit, getSynopsisHoverWordLimit, truncateToWordLimit } from '../../utils/synopsisLimits';
-
-function countWords(text: string | undefined): number {
-    const normalized = String(text ?? '').replace(/\s+/g, ' ').trim();
-    if (!normalized) return 0;
-    return normalized.split(' ').length;
-}
 
 function resolveHoverSynopsisText(scene: TimelineItem, synopsisWordLimit: number, hoverWordLimit: number): string | undefined {
     const synopsis = typeof scene.synopsis === 'string' ? scene.synopsis.trim() : '';
     if (!synopsis) return undefined;
 
-    const synopsisWords = countWords(synopsis);
+    const synopsisWords = countWords(synopsis ?? '');
     const synopsisLooksClipped = synopsis.endsWith('...');
     const synopsisAtCap = synopsisWords >= Math.max(10, synopsisWordLimit - 2);
 

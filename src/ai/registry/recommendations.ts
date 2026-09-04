@@ -1,7 +1,8 @@
 import { selectModel } from '../router/selectModel';
-import type { AccessTier, AIProviderId, AiSettingsV1, Capability, ModelInfo, ModelPolicy } from '../types';
+import type { AIProviderId, AiSettingsV1, Capability, ModelInfo, ModelPolicy } from '../types';
 import type { AvailabilityStatus, MergedModelInfo } from './mergeModels';
 import { formatRecommendationWhy } from './recommendationWhy';
+import { resolveAccessTier } from '../runtime/runtimeSelection';
 
 export interface RecommendationRow {
     id: 'inquiry' | 'gossamer' | 'quick' | 'local';
@@ -29,13 +30,6 @@ function toShortReason(reason: string, maxWords = 14): string {
     return `${words.slice(0, maxWords).join(' ')}...`;
 }
 
-function getTier(aiSettings: AiSettingsV1, provider: AIProviderId): AccessTier {
-    if (provider === 'anthropic') return aiSettings.aiAccessProfile.anthropicTier ?? 1;
-    if (provider === 'openai') return aiSettings.aiAccessProfile.openaiTier ?? 1;
-    if (provider === 'google') return aiSettings.aiAccessProfile.googleTier ?? 1;
-    return 1;
-}
-
 function findMergedModel(models: MergedModelInfo[], selected: ModelInfo): MergedModelInfo | null {
     return models.find(model => model.provider === selected.provider && model.alias === selected.alias) ?? null;
 }
@@ -50,7 +44,7 @@ function resolveIntentWithRouter(
             provider: intent.provider,
             policy: intent.policy,
             requiredCapabilities: intent.requiredCapabilities,
-            accessTier: getTier(aiSettings, intent.provider),
+            accessTier: resolveAccessTier(aiSettings, intent.provider),
             contextTokensNeeded: intent.contextTokensNeeded ?? 4000,
             outputTokensNeeded: intent.outputTokensNeeded ?? 800
         });

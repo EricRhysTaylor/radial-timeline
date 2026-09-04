@@ -217,7 +217,7 @@ export function getActiveBookExportContext(settings: RadialTimelineSettings): { 
   return { sourceFolder, title, fileStem };
 }
 
-function slugifyToFileStem(title: string): string {
+export function slugifyToFileStem(title: string): string {
   return title
     .replace(/[/\\:*?"<>|]+/g, '')
     .replace(/\s+/g, '-')

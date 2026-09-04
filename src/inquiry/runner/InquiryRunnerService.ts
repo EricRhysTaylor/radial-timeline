@@ -31,6 +31,7 @@ import { buildInquiryJsonSchema, buildInquiryOmnibusJsonSchema } from '../jsonSc
 import { buildInquiryPromptParts, INQUIRY_ROLE_TEMPLATE_GUARDRAIL } from '../promptScaffold';
 import { BUILTIN_MODELS } from '../../ai/registry/builtinModels';
 import { buildInquiryBookAnchorId } from '../services/canonicalInquiryCorpus';
+import { fnv1a32Hex, fnv1a32HexUnpadded } from '../../utils/hash';
 
 export { cleanEvidenceBody } from '../utils/evidenceCleaning';
 
@@ -1335,12 +1336,7 @@ export class InquiryRunnerService implements InquiryRunner {
     }
 
     private hashText(input: string): string {
-        let hash = 2166136261;
-        for (let i = 0; i < input.length; i += 1) {
-            hash ^= input.charCodeAt(i);
-            hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
-        }
-        return (hash >>> 0).toString(16);
+        return fnv1a32HexUnpadded(input);
     }
 
     private async getExecutionPrecheck(options: {
@@ -2705,12 +2701,7 @@ export class InquiryRunnerService implements InquiryRunner {
 
     /** Deterministic fallback scn_ ID derived from file path (FNV-1a). */
     private buildPathFallbackSceneId(path: string): string {
-        let h = 0x811c9dc5;
-        for (let i = 0; i < path.length; i++) {
-            h ^= path.charCodeAt(i);
-            h = Math.imul(h, 0x01000193);
-        }
-        return `scn_${(h >>> 0).toString(16).padStart(8, '0')}`;
+        return `scn_${fnv1a32Hex(path)}`;
     }
 
     private buildStubResult(

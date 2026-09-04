@@ -9,6 +9,7 @@ import { warnLegacyAccess } from './legacyAccessGuard';
 import { CACHE_BREAK_DELIMITER } from '../ai/prompts/composeEnvelope';
 import { modelSupportsAdaptiveThinking, modelThinkingDefaultsOn, modelUsesAlwaysOnThinking } from '../ai/registry/modelRequestProfiles';
 import type { AnthropicCacheTtl, EvidenceDocument, TokenCountResult } from '../ai/types';
+import { fnv1a32Hex } from '../utils/hash';
 
 export type AnthropicTextBlock = {
   type: 'text';
@@ -249,12 +250,7 @@ export function buildAnthropicUserContent(input: BuildAnthropicUserContentInput)
 }
 
 function fingerprintAnthropicText(value: string): string {
-  let hash = 2166136261;
-  for (let index = 0; index < value.length; index++) {
-    hash ^= value.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash >>> 0).toString(16).padStart(8, '0');
+    return fnv1a32Hex(value);
 }
 
 export function buildAnthropicDispatchDiagnostics(

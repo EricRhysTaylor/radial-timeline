@@ -20,6 +20,7 @@ import { resolveSelectedBeatModelFromSettings } from '../../utils/beatSystemStat
 import { appendRecentStructuralMove, getActiveRecentStructuralMoves } from '../../utils/recentStructuralMoves';
 import { openStructuralMoveHistoryLog } from '../../utils/recentStructuralMoveLog';
 import type { RadialTimelineSettings } from '../../types/settings';
+import { fileStem } from '../../utils/paths';
 
 /**
  * Settings plus the legacy `masterSubplotOrder` key that older vault data.json
@@ -260,12 +261,6 @@ export class OuterRingDragController {
         return cssEscape(value);
     }
 
-    private getBasenameFromPath(path: string): string {
-        const fileName = path.split('/').pop() ?? path;
-        const extensionMatch = fileName.match(/\.([^.]+)$/);
-        return extensionMatch ? fileName.slice(0, -(extensionMatch[0].length)) : fileName;
-    }
-
     private getCurrentPrefixForCompare(entry: OuterRingOrderEntry): string {
         const basenameMatch = entry.basename.match(/^\s*(\d+(?:\.\d+)?)\s+/);
         if (basenameMatch) return basenameMatch[1];
@@ -454,7 +449,7 @@ export class OuterRingDragController {
             const itemType = (group.getAttribute('data-item-type') as 'Scene' | 'Beat') || 'Scene';
             
             // Extract basename and numeric prefix from file path (e.g., "01 Opening Image.md" → "01")
-            const basename = path ? this.getBasenameFromPath(path) : '';
+            const basename = path ? fileStem(path) : '';
             let numberText = '';
             const prefixMatch = basename.match(/^\s*(\d+(?:\.\d+)?)\s+/);
             numberText = prefixMatch ? prefixMatch[1] : '';

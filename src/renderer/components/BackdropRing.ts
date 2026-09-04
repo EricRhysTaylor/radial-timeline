@@ -20,28 +20,12 @@
 
 import type { TimelineItem } from '../../types/timeline';
 import { parseDuration, parseWhenField } from '../../utils/date';
-import { formatNumber } from '../../utils/svg';
+import { formatNumber, escapeXml } from '../../utils/svg';
 import { BACKDROP_RING_HEIGHT, BACKDROP_TITLE_RADIUS_OFFSET } from '../layout/LayoutConstants';
 import { isBeatNote, sortScenes, type PluginRendererFacade } from '../../utils/sceneHelpers';
 import { appendSynopsisElementForScene } from '../utils/SynopsisBuilder';
 import { makeSceneId } from '../../utils/numberSquareHelpers';
 
-
-/**
- * Escape XML/SVG special characters in text destined for SVG <text> content
- * or attribute values. A single unescaped `&` (e.g. "Hunsford & Rosings")
- * makes the whole SVG invalid and the browser drops it silently — no console
- * error, just a blank timeline. Must escape `&` first so subsequent
- * replacements don't re-escape ampersands they introduce.
- */
-function escapeXml(text: string): string {
-    return text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&apos;');
-}
 
 
 interface BackdropSegment {

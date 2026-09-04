@@ -4,6 +4,7 @@ import type { InquiryBriefModel } from '../types/inquiryViewTypes';
 import type { InquiryStaleDiagnosis } from '../state';
 import { openOrRevealFile, openOrRevealFileAtSubpath, openOrRevealFileByPath } from '../../utils/fileUtils';
 import { getEmbeddedAssetDataUri } from '../../utils/embeddedAssets';
+import { escapeRegExp } from '../../utils/regex';
 
 type InquiryBriefingModalOptions = {
     brief: InquiryBriefModel;
@@ -594,7 +595,7 @@ export class InquiryBriefingModal extends Modal {
     }
 
     private escapeRegExp(value: string): string {
-        return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return escapeRegExp(value);
     }
 
     private focusRequestedAnchor(): void {

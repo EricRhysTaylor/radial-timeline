@@ -12,6 +12,7 @@ import { describeParts } from '../../publishing/layoutVisuals';
 import { resolveActiveNovelPandocLayout } from '../../utils/exportFormats';
 import { readSharedChapterTitle, SHARED_CHAPTER_FIELD_KEY } from '../../utils/timelineChapters';
 import { frontmatterValueToText } from '../../utils/frontmatter';
+import { formatLocalDateKey } from '../../utils/date';
 
 type SceneContextMenuView = {
     plugin: {
@@ -56,13 +57,6 @@ const PUBLISH_STAGE_OPTIONS: PublishStageOption[] = [
     { label: 'House', value: 'House', icon: 'home' },
     { label: 'Press', value: 'Press', icon: 'newspaper' },
 ];
-
-function getLocalDateString(date = new Date()): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
 
 function normalizeScalar(value: unknown): string {
     if (value === null || value === undefined) return '';
@@ -512,7 +506,7 @@ function showSceneContextMenu(view: SceneContextMenuView, group: Element, event:
                     (fm) => {
                         fm.Status = option.value;
                         if (option.value === 'Complete') {
-                            fm.Due = getLocalDateString();
+                            fm.Due = formatLocalDateKey();
                         }
                     },
                     option.value === 'Complete'

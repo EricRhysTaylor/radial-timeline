@@ -31,7 +31,6 @@ import type {
     InputTokenEstimateMethod,
     ModelPolicy,
     ModelInfo,
-    AccessTier,
     ProviderExecutionResult,
     RegistryRefreshResult
 } from '../types';
@@ -44,6 +43,8 @@ import { validateJsonResponse } from './jsonValidator';
 import { estimateHeuristicInputTokens, estimateInputTokens, estimateUncertaintyTokens } from '../tokens/inputTokenEstimate';
 import { extractTokenUsage } from '../usage/providerUsage';
 import { estimateTokensFromChars } from '../estimates';
+import { resolveAccessTier } from './runtimeSelection';
+import { fnv1a32HexUnpadded } from '../../utils/hash';
 
 const DEFAULT_REMOTE_PROVIDER_SNAPSHOT_URL = 'https://raw.githubusercontent.com/ericrhystaylor/radial-timeline/HEAD/scripts/models/latest-models.json';
 const DEFAULT_REMOTE_PRICING_URL = 'https://raw.githubusercontent.com/ericrhystaylor/radial-timeline/main/scripts/models/pricing.json';
@@ -55,13 +56,6 @@ interface PluginWithAiDebug extends RadialTimelinePlugin {
 function getAiSettings(settings: RadialTimelineSettings): AiSettingsV1 {
     const validated = validateAiSettings(settings.aiSettings ?? buildDefaultAiSettings());
     return validated.value;
-}
-
-function resolveTier(settings: AiSettingsV1, provider: AIProviderId): AccessTier {
-    if (provider === 'anthropic') return settings.aiAccessProfile.anthropicTier ?? 1;
-    if (provider === 'openai') return settings.aiAccessProfile.openaiTier ?? 1;
-    if (provider === 'google') return settings.aiAccessProfile.googleTier ?? 1;
-    return 1;
 }
 
 function toProviderKey(feature: string, provider: AIProviderId): string {
@@ -82,12 +76,7 @@ function mergePolicy(base: ModelPolicy, request: AIRunRequest): ModelPolicy {
 }
 
 function hash(input: string): string {
-    let h = 2166136261;
-    for (let i = 0; i < input.length; i += 1) {
-        h ^= input.charCodeAt(i);
-        h += (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24);
-    }
-    return (h >>> 0).toString(16);
+    return fnv1a32HexUnpadded(input);
 }
 
 function mergeOverrides(base: AiSettingsV1['overrides'], request: AIRunRequest): AiSettingsV1['overrides'] {
@@ -603,7 +592,7 @@ export class AIClient {
                 provider,
                 policy,
                 requiredCapabilities,
-                accessTier: resolveTier(aiSettings, provider),
+                accessTier: resolveAccessTier(aiSettings, provider),
                 contextTokensNeeded: heuristicEstimate,
                 outputTokensNeeded: 0
             });
@@ -634,7 +623,7 @@ export class AIClient {
         const caps = computeCaps({
             provider,
             model: initialSelection.model,
-            accessTier: resolveTier(aiSettings, provider),
+            accessTier: resolveAccessTier(aiSettings, provider),
             feature: request.feature,
             overrides,
             userCitationsEnabled: aiSettings.citationsEnabled

@@ -1,15 +1,5 @@
 import { formatNumber } from '../../utils/svg';
-
-const normalizeAngle = (angle: number): number => {
-  const twoPi = Math.PI * 2;
-  let normalized = angle % twoPi;
-  if (normalized > Math.PI) {
-    normalized -= twoPi;
-  } else if (normalized <= -Math.PI) {
-    normalized += twoPi;
-  }
-  return normalized;
-};
+import { normalizeAngleSigned } from '../utils/angles';
 
 export function renderMonthSpokesAndInnerLabels(params: {
   months: { name: string; shortName: string; angle: number }[];
@@ -27,7 +17,7 @@ export function renderMonthSpokesAndInnerLabels(params: {
   const actBoundaryAngles = Array.from({ length: totalActs }, (_, i) => -Math.PI / 2 + (i * 2 * Math.PI) / totalActs);
   const isActBoundaryAngle = (angle: number): boolean => {
     const tolerance = (2 * Math.PI / totalActs) / 12; // small fraction of act wedge
-    return actBoundaryAngles.some(b => Math.abs(normalizeAngle(angle - b)) <= tolerance);
+    return actBoundaryAngles.some(b => Math.abs(normalizeAngleSigned(angle - b)) <= tolerance);
   };
   
   // Inner calendar spokes - always render these short spokes around the calendar labels
@@ -140,7 +130,7 @@ export function renderMonthSpokesAndInnerLabels(params: {
     for (let monthIndex = 0; monthIndex < months.length; monthIndex++) {
       for (let step = 1; step < multiplier; step++) {
         const rawAngle = months[monthIndex].angle + (majorStep * step) / multiplier;
-        const angle = normalizeAngle(rawAngle);
+        const angle = normalizeAngleSigned(rawAngle);
         const x1 = formatNumber(outerSpokeInnerRadius * Math.cos(angle));
         const y1 = formatNumber(outerSpokeInnerRadius * Math.sin(angle));
         const x2 = formatNumber(lineOuterRadius * Math.cos(angle));
@@ -195,7 +185,7 @@ export function renderGossamerMonthSpokes(params: {
     const y1 = formatNumber(innerRadius * Math.sin(angle));
     const x2 = formatNumber(outerRadius * Math.cos(angle));
     const y2 = formatNumber(outerRadius * Math.sin(angle));
-    const isActBoundary = actBoundaryAngles.some(b => Math.abs(normalizeAngle(angle - b)) < 1e-6);
+    const isActBoundary = actBoundaryAngles.some(b => Math.abs(normalizeAngleSigned(angle - b)) < 1e-6);
     spokesHtml += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="rt-month-spoke-line rt-gossamer-grid-spoke${isActBoundary ? ' rt-act-boundary' : ''}"/>`;
   });
   // Explicit act spokes for non-divisible month boundaries

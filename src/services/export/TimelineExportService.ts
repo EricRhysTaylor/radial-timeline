@@ -40,6 +40,7 @@ import type {
     TimelineItem,
 } from '../../types';
 import { isMatterNote } from '../../utils/sceneHelpers';
+import { rasterizeSvgToPng } from './svgToPng';
 import {
     buildFontFaceCss,
     collectSelfContainedFontFaces,
@@ -765,54 +766,6 @@ export class TimelineExportService {
     }
 
     /**
-     * Rasterize an SVG string to PNG at a scale factor. Mirrors the APR export
-     * pattern (Blob -> Image -> offscreen canvas -> toBlob).
-     */
-    private async svgToPngBuffer(svgString: string, width: number, height: number, scale: number): Promise<ArrayBuffer> {
-        if (typeof window === 'undefined' || typeof document === 'undefined') {
-            throw new Error('PNG export is unavailable in this environment.');
-        }
-        const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-        const objectUrl = URL.createObjectURL(blob);
-        try {
-            const image = await new Promise<HTMLImageElement>((resolve, reject) => {
-                const img = new Image();
-                img.onload = () => resolve(img);
-                img.onerror = () => reject(new Error('Failed to load SVG for PNG rendering.'));
-                img.src = objectUrl;
-            });
-            // decode() blocks until the SVG image document is fully ready to
-            // paint — including its embedded @font-face data-URI fonts, which
-            // load inside the isolated image context and are not observable
-            // via this document's FontFaceSet. Without it, drawImage can race
-            // the font load and rasterize fallback glyphs.
-            await image.decode();
-
-            const targetWidth = Math.max(1, Math.round(width * scale));
-            const targetHeight = Math.max(1, Math.round(height * scale));
-            const canvas = createEl('canvas');
-            canvas.width = targetWidth;
-            canvas.height = targetHeight;
-            const ctx = canvas.getContext('2d');
-            if (!ctx) throw new Error('Could not initialize canvas context.');
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
-
-            const pngBlob = await new Promise<Blob | null>((resolve) => {
-                canvas.toBlob((result) => resolve(result), 'image/png');
-            });
-            if (!pngBlob) {
-                throw new Error('Canvas failed to produce PNG data.');
-            }
-            return pngBlob.arrayBuffer();
-        } finally {
-            URL.revokeObjectURL(objectUrl);
-        }
-    }
-
-    /**
      * Create `folderPath` on demand, walking each segment — both destinations
      * are nested (`<system>/Community`, `<Export>/Timeline`), so a single
      * createFolder call cannot be relied on to materialize the parent.
@@ -888,7 +841,7 @@ export class TimelineExportService {
                 return;
             }
 
-            const png = await this.svgToPngBuffer(svgString, width, height, scale);
+            const png = await rasterizeSvgToPng(svgString, width, height, scale);
             const scaleTag = scale === 1 ? '' : `@${scale}x`;
             const baseName = this.buildFileName(active.mode, 'png').replace(/\.png$/, `${scaleTag}.png`);
             const path = `${folder}/${baseName}`;

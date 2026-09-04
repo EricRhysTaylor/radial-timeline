@@ -15,7 +15,6 @@
 
 import type RadialTimelinePlugin from '../../main';
 import type {
-    AccessTier,
     AIProviderId,
     AiSettingsV1,
     Capability,
@@ -26,6 +25,7 @@ import { selectModel } from '../../ai/router/selectModel';
 import { buildDefaultAiSettings } from '../../ai/settings/aiSettings';
 import { validateAiSettings } from '../../ai/settings/validateAiSettings';
 import { getLocalLlmSettings } from '../../ai/localLlm/settings';
+import { resolveAccessTier } from '../../ai/runtime/runtimeSelection';
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -100,13 +100,6 @@ function getValidatedAiSettings(plugin: RadialTimelinePlugin): AiSettingsV1 {
     const validated = validateAiSettings(plugin.settings.aiSettings ?? buildDefaultAiSettings());
     plugin.settings.aiSettings = validated.value;
     return validated.value;
-}
-
-function resolveTier(aiSettings: AiSettingsV1, provider: AIProviderId): AccessTier {
-    if (provider === 'anthropic') return aiSettings.aiAccessProfile.anthropicTier ?? 1;
-    if (provider === 'openai') return aiSettings.aiAccessProfile.openaiTier ?? 1;
-    if (provider === 'google') return aiSettings.aiAccessProfile.googleTier ?? 1;
-    return 1;
 }
 
 // ── Main resolver ──────────────────────────────────────────────────
@@ -185,7 +178,7 @@ export function resolveInquiryEngine(
         ?? aiSettings.modelPolicy;
 
     // ── Model selection ────────────────────────────────────────────
-    const accessTier = resolveTier(aiSettings, provider);
+    const accessTier = resolveAccessTier(aiSettings, provider);
     const providerLabel = PROVIDER_LABELS[provider] ?? String(provider);
     // For key-based providers "has credential" must mean a REAL secret is stored,
     // not merely that a secret-ID alias exists — the alias (e.g. `rt.openai.api-key`)

@@ -1,6 +1,8 @@
 import type { TimelineItem } from '../../types';
 import type { CompletionEstimate } from '../../services/TimelineMetricsService';
 import { isSceneItem, type PluginRendererFacade } from '../../utils/sceneHelpers';
+import { parseLocalDateKey } from '../../utils/date';
+import { clamp } from '../../utils/math';
 
 interface TimelapseYearSimulationSettings {
     enabled?: boolean;
@@ -53,7 +55,7 @@ export function resolveProgressRingDate(plugin: PluginRendererFacade, scenes: Ti
     const config = getTimelapseYearSimulationSettings(plugin);
     if (!config?.enabled) return new Date();
 
-    const startDate = parseLocalDate(config.startDate) ?? new Date(new Date().getFullYear(), 0, 1);
+    const startDate = parseLocalDateKey(config.startDate) ?? new Date(new Date().getFullYear(), 0, 1);
     const finishDate = resolveTimelapseFinishDate(config, startDate);
     const totalScenes = Number.isFinite(config.totalScenes) && Number(config.totalScenes) > 0
         ? Number(config.totalScenes)
@@ -77,7 +79,7 @@ export function resolveProgressEstimate(
     const config = getTimelapseYearSimulationSettings(plugin);
     if (!config?.enabled) return estimate;
 
-    const startDate = parseLocalDate(config.startDate) ?? new Date(new Date().getFullYear(), 0, 1);
+    const startDate = parseLocalDateKey(config.startDate) ?? new Date(new Date().getFullYear(), 0, 1);
     const finishDate = resolveTimelapseFinishDate(config, startDate);
     const totalScenes = Number.isFinite(config.totalScenes) && Number(config.totalScenes) > 0
         ? Number(config.totalScenes)
@@ -107,15 +109,7 @@ function getTimelapseYearSimulationSettings(plugin: PluginRendererFacade): Timel
 }
 
 function resolveTimelapseFinishDate(config: TimelapseYearSimulationSettings, startDate: Date): Date {
-    return parseLocalDate(config.finishDate) ?? new Date(startDate.getFullYear(), 10, 30);
-}
-
-function parseLocalDate(value?: string): Date | null {
-    if (!value) return null;
-    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (!match) return null;
-    const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
-    return Number.isFinite(date.getTime()) ? date : null;
+    return parseLocalDateKey(config.finishDate) ?? new Date(startDate.getFullYear(), 10, 30);
 }
 
 function progressWeightForScene(scene: TimelineItem): number {
@@ -137,8 +131,4 @@ function stageProgressBase(rawStage: unknown): number {
     if (normalized === 'house') return 1.5;
     if (normalized === 'press') return 2;
     return 0;
-}
-
-function clamp(value: number, min: number, max: number): number {
-    return Math.min(max, Math.max(min, value));
 }

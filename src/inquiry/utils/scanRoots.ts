@@ -1,4 +1,5 @@
 import { TFolder, Vault, normalizePath } from 'obsidian';
+import { escapeRegExp } from '../../utils/regex';
 
 export const MAX_RESOLVED_SCAN_ROOTS = 50;
 
@@ -6,9 +7,6 @@ export type ResolvedScanRoots = {
     resolvedRoots: string[];
     totalMatches: number;
 };
-
-const escapeRegExp = (value: string): string =>
-    value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const MAX_RANGE_EXPANSION = 200;
 

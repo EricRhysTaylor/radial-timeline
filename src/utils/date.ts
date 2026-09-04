@@ -238,6 +238,26 @@ export function parseWhenField(when: string): Date | null {
  * value (`parseWhenField(formatWhenForYaml(d))`), not the input Date — a value
  * 30 seconds inside a bound formats to a value exactly ON it.
  */
+/**
+ * The author's local calendar day as YYYY-MM-DD. Never UTC: a session saved
+ * at 6pm Pacific is "today" for the author even though UTC has rolled over.
+ */
+export function formatLocalDateKey(date: Date = new Date()): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+/** Parse a YYYY-MM-DD key as local midnight. Null for anything else; never today's date as a stand-in. */
+export function parseLocalDateKey(value: string | undefined): Date | null {
+    if (!value) return null;
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return null;
+    const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    return Number.isFinite(date.getTime()) ? date : null;
+}
+
 export function formatWhenForYaml(date: Date): string {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');

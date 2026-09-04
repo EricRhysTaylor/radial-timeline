@@ -38,8 +38,6 @@ import type {
     WritingSessionStage,
 } from '../types/settings';
 
-export type SessionLogAudience = 'private' | 'community';
-
 // -- Shared canonical row that survives all rendering ------------------------
 
 /**

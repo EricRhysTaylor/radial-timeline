@@ -15,10 +15,11 @@ import { STAGE_ORDER } from '../utils/constants';
 import { getActiveBook, isSceneInBook } from '../utils/books';
 import { isCompleteStatus, normalizePublishStage } from '../progress/progressSnapshot';
 import { getRuntimeSettings } from '../utils/runtimeEstimator';
-import { normalizeStatus } from '../utils/text';
+import { normalizeStatus, countWords } from '../utils/text';
 import { buildPrivateSessionLog, type PrivateSessionLogRow } from './WritingSessionLog';
-import { countWords, extractBodyText } from '../utils/manuscript';
+import { extractBodyText } from '../utils/manuscript';
 import { RT_SYSTEM_FOLDER } from '../utils/systemFolder';
+import { formatLocalDateKey, parseLocalDateKey } from '../utils/date';
 
 const MAX_SESSION_RECORDS = 500;
 
@@ -201,24 +202,6 @@ function nowIso(): string {
     return new Date().toISOString();
 }
 
-function localDateString(date = new Date()): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
-
-function parseLocalDate(value: string): Date {
-    const [yearRaw, monthRaw, dayRaw] = value.split('-');
-    const year = Number(yearRaw);
-    const month = Number(monthRaw);
-    const day = Number(dayRaw);
-    if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
-        return new Date();
-    }
-    return new Date(year, month - 1, day);
-}
-
 function addLocalDays(date: Date, days: number): Date {
     const next = new Date(date);
     next.setDate(next.getDate() + days);
@@ -227,13 +210,14 @@ function addLocalDays(date: Date, days: number): Date {
 
 function dateRangeSet(endDate: string, days: number): { startDate: string; dates: Set<string> } {
     const safeDays = Math.max(1, Math.round(days));
-    const end = parseLocalDate(endDate);
+    const end = parseLocalDateKey(endDate);
+    if (!end) throw new Error(`Writing session range end is not a date key: ${endDate}`);
     const start = addLocalDays(end, -(safeDays - 1));
     const dates = new Set<string>();
     for (let index = 0; index < safeDays; index++) {
-        dates.add(localDateString(addLocalDays(start, index)));
+        dates.add(formatLocalDateKey(addLocalDays(start, index)));
     }
-    return { startDate: localDateString(start), dates };
+    return { startDate: formatLocalDateKey(start), dates };
 }
 
 function dateKey(value: string | undefined): string {
@@ -241,7 +225,7 @@ function dateKey(value: string | undefined): string {
     if (raw.includes('T')) {
         const parsed = new Date(raw);
         if (!Number.isNaN(parsed.getTime())) {
-            return localDateString(parsed);
+            return formatLocalDateKey(parsed);
         }
     }
     return raw.slice(0, 10);
@@ -863,7 +847,7 @@ export class WritingSessionService {
      * for the save popover; values are advisory (active-ms ≈ session elapsed).
      */
     getTodaySceneActivity(at = new Date()): SceneActivityRecord[] {
-        const todayKey = localDateString(at);
+        const todayKey = formatLocalDateKey(at);
         const totals = new Map<string, { activeMs: number; typedWords: number }>();
         const add = (path: string, activeMs: number, typedWords: number): void => {
             const entry = totals.get(path) ?? { activeMs: 0, typedWords: 0 }; // SAFE: first sighting of a scene starts a zero accumulator
@@ -1290,7 +1274,7 @@ export class WritingSessionService {
         await this.plugin.saveSettings();
     }
 
-    async getDailyStats(date = localDateString()): Promise<DailyWritingStats> {
+    async getDailyStats(date = formatLocalDateKey()): Promise<DailyWritingStats> {
         const scenes = await this.plugin.getSceneData();
         return buildDailyWritingStats({
             date,
@@ -1299,7 +1283,7 @@ export class WritingSessionService {
         });
     }
 
-    getDailySessionProgress(date = localDateString()): DailyWritingSessionProgress {
+    getDailySessionProgress(date = formatLocalDateKey()): DailyWritingSessionProgress {
         return buildDailyWritingSessionProgress({
             date,
             sessions: this.getSettings().records,
@@ -1309,7 +1293,7 @@ export class WritingSessionService {
         });
     }
 
-    async getRangeStats(days: number, endDate = localDateString()): Promise<WritingRangeStats> {
+    async getRangeStats(days: number, endDate = formatLocalDateKey()): Promise<WritingRangeStats> {
         const scenes = await this.plugin.getSceneData();
         return buildWritingRangeStats({
             endDate,
@@ -1334,7 +1318,7 @@ export class WritingSessionService {
     getPrivateSessionLog(params: { days: number; endDate?: string; limit?: number }): PrivateSessionLogRow[] {
         return buildPrivateSessionLog({
             records: this.getSettings().records,
-            window: { endDate: params.endDate ?? localDateString(), days: params.days },
+            window: { endDate: params.endDate ?? formatLocalDateKey(), days: params.days },
             limit: params.limit,
         });
     }

@@ -4,7 +4,7 @@
 import { TFile, Vault, App, getFrontMatterInfo, parseYaml } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { TimelineItem, BookMeta, MatterMeta, LegacyMatterOrder } from '../types';
-import { getScenePrefixNumber } from './text';
+import { getScenePrefixNumber, countWords } from './text';
 import { getActiveBookExportContext } from './exportContext';
 import { normalizeMatterBodyMode, parseMatterMetaFromFrontmatter, type MatterBodyMode } from './matterMeta';
 import { extractFrontmatterObject } from './frontmatter';
@@ -225,14 +225,10 @@ function preserveLatexMatterHardWraps(bodyText: string): string {
   }).join('\n');
 }
 
-function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 function stripScenePrefix(title: string, prefix: string | null): string {
   const trimmed = title.trim();
   if (!prefix) return trimmed;
-  const pattern = new RegExp(`^${escapeRegex(prefix)}(?:\\s+|[._:-]+\\s*)?`, 'i');
+  const pattern = new RegExp(`^${escapeRegExp(prefix)}(?:\\s+|[._:-]+\\s*)?`, 'i');
   return trimmed.replace(pattern, '').trim();
 }
 
@@ -516,15 +512,6 @@ function renderBookMetaBackedMatterPage(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Count words in text
- */
-export function countWords(text: string): number {
-  // Split on whitespace and filter out empty strings
-  const words = text.split(/\s+/).filter(word => word.length > 0);
-  return words.length;
-}
-
-/**
  * Estimate tokens from word count (rough approximation: 1 token ≈ 0.75 words)
  */
 export function estimateTokens(wordCount: number): number {
@@ -580,6 +567,7 @@ export async function getSortedSceneFiles(plugin: RadialTimelinePlugin): Promise
 }
 
 import { parseRuntimeField } from './runtimeEstimator';
+import { escapeRegExp } from './regex';
 
 /**
  * Get all valid scenes from the timeline (wrapper for getting timeline items directly)

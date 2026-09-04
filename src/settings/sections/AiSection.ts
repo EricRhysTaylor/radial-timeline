@@ -96,6 +96,7 @@ import {
     type PanelViewModel
 } from './aiPanelEstimate';
 import { tokenEstimateFromMethod, formatTokenHeadline } from '../../ai/estimates';
+import { resolveAccessTier } from '../../ai/runtime/runtimeSelection';
 
 type Provider = 'anthropic' | 'google' | 'openai' | 'ollama';
 type CapacityItem = string | { text: string; dividerBefore?: boolean; extraCls?: string };
@@ -913,13 +914,7 @@ export function renderAiSection(params: {
         };
     };
 
-    const getAccessTier = (provider: AIProviderId): AccessTier => {
-        const aiSettings = ensureCanonicalAiSettings();
-        if (provider === 'anthropic') return aiSettings.aiAccessProfile.anthropicTier ?? 1;
-        if (provider === 'openai') return aiSettings.aiAccessProfile.openaiTier ?? 1;
-        if (provider === 'google') return aiSettings.aiAccessProfile.googleTier ?? 1;
-        return 1;
-    };
+    const getAccessTier = (provider: AIProviderId): AccessTier => resolveAccessTier(ensureCanonicalAiSettings(), provider);
 
     const persistCanonical = async (): Promise<void> => {
         ensureCanonicalAiSettings();

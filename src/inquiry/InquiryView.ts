@@ -97,7 +97,7 @@ import {
 } from './questions/resolveQuestionPrompt';
 import { ensureInquiryArtifactFolder, getMostRecentArtifactFile, resolveInquiryArtifactFolder } from './utils/artifacts';
 import { cleanEvidenceBody } from './utils/evidenceCleaning';
-import { countWords as countManuscriptWords } from '../utils/manuscript';
+import { countWords as countManuscriptWords } from '../utils/text';
 import { ensureInquiryContentLogFolder, ensureInquiryLogFolder, resolveInquiryLogFolder } from './utils/logs';
 import { openOrRevealFile, openOrRevealFileAtSubpath } from '../utils/fileUtils';
 import { extractTokenUsage } from '../ai/log';
@@ -115,7 +115,7 @@ import { resolveCitationsEnabled } from '../ai/caps/computeCaps';
 import { BUILTIN_MODELS } from '../ai/registry/builtinModels';
 import { ANTHROPIC_REQUESTED_CACHE_TTL, buildDefaultAiSettings } from '../ai/settings/aiSettings';
 import { validateAiSettings } from '../ai/settings/validateAiSettings';
-import type { AIProviderId, AiSettingsV1, AccessTier, RTCorpusTokenEstimate, AIRunAdvancedContext } from '../ai/types';
+import type { AIProviderId, AiSettingsV1, RTCorpusTokenEstimate, AIRunAdvancedContext } from '../ai/types';
 import type {
     CorpusManifest,
     CorpusManifestEntry,
@@ -1500,13 +1500,6 @@ export class InquiryView extends ItemView {
             'inquiry',
             this.getCanonicalAiSettings().citationsEnabled !== false
         );
-    }
-
-    private getAccessTierForProvider(provider: AIProviderId, aiSettings: AiSettingsV1): AccessTier {
-        if (provider === 'anthropic') return aiSettings.aiAccessProfile.anthropicTier ?? 1; // SAFE: unset access profile defaults to tier 1, the lowest tier
-        if (provider === 'openai') return aiSettings.aiAccessProfile.openaiTier ?? 1; // SAFE: unset access profile defaults to tier 1, the lowest tier
-        if (provider === 'google') return aiSettings.aiAccessProfile.googleTier ?? 1; // SAFE: unset access profile defaults to tier 1, the lowest tier
-        return 1;
     }
 
     private buildReadinessUiState(): InquiryReadinessUiState {

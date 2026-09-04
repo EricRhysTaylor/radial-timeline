@@ -1,4 +1,5 @@
 import type { SceneRef } from '../types';
+import { basename } from '../../utils/paths';
 
 const SCENE_ID_REGEX = /^scn_[a-f0-9]{8,10}$/i;
 
@@ -264,12 +265,6 @@ function normalizeLookupKey(raw: string | undefined): string | undefined {
         .replace(/\s+/g, ' ')
         .trim();
     return normalized.length > 0 ? normalized : undefined;
-}
-
-function basename(path: string): string {
-    const normalized = path.replace(/\\/g, '/');
-    const parts = normalized.split('/');
-    return parts[parts.length - 1] || path;
 }
 
 function removeExtension(value: string): string {

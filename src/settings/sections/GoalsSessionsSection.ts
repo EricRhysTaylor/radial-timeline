@@ -9,6 +9,8 @@ import type { WritingRangeStats } from '../../services/WritingSessionService';
 import { renderSessionLogList } from '../../renderer/components/SessionLogList';
 import { openOrRevealFileByPath } from '../../utils/fileUtils';
 import { fitSelectToSelectedLabel } from '../selectSizing';
+import { formatLocalDateKey, parseLocalDateKey } from '../../utils/date';
+import { runtimeRatesFromSettings } from '../../utils/runtimeEstimator';
 
 interface GoalsSessionsSectionParams {
     plugin: RadialTimelinePlugin;
@@ -19,15 +21,7 @@ function buildProfileFromLegacy(plugin: RadialTimelinePlugin): RuntimeRateProfil
     return {
         id: 'default',
         label: 'Default',
-        contentType: (plugin.settings.runtimeContentType || 'novel'),
-        dialogueWpm: plugin.settings.runtimeDialogueWpm || 160,
-        actionWpm: plugin.settings.runtimeActionWpm || 100,
-        narrationWpm: plugin.settings.runtimeNarrationWpm || 150,
-        beatSeconds: plugin.settings.runtimeBeatSeconds || 2,
-        pauseSeconds: plugin.settings.runtimePauseSeconds || 3,
-        longPauseSeconds: plugin.settings.runtimeLongPauseSeconds || 5,
-        momentSeconds: plugin.settings.runtimeMomentSeconds || 4,
-        silenceSeconds: plugin.settings.runtimeSilenceSeconds || 5,
+        ...runtimeRatesFromSettings(plugin.settings),
         sessionPlanning: {
             draftingWpm: undefined,
             recordingWpm: undefined,
@@ -117,33 +111,16 @@ function formatShortDate(date: string): string {
     return `${months[month - 1] ?? yearRaw} ${day}`;
 }
 
-function parseLocalDateKey(date: string): Date {
-    const [yearRaw, monthRaw, dayRaw] = date.split('-');
-    const year = Number(yearRaw);
-    const month = Number(monthRaw);
-    const day = Number(dayRaw);
-    if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
-        return new Date();
-    }
-    return new Date(year, month - 1, day);
-}
-
-function localDateKey(date = new Date()): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
-
-function daysInCurrentYearToDate(endDate = localDateKey()): number {
+function daysInCurrentYearToDate(endDate = formatLocalDateKey()): number {
     const end = parseLocalDateKey(endDate);
+    if (!end) throw new Error(`Not a date key: ${endDate}`);
     const start = new Date(end.getFullYear(), 0, 1);
     return Math.max(1, Math.floor((end.getTime() - start.getTime()) / 86400000) + 1);
 }
 
 function isYearToDateRange(stats: WritingRangeStats): boolean {
     const end = parseLocalDateKey(stats.endDate);
-    return stats.startDate === `${end.getFullYear()}-01-01`;
+    return !!end && stats.startDate === `${end.getFullYear()}-01-01`;
 }
 
 function formatRangeDate(stats: WritingRangeStats): string {

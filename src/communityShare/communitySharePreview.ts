@@ -15,6 +15,7 @@ import { buildProgressSnapshot } from '../progress/progressSnapshot';
 import { STAGE_ORDER, type Stage } from '../utils/constants';
 import { isSceneInBook } from '../utils/books';
 import { COMMUNITY_SHARE_FIELD_KEYS, normalizeCommunityShareSettings } from './communityShareSettings';
+import { formatLocalDateKey } from '../utils/date';
 
 export const COMMUNITY_SHARE_REPORT_SCHEMA_VERSION = 'community-share-report-v1';
 
@@ -63,13 +64,6 @@ function toHex(buf: ArrayBuffer): string {
 
 async function canonicalHash(value: unknown): Promise<string> {
     return toHex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonicalJson(value))));
-}
-
-function localDateString(date = new Date()): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
 }
 
 function shiftDate(date: Date, days: number): Date {
@@ -209,7 +203,7 @@ export async function buildCommunityDailyEntries(
     const modeKeys: WritingSessionMode[] = ['drafting', 'revising', 'editing', 'planning'];
     const entries: CommunityDailyEntry[] = [];
     for (let offset = days - 1; offset >= 0; offset--) {
-        const date = localDateString(shiftDate(new Date(), -offset));
+        const date = formatLocalDateKey(shiftDate(new Date(), -offset));
         const stats = buildDailyWritingStats({ date, sessions, scenes });
         entries.push({
             date,
@@ -238,14 +232,14 @@ export async function buildCommunityHourModeMixEntries(
     plugin: RadialTimelinePlugin
 ): Promise<Record<string, CommunityHourModeMinutes>> {
     const sessions = plugin.getWritingSessionService().getSettings().records;
-    return buildCommunityHourModeMix({ records: sessions, endDate: localDateString() });
+    return buildCommunityHourModeMix({ records: sessions, endDate: formatLocalDateKey() });
 }
 
 export async function buildCommunitySharePreview(plugin: RadialTimelinePlugin): Promise<CommunitySharePreviewBuild> {
     const settings = normalizeCommunityShareSettings(plugin.settings.communityShare);
     const book = plugin.settings.books.find(candidate => candidate.id === plugin.settings.activeBookId) ?? plugin.settings.books[0];
-    const end = localDateString();
-    const start = localDateString(shiftDate(new Date(), -6));
+    const end = formatLocalDateKey();
+    const start = formatLocalDateKey(shiftDate(new Date(), -6));
     const stats = await plugin.getWritingSessionService().getRangeStats(7, end);
     const scenes = await plugin.getSceneData();
     const stageMix = buildCurrentStageMix(scenes, book);

@@ -8,6 +8,7 @@ import { generateDesignedStyleTex, migrateDesignedStyleSpec } from '../publishin
 import { BUNDLED_FICTION_SPECS, type BundledFictionId } from '../publishing/bundledStyleSpecs';
 import { getPandocFolder } from './exportFormats';
 import { getEmbeddedAssetBytes, getEmbeddedAssetByteLength, type EmbeddedAssetKey } from './embeddedAssets';
+import { basename } from './paths';
 
 interface BundledPandocLayoutTemplate extends PandocLayoutTemplate {
     bundled: true;
@@ -67,10 +68,6 @@ const LEGACY_BUNDLED_LAYOUT_BASENAME_MAP: Record<string, string> = {
     'signature_literary_rt.tex': BUNDLED_FICTION_SIGNATURE_ID,
 };
 
-function basenameOfPath(value: string): string {
-    return value.split(/[\\/]/).pop() || value;
-}
-
 function isAbsolutePath(value: string): boolean {
     return value.startsWith('/') || /^[A-Za-z]:[\\/]/.test(value);
 }
@@ -83,8 +80,8 @@ function resolveCanonicalBundledLayoutId(layout: PandocLayoutTemplate, canonical
     if (mappedById && canonicalIds.has(mappedById)) return mappedById;
 
     const normalizedPath = normalizePath((layout.path || '').trim().replace(/^\/+/, ''));
-    const basename = basenameOfPath(normalizedPath).toLowerCase();
-    const mappedByPath = LEGACY_BUNDLED_LAYOUT_BASENAME_MAP[basename];
+    const fileName = basename(normalizedPath).toLowerCase();
+    const mappedByPath = LEGACY_BUNDLED_LAYOUT_BASENAME_MAP[fileName];
     if (mappedByPath && canonicalIds.has(mappedByPath)) return mappedByPath;
 
     return null;

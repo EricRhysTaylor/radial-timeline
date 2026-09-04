@@ -1,10 +1,7 @@
 import { App, setIcon } from 'obsidian';
 import { ErtModal } from '../ui/ErtModal';
 import type { SceneInsertionPlan } from '../services/SceneInsertService';
-
-function basename(path: string): string {
-    return path.split('/').pop() ?? path;
-}
+import { basename } from '../utils/paths';
 
 export class AddSceneConfirmModal extends ErtModal {
     private phase: 'confirm' | 'running' | 'done' = 'confirm';

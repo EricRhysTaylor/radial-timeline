@@ -1,4 +1,5 @@
 import { normalizePath, type TAbstractFile, TFolder, type Vault } from 'obsidian';
+import { escapeRegExp } from './regex';
 
 export interface DraftTarget {
   destinationPath: string;
@@ -60,7 +61,7 @@ export function suggestNextDraftLabel(vault: Vault, sourceFolderPath: string): s
   if (!baseName) return 'Draft 2';
   const parentPath = getParentPath(sourcePath);
   const siblings = getAllFolders(vault).filter(folder => getParentPath(folder.path) === parentPath);
-  const escaped = baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escaped = escapeRegExp(baseName);
   const draftPattern = new RegExp(`^${escaped}\\s+—\\s+Draft\\s+(\\d+)$`, 'i');
 
   let maxSeen = 1;

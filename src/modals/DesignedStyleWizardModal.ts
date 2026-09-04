@@ -45,9 +45,10 @@ import {
 } from '../publishing/layoutVisuals';
 import type { ManuscriptSceneHeadingMode, PandocLayoutTemplate } from '../types';
 import { compactTemplatePathForStorage } from '../utils/templateImport';
-import { clearFontAvailabilityCache, getFontDiagnosticForFontKey, getPandocFolder, slugifyToFileStem } from '../utils/exportFormats';
+import { clearFontAvailabilityCache, getFontDiagnosticForFontKey, getPandocFolder } from '../utils/exportFormats';
 import { assertNever } from '../utils/assertNever';
 import { LatexPreviewModal } from './LatexPreviewModal';
+import { slugifyToFileStem } from '../utils/books';
 
 type WizardCategory =
     | 'page'

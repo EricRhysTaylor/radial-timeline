@@ -240,7 +240,7 @@ Ordered by severity, then by leverage. IDs are `CH-2026-09-04-#N`.
 - **Category:** doctrine correction
 - **Severity:** YELLOW
 - **Confidence:** High
-- **Risk:** The enforced lane tracks five rules at zero; the full config reports 313 `no-unsafe-*` hits concentrated in two files. The report-only Obsidian lane grew 342 → 573 between 2026-07-20 and 2026-09-01 (`prefer-create-el` 236 new).
+- **Risk:** The enforced lane tracks five rules at zero; the full config reports 313 `no-unsafe-*` hits concentrated in two files. The report-only Obsidian lane read 573 on 2026-09-01 (`prefer-create-el` 236) but 328 with 2 obsidianmd hits at this audit's gate run, so that spike was transient; the 328 are the same `no-unsafe-*` set as `eslint src`.
 - **Effort:** 1 day for the two hot files
 - **Evidence:** `src/SceneAnalysisCommands.ts` 62, `src/inquiry/InquiryView.ts` 58, `settings/sections/beats/dirtyState.ts` 17, `services/SubplotManagementService.ts` 15. `@ts-ignore` ×7 with no `SAFE:` (`modals/RuntimeProcessingModal.ts:326,328`, `ManuscriptOptionsModal.ts:497,499,1069,1071`, `SceneAnalysisProcessingModal.ts:1614`); 7 `as unknown as` casts and 25 `.style.` lines without `SAFE:` (`ManuscriptOptionsModal.ts:3152-3154`, `RuntimeProcessingModal.ts:169` `style.cssText =`, `AuthorProgressSection.ts:384-385, 591, 596-597`). `no-base-to-string` ×8 at `modals/OnboardingModal.ts:1076-1131` (frontmatter values stringified — real bug class). `modes/ModeDefinition.ts:226` enum comparison. `ai/localLlm/transport.ts:310, 417` `fetch` (intentional for abort; `requestUrl` fallback exists). `settings/SettingsTab.ts:48` no `getSettingDefinitions()` (settings invisible to Obsidian 1.13 search). `services/CommandRegistrar.ts:94` plugin-id in command id. `.eslintignore` deprecated warning on every run; `.eslintrc` (legacy) coexists with `eslint.config.mjs`; `.lintstagedrc` references a tool not installed.
 - **Suggested next action:** Fix the 8 `no-base-to-string` sites (real); type the frontmatter access in `SceneAnalysisCommands.ts`; annotate or remove the 7 `@ts-ignore`; delete `.eslintignore`/`.eslintrc`/`.lintstagedrc`.
@@ -275,7 +275,7 @@ Ordered by severity, then by leverage. IDs are `CH-2026-09-04-#N`.
 | CH-#11 string-SVG renderer | Intentional debt (design choice) — layering inversion is new |
 | CH-#12 CSS accretion | Chronic — drift-check ratchet flat at 186 raw-hex |
 | CH-#13 source-text tests | Chronic — pattern predates this audit |
-| CH-#14 lint | Stable on the enforced lane; report-only lane regressed 342 → 573 |
+| CH-#14 lint | Stable on the enforced lane; report-only lane back to 328 after a transient 573 on 2026-09-01 |
 | CH-#15 hygiene | New |
 
 ---

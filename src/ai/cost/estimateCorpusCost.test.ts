@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { estimateCorpusCost, estimateUsageCost } from './estimateCorpusCost';
+import { afterEach, describe, expect, it } from 'vitest';
+import { estimateCorpusCost, estimateOmnibusCostRange, estimateUsageCost } from './estimateCorpusCost';
+import { getActivePricingTable, mergeRemotePricing, resetPricingToBuiltin } from './providerPricing';
 
 /*
  * estimateCorpusCost behaviour tests.
@@ -252,19 +253,119 @@ describe('estimateCorpusCost', () => {
         expect(ratio).toBeLessThan(2.0);
     });
 
-    it('falls back gracefully when the requested TTL rate is missing', () => {
-        // GPT-5.5 has no cacheWrite1hPer1M field. Asking for 1h must not
-        // throw — fall back to whatever cache write rate is available so
-        // the estimate is always finite.
-        const result = estimateCorpusCost(
-            'openai',
-            'gpt-5.5',
-            61_600,
-            8_000,
-            1,
-            { cacheReuseRatio: 0.5, cacheWriteTtl: '1h' }
-        );
-        expect(Number.isFinite(result.freshCostUSD)).toBe(true);
-        expect(result.freshCostUSD).toBeGreaterThan(0);
+    it('prices the priming pass at the input rate for providers with no explicit cache-write rate', () => {
+        // GPT-5.5 bills the first pass as ordinary input; automatic caching
+        // has no separate write price. The TTL is irrelevant there, so asking
+        // for 1h neither throws nor changes the number.
+        const oneHour = estimateCorpusCost('openai', 'gpt-5.5', 61_600, 8_000, 1, { cacheReuseRatio: 0.5, cacheWriteTtl: '1h' });
+        const fiveMinute = estimateCorpusCost('openai', 'gpt-5.5', 61_600, 8_000, 1, { cacheReuseRatio: 0.5, cacheWriteTtl: '5m' });
+        expect(Number.isFinite(oneHour.freshCostUSD)).toBe(true);
+        expect(oneHour.freshCostUSD).toBeGreaterThan(0);
+        expect(oneHour.freshCostUSD).toBe(fiveMinute.freshCostUSD);
+    });
+});
+
+// A model that prices cache writes explicitly, but only for the 5m TTL. The
+// other TTL is ~1.6× different, so it must never be used as a stand-in.
+const FIVE_MINUTE_ONLY_MODEL = 'rt-test-write-5m-only';
+function installFiveMinuteOnlyPricing(): void {
+    mergeRemotePricing({
+        anthropic: {
+            [FIVE_MINUTE_ONLY_MODEL]: { inputPer1M: 4, outputPer1M: 20, cacheWrite5mPer1M: 5, cacheReadPer1M: 0.4 }
+        }
+    }, 'remote');
+}
+
+describe('estimateCorpusCost never substitutes one cache-write TTL rate for another', () => {
+    afterEach(() => resetPricingToBuiltin());
+
+    it('is unavailable (throws) when the run requests a TTL the table has no write rate for', () => {
+        installFiveMinuteOnlyPricing();
+        expect(() => estimateCorpusCost('anthropic', FIVE_MINUTE_ONLY_MODEL, 100_000, 1_000, 1, { cacheReuseRatio: 0.5, cacheWriteTtl: '1h' }))
+            .toThrowError(/unavailable/);
+        const fiveMinute = estimateCorpusCost('anthropic', FIVE_MINUTE_ONLY_MODEL, 100_000, 1_000, 1, { cacheReuseRatio: 0.5, cacheWriteTtl: '5m' });
+        // 50k uncached @ $4 + 50k written @ $5 + 1k output @ $20
+        expect(fiveMinute.freshCostUSD).toBeCloseTo(0.2 + 0.25 + 0.02, 10);
+    });
+
+    it('leaves actual-usage cache-creation cost undefined when tokens were written at a TTL with no rate', () => {
+        installFiveMinuteOnlyPricing();
+        const oneHourWrite = estimateUsageCost('anthropic', FIVE_MINUTE_ONLY_MODEL, {
+            inputTokens: 100_000, outputTokens: 1_000, rawInputTokens: 0,
+            cacheReadInputTokens: 0, cacheCreationInputTokens: 100_000, cacheCreation1hInputTokens: 100_000
+        });
+        expect(oneHourWrite?.cacheCreationCostUSD).toBeUndefined();
+        expect(oneHourWrite?.inputCostUSD).toBeUndefined();
+        expect(oneHourWrite?.totalCostUSD).toBeUndefined();
+        expect(oneHourWrite?.outputCostUSD).toBeCloseTo(0.02, 10);
+
+        const fiveMinuteWrite = estimateUsageCost('anthropic', FIVE_MINUTE_ONLY_MODEL, {
+            inputTokens: 100_000, outputTokens: 1_000, rawInputTokens: 0,
+            cacheReadInputTokens: 0, cacheCreationInputTokens: 100_000, cacheCreation5mInputTokens: 100_000
+        });
+        expect(fiveMinuteWrite?.cacheCreationCostUSD).toBeCloseTo(0.5, 10);
+        expect(fiveMinuteWrite?.totalCostUSD).toBeCloseTo(0.52, 10);
+    });
+
+    it('prices creation tokens with no per-TTL split at the TTL the run requested, and not at all without one', () => {
+        const pricing = getActivePricingTable().anthropic['claude-opus-4-8'];
+        const usage = { inputTokens: 10_000, outputTokens: 100, rawInputTokens: 0, cacheReadInputTokens: 0, cacheCreationInputTokens: 10_000 };
+        expect(estimateUsageCost('anthropic', 'claude-opus-4-8', usage)?.cacheCreationCostUSD).toBeUndefined();
+        expect(estimateUsageCost('anthropic', 'claude-opus-4-8', usage)?.totalCostUSD).toBeUndefined();
+        expect(estimateUsageCost('anthropic', 'claude-opus-4-8', usage, undefined, '1h')?.cacheCreationCostUSD)
+            .toBeCloseTo(0.01 * (pricing.cacheWrite1hPer1M as number), 10);
+        expect(estimateUsageCost('anthropic', 'claude-opus-4-8', usage, undefined, '5m')?.cacheCreationCostUSD)
+            .toBeCloseTo(0.01 * (pricing.cacheWrite5mPer1M as number), 10);
+        // Requested TTL with no rate in the table is still unavailable.
+        installFiveMinuteOnlyPricing();
+        expect(estimateUsageCost('anthropic', FIVE_MINUTE_ONLY_MODEL, usage, undefined, '1h')?.cacheCreationCostUSD).toBeUndefined();
+    });
+});
+
+describe('estimateOmnibusCostRange', () => {
+    afterEach(() => resetPricingToBuiltin());
+
+    it('matches the corpus-cost rate rules exactly: write once at the TTL rate, read N-1 times', () => {
+        const pricing = getActivePricingTable().anthropic['claude-opus-4-8'];
+        const range = estimateOmnibusCostRange({
+            provider: 'anthropic', modelId: 'claude-opus-4-8',
+            corpusInputTokens: 100_000, expectedOutputTokensPerQuestion: 2_000, questionCount: 6,
+            cacheWriteTtl: '1h'
+        });
+        const output = 6 * (2_000 / 1e6) * pricing.outputPer1M;
+        expect(range.uncachedUSD).toBeCloseTo(6 * 0.1 * pricing.inputPer1M + output, 10);
+        expect(range.cachedUSD).toBeCloseTo(0.1 * (pricing.cacheWrite1hPer1M as number) + 5 * 0.1 * (pricing.cacheReadPer1M as number) + output, 10);
+        expect(range.cachedUSD as number).toBeLessThan(range.uncachedUSD);
+    });
+
+    it('prices question 1 as a cache read when the cache is already warm', () => {
+        const base = { provider: 'anthropic' as const, modelId: 'claude-opus-4-8', corpusInputTokens: 100_000, expectedOutputTokensPerQuestion: 2_000, questionCount: 6, cacheWriteTtl: '1h' as const };
+        const cold = estimateOmnibusCostRange(base);
+        const warm = estimateOmnibusCostRange({ ...base, cacheAlreadyWarm: true });
+        expect(warm.uncachedUSD).toBe(cold.uncachedUSD);
+        expect(warm.cachedUSD as number).toBeLessThan(cold.cachedUSD as number);
+    });
+
+    it('omits the cached band rather than guessing when the requested TTL has no write rate', () => {
+        installFiveMinuteOnlyPricing();
+        const base = { provider: 'anthropic' as const, modelId: FIVE_MINUTE_ONLY_MODEL, corpusInputTokens: 100_000, expectedOutputTokensPerQuestion: 1_000, questionCount: 3 };
+        expect(estimateOmnibusCostRange({ ...base, cacheWriteTtl: '1h' }).cachedUSD).toBeUndefined();
+        expect(estimateOmnibusCostRange({ ...base, cacheWriteTtl: '5m' }).cachedUSD).toBeCloseTo(0.5 + 2 * 0.04 + 3 * 0.02, 10);
+        // A warm cache never writes, so the missing write rate does not matter.
+        expect(estimateOmnibusCostRange({ ...base, cacheWriteTtl: '1h', cacheAlreadyWarm: true }).cachedUSD).toBeCloseTo(3 * 0.04 + 3 * 0.02, 10);
+    });
+
+    it('prices the priming question at the input rate for providers without an explicit write rate', () => {
+        const pricing = getActivePricingTable().openai['gpt-5.5'];
+        const range = estimateOmnibusCostRange({ provider: 'openai', modelId: 'gpt-5.5', corpusInputTokens: 50_000, expectedOutputTokensPerQuestion: 1_000, questionCount: 4, cacheWriteTtl: '1h' });
+        const output = 4 * (1_000 / 1e6) * pricing.outputPer1M;
+        expect(range.cachedUSD).toBeCloseTo(0.05 * pricing.inputPer1M + 3 * 0.05 * (pricing.cacheReadPer1M as number) + output, 10);
+        expect(range.cachedUSD as number).toBeLessThan(range.uncachedUSD);
+    });
+
+    it('omits the cached band for a model with no cache-read rate at all', () => {
+        mergeRemotePricing({ openai: { 'rt-test-no-cache': { inputPer1M: 1, outputPer1M: 2 } } }, 'remote');
+        const range = estimateOmnibusCostRange({ provider: 'openai', modelId: 'rt-test-no-cache', corpusInputTokens: 1_000_000, expectedOutputTokensPerQuestion: 0, questionCount: 2 });
+        expect(range).toEqual({ uncachedUSD: 2 });
     });
 });

@@ -8,7 +8,7 @@ import { AiContextModal } from '../AiContextModal';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
 import { ERT_CLASSES } from '../../ui/classes';
 import { IMPACT_FULL } from '../SettingImpact';
-import { buildDefaultAiSettings, DECLARABLE_LOCAL_CAPABILITIES } from '../../ai/settings/aiSettings';
+import { ANTHROPIC_REQUESTED_CACHE_TTL, buildDefaultAiSettings, DECLARABLE_LOCAL_CAPABILITIES } from '../../ai/settings/aiSettings';
 import { formatProviderCacheWindowLabel } from '../../ai/settings/cacheWindows';
 import { formatGossamerCacheClock, formatGossamerCacheCostHint } from '../../gossamer/cacheWindow';
 import { validateAiSettings } from '../../ai/settings/validateAiSettings';
@@ -1422,7 +1422,7 @@ export function renderAiSection(params: {
         const extraPills: PreviewPill[] = [];
         const hasUsagePricing = !!getActivePricingTable()[context.provider]?.[context.modelId];
         const latestUsageCost = hasUsagePricing
-            ? estimateUsageCost(context.provider, context.modelId, latestSession.result.tokenUsage, latestSession.providerCacheStatus)?.totalCostUSD
+            ? estimateUsageCost(context.provider, context.modelId, latestSession.result.tokenUsage, latestSession.providerCacheStatus, ANTHROPIC_REQUESTED_CACHE_TTL)?.totalCostUSD
             : undefined;
         if (typeof latestUsageCost === 'number' && Number.isFinite(latestUsageCost)) {
             extraPills.push({
@@ -2158,7 +2158,7 @@ export function renderAiSection(params: {
                 // panel would price the priming pass at the 5m rate and
                 // under-estimate by ~33% on the first run.
                 {
-                    ...(model.provider === 'anthropic' ? { cacheWriteTtl: '1h' as const } : {}),
+                    ...(model.provider === 'anthropic' ? { cacheWriteTtl: ANTHROPIC_REQUESTED_CACHE_TTL } : {}),
                     cacheReuseRatio
                 }
             );

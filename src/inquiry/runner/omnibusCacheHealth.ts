@@ -18,7 +18,7 @@
 import type { TokenUsage } from '../../ai/usage/providerUsage';
 import type { AIProviderId } from '../../ai/types';
 import { estimateUsageCost } from '../../ai/cost/estimateCorpusCost';
-import { resolveProviderModelPricing } from '../../ai/cost/providerPricing';
+import { ANTHROPIC_REQUESTED_CACHE_TTL } from '../../ai/settings/aiSettings';
 
 export type OmnibusCacheHealth =
     /** cache_read tokens > 0 — healthy reuse (or a warm cache from a prior run). */
@@ -145,7 +145,7 @@ export function accumulateOmnibusPassCost(
     const provenance: 'hit' | 'created' = cacheReadTokens > 0 ? 'hit' : 'created';
     let cost: number | undefined;
     try {
-        cost = estimateUsageCost(provider, modelId, usage, provenance)?.totalCostUSD;
+        cost = estimateUsageCost(provider, modelId, usage, provenance, ANTHROPIC_REQUESTED_CACHE_TTL)?.totalCostUSD;
     } catch {
         cost = undefined;
     }
@@ -157,63 +157,6 @@ export function accumulateOmnibusPassCost(
         pricedPasses: acc.pricedPasses + 1,
         unpricedPasses: acc.unpricedPasses
     };
-}
-
-export interface OmnibusCostRange {
-    /** Every question re-sends the corpus at full input price (the miss case). */
-    uncachedUSD: number;
-    /**
-     * Question 1 writes the cache, questions 2..N read it (the healthy case) —
-     * or, with `cacheAlreadyWarm`, all N questions read a cache primed by a
-     * prior run inside its still-open TTL window.
-     */
-    cachedUSD?: number;
-}
-
-/**
- * Pre-run cost band for the plan modal: the healthy (cached) total vs the
- * costly (uncached) total for running `questionCount` questions against a
- * corpus of `corpusInputTokens`. Returns null when the model has no usable
- * input pricing; `cachedUSD` is omitted when the model has no cache-read rate.
- * `cacheAlreadyWarm` prices question 1 as a cache READ instead of a write —
- * the piggyback case where a recent run's provider cache window is still open.
- */
-export function estimateOmnibusCostRange(params: {
-    provider: AIProviderId;
-    modelId: string;
-    corpusInputTokens: number;
-    expectedOutputTokensPerQuestion: number;
-    questionCount: number;
-    cacheAlreadyWarm?: boolean;
-}): OmnibusCostRange | null {
-    const inputTokens = Math.max(0, Math.floor(params.corpusInputTokens));
-    const outputTokens = Math.max(0, Math.floor(params.expectedOutputTokensPerQuestion));
-    const n = Math.max(1, Math.floor(params.questionCount));
-    const pricing = resolveProviderModelPricing(params.provider, params.modelId, inputTokens);
-    const inputRate = pricing.inputPer1M;
-    const outputRate = pricing.outputPer1M;
-    if (typeof inputRate !== 'number' || !Number.isFinite(inputRate)) return null;
-
-    const perMillion = (tokens: number, rate: number | undefined): number =>
-        typeof rate === 'number' && Number.isFinite(rate) ? (tokens / 1_000_000) * rate : 0;
-
-    const outputCost = perMillion(outputTokens, outputRate) * n;
-    const uncachedInput = perMillion(inputTokens, inputRate) * n;
-    const uncachedUSD = uncachedInput + outputCost;
-
-    const cacheReadRate = pricing.cacheReadPer1M;
-    const cacheWriteRate = pricing.cacheWrite1hPer1M ?? pricing.cacheWrite5mPer1M;
-    let cachedUSD: number | undefined;
-    if (typeof cacheReadRate === 'number' && Number.isFinite(cacheReadRate)) {
-        if (params.cacheAlreadyWarm) {
-            cachedUSD = perMillion(inputTokens, cacheReadRate) * n + outputCost;
-        } else {
-            const writeInput = perMillion(inputTokens, cacheWriteRate ?? inputRate);
-            const readInput = perMillion(inputTokens, cacheReadRate) * (n - 1);
-            cachedUSD = writeInput + readInput + outputCost;
-        }
-    }
-    return { uncachedUSD, cachedUSD };
 }
 
 /**

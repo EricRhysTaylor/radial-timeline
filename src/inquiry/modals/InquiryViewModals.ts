@@ -8,7 +8,9 @@ import {
 import type { AIRunAdvancedContext } from '../../ai/types';
 import type { TokenUsage } from '../../ai/usage/providerUsage';
 import { formatExactUsdCost } from '../../ai/cost/estimateCorpusCost';
-import { estimateOmnibusCostRange, type OmnibusCacheHealth, type OmnibusCostAccumulator } from '../runner/omnibusCacheHealth';
+import { type OmnibusCacheHealth, type OmnibusCostAccumulator } from '../runner/omnibusCacheHealth';
+import { estimateOmnibusCostRange } from '../../ai/cost/estimateCorpusCost';
+import { ANTHROPIC_REQUESTED_CACHE_TTL } from '../../ai/settings/aiSettings';
 import { formatOmnibusResultAge, shouldSuggestOmnibusSkip } from '../runner/omnibusRecentResults';
 import { redactSensitiveValue } from '../../ai/credentials/redactSensitive';
 import { SIGMA_CHAR } from '../constants/inquiryUi';
@@ -590,8 +592,9 @@ export class InquiryOmnibusModal extends Modal {
             corpusInputTokens: costRange.corpusInputTokens,
             expectedOutputTokensPerQuestion: costRange.expectedOutputTokensPerQuestion,
             questionCount: effectiveQuestions,
-            cacheAlreadyWarm: costRange.cacheAlreadyWarm
-        }) ?? { uncachedUSD: costRange.uncachedUSD, cachedUSD: costRange.cachedUSD };
+            cacheAlreadyWarm: costRange.cacheAlreadyWarm,
+            cacheWriteTtl: ANTHROPIC_REQUESTED_CACHE_TTL
+        });
         const corpusTokens = Math.max(0, Math.round(costRange.corpusInputTokens)).toLocaleString();
         const reuseLabel = costRange.cacheAlreadyWarm ? 'warm — piggybacking on your recent run' : 'healthy';
         if (typeof range.cachedUSD === 'number') {

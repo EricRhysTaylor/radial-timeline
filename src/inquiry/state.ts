@@ -168,7 +168,7 @@ export interface CitationIntegritySummary {
 export function computeCitationIntegritySummary(
     result: Pick<InquiryResult, 'findings' | 'unverifiedFindings' | 'citationIntegrityWarnings'>
 ): CitationIntegritySummary {
-    const findings = result.findings || [];
+    const findings = result.findings || []; // SAFE: sessions persisted before findings became required rehydrate without the field; see InquiryView.normalizeLegacyResult
     const unverified = result.unverifiedFindings || [];
     const warnings = result.citationIntegrityWarnings || [];
     const rescuedCount = findings.filter(finding => finding.rawRef !== undefined).length;

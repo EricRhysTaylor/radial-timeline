@@ -41,7 +41,7 @@ import { AICache } from './cache';
 import { buildTelemetryEvent, emitTelemetry } from './aiTelemetry';
 import { AIRateLimiter } from './rateLimit';
 import { validateJsonResponse } from './jsonValidator';
-import { estimateInputTokens, estimateUncertaintyTokens } from '../tokens/inputTokenEstimate';
+import { estimateHeuristicInputTokens, estimateInputTokens, estimateUncertaintyTokens } from '../tokens/inputTokenEstimate';
 import { extractTokenUsage } from '../usage/providerUsage';
 import { estimateTokensFromChars } from '../estimates';
 
@@ -609,9 +609,7 @@ export class AIClient {
 
         const heuristicEstimate = Number.isFinite(request.tokenEstimateInput)
             ? Math.max(0, Math.floor(request.tokenEstimateInput as number))
-            : estimateTokens(envelope.finalPrompt) + ((evidenceDocuments || []).reduce((sum, doc) => (
-                sum + estimateTokens(doc.title || '') + estimateTokens(doc.content || '')
-            ), 0));
+            : estimateHeuristicInputTokens({ systemPrompt, userPrompt, evidenceDocuments });
         const initialSelection = provider === 'ollama'
             ? await getLocalLlmClient(this.plugin).resolveSelectionFromLiveData()
             : selectModel(this.registry.getAll(), {

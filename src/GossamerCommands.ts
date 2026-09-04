@@ -2,6 +2,7 @@
  * Gossamer Commands and State - Manual Score Entry
  */
 import type RadialTimelinePlugin from './main';
+import { ANTHROPIC_REQUESTED_CACHE_TTL } from './ai/settings/aiSettings';
 import type { RadialTimelineView } from './view/TimeLineView';
 import {
   applyGossamerRunMetadata,
@@ -1039,7 +1040,7 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
         const usage = extractTokenUsage(result.provider, result.responseData);
         const modelId = result.modelResolved || result.modelRequested;
         if (usage && modelId) {
-          const cost = estimateUsageCost(result.provider, modelId, usage, result.advancedContext?.cacheStatus);
+          const cost = estimateUsageCost(result.provider, modelId, usage, result.advancedContext?.cacheStatus, ANTHROPIC_REQUESTED_CACHE_TTL);
           if (typeof cost?.totalCostUSD === 'number' && Number.isFinite(cost.totalCostUSD)) {
             plugin.gossamerCacheWindow.lastRunCostUSD = cost.totalCostUSD;
           }

@@ -10,7 +10,7 @@ function filterEligible(models: ModelInfo[], request: ModelSelectionRequest): Mo
         .filter(model => model.provider === request.provider)
         .filter(model => model.status !== 'deprecated')
         .filter(model => hasCapabilities(model, request.requiredCapabilities))
-        .filter(model => (request.contextTokensNeeded ?? 0) <= model.contextWindow)
+        .filter(model => request.contextTokensNeeded === undefined || request.contextTokensNeeded <= model.contextWindow)
         .filter(model => (request.outputTokensNeeded ?? 0) <= model.maxOutput);
 }
 

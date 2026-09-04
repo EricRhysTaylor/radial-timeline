@@ -396,6 +396,11 @@ export interface ModelSelectionRequest {
     policy: ModelPolicy;
     requiredCapabilities: Capability[];
     accessTier?: AccessTier;
+    /**
+     * Input tokens the request will carry. Omit only when resolving a policy
+     * with no request in hand (settings, advisories); then no context-window
+     * filter applies. Dispatch must always pass the real estimate.
+     */
     contextTokensNeeded?: number;
     outputTokensNeeded?: number;
 }

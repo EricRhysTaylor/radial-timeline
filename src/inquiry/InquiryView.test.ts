@@ -419,9 +419,11 @@ describe('InquiryView payload accounting', () => {
         // The pricing call now lives in the pure module, not InquiryView.
         expect(viewSource.includes('estimateUsageCost(provider, modelId, result.tokenUsage)')).toBe(false);
         const statusSource = readFileSync(resolve(process.cwd(), 'src/inquiry/engine/inquiryCacheStatus.ts'), 'utf8');
-        // Cost pricing now threads cacheProvenance so a Gemini 'created' run is
-        // priced at the input rate, not the cache-read discount.
-        expect(statusSource.includes('estimateUsageCost(provider, modelId, result.tokenUsage, cacheProvenance)')).toBe(true);
+        // Cost pricing threads cacheProvenance (a Gemini 'created' run is priced
+        // at the input rate, not the cache-read discount) and the TTL the run
+        // requested, so creation tokens with no per-TTL split are priced at
+        // the rate actually asked for rather than a stand-in.
+        expect(statusSource.includes('estimateUsageCost(provider, modelId, result.tokenUsage, cacheProvenance, ANTHROPIC_REQUESTED_CACHE_TTL)')).toBe(true);
         expect(statusSource.includes('actualCostUSD: resolveActualUsageCostForResult(result, cacheStatus)')).toBe(true);
     });
 

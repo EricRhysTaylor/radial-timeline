@@ -338,11 +338,14 @@ export async function callAiProvider(
 
         if (!submittedAt) submittedAt = new Date();
         if (!returnedAt) returnedAt = new Date();
-        const logProvider = runResult
+        // No provider was configured and nothing ran: there is no provider to
+        // attribute the failure to, so no Pulse log entry (the Notice above
+        // already told the author). Never label it as some other provider.
+        const logProvider: PulseLogPayload['provider'] | null = runResult
             ? (runResult.provider as PulseLogPayload['provider'])
-            : ((provider === 'none' ? 'openai' : provider));
+            : (provider === 'none' ? null : provider);
 
-        if (commandContext !== 'synopsis') {
+        if (commandContext !== 'synopsis' && logProvider) {
             await writePulseLog(plugin, vault, {
                 provider: logProvider,
                 modelRequested,

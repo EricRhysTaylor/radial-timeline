@@ -15,6 +15,7 @@ import {
 import { getActivePricingTable } from './cost/providerPricing';
 import { type TokenUsage } from './usage/providerUsage';
 import { systemFolderPath } from '../utils/systemFolder';
+import { ANTHROPIC_REQUESTED_CACHE_TTL } from './settings/aiSettings';
 
 export { extractTokenUsage, type TokenUsage } from './usage/providerUsage';
 
@@ -178,7 +179,7 @@ export function buildUsageCostBreakdown(
     const pricingProvider = normalizePricingProvider(provider);
     if (!pricingProvider || !modelId) return null;
     if (!getActivePricingTable()[pricingProvider]?.[modelId]) return null;
-    return estimateUsageCost(pricingProvider, modelId, usage, cacheProvenance);
+    return estimateUsageCost(pricingProvider, modelId, usage, cacheProvenance, ANTHROPIC_REQUESTED_CACHE_TTL);
 }
 
 export interface LogCostEstimateInput {
@@ -222,7 +223,7 @@ export function formatUsageCostBreakdownLines(
                     cacheReuseRatio: estimateInput.cacheReuseRatio,
                     // Match the priming-pass TTL the run actually requested
                     // (Anthropic Inquiry runs always use 1h).
-                    ...(pricingProvider === 'anthropic' ? { cacheWriteTtl: '1h' as const } : {})
+                    ...(pricingProvider === 'anthropic' ? { cacheWriteTtl: ANTHROPIC_REQUESTED_CACHE_TTL } : {})
                 }
             );
         } catch {

@@ -113,7 +113,7 @@ import { getLastAiAdvancedContext } from '../ai/runtime/aiClient';
 // computeCaps, INPUT_TOKEN_GUARD_FACTOR: now used in inquiryReadinessBuilder.ts
 import { resolveCitationsEnabled } from '../ai/caps/computeCaps';
 import { BUILTIN_MODELS } from '../ai/registry/builtinModels';
-import { buildDefaultAiSettings } from '../ai/settings/aiSettings';
+import { ANTHROPIC_REQUESTED_CACHE_TTL, buildDefaultAiSettings } from '../ai/settings/aiSettings';
 import { validateAiSettings } from '../ai/settings/validateAiSettings';
 import type { AIProviderId, AiSettingsV1, AccessTier, RTCorpusTokenEstimate, AIRunAdvancedContext } from '../ai/types';
 import type {
@@ -211,13 +211,13 @@ import {
 import {
     estimateCorpusCost,
     formatExactUsdCost,
-    formatApproxUsdCost
+    formatApproxUsdCost,
+    estimateOmnibusCostRange
 } from '../ai/cost/estimateCorpusCost';
 import {
     accumulateOmnibusPassCost,
     buildOmnibusCacheMissMessage,
     createOmnibusCostAccumulator,
-    estimateOmnibusCostRange,
     evaluateOmnibusCachePass,
     readOmnibusCacheProbe,
     type OmnibusCostAccumulator
@@ -7534,9 +7534,9 @@ export class InquiryView extends ItemView {
             corpusInputTokens,
             expectedOutputTokensPerQuestion,
             questionCount,
-            cacheAlreadyWarm
+            cacheAlreadyWarm,
+            cacheWriteTtl: ANTHROPIC_REQUESTED_CACHE_TTL
         });
-        if (!range) return undefined;
         return {
             uncachedUSD: range.uncachedUSD,
             cachedUSD: range.cachedUSD,
@@ -11340,7 +11340,7 @@ export class InquiryView extends ItemView {
                 // Inquiry on Anthropic always primes a 1h cache; pass the
                 // matching write rate so the priming pass isn't priced as 5m.
                 {
-                    ...(engine.provider === 'anthropic' ? { cacheWriteTtl: '1h' as const } : {}),
+                    ...(engine.provider === 'anthropic' ? { cacheWriteTtl: ANTHROPIC_REQUESTED_CACHE_TTL } : {}),
                     cacheReuseRatio
                 }
             );

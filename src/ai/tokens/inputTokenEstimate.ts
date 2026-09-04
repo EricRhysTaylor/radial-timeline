@@ -65,6 +65,25 @@ export function estimateTokensFromText(text: string, charsPerToken = DEFAULT_CHA
     return estimateTokensFromChars(text.length, charsPerToken);
 }
 
+/**
+ * The chars/4 estimate for a whole request: system + user prompt plus every
+ * evidence document (title, a 4-char separator allowance, content). The one
+ * heuristic both model selection and the displayed estimate use, so the
+ * model chosen for a corpus and the size shown for it never disagree.
+ */
+export function estimateHeuristicInputTokens(params: {
+    systemPrompt?: string | null;
+    userPrompt?: string | null;
+    evidenceDocuments?: ReadonlyArray<{ title?: string; content?: string }>;
+    charsPerToken?: number;
+}): number {
+    const promptChars = (params.systemPrompt?.length ?? 0) + (params.userPrompt?.length ?? 0);
+    const evidenceChars = (params.evidenceDocuments || []).reduce((sum, doc) => (
+        sum + (doc.title?.length ?? 0) + 4 + (doc.content?.length ?? 0)
+    ), 0);
+    return estimateTokensFromChars(promptChars + evidenceChars, params.charsPerToken);
+}
+
 export function estimateUncertaintyTokens(method: TokenEstimateMethod, safeInputBudget?: number): number {
     const budget = Number.isFinite(safeInputBudget) ? Math.max(0, Math.floor(safeInputBudget as number)) : 0;
     if (method === 'anthropic_count' || method === 'google_count') {
@@ -125,15 +144,13 @@ export async function estimateInputTokens(request: EstimateInputTokensRequest): 
     // OpenAI / Ollama / 'none' have no provider count endpoint. The
     // chars/4 corpus count is the canonical metric for these providers.
     if (provider === 'openai' || provider === 'ollama' || provider === 'none') {
-        const combinedPrompt = `${request.systemPrompt || ''}${request.userPrompt || ''}`;
-        const evidenceChars = (request.evidenceDocuments || []).reduce((sum, doc) => (
-            sum + (doc.title?.length ?? 0) + 4 + (doc.content?.length ?? 0)
-        ), 0);
         return {
-            inputTokens: estimateTokensFromChars(
-                combinedPrompt.length + evidenceChars,
-                request.charsPerToken
-            ),
+            inputTokens: estimateHeuristicInputTokens({
+                systemPrompt: request.systemPrompt,
+                userPrompt: request.userPrompt,
+                evidenceDocuments: request.evidenceDocuments,
+                charsPerToken: request.charsPerToken
+            }),
             method: 'heuristic_chars',
             uncertaintyTokens: estimateUncertaintyTokens('heuristic_chars', request.safeInputBudget),
         };

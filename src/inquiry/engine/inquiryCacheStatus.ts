@@ -7,6 +7,7 @@
  * keeps thin wrappers delegating here so all call sites are unchanged.
  */
 import type { AIRunAdvancedContext, AIProviderId } from '../../ai/types';
+import { ANTHROPIC_REQUESTED_CACHE_TTL } from '../../ai/settings/aiSettings';
 import type { InquiryRunTrace } from '../runner/types';
 import type { InquiryResult } from '../state';
 import type { InquirySession } from '../sessionTypes';
@@ -88,7 +89,7 @@ export function resolveActualUsageCostForResult(
     const modelId = result.aiModelResolved || result.aiModelRequested;
     if (!modelId || !result.tokenUsage) return undefined;
     try {
-        const breakdown = estimateUsageCost(provider, modelId, result.tokenUsage, cacheProvenance);
+        const breakdown = estimateUsageCost(provider, modelId, result.tokenUsage, cacheProvenance, ANTHROPIC_REQUESTED_CACHE_TTL);
         return typeof breakdown?.totalCostUSD === 'number' && Number.isFinite(breakdown.totalCostUSD)
             ? breakdown.totalCostUSD
             : undefined;

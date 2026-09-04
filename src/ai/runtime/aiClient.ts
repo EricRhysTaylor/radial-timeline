@@ -424,28 +424,15 @@ export class AIClient {
         return this.providerSnapshot;
     }
 
+    /**
+     * Pricing is model data like the provider snapshot: the same privacy
+     * consent gates its fetch. With consent off, built-in (bundled) pricing is
+     * used and nothing leaves the machine.
+     */
     async refreshPricing(): Promise<RemotePricingLoadResult> {
         const result = await loadRemotePricing({
-            enabled: true,
+            enabled: this.isProviderSnapshotAllowed(),
             url: DEFAULT_REMOTE_PRICING_URL,
-            readCache: async () => this.plugin.settings.aiPricingCacheJson ?? null,
-            writeCache: async (content: string) => {
-                this.plugin.settings.aiPricingCacheJson = content;
-                await this.plugin.saveSettings();
-            }
-        });
-        if (result.table) {
-            mergeRemotePricing(result.table, result.source, result.fetchedAt);
-        }
-        this.pricingReady = true;
-        return result;
-    }
-
-    async refreshPricingNow(): Promise<RemotePricingLoadResult> {
-        const result = await loadRemotePricing({
-            enabled: true,
-            url: DEFAULT_REMOTE_PRICING_URL,
-            ttlMs: 0,
             readCache: async () => this.plugin.settings.aiPricingCacheJson ?? null,
             writeCache: async (content: string) => {
                 this.plugin.settings.aiPricingCacheJson = content;

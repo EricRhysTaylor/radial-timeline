@@ -217,6 +217,66 @@ describe('Community Share mutators write against live state, not a pre-await sna
     });
 });
 
+describe('Community Share checks the live state right before each request leaves', () => {
+    it('refuses to publish when a Pause lands while the preview is building', async () => {
+        const harness = createPluginHarness();
+        const { plugin } = harness;
+        vi.clearAllMocks();
+        await armReadyToPublish(harness);
+        const request = vi.spyOn(obsidian, 'requestUrl');
+        const realBuild = (await vi.importActual<typeof import('./communitySharePreview')>('./communitySharePreview')).buildCommunitySharePreview;
+        vi.mocked(buildCommunitySharePreview).mockImplementationOnce(async (p) => {
+            const preview = await realBuild(p);
+            await pauseCommunitySharing(plugin as never);
+            return preview;
+        });
+
+        await expect(publishCommunityShareReport(plugin as never)).rejects.toMatchObject({ code: 'sharing_paused' });
+        expect(request).not.toHaveBeenCalled();
+        expect(plugin.settings.communityShare.sharingPaused).toBe(true);
+    });
+
+    it('does not send daily aggregates when a disconnect lands while they are being built', async () => {
+        const harness = createPluginHarness();
+        const { plugin } = harness;
+        vi.clearAllMocks();
+        await armReadyToPublish(harness, 4);
+        const request = vi.spyOn(obsidian, 'requestUrl');
+        const service = plugin.getWritingSessionService();
+        (plugin as { getWritingSessionService: unknown }).getWritingSessionService = () => ({
+            ...service,
+            // The aggregate build reads the session records; a disconnect lands mid-read.
+            getSettings: () => {
+                plugin.settings.communityShare.connection.status = 'disconnected';
+                return { records: [] };
+            }
+        });
+
+        await syncCommunityDailyIfEligible(plugin as never);
+
+        expect(request).not.toHaveBeenCalled();
+    });
+
+    it('refuses a project sync when the vault was disconnected while the secret was being read', async () => {
+        const harness = createPluginHarness();
+        const { plugin, secrets } = harness;
+        vi.clearAllMocks();
+        await armReadyToPublish(harness);
+        const request = vi.spyOn(obsidian, 'requestUrl');
+        const storage = plugin.app.secretStorage;
+        const realGet = storage.getSecret;
+        storage.getSecret = (id: string) => {
+            // A concurrent disconnect cleared local state before the secret came back.
+            plugin.settings.communityShare.connection.status = 'disconnected';
+            return realGet.call(storage, id);
+        };
+        expect(secrets.has('rt-community-share-connection-secret')).toBe(true);
+
+        await expect(syncCommunityProjects(plugin as never)).rejects.toMatchObject({ code: 'connection_required' });
+        expect(request).not.toHaveBeenCalled();
+    });
+});
+
 describe('Community Share activation client', () => {
     it('confirms activation with only a hashed installation id and stores the returned secret privately', async () => {
         const { plugin, secrets } = createPluginHarness();

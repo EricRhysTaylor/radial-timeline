@@ -301,6 +301,7 @@ export async function publishCommunityShareReport(
     if (preview.previewHash !== current.preview.previewHash || preview.payloadHash !== current.preview.payloadHash) {
         throw new CommunityShareError('preview_stale', 'The complete preview is out of date. Reopen the sharing settings to refresh it, then try again.');
     }
+    assertStillSendable(plugin);
 
     const response = await requestUrl({
         url: `${FUNCTIONS_BASE_URL}/community-share-publish`,
@@ -424,6 +425,31 @@ function isCommunityShareContext(value: unknown): value is CommunityShareContext
     return !!v && v.ok === true && Array.isArray(v.projects);
 }
 
+/**
+ * Whether the LIVE settings still permit a request to leave. Every sender
+ * awaits (secret storage, preview or aggregate builds) between its gate and
+ * its send, and Pause or Disconnect can land in that window. A disconnect
+ * clears local state even when the server call fails, so a secret fetched
+ * before it must not be usable after it. Checked immediately before each
+ * `requestUrl`; `allowPaused` is for author actions that must work while
+ * paused (revoke) and for read-only lookups.
+ */
+function isStillSendable(live: CommunityShareSettings, allowPaused = false): boolean {
+    if (!live.enabled || live.connection.status !== 'connected' || !live.connection.connectionId) return false;
+    if (!allowPaused && live.sharingPaused) return false;
+    return true;
+}
+
+function assertStillSendable(plugin: RadialTimelinePlugin, allowPaused = false): void {
+    const live = normalizeCommunityShareSettings(plugin.settings.communityShare);
+    if (!live.enabled || live.connection.status !== 'connected' || !live.connection.connectionId) {
+        throw new CommunityShareError('connection_required', 'Community Share was disconnected before the request could be sent.');
+    }
+    if (!allowPaused && live.sharingPaused) {
+        throw new CommunityShareError('sharing_paused', 'Sharing was paused before the request could be sent.');
+    }
+}
+
 async function requireActiveConnection(plugin: RadialTimelinePlugin): Promise<{
     connectionId: string;
     projectId: string;
@@ -473,6 +499,7 @@ export async function uploadAprToCommunity(
     if (!bookKey) {
         throw new CommunityShareError('project_mapping_required', 'Choose a campaign book before sending its APR to Community.');
     }
+    assertStillSendable(plugin);
 
     const response = await requestUrl({
         url: `${FUNCTIONS_BASE_URL}/community-apr-upload`,
@@ -515,6 +542,7 @@ export async function uploadAprToCommunity(
  */
 export async function fetchCommunityShareContext(plugin: RadialTimelinePlugin): Promise<CommunityShareContext> {
     const { connectionId, currentSecret } = await requireActiveConnection(plugin);
+    assertStillSendable(plugin, true);
 
     const response = await requestUrl({
         url: `${FUNCTIONS_BASE_URL}/community-share-context`,
@@ -562,6 +590,7 @@ export async function syncCommunityProjects(plugin: RadialTimelinePlugin): Promi
     const targetDate = (value?: string): string | null =>
         value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
     const activeBookId = plugin.settings.activeBookId;
+    assertStillSendable(plugin);
 
     const response = await requestUrl({
         url: `${FUNCTIONS_BASE_URL}/community-project-sync`,
@@ -758,8 +787,9 @@ export async function syncCommunityDailyIfEligible(plugin: RadialTimelinePlugin)
         // companion rollup of the identical session store, not a separately
         // gated field. Optional on the wire: the server accepts its absence.
         const hourModeMix = await buildCommunityHourModeMixEntries(plugin);
-        // Pause is a hard freeze: honour one that landed while the aggregates were building.
-        if (normalizeCommunityShareSettings(plugin.settings.communityShare).sharingPaused) return;
+        // Pause is a hard freeze and a disconnect revokes the secret we hold:
+        // honour either if it landed while the aggregates were building.
+        if (!isStillSendable(normalizeCommunityShareSettings(plugin.settings.communityShare))) return;
 
         const response = await requestUrl({
             url: `${FUNCTIONS_BASE_URL}/community-daily-sync`,
@@ -916,6 +946,7 @@ export async function revokeCommunityShareReport(plugin: RadialTimelinePlugin): 
     const publishId = latestPublishId(current);
     if (!publishId) throw new CommunityShareError('publish_required', 'Publish a report before revoking it.');
     const secret = await getConnectedSecret(plugin, current);
+    assertStillSendable(plugin, true);
     const result = await callReportAction(plugin, 'community-share-revoke', {
         publish_id: publishId,
         current_secret: secret
@@ -1047,6 +1078,7 @@ export async function postSessionToCommunityFeed(
         throw new CommunityShareError('sharing_level_required', 'Posting to the community feed requires Level 3 (writing activity).');
     }
     const secret = await getConnectedSecret(plugin, current);
+    assertStillSendable(plugin);
     const response = await requestUrl({
         url: `${FUNCTIONS_BASE_URL}/community-session-post`,
         method: 'POST',

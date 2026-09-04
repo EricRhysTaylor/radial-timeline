@@ -151,6 +151,25 @@ export class RadialTimelineView extends ItemView {
             this.renderScopeComponent = null;
         }
     }
+
+    // The writing-session panel is emptied and rebuilt on every state change
+    // (start, pause, idle, save). Its controls' listeners live exactly as long
+    // as that build, not as long as the view.
+    private sessionPanelScopeComponent: Component | null = null;
+
+    private get sessionPanelScope(): Component {
+        if (!this.sessionPanelScopeComponent) {
+            this.sessionPanelScopeComponent = this.addChild(new Component());
+        }
+        return this.sessionPanelScopeComponent;
+    }
+
+    private resetSessionPanelScope(): void {
+        if (this.sessionPanelScopeComponent) {
+            this.removeChild(this.sessionPanelScopeComponent);
+            this.sessionPanelScopeComponent = null;
+        }
+    }
     
     // Change detection snapshot for optimizing renders
     private lastSnapshot: TimelineSnapshot | null = null;
@@ -1466,7 +1485,7 @@ export class RadialTimelineView extends ItemView {
 
     private isolateSessionPanelControl(control: HTMLElement): void {
         (['keydown', 'keypress', 'keyup'] as const).forEach(eventName => {
-            this.registerDomEvent(control, eventName, event => {
+            this.sessionPanelScope.registerDomEvent(control, eventName, event => {
                 event.stopPropagation();
             });
         });
@@ -1511,6 +1530,7 @@ export class RadialTimelineView extends ItemView {
     private renderWritingSessionPanel(): void {
         const panel = this.writingSessionPanel;
         if (!panel) return;
+        this.resetSessionPanelScope();
         panel.empty();
 
         const service = this.plugin.getWritingSessionService();
@@ -1719,7 +1739,7 @@ export class RadialTimelineView extends ItemView {
         });
         modeSelect.value = defaultMode;
         this.isolateSessionPanelControl(modeSelect);
-        this.registerDomEvent(modeSelect, 'change', () => {
+        this.sessionPanelScope.registerDomEvent(modeSelect, 'change', () => {
             const mode = (modeSelect.value as WritingSessionMode) || 'drafting';
             if (mode === 'drafting') {
                 stageSelect.value = 'Zero';
@@ -1750,7 +1770,7 @@ export class RadialTimelineView extends ItemView {
         });
         stageSelect.value = defaultStage;
         this.isolateSessionPanelControl(stageSelect);
-        this.registerDomEvent(stageSelect, 'change', () => {
+        this.sessionPanelScope.registerDomEvent(stageSelect, 'change', () => {
             const stage = (stageSelect.value as WritingSessionStagePreference) || 'auto';
             updateIdleMeta();
             void service.setDefaultStage(stage).catch(error => {
@@ -1781,14 +1801,14 @@ export class RadialTimelineView extends ItemView {
             updateIdleMeta();
         };
 
-        this.registerDomEvent(targetModeSelect, 'change', () => {
+        this.sessionPanelScope.registerDomEvent(targetModeSelect, 'change', () => {
             syncTargetControls();
             void service.setDefaultTargetMode((targetModeSelect.value as WritingSessionTargetMode) || 'time').catch(error => {
                 new Notice(error instanceof Error ? error.message : 'Could not save writing session target.');
             });
         });
-        this.registerDomEvent(goalInput, 'change', updateIdleMeta);
-        this.registerDomEvent(wordGoalInput, 'change', updateIdleMeta);
+        this.sessionPanelScope.registerDomEvent(goalInput, 'change', updateIdleMeta);
+        this.sessionPanelScope.registerDomEvent(wordGoalInput, 'change', updateIdleMeta);
 
         countdownToggle.onchange = () => {
             syncTargetControls();
@@ -1797,13 +1817,13 @@ export class RadialTimelineView extends ItemView {
             });
         };
         syncTargetControls();
-        this.registerDomEvent(goalInput, 'keydown', (event: KeyboardEvent) => {
+        this.sessionPanelScope.registerDomEvent(goalInput, 'keydown', (event: KeyboardEvent) => {
             if (event.key !== 'Enter') return;
             event.preventDefault();
             event.stopPropagation();
             void startSession();
         });
-        this.registerDomEvent(wordGoalInput, 'keydown', (event: KeyboardEvent) => {
+        this.sessionPanelScope.registerDomEvent(wordGoalInput, 'keydown', (event: KeyboardEvent) => {
             if (event.key !== 'Enter') return;
             event.preventDefault();
             event.stopPropagation();
@@ -3516,11 +3536,11 @@ export class RadialTimelineView extends ItemView {
             event.stopPropagation();
         };
 
-        this.registerDomEvent(panel, 'click', stopRunsEvent);
-        this.registerDomEvent(panel, 'mousedown', stopRunsEvent);
-        this.registerDomEvent(panel, 'mouseup', stopRunsEvent);
-        this.registerDomEvent(panel, 'pointerdown', stopRunsEvent);
-        this.registerDomEvent(panel, 'pointerup', stopRunsEvent);
+        this.renderScope.registerDomEvent(panel, 'click', stopRunsEvent);
+        this.renderScope.registerDomEvent(panel, 'mousedown', stopRunsEvent);
+        this.renderScope.registerDomEvent(panel, 'mouseup', stopRunsEvent);
+        this.renderScope.registerDomEvent(panel, 'pointerdown', stopRunsEvent);
+        this.renderScope.registerDomEvent(panel, 'pointerup', stopRunsEvent);
 
         // Pill click: binary toggle — latest-only vs show-all.
         const togglePillMode = (event: Event) => {
@@ -3531,8 +3551,8 @@ export class RadialTimelineView extends ItemView {
             void this.plugin.saveGossamerRunFilterState();
             schedulePanelRefresh();
         };
-        this.registerDomEvent(button, 'click', togglePillMode);
-        this.registerDomEvent(button, 'keydown', (event: KeyboardEvent) => {
+        this.renderScope.registerDomEvent(button, 'click', togglePillMode);
+        this.renderScope.registerDomEvent(button, 'keydown', (event: KeyboardEvent) => {
             if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();
                 togglePillMode(event);
@@ -3541,7 +3561,7 @@ export class RadialTimelineView extends ItemView {
 
         // Signal selector click: switch the plotted signal.
         signalButtons.forEach(({ el, signal }) => {
-            this.registerDomEvent(el, 'click', (event) => {
+            this.renderScope.registerDomEvent(el, 'click', (event) => {
                 event.stopPropagation();
                 if (this.plugin.gossamerSelectedSignal === signal) return;
                 this.plugin.gossamerSelectedSignal = signal;
@@ -3551,8 +3571,8 @@ export class RadialTimelineView extends ItemView {
                 void this.plugin.saveGossamerRunFilterState();
                 schedulePanelRefresh();
             });
-            this.registerDomEvent(el, 'mousedown', stopRunsEvent);
-            this.registerDomEvent(el, 'pointerdown', stopRunsEvent);
+            this.renderScope.registerDomEvent(el, 'mousedown', stopRunsEvent);
+            this.renderScope.registerDomEvent(el, 'pointerdown', stopRunsEvent);
         });
 
         foreignObject.appendChild(panel);
@@ -3590,13 +3610,13 @@ export class RadialTimelineView extends ItemView {
             event.stopPropagation();
         };
 
-        this.registerDomEvent(row, 'click', stopRunsEvent);
-        this.registerDomEvent(row, 'mousedown', stopRunsEvent);
-        this.registerDomEvent(row, 'mouseup', stopRunsEvent);
-        this.registerDomEvent(row, 'pointerdown', stopRunsEvent);
-        this.registerDomEvent(row, 'pointerup', stopRunsEvent);
+        this.renderScope.registerDomEvent(row, 'click', stopRunsEvent);
+        this.renderScope.registerDomEvent(row, 'mousedown', stopRunsEvent);
+        this.renderScope.registerDomEvent(row, 'mouseup', stopRunsEvent);
+        this.renderScope.registerDomEvent(row, 'pointerdown', stopRunsEvent);
+        this.renderScope.registerDomEvent(row, 'pointerup', stopRunsEvent);
 
-        this.registerDomEvent(checkbox, 'change', (event) => {
+        this.renderScope.registerDomEvent(checkbox, 'change', (event) => {
             event.stopPropagation();
             const allIds = this.plugin.gossamerRunInventory.map((run) => run.id);
             const latestIds = this.plugin.gossamerRunInventory.filter((run) => run.isLatest).map((run) => run.id);
@@ -3622,11 +3642,11 @@ export class RadialTimelineView extends ItemView {
             void this.plugin.saveGossamerRunFilterState();
             schedulePanelRefresh();
         });
-        this.registerDomEvent(checkbox, 'click', stopRunsEvent);
-        this.registerDomEvent(checkbox, 'mousedown', stopRunsEvent);
-        this.registerDomEvent(checkbox, 'mouseup', stopRunsEvent);
-        this.registerDomEvent(checkbox, 'pointerdown', stopRunsEvent);
-        this.registerDomEvent(checkbox, 'pointerup', stopRunsEvent);
+        this.renderScope.registerDomEvent(checkbox, 'click', stopRunsEvent);
+        this.renderScope.registerDomEvent(checkbox, 'mousedown', stopRunsEvent);
+        this.renderScope.registerDomEvent(checkbox, 'mouseup', stopRunsEvent);
+        this.renderScope.registerDomEvent(checkbox, 'pointerdown', stopRunsEvent);
+        this.renderScope.registerDomEvent(checkbox, 'pointerup', stopRunsEvent);
 
         return row;
     }

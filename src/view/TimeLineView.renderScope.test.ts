@@ -65,6 +65,23 @@ describe('RadialTimelineView render scope', () => {
         expect(staleCleanup).toHaveBeenCalledTimes(1);
     });
 
+    it('keeps a separate scope for the writing-session panel that resets when the panel is rebuilt', () => {
+        const view = makeView();
+        const panelCleanup = vi.fn();
+        const renderCleanup = vi.fn();
+        const v = view as unknown as { sessionPanelScope: Component; resetSessionPanelScope: () => void }; // SAFE: exercising the private panel scope the panel renderer resets
+        v.sessionPanelScope.register(panelCleanup);
+        view.renderScope.register(renderCleanup);
+
+        v.resetSessionPanelScope();
+        expect(panelCleanup).toHaveBeenCalledTimes(1);
+        // A panel rebuild must not tear down the SVG's listeners, and vice versa.
+        expect(renderCleanup).not.toHaveBeenCalled();
+        resetRenderScope(view);
+        expect(renderCleanup).toHaveBeenCalledTimes(1);
+        expect(panelCleanup).toHaveBeenCalledTimes(1);
+    });
+
     it('unloads the current scope with the view', () => {
         const view = makeView();
         const cleanup = vi.fn();

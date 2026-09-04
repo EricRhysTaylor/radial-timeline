@@ -3159,7 +3159,6 @@
   transition: opacity 0.15s ease;
 }
 
-.vertical-tab-content:has(.ert-settings-root),
 .vertical-tab-content.ert-settings-scroll-host {
   scrollbar-gutter: stable;
 }
@@ -3235,7 +3234,7 @@
   100% { border-color: color-mix(in srgb, var(--background-modifier-border) 100%, transparent); }
 }
 
-.ert-ui.ert-scope--settings .ert-ai-grid-item:has(.ert-ai-strategy-select.is-ready) {
+.ert-ui.ert-scope--settings .ert-ai-grid-item.is-strategy-ready {
   animation: ert-border-flash-green 1.2s ease-out forwards;
 }
 
@@ -6312,8 +6311,7 @@
   flex-wrap: wrap;
 }
 
-.ert-ui.ert-scope--modal.ert-modal-shell.modal:has(.ert-search-modal),
-.ert-ui.ert-scope--modal .ert-modal-shell.modal:has(.ert-search-modal) {
+.ert-ui.ert-scope--modal.ert-modal-shell.ert-modal--search {
   width: min(600px, 90vw);
 }
 
@@ -6325,7 +6323,7 @@
 }
 
 /* Min-height only applies when the modal hosts a scrollable results panel */
-.ert-ui.ert-scope--modal .ert-search-modal:has(.ert-template-search-results) {
+.ert-ui.ert-scope--modal .ert-search-modal.ert-search-modal--with-results {
   min-height: 360px;
 }
 
@@ -8354,14 +8352,10 @@
   padding-bottom: var(--ert-gap-xs);
 }
 
-/* -- Desc container tweaks when visual is present -- */
+/* -- Desc container tweaks when it hosts a layout visual or imported summary
+   (PublishSection stamps the modifier where it renders them) -- */
 
-.ert-ui.ert-scope--settings .ert-layout-row-desc:has(.ert-layout-visual) {
-  line-height: normal;
-  padding-top: 2px;
-}
-
-.ert-ui.ert-scope--settings .ert-layout-row-desc:has(.ert-layout-imported) {
+.ert-ui.ert-scope--settings .ert-layout-row-desc.ert-layout-row-desc--rich {
   line-height: normal;
   padding-top: 2px;
 }

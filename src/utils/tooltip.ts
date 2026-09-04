@@ -525,7 +525,8 @@ function showCustomTooltip(
     // elements so the title can be all-caps and the body justified. Plain
     // tooltips fall back to setText unchanged.
     const paragraphs = text.split(/\n{2,}/);
-    if (paragraphs.length >= 2) {
+    const hasTitle = paragraphs.length >= 2;
+    if (hasTitle) {
         customTooltipEl.empty();
         const title = paragraphs[0].replace(/\n/g, ' ').trim();
         const body = paragraphs.slice(1).join(' ').replace(/\n/g, ' ').trim();
@@ -537,6 +538,7 @@ function showCustomTooltip(
 
     // Reset classes and position before measuring to avoid shrink-to-fit from the previous location.
     customTooltipEl.className = 'rt-tooltip'; // reset placement classes
+    if (hasTitle) customTooltipEl.classList.add('rt-tooltip--titled');
     customTooltipEl.style.removeProperty('--rt-tooltip-tone-color');
     const tone = target.getAttribute(RT_TOOLTIP_TONE_ATTR);
     if (tone) {

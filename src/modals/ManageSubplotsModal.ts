@@ -31,7 +31,7 @@ export class ManageSubplotsModal extends Modal {
         contentEl.empty();
         
         // Apply generic modal shell + modal-specific class
-        modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell');
+        modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal--manage-subplots');
         contentEl.addClass('ert-modal-container', 'ert-stack', 'ert-manage-subplots-modal');
 
         // Hero Section (generic header)

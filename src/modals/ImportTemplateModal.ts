@@ -29,10 +29,10 @@ class TemplateFileSuggestModal extends SuggestModal<TFile> {
 
     onOpen(): void {
         void super.onOpen();
-        this.modalEl.addClass('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal-shell--md', 'ert-modal--template-pack');
+        this.modalEl.addClass('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal-shell--md', 'ert-modal--template-pack', 'ert-modal--search');
         this.modalEl.removeClass('is-ui-settled');
         scheduleClassAfterPaint(this.modalEl, 'is-ui-settled');
-        this.contentEl.addClass('ert-modal-container', 'ert-search-modal', 'ert-stack', 'ert-template-search-modal');
+        this.contentEl.addClass('ert-modal-container', 'ert-search-modal', 'ert-search-modal--with-results', 'ert-stack', 'ert-template-search-modal');
         this.resultContainerEl.addClass('ert-template-search-results');
         this.setPlaceholder('Search LaTeX templates');
         scheduleFocusAfterPaint(this.inputEl, { selectText: true });

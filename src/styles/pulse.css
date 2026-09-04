@@ -2121,7 +2121,7 @@
 /* When the icon is inline (inside the title row), suppress the legacy
    left-rail sibling alignment on the parent panel so content can use the
    full horizontal space. */
-.ert-manuscript-template-warning:has(.ert-warning-icon--inline) > .ert-pdf-output-text {
+.ert-manuscript-template-warning.ert-pdf-output-summary--inline-icon > .ert-pdf-output-text {
   flex: 1 1 100%;
   min-width: 0;
 }
@@ -2324,7 +2324,7 @@ body > .tooltip {
   color: var(--text-normal);
 }
 
-.rt-tooltip:has(.rt-tooltip__title) {
+.rt-tooltip.rt-tooltip--titled {
   padding: 9px 12px;
   text-align: left;
   white-space: normal;

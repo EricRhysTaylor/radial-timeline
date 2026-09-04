@@ -2296,6 +2296,9 @@ export class ManuscriptOptionsModal extends Modal {
         // ── Render ───────────────────────────────────────────────────
         this.templateWarningEl.addClass('ert-pdf-output-summary');
         this.templateWarningEl.addClass('ert-pdf-output-summary--compact');
+        // Both branches below put the icon inline in the title row; the panel
+        // modifier lets pulse.css widen the content block without :has().
+        this.templateWarningEl.addClass('ert-pdf-output-summary--inline-icon');
         if (isReady) {
             this.templateWarningEl.addClass('ert-pdf-output-summary--ready');
         }

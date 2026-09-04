@@ -54,27 +54,6 @@
   justify-content: flex-end;
 }
 
-/* When a row has both chips and another control (e.g. a toggle),
-   stack the right side: chips on top (aligned with title), control
-   below. Top-align the whole row so chips sit on the title line.
-   Only applies when controlEl has more than just chips — info-only
-   rows (chips alone) are unaffected. */
-.ert-settingRow:has(.ert-control--with-chips > *:not(.ert-path-chips)) {
-  align-items: flex-start;
-}
-
-.ert-control--with-chips:has(> *:not(.ert-path-chips)) {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: var(--ert-gap-sm);
-}
-
-.ert-control--with-chips:has(> *:not(.ert-path-chips)) > * {
-  align-self: flex-end;
-  margin-left: auto;
-}
-
 .ert-path-chip {
   display: inline-flex;
   align-items: center;

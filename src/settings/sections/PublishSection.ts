@@ -2571,6 +2571,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             }
 
             if (useVisual && s.descEl) {
+                s.descEl.addClass('ert-layout-row-desc--rich');
                 buildLayoutVisual(s.descEl, variant, {
                     layoutId: layout.id,
                     layout,
@@ -2590,6 +2591,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                         : undefined
                 });
             } else if (isImported && s.descEl) {
+                s.descEl.addClass('ert-layout-row-desc--rich');
                 renderImportedLayoutSummary(s.descEl, layout);
             } else {
                 s.setDesc(buildLayoutDescription(layout));

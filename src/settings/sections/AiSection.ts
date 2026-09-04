@@ -994,6 +994,9 @@ export function renderAiSection(params: {
         }
 
         selectEl.removeClass('is-ready', 'is-warning', 'is-muted');
+        // The grid card flashes green on readiness; mirror the state onto it so
+        // rt-ui.css needs no :has() lookup into the select.
+        selectEl.closest('.ert-ai-grid-item')?.classList.toggle('is-strategy-ready', selectedState === 'ready');
         if (selectedState === 'ready') {
             selectEl.addClass('is-ready');
         } else if (selectedState === 'not_configured' || selectedState === 'rejected' || selectedState === 'network_blocked') {

@@ -255,7 +255,7 @@
   color: var(--text-normal);
 }
 
-.ert-modal-shell.modal:has(.ert-manage-subplots-modal) {
+.ert-modal-shell.ert-modal--manage-subplots {
   width: min(700px, 90vw);
   max-height: calc(92vh - 100px);
 }

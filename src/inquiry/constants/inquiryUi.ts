@@ -1,5 +1,4 @@
 import type { Capability } from '../../ai/types';
-import { t } from '../../i18n';
 
 export const INQUIRY_CONTEXT_CLASSES = new Set(['character', 'place', 'power']);
 
@@ -52,15 +51,6 @@ export const INQUIRY_VIEW_LIMITS = {
 export const INQUIRY_VIEW_LINKS = {
     guidanceDocUrl: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Inquiry'
 } as const;
-
-export const getInquiryHelpTooltip = (): string => t('inquiry.help.tooltip');
-export const getInquiryHelpConfigTooltip = (): string => t('inquiry.help.configTooltip');
-export const getInquiryHelpNoScenesTooltip = (): string => t('inquiry.help.noScenesTooltip');
-export const getInquiryHelpCorpusTooltip = (): string => t('inquiry.help.corpusTooltip');
-export const getInquiryHelpResultsTooltip = (): string => t('inquiry.help.resultsTooltip');
-export const getInquiryHelpRunningTooltip = (): string => t('inquiry.help.runningTooltip');
-export const getInquiryHelpRunningSingleTooltip = (): string => t('inquiry.help.runningSingleTooltip');
-export const getInquiryHelpOnboardingTooltip = (): string => t('inquiry.help.onboardingTooltip');
 
 export const INQUIRY_REQUIRED_CAPABILITIES: Capability[] = ['longContext', 'jsonStrict', 'reasoningStrong', 'highOutputCap'];
 

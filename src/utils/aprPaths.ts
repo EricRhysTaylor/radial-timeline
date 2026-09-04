@@ -2,8 +2,6 @@ import { systemFolderPath } from './systemFolder';
 
 export type AprSize = 'small' | 'medium' | 'large';
 export type AprFrequency = 'manual' | 'daily' | 'weekly' | 'monthly';
-/** Legacy v1 path tokens kept here ONLY for matching pre-v6 export filenames. Not a valid AprSize. */
-type LegacyAprSizeToken = 'thumb' | 'small' | 'medium' | 'large';
 export type AprExportFormat = 'png' | 'svg';
 export type AprExportQuality = 'standard' | 'ultra' | 'print';
 
@@ -62,40 +60,6 @@ export function normalizeAprExportFormat(value: unknown): AprExportFormat {
 
 /** APR artwork root — the Social subfolder of the canonical system folder. */
 const SOCIAL_ROOT = systemFolderPath('Social');
-
-/** Legacy size tokens used in v1 paths (kept for backward-compat path matching only). */
-const LEGACY_SIZES: LegacyAprSizeToken[] = ['thumb', 'small', 'medium', 'large'];
-const QUALITY_TOKENS: AprExportQuality[] = ['standard', 'ultra', 'print'];
-
-/**
- * Returns true if the path is a default/core APR path for the given book and mode.
- * Matches both v2 (quality-based) and legacy v1 (size-based) formats.
- */
-export function isDefaultEmbedPath(path: string | undefined, options: { bookTitle?: string; updateFrequency?: AprFrequency }): boolean {
-    if (!path?.trim()) return false;
-    const bookSlug = slugify(options.bookTitle, 'book');
-    const mode = formatAprMode(options.updateFrequency);
-    const prefix = `${SOCIAL_ROOT}/${bookSlug}/`;
-    if (!path.startsWith(prefix)) return false;
-    const filename = path.slice(prefix.length);
-    for (const format of EXPORT_FORMATS) {
-        // v2: quality-based
-        for (const q of QUALITY_TOKENS) {
-            if (filename === `apr-default-${mode}-${q}.${format}`) return true;
-        }
-        // Legacy v1: size-based (apr- prefix)
-        for (const size of LEGACY_SIZES) {
-            if (filename === `apr-default-${mode}-${size}.${format}`) return true;
-            if (filename === `apr-${bookSlug}-default-${mode}-${size}.${format}`) return true;
-        }
-        // Legacy v0: social- prefix
-        for (const size of LEGACY_SIZES) {
-            if (filename === `social-default-${mode}-${size}.${format}`) return true;
-            if (filename === `social-${bookSlug}-default-${mode}-${size}.${format}`) return true;
-        }
-    }
-    return false;
-}
 
 /**
  * Builds the embed path for the default/core APR report.

@@ -76,12 +76,6 @@ class ConfirmationModal extends Modal {
     }
 }
 
-export interface ProcessingOptions {
-    mode: ProcessingMode;
-    sceneCount: number;
-    estimatedMinutes: number;
-}
-
 /**
  * Modal for confirming and showing progress of scene analysis processing
  */

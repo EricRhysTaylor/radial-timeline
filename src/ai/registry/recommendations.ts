@@ -99,28 +99,6 @@ export function getAvailabilityIconName(status: AvailabilityStatus): string {
     return 'help-circle';
 }
 
-export interface CurrentResolvedModelRef {
-    provider: AIProviderId;
-    alias?: string;
-    modelId?: string;
-    availabilityStatus?: AvailabilityStatus;
-}
-
-export function getRecommendationComparisonTag(
-    row: RecommendationRow,
-    current: CurrentResolvedModelRef | null
-): 'Using this now' | 'Different from current' | null {
-    if (!row.model || !current) return null;
-    if (current.availabilityStatus && current.availabilityStatus !== 'visible') return null;
-
-    const aliasMatch = Boolean(current.alias && row.model.alias && current.alias === row.model.alias);
-    const keyMatch = row.model.provider === current.provider
-        && Boolean(current.modelId && row.model.providerModelId === current.modelId);
-
-    if (aliasMatch || keyMatch) return 'Using this now';
-    return 'Different from current';
-}
-
 export function computeRecommendedPicks(input: {
     models: MergedModelInfo[];
     aiSettings: AiSettingsV1;

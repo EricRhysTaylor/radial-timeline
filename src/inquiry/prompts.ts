@@ -106,11 +106,6 @@ const buildDetachedCustomSlot = (
     };
 };
 
-export const createCanonicalPromptSlot = (
-    canonical: InquiryCanonicalQuestionDefinition,
-    overrides: Partial<InquiryPromptSlot> = {}
-): InquiryPromptSlot => buildCanonicalSlot(canonical, overrides);
-
 export const createCanonicalPromptSlotById = (
     canonicalId: string,
     overrides: Partial<InquiryPromptSlot> = {}

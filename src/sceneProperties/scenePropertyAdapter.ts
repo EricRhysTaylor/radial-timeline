@@ -1,10 +1,9 @@
 import type { HoverMetadataField, RadialTimelineSettings } from '../types/settings';
 import {
-    extractKeysInOrder,
     getBaseKeys,
     getCustomKeys,
     getTemplateParts,
-    safeParseYaml,
+    safeParseYaml
 } from '../utils/yamlTemplateNormalize';
 import type {
     ScenePropertyDefinition,
@@ -89,8 +88,3 @@ export function serializeAdvancedSceneProperties(
     };
 }
 
-export function getSceneAdvancedTemplateOrder(settings: RadialTimelineSettings): string[] {
-    return extractKeysInOrder(getTemplateParts('Scene', settings).advanced);
-}
-
-export { DEFAULT_HOVER_ICON as SCENE_DEFAULT_HOVER_ICON };

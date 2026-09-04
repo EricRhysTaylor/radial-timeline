@@ -481,10 +481,3 @@ export function migrateAuthorProgressSettings(raw: unknown): AuthorProgressSetti
     };
 }
 
-export function getAuthorProgressDefaults(authorProgress?: AuthorProgressSettings): AuthorProgressDefaults | undefined {
-    return authorProgress?.defaults;
-}
-
-export function getAuthorProgressCampaigns(authorProgress?: AuthorProgressSettings): AuthorProgressCampaign[] {
-    return authorProgress?.campaigns ?? [];
-}

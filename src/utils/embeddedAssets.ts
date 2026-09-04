@@ -65,7 +65,3 @@ export function getEmbeddedAssetDataUri(key: EmbeddedAssetKey): string {
     return `data:${asset.mime};base64,${asset.base64}`;
 }
 
-/** Whether a key is present in this build. Used by diagnostics, not by hot paths. */
-export function hasEmbeddedAsset(key: string): key is EmbeddedAssetKey {
-    return Object.prototype.hasOwnProperty.call(EMBEDDED_ASSETS, key);
-}

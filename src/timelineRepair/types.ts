@@ -310,16 +310,6 @@ export interface RepairPipelineConfig {
     useTextCues: boolean;
 }
 
-/**
- * Default pipeline configuration.
- */
-export const DEFAULT_PIPELINE_CONFIG: Omit<RepairPipelineConfig, 'anchorWhen'> = {
-    anchorSceneIndex: 0,
-    patternPreset: 'beats2',
-    useTextCues: true,
-    preserveAuthoredDates: true
-};
-
 // ============================================================================
 // Pipeline Results
 // ============================================================================
@@ -351,20 +341,6 @@ export interface RepairPipelineResult {
  * State for the Timeline Repair Modal.
  */
 export type ModalPhase = 'config' | 'analyzing' | 'review';
-
-export interface ModalState {
-    phase: ModalPhase;
-    config: RepairPipelineConfig | null;
-    result: RepairPipelineResult | null;
-    session: SessionDiffModel | null;
-    
-    // Review phase filters
-    filterNeedsReview: boolean;
-    filterKeywordDerived: boolean;
-    
-    // Selection state
-    selectedIndices: Set<number>;
-}
 
 // ============================================================================
 // Frontmatter Update Types

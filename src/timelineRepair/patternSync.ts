@@ -363,37 +363,6 @@ function detectTemporalIssues(entries: RepairSceneEntry[]): void {
     }
 }
 
-// ============================================================================
-// Utility Functions
-// ============================================================================
-
-/**
- * Apply a time bucket to a date, keeping the same date but changing the time.
- */
-export function applyTimeBucket(date: Date, bucket: TimeBucket): Date {
-    const result = new Date(date);
-    result.setHours(TIME_BUCKET_HOURS[bucket], 0, 0, 0);
-    return result;
-}
-
-/**
- * Shift a date by a number of days.
- */
-export function shiftDays(date: Date, days: number): Date {
-    const result = new Date(date);
-    result.setDate(result.getDate() + days);
-    return result;
-}
-
-/**
- * Shift a date by a number of hours.
- */
-export function shiftHours(date: Date, hours: number): Date {
-    const result = new Date(date);
-    result.setHours(result.getHours() + hours);
-    return result;
-}
-
 /**
  * Detect which time bucket a date falls into.
  */
@@ -418,17 +387,3 @@ export function formatWhenForDisplay(date: Date): string {
     return `${year}-${month}-${day} ${hour}:${minute}`;
 }
 
-/**
- * Format just the time portion for compact display.
- */
-export function formatTimeForDisplay(date: Date): string {
-    const hour = date.getHours();
-    const minute = date.getMinutes();
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const hour12 = hour % 12 || 12;
-    
-    if (minute === 0) {
-        return `${hour12}${ampm}`;
-    }
-    return `${hour12}:${String(minute).padStart(2, '0')}${ampm}`;
-}

@@ -520,11 +520,6 @@ export function getActiveBeatWorkspaceKind(settings: RadialTimelineSettings): Be
     return getActiveLoadedBeatTab(settings)?.sourceKind;
 }
 
-export function getActiveBeatWorkspaceSystemId(settings: RadialTimelineSettings): string | undefined {
-    const activeTab = getActiveLoadedBeatTab(settings);
-    return activeTab ? getWorkspaceCustomSystemId(activeTab) : undefined;
-}
-
 export function getActiveBeatWorkspaceConfigKey(settings: RadialTimelineSettings): string | undefined {
     const activeTab = getActiveLoadedBeatTab(settings);
     return activeTab ? getLoadedBeatTabConfigKey(activeTab) : undefined;

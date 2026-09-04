@@ -81,38 +81,3 @@ export function updateNumberSquareStates(
     }
 }
 
-/**
- * Updates AI grade colors on number squares
- */
-export function updateNumberSquareGrades(
-    svg: SVGSVGElement,
-    sceneGrades: Map<string, string>
-): boolean {
-    try {
-        let updated = false;
-        
-        sceneGrades.forEach((grade, sceneId) => {
-            // Find the number text element by scene ID
-            const numberText = svg.querySelector(`#${sceneId} .rt-number-text`);
-            if (!numberText) return;
-            
-            const currentClasses = numberText.getAttribute('class') || '';
-            
-            // Remove old grade classes
-            const withoutGrade = currentClasses.replace(/\s*rt-grade-[A-F]/g, '');
-            
-            // Add new grade class
-            const newClasses = `${withoutGrade} rt-grade-${grade}`.trim();
-            
-            if (currentClasses !== newClasses) {
-                numberText.setAttribute('class', newClasses);
-                updated = true;
-            }
-        });
-        
-        return updated;
-    } catch (error) {
-        console.error('[NumberSquareDOMUpdater] Failed to update grades:', error);
-        return false;
-    }
-}

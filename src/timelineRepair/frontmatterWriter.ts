@@ -11,8 +11,7 @@ import type { App } from 'obsidian';
 import type {
     SessionDiffModel,
     FrontmatterUpdate,
-    FrontmatterWriteResult,
-    WhenSource
+    FrontmatterWriteResult
 } from './types';
 import { getEffectiveWhen } from './types';
 import { appendWhenChanges, type WhenChangeRecord } from './whenChangeLog';
@@ -189,32 +188,6 @@ export async function writeSessionChanges(
 ): Promise<FrontmatterWriteResult> {
     const updates = prepareUpdates(session);
     return writeFrontmatterUpdates(app, updates, options);
-}
-
-/**
- * Preview what would be written without actually writing.
- */
-export function previewUpdates(session: SessionDiffModel): Array<{
-    fileName: string;
-    path: string;
-    originalWhen: string | null;
-    newWhen: string;
-    source: WhenSource;
-}> {
-    const updates = prepareUpdates(session);
-
-    return updates.map(update => {
-        const entry = session.entries.find(e => e.file.path === update.file.path);
-
-        return {
-            fileName: update.file.basename,
-            path: update.file.path,
-            originalWhen: entry?.originalWhenRaw ??
-                (entry?.originalWhen ? formatWhenForYaml(entry.originalWhen) : null),
-            newWhen: formatWhenForYaml(update.when),
-            source: update.whenSource
-        };
-    });
 }
 
 /**

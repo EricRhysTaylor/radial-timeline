@@ -464,23 +464,3 @@ function detectTemporalIssuesAfterSweep(entries: RepairSceneEntry[]): void {
     }
 }
 
-// ============================================================================
-// Utility: Parse AM/PM Time
-// ============================================================================
-
-/**
- * Parse an AM/PM time string to hours.
- */
-export function parseAmPmTime(text: string): number | null {
-    // Match patterns like "3pm", "3:30 PM", "11:00 am"
-    const match = text.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i);
-    if (!match) return null;
-    
-    let hour = parseInt(match[1], 10);
-    const ampm = match[3].toLowerCase();
-    
-    if (ampm === 'pm' && hour < 12) hour += 12;
-    if (ampm === 'am' && hour === 12) hour = 0;
-    
-    return hour;
-}

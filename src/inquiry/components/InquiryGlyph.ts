@@ -76,8 +76,6 @@ const ZONE_SEGMENT_AXIS_ROTATION_DEG = 90;
 const ZONE_CONTROL_SCALE = 1.05;
 const DEBUG_INQUIRY_ZONES = false;
 
-export const GLYPH_OUTER_DIAMETER = (FLOW_RADIUS * 2) + FLOW_STROKE;
-
 export class InquiryGlyph {
     private props: InquiryGlyphProps;
 

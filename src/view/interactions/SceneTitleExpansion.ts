@@ -60,17 +60,6 @@ export function calculateTargetSize(
     return targetArcPx / midRadius;
 }
 
-/**
- * Calculate act boundaries based on act number
- */
-export function getActBoundaries(actNumber: number, totalActs: number = 3): { start: number; end: number } {
-    const NUM_ACTS = Math.max(3, totalActs);
-    return {
-        start: (actNumber * 2 * Math.PI / NUM_ACTS) - Math.PI / 2,
-        end: ((actNumber + 1) * 2 * Math.PI / NUM_ACTS) - Math.PI / 2
-    };
-}
-
 export function getSegmentBoundaries(segmentIndex: number, totalSegments: number = 3): { start: number; end: number } {
     const count = Math.max(1, Math.floor(totalSegments));
     return {

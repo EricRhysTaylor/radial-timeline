@@ -4,8 +4,7 @@ import type {
     AIProviderId,
     EvidenceDocument,
     InputTokenEstimateMethod,
-    TokenCountResult,
-    TokenCountSource
+    TokenCountResult
 } from '../types';
 import { countAnthropicTokens } from '../../api/anthropicApi';
 import { countGeminiTokens } from '../../api/geminiApi';
@@ -48,12 +47,6 @@ function normalizeProvider(provider: EstimateInputTokensRequest['provider']): AI
         return provider;
     }
     return 'none';
-}
-
-export function tokenEstimateSourceFromMethod(method: TokenEstimateMethod): TokenCountSource {
-    return method === 'anthropic_count' || method === 'google_count'
-        ? 'provider_count'
-        : 'estimate';
 }
 
 export function describeTokenEstimateMethod(method: TokenEstimateMethod): string {

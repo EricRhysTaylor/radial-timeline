@@ -165,13 +165,6 @@ export function getResolvedModelId(aliasId: string): string | null {
     return resolvedModelCache.get(normalizeModelId(aliasId))?.resolvedTo ?? null;
 }
 
-/**
- * Check if a model ID is a "latest" alias.
- */
-export function isLatestAlias(modelId: string): boolean {
-    return modelId.includes('latest');
-}
-
 export function clearResolvedModelCache(): void {
     resolvedModelCache.clear();
 }

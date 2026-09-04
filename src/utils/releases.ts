@@ -27,23 +27,6 @@ export function parseReleaseVersion(version: string | undefined | null): Release
     return { major, minor, patch, majorLabel, fullLabel };
 }
 
-export function extractReleaseSummary(markdownBody: string | undefined | null): string | null {
-    if (!markdownBody) return null;
-    const lines = markdownBody
-        .split(/\r?\n/)
-        .map(line => line.trim())
-        .filter(line => line.length > 0);
-
-    for (let line of lines) {
-        if (line.startsWith('#')) continue; // Skip headings
-        // Skip markdown link-only lines to prefer descriptive text
-        if (/^\[.+?\]\(.+?\)$/.test(line)) continue;
-        line = line.replace(/^[-*+]\s+/, '');
-        return line;
-    }
-    return null;
-}
-
 export function compareReleaseVersionsDesc(aVersion: string, bVersion: string): number {
     const a = parseReleaseVersion(aVersion);
     const b = parseReleaseVersion(bVersion);

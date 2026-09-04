@@ -55,26 +55,3 @@ export function getToggleableModes(): ModeDefinition[] {
         .sort((a, b) => a.ui.order - b.ui.order);
 }
 
-/**
- * Get the next mode in the toggle cycle
- */
-export function getNextToggleMode(currentMode: TimelineMode): TimelineMode {
-    const toggleable = getToggleableModes();
-    const currentIndex = toggleable.findIndex(mode => mode.id === currentMode);
-    
-    if (currentIndex === -1) {
-        // Current mode is not toggleable, default to first toggleable mode
-        return toggleable[0]?.id || TimelineMode.NARRATIVE;
-    }
-    
-    // Cycle to next mode
-    const nextIndex = (currentIndex + 1) % toggleable.length;
-    return toggleable[nextIndex].id;
-}
-
-/**
- * Check if a mode is registered
- */
-export function isModeRegistered(mode: TimelineMode): boolean {
-    return MODE_REGISTRY.has(mode);
-}

@@ -1,6 +1,6 @@
 import type { TimelineItem } from '../types';
 import { isNonSceneItem } from '../utils/sceneHelpers';
-import { STAGE_ORDER, STATUSES_FOR_GRID, type Stage, type Status } from '../utils/constants';
+import { STAGE_ORDER, type Stage, type Status } from '../utils/constants';
 import { isOverdueDateString } from '../utils/date';
 import { normalizeStatus } from '../utils/text';
 
@@ -131,9 +131,3 @@ export function buildProgressSnapshot(scenes: TimelineItem[]): ProgressSnapshot 
     };
 }
 
-export function getCompletedStage(snapshot: ProgressSnapshot): Stage {
-    return snapshot.highestCompletedStage ?? 'Zero';
-}
-
-export const PROGRESS_STAGE_ORDER = STAGE_ORDER;
-export const PROGRESS_STATUSES = STATUSES_FOR_GRID;

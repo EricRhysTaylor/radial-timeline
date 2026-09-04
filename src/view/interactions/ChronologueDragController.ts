@@ -52,12 +52,7 @@ export interface ChronologueDragOptions {
 const CLICK_THRESHOLD_MS = 500;
 const MOVE_THRESHOLD_PX = 7;
 
-let dragInProgress = false;
 let lastInteractionTime = 0;
-
-export function isChronologueDragInProgress(): boolean {
-    return dragInProgress;
-}
 
 /** Guards the click handler from opening a file at the end of a drag. */
 export function wasRecentlyHandledByChronologueDrag(): boolean {
@@ -164,7 +159,6 @@ export class ChronologueDragController {
     private beginDrag(): void {
         if (this.dragging || !this.sourceGroup) return;
         this.dragging = true;
-        dragInProgress = true;
         lastInteractionTime = Date.now();
         this.svg.classList.add('rt-dragging-outer');
         this.sourceGroup.classList.add('rt-drag-source');
@@ -380,7 +374,6 @@ export class ChronologueDragController {
     private reset(): void {
         if (this.dragging) lastInteractionTime = Date.now();
         this.dragging = false;
-        dragInProgress = false;
 
         if (this.sourceGroup) {
             this.sourceGroup.classList.remove('rt-drag-source');

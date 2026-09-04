@@ -40,10 +40,6 @@ export function getSummarySystemPrompt(): string {
   return `You are a precise, neutral summarizer for fiction manuscripts. Your goal is to generate detailed, purely factual summaries of scene events for an analysis database. Do not critique, do not improve the prose, and do not use flowery language.`;
 }
 
-export function getSynopsisSystemPrompt(): string {
-  return `You are a precise, neutral summarizer for fiction manuscripts. Your goal is to generate short, purely factual summaries of scene events for an outline database. Do not critique, do not improve the prose, and do not use flowery language.`;
-}
-
 /**
  * Build a prompt for generating an extended Summary (≈200–300 words).
  * This is the primary AI-generated artifact.

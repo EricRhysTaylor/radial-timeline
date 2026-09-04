@@ -54,16 +54,6 @@ export interface ParsedSceneAnalysis {
     sceneGrade?: 'A' | 'B' | 'C';
 }
 
-export interface ApiMessage {
-    role: 'user' | 'system' | 'assistant';
-    content: string;
-}
-
-export interface ApiRequestData {
-    messages?: ApiMessage[];
-    system?: string;
-}
-
 export interface ProcessedCheckOptions {
     todayOnly?: boolean;
 }

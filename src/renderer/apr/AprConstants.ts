@@ -16,24 +16,6 @@ export const APR_BASE_RADII = {
     text: 134,
 } as const;
 
-export const APR_SIZE_SCALES = {
-    sm150: 0.5,
-    md300: 1,
-    lg450: 1.5,
-} as const;
-
-// =============================================================================
-// APR VIEW MODES
-// =============================================================================
-
-export type AprViewMode = 'full' | 'scenes' | 'momentum';
-
-export const APR_VIEW_MODE_LABELS: Record<AprViewMode, string> = {
-    full: 'Full Structure',
-    scenes: 'Scenes Only',
-    momentum: 'Momentum Only',
-};
-
 // =============================================================================
 // BRANDING TEXT TUNING (Manual Control)
 // =============================================================================
@@ -76,16 +58,6 @@ export const APR_TEXT_COLORS = {
 } as const;
 
 // =============================================================================
-// FIXED STROKES (no dynamic sizing)
-// =============================================================================
-
-export const APR_FIXED_STROKES = {
-    border: 1,
-    actSpoke: 2,
-    spoke: 1,
-} as const;
-
-// =============================================================================
 // CENTER METRIC TYPOGRAPHY (fixed, non-configurable)
 // =============================================================================
 
@@ -113,16 +85,6 @@ export const APR_CENTER_METRIC = {
         3: 0
     } as Record<1 | 2 | 3, number>,
 } as const;
-
-// =============================================================================
-// GEOMETRY HELPERS
-// =============================================================================
-
-/** Gap between scenes (radians) */
-export const APR_SCENE_GAP_RAD = 0.008;
-
-/** Minimum arc angle for very small scenes (radians) */
-export const APR_MIN_SCENE_ARC_RAD = 0.02;
 
 // =============================================================================
 // TEASER REVEAL (Progressive Reveal) PRESETS

@@ -48,13 +48,6 @@ export const VERSION_ICON_X = -750;
 /** Y position for Version/Bug icon CENTER */
 export const VERSION_ICON_Y = 756;
 
-// Legacy aliases (deprecated - use VERSION_ICON_X/Y)
-export const VERSION_INDICATOR_POS_X = VERSION_ICON_X;
-export const VERSION_INDICATOR_POS_Y = VERSION_ICON_Y + STATUS_TEXT_ABOVE_ICON; // text baseline for backwards compat
-
-/** Horizontal offset for update alert icon from version text */
-export const VERSION_ALERT_OFFSET_X = 8;
-
 // -----------------------------------------------------------------------------
 // BOTTOM-LEFT: APR Refresh Indicator (above Version)
 // -----------------------------------------------------------------------------
@@ -78,9 +71,7 @@ export const HELP_ICON_X = 700;
 /** Y position for Help icon CENTER */
 export const HELP_ICON_Y = 756;
 
-// Legacy aliases (deprecated - use HELP_ICON_X/Y)
-export const HELP_ICON_POS_X = HELP_ICON_X;
-export const HELP_ICON_POS_Y = HELP_ICON_Y + STATUS_TEXT_ABOVE_ICON; // text baseline for backwards compat
+ // text baseline for backwards compat
 
 // -----------------------------------------------------------------------------
 // BOTTOM-RIGHT: Milestone Indicator (above Help)
@@ -126,15 +117,6 @@ export const DRAG_DROP_TICK_LENGTH = 10;
 
 /** Where subplot rings end in Chronologue mode (smaller for time details) */
 export const SUBPLOT_OUTER_RADIUS_CHRONOLOGUE = 750;
-
-/**
- * Radius for APR branding text path (between rings and edge).
- * Pushed farther out to avoid overlapping scene arcs when downscaled.
- */
-export const APR_BRANDING_RADIUS = 720;
-
-/** Font size for APR perimeter branding */
-export const APR_BRANDING_FONT_SIZE = 38;
 
 // =============================================================================
 // RADII - BACKDROP RING
@@ -192,9 +174,6 @@ export const MICRO_RING_WIDTH = 6;
 export const MICRO_RING_GAP = 2;
 
 
-/** Offset for the progress ring in Chronologue mode (px, relative to lineInnerRadius) */
-export const CHRONOLOGUE_PROGRESS_RING_RADIUS_OFFSET = -3;
-
 /** Default progress ring radius offset (px, relative to lineInnerRadius) */
 export const PROGRESS_RING_RADIUS_OFFSET = 13;
 
@@ -251,20 +230,11 @@ export const PLOT_PIXEL_WIDTH = 18;
 /** Beat label font size in px - must match .rt-storybeat-title in CSS */
 export const BEAT_FONT_PX = 9;
 
-/** Approximate character width in em (for beat label width estimation) */
-export const CHAR_WIDTH_EM = 0.62;
-
-/** Additional letter spacing in em (for beat label width estimation) */
-export const LETTER_SPACING_EM = 0.07;
-
 /** Generous multiplier for initial render estimation */
 export const ESTIMATE_FUDGE_RENDER = 1.35;
 
 /** Extra pixels added to estimated beat label width */
 export const PADDING_RENDER_PX = 24;
-
-/** Gap used when checking beat label overlaps (px) */
-export const ANGULAR_GAP_PX = 16;
 
 /** Extra breathing room between beat labels when they stack (px) */
 export const BEAT_LABEL_BREATHING_ROOM_PX = 10;
@@ -303,16 +273,6 @@ export const BEAT_LABEL_FONT_SIZE_PX = 12;
 /** Letter spacing for beat labels (em) */
 export const BEAT_LABEL_LETTER_SPACING_EM = 0.07;
 
-// =============================================================================
-// UI CONTROLS POSITIONING
-// =============================================================================
-
-/** Horizontal position for book title text */
-export const BOOK_TITLE_POS_X = 568;
-
-/** Vertical position for book title text */
-export const BOOK_TITLE_POS_Y = -780;
-
 /** Initial horizontal position for mode title text (overwritten dynamically to track the leftmost button) */
 export const MODE_TITLE_POS_X = 598;
 
@@ -340,4 +300,3 @@ export const GRID_CELL_WIDTH_EXTRA = 9; // width = round(base*1.5) + extra
 export const GRID_CELL_GAP_X = 2;
 export const GRID_CELL_GAP_Y = 4;
 export const GRID_HEADER_OFFSET_Y = 12;
-export const GRID_LINE_HEIGHT = 26;

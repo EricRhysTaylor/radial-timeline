@@ -2,10 +2,7 @@ import type { TimelineItem } from '../types';
 import { isMatterNote, isSceneItem, sortScenes } from './sceneHelpers';
 
 export const SHARED_CHAPTER_FIELD_KEY = 'Chapter';
-export const SHARED_CHAPTER_FIELD_SOURCE_LABEL = 'Chapter field on scene notes';
 export const SHARED_CHAPTER_FIELD_SOURCE_LABEL_TITLE = 'Chapter field on scene notes';
-export const SHARED_CHAPTER_FIELD_PUBLICATION_COPY = `Chapter headings come from the ${SHARED_CHAPTER_FIELD_SOURCE_LABEL}.`;
-
 export interface TimelineChapterMarker {
     sourcePath?: string;
     sourceType: 'Scene';

@@ -1,9 +1,3 @@
-/*
- * Radial Timeline (tm) Plugin for Obsidian
- * Copyright (c) 2025 Eric Rhys Taylor
- * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
- */
-import { escapeRegExp } from './regex';
 import { escapeXml } from './svg';
 import { getNumberSquareWidthFromCache } from '../renderer/utils/FontMetricsCache';
 import { NUMBER_SQUARE_HEIGHT_PX } from '../renderer/layout/LayoutConstants';
@@ -83,43 +77,6 @@ export function parseSceneTitleComponents(titleText: string, sceneNumber?: numbe
   }
   
   return result;
-}
-
-/**
- * Renders just the main title part of the scene title.
- * @param title - The title text.
- * @param searchTerm - The search term for highlighting.
- * @returns A DocumentFragment containing the title tspan.
- */
-export function renderSceneTitleFragment(
-  title: string,
-  searchTerm: string
-): DocumentFragment {
-  const fragment = activeWindow.createFragment();
-  const main = activeWindow.createSvg('tspan');
-  main.setAttribute('class', 'rt-scene-title-bold');
-  main.setAttribute('data-item-type', 'title');
-
-  if (searchTerm && title) {
-    const regex = new RegExp(`(${escapeRegExp(searchTerm)})`, 'gi');
-    let last = 0;
-    let m: RegExpExecArray | null;
-    while ((m = regex.exec(title))) {
-      if (m.index > last) main.appendChild(activeDocument.createTextNode(title.slice(last, m.index)));
-      const hl = activeWindow.createSvg('tspan');
-      hl.setAttribute('class', 'rt-search-term');
-      // No fill attribute; inherit from parent via --rt-dynamic-color
-      hl.textContent = m[0];
-      main.appendChild(hl);
-      last = m.index + m[0].length;
-    }
-    if (last < title.length) main.appendChild(activeDocument.createTextNode(title.slice(last)));
-  } else {
-    main.textContent = title;
-  }
-
-  fragment.appendChild(main);
-  return fragment;
 }
 
 /**

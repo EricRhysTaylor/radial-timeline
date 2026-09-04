@@ -403,17 +403,6 @@ export function extractPositionToken(item: TimelineItem): string | null {
 }
 
 /**
- * Legacy numeric extractor retained for renderer callers.
- * Prefer token-based ordering via sortByManuscriptOrder().
- */
-export function extractPosition(item: TimelineItem): number {
-    const token = extractPositionToken(item);
-    if (!token) return Infinity;
-    const parsed = Number.parseFloat(token);
-    return Number.isFinite(parsed) ? parsed : Infinity;
-}
-
-/**
  * Sort scenes by manuscript order (prefix number, then alphanumeric)
  */
 export function sortByManuscriptOrder(a: TimelineItem, b: TimelineItem): number {

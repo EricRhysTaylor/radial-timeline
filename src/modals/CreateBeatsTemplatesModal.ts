@@ -116,10 +116,5 @@ export class CreateBeatSetModal extends Modal {
   }
 }
 
-// ─── Deprecated aliases (remove after v5.2) ─────────────────────────
-
-/** @deprecated Use CreateBeatSetResult */
-export type CreateBeatsTemplatesResult = CreateBeatSetResult;
-
 /** @deprecated Use CreateBeatSetModal */
 export const CreateBeatsTemplatesModal = CreateBeatSetModal;

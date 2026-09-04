@@ -256,8 +256,6 @@ export function projectCommunityDaily(
 
 /** Server-enforced community_posts body length limits. */
 export const SESSION_FEED_POST_BODY_MAX = 1000;
-export const SESSION_FEED_POST_BODY_MIN = 3;
-
 export interface SessionFeedPost {
     audience: 'community';
     /** Post text: stats headline plus the author's note. Never paths or raw titles. */

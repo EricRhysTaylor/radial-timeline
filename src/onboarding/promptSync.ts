@@ -10,7 +10,7 @@
 
 import { requestUrl } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
-import { ONBOARDING_CANONICAL_PROMPT, ONBOARDING_SCHEMA_VERSION } from '../ai/prompts/onboarding';
+import { ONBOARDING_SCHEMA_VERSION } from '../ai/prompts/onboarding';
 
 const PROMPT_ENDPOINT = 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/functions/v1/onboarding-prompt';
 
@@ -40,19 +40,6 @@ export function shouldAdoptRemotePrompt(
   pinnedVersion: number = ONBOARDING_SCHEMA_VERSION
 ): boolean {
   return payload !== null && payload.schemaVersion === pinnedVersion;
-}
-
-/**
- * The effective canonical prompt: the adopted remote text when compatible,
- * else the bundled snapshot. (The future settings override layers on top of
- * this per the plan; it replaces only the instruction block.)
- */
-export function getOnboardingCanonicalPrompt(plugin: RadialTimelinePlugin): string {
-  const cache = plugin.settings.onboardingPromptCache;
-  if (cache && cache.schemaVersion === ONBOARDING_SCHEMA_VERSION && cache.promptText.trim().length > 0) {
-    return cache.promptText;
-  }
-  return ONBOARDING_CANONICAL_PROMPT;
 }
 
 /**

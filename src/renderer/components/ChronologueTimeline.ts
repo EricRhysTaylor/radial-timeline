@@ -325,14 +325,6 @@ function renderDurationTickArcs(params: DurationTickArcParams): string | null {
 }
 
 /**
- * Map a time value to an angular position on the timeline arc
- */
-function mapTimeToAngle(timeMs: number, startMs: number, endMs: number): number {
-    const progress = (timeMs - startMs) / (endMs - startMs);
-    return progress * 2 * Math.PI - Math.PI / 2; // Start at top (12 o'clock)
-}
-
-/**
  * Render elapsed time arc between two selected scenes (fallback when geometry not available)
  * Note: This is rarely used - the main path in ChronologueShiftController handles most cases
  */
@@ -449,76 +441,3 @@ export function renderChronologicalBackboneArc(
     return svg;
 }
 
-/**
- * Arc 2: TimelineItem Duration Overlay
- * Renders colored arc segments showing each scene's duration
- * Red segments indicate temporal overlaps
- * 
- * @param scenes - Scenes with When dates and Duration fields (sorted chronologically)
- * @param outerRadius - Outer radius of scene ring
- * @returns SVG string
- */
-export function renderSceneDurationArcs(
-    scenes: TimelineItem[],
-    outerRadius: number
-): string {
-    // Detect overlaps
-    const overlapIndices = detectSceneOverlaps(scenes);
-    
-    // Parse dates and calculate time range
-    const validScenes: { scene: TimelineItem; date: Date; index: number }[] = [];
-    scenes.forEach((scene, index) => {
-        const whenDate =
-            scene.when instanceof Date
-                ? scene.when
-                : parseWhenField(typeof scene.when === 'string' ? scene.when : '');
-        if (whenDate) {
-            validScenes.push({ scene, date: whenDate, index });
-        }
-    });
-    
-    if (validScenes.length === 0) return '';
-    
-    const earliestMs = Math.min(...validScenes.map(s => s.date.getTime()));
-    const latestMs = Math.max(...validScenes.map(s => s.date.getTime()));
-    const totalMs = latestMs - earliestMs;
-    
-    if (totalMs === 0) return ''; // All scenes at same time
-    
-    const arcRadius = outerRadius + 9; // Position outside backbone arc
-    const arcWidth = 3.5;
-    
-    let svg = `<g class="rt-scene-duration-arcs">`;
-    
-    validScenes.forEach(({ scene, date, index }) => {
-        const durationMs = parseDuration(scene.Duration);
-        if (!durationMs || durationMs === 0) return; // Skip scenes without duration
-        
-        // Calculate arc segment
-        const startMs = date.getTime();
-        const endMs = startMs + durationMs;
-        
-        const startAngle = mapTimeToAngle(startMs, earliestMs, latestMs);
-        const endAngle = mapTimeToAngle(Math.min(endMs, latestMs), earliestMs, latestMs);
-        
-        // Determine color based on overlap
-        const hasOverlap = overlapIndices.has(index);
-        const color = hasOverlap ? 'var(--text-error)' : 'var(--text-success)';
-        const opacity = Math.min(0.3 + (durationMs / (24 * 60 * 60 * 1000)) * 0.1, 0.8); // Opacity based on duration
-        
-        // Create arc path
-        const largeArcFlag = (endAngle - startAngle) > Math.PI ? 1 : 0;
-        const x1 = formatNumber(arcRadius * Math.cos(startAngle));
-        const y1 = formatNumber(arcRadius * Math.sin(startAngle));
-        const x2 = formatNumber(arcRadius * Math.cos(endAngle));
-        const y2 = formatNumber(arcRadius * Math.sin(endAngle));
-        
-        const arcPath = `M ${x1} ${y1} A ${formatNumber(arcRadius)} ${formatNumber(arcRadius)} 0 ${largeArcFlag} 1 ${x2} ${y2}`;
-        
-        svg += `<path d="${arcPath}" fill="none" stroke="${color}" stroke-width="${arcWidth}" opacity="${opacity}" class="rt-duration-arc ${hasOverlap ? 'rt-overlap' : ''}"/>`;
-    });
-    
-    svg += `</g>`;
-    
-    return svg;
-}

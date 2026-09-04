@@ -519,7 +519,3 @@ export async function createBeatNotesFromSet(
   return { created, skipped, errors, createdPaths };
 }
 
-// ─── Deprecated aliases (remove after v5.2) ─────────────────────────
-
-/** @deprecated Use createBeatNotesFromSet */
-export const createBeatTemplateNotes = createBeatNotesFromSet;

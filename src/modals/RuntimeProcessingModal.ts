@@ -40,12 +40,6 @@ export interface RuntimeStatusFilters {
     includeComplete: boolean;
 }
 
-export interface RuntimeQueueItem {
-    path: string;
-    title: string;
-    subplot?: string;
-}
-
 /**
  * Modal for runtime estimation processing
  */

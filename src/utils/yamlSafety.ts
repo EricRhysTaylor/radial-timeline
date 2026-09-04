@@ -296,58 +296,6 @@ export async function scanFrontmatterSafety(
     return { status, issues };
 }
 
-// ─── Batch scanner ──────────────────────────────────────────────────────
-
-export interface BatchSafetyResult {
-    results: Map<TFile, FrontmatterSafetyResult>;
-    /** Files where at least one danger-level issue was found. */
-    dangerousFiles: TFile[];
-    /** Files where at least one warning-level issue was found (but no danger). */
-    suspiciousFiles: TFile[];
-    safeFiles: TFile[];
-}
-
-/**
- * Scan multiple files for safety issues.
- */
-export async function scanFrontmatterSafetyBatch(
-    app: App,
-    files: TFile[],
-    knownKeys?: Set<string>,
-    checkBrokenYaml = true
-): Promise<BatchSafetyResult> {
-    const results = new Map<TFile, FrontmatterSafetyResult>();
-    const dangerousFiles: TFile[] = [];
-    const suspiciousFiles: TFile[] = [];
-    const safeFiles: TFile[] = [];
-
-    for (const file of files) {
-        const cache = app.metadataCache.getFileCache(file);
-        const result = await scanFrontmatterSafety({
-            app,
-            file,
-            cache,
-            knownKeys,
-            checkBrokenYaml,
-        });
-        results.set(file, result);
-
-        switch (result.status) {
-            case 'dangerous':
-                dangerousFiles.push(file);
-                break;
-            case 'suspicious':
-                suspiciousFiles.push(file);
-                break;
-            default:
-                safeFiles.push(file);
-                break;
-        }
-    }
-
-    return { results, dangerousFiles, suspiciousFiles, safeFiles };
-}
-
 // ─── Helpers ────────────────────────────────────────────────────────────
 
 function deriveStatus(issues: SafetyIssue[]): SafetyStatus {

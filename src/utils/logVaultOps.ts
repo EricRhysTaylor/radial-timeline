@@ -2,11 +2,6 @@ import { App, TAbstractFile, TFile, Vault, getFrontMatterInfo, normalizePath, pa
 import { confirmWithErtModal } from '../modals/ErtConfirmModal';
 import { resolveRecoverSnapshotsRoot } from '../ai/log';
 
-export interface TrashFilesOptions {
-    operation: string;
-    snapshotBeforeTrash?: boolean;
-}
-
 export interface SnapshotFrontmatterFieldsOptions {
     operation: string;
     fields?: string[];
@@ -133,37 +128,6 @@ async function readTextFile(app: App, file: TFile): Promise<string> {
     return app.vault.read(file);
 }
 
-export async function trashFiles(app: App, files: TFile[], options: TrashFilesOptions): Promise<{
-    trashed: number;
-    failed: number;
-    errors: string[];
-    snapshotPath: string | null;
-}> {
-    const uniqueFiles = [...new Map(files.map((file) => [file.path, file])).values()];
-    const snapshotPath = options.snapshotBeforeTrash
-        ? await snapshotFileCollection(app, uniqueFiles, {
-            operation: options.operation,
-            meta: { mode: 'pre-trash' }
-        })
-        : null;
-
-    let trashed = 0;
-    let failed = 0;
-    const errors: string[] = [];
-
-    for (const file of uniqueFiles) {
-        try {
-            await app.fileManager.trashFile(file);
-            trashed += 1;
-        } catch (error) {
-            failed += 1;
-            errors.push(`${file.path}: ${error instanceof Error ? error.message : String(error)}`);
-        }
-    }
-
-    return { trashed, failed, errors, snapshotPath };
-}
-
 export async function snapshotFrontmatterFields(
     app: App,
     files: TFile[],
@@ -281,37 +245,6 @@ export async function writeDeletionSnapshot(
 
     await app.vault.create(snapshotPath, `${JSON.stringify(payload, null, 2)}\n`);
     return snapshotPath;
-}
-
-async function snapshotFileCollection(
-    app: App,
-    files: TFile[],
-    options: SnapshotFileBeforeOverwriteOptions
-): Promise<string | null> {
-    const uniqueFiles = [...new Map(files.map((file) => [file.path, file])).values()];
-    const entries: Array<Record<string, unknown>> = [];
-    for (const file of uniqueFiles) {
-        try {
-            entries.push({
-                path: file.path,
-                basename: file.basename,
-                extension: file.extension,
-                content: await readTextFile(app, file)
-            });
-        } catch {
-            continue;
-        }
-    }
-    if (entries.length === 0) return null;
-    return writeSnapshotPayload(app, {
-        version: 1,
-        kind: 'file-overwrite',
-        operation: options.operation,
-        createdAt: new Date().toISOString(),
-        fileCount: entries.length,
-        entries,
-        meta: options.meta ?? {}
-    }, { operation: options.operation });
 }
 
 export async function canOverwriteManagedOutput(

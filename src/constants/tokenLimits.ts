@@ -29,8 +29,3 @@ export const PROVIDER_MAX_OUTPUT_TOKENS = {
     ollama: 4000,
 } as const;
 
-// Scene analysis needs structured JSON output
-// Use generous limits for thinking models
-export function getSceneAnalysisTokenLimit(provider: 'anthropic' | 'openai' | 'google' | 'ollama'): number {
-    return PROVIDER_MAX_OUTPUT_TOKENS[provider];
-}

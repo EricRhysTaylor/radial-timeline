@@ -10,7 +10,6 @@
 import type { TFile, Vault } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { TimelineItem } from '../types';
-import { buildSharedSceneNoteFileMap, loadScopedSceneNotes, mapSharedSceneNotesToTimelineItems } from '../timeline/sharedSceneNotes';
 import type {
     RepairPipelineConfig,
     RepairPipelineResult,
@@ -181,20 +180,3 @@ function createEmptyResult(): RepairPipelineResult {
     };
 }
 
-// ============================================================================
-// Utility Functions
-// ============================================================================
-
-/**
- * Collect scenes and their file references from plugin data.
- * Returns scenes in manuscript order.
- */
-export async function collectScenesForRepair(
-    plugin: RadialTimelinePlugin
-): Promise<{ scenes: TimelineItem[]; files: Map<string, TFile> }> {
-    const sceneNotes = await loadScopedSceneNotes(plugin);
-    return {
-        scenes: mapSharedSceneNotesToTimelineItems(sceneNotes),
-        files: buildSharedSceneNoteFileMap(sceneNotes)
-    };
-}

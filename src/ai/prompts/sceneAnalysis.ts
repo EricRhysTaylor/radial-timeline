@@ -79,10 +79,6 @@ const SCENE_ANALYSIS_JSON_EXAMPLE = `{
   ]
 }`;
 
-export function getSceneAnalysisJsonExample(): string {
-  return SCENE_ANALYSIS_JSON_EXAMPLE;
-}
-
 const SCENE_ANALYSIS_EXAMPLE_SECTION = `Example of valid JSON (do not copy verbatim; adapt to the scenes below):
 ${SCENE_ANALYSIS_JSON_EXAMPLE}
 `;

@@ -1,9 +1,7 @@
-import type { AIProviderId, AIRunAdvancedContext } from '../../ai/types';
+import type { AIProviderId } from '../../ai/types';
 import type {
     InquiryCanonicalQuestionTier,
-    InquiryClassConfig,
     SceneInclusion,
-    InquiryTimingHistoryEntry,
     OmnibusProgressState
 } from '../../types/settings';
 import type {
@@ -267,16 +265,6 @@ export type OmnibusProviderPlan = {
     disabledReason?: string;
 };
 
-export type EngineChoice = {
-    provider: Exclude<AIProviderId, 'none'>;
-    providerLabel: string;
-    modelId: string;
-    modelLabel: string;
-    isActive: boolean;
-    enabled: boolean;
-    disabledReason?: string;
-};
-
 export type AiSettingsFocus =
     | 'provider'
     | 'thinking-style'
@@ -299,36 +287,3 @@ export type InquiryGlyphSeed = {
     session?: InquirySession;
 };
 
-export type InquirySceneNoteEntry = {
-    headline: string;
-    bullets: string[];
-    lens: string;
-};
-
-export type InquirySceneNoteSection = {
-    label: string;
-    header: string;
-    anchorId?: string;
-    entries: InquirySceneNoteEntry[];
-};
-
-export type InquiryBriefDependencies = {
-    formatMetricDisplay: (value: number) => string;
-    formatBriefLabel: (value?: string | null) => string;
-    normalizeInquiryHeadline: (headline: string) => string;
-};
-
-export type InquiryBriefRenderContext = {
-    brief: InquiryBriefModel;
-};
-
-export type InquiryCorpusModeDependency = {
-    normalizeEvidenceMode: (mode?: SceneInclusion) => 'excluded' | 'summary' | 'full';
-};
-
-export type InquiryClassContributionDependency = {
-    normalizeClassContribution: (config: InquiryClassConfig) => InquiryClassConfig;
-};
-
-export type InquiryTimingLookup = (provider?: string, model?: string) => InquiryTimingHistoryEntry | null;
-export type InquiryAdvancedContext = AIRunAdvancedContext | null;

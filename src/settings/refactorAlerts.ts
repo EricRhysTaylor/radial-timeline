@@ -328,13 +328,6 @@ export function getAllNotificationsForHistory(settings: RadialTimelineSettings):
 }
 
 /**
- * Check if an alert has been dismissed/viewed
- */
-export function isAlertDismissed(alertId: string, settings: RadialTimelineSettings): boolean {
-    return (settings.dismissedAlerts ?? []).includes(alertId);
-}
-
-/**
  * Perform all migrations for a specific alert in the template
  * Returns the updated template string
  */

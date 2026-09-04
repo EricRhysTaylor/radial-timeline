@@ -4,8 +4,7 @@ import type {
     AIRoleTemplate,
     DeclarableLocalCapability,
     LocalLlmSettings,
-    ModelPolicy,
-    AIFeatureProfile
+    ModelPolicy
 } from '../types';
 import {
     ANTHROPIC_INQUIRY_CACHE_TTL,
@@ -108,29 +107,6 @@ export function cloneDefaultLocalLlmSettings(): LocalLlmSettings {
         capabilitiesByModel: { ...DEFAULT_LOCAL_LLM_SETTINGS.capabilitiesByModel }
     };
 }
-
-/**
- * Onboarding's model profile — INTENTIONALLY NOT SEEDED BY DEFAULT.
- *
- * Withdrawn 2026-08-21 after review. Seeding this shipped a cross-provider
- * defect: `AIFeatureProfile.modelPolicy` REPLACES the author's global policy,
- * and a pinned Claude alias cannot resolve on OpenAI or Google. `selectModel`
- * does not fail there — it substitutes that provider's latest stable model
- * (GPT-5.5, Gemini 3.5 Flash) and records a warning. So an OpenAI author who
- * had deliberately pinned GPT-5.4 would have been moved to GPT-5.5 by a
- * default that was never meant to touch them.
- *
- * Pinning `provider` as well would be worse — it would hijack the provider
- * outright. A correct default has to be provider-aware, and it should not
- * land before one representative onboarding run on the economy model has been
- * measured against quality criteria. Haiku 4.5 remains selectable; it is
- * simply not automatic.
- *
- * Exported so the eventual provider-aware default has one obvious home.
- */
-export const DEFAULT_ONBOARDING_FEATURE_PROFILE: AIFeatureProfile = {
-    modelPolicy: { type: 'pinned', pinnedAlias: 'claude-haiku-4-5' }
-};
 
 export function buildDefaultAiSettings(): AiSettingsV1 {
     return {

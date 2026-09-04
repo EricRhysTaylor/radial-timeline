@@ -159,113 +159,6 @@ export function setSceneTimeBucket(
 }
 
 // ============================================================================
-// Batch Edits
-// ============================================================================
-
-/**
- * Edit multiple scenes at once.
- */
-export function editMultipleScenes(
-    session: SessionDiffModel,
-    edits: Array<{ sceneIndex: number; newWhen: Date }>
-): SessionDiffModel {
-    if (edits.length === 0) return session;
-    
-    // Record all changes for undo
-    const changes: EditOperation['changes'] = [];
-    const newEntries = [...session.entries];
-    
-    for (const { sceneIndex, newWhen } of edits) {
-        const entry = newEntries[sceneIndex];
-        if (!entry) continue;
-        
-        const previousWhen = getEffectiveWhen(entry);
-        if (previousWhen.getTime() === newWhen.getTime()) continue;
-        
-        changes.push({
-            sceneIndex,
-            previousWhen,
-            newWhen
-        });
-        
-        newEntries[sceneIndex] = {
-            ...entry,
-            editedWhen: newWhen,
-            source: 'manual',
-            isChanged: entry.originalWhen === null ||
-                newWhen.getTime() !== entry.originalWhen.getTime()
-        };
-    }
-    
-    if (changes.length === 0) return session;
-    
-    // Create batch operation
-    const operation: EditOperation = {
-        type: 'batch',
-        timestamp: Date.now(),
-        changes
-    };
-    
-    // Update temporal flags for all affected scenes
-    const affectedIndices = new Set(changes.map(c => c.sceneIndex));
-    for (const idx of affectedIndices) {
-        updateTemporalFlags(newEntries, idx);
-    }
-    
-    return {
-        ...session,
-        entries: newEntries,
-        undoStack: [...session.undoStack, operation].slice(-MAX_UNDO_STACK),
-        redoStack: [],
-        hasUnsavedChanges: true
-    };
-}
-
-/**
- * Shift multiple scenes by days.
- */
-export function shiftMultipleDays(
-    session: SessionDiffModel,
-    sceneIndices: number[],
-    dayDelta: number
-): SessionDiffModel {
-    const edits = sceneIndices.map(sceneIndex => {
-        const entry = session.entries[sceneIndex];
-        if (!entry) return null;
-        
-        const currentWhen = getEffectiveWhen(entry);
-        const newWhen = new Date(currentWhen);
-        newWhen.setDate(newWhen.getDate() + dayDelta);
-        
-        return { sceneIndex, newWhen };
-    }).filter((e): e is { sceneIndex: number; newWhen: Date } => e !== null);
-    
-    return editMultipleScenes(session, edits);
-}
-
-/**
- * Set time bucket for multiple scenes.
- */
-export function setMultipleTimeBucket(
-    session: SessionDiffModel,
-    sceneIndices: number[],
-    hour: number
-): SessionDiffModel {
-    const edits = sceneIndices.map(sceneIndex => {
-        const entry = session.entries[sceneIndex];
-        if (!entry) return null;
-        
-        const currentWhen = getEffectiveWhen(entry);
-        const newWhen = new Date(currentWhen);
-        newWhen.setHours(hour, 0, 0, 0);
-        
-        return { sceneIndex, newWhen };
-    }).filter((e): e is { sceneIndex: number; newWhen: Date } => e !== null);
-    
-    return editMultipleScenes(session, edits);
-}
-
-// ============================================================================
 // Ripple Mode
 // ============================================================================
 
@@ -390,30 +283,6 @@ function applyRipple(
         ...session,
         entries: newEntries
     };
-}
-
-/**
- * Preview ripple impact from a given index: how many scenes would shift,
- * how many authored anchors hold, and how many flashbacks stay pinned.
- */
-export function getRippleImpact(
-    session: SessionDiffModel,
-    fromIndex: number
-): { shiftable: number; anchoredHeld: number; flashbacksPinned: number } {
-    let shiftable = 0;
-    let anchoredHeld = 0;
-    let flashbacksPinned = 0;
-    for (let i = fromIndex + 1; i < session.entries.length; i++) {
-        const entry = session.entries[i];
-        if (!isRipplePinned(entry, session)) {
-            shiftable++;
-        } else if (entry.isFlashback) {
-            flashbacksPinned++;
-        } else {
-            anchoredHeld++;
-        }
-    }
-    return { shiftable, anchoredHeld, flashbacksPinned };
 }
 
 // ============================================================================
@@ -617,34 +486,6 @@ function updateAllTemporalFlags(entries: RepairSceneEntry[]): void {
  */
 function checkForChanges(entries: RepairSceneEntry[]): boolean {
     return entries.some(e => e.isChanged);
-}
-
-// ============================================================================
-// Session Queries
-// ============================================================================
-
-/**
- * Get entries that need review.
- */
-export function getEntriesNeedingReview(session: SessionDiffModel): RepairSceneEntry[] {
-    return session.entries.filter(e => e.needsReview);
-}
-
-/**
- * Get entries with backward time.
- */
-export function getEntriesWithBackwardTime(session: SessionDiffModel): RepairSceneEntry[] {
-    return session.entries.filter(e => e.hasBackwardTime);
-}
-
-/**
- * Get entries by source.
- */
-export function getEntriesBySource(
-    session: SessionDiffModel,
-    source: RepairSceneEntry['source']
-): RepairSceneEntry[] {
-    return session.entries.filter(e => e.source === source);
 }
 
 /**

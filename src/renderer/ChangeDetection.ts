@@ -459,31 +459,3 @@ function getActiveNovelPandocLayoutId(settings: RadialTimelineSettings): string 
     return typeof globalLayoutId === 'string' ? globalLayoutId.trim() : '';
 }
 
-/**
- * Get a human-readable description of changes
- */
-export function describeChanges(result: ChangeDetectionResult): string {
-    if (!result.hasChanges) {
-        return 'No changes detected';
-    }
-    
-    const changes = Array.from(result.changeTypes).map(type => {
-        switch (type) {
-            case ChangeType.SCENE_DATA: return 'scene data';
-            case ChangeType.OPEN_FILES: return 'open files';
-            case ChangeType.SEARCH: return 'search';
-            case ChangeType.MODE: return 'mode';
-            case ChangeType.SETTINGS: return 'settings';
-            case ChangeType.TARGET_DATES: return 'target dates';
-            case ChangeType.TIME: return 'time';
-            case ChangeType.GOSSAMER: return 'gossamer';
-            case ChangeType.DOMINANT_SUBPLOT: return 'dominant subplot';
-            case ChangeType.SCENE_VISUAL: return 'scene visual';
-            case ChangeType.UPDATE_STATUS: return 'plugin update';
-            case ChangeType.RECENT_MOVES: return 'recent moves';
-            default: return type;
-        }
-    }).join(', ');
-    
-    return `Changes detected: ${changes} (strategy: ${result.updateStrategy})`;
-}

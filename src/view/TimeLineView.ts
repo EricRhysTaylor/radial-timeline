@@ -63,7 +63,6 @@ import { tooltip as applyTooltip } from '../utils/tooltip';
 
 // Duplicate of constants defined in main for now. We can consolidate later.
 export const TIMELINE_VIEW_TYPE = "radial-timeline";
-export const TIMELINE_VIEW_DISPLAY_TEXT = "Radial timeline";
 const TIMELINE_REFRESH_DELAY_MS = 1000;
 const SAGA_SCOPE_OPTION = '__rt_saga__';
 const SESSION_PROGRESS_STEP_PERCENT = 5;

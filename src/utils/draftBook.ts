@@ -201,11 +201,6 @@ export function isValidBookSourceFolder(file: TAbstractFile | null): file is TFo
   return file instanceof TFolder;
 }
 
-export function isVaultRootPath(sourceFolderPath: string): boolean {
-  const normalized = normalizePath((sourceFolderPath || '').trim());
-  return normalized.length === 0 || normalized === '/' || normalized === '.';
-}
-
 export function getDraftDisplayTitle(baseTitle: string, draftLabel: string): string {
   const cleanedBase = baseTitle.trim();
   return `${cleanedBase} — ${draftLabel}`;

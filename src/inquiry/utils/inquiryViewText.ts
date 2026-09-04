@@ -166,19 +166,6 @@ export const getSceneNoteSortOrder = (label: string): number => {
     return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
 };
 
-export const getPendingInquiryActions = (result: InquiryResult): string[] => {
-    const legacy = result as unknown as {
-        pendingActions?: unknown;
-        followUps?: unknown;
-        pendingInputs?: unknown;
-    };
-    const raw = legacy.pendingActions ?? legacy.followUps ?? legacy.pendingInputs;
-    if (!Array.isArray(raw)) return [];
-    return raw
-        .map(item => String(item).replace(/\s+/g, ' ').trim())
-        .filter(Boolean);
-};
-
 export const normalizeInquiryHeadline = (headline: string): string =>
     stripInquiryReferenceArtifacts(headline || 'Finding') || 'Finding';
 
@@ -203,8 +190,6 @@ export const formatInquiryBriefShortDate = (date: Date): string => {
     if (!Number.isFinite(date.getTime())) return 'Unknown';
     return `${INQUIRY_BRIEF_SHORT_MONTHS[date.getMonth()]} ${date.getDate()}`;
 };
-
-export const INQUIRY_BRIEF_ID_PATTERN = /^IB-\d{6}-\d{4}$/;
 
 export const formatManifestClassLabel = (value: string): string => {
     if (!value) return 'Class';

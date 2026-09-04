@@ -3,7 +3,7 @@
  * Keep this module focused on formatting and process execution.
  */
 
-import { normalizePath, FileSystemAdapter, Platform, Vault, TFile } from 'obsidian';
+import { normalizePath, FileSystemAdapter, Platform, TFile } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { PandocLayoutTemplate, LegacyPersistedSettings } from '../types';
 import type { ManuscriptSceneSelection, ManuscriptOrder } from './manuscript';
@@ -47,11 +47,6 @@ export function slugifyToFileStem(title: string): string {
 export function getLayoutById(plugin: RadialTimelinePlugin, id: string | undefined): PandocLayoutTemplate | undefined {
     if (!id) return undefined;
     return (plugin.settings.pandocLayouts || []).find(l => l.id === id);
-}
-
-/** Return all layouts scoped to a given preset. */
-export function getLayoutsForPreset(plugin: RadialTimelinePlugin, preset: ManuscriptPreset): PandocLayoutTemplate[] {
-    return (plugin.settings.pandocLayouts || []).filter(l => l.preset === preset);
 }
 
 /**
@@ -1492,59 +1487,6 @@ export function buildOutlineExport(
     }
 }
 
-export function getTemplateForPreset(
-    plugin: RadialTimelinePlugin,
-    preset: ManuscriptPreset
-): string | undefined {
-    const templates = (plugin.settings as LegacyPersistedSettings).pandocTemplates || {};
-    switch (preset) {
-        case 'screenplay':
-            return templates.screenplay || undefined;
-        case 'podcast':
-            return templates.podcast || undefined;
-        case 'novel':
-        default:
-            return templates.novel || undefined;
-    }
-}
-
-/**
- * Check if a template is configured and exists for a preset
- * Returns: { configured: boolean, exists: boolean, path: string | null }
- */
-export function validateTemplateForPreset(
-    plugin: RadialTimelinePlugin,
-    preset: ManuscriptPreset
-): { configured: boolean; exists: boolean; path: string | null; isAbsolute: boolean } {
-    const templatePath = getTemplateForPreset(plugin, preset);
-    
-    if (!templatePath || !templatePath.trim()) {
-        return { configured: false, exists: false, path: null, isAbsolute: false };
-    }
-    
-    const trimmed = templatePath.trim();
-    const isAbsolute = path.isAbsolute(trimmed);
-    
-    // For vault-relative paths, check if file exists
-    if (!isAbsolute) {
-        const file = plugin.app.vault.getAbstractFileByPath(trimmed);
-        const exists = file instanceof TFile;
-        return { configured: true, exists, path: trimmed, isAbsolute: false };
-    }
-    
-    // For absolute paths, we can't verify existence in Obsidian
-    // Assume it exists if configured (user responsibility)
-    return { configured: true, exists: true, path: trimmed, isAbsolute: true };
-}
-
-/**
- * Check if a preset requires a template for PDF export
- */
-export function presetRequiresTemplate(preset: ManuscriptPreset, format: ExportFormat): boolean {
-    if (format === 'markdown') return false; // Markdown never needs templates
-    return preset === 'screenplay' || preset === 'podcast'; // Novel can use defaults
-}
-
 export function getExportFormatExtension(format: ExportFormat): string {
     switch (format) {
         case 'pdf':
@@ -1595,16 +1537,6 @@ export function resolveTemplatePath(plugin: RadialTimelinePlugin, templatePath: 
     const preferred = candidates[1] || candidates[0] || trimmed;
     const absolutePreferred = resolveVaultAbsolutePath(plugin, preferred);
     return absolutePreferred || preferred || trimmed;
-}
-
-export async function writeTextFile(
-    vault: Vault,
-    vaultPath: string,
-    content: string
-): Promise<void> {
-    const normalized = normalizePath(vaultPath);
-    const adapter = vault.adapter; // SAFE: adapter write used to save generated export content
-    await adapter.write(normalized, content);
 }
 
 

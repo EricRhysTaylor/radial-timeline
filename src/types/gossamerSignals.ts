@@ -128,6 +128,3 @@ export function coerceGossamerSignal(value: unknown): GossamerSignalType {
   return DEFAULT_GOSSAMER_SIGNAL;
 }
 
-export function getGossamerSignalMetadata(signal: GossamerSignalType): GossamerSignalMetadata {
-  return GOSSAMER_SIGNAL_METADATA[signal];
-}

@@ -55,7 +55,6 @@ export type AprLayoutSpec = {
 
 export const kInset = 0.05;
 export const kTextBand = 0.12;
-export const kRingStroke = 0.01;
 export const kDividerStroke = 0.004;
 export const kCenterNumber = 0.24;
 export const kPercent = 0.5;

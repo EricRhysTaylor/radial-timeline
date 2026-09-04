@@ -69,14 +69,6 @@ export function replaceSavedBeatSystem(
     settings.savedBeatSystems.unshift(normalized);
 }
 
-export function removeSavedBeatSystem(
-    settings: Pick<RadialTimelineSettings, 'savedBeatSystems'>,
-    customBeatSystemId: string
-): void {
-    if (!Array.isArray(settings.savedBeatSystems)) return;
-    settings.savedBeatSystems = settings.savedBeatSystems.filter((system) => system.id !== customBeatSystemId);
-}
-
 export function resolveSelectedBeatModelFromSettings(
     settings: Pick<RadialTimelineSettings, 'books' | 'activeBookId'>
 ): string | undefined {

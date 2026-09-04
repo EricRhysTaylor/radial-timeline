@@ -673,10 +673,6 @@ export function resolveRecoverSnapshotsRoot(): string {
     return normalizePath(`${DEFAULT_RECOVER_ROOT}/${RECOVER_SNAPSHOTS_FOLDER_NAME}`);
 }
 
-export async function ensureRecoverSnapshotsRoot(vault: Vault): Promise<TFolder | null> {
-    return ensureNestedFolder(vault, resolveRecoverSnapshotsRoot());
-}
-
 export function resolveAvailableLogPath(vault: Vault, folderPath: string, baseName: string): string {
     const sanitizedFolder = normalizePath(folderPath);
     const cleanBase = baseName.replace(/\.md$/i, '');

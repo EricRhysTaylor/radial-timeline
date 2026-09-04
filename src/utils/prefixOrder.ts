@@ -16,13 +16,6 @@ export function extractPrefixToken(value: string | undefined | null): string | n
     return match?.[1] ?? null;
 }
 
-export function extractIntegerPrefixWidth(value: string | undefined | null): number {
-    const token = extractPrefixToken(value);
-    if (!token) return 0;
-    const integerPart = token.split('.')[0] ?? '';
-    return integerPart.length;
-}
-
 export function comparePrefixTokens(a: string | null, b: string | null): number {
     if (a && b) {
         const cmp = a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });

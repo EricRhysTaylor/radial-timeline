@@ -457,10 +457,6 @@ export async function openGossamerScoreEntry(plugin: RadialTimelinePlugin): Prom
   modal.open();
 }
 
-export function getActiveGossamerRun(plugin: RadialTimelinePlugin): GossamerRun | null {
-  return lastRunByPlugin.get(plugin) ?? null;
-}
-
 export async function syncGossamerPresentationState(
   plugin: RadialTimelinePlugin,
   scenesInput?: Awaited<ReturnType<RadialTimelinePlugin['getSceneData']>>

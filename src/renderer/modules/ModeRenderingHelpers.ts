@@ -96,20 +96,6 @@ export function usesSequenceAlignment(plugin: PluginFacade): boolean {
 }
 
 /**
- * Check if the inner ring should show scene content
- *
- * @param plugin - Plugin facade with settings
- * @returns true if inner rings show content, false if hidden/empty
- */
-export function shouldShowInnerRingContent(plugin: PluginFacade): boolean {
-    const currentMode = plugin.settings.currentMode || TimelineMode.NARRATIVE;
-    const modeDef = getModeDefinition(currentMode as TimelineMode);
-    
-    // Inner rings show content unless hidden
-    return modeDef.rendering.innerRingContent !== 'hidden';
-}
-
-/**
  * Get the subplot label text for a given subplot name and ring position
  * 
  * @param plugin - Plugin facade with settings

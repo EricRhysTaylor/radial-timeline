@@ -13,16 +13,6 @@ export interface PlotBeatInfo {
   id?: string;        // Stable internal beat-definition id (e.g. "save-the-cat:midpoint")
 }
 
-/** Lowercase slug: spaces/special → hyphens, collapse, trim. */
-export function slugifyBeat(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-}
-
-/** Deterministic internal beat-definition id: <system-slug>:<beat-slug> */
-export function buildBuiltinBeatId(systemName: string, beatName: string): string {
-  return `${slugifyBeat(systemName)}:${slugifyBeat(beatName)}`;
-}
-
 export interface PlotSystemPreset {
   name: string;
   category: BeatLibraryCategory;
@@ -565,7 +555,3 @@ export const STARTER_BEAT_SETS: StarterBeatSet[] = [
   },
 ];
 
-// ─── Deprecated aliases (remove after v5.2) ─────────────────────────
-
-/** @deprecated Use PlotSystemPreset */
-export type PlotSystemTemplate = PlotSystemPreset;

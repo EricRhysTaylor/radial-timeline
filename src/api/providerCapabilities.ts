@@ -1,5 +1,3 @@
-// DEPRECATED: Legacy provider adapter; prefer aiClient entrypoints.
-import type { OpenAiResponseFormat } from './openaiApi';
 import {
     modelSupportsRequestTemperature,
     modelSupportsRequestTopP,
@@ -7,19 +5,6 @@ import {
 } from '../ai/registry/modelRequestProfiles';
 
 export type AiProvider = 'openai' | 'anthropic' | 'google' | 'ollama';
-
-export interface ProviderCallArgs {
-    userPrompt: string;
-    systemPrompt?: string | null;
-    maxTokens?: number | null;
-    temperature?: number;
-    top_p?: number;
-    responseFormat?: OpenAiResponseFormat;
-    jsonSchema?: Record<string, unknown>;
-    thinkingBudgetTokens?: number;
-    citationsEnabled?: boolean;
-    evidenceDocuments?: { title: string; content: string }[];
-}
 
 type ProviderCapabilities = {
     supportsTemperature: boolean;
@@ -102,10 +87,6 @@ const normalizeModelId = (provider: AiProvider, modelId?: string): string => {
     return modelId.trim();
 };
 
-export function getProviderCapabilities(provider: AiProvider): Readonly<ProviderCapabilities> {
-    return PROVIDER_CAPABILITIES[provider];
-}
-
 export function providerSupportsCitations(provider: AiProvider): boolean {
     return PROVIDER_CAPABILITIES[provider].supportsCitations;
 }
@@ -116,58 +97,6 @@ export function providerSupportsCorpusReuse(provider: AiProvider): boolean {
 
 export function providerSupportsBatchApi(provider: AiProvider): boolean {
     return PROVIDER_CAPABILITIES[provider].supportsBatchApi;
-}
-
-/** @deprecated Legacy sanitization — use sanitizeDispatchParams for the modern aiClient path. */
-export function sanitizeProviderArgs(
-    provider: AiProvider,
-    modelId: string | undefined,
-    args: ProviderCallArgs
-): ProviderCallArgs {
-    const capabilities = PROVIDER_CAPABILITIES[provider];
-    const normalizedModelId = normalizeModelId(provider, modelId);
-    const temperatureAllowed = capabilities.supportsTemperature &&
-        modelSupportsRequestTemperature(provider, normalizedModelId) &&
-        !MODEL_TEMPERATURE_UNSUPPORTED[provider].has(normalizedModelId);
-    const topPAllowed = capabilities.supportsTopP &&
-        modelSupportsRequestTopP(provider, normalizedModelId);
-    const thinkingBudgetAllowed = capabilities.supportsExtendedThinking &&
-        modelSupportsThinkingBudget(provider, normalizedModelId);
-    const supportsCitationControl = capabilities.supportsCitations || provider === 'google';
-
-    const sanitized: ProviderCallArgs = {
-        userPrompt: args.userPrompt
-    };
-
-    if (args.systemPrompt !== undefined) {
-        sanitized.systemPrompt = args.systemPrompt;
-    }
-    if (args.maxTokens !== undefined) {
-        sanitized.maxTokens = args.maxTokens;
-    }
-    if (temperatureAllowed && typeof args.temperature === 'number') {
-        sanitized.temperature = args.temperature;
-    }
-    if (topPAllowed && typeof args.top_p === 'number') {
-        sanitized.top_p = args.top_p;
-    }
-    if (capabilities.supportsResponseFormat && args.responseFormat) {
-        sanitized.responseFormat = args.responseFormat;
-    }
-    if (capabilities.supportsJsonSchema && args.jsonSchema) {
-        sanitized.jsonSchema = args.jsonSchema;
-    }
-    if (thinkingBudgetAllowed && typeof args.thinkingBudgetTokens === 'number') {
-        sanitized.thinkingBudgetTokens = args.thinkingBudgetTokens;
-    }
-    if (supportsCitationControl && args.citationsEnabled) {
-        sanitized.citationsEnabled = args.citationsEnabled;
-    }
-    if (capabilities.supportsCitations && args.evidenceDocuments) {
-        sanitized.evidenceDocuments = args.evidenceDocuments;
-    }
-
-    return sanitized;
 }
 
 // ---------------------------------------------------------------------------

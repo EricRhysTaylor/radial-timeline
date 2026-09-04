@@ -945,25 +945,6 @@ function createModernClassicState(options?: ModernClassicStructureOptions): Mode
   };
 }
 
-/**
- * Apply an inclusive range to any ordered list of scenes.
- * Range is 1-based; if start/end are undefined the full list is returned.
- */
-export function sliceScenesByRange(
-  sceneFiles: TFile[],
-  startIndex?: number,
-  endIndex?: number
-): TFile[] {
-  if (!sceneFiles.length) return sceneFiles;
-
-  const start = startIndex && startIndex > 0 ? startIndex : 1;
-  const end = endIndex && endIndex > 0 ? endIndex : sceneFiles.length;
-  const clampedStart = Math.min(Math.max(start, 1), sceneFiles.length);
-  const clampedEnd = Math.min(Math.max(end, clampedStart), sceneFiles.length);
-
-  return sceneFiles.slice(clampedStart - 1, clampedEnd);
-}
-
 
 /**
  * Generate a table of contents for the manuscript

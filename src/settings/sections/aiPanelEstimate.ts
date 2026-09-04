@@ -24,7 +24,6 @@ import type { AIProviderId } from '../../ai/types';
 import {
     type TokenEstimate,
     TOKEN_ESTIMATE_DISCLOSURE,
-    TOKEN_ESTIMATE_SOURCE_LABEL,
     pickBestTokenEstimate,
     formatTokenShorthand
 } from '../../ai/estimates';
@@ -38,9 +37,6 @@ import {
  * `TokenEstimate` directly.
  */
 export type PanelTokenEstimate = TokenEstimate;
-
-/** @deprecated Use TOKEN_ESTIMATE_SOURCE_LABEL from `src/ai/estimates`. */
-export const ESTIMATE_SOURCE_LABEL = TOKEN_ESTIMATE_SOURCE_LABEL;
 
 export interface PanelRowItem {
     label: string;

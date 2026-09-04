@@ -27,18 +27,6 @@ export interface TimeSpanInfo {
 }
 
 /**
- * Time label information for rendering around the timeline arc
- */
-export interface TimeLabelInfo {
-    /** Label text (e.g., "Day 1", "Week 2") */
-    text: string;
-    /** Angular position in radians */
-    angle: number;
-    /** Time value in milliseconds */
-    timeMs: number;
-}
-
-/**
  * Parse a When field string into a Date object
  * Supports ISO formats: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS, YYYY-MM-DD HH:MM
  */
@@ -344,116 +332,6 @@ export function calculateTimeSpan(dates: Date[]): TimeSpanInfo {
         years,
         recommendedUnit
     };
-}
-
-/**
- * Generate time labels for the timeline arc based on time span
- */
-export function generateTimeLabels(span: TimeSpanInfo, earliestDate: Date): TimeLabelInfo[] {
-    const labels: TimeLabelInfo[] = [];
-
-    switch (span.recommendedUnit) {
-        case 'minutes': {
-            // Generate minute labels (max 90 labels for up to 90 minutes)
-            const maxMinutes = Math.min(90, Math.ceil(span.minutes));
-            const minuteStep = maxMinutes > 30 ? 5 : (maxMinutes > 15 ? 2 : 1); // 1min, 2min, or 5min intervals
-            for (let i = 0; i <= maxMinutes; i += minuteStep) {
-                const timeMs = earliestDate.getTime() + (i * 60 * 1000);
-                const angle = mapTimeToAngle(timeMs, earliestDate.getTime(), earliestDate.getTime() + span.totalMs);
-                labels.push({
-                    text: `${i}m`,
-                    angle,
-                    timeMs
-                });
-            }
-            break;
-        }
-
-        case 'hours': {
-            // Generate hourly labels (max 24 labels)
-            const maxHours = Math.min(24, Math.ceil(span.hours));
-            for (let i = 0; i <= maxHours; i++) {
-                const timeMs = earliestDate.getTime() + (i * 60 * 60 * 1000);
-                const angle = mapTimeToAngle(timeMs, earliestDate.getTime(), earliestDate.getTime() + span.totalMs);
-                labels.push({
-                    text: `${i}h`,
-                    angle,
-                    timeMs
-                });
-            }
-            break;
-        }
-
-        case 'days': {
-            // Generate daily labels (max 7 labels)
-            const maxDays = Math.min(7, Math.ceil(span.days));
-            for (let i = 0; i <= maxDays; i++) {
-                const timeMs = earliestDate.getTime() + (i * 24 * 60 * 60 * 1000);
-                const angle = mapTimeToAngle(timeMs, earliestDate.getTime(), earliestDate.getTime() + span.totalMs);
-                labels.push({
-                    text: `Day ${i + 1}`,
-                    angle,
-                    timeMs
-                });
-            }
-            break;
-        }
-
-        case 'weeks': {
-            // Generate weekly labels (max 8 labels)
-            const maxWeeks = Math.min(8, Math.ceil(span.weeks));
-            for (let i = 0; i <= maxWeeks; i++) {
-                const timeMs = earliestDate.getTime() + (i * 7 * 24 * 60 * 60 * 1000);
-                const angle = mapTimeToAngle(timeMs, earliestDate.getTime(), earliestDate.getTime() + span.totalMs);
-                labels.push({
-                    text: `Week ${i + 1}`,
-                    angle,
-                    timeMs
-                });
-            }
-            break;
-        }
-
-        case 'months': {
-            // Generate monthly labels (max 12 labels)
-            const maxMonths = Math.min(12, Math.ceil(span.months));
-            for (let i = 0; i <= maxMonths; i++) {
-                const timeMs = earliestDate.getTime() + (i * 30.44 * 24 * 60 * 60 * 1000);
-                const angle = mapTimeToAngle(timeMs, earliestDate.getTime(), earliestDate.getTime() + span.totalMs);
-                labels.push({
-                    text: `Month ${i + 1}`,
-                    angle,
-                    timeMs
-                });
-            }
-            break;
-        }
-
-        case 'years': {
-            // Generate yearly labels (max 10 labels)
-            const maxYears = Math.min(10, Math.ceil(span.years));
-            for (let i = 0; i <= maxYears; i++) {
-                const timeMs = earliestDate.getTime() + (i * 365.25 * 24 * 60 * 60 * 1000);
-                const angle = mapTimeToAngle(timeMs, earliestDate.getTime(), earliestDate.getTime() + span.totalMs);
-                labels.push({
-                    text: `Year ${i + 1}`,
-                    angle,
-                    timeMs
-                });
-            }
-            break;
-        }
-    }
-
-    return labels;
-}
-
-/**
- * Map a time value to an angular position on the timeline arc
- */
-function mapTimeToAngle(timeMs: number, startMs: number, endMs: number): number {
-    const progress = (timeMs - startMs) / (endMs - startMs);
-    return progress * 2 * Math.PI - Math.PI / 2; // Start at top (12 o'clock)
 }
 
 /**

@@ -36,38 +36,3 @@ export function updateSubplotLabels(
     }
 }
 
-/**
- * Updates subplot label visibility based on mode
- */
-export function updateSubplotLabelVisibility(
-    svg: SVGSVGElement,
-    visibleSubplots: Set<string>
-): boolean {
-    try {
-        let updated = false;
-        
-        const labelGroups = svg.querySelectorAll('.rt-subplot-ring-label-text');
-        
-        labelGroups.forEach(group => {
-            const subplotName = group.getAttribute('data-subplot-name');
-            if (!subplotName) return;
-            
-            const shouldBeVisible = visibleSubplots.has(subplotName);
-            const isCurrentlyVisible = group.getAttribute('opacity') !== '0';
-            
-            if (shouldBeVisible && !isCurrentlyVisible) {
-                group.setAttribute('opacity', '1');
-                updated = true;
-            } else if (!shouldBeVisible && isCurrentlyVisible) {
-                group.setAttribute('opacity', '0');
-                updated = true;
-            }
-        });
-        
-        return updated;
-    } catch (error) {
-        console.error('[SubplotLabelDOMUpdater] Failed to update subplot label visibility:', error);
-        return false;
-    }
-}
-

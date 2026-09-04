@@ -1,11 +1,3 @@
-/*
- * Radial Timeline (tm) Plugin for Obsidian
- * Copyright (c) 2025 Eric Rhys Taylor
- * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
- */
-// Minimal local constants the renderer relies on
-export const NUM_ACTS = 3;
-
 // Single source of truth for status colors as raw hex.
 // Mirrors --rt-color-* in src/styles/variables.css. APR (canvas/PNG, standalone SVG embed) reads
 // these directly; the timeline reads STATUS_COLORS below, which uses the same hex as the var fallback.

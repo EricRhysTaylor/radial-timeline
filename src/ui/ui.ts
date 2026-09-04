@@ -58,12 +58,6 @@ const applyVariant = (el: HTMLElement, variant?: ErtVariant | ErtVariant[]) => {
   }
 };
 
-export function mountRoot(parentEl: HTMLElement): HTMLElement {
-  const root = parentEl.createDiv({ cls: ERT_CLASSES.ROOT });
-  warnUnknownErtClasses([ERT_CLASSES.ROOT], root);
-  return root;
-}
-
 export function section(parent: HTMLElement, opts: SectionOpts, buildFn?: (bodyEl: HTMLElement) => void): HTMLElement {
   const sectionEl = parent.createDiv({ cls: ERT_CLASSES.SECTION });
   warnUnknownErtClasses([ERT_CLASSES.SECTION], sectionEl);

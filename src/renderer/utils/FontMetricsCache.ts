@@ -215,20 +215,6 @@ export function getNumberSquareWidthFromCache(num: string, scale: number = 1): n
 }
 
 /**
- * Check if the beat label cache is initialized.
- */
-export function isBeatLabelCacheReady(): boolean {
-    return beatLabelCache !== null;
-}
-
-/**
- * Check if the number square cache is initialized.
- */
-export function isNumberSquareCacheReady(): boolean {
-    return numberSquareCache !== null;
-}
-
-/**
  * Clear all caches (call when font settings change).
  */
 export function clearFontMetricsCaches(): void {

@@ -370,24 +370,6 @@ export function filterBeatsBySystem<T extends object>(
   }
 }
 
-export const DefaultGossamerMomentum: { beat: string; score: number; notes: string }[] = [
-  { beat: 'Opening Image',          score: 4,  notes: 'Quiet status quo before disturbance.' },
-  { beat: 'Theme Stated',           score: 8,  notes: 'Subtle tension; hints of deeper change.' },
-  { beat: 'Set-Up',                 score: 14, notes: 'World and protagonist established; mild friction.' },
-  { beat: 'Catalyst',               score: 26, notes: 'Inciting incident jolts the protagonist’s world.' },
-  { beat: 'Debate',                 score: 22, notes: 'Internal conflict; push–pull before commitment.' },
-  { beat: 'Break into Two',         score: 35, notes: 'Crossing threshold; tension climbs.' },
-  { beat: 'B Story',                score: 40, notes: 'Secondary stakes introduced; emotional contrast.' },
-  { beat: 'Fun and Games',          score: 46, notes: 'Momentum holds steady; stakes rising under surface.' },
-  { beat: 'Midpoint',               score: 64, notes: 'Major reversal or revelation; visible peak forming.' },
-  { beat: 'Bad Guys Close In',      score: 72, notes: 'Pressure intensifies; opposing forces gather.' },
-  { beat: 'All Is Lost',            score: 86, notes: 'Crisis hits; near-peak emotional tension.' },
-  { beat: 'Dark Night of the Soul', score: 78, notes: 'Momentary drop before regrouping.' },
-  { beat: 'Break into Three',       score: 82, notes: 'Decision to fight back; new synthesis.' },
-  { beat: 'Finale',                 score: 94, notes: 'Climactic confrontation; maximum momentum.' },
-  { beat: 'Final Image',            score: 42, notes: 'Resolution; lingering emotional after-echo.' }
-];
-
 export function normalizeBeatName(name: string): string {
   // Strip score/range suffixes, then normalize via shared beat matcher.
   return toBeatMatchKey((name || '').replace(/\s*\d+(?:\s*-\s*\d+)?\s*%?\s*$/i, '')).replace(/\s+/g, '');
@@ -862,19 +844,6 @@ export function buildAllGossamerRuns(
   };
 }
 
-export function zeroOffsetRun(run: GossamerRun): GossamerRun {
-  // Use the first beat as the zero anchor (instead of hardcoded "opening image")
-  const firstBeat = run.beats[0];
-  const base = typeof firstBeat?.score === 'number' ? firstBeat.score : 0;
-  return {
-    ...run,
-    beats: run.beats.map(b => ({
-      ...b,
-      score: typeof b.score === 'number' ? Math.max(0, b.score - base) : b.score,
-    })),
-  };
-}
-
 export function extractPresentBeatScores(run: GossamerRun): { beat: string; score: number }[] {
   return run.beats
     .filter(b => b.status === 'present' && typeof b.score === 'number')
@@ -910,36 +879,6 @@ export function extractBeatOrder(scenes: { itemType?: string; subplot?: string; 
     .filter(Boolean);
   
   return beatNames;
-}
-
-/**
- * Shift Gossamer history down by one (Gossamer1 → Gossamer2, etc.)
- * Shifts both scores and justifications. Returns updated frontmatter.
- */
-export function shiftGossamerHistory(frontmatter: Record<string, unknown>): Record<string, unknown> {
-  const maxHistory = GOSSAMER_MAX_HISTORY;
-  const updated = { ...frontmatter };
-  for (let i = maxHistory; i >= 2; i--) {
-    clearGossamerRunSlot(updated, i);
-
-    const priorScore = updated[getGossamerScoreKey(i - 1)];
-    if (priorScore !== undefined) {
-      updated[getGossamerScoreKey(i)] = priorScore;
-    }
-
-    const priorJustification = updated[getGossamerJustificationKey(i - 1)];
-    if (priorJustification !== undefined) {
-      updated[getGossamerJustificationKey(i)] = priorJustification;
-    }
-
-    const priorMetadata = readGossamerSlotMetadata(updated, i - 1);
-    applyGossamerRunMetadata(updated, i, priorMetadata);
-  }
-
-  clearGossamerRunSlot(updated, 1);
-  
-  // Gossamer1 and Gossamer1 Justification will be set by the caller with the new values
-  return updated;
 }
 
 export function normalizeGossamerHistory(frontmatter: Record<string, unknown>): {

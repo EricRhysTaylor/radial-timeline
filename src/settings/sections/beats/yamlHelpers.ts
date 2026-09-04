@@ -74,23 +74,6 @@ export function buildYamlFromEntries(entries: FieldEntry[], commentMap?: Record<
     return lines.join('\n');
 }
 
-export function buildYamlWithRequired(
-    requiredOrder: string[],
-    requiredValues: Record<string, FieldEntryValue>,
-    optionalEntries: FieldEntry[],
-    commentMap?: Record<string, string>
-): string {
-    const combined: FieldEntry[] = [
-        ...requiredOrder.map(key => ({
-            key,
-            value: requiredValues[key] ?? '',
-            required: true
-        })),
-        ...optionalEntries
-    ];
-    return buildYamlFromEntries(combined, commentMap);
-}
-
 export function entriesFromTemplate(template: string, requiredOrder: string[]): FieldEntry[] {
     const order = mergeOrders(extractKeysInOrder(template), requiredOrder);
     const obj = safeParseYaml(template);

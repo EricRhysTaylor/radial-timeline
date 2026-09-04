@@ -60,18 +60,3 @@ export function isBonusVaultInstalled(plugin: RadialTimelinePlugin, id: string):
         && plugin.settings.installedBonusVaults.includes(id);
 }
 
-/** Persist the installed/uninstalled state of a bonus vault. */
-export async function setBonusVaultInstalled(
-    plugin: RadialTimelinePlugin,
-    id: string,
-    installed: boolean
-): Promise<void> {
-    const current = new Set(plugin.settings.installedBonusVaults ?? []);
-    if (installed) {
-        current.add(id);
-    } else {
-        current.delete(id);
-    }
-    plugin.settings.installedBonusVaults = Array.from(current);
-    await plugin.saveSettings();
-}

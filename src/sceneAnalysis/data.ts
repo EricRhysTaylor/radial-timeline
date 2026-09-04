@@ -87,9 +87,6 @@ export function getSummaryUpdateFlag(fm: Record<string, unknown> | undefined): u
     return undefined;
 }
 
-/** @deprecated Use getSummaryUpdateFlag instead */
-export const getSynopsisUpdateFlag = getSummaryUpdateFlag;
-
 function hasWordsContent(fm: Record<string, unknown>): boolean {
     const w1 = fm?.words;
     const w2 = (fm)['Words'];

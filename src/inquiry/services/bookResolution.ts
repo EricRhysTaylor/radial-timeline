@@ -1,5 +1,4 @@
-import { MetadataCache, TFolder, Vault, normalizePath } from 'obsidian';
-import { normalizeFrontmatterKeys } from '../../utils/frontmatter';
+import { normalizePath } from 'obsidian';
 import type { BookProfile } from '../../types/settings';
 import { getSequencedBooks } from '../../utils/books';
 
@@ -72,18 +71,6 @@ export const normalizeInquiryBookInclusion = (raw?: Record<string, unknown>): Re
     });
     return normalized;
 };
-
-export function resolveInquiryBookResolution(params: {
-    vault: Vault;
-    metadataCache: MetadataCache;
-    resolvedVaultRoots: string[];
-    frontmatterMappings?: Record<string, string>;
-    bookInclusion?: Record<string, unknown>;
-    bookProfiles?: BookProfile[];
-}): InquiryBookResolution {
-    const discovered = discoverInquiryBookRoots(params);
-    return finalizeInquiryBookResolution(discovered, params.bookInclusion);
-}
 
 export function resolveBookManagerInquiryBooks(bookProfiles?: BookProfile[]): InquiryBookResolution {
     const candidates: InquiryResolvedBook[] = [];
@@ -261,138 +248,6 @@ function resolveDetectedBy(item: DiscoveredInquiryBookRoot): InquiryResolvedBook
     if (item.detectedByOutline) parts.push('outline');
     // Join parts; type-safe cast since the combination is always valid.
     return (parts.join('+') || 'name') as InquiryResolvedBook['detectedBy'];
-}
-
-function discoverInquiryBookRoots(params: {
-    vault: Vault;
-    metadataCache: MetadataCache;
-    resolvedVaultRoots: string[];
-    frontmatterMappings?: Record<string, string>;
-    bookProfiles?: BookProfile[];
-}): DiscoveredInquiryBookRoot[] {
-    const resolvedVaultRoots = Array.from(new Set(
-        (params.resolvedVaultRoots || []).map(root => normalizeMaybeRootPath(root))
-    ));
-
-    if (!resolvedVaultRoots.length) return [];
-
-    const map = new Map<string, DiscoveredInquiryBookRoot>();
-    const outlineBookFolders = collectOutlineBookFolders(params.vault, params.metadataCache, params.frontmatterMappings);
-
-    const addDiscoveredRoot = (rootPath: string, reason: 'name' | 'outline' | 'profile', bookNumber?: number) => {
-        const normalizedRoot = normalizeMaybeRootPath(rootPath);
-        if (!normalizedRoot) return;
-        const prior = map.get(normalizedRoot);
-        if (prior) {
-            prior.detectedByName = prior.detectedByName || reason === 'name';
-            prior.detectedByOutline = prior.detectedByOutline || reason === 'outline';
-            prior.detectedByProfile = prior.detectedByProfile || reason === 'profile';
-            if (bookNumber !== undefined && prior.bookNumber === undefined) {
-                prior.bookNumber = bookNumber;
-            }
-            return;
-        }
-
-        map.set(normalizedRoot, {
-            rootPath: normalizedRoot,
-            bookNumber,
-            detectedByName: reason === 'name',
-            detectedByOutline: reason === 'outline',
-            detectedByProfile: reason === 'profile'
-        });
-    };
-
-    // Priority 1: BookProfile sourceFolder entries from Book Manager.
-    if (params.bookProfiles?.length) {
-        getSequencedBooks(params.bookProfiles).forEach(({ book: profile, sequenceNumber }) => {
-            const folder = normalizeMaybeRootPath((profile.sourceFolder || '').trim());
-            if (!folder) return;
-            // Only include if folder falls within the configured scan roots.
-            const inRoots = resolvedVaultRoots.some(root =>
-                !root || folder === root || folder.startsWith(`${root}/`)
-            );
-            if (!inRoots) return;
-            addDiscoveredRoot(folder, 'profile', sequenceNumber);
-        });
-    }
-
-    // Priority 2: Legacy Book X folder name detection.
-    const hasRootScan = resolvedVaultRoots.some(root => root === '');
-    if (hasRootScan) {
-        const folders = params.vault.getAllLoadedFiles().filter((file): file is TFolder => file instanceof TFolder);
-
-        folders.forEach(folder => {
-            const match = BOOK_FOLDER_REGEX.exec(folder.name);
-            if (!match) return;
-            addDiscoveredRoot(folder.path, 'name', Number(match[1]));
-        });
-
-        folders.forEach(folder => {
-            if (folder.path.includes('/')) return;
-            if (!outlineBookFolders.has(normalizeMaybeRootPath(folder.path))) return;
-            addDiscoveredRoot(folder.path, 'outline');
-        });
-    }
-
-    // Priority 3: Legacy outline-based and scan-root name detection.
-    resolvedVaultRoots.forEach(root => {
-        if (!root) return;
-        const candidate = extractBookRootByName(root);
-        if (candidate) {
-            const match = BOOK_FOLDER_REGEX.exec(candidate.split('/').pop() || '');
-            addDiscoveredRoot(candidate, 'name', match ? Number(match[1]) : undefined);
-            return;
-        }
-        if (outlineBookFolders.has(root)) {
-            addDiscoveredRoot(root, 'outline');
-        }
-    });
-
-    return Array.from(map.values());
-}
-
-function collectOutlineBookFolders(
-    vault: Vault,
-    metadataCache: MetadataCache,
-    frontmatterMappings?: Record<string, string>
-): Set<string> {
-    const folders = new Set<string>();
-    const files = vault.getMarkdownFiles();
-
-    files.forEach(file => {
-        const cache = metadataCache.getFileCache(file);
-        const frontmatter = cache?.frontmatter;
-        if (!frontmatter) return;
-        const normalized = normalizeFrontmatterKeys(frontmatter, frontmatterMappings);
-
-        const rawClass = normalized['Class'];
-        const classValues = Array.isArray(rawClass) ? rawClass : rawClass ? [rawClass] : [];
-        const hasOutlineClass = classValues
-            .map(value => (typeof value === 'string' ? value : String(value)).trim().toLowerCase())
-            .includes('outline');
-        if (!hasOutlineClass) return;
-
-        const scope = normalized['Scope'];
-        if (typeof scope !== 'string' || scope.trim().toLowerCase() !== 'book') return;
-
-        const pathSegments = file.path.split('/').filter(Boolean);
-        if (pathSegments.length <= 1) return;
-        for (let idx = 1; idx < pathSegments.length; idx += 1) {
-            const folderPath = pathSegments.slice(0, idx).join('/');
-            if (folderPath) folders.add(normalizeMaybeRootPath(folderPath));
-        }
-    });
-
-    return folders;
-}
-
-function extractBookRootByName(path: string): string | null {
-    const normalizedPath = normalizeMaybeRootPath(path);
-    if (!normalizedPath) return null;
-    const segments = normalizedPath.split('/').filter(Boolean);
-    const index = segments.findIndex(segment => BOOK_FOLDER_REGEX.test(segment));
-    if (index < 0) return null;
-    return segments.slice(0, index + 1).join('/');
 }
 
 function findContainingRoot(rootPath: string, sortedRoots: string[]): string | undefined {

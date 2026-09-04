@@ -1,22 +1,3 @@
-/*
- * Radial Timeline (tm) Plugin for Obsidian
- * Copyright (c) 2025 Eric Rhys Taylor
- * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
- */
-
-/**
- * The search options panel — the surface that makes search legible.
- *
- * Before this, the search box was a blind text field: the author could not see
- * what was being searched, and an empty result was indistinguishable from a
- * broken search. The panel names the scopes and reports what happened.
- *
- * Scopes not yet implemented render **disabled**, never inert-but-enabled. A
- * checkbox that accepts a click and changes nothing is a lie about the
- * product's capability, and the author has no way to tell it from a bug.
- */
-
-import { setIcon } from 'obsidian';
 import { t } from '../../i18n';
 import type { TimelineSearchOptions, TimelineSearchState } from '../../services/searchState';
 import { hasSearchScope } from '../../services/searchState';
@@ -391,8 +372,3 @@ export class SearchPanelController {
     }
 }
 
-/** Icon helper kept here so the shell's button styling stays in one place. */
-export function setSearchButtonIcon(button: HTMLElement, mode: 'search' | 'clear'): void {
-    button.empty();
-    setIcon(button, mode === 'clear' ? 'search-x' : 'search');
-}

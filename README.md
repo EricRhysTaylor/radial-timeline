@@ -116,7 +116,7 @@ Radial Timeline may contact external services in these workflows:
 
 - AI provider requests when you actively use enabled AI features
 - Optional provider/model/pricing metadata refreshes governed by AI privacy settings
-- Optional version/update checks
+- A version check against the GitHub Releases API runs once at plugin load (throttled to once a day). It carries no vault data or identity; it only compares version numbers so the timeline can show an update indicator.
 - A Discord presence chip in the Radial Timeline View title bar polls a public `discord-presence` endpoint roughly every 60 seconds, **by default, for every user**. It is not gated on connecting to Community and does not require any sign-in — it only reports whether the Discord community is currently staffed. See [Radial Timeline View → Discord Presence Chip](https://github.com/EricRhysTaylor/Radial-Timeline/wiki/Radial-Timeline-View#discord-presence-chip)
 - Community Share publish and daily-activity sync calls, sent only when you connect to Community and choose a sharing level above Private — see [Settings → Community](https://github.com/EricRhysTaylor/Radial-Timeline/wiki/Settings-Community)
 

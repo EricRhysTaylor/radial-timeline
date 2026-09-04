@@ -20,7 +20,7 @@ Onboarding detects the right lane from what you point it at, and you can overrid
 
 Every lane works both ways:
 
-*   **Structure-only (no AI).** Deterministic splitting from your document's structure and scene markers. Nothing leaves your machine and no model is required.
+*   **Structure-only (no AI).** Deterministic splitting from your document's structure and scene markers. No manuscript text leaves your machine and no model is required.
 *   **With a local LLM.** The model proposes scene breaks inside unmarked prose (**Auto-split with AI**), writes grounded synopses, and can generate opt-in Character and Place notes. Everything runs on your machine — the manuscript is never sent to a cloud provider during onboarding.
 
 > **Local model requirement:** onboarding is tested and verified with **Qwen3-Next-80B-A3B-Instruct (4-bit)**, the recommended model; the previously verified **Qwen3-30B-A3B-2507 (4-bit)** also performs, though not as strongly. Onboarding reads and reasons over your entire manuscript, which demands far more than everyday AI features — smaller or lesser models may fail to follow the workflow or produce unreliable scene splits. See [Settings → AI](Settings-AI#local-llm) for hardware notes and local server setup.

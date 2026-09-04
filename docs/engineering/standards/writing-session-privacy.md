@@ -1,189 +1,190 @@
 # Writing Session Privacy Architecture
 
-Authoritative contract for how writing-session data is projected to each
-audience. Any code path that emits session data outside the author's own
-device — friends, community, public sharing — **must** go through one of the
-projection functions defined here. This document is doctrine: read it before
-touching any code that reads, renders, or transmits `WritingSessionRecord`.
+Authoritative statement of how writing-session data and book identity leave
+the author's device. Any code path that transmits `WritingSessionRecord`
+data or Book Manager data to the community website **must** go through one
+of the exit points named here. This document is doctrine: read it before
+touching any code that reads, renders, or transmits session records or book
+profiles.
 
-The plugin currently ships only the `private` audience. The `friends` and
-`community` projections exist as stubs with locked-in contracts so the
-companion website can be built against a stable, tested boundary.
+The product-level contract this document implements is
+`Platform/COMMUNITY-SHARE-PRODUCT-CONTRACT.md` (sharing modes, tiers, field
+bundles, and the 2026-07-04 "share surfaces" amendment). Where the two ever
+disagree, the contract wins and this document is wrong; fix this document.
+
+Reconciled 2026-09-04. The earlier revision described a `friends` audience
+and a device-side per-book toggle for book titles. Neither shipped and
+neither exists in the contract; both are gone.
 
 ---
 
 ## Audiences
 
-There are three audiences. They are different, and they take different
-shapes. Do not collapse them into one "shared" tier.
+There are two audiences. They take different shapes. Do not collapse them.
 
-| Audience | Who | Shape | Default |
+| Audience | Who | Shape | When |
 |---|---|---|---|
-| `private` | The author, on their own device | Full row | always on |
-| `friends` | Invited, trusted contacts | Per-session row, redacted | opt-in per book |
-| `community` | Public / strangers | Daily aggregate only | opt-in per book |
+| `private` | The author, on their own device | Full session row | always |
+| `community` | The public website | Aggregates, an undated rollup, and author-composed posts | standing share at Level 3, or an explicit per-save post |
 
-**Key shape difference:** friends see *per-session rows* (with sensitive
-fields stripped). Community **never** sees per-session rows — only daily
-aggregates. This is itself a privacy lever: forcing community to aggregates
-eliminates the spoiler surface entirely.
+Community **never** sees per-session rows. Forcing community to aggregates
+removes the spoiler surface entirely; it is the privacy lever, not a
+presentation choice.
 
 ---
 
-## Field sensitivity tiers
+## What leaves the device, and when
 
-Every field on `WritingSessionRecord` lives in one of three tiers.
+Everything below is gated on the vault being **connected** to a Community
+profile. Nothing leaves before that.
 
-### Always private — never emitted at any tier
+### On connection, at every level including Private: project shells
 
-These fields **must not** appear in `friends` or `community` projections,
-ever, under any opt-in. Adding a new field to this list is a one-way door.
+Per the contract's share-surfaces amendment, every book in Book Manager syncs
+to the website as a **project shell** with `visibility='private'`:
 
-- `scenePaths` — vault file paths; reveal folder structure and working
-  titles
-- `scenesCompletedPaths` — same risk surface as `scenePaths`
-- Scene titles (derived from paths or scene metadata) — these are spoilers
-  for unpublished work
-- `note` — free-form prose written by the author about their own session;
-  the writing journal must be safe to write honestly in. Sharing it by
-  default would chill that. **One sanctioned exception:** the session feed
-  post (below) may carry the note when the author arms the per-save
-  "post to community feed" toggle in the save modal.
+- the book's public label, or its **working title** when no public label is set
+- the public description (logline), if set
+- Book Manager order
+- the four stage target dates (Zero / Author / House / Press), value or null
+- the vault-global zero-draft flag, on the active book only
 
-> The "share this reflection" clause is now implemented as
-> `projectSessionFeedPost`: an explicit per-row publish action affirmed in
-> the save modal UI (the toggle + social-accent styling are visible at every
-> save; the remembered default only pre-arms the toggle, the author always
-> sees its state before saving). It is never a passive flag applied after
-> the fact.
+Shells appear only on the owner's My Share list. The website is the only
+place a shell becomes public, by an explicit visibility flip per project.
+The plugin never changes visibility and never deletes shells.
 
-### Author-controlled — opt-in per audience
+This is a **server-side** privacy model for book identity: the working title
+crosses the wire and is stored privately, rather than being withheld on the
+device. The plugin's disclosure copy must say this plainly. It is not a
+device-side per-book opt-in, and no code may describe it as one.
 
-These fields are personal but not dangerous. They are emitted only when the
-author has opted in (per book, not globally).
+Exit point: `communityShareClient.syncCommunityProjects` (from plugin load
+and from target-date edits, throttled). Never carries scene data, paths,
+notes, or session records.
 
-- `bookTitle` — public for published works, private for WIP. Per-book toggle.
-- Wall-clock time-of-day in `startedAt` / `endedAt` / `lastSeenAt`. See
-  **Time precision** below — this is a granularity knob, not a binary flag.
+### Level 2 and above: the standing report
 
-### Social currency — emitted freely once a tier is opted in
+The weekly report payload is built by `communitySharePreview.buildCommunitySharePreview`
+from the field manifest the selected level enables. For book identity it
+uses the **public label only**; when a book has no public label, the title
+field is simply absent from the payload. It never substitutes "Untitled".
+Activity fields are rounded per the contract (minutes to 5, words to 50).
 
-These fields carry the "writing life" story without exposing the work.
+### Level 3 only: daily aggregates and the hour × mode rollup
 
-- `mode` (drafting / revising / editing / planning)
-- `stage` (Zero / Author / House / Press)
-- `elapsedMs`, rounded to minutes
-- `wordsAdded`, full precision (rounded to nearest 50 for `community`)
-- `scenesCompleted` (count only — never paths or titles)
-- `pagesEdited`
-- Date, at audience-appropriate precision
+`communitySharePreview.buildCommunityDailyEntries` emits one row per day
+for the trailing 14 days: date, minutes (rounded to 5), session count, words
+(rounded to 50), scenes completed by stage, and mode mix as integer percent.
+It reads the same session store the author sees and the same
+`buildDailyWritingStats` aggregator the plugin's own Progress view uses, so
+what the website shows and what the author sees cannot drift.
+
+`WritingSessionLog.buildCommunityHourModeMix` (via
+`communitySharePreview.buildCommunityHourModeMixEntries`) rolls the trailing
+28 days of session minutes into buckets keyed by **local start hour** (0–23)
+and folded mode (`drafting`, `revising` absorbing `editing`, `planning`).
+It carries no calendar date at all. It ships as the optional `hour_mode_mix`
+field on the same daily sync under the same tier-4 public gate; it is never
+gated separately and never introduces a setting.
+
+Both are sent by `communityShareClient.syncCommunityDailyIfEligible`.
+
+### Level 2 and above, Pro, per campaign: the APR image
+
+`communityShareClient.uploadAprToCommunity` sends the rendered Author
+Progress Report SVG for one campaign's book. By construction it contains
+geometry, the book title, author name, percent, and branding; no manuscript
+text. It lands in a private bucket on My Share and is activated only on the
+website. Governed by the contract's amendment, not by this document.
+
+### Level 3, explicit per-save: the session feed post
+
+`WritingSessionLog.projectSessionFeedPost` builds an author-composed post
+from one session: a stats headline (minutes, words, mode) and the session
+note. It is produced only when the author arms the "post to community feed"
+toggle in the save modal; the toggle's state is always visible before
+saving, and the remembered default only pre-arms it. It is never a passive
+flag applied after the fact. Sent by
+`communityShareClient.postSessionToCommunityFeed`.
 
 ---
 
-## Time precision is its own axis
+## Field sensitivity
 
-Same timestamp, different granularity per audience. Apply via the
-`redactTime(iso, audience)` helper — never emit raw ISO strings to non-private
-audiences.
+### Never emitted to community, under any level
 
-| Audience | Precision |
-|---|---|
-| `private` | minute (`2026-06-01T09:14:00Z`) |
-| `friends` | hour (`2026-06-01T09:00:00Z`) |
-| `community` | day (`2026-06-01`) |
+- `scenePaths`, `scenesCompletedPaths`, `scenesActivity[].path` — vault
+  file paths reveal folder structure and working titles
+- scene titles, derived from paths or scene metadata — spoilers for
+  unpublished work
+- raw session rows, exact session start/end timestamps
+- `note` — except through the session feed post, above
+- the local vault name, device names, plugin logs, API or license keys
 
-This is a standard privacy-engineering pattern. Do not skip it.
+Adding a field to this list is a one-way door.
 
----
+### Crosses the wire only as a private shell
 
-## Projection functions
+- the book working title (when no public label is set), logline, stage
+  target dates, order, zero-draft flag — see "On connection" above
 
-The four projection functions are the **only** sanctioned exit points for
-session data. Each one is pure, deterministic, and tested against the tracer
-contract (see below).
+### Social currency, once Level 3 is on
 
-```ts
-type Audience = 'private' | 'friends' | 'community';
-
-projectPrivate(record): PrivateSessionLogRow         // full row
-projectFriends(record): FriendsSessionLogRow         // per-session, redacted
-projectCommunityDaily(records[]): CommunityDailyRow  // daily aggregate ONLY
-buildCommunityHourModeMix(records[], endDate)        // 28-day hour x mode
-                                                     // minutes rollup, UNDATED
-projectSessionFeedPost(record): SessionFeedPost      // authored public post,
-                                                     // explicit per-save opt-in
-```
-
-There is intentionally no `projectCommunity(record)` — community *data
-exhaust* emits daily aggregates, never per-session rows.
-`projectSessionFeedPost` is not exhaust: it is an author-composed public
-post (equivalent to typing on the website feed), produced only when the
-author arms the per-save toggle at the top sharing level. It carries the
-stats headline and the note; it never carries paths, scene titles, book
-identity, ids, or exact timestamps.
-
-`buildCommunityHourModeMix` is a second community aggregate, alongside
-`projectCommunityDaily`, not a replacement: it rolls the trailing 28 days
-(inclusive of today) of session minutes into buckets keyed by the session's
-**local wall-clock start hour** (0-23, no timezone conversion — each
-author's own local hour is the point) and a folded mode (`drafting`,
-`revising` — absorbing `editing` — `planning`; unrecognized modes drop).
-Each session's full minutes attribute to its start hour only, no splitting
-across hour boundaries, and hours with zero activity are omitted. It carries
-**no calendar date at all** — only a recurring hour-of-day shape aggregated
-over the window — which makes it strictly less identifying than the
-day-precision `community` tier already permits. It ships as the optional
-`hour_mode_mix` field on the same daily sync payload and under the exact
-same tier-4 public gate as `projectCommunityDaily`'s `community_daily` rows;
-it is never gated separately and never introduces a new setting.
+- `mode`, `stage`, minutes, words, scene completions by stage, at the
+  contract's rounding, at day precision or undated
 
 **No fallbacks.** If a field cannot be safely projected, omit it. Never
-substitute "Untitled scene" or "Anonymous" — surface absence honestly. The
-no-fallback doctrine applies here as it does everywhere.
+substitute "Untitled scene" or "Anonymous". The no-fallback doctrine applies
+here as it does everywhere.
 
-**Identity is added server-side.** Client projections never know the author
-id. The website attaches identity at upload from the authenticated session.
-This means the projections are pure of identity concerns and one less thing
-can leak.
+**Identity is added server-side.** Client payloads never know the author id.
+The website attaches identity from the authenticated connection. The exit
+points are pure of identity concerns and one less thing can leak.
 
 ---
 
 ## Defaults
 
-- Every record is `private` by default.
-- Friends sharing is **per-book**, not global. Author has multiple books;
-  one may be public, three may be WIP.
-- Community sharing is **per-book**, not global, and requires friends
-  sharing to also be enabled (forcing the author through the lower-stakes
-  tier first).
-- The `note` field never leaves the device passively. Its only exit is the
-  session feed post, armed per save in the modal (remembered default, but
-  the toggle state is always visible before saving).
-- Time precision is not user-configurable — it is fixed per audience.
+- Every session record is `private` by default.
+- The standing share is per vault connection and off until the author
+  chooses a level and presses **Begin sharing**.
+- The `note` field never leaves the device passively; its only exit is the
+  per-save feed post.
+- Rounding and precision are not user-configurable; they are fixed by the
+  contract per level.
 
 ---
 
-## The tracer privacy test
+## The tracer privacy tests
 
 Privacy boundaries are tested like security boundaries, because that is
-what they are.
-
-`projections.privacy.test.ts` builds a `WritingSessionRecord` where every
-private field contains a unique tracer string:
+what they are. Two test files carry the same tracer strings:
 
 ```
-note:               'PRIVACY_TRACER_NOTE_DO_NOT_LEAK'
-scenePaths:         ['PRIVACY_TRACER_PATH_DO_NOT_LEAK']
+note:                 'PRIVACY_TRACER_NOTE_DO_NOT_LEAK'
+scenePaths:           ['PRIVACY_TRACER_PATH_DO_NOT_LEAK']
 scenesCompletedPaths: ['PRIVACY_TRACER_COMPLETED_PATH_DO_NOT_LEAK']
-bookTitle:          'PRIVACY_TRACER_TITLE_DO_NOT_LEAK'  // when book opt-in is off
+scenesActivity[].path:'PRIVACY_TRACER_ACTIVITY_PATH_DO_NOT_LEAK'
+bookTitle:            'PRIVACY_TRACER_TITLE_DO_NOT_LEAK'
 ```
 
-For each non-private projection, the test asserts the JSON-serialized
-output does **not** contain any tracer substring.
+- `src/services/WritingSessionLog.privacy.test.ts` covers the exits in the
+  log module: `projectPrivate` (baseline: all tracers present),
+  `projectSessionFeedPost` (note allowed, nothing else), and
+  `buildCommunityHourModeMix`.
+- `src/communityShare/communitySharePreview.test.ts` covers the wire path:
+  `buildCommunityDailyEntries` and `buildCommunitySharePreview`, fed traced
+  records, traced scene data, and a book whose working title is a tracer
+  with no public label. The report payload must contain no tracer and no
+  title field at all.
 
-A future field added to `WritingSessionRecord` that quietly passes through
-to a non-private projection will fail this test. **Adding the tracer for a
-new field is required as part of adding that field.**
+The project-shell sync is asserted in `communityShareClient.test.ts`: it
+**does** carry the working title (that is the contract), and it never
+carries paths, notes, or session data.
+
+A future field on `WritingSessionRecord` that quietly passes through to a
+community exit fails these tests. **Adding the tracer for a new field is
+required as part of adding that field.**
 
 ---
 
@@ -191,9 +192,10 @@ new field is required as part of adding that field.**
 
 Bump and amend before:
 
-- Adding a new field to `WritingSessionRecord`.
-- Adding a new projection function or audience tier.
-- Changing what a current projection emits.
-- Wiring a new render surface that consumes session data.
+- adding a field to `WritingSessionRecord` or `BookProfile` that any exit
+  point could read;
+- adding, removing, or re-routing an exit point;
+- changing what any exit point emits or how it is gated;
+- any amendment to the product contract that touches data scope.
 
-The doctrine is the contract. The contract is older than any view.
+The contract is the promise. This document is how the plugin keeps it.

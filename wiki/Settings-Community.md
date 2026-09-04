@@ -46,13 +46,13 @@ At Level 3, the hourly rollup behind the Community's **Working Clock** (the acti
 7. Review the preview, which updates automatically to reflect your selection.
 8. Click **Begin sharing**.
 
-Connecting alone does not publish anything. It only links this local vault/book to the website project you selected.
+Connecting alone does not publish anything. It links this vault to your Community profile and sends each of your Book Manager books to your **private** My Share list as a project shell: the book's public label (or its working title if you have not set one), logline, stage target dates, and order. Shells stay private until you switch a project on from My Share; the plugin never changes that.
 
 ## What You Share
 
 Sharing is controlled by a single **What you share** level:
 
-*   **Level 1 — Private** — nothing is published.
+*   **Level 1 — Private** — nothing is published. Your private project shells still sync so My Share can list your books.
 *   **Level 2 — Profile, books + APR** — your public profile and project shells, plus the option to send a campaign's visual progress report for one selected book. This level does not include writing days, streaks, minutes, inactivity, or session statistics.
 *   **Level 3 — Profile, books + writing activity** — includes Level 2 and adds two activity feeds: a daily aggregate feed (writing days, rounded minutes and word totals, and coarse mode mix) and the **Working Clock** rollup — a trailing 28-day summary of your writing minutes bucketed by the local hour of day you started each session and by mode (drafting/revising/planning). This is what your time-of-day writing pattern looks like on the website.
 

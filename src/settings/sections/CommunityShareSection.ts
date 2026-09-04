@@ -268,7 +268,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     const connectionHeading = new Setting(activationSection)
         .setName('Connect Radial Timeline')
         .setHeading()
-        .setDesc('Paste the one-time connection code from the website to link this vault to your community profile.');
+        .setDesc('Paste the one-time connection code from the website to link this vault to your community profile. Connecting lists your Book Manager books on your private My Share page (public label or working title, logline, target dates); they stay private until you switch one on there.');
     addHeadingIcon(connectionHeading, 'satellite-dish');
     applyErtHeaderLayout(connectionHeading);
 
@@ -320,8 +320,8 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         const connectedAt = formatConnectedAt(settings.connection.connectedAt);
         const statusRow = new Setting(activationSection)
             .setDesc(connectedAt
-                ? `Linked to your Community profile since ${connectedAt}. Data syncs are shown under Sharing and safety below.`
-                : 'Linked to your Community profile.');
+                ? `Linked to your Community profile since ${connectedAt}. Your books are listed privately on My Share; data syncs are shown under Sharing and safety below.`
+                : 'Linked to your Community profile. Your books are listed privately on My Share.');
         const replacementContainer = activationSection.createDiv({ cls: 'ert-hidden' });
         statusRow.addButton(button => {
             const renderState = (connected: boolean) => {

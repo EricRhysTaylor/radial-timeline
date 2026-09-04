@@ -219,6 +219,102 @@ describe('Community daily activity aggregates', () => {
     });
 });
 
+// Same tracer strings as WritingSessionLog.privacy.test.ts. These two exits are
+// the real wire path for community data; see writing-session-privacy.md.
+const TRACERS = {
+    note: 'PRIVACY_TRACER_NOTE_DO_NOT_LEAK',
+    scenePath: 'PRIVACY_TRACER_PATH_DO_NOT_LEAK',
+    scenesCompletedPath: 'PRIVACY_TRACER_COMPLETED_PATH_DO_NOT_LEAK',
+    sceneActivityPath: 'PRIVACY_TRACER_ACTIVITY_PATH_DO_NOT_LEAK',
+    bookTitle: 'PRIVACY_TRACER_TITLE_DO_NOT_LEAK',
+    sceneTitle: 'PRIVACY_TRACER_SCENE_TITLE_DO_NOT_LEAK',
+} as const;
+
+function assertNoTracers(value: unknown): void {
+    const serialized = JSON.stringify(value);
+    for (const [key, tracer] of Object.entries(TRACERS)) {
+        expect(serialized, `tracer "${key}" leaked`).not.toContain(tracer);
+    }
+}
+
+describe('Community wire path carries no private detail (tracer test)', () => {
+    const localKey = (date: Date) => {
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${date.getFullYear()}-${month}-${day}`;
+    };
+    const todayKey = localKey(new Date());
+
+    function tracedPlugin(fieldPolicy: Record<string, boolean>) {
+        const settings = buildDefaultCommunityShareSettings();
+        settings.enabled = true;
+        settings.tier = 4;
+        settings.audience = 'public';
+        settings.connection = { status: 'connected', connectionId: 'c', profileId: 'p', projectId: 'pr', secretId: 'rt.community-share.connection-secret' };
+        for (const [key, on] of Object.entries(fieldPolicy)) (settings.fieldPolicy as Record<string, boolean>)[key] = on;
+        return {
+            settings: {
+                activeBookId: 'book-1',
+                // A working title and NO public label: the report must carry no title at all.
+                books: [{ id: 'book-1', title: TRACERS.bookTitle, sourceFolder: `Books/${TRACERS.scenePath}`, genre: 'Fantasy' }],
+                communityShare: settings
+            },
+            getWritingSessionService: () => ({
+                getRangeStats: async () => ({
+                    startDate: todayKey, endDate: todayKey, days: 7, targetMode: 'words',
+                    minutesLogged: 63, sessionsCompleted: 1, wordsDrafted: 1234, daysWithSessions: 1, daysGoalMet: 1,
+                    sessionCountByMode: { drafting: 1, revising: 0, editing: 0, planning: 0 },
+                    minutesByMode: { drafting: 63, revising: 0, editing: 0, planning: 0 },
+                    scenesCompletedByStage: { Zero: 0, Author: 1, House: 0, Press: 0 },
+                    freshScenesCompleted: 1, revisionScenesCompleted: 0, sceneCompletionEvents: []
+                }),
+                getSettings: () => ({
+                    records: [{
+                        id: 'rec-tracer', bookId: 'book-1', bookTitle: TRACERS.bookTitle, mode: 'drafting', stage: 'Zero',
+                        startedAt: `${todayKey}T09:00:00.000Z`, endedAt: `${todayKey}T10:03:00.000Z`, sessionDate: todayKey,
+                        elapsedMs: 63 * 60000, wordsAdded: 1234, scenesCompleted: 1,
+                        scenePaths: [`Books/${TRACERS.scenePath}.md`],
+                        scenesCompletedPaths: [`Books/${TRACERS.scenesCompletedPath}.md`],
+                        scenesActivity: [{ path: `Books/${TRACERS.sceneActivityPath}.md`, activeMs: 600000, typedWords: 120 }],
+                        note: TRACERS.note, source: 'timer'
+                    }]
+                })
+            }),
+            getSceneData: async () => [{
+                date: '', path: `Books/${TRACERS.scenePath}.md`, title: TRACERS.sceneTitle, itemType: 'Scene',
+                'Publish Stage': 'Author', status: 'Completed', due: todayKey
+            }]
+        };
+    }
+
+    it('daily aggregates: fourteen rows of numbers and dates, no tracer', async () => {
+        const entries = await buildCommunityDailyEntries(tracedPlugin({}) as never);
+        expect(entries).toHaveLength(COMMUNITY_DAILY_WINDOW_DAYS);
+        expect(entries.at(-1)?.minutes_total).toBe(65);
+        assertNoTracers(entries);
+    });
+
+    it('hour x mode rollup: undated buckets, no tracer', async () => {
+        assertNoTracers(await buildCommunityHourModeMixEntries(tracedPlugin({}) as never));
+    });
+
+    it('standing report: with every field enabled, a book without a public label sends no title field, and nothing private', async () => {
+        const allOn = Object.fromEntries([
+            'project.title', 'project.alias', 'project.description', 'project.status', 'project.genre', 'project.custom_genre_label',
+            'activity.report_period', 'activity.writing_days', 'activity.minutes_total', 'activity.words_added', 'activity.session_count',
+            'activity.mode_mix', 'activity.scenes_completed_by_stage', 'activity.stage_mix', 'activity.completed_scene_count',
+            'activity.revised_scene_count', 'activity.streak', 'structure.real_scene_titles', 'activity.exact_session_timestamps'
+        ].map(key => [key, true]));
+        const preview = await buildCommunitySharePreview(tracedPlugin(allOn) as never);
+        expect(preview.payload['project.title']).toBeUndefined();
+        expect(preview.payload['project.alias']).toBeUndefined();
+        expect(Object.keys(preview.payload).length).toBeGreaterThan(0);
+        assertNoTracers(preview.payload);
+        assertNoTracers(preview.summary);
+        assertNoTracers(preview.fieldManifest);
+    });
+});
+
 describe('Community hour x mode mix rollup', () => {
     const localKey = (date: Date) => {
         const month = String(date.getMonth() + 1).padStart(2, '0');

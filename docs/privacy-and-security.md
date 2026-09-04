@@ -74,15 +74,21 @@ Every other path is optional and author-triggered.
 
 Community Share is shipped. It is opt-in and inert until the author connects
 this vault to the website and selects a sharing level: nothing publishes on
-install, and Level 1 (Private) publishes nothing at all. Full behavior and
-the per-level field breakdown live in the
+install, and Level 1 (Private) publishes nothing. One thing does cross the
+wire from the moment a vault is connected, at every level: each Book Manager
+book syncs to the website as a **private project shell** (its public label,
+or its working title when no label is set, plus logline, stage target dates,
+and order). Shells are visible only to the author on My Share and become
+public only by an explicit switch on the website; the plugin never changes
+that. Full behavior and the per-level field breakdown live in the
 [Settings → Community](https://github.com/EricRhysTaylor/Radial-Timeline/wiki/Settings-Community)
 wiki page.
 
 Posture:
 
 - **Opt-in at the source.** Connecting alone publishes nothing; the author
-  must also pick a level and press **Begin sharing**.
+  must also pick a level and press **Begin sharing**. Connecting does store
+  the private project shells described above.
 - **Never published at any level:** manuscript text, scene/note/vault paths,
   file or folder names, raw writing-session rows, exact session timestamps,
   and API/license keys or plugin secrets.

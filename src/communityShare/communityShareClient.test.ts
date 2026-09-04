@@ -764,8 +764,12 @@ describe('Community Share activation client', () => {
             // Zero-draft mode is a vault-global working mode -> active book only.
             zero_draft_mode: true
         });
-        // The public shell uses publicLabel, never the private working title.
+        // A book with a public label sends the label, never its working title.
         expect(JSON.stringify(body)).not.toContain('Private Draft Title');
+        // A book with no public label sends its working title: the contract's
+        // share-surfaces amendment stores every book as a PRIVATE shell that only
+        // the author can see on My Share until they switch it on there. See
+        // docs/engineering/standards/writing-session-privacy.md, "On connection".
         expect(body.projects[1].title).toBe('Second Book');
         // Book Manager array order rides along so the website can mirror it.
         expect(body.projects[1].order_index).toBe(1);

@@ -3,8 +3,11 @@
  * `docs/engineering/standards/writing-session-privacy.md`.
  *
  * Every private field on `WritingSessionRecord` gets a unique tracer string.
- * For each non-private projection (friends, community), we assert the
- * JSON-serialized output does NOT contain any tracer.
+ * For each exit point in this module that leaves the device (the session feed
+ * post and the hour × mode rollup), we assert the JSON-serialized output does
+ * NOT contain any tracer. The daily aggregate exit lives in
+ * `communitySharePreview.ts` and is traced in `communitySharePreview.test.ts`
+ * with the same tracer strings.
  *
  * Adding a new field to WritingSessionRecord requires adding its tracer here.
  * If you skip that step, the test won't catch a future regression — but the
@@ -14,13 +17,9 @@
 import { describe, expect, it } from 'vitest';
 import type { WritingSessionRecord } from '../types/settings';
 import {
-    buildCommunityDailyLog,
     buildCommunityHourModeMix,
-    projectCommunityDaily,
-    projectFriends,
     projectPrivate,
     projectSessionFeedPost,
-    redactTime,
     SESSION_FEED_POST_BODY_MAX,
 } from './WritingSessionLog';
 
@@ -72,35 +71,6 @@ describe('WritingSessionLog privacy boundary', () => {
         expect(serialized).toContain(TRACERS.bookTitle);
     });
 
-    describe('friends projection', () => {
-        it('strips all private tracers when book sharing is OFF', () => {
-            const out = projectFriends(tracedRecord());
-            assertNoTracers(out);
-        });
-
-        it('strips all private tracers when book sharing is ON (but allows bookTitle)', () => {
-            const out = projectFriends(tracedRecord(), { shareBookTitle: true });
-            // bookTitle is the only opt-in field allowed through.
-            assertNoTracers(out, [TRACERS.bookTitle]);
-            expect(JSON.stringify(out)).toContain(TRACERS.bookTitle);
-        });
-
-        it('emits hour-precision timestamps only', () => {
-            const out = projectFriends(tracedRecord());
-            expect(out.date.endsWith('00:00.000Z')).toBe(true);
-        });
-
-        it('never emits scenePaths, scenesCompletedPaths, note, bookId, startedAt fields', () => {
-            const out = projectFriends(tracedRecord(), { shareBookTitle: true }) as Record<string, unknown>;
-            expect(out).not.toHaveProperty('scenePaths');
-            expect(out).not.toHaveProperty('scenesCompletedPaths');
-            expect(out).not.toHaveProperty('note');
-            expect(out).not.toHaveProperty('bookId');
-            expect(out).not.toHaveProperty('startedAt');
-            expect(out).not.toHaveProperty('endedAt');
-        });
-    });
-
     describe('session feed post projection (explicit per-save opt-in)', () => {
         it('carries the note (the sanctioned opt-in exit) but never paths or book identity', () => {
             const out = projectSessionFeedPost(tracedRecord());
@@ -130,54 +100,6 @@ describe('WritingSessionLog privacy boundary', () => {
         it('posts the stats headline alone when the author left no note', () => {
             const out = projectSessionFeedPost(tracedRecord({ note: undefined }));
             expect(out.body).toBe('Drafting · 47 min · 312 words');
-        });
-    });
-
-    describe('community daily projection', () => {
-        it('strips all private tracers — including bookTitle (community never sees book identity)', () => {
-            const out = projectCommunityDaily('2026-06-01', [tracedRecord()]);
-            assertNoTracers(out); // no exceptions — bookTitle MUST be stripped at community tier
-        });
-
-        it('emits day-precision dates only', () => {
-            const out = projectCommunityDaily('2026-06-01', [tracedRecord()]);
-            expect(out.date).toBe('2026-06-01');
-        });
-
-        it('never emits per-session detail', () => {
-            const out = projectCommunityDaily('2026-06-01', [tracedRecord(), tracedRecord({ id: 'rec-tracer-2' })]) as Record<string, unknown>;
-            // sessions/records arrays must not be present
-            expect(out).not.toHaveProperty('sessions');
-            expect(out).not.toHaveProperty('records');
-            expect(out).not.toHaveProperty('id');
-            // sessionCount is the aggregate proxy
-            expect((out as { sessionCount: number }).sessionCount).toBe(2);
-        });
-
-        it('rounds words to nearest 50 to coarsen specificity', () => {
-            const out = projectCommunityDaily('2026-06-01', [
-                tracedRecord({ wordsAdded: 312 }),
-                tracedRecord({ id: 'rec-2', wordsAdded: 311 }),
-            ]);
-            // 312 + 311 = 623 → rounded to 600
-            expect(out.wordsAdded).toBe(600);
-        });
-
-        it('buildCommunityDailyLog groups per day and produces only aggregate rows', () => {
-            const records: WritingSessionRecord[] = [
-                tracedRecord({ id: 'a', endedAt: '2026-06-01T09:47:00.000Z' }),
-                tracedRecord({ id: 'b', endedAt: '2026-06-01T15:00:00.000Z' }),
-                tracedRecord({ id: 'c', endedAt: '2026-06-02T10:00:00.000Z' }),
-            ];
-            const rows = buildCommunityDailyLog({
-                records,
-                window: { endDate: '2026-06-02', days: 7 },
-            });
-            expect(rows).toHaveLength(2);
-            assertNoTracers(rows);
-            for (const row of rows) {
-                expect(row).not.toHaveProperty('id');
-            }
         });
     });
 
@@ -228,15 +150,4 @@ describe('WritingSessionLog privacy boundary', () => {
         });
     });
 
-    describe('redactTime', () => {
-        it('preserves minute precision for private', () => {
-            expect(redactTime('2026-06-01T09:47:23.456Z', 'private')).toBe('2026-06-01T09:47:00.000Z');
-        });
-        it('coarsens to hour for friends', () => {
-            expect(redactTime('2026-06-01T09:47:23.456Z', 'friends')).toBe('2026-06-01T09:00:00.000Z');
-        });
-        it('coarsens to day for community', () => {
-            expect(redactTime('2026-06-01T09:47:23.456Z', 'community')).toBe('2026-06-01');
-        });
-    });
 });

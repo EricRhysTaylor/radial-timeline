@@ -9,14 +9,12 @@ import type {
     ValidationIssue,
     ValidationSummary,
 } from '../types';
-import { DEFAULT_SETTINGS } from '../settings/defaults';
-import { getAutoPdfEngineSelection, resolveTemplatePath, validatePandocLayout } from './exportFormats';
+import { getAutoPdfEngineSelection, getPandocFolder, resolveTemplatePath, validatePandocLayout } from './exportFormats';
 import { adaptPandocLayoutToTemplateAsset, adaptPandocLayoutToTemplateProfile } from './publishingModel';
 import { summarizeValidationIssues } from '../services/PublishingValidationService';
 import type { DetectedTemplateProfile } from '../publishing/templateDetection';
 import { detectImportedTemplateStyle } from '../publishing/templateDetection';
 import { describeRtPartArityIssue } from '../publishing/rttsValidation';
-import { systemFolderPath } from './systemFolder';
 
 export interface ImportedTemplateCandidate {
     layout: PandocLayoutTemplate;
@@ -75,7 +73,7 @@ const SIGNATURE_HINTS = [
     /scene opener/i,
 ];
 
-function isAbsolutePath(value: string): boolean {
+export function isAbsolutePath(value: string): boolean {
     return value.startsWith('/') || /^[A-Za-z]:[\\/]/.test(value);
 }
 
@@ -93,9 +91,7 @@ export function compactTemplatePathForStorage(plugin: RadialTimelinePlugin, rawP
     const normalized = normalizePath(trimmed.replace(/^\/+/, ''));
     if (!normalized) return '';
 
-    const defaultPandocFolder = normalizePath(DEFAULT_SETTINGS.pandocFolder || systemFolderPath('Pandoc'));
-    const pandocFolder = normalizePath((plugin.settings.pandocFolder || defaultPandocFolder).trim() || defaultPandocFolder);
-    const prefix = `${pandocFolder}/`;
+    const prefix = `${getPandocFolder(plugin)}/`;
     if (normalized.startsWith(prefix)) {
         return normalized.slice(prefix.length);
     }

@@ -293,7 +293,7 @@ export function buildBookPagesChecklist(params: {
     });
 }
 
-function parseBookMetaFromFrontmatter(frontmatter: Record<string, unknown>, sourcePath: string): BookMeta {
+export function parseBookMetaFromFrontmatter(frontmatter: Record<string, unknown>, sourcePath: string): BookMeta {
     const book = frontmatter.Book as Record<string, unknown> | undefined;
     const rights = frontmatter.Rights as Record<string, unknown> | undefined;
     const identifiers = frontmatter.Identifiers as Record<string, unknown> | undefined;

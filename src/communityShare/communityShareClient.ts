@@ -139,6 +139,25 @@ function appendHistory(
     return [...settings.publishHistory, entry].slice(-25);
 }
 
+/**
+ * Write Community Share settings against the state that is live NOW, not a
+ * snapshot taken before an await. Every mutator here awaits (secret storage,
+ * preview build, the network) and the author can click Pause, Resume, or
+ * Disconnect in that window; spreading a pre-await snapshot back over the
+ * settings silently reverted those clicks. Callers keep their pre-await
+ * snapshot for gating and for values they computed from it, and pass an
+ * updater that layers only their own changes onto the live state.
+ */
+export function commitCommunityShare(
+    plugin: RadialTimelinePlugin,
+    update: (live: CommunityShareSettings) => CommunityShareSettings
+): CommunityShareSettings {
+    const live = normalizeCommunityShareSettings(plugin.settings.communityShare);
+    const next = normalizeCommunityShareSettings(update(live));
+    plugin.settings.communityShare = next;
+    return next;
+}
+
 async function getOrCreateInstallationId(plugin: RadialTimelinePlugin): Promise<string> {
     const existing = await getSecret(plugin.app, INSTALLATION_SECRET_ID);
     if (existing) return existing;
@@ -315,20 +334,22 @@ export async function publishCommunityShareReport(
         throw new CommunityShareError('invalid_response', 'Community sharing returned an unexpected response.');
     }
 
-    plugin.settings.communityShare = normalizeCommunityShareSettings({
-        ...current,
+    // The payload has left; record that against the live state so a Pause or
+    // Disconnect that landed while the request was in flight is kept.
+    commitCommunityShare(plugin, live => ({
+        ...live,
         connection: {
-            ...current.connection,
+            ...live.connection,
             publicSlug: parsed.public_slug,
             lastSyncedAt: parsed.published_at,
             lastSyncedPayloadHash: preview.payloadHash
         },
         preview: {
-            ...current.preview,
+            ...live.preview,
             status: 'stale'
         },
         publishHistory: [
-            ...current.publishHistory,
+            ...live.publishHistory,
             {
                 id: parsed.version_id,
                 action: mode === 'scheduled' ? 'sync' : 'publish',
@@ -341,7 +362,7 @@ export async function publishCommunityShareReport(
             }
         ],
         lastError: undefined
-    });
+    }));
     await plugin.saveSettings();
     return parsed;
 }
@@ -737,6 +758,8 @@ export async function syncCommunityDailyIfEligible(plugin: RadialTimelinePlugin)
         // companion rollup of the identical session store, not a separately
         // gated field. Optional on the wire: the server accepts its absence.
         const hourModeMix = await buildCommunityHourModeMixEntries(plugin);
+        // Pause is a hard freeze: honour one that landed while the aggregates were building.
+        if (normalizeCommunityShareSettings(plugin.settings.communityShare).sharingPaused) return;
 
         const response = await requestUrl({
             url: `${FUNCTIONS_BASE_URL}/community-daily-sync`,
@@ -766,12 +789,11 @@ export async function syncCommunityDailyIfEligible(plugin: RadialTimelinePlugin)
         const code = error instanceof CommunityShareError ? error.code : 'daily_sync_failed';
         const message = error instanceof Error ? error.message : 'Daily activity sync failed.';
         if (SYNC_STOP_CODES.has(code)) {
-            const after = normalizeCommunityShareSettings(plugin.settings.communityShare);
             const at = new Date().toISOString();
-            plugin.settings.communityShare = normalizeCommunityShareSettings({
-                ...after,
+            commitCommunityShare(plugin, live => ({
+                ...live,
                 scheduledPublishEnabled: false,
-                publishHistory: appendHistory(after, {
+                publishHistory: appendHistory(live, {
                     id: `daily-sync-${at}`,
                     action: 'sync',
                     status: 'failed',
@@ -779,7 +801,7 @@ export async function syncCommunityDailyIfEligible(plugin: RadialTimelinePlugin)
                     message: `${message} Sharing stopped.`
                 }),
                 lastError: message
-            });
+            }));
             await plugin.saveSettings();
         } else {
             console.warn('Community daily activity sync failed:', message);
@@ -792,7 +814,22 @@ export async function syncCommunityDailyIfEligible(plugin: RadialTimelinePlugin)
  * Silent by design (no Notices) — outcomes land in settings/history and the
  * sharing settings screen. Skips when nothing changed since the last sync.
  */
-export async function syncCommunityShareIfDue(plugin: RadialTimelinePlugin): Promise<'synced' | 'skipped' | 'failed'> {
+// The scheduled sync is reachable from the 20 s startup timer, the 6 h
+// interval, Resume, and the settings preview builder. Two of those can
+// overlap; a second run while one is in flight would publish the same
+// payload twice and write two history entries. Callers share the in-flight
+// promise instead.
+let shareSyncInflight: Promise<'synced' | 'skipped' | 'failed'> | null = null;
+
+export function syncCommunityShareIfDue(plugin: RadialTimelinePlugin): Promise<'synced' | 'skipped' | 'failed'> {
+    if (shareSyncInflight) return shareSyncInflight;
+    shareSyncInflight = runShareSync(plugin).finally(() => {
+        shareSyncInflight = null;
+    });
+    return shareSyncInflight;
+}
+
+async function runShareSync(plugin: RadialTimelinePlugin): Promise<'synced' | 'skipped' | 'failed'> {
     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
     if (!current.enabled || !current.scheduledPublishEnabled) return 'skipped';
     // Belt-and-braces alongside scheduledPublishEnabled: a paused vault never
@@ -804,9 +841,13 @@ export async function syncCommunityShareIfDue(plugin: RadialTimelinePlugin): Pro
     try {
         const preview = await buildCommunitySharePreview(plugin);
         if (preview.payloadHash === current.connection.lastSyncedPayloadHash) return 'skipped';
+        // A Pause or Disconnect that landed while the preview was building is
+        // a clean skip, not a failed sync with an error entry.
+        const live = normalizeCommunityShareSettings(plugin.settings.communityShare);
+        if (live.sharingPaused || !live.scheduledPublishEnabled || live.connection.status !== 'connected') return 'skipped';
 
-        plugin.settings.communityShare = normalizeCommunityShareSettings({
-            ...current,
+        commitCommunityShare(plugin, state => ({
+            ...state,
             preview: {
                 status: 'ready',
                 generatedAt: new Date().toISOString(),
@@ -815,7 +856,7 @@ export async function syncCommunityShareIfDue(plugin: RadialTimelinePlugin): Pro
                 reportPeriod: 'weekly',
                 summary: preview.summary
             }
-        });
+        }));
         await plugin.saveSettings();
         await publishCommunityShareReport(plugin, 'scheduled');
         // Companion daily-aggregate sync rides along with the successful
@@ -826,12 +867,11 @@ export async function syncCommunityShareIfDue(plugin: RadialTimelinePlugin): Pro
         const code = error instanceof CommunityShareError ? error.code : 'sync_failed';
         const message = error instanceof Error ? error.message : 'Community sharing sync failed.';
         const stopped = SYNC_STOP_CODES.has(code);
-        const after = normalizeCommunityShareSettings(plugin.settings.communityShare);
         const at = new Date().toISOString();
-        plugin.settings.communityShare = normalizeCommunityShareSettings({
-            ...after,
-            scheduledPublishEnabled: stopped ? false : after.scheduledPublishEnabled,
-            publishHistory: appendHistory(after, {
+        commitCommunityShare(plugin, live => ({
+            ...live,
+            scheduledPublishEnabled: stopped ? false : live.scheduledPublishEnabled,
+            publishHistory: appendHistory(live, {
                 id: `sync-${at}`,
                 action: 'sync',
                 status: 'failed',
@@ -839,7 +879,7 @@ export async function syncCommunityShareIfDue(plugin: RadialTimelinePlugin): Pro
                 message: stopped ? `${message} Sharing stopped.` : message
             }),
             lastError: message
-        });
+        }));
         await plugin.saveSettings();
         return 'failed';
     }
@@ -881,14 +921,14 @@ export async function revokeCommunityShareReport(plugin: RadialTimelinePlugin): 
         current_secret: secret
     });
     const at = result.revoked_at || new Date().toISOString();
-    plugin.settings.communityShare = normalizeCommunityShareSettings({
-        ...current,
+    commitCommunityShare(plugin, live => ({
+        ...live,
         scheduledPublishEnabled: false,
         connection: {
-            ...current.connection,
+            ...live.connection,
             lastSyncedPayloadHash: undefined
         },
-        publishHistory: appendHistory(current, {
+        publishHistory: appendHistory(live, {
             id: `revoke-${at}`,
             action: 'revoke',
             status: 'success',
@@ -897,7 +937,7 @@ export async function revokeCommunityShareReport(plugin: RadialTimelinePlugin): 
             message: 'Sharing revoked and taken off the website.'
         }),
         lastError: undefined
-    });
+    }));
     await plugin.saveSettings();
     return result;
 }
@@ -939,19 +979,19 @@ export async function disconnectCommunityShare(plugin: RadialTimelinePlugin): Pr
             console.warn('Community Share disconnect: local connection secret could not be deleted.');
         }
     }
-    plugin.settings.communityShare = normalizeCommunityShareSettings({
-        ...current,
+    commitCommunityShare(plugin, live => ({
+        ...live,
         enabled: false,
         scheduledPublishEnabled: false,
         sharingPaused: false,
         connection: {
-            ...current.connection,
+            ...live.connection,
             status: 'disconnected',
             disconnectedAt: at,
             lastSyncedPayloadHash: undefined,
             secretId: undefined
         },
-        publishHistory: appendHistory(current, {
+        publishHistory: appendHistory(live, {
             id: `disconnect-${at}`,
             action: 'disconnect',
             status: 'success',
@@ -962,7 +1002,7 @@ export async function disconnectCommunityShare(plugin: RadialTimelinePlugin): Pr
             status: 'not_generated'
         },
         lastError: undefined
-    });
+    }));
     await plugin.saveSettings();
     // If the server call was skipped or failed, synthesize a local success so
     // callers still see a clean disconnect — local state is already cleared.

@@ -10,6 +10,7 @@ import {
 import {
     CommunityShareError,
     beginCommunitySharing,
+    commitCommunityShare,
     confirmCommunityShareActivation,
     disconnectCommunityShare,
     fetchCommunityShareContext,
@@ -637,12 +638,15 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         }
         try {
             const preview = await buildCommunitySharePreview(plugin);
-            const upToDate = current.preview.status === 'ready'
-                && current.preview.previewHash === preview.previewHash
-                && current.preview.payloadHash === preview.payloadHash;
+            // Building the preview awaited; anything the author clicked
+            // meanwhile (Pause, Disconnect) is in the live state, not `current`.
+            const live = normalizeCommunityShareSettings(plugin.settings.communityShare);
+            const upToDate = live.preview.status === 'ready'
+                && live.preview.previewHash === preview.previewHash
+                && live.preview.payloadHash === preview.payloadHash;
             if (upToDate) return;
-            plugin.settings.communityShare = normalizeCommunityShareSettings({
-                ...current,
+            const committed = commitCommunityShare(plugin, state => ({
+                ...state,
                 preview: {
                     status: 'ready',
                     generatedAt: new Date().toISOString(),
@@ -651,29 +655,30 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
                     reportPeriod: 'weekly',
                     summary: preview.summary
                 },
-                lastError: current.preview.status === 'blocked' ? undefined : current.lastError
-            });
+                lastError: state.preview.status === 'blocked' ? undefined : state.lastError
+            }));
             await plugin.saveSettings();
             // Standing share: if sharing is on and the content changed, push
             // the refreshed payload before repainting so the card and the
             // website stay in step.
-            if (current.scheduledPublishEnabled) {
+            if (committed.scheduledPublishEnabled) {
                 await syncCommunityShareIfDue(plugin);
             }
             rerender();
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Could not build the complete preview.';
-            if (current.preview.status === 'blocked' && current.lastError === message) return;
-            plugin.settings.communityShare = normalizeCommunityShareSettings({
-                ...current,
+            const live = normalizeCommunityShareSettings(plugin.settings.communityShare);
+            if (live.preview.status === 'blocked' && live.lastError === message) return;
+            commitCommunityShare(plugin, state => ({
+                ...state,
                 preview: {
-                    ...current.preview,
+                    ...state.preview,
                     status: 'blocked',
                     previewHash: undefined,
                     payloadHash: undefined
                 },
                 lastError: message
-            });
+            }));
             await plugin.saveSettings();
             rerender();
         }

@@ -3,6 +3,12 @@ import { describe, expect, it, vi } from 'vitest';
 vi.mock('obsidian', () => ({
     requestUrl: vi.fn()
 }));
+// Real preview builder behind a spy so a test can interleave an author action
+// (Pause) into the await window between "preview built" and "request sent".
+vi.mock('./communitySharePreview', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('./communitySharePreview')>();
+    return { ...actual, buildCommunitySharePreview: vi.fn(actual.buildCommunitySharePreview) };
+});
 
 import * as obsidian from 'obsidian';
 import { buildDefaultCommunityShareSettings } from './communityShareSettings';
@@ -11,10 +17,12 @@ import {
     confirmCommunityShareActivation,
     disconnectCommunityShare,
     fetchCommunityShareContext,
+    pauseCommunitySharing,
     publishCommunityShareReport,
     revokeCommunityShareReport,
     syncCommunityDailyIfEligible,
     syncCommunityProjects,
+    syncCommunityShareIfDue,
     uploadAprToCommunity
 } from './communityShareClient';
 
@@ -86,6 +94,128 @@ function createPluginHarness(options: {
     };
     return { plugin, secrets };
 }
+
+async function armReadyToPublish(harness: ReturnType<typeof createPluginHarness>, tier = 3) {
+    const { plugin, secrets } = harness;
+    const settings = plugin.settings.communityShare;
+    settings.enabled = true;
+    settings.tier = tier;
+    settings.audience = 'public';
+    settings.connection = {
+        status: 'connected',
+        connectionId: 'conn-1',
+        profileId: 'profile-1',
+        projectId: 'project-1',
+        secretId: 'rt.community-share.connection-secret'
+    };
+    settings.fieldPolicy['project.title'] = true;
+    settings.fieldPolicy['activity.words_added'] = true;
+    secrets.set('rt-community-share-connection-secret', 'rtcs_current-secret');
+    const preview = await buildCommunitySharePreview(plugin as never);
+    settings.preview = {
+        status: 'ready',
+        generatedAt: '2026-06-27T12:00:00.000Z',
+        previewHash: preview.previewHash,
+        payloadHash: preview.payloadHash,
+        reportPeriod: 'weekly',
+        summary: preview.summary
+    };
+    return preview;
+}
+
+const publishedBody = {
+    ok: true,
+    publish_id: 'publish-1',
+    version_id: 'version-1',
+    public_slug: 'csr_public',
+    status: 'published',
+    published_at: '2026-06-27T19:00:00.000Z',
+    superseded_version_id: null
+};
+
+describe('Community Share mutators write against live state, not a pre-await snapshot', () => {
+    it('keeps a Pause that lands while the publish request is in flight', async () => {
+        const harness = createPluginHarness();
+        const { plugin } = harness;
+        vi.clearAllMocks();
+        await armReadyToPublish(harness);
+        plugin.settings.communityShare.scheduledPublishEnabled = true;
+
+        // The author clicks Pause while the payload is on the wire.
+        vi.spyOn(obsidian, 'requestUrl').mockImplementation(async () => {
+            await pauseCommunitySharing(plugin as never);
+            return { status: 201, text: JSON.stringify(publishedBody) } as never;
+        });
+
+        await publishCommunityShareReport(plugin as never);
+
+        const after = plugin.settings.communityShare;
+        // The publish is recorded — the payload did leave…
+        expect(after.connection.publicSlug).toBe('csr_public');
+        expect(after.publishHistory.map(entry => entry.action)).toEqual(['pause', 'publish']);
+        // …but the Pause is not reverted by it.
+        expect(after.sharingPaused).toBe(true);
+        expect(after.scheduledPublishEnabled).toBe(false);
+    });
+
+    it('skips the scheduled sync cleanly when a Pause lands while the preview is building', async () => {
+        const harness = createPluginHarness();
+        const { plugin } = harness;
+        vi.clearAllMocks();
+        await armReadyToPublish(harness);
+        plugin.settings.communityShare.scheduledPublishEnabled = true;
+        const request = vi.spyOn(obsidian, 'requestUrl');
+
+        const realBuild = (await vi.importActual<typeof import('./communitySharePreview')>('./communitySharePreview')).buildCommunitySharePreview;
+        vi.mocked(buildCommunitySharePreview).mockImplementationOnce(async (p) => {
+            const preview = await realBuild(p);
+            await pauseCommunitySharing(plugin as never);
+            return preview;
+        });
+
+        const outcome = await syncCommunityShareIfDue(plugin as never);
+
+        expect(outcome).toBe('skipped');
+        expect(request).not.toHaveBeenCalled();
+        const after = plugin.settings.communityShare;
+        expect(after.sharingPaused).toBe(true);
+        expect(after.scheduledPublishEnabled).toBe(false);
+        // No failed-sync entry: a Pause during the build is not an error.
+        expect(after.publishHistory.map(entry => entry.action)).toEqual(['pause']);
+        expect(after.lastError).toBeUndefined();
+    });
+
+    it('shares one in-flight run between overlapping scheduled syncs', async () => {
+        const harness = createPluginHarness();
+        const { plugin } = harness;
+        vi.clearAllMocks();
+        await armReadyToPublish(harness);
+        plugin.settings.communityShare.scheduledPublishEnabled = true;
+
+        let release: (() => void) | null = null;
+        const gate = new Promise<void>(resolve => { release = resolve; });
+        const request = vi.spyOn(obsidian, 'requestUrl').mockImplementation(async () => {
+            await gate;
+            return { status: 201, text: JSON.stringify(publishedBody) } as never;
+        });
+
+        // Startup timer and the settings preview builder overlap.
+        const first = syncCommunityShareIfDue(plugin as never);
+        const second = syncCommunityShareIfDue(plugin as never);
+        expect(second).toBe(first);
+        release?.();
+
+        await expect(first).resolves.toBe('synced');
+        await expect(second).resolves.toBe('synced');
+        expect(request.mock.calls.filter(([args]) => String((args as { url: string }).url).includes('/community-share-publish'))).toHaveLength(1);
+        expect(plugin.settings.communityShare.publishHistory.filter(entry => entry.action === 'sync')).toHaveLength(1);
+
+        // The guard releases: a later sync runs on its own.
+        const third = syncCommunityShareIfDue(plugin as never);
+        expect(third).not.toBe(first);
+        await third;
+    });
+});
 
 describe('Community Share activation client', () => {
     it('confirms activation with only a hashed installation id and stores the returned secret privately', async () => {

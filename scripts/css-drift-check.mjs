@@ -332,6 +332,30 @@ for (const file of FILES.filter(exists)) {
     }
   }
 
+  // 5a) Hover-path filters (fail) — a `filter` on a :hover / .rt-selected rule
+  //     forces a per-frame raster pass while the pointer moves over the
+  //     timeline, which makes scene hover sluggish. Use stroke / opacity /
+  //     background cues instead. (owner rule, 2026-09-04)
+  const hoverRuleRe = /([^{}]+)\{([^{}]*)\}/g;
+  for (const m of findAll(hoverRuleRe, css)) {
+    const selector = m[1].replace(/\/\*[\s\S]*?\*\//g, "").trim();
+    const body = m[2].replace(/\/\*[\s\S]*?\*\//g, "");
+    if (selector.startsWith("@") || !/:hover|\.rt-selected/.test(selector)) continue;
+    // Timeline chrome only: the rule is about the scene-hover path, not modals.
+    if (!/radial-timeline-container|\.rt-|\.ert-timeline-/.test(selector)) continue;
+    const filterDecl = body.match(/(?:^|[;\s])(?:backdrop-)?filter\s*:(?!\s*none\b)[^;]+/);
+    const filterTransition = body.match(/transition[^;]*\bfilter\b/);
+    const hit = filterDecl ?? filterTransition;
+    if (!hit) continue;
+    addFail(
+      file,
+      "filter on a hover/selected rule (hover-path raster cost). Use stroke, opacity, or background instead.",
+      `${selector.split("\n").pop().trim()} { ${hit[0].trim()} }`,
+      "hover-filter",
+      getLineNumber(lineStarts, m.index + m[0].indexOf(hit[0]))
+    );
+  }
+
   // 5b) Backslide guard (fail) — rt-* selectors in files that have finished
   //     migrating off rt-* are a hard FAIL. apr-rt-* branding is exempt via
   //     RT_LEGACY_TOKEN. See scripts/css-namespace-allowlist.json → rtCleanFiles.

@@ -15,8 +15,11 @@
 .rt-scene-group.rt-gossamer-hover .rt-storybeat-title,
 .radial-timeline-svg[data-gossamer-mode="true"] .rt-scene-group.beats:hover .rt-storybeat-title,
 .radial-timeline-svg[data-gossamer-mode="true"] .rt-scene-group[data-item-type="Beat"]:hover .rt-storybeat-title {
-  filter: url(#beatTextBg);
-  /* black background halo */
+  /* Black halo drawn as a stroke under the fill: no SVG filter on the hover path. */
+  paint-order: stroke fill;
+  stroke: var(--rt-legacy-black);
+  stroke-width: 3.6px;
+  stroke-linejoin: round;
   fill: var(--rt-color-empty);
   font-weight: 700;
   /* heavier for readability */
@@ -303,7 +306,13 @@
 }
 
 .radial-timeline-container .rt-scene-title.rt-selected {
-  filter: url(#sceneTitleHalo);
+  /* Halo drawn as a stroke under the fill; rt-selected is applied on every
+     scene hover, so this rule must never carry a filter. */
+  paint-order: stroke fill;
+  stroke: var(--rt-legacy-black);
+  stroke-opacity: 0.85;
+  stroke-width: 2.4px;
+  stroke-linejoin: round;
 }
 
 /* Scene is open: non-selected state */
@@ -647,9 +656,8 @@
 
 /* Default shown state - uses darker/saturated version of subplot color */
 .rt-subplot-dominance-flag.is-shown path {
-  /* Darken and saturate the subplot color for better visibility */
-  fill: color-mix(in srgb, var(--flag-color), black 20%);
-  filter: saturate(1.5);
+  /* Darken the subplot color for visibility; no filter inside the timeline SVG. */
+  fill: color-mix(in srgb, var(--flag-color), black 25%);
 }
 
 /* Hidden state - uses same gray as non-selected number squares */

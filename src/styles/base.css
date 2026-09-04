@@ -988,7 +988,10 @@ body.rt-modal-open .radial-timeline-container * {
 }
 
 .radial-timeline-container .rt-scene-path.rt-selected {
-  filter: saturate(1.2) brightness(1.1);
+  /* Hover emphasis as a stroke, never a filter: rt-selected flips on every scene hover. */
+  stroke: var(--rt-legacy-black);
+  stroke-opacity: 0.35;
+  stroke-width: 1.5px;
 }
 
 .radial-timeline-container .rt-scene-title {

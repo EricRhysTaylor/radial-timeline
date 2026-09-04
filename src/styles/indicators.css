@@ -26,11 +26,11 @@
    ============================================================================= */
 .rt-version-indicator {
   cursor: pointer;
-  transition: filter 0.2s ease;
+  opacity: 0.85;
 }
 
 .rt-version-indicator:hover {
-  filter: drop-shadow(0 0 5px var(--text-muted));
+  opacity: 1;
 }
 
 .rt-version-hitarea {
@@ -45,13 +45,12 @@
   cursor: pointer;
   stroke: var(--text-muted);
   opacity: 0.6;
-  transition: opacity 0.2s ease, stroke 0.2s ease, filter 0.2s ease;
+  transition: opacity 0.2s ease, stroke 0.2s ease;
 }
 
 .rt-help-icon:hover {
   opacity: 1;
   stroke: var(--text-normal);
-  filter: drop-shadow(0 0 5px var(--text-muted));
 }
 
 .rt-help-text {
@@ -141,7 +140,6 @@
 .rt-update-none:hover .rt-version-bug-icon {
   opacity: 1;
   stroke: var(--text-normal);
-  filter: drop-shadow(0 0 5px var(--text-normal));
 }
 
 /* Alert icon (shown when update available) */
@@ -149,7 +147,7 @@
   fill: none;
   stroke-width: 1px;
   opacity: 1;
-  transition: opacity 0.3s ease, stroke 0.2s ease, filter 0.2s ease;
+  transition: opacity 0.3s ease, stroke 0.2s ease;
   cursor: pointer;
 }
 
@@ -161,7 +159,7 @@
 
 .rt-update-minor:hover .rt-version-alert-icon {
   stroke: #f97316;
-  filter: drop-shadow(0 0 5px #f97316);
+  stroke-width: 1.5px;
 }
 
 .rt-update-major .rt-version-alert-icon {
@@ -171,7 +169,7 @@
 
 .rt-update-major:hover .rt-version-alert-icon {
   stroke: #ef4444;
-  filter: drop-shadow(0 0 5px #ef4444);
+  stroke-width: 1.5px;
 }
 
 /* Settings alert mode (orange/warning) */
@@ -191,7 +189,6 @@
 .rt-update-settings:hover .rt-version-settings-icon {
   stroke: #d97706;
   opacity: 1;
-  filter: drop-shadow(0 0 5px #f59e0b);
 }
 
 /* Progress Ring Base (thin gray track underneath) */
@@ -388,7 +385,8 @@
 
 .radial-timeline-container .rt-estimate-tick-group:hover .estimated-date-tick,
 .radial-timeline-container .rt-estimate-tick-group:hover .estimated-date-dot {
-  filter: drop-shadow(0 0 6px currentColor);
+  stroke: currentColor;
+  stroke-width: 2px;
 }
 
 /* Large invisible hotspot for target ticks (easy hover/touch) */
@@ -491,11 +489,11 @@
 
 .radial-timeline-container .rt-target-tick-group {
   cursor: pointer;
-  transition: filter 0.2s ease;
+  opacity: 0.85;
 }
 
 .radial-timeline-container .rt-target-tick-group:hover {
-  filter: drop-shadow(0 0 4px currentColor);
+  opacity: 1;
 }
 
 /* Stage-specific target tick colors */
@@ -560,11 +558,11 @@
    ============================================================================= */
 .rt-apr-indicator {
   cursor: pointer;
-  transition: filter 0.2s ease;
+  opacity: 0.85;
 }
 
 .rt-apr-indicator:hover {
-  filter: drop-shadow(0 0 5px var(--text-error, #ef4444));
+  opacity: 1;
 }
 
 /* Text styles - matches version text, pulses by default */
@@ -587,7 +585,7 @@
 }
 
 .rt-apr-indicator:hover .rt-apr-alert-icon {
-  filter: drop-shadow(0 0 5px var(--text-error, #ef4444));
+  stroke-width: 1.5px;
 }
 
 /* =============================================================================
@@ -596,11 +594,11 @@
    ============================================================================= */
 .rt-milestone-indicator {
   cursor: pointer;
-  transition: filter 0.2s ease;
+  opacity: 0.85;
 }
 
 .rt-milestone-indicator:hover {
-  filter: drop-shadow(0 0 5px var(--text-muted));
+  opacity: 1;
 }
 
 /* Text styles - visible by default, pulses like APR */
@@ -617,5 +615,5 @@
 }
 
 .rt-milestone-indicator:hover .rt-milestone-icon {
-  filter: drop-shadow(0 0 5px currentColor);
+  stroke-width: 2px;
 }

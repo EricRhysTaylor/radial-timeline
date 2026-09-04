@@ -469,7 +469,8 @@
 .radial-timeline-svg[data-shift-mode="active"] .rt-scene-group[data-item-type="Scene"].rt-shift-hover .rt-scene-path,
 .radial-timeline-svg[data-shift-mode="active"] .rt-scene-group[data-item-type="Scene"] .rt-scene-path.rt-shift-locked {
   fill: var(--interactive-accent);
-  filter: brightness(1.2);
+  stroke: var(--interactive-accent);
+  stroke-width: 2px;
 }
 
 /* Shift mode: A new class, managed by JS, to restore number squares on hover/select */
@@ -562,7 +563,6 @@
 .rt-shift-selected {
   stroke: var(--interactive-accent);
   stroke-width: 3;
-  filter: drop-shadow(0 0 8px var(--interactive-accent-alpha-50));
 }
 
 /* Elapsed time arc (SHIFT mode) - uses Stage 1 Zero color */
@@ -710,7 +710,7 @@
 .radial-timeline-svg[data-shift-mode="alien"] .rt-scene-group[data-item-type="Scene"] .rt-scene-path.rt-shift-locked {
   fill: var(--text-error);
   stroke: var(--text-error);
-  filter: brightness(1.3) drop-shadow(0 0 5px var(--text-error));
+  stroke-width: 2px;
 }
 
 /* Alien scene-hover (global .scene-hover flag): keep AI grade squares/text tinted */
@@ -946,7 +946,7 @@
 .radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"] .rt-scene-path.rt-shift-locked {
   fill: rgba(80, 160, 255, 1);
   stroke: rgba(80, 160, 255, 1);
-  filter: brightness(1.3) drop-shadow(0 0 5px rgba(80, 160, 255, 0.9));
+  stroke-width: 2px;
 }
 
 /* 7. Duration/Runtime arcs get blue tint in runtime mode */
@@ -1923,7 +1923,7 @@
 }
 
 .ert-timeline-session-panel__primary:hover {
-  filter: brightness(1.08);
+  background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
   transform: none;
 }
 

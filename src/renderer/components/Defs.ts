@@ -102,29 +102,7 @@ export function renderDefs(
     </symbol>
   `;
 
-  const filters = `
-    <filter id="beatTextBg" x="-25%" y="-25%" width="150%" height="150%">
-      <feMorphology in="SourceAlpha" operator="dilate" radius="1.8" result="DILATE"/>
-      <feFlood flood-color="#000000" result="BLACK"/>
-      <feComposite in="BLACK" in2="DILATE" operator="in" result="BG"/>
-      <feMerge>
-        <feMergeNode in="BG"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-    <filter id="sceneTitleHalo" x="-20%" y="-20%" width="140%" height="140%">
-      <feMorphology in="SourceAlpha" operator="dilate" radius="1.2" result="expanded"/>
-      <feGaussianBlur in="expanded" stdDeviation="0.8" result="blurred"/>
-      <feFlood flood-color="#000000" flood-opacity="0.85" result="haloColor"/>
-      <feComposite in="haloColor" in2="blurred" operator="in" result="halo"/>
-      <feMerge>
-        <feMergeNode in="halo"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-  `;
-
-  return plaid + icons + filters;
+  return plaid + icons;
 }
 
 

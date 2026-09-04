@@ -308,7 +308,7 @@ export function setupModeToggleController(view: RadialTimelineView, svg: SVGSVGE
         const modeElement = modeSelector.querySelector(`[data-mode="${mode.id}"]`);
         if (modeElement) {
             const clickTarget = (modeElement.querySelector('.rt-document-bg') ?? modeElement) as unknown as HTMLElement;
-            view.registerDomEvent(clickTarget, 'click', (e: MouseEvent) => {
+            view.renderScope.registerDomEvent(clickTarget, 'click', (e: MouseEvent) => {
                 e.stopPropagation();
                 void switchToMode(view, mode.id, modeSelector);
             });
@@ -339,10 +339,10 @@ export function setupModeToggleController(view: RadialTimelineView, svg: SVGSVGE
         }
     };
 
-    // SAFE: Document-level listener cleaned up via view.register() below
+    // SAFE: Document-level listener cleaned up via view.renderScope.register() below
     const handleKeyPressListener = (e: KeyboardEvent) => { void handleKeyPress(e); };
     doc.addEventListener('keydown', handleKeyPressListener);
-    view.register(() => {
+    view.renderScope.register(() => {
         doc.removeEventListener('keydown', handleKeyPressListener);
     });
 
@@ -350,11 +350,11 @@ export function setupModeToggleController(view: RadialTimelineView, svg: SVGSVGE
     MODE_OPTIONS.forEach(mode => {
         const modeElement = modeSelector.querySelector(`[data-mode="${mode.id}"]`);
         if (modeElement) {
-            view.registerDomEvent(modeElement as unknown as HTMLElement, 'mouseenter', (e: MouseEvent) => {
+            view.renderScope.registerDomEvent(modeElement as unknown as HTMLElement, 'mouseenter', (e: MouseEvent) => {
                 modeElement.classList.add('rt-mode-hover');
             });
 
-            view.registerDomEvent(modeElement as unknown as HTMLElement, 'mouseleave', (e: MouseEvent) => {
+            view.renderScope.registerDomEvent(modeElement as unknown as HTMLElement, 'mouseleave', (e: MouseEvent) => {
                 modeElement.classList.remove('rt-mode-hover');
             });
         }

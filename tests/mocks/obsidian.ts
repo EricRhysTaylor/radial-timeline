@@ -251,12 +251,55 @@ export class PluginSettingTab {
   hide(): void {}
 }
 
-// Component base
+// Component base — a working model of Obsidian's lifecycle: registrations
+// accumulate until unload(), children load/unload with their parent, and
+// removeChild() unloads the child immediately.
 export class Component {
-  register(_cb: () => void): void {}
+  private _loaded = false;
+  private _cleanups: Array<() => void> = [];
+  private _children: Component[] = [];
+
+  load(): void {
+    if (this._loaded) return;
+    this._loaded = true;
+    this.onload();
+    for (const child of this._children) child.load();
+  }
+  onload(): void {}
+  unload(): void {
+    if (!this._loaded) return;
+    this._loaded = false;
+    for (const child of [...this._children]) child.unload();
+    const cleanups = this._cleanups;
+    this._cleanups = [];
+    for (const cb of cleanups.reverse()) cb();
+    this.onunload();
+  }
+  onunload(): void {}
+  addChild<T extends Component>(child: T): T {
+    this._children.push(child);
+    if (this._loaded) child.load();
+    return child;
+  }
+  removeChild<T extends Component>(child: T): T {
+    const idx = this._children.indexOf(child);
+    if (idx >= 0) this._children.splice(idx, 1);
+    child.unload();
+    return child;
+  }
+  register(cb: () => void): void { this._cleanups.push(cb); }
   registerEvent(_event: unknown): void {}
-  registerDomEvent(_el: unknown, _type: string, _handler: unknown): void {}
-  registerInterval(_interval: number): number { return 0; }
+  registerDomEvent(el: unknown, type: string, handler: unknown): void {
+    const target = el as { addEventListener?: (t: string, h: unknown) => void; removeEventListener?: (t: string, h: unknown) => void } | null;
+    if (target && typeof target.addEventListener === 'function') {
+      target.addEventListener(type, handler);
+      this.register(() => target.removeEventListener?.(type, handler));
+    }
+  }
+  registerInterval(interval: number): number {
+    this.register(() => clearInterval(interval));
+    return interval;
+  }
 }
 
 // ItemView for custom views

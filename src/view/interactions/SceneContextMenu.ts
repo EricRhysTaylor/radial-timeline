@@ -20,7 +20,10 @@ type SceneContextMenuView = {
         getSceneData?: () => Promise<TimelineItem[]>;
         refreshTimelineIfNeeded?: (file: TFile | null, delayMs?: number) => void;
     };
-    registerDomEvent: (el: HTMLElement, event: string, handler: (ev: Event) => void) => void;
+    renderScope: {
+        register: (cb: () => void) => void;
+        registerDomEvent: (el: HTMLElement, event: string, handler: (ev: Event) => void) => void;
+    };
     refreshTimeline?: () => void;
 };
 
@@ -560,7 +563,7 @@ function showSceneContextMenu(view: SceneContextMenuView, group: Element, event:
 }
 
 export function setupSceneContextMenu(view: SceneContextMenuView, svg: SVGSVGElement): void {
-    view.registerDomEvent(svg as unknown as HTMLElement, 'contextmenu', (event: Event) => {
+    view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'contextmenu', (event: Event) => {
         const mouseEvent = event as MouseEvent;
         const group = (mouseEvent.target as Element | null)?.closest(SCENE_CONTEXT_SELECTOR);
         if (!group) return;

@@ -37,7 +37,7 @@ export function setupMainPlotMode(view: RadialTimelineView, svg: SVGSVGElement):
     };
 
     // Register handlers for Scene elements (main plot scenes)
-    view.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (e: PointerEvent) => {
+    view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (e: PointerEvent) => {
         if (suspendHoverUntilPointerMove) return;
 
         const g = (e.target as Element).closest('.rt-scene-group[data-item-type="Scene"]');
@@ -59,7 +59,7 @@ export function setupMainPlotMode(view: RadialTimelineView, svg: SVGSVGElement):
         manager.onSceneHover(g, sid, e);
     });
 
-    view.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', (e: PointerEvent) => {
+    view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', (e: PointerEvent) => {
         if (suspendHoverUntilPointerMove) return;
 
         const toEl = e.relatedTarget as Element | null;
@@ -71,7 +71,7 @@ export function setupMainPlotMode(view: RadialTimelineView, svg: SVGSVGElement):
         clearSelection();
     });
 
-    view.registerDomEvent(svg as unknown as HTMLElement, 'pointermove', (e: PointerEvent) => {
+    view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointermove', (e: PointerEvent) => {
         if (suspendHoverUntilPointerMove) {
             suspendHoverUntilPointerMove = false;
             return;
@@ -85,14 +85,14 @@ export function setupMainPlotMode(view: RadialTimelineView, svg: SVGSVGElement):
     });
     
     // Cleanup on pointerout
-    view.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', () => {
+    view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', () => {
         if (rafId !== null) {
             cancelAnimationFrame(rafId);
             rafId = null;
         }
     });
 
-    view.registerDomEvent(svg as unknown as HTMLElement, 'click', (e: MouseEvent) => { void (async () => {
+    view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'click', (e: MouseEvent) => { void (async () => {
         const g = (e.target as Element).closest('.rt-scene-group[data-item-type="Scene"]');
         if (!g) return;
         e.stopPropagation();

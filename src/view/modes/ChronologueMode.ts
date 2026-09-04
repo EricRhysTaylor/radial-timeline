@@ -271,7 +271,7 @@ function setupSceneHoverInteractions(view: RadialTimelineView, svg: SVGSVGElemen
     };
 
     // Register hover handlers for Scene elements
-    view.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (e: PointerEvent) => {
+    view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (e: PointerEvent) => {
         // Suspend hover synopsis reveal when shift/alt/runtime mode is active
         // CHECK THIS FIRST before any other work!
         if (isShiftModeActive() || isAlienModeActive() || isRuntimeModeActive()) {
@@ -338,7 +338,7 @@ function setupSceneHoverInteractions(view: RadialTimelineView, svg: SVGSVGElemen
         }
     });
 
-    view.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', (e: PointerEvent) => {
+    view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', (e: PointerEvent) => {
         const g = (e.target as Element).closest('.rt-scene-group[data-item-type="Scene"], .rt-scene-group[data-item-type="Backdrop"]');
         if (!g) return;
 
@@ -376,7 +376,7 @@ function setupSceneHoverInteractions(view: RadialTimelineView, svg: SVGSVGElemen
  * Setup scene click interactions for opening files
  */
 function setupSceneClickInteractions(view: RadialTimelineView, svg: SVGSVGElement): void {
-    view.registerDomEvent(svg as unknown as HTMLElement, 'click', (e: MouseEvent) => { void (async () => {
+    view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'click', (e: MouseEvent) => { void (async () => {
         const g = (e.target as Element).closest('.rt-scene-group[data-item-type="Scene"], .rt-scene-group[data-item-type="Backdrop"]');
         if (!g) return;
 

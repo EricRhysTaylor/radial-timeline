@@ -17,13 +17,16 @@ interface SearchView {
         searchState: TimelineSearchState;
         clearSearch: () => void;
     };
-    registerDomEvent: (el: HTMLElement, event: string, handler: (ev: Event) => void) => void;
+    renderScope: {
+        register: (cb: () => void) => void;
+        registerDomEvent: (el: HTMLElement, event: string, handler: (ev: Event) => void) => void;
+    };
 }
 
 export function setupSearchControls(view: SearchView): void {
     const clearSearchBtn = view.contentEl.querySelector('.rt-clear-search-btn');
     if (clearSearchBtn) {
-        view.registerDomEvent(clearSearchBtn as HTMLElement, 'click', () => {
+        view.renderScope.registerDomEvent(clearSearchBtn as HTMLElement, 'click', () => {
             view.plugin.clearSearch();
         });
     }

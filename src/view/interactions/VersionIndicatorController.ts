@@ -18,7 +18,10 @@ interface VersionIndicatorView {
             revealSettingsSection: (tab: RadialTimelineSettingsTabId, sectionKey: string) => void;
         };
     };
-    registerDomEvent: (el: HTMLElement, event: string, handler: (ev: Event) => void) => void;
+    renderScope: {
+        register: (cb: () => void) => void;
+        registerDomEvent: (el: HTMLElement, event: string, handler: (ev: Event) => void) => void;
+    };
 }
 
 function openRadialTimelineCoreAlerts(view: VersionIndicatorView): void {
@@ -79,9 +82,9 @@ export function setupVersionIndicatorController(view: VersionIndicatorView, svg:
 
     // Prefer the unified hit area; fall back to the whole indicator group
     if (hitArea) {
-        view.registerDomEvent(hitArea as unknown as HTMLElement, 'click', handleClick);
+        view.renderScope.registerDomEvent(hitArea as unknown as HTMLElement, 'click', handleClick);
     }
-    view.registerDomEvent(versionIndicator as unknown as HTMLElement, 'click', handleClick);
+    view.renderScope.registerDomEvent(versionIndicator as unknown as HTMLElement, 'click', handleClick);
     
     // Set cursor to pointer for the entire indicator area
     versionIndicator.classList.add('ert-cursor-pointer');

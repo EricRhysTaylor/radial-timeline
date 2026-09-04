@@ -4,7 +4,7 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 // --- Imports and constants added for standalone module ---
-import { ItemView, WorkspaceLeaf, MarkdownView, TFile, Notice, setIcon, Menu } from 'obsidian';
+import { ItemView, WorkspaceLeaf, MarkdownView, TFile, Notice, setIcon, Menu, Component } from 'obsidian';
 import { TimelineRepairModal } from '../modals/TimelineRepairModal';
 import { TimelineAuditModal } from '../modals/TimelineAuditModal';
 import RadialTimelinePlugin from '../main';
@@ -129,6 +129,28 @@ export class RadialTimelineView extends ItemView {
     private timelineRefreshTimeout: number | null = null;
     private beatLabelAdjustTimeout: number | null = null;
     private beatLabelAdjustRaf: number | null = null;
+
+    // Registrations that belong to the current SVG, not to the view. Every
+    // render replaces the SVG, so every listener, cleanup, and timer bound to
+    // it must die with it; registering them on the view itself kept each
+    // generation alive until the view closed. A child Component per render
+    // is unloaded at the top of the next render (and with the view).
+    private renderScopeComponent: Component | null = null;
+
+    /** The Component that owns registrations for the SVG currently on screen. */
+    public get renderScope(): Component {
+        if (!this.renderScopeComponent) {
+            this.renderScopeComponent = this.addChild(new Component());
+        }
+        return this.renderScopeComponent;
+    }
+
+    private resetRenderScope(): void {
+        if (this.renderScopeComponent) {
+            this.removeChild(this.renderScopeComponent);
+            this.renderScopeComponent = null;
+        }
+    }
     
     // Change detection snapshot for optimizing renders
     private lastSnapshot: TimelineSnapshot | null = null;
@@ -2914,6 +2936,18 @@ export class RadialTimelineView extends ItemView {
             this._subplotKeyCleanup();
             this._subplotKeyCleanup = undefined;
         }
+        if (this.timelineRefreshTimeout !== null) {
+            window.clearTimeout(this.timelineRefreshTimeout);
+            this.timelineRefreshTimeout = null;
+        }
+        if (this.writingSessionPulseTimeout !== undefined) {
+            window.clearTimeout(this.writingSessionPulseTimeout);
+            this.writingSessionPulseTimeout = undefined;
+        }
+        if (this.writingSessionRingPulseTimeout !== undefined) {
+            window.clearTimeout(this.writingSessionRingPulseTimeout);
+            this.writingSessionRingPulseTimeout = undefined;
+        }
         if (this.beatLabelAdjustTimeout !== null) {
             window.clearTimeout(this.beatLabelAdjustTimeout);
             this.beatLabelAdjustTimeout = null;
@@ -2942,6 +2976,7 @@ export class RadialTimelineView extends ItemView {
             this._subplotKeyCleanup();
             this._subplotKeyCleanup = undefined;
         }
+        this.resetRenderScope();
         container.empty();
         
         // Check if there are any actual scenes (not just backdrops or beats)
@@ -2977,7 +3012,7 @@ export class RadialTimelineView extends ItemView {
             }
             
             // Render directly into the container
-            const svgElement = renderSvgFromString(svgString, timelineContainer, (cleanup) => this.register(cleanup));
+            const svgElement = renderSvgFromString(svgString, timelineContainer, (cleanup) => this.renderScope.register(cleanup));
 
                 if (svgElement) {
                     // Set data-mode attribute for CSS targeting
@@ -3046,7 +3081,7 @@ export class RadialTimelineView extends ItemView {
                 // Attach Author Progress Indicator click behavior - opens Settings Social tab
                 const aprIndicator = svgElement.querySelector('.rt-apr-indicator');
                 if (aprIndicator) {
-                    this.registerDomEvent(aprIndicator as unknown as HTMLElement, 'click', () => {
+                    this.renderScope.registerDomEvent(aprIndicator as unknown as HTMLElement, 'click', () => {
                         // Open settings and switch to Social tab
                         if (this.plugin.settingsTab) {
                             this.plugin.settingsTab.setActiveTab('social');
@@ -3063,7 +3098,7 @@ export class RadialTimelineView extends ItemView {
                 // Attach Progress Milestone Indicator click behavior - opens Settings Core tab (where progress preview lives)
                 const milestoneIndicator = svgElement.querySelector('.rt-milestone-indicator');
                 if (milestoneIndicator) {
-                    this.registerDomEvent(milestoneIndicator as unknown as HTMLElement, 'click', () => {
+                    this.renderScope.registerDomEvent(milestoneIndicator as unknown as HTMLElement, 'click', () => {
                         // Open settings and switch to Core tab (where the progress preview lives)
                         if (this.plugin.settingsTab) {
                             this.plugin.settingsTab.forceExpandCoreCompletionPreview();
@@ -3140,7 +3175,7 @@ export class RadialTimelineView extends ItemView {
                 };
                 
                 // Register cleanup for RAF IDs
-                this.register(() => {
+                this.renderScope.register(() => {
                     sceneGroupRafIds.forEach(id => cancelAnimationFrame(id));
                 });
                 
@@ -3170,14 +3205,14 @@ export class RadialTimelineView extends ItemView {
                     const svg = container.querySelector('.radial-timeline-svg') as SVGSVGElement;
                     if (svg) {
                         let lastHoverGroup: Element | null = null;
-                        this.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (e: PointerEvent) => {
+                        this.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (e: PointerEvent) => {
                             const g = (e.target as Element).closest('.rt-scene-group');
                             if (g && g !== lastHoverGroup) {
                                 onEnterLeave(true, g);
                                 lastHoverGroup = g;
                             }
                         });
-                        this.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', (e: PointerEvent) => {
+                        this.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', (e: PointerEvent) => {
                             const g = (e.target as Element).closest('.rt-scene-group');
                             if (g && g === lastHoverGroup) {
                                 onEnterLeave(false, g);
@@ -3234,7 +3269,7 @@ export class RadialTimelineView extends ItemView {
                     });
                     
                     // Register cleanup for gossamer RAF IDs
-                    this.register(() => {
+                    this.renderScope.register(() => {
                         if (gossamerOuterRafId !== null) cancelAnimationFrame(gossamerOuterRafId);
                         if (gossamerInnerRafId !== null) cancelAnimationFrame(gossamerInnerRafId);
                     });
@@ -3471,10 +3506,11 @@ export class RadialTimelineView extends ItemView {
         }
 
         const schedulePanelRefresh = () => {
-            window.setTimeout(() => {
+            const id = window.setTimeout(() => {
                 this.lastSnapshot = null;
                 this.refreshTimeline();
             }, 0);
+            this.renderScope.register(() => window.clearTimeout(id));
         };
         const stopRunsEvent = (event: Event) => {
             event.stopPropagation();
@@ -3544,10 +3580,11 @@ export class RadialTimelineView extends ItemView {
         row.appendChild(text);
 
         const schedulePanelRefresh = () => {
-            window.setTimeout(() => {
+            const id = window.setTimeout(() => {
                 this.lastSnapshot = null;
                 this.refreshTimeline();
             }, 0);
+            this.renderScope.register(() => window.clearTimeout(id));
         };
         const stopRunsEvent = (event: Event) => {
             event.stopPropagation();
@@ -3698,9 +3735,6 @@ export class RadialTimelineView extends ItemView {
         }
     }
 
-    // Property to track tab highlight timeout
-    private _tabHighlightTimeout: number | null = null;
-    
     /**
      * Remove all Gossamer-specific event listeners and restore normal mode.
      * Public: invoked by GossamerCommands during the non-ModeManager exit path.

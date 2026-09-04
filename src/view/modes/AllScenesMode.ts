@@ -18,7 +18,7 @@ export function setupSceneInteractions(view: RadialTimelineView, group: Element,
     const encodedPath = group.getAttribute('data-path');
     if (encodedPath && encodedPath !== '') {
         const filePath = decodeURIComponent(encodedPath);
-        view.registerDomEvent(path as HTMLElement, 'click', (evt: MouseEvent) => { void (async () => {
+        view.renderScope.registerDomEvent(path as HTMLElement, 'click', (evt: MouseEvent) => { void (async () => {
             // Skip if drag controller is handling this interaction
             // The drag controller handles click-to-open for quick clicks and drag operations
             if (isDragInProgress() || wasRecentlyHandledByDrag()) return;
@@ -53,11 +53,11 @@ export function setupSceneInteractions(view: RadialTimelineView, group: Element,
             await openOrRevealFile(view.plugin.app, file, false, highlight);
         })(); });
 
-        view.registerDomEvent(group as HTMLElement, 'mouseenter', () => {
+        view.renderScope.registerDomEvent(group as HTMLElement, 'mouseenter', () => {
             const itemType = group.getAttribute('data-item-type');
             if (view.currentMode === 'gossamer' && itemType !== 'Beat') return;
         });
-        view.registerDomEvent(group as HTMLElement, 'mouseleave', () => {
+        view.renderScope.registerDomEvent(group as HTMLElement, 'mouseleave', () => {
             const itemType = group.getAttribute('data-item-type');
             if (view.currentMode === 'gossamer' && itemType !== 'Beat') return;
         });
@@ -91,21 +91,21 @@ export function setupAllScenesDelegatedHover(view: RadialTimelineView, container
     };
 
     // Custom event name isn't part of HTMLElementEventMap, so register directly.
-    // SAFE: listener removed via view.register() (Component lifecycle cleanup).
+    // SAFE: listener removed via view.renderScope.register() (Component lifecycle cleanup).
     const onSceneOpenBegin = () => {
         suspendHoverUntilPointerMove = true;
         svg.classList.remove('scene-hover');
         clearSelection();
     };
     svg.addEventListener('rt-scene-open-begin', onSceneOpenBegin);
-    view.register(() => svg.removeEventListener('rt-scene-open-begin', onSceneOpenBegin));
+    view.renderScope.register(() => svg.removeEventListener('rt-scene-open-begin', onSceneOpenBegin));
 
     const getSceneIdFromGroup = (group: Element): string | null => {
         const pathEl = group.querySelector('.rt-scene-path');
         return pathEl?.id || null;
     };
 
-    view.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (e: PointerEvent) => {
+    view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (e: PointerEvent) => {
         if (suspendHoverUntilPointerMove) return;
 
         if (isDragInteractionActive()) {
@@ -132,7 +132,7 @@ export function setupAllScenesDelegatedHover(view: RadialTimelineView, container
         manager.onSceneHover(g, sid, e);
     });
 
-    view.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', (e: PointerEvent) => {
+    view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', (e: PointerEvent) => {
         if (suspendHoverUntilPointerMove) return;
 
         if (isDragInteractionActive()) {
@@ -153,7 +153,7 @@ export function setupAllScenesDelegatedHover(view: RadialTimelineView, container
         clearSelection();
     });
 
-    view.registerDomEvent(svg as unknown as HTMLElement, 'pointermove', (e: PointerEvent) => {
+    view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointermove', (e: PointerEvent) => {
         if (suspendHoverUntilPointerMove) {
             suspendHoverUntilPointerMove = false;
             return;
@@ -175,7 +175,7 @@ export function setupAllScenesDelegatedHover(view: RadialTimelineView, container
     });
     
     // Cleanup on pointerout
-    view.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', () => {
+    view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', () => {
         if (rafId !== null) {
             cancelAnimationFrame(rafId);
             rafId = null;

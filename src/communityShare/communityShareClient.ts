@@ -620,6 +620,14 @@ export function scheduleCommunityProjectSync(plugin: RadialTimelinePlugin): Prom
     return Promise.resolve();
 }
 
+/** Drop a queued trailing project sync. Called on plugin unload so the timer never fires against a dead instance. */
+export function cancelPendingCommunityProjectSync(): void {
+    if (pendingProjectSync !== null) {
+        window.clearTimeout(pendingProjectSync);
+        pendingProjectSync = null;
+    }
+}
+
 export async function beginCommunitySharing(plugin: RadialTimelinePlugin): Promise<PublishSuccess> {
     const result = await publishCommunityShareReport(plugin, 'manual');
     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);

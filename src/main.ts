@@ -52,7 +52,7 @@ import { migrateLegacyKeysToSecretStorage, needsLegacyKeyMigration } from './ai/
 import { hasSecret } from './ai/credentials/secretStorage';
 import type { AIProviderId } from './ai/types';
 import { migrateAuthorProgressSettings } from './authorProgress/authorProgressConfig';
-import { scheduleCommunityProjectSync } from './communityShare/communityShareClient';
+import { scheduleCommunityProjectSync, cancelPendingCommunityProjectSync } from './communityShare/communityShareClient';
 import { migrateBeatSettings, stripLegacyBeatSettings } from './migrations/beatSettings';
 import { DEFAULT_BOOK_TITLE, createBookId, deriveBookTitleFromSourcePath, getActiveBook, getSagaBooks, getTimelineScope, isSagaScopeAvailable, normalizeBookProfile, shouldSeedBookProfileFromLegacySettings } from './utils/books';
 import { adaptPandocLayoutsToPublishingModel } from './utils/publishingModel';
@@ -598,10 +598,11 @@ export default class RadialTimelinePlugin extends Plugin {
             // Standing community share: while sharing is on, keep the live
             // report current. Delayed so startup stays snappy; the sync is a
             // no-op when sharing is off or nothing changed.
-            window.setTimeout(() => {
+            const communitySyncKickoff = window.setTimeout(() => {
                 void import('./communityShare/communityShareClient')
                     .then(({ syncCommunityShareIfDue }) => syncCommunityShareIfDue(this));
             }, 20_000);
+            this.register(() => window.clearTimeout(communitySyncKickoff));
             this.registerInterval(window.setInterval(() => {
                 void import('./communityShare/communityShareClient')
                     .then(({ syncCommunityShareIfDue }) => syncCommunityShareIfDue(this));
@@ -1484,6 +1485,9 @@ export default class RadialTimelinePlugin extends Plugin {
         // Dispose its UI timers before the old instance loses those hooks; the
         // client-owned diagnostic itself is allowed to settle normally.
         this.settingsTab?.disposeAsyncWork();
+        // A throttled project sync queued by a settings edit must not fire
+        // against this unloaded instance.
+        cancelPendingCommunityProjectSync();
         // Tear down registered services first; failures are caught per-item
         // so one bad cleanup cannot leak the rest.
         this.disposables.disposeAll();

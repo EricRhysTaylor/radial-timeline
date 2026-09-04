@@ -676,12 +676,12 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
                     view.plugin.refreshTimelineIfNeeded(null);
                 }
             });
-            view.register(() => cancelAnimationFrame(rafId));
+            view.renderScope.register(() => cancelAnimationFrame(rafId));
         }
     };
 
     // Register shift button click handler
-    view.registerDomEvent(shiftButton as unknown as HTMLElement, 'click', (e: MouseEvent) => {
+    view.renderScope.registerDomEvent(shiftButton as unknown as HTMLElement, 'click', (e: MouseEvent) => {
         e.stopPropagation();
         if (shiftModeActive) {
             deactivateShiftMode();
@@ -692,7 +692,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
 
     // Register ALT button click handler
     if (altButton) {
-        view.registerDomEvent(altButton as unknown as HTMLElement, 'click', (e: MouseEvent) => {
+        view.renderScope.registerDomEvent(altButton as unknown as HTMLElement, 'click', (e: MouseEvent) => {
             e.stopPropagation();
             toggleAlienMode();
         });
@@ -700,7 +700,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
 
     // Register RT button click handler
     if (rtButton) {
-        view.registerDomEvent(rtButton as unknown as HTMLElement, 'click', (e: MouseEvent) => {
+        view.renderScope.registerDomEvent(rtButton as unknown as HTMLElement, 'click', (e: MouseEvent) => {
             e.stopPropagation();
             toggleRuntimeMode();
         });
@@ -796,11 +796,11 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
         }
     };
 
-    // SAFE: Document-level listeners cleaned up via view.register() below
+    // SAFE: Document-level listeners cleaned up via view.renderScope.register() below
     doc.addEventListener('keydown', handleKeyDown);
-    // SAFE: Cleanup handled by view.register() below
+    // SAFE: Cleanup handled by view.renderScope.register() below
     doc.addEventListener('keyup', handleKeyUp);
-    view.register(() => {
+    view.renderScope.register(() => {
         doc.removeEventListener('keydown', handleKeyDown);
         doc.removeEventListener('keyup', handleKeyUp);
     });
@@ -869,7 +869,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
 
         // Use capture phase to run before other handlers
         // Works for Shift mode, ALT (Alien) mode, and Runtime mode
-        view.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (e: PointerEvent) => {
+        view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (e: PointerEvent) => {
             if (!shiftModeActive && !alienModeActive && !runtimeModeActive) return;
 
             const g = (e.target as Element).closest('.rt-scene-group[data-item-type="Scene"]');
@@ -899,7 +899,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
 
         // Use capture phase for pointerout too
         // Works for Shift mode, ALT (Alien) mode, and Runtime mode
-        view.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', (e: PointerEvent) => {
+        view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', (e: PointerEvent) => {
             if (!shiftModeActive && !alienModeActive && !runtimeModeActive) return;
 
             const g = (e.target as Element).closest('.rt-scene-group[data-item-type="Scene"]');
@@ -990,7 +990,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
     };
 
     // Register elapsed time text click handler (works for Shift, ALT, and Runtime modes)
-    view.registerDomEvent(svg as unknown as HTMLElement, 'click', (e: MouseEvent) => {
+    view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'click', (e: MouseEvent) => {
         if ((!shiftModeActive && !alienModeActive && !runtimeModeActive) || selectedScenes.length !== 2) return;
 
         const elapsedTimeLabel = (e.target as Element).closest('.rt-elapsed-time-label');
@@ -1025,7 +1025,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
                 }
             }
         }, 0);
-        view.register(() => window.clearTimeout(timeoutId));
+        view.renderScope.register(() => window.clearTimeout(timeoutId));
     };
 
     const schedulePlanetaryDefaultActivation = () => {
@@ -1044,7 +1044,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
                 }
             }
         }, 0);
-        view.register(() => window.clearTimeout(timeoutId));
+        view.renderScope.register(() => window.clearTimeout(timeoutId));
     };
 
     if (globalRuntimeModeActive && rtButton) {

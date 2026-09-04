@@ -41,7 +41,10 @@ import { isAlienModeActive, isRuntimeModeActive, isShiftModeActive } from './Chr
 export interface ChronologueDragViewAdapter {
     plugin: RadialTimelinePlugin;
     sceneData: TimelineItem[];
-    registerDomEvent: (el: HTMLElement, event: string, handler: (ev: Event) => void) => void;
+    renderScope: {
+        register: (cb: () => void) => void;
+        registerDomEvent: (el: HTMLElement, event: string, handler: (ev: Event) => void) => void;
+    };
 }
 
 export interface ChronologueDragOptions {
@@ -98,23 +101,23 @@ export class ChronologueDragController {
         sources.forEach(group => group.setAttribute('data-draggable', 'true'));
         this.overlays.createIndicator();
 
-        this.view.registerDomEvent(window as unknown as HTMLElement, 'pointermove', (evt: PointerEvent) => this.onPointerMove(evt));
-        this.view.registerDomEvent(window as unknown as HTMLElement, 'pointerup', (evt: PointerEvent) => { void this.onPointerUp(evt); });
+        this.view.renderScope.registerDomEvent(window as unknown as HTMLElement, 'pointermove', (evt: PointerEvent) => this.onPointerMove(evt));
+        this.view.renderScope.registerDomEvent(window as unknown as HTMLElement, 'pointerup', (evt: PointerEvent) => { void this.onPointerUp(evt); });
 
         sources.forEach(group => {
             const scenePath = group.querySelector('.rt-scene-path');
             if (!scenePath) return;
-            this.view.registerDomEvent(scenePath as unknown as HTMLElement, 'pointerdown', (evt: PointerEvent) => this.startDrag(evt, group));
+            this.view.renderScope.registerDomEvent(scenePath as unknown as HTMLElement, 'pointerdown', (evt: PointerEvent) => this.startDrag(evt, group));
         });
 
-        this.view.registerDomEvent(this.svg as unknown as HTMLElement, 'pointerover', (evt: PointerEvent) => {
+        this.view.renderScope.registerDomEvent(this.svg as unknown as HTMLElement, 'pointerover', (evt: PointerEvent) => {
             if (this.dragging || this.subModeActive()) return;
             const group = (evt.target as Element).closest<SVGGElement>('.rt-scene-group[data-draggable="true"]');
             if (group) {
                 this.overlays.showIndicator(group, resolveSubplotColorFromGroup(group, this.view.plugin.settings.subplotColors));
             }
         });
-        this.view.registerDomEvent(this.svg as unknown as HTMLElement, 'pointerout', (evt: PointerEvent) => {
+        this.view.renderScope.registerDomEvent(this.svg as unknown as HTMLElement, 'pointerout', (evt: PointerEvent) => {
             const toEl = evt.relatedTarget as Element | null;
             const group = (evt.target as Element).closest('.rt-scene-group');
             if (group && toEl && group.contains(toEl)) return;

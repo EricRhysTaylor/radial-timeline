@@ -29,7 +29,10 @@ type SettingsWithLegacySubplotOrder = RadialTimelineSettings & { masterSubplotOr
 
 export interface OuterRingViewAdapter {
     plugin: RadialTimelinePlugin;
-    registerDomEvent: (el: HTMLElement, event: string, handler: (ev: Event) => void) => void;
+    renderScope: {
+        register: (cb: () => void) => void;
+        registerDomEvent: (el: HTMLElement, event: string, handler: (ev: Event) => void) => void;
+    };
 }
 
 export interface OuterRingDragOptions {
@@ -204,24 +207,31 @@ export class OuterRingDragController {
         // Create the tangent-aligned drag reorder indicator (move-horizontal arrows)
         this.overlays.createIndicator();
 
-        this.view.registerDomEvent(window as unknown as HTMLElement, 'pointermove', (evt: PointerEvent) => this.onPointerMove(evt));
-        this.view.registerDomEvent(window as unknown as HTMLElement, 'pointerup', (evt: PointerEvent) => { void this.onPointerUp(evt); });
+        // The hold timer that promotes a press into a drag must not outlive the SVG it was pressed on.
+        this.view.renderScope.register(() => {
+            if (this.holdTimer !== null) {
+                window.clearTimeout(this.holdTimer);
+                this.holdTimer = null;
+            }
+        });
+        this.view.renderScope.registerDomEvent(window as unknown as HTMLElement, 'pointermove', (evt: PointerEvent) => this.onPointerMove(evt));
+        this.view.renderScope.registerDomEvent(window as unknown as HTMLElement, 'pointerup', (evt: PointerEvent) => { void this.onPointerUp(evt); });
         
         draggableGroups.forEach(group => {
             // Listen on the scene/beat path for pointer events (outer ring only)
             const scenePath = group.querySelector('.rt-scene-path');
             if (scenePath) {
-                this.view.registerDomEvent(scenePath as unknown as HTMLElement, 'pointerdown', (evt: PointerEvent) => this.startDrag(evt, group));
+                this.view.renderScope.registerDomEvent(scenePath as unknown as HTMLElement, 'pointerdown', (evt: PointerEvent) => this.startDrag(evt, group));
             }
         });
 
         // Delegated hover for the drag indicator — show tangent arrows on outer ring groups only
-        this.view.registerDomEvent(this.svg as unknown as HTMLElement, 'pointerover', (e: PointerEvent) => {
+        this.view.renderScope.registerDomEvent(this.svg as unknown as HTMLElement, 'pointerover', (e: PointerEvent) => {
             if (this.dragging) return;
             const group = (e.target as Element).closest<SVGGElement>('.rt-scene-group[data-draggable="true"]');
             if (group) this.showDragIndicator(group);
         });
-        this.view.registerDomEvent(this.svg as unknown as HTMLElement, 'pointerout', (e: PointerEvent) => {
+        this.view.renderScope.registerDomEvent(this.svg as unknown as HTMLElement, 'pointerout', (e: PointerEvent) => {
             const toEl = e.relatedTarget as Element | null;
             const group = (e.target as Element).closest('.rt-scene-group');
             // Only hide if leaving the scene group entirely

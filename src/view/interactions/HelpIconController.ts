@@ -7,7 +7,10 @@
 const WIKI_URL = 'https://github.com/EricRhysTaylor/radial-timeline/wiki';
 
 interface HelpIconView {
-    registerDomEvent: (el: HTMLElement, event: string, handler: (ev: Event) => void) => void;
+    renderScope: {
+        register: (cb: () => void) => void;
+        registerDomEvent: (el: HTMLElement, event: string, handler: (ev: Event) => void) => void;
+    };
 }
 
 /**
@@ -29,13 +32,13 @@ export function setupHelpIconController(view: HelpIconView, svg: SVGSVGElement):
 
     // Handle click on icon area
     if (hitArea) {
-        view.registerDomEvent(hitArea as unknown as HTMLElement, 'click', openWiki);
+        view.renderScope.registerDomEvent(hitArea as unknown as HTMLElement, 'click', openWiki);
     }
 
     // Also handle click on the icon group itself
     const iconGroup = helpIcon.querySelector('g');
     if (iconGroup) {
-        view.registerDomEvent(iconGroup as unknown as HTMLElement, 'click', openWiki);
+        view.renderScope.registerDomEvent(iconGroup as unknown as HTMLElement, 'click', openWiki);
     }
     
     // Set cursor to pointer

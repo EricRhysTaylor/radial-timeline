@@ -57,7 +57,8 @@ export class SceneInteractionManager {
         // Prefer segment count from the rendered SVG so hover redistribution matches the actual geometry.
         const svgSegments = this.getSegmentCountFromSvg(svg);
         this.totalSegments = svgSegments ?? Math.max(3, totalActs ?? 3);
-        this.registerFn = view.register.bind(view);
+        // Cleanups belong to the SVG this manager was built for, not to the view.
+        this.registerFn = (fn) => view.renderScope.register(fn);
         
         // Create reusable text measurement element
         this.measurementText = svg.ownerDocument.win.createSvg('text');

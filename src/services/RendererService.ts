@@ -293,7 +293,10 @@ export class RendererService {
             addHighlightRectanglesExt({
                 contentEl: container,
                 plugin: this.plugin,
-                registerDomEvent: () => { /* no-op: highlights don't attach events */ }
+                renderScope: {
+                    register: () => { /* no-op: highlights don't attach events */ },
+                    registerDomEvent: () => { /* no-op: highlights don't attach events */ }
+                }
             });
         } catch { /* highlight refresh is best-effort */ }
         return true;

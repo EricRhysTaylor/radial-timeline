@@ -3,7 +3,10 @@ interface RotationView {
     getRotationState(): boolean;
     setRotationState(rotated: boolean): void;
     applyRotationToNumberSquares(svg: SVGSVGElement, rotated: boolean): void;
-    registerDomEvent: (el: HTMLElement, event: string, handler: (ev: Event) => void) => void;
+    renderScope: {
+        register: (cb: () => void) => void;
+        registerDomEvent: (el: HTMLElement, event: string, handler: (ev: Event) => void) => void;
+    };
 }
 
 export function getRotationStepDegrees(segmentCount: number): number {
@@ -77,5 +80,5 @@ export function setupRotationController(view: RotationView, svg: SVGSVGElement):
         applyRotation();
     };
     
-    view.registerDomEvent(toggle as unknown as HTMLElement, 'click', clickHandler);
+    view.renderScope.registerDomEvent(toggle as unknown as HTMLElement, 'click', clickHandler);
 }

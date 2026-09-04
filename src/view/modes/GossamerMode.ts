@@ -325,13 +325,13 @@ export function setupGossamerMode(view: RadialTimelineView, svg: SVGSVGElement):
     // Void wrappers keep a single listener reference for both add and removal.
     const beatSliceClickListener = (e: MouseEvent) => { void beatSliceClick(e); };
     const dotClickListener = (e: MouseEvent) => { void dotClick(e); };
-    view.registerDomEvent(svg as unknown as HTMLElement, 'click', beatSliceClickListener);
-    view.registerDomEvent(svg as unknown as HTMLElement, 'click', dotClickListener);
-    view.registerDomEvent(svg as unknown as HTMLElement, 'click', backgroundClick);
-    view.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', beatSliceOver);
-    view.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', beatSliceOut);
-    view.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', dotOver);
-    view.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', dotOut);
+    view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'click', beatSliceClickListener);
+    view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'click', dotClickListener);
+    view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'click', backgroundClick);
+    view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', beatSliceOver);
+    view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', beatSliceOut);
+    view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', dotOver);
+    view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', dotOut);
 
     // Track for manual cleanup when switching modes
     view.registerGossamerHandler('pointerover::svg', beatSliceOver);
@@ -345,9 +345,9 @@ export function setupGossamerMode(view: RadialTimelineView, svg: SVGSVGElement):
     // Direct beat-group handlers for reliability
     const beatGroups = svg.querySelectorAll('.rt-scene-group[data-item-type="Beat"]');
     beatGroups.forEach((el) => {
-        view.registerDomEvent(el as HTMLElement, 'pointerenter', (ev) => beatSliceEnter(el, ev));
-        view.registerDomEvent(el as HTMLElement, 'pointerleave', (ev) => beatSliceOut(ev as PointerEvent));
-        view.registerDomEvent(el as HTMLElement, 'click', (ev) => beatSliceClick(ev as MouseEvent));
+        view.renderScope.registerDomEvent(el as HTMLElement, 'pointerenter', (ev) => beatSliceEnter(el, ev));
+        view.renderScope.registerDomEvent(el as HTMLElement, 'pointerleave', (ev) => beatSliceOut(ev as PointerEvent));
+        view.renderScope.registerDomEvent(el as HTMLElement, 'click', (ev) => beatSliceClick(ev as MouseEvent));
     });
 }
 

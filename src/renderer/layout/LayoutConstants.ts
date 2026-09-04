@@ -209,7 +209,16 @@ export const BEAT_TEXT_RADIUS = {
 } as const;
 
 /** Small start nudge for text paths (radians) */
-export const TEXTPATH_START_NUDGE_RAD = 0.02;
+/**
+ * Where a scene title starts along its arc, measured from the scene's start
+ * edge: the text path begins TEXTPATH_START_NUDGE_PX after the edge (so the
+ * path never starts exactly on the clip boundary) and the text sits
+ * TEXTPATH_START_OFFSET_PX further along it. Both are pixels, so the gap is
+ * the same on every ring; an angular nudge grew with radius and wasted
+ * 15-20px on the outer rings.
+ */
+export const TEXTPATH_START_NUDGE_PX = 1;
+export const TEXTPATH_START_OFFSET_PX = 4;
 
 // =============================================================================
 // SIZING

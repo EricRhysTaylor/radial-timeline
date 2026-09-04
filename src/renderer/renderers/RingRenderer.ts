@@ -9,7 +9,8 @@ import {
 } from '../../utils/sceneHelpers';
 import { makeSceneId } from '../../utils/numberSquareHelpers';
 import {
-    TEXTPATH_START_NUDGE_RAD,
+    TEXTPATH_START_NUDGE_PX,
+    TEXTPATH_START_OFFSET_PX,
     BEAT_TEXT_RADIUS,
     BEAT_FONT_PX,
     ESTIMATE_FUDGE_RENDER,
@@ -200,7 +201,8 @@ export function renderRings(ctx: RingRenderContext): string {
 
                     const sceneTitleInset = SCENE_TITLE_INSET + ((fontScale - 1) * 18);
                     const textPathRadius = Math.max(innerR, outerR - sceneTitleInset);
-                    const textPathLargeArcFlag = (sceneEndAngle - (sceneStartAngle + TEXTPATH_START_NUDGE_RAD)) > Math.PI ? 1 : 0;
+                    const textStartAngle = sceneStartAngle + TEXTPATH_START_NUDGE_PX / textPathRadius;
+                    const textPathLargeArcFlag = (sceneEndAngle - textStartAngle) > Math.PI ? 1 : 0;
 
                     const color = getFillForScene(scene, PUBLISH_STAGE_COLORS, subplotColorFor, true, forceSubplotFillColors);
                     const arcPathStr = sceneArcPath(innerR, effectiveOuterR, sceneStartAngle, sceneEndAngle);
@@ -288,14 +290,12 @@ export function renderRings(ctx: RingRenderContext): string {
                                   class="${sceneClasses}"/>
                             ${!isBeatNote(scene) ? `
                             <path id="textPath-${act}-${ring}-outer-${idx}" 
-                                  d="M ${formatNumber(textPathRadius * Math.cos(sceneStartAngle + TEXTPATH_START_NUDGE_RAD))} ${formatNumber(textPathRadius * Math.sin(sceneStartAngle + TEXTPATH_START_NUDGE_RAD))} 
+                                  d="M ${formatNumber(textPathRadius * Math.cos(textStartAngle))} ${formatNumber(textPathRadius * Math.sin(textStartAngle))} 
                                      A ${formatNumber(textPathRadius)} ${formatNumber(textPathRadius)} 0 ${textPathLargeArcFlag} 1 ${formatNumber(textPathRadius * Math.cos(sceneEndAngle))} ${formatNumber(textPathRadius * Math.sin(sceneEndAngle))}" 
                                   fill="none"/>
                             <clipPath id="clip-${sceneId}"><use href="#${sceneId}"/></clipPath>
                             <text class="rt-scene-title${scene.path && plugin.openScenePaths.has(scene.path) ? ' rt-scene-is-open' : ''}" clip-path="url(#clip-${sceneId})" dy="${dyOffset}" data-scene-id="${sceneId}">
-                                <textPath href="#textPath-${act}-${ring}-outer-${idx}" startOffset="4">
-                                    ${text}
-                                </textPath>
+                                <textPath href="#textPath-${act}-${ring}-outer-${idx}" startOffset="${TEXTPATH_START_OFFSET_PX}">${text}</textPath>
                             </text>` : isBeatNote(scene) ? `
                             <path id="plot-label-arc-${act}-${ring}-outer-${idx}" 
                                   d="M ${formatNumber(beatTextRadius * Math.cos(labelStartAngle))} ${formatNumber(beatTextRadius * Math.sin(labelStartAngle))} 
@@ -353,7 +353,8 @@ export function renderRings(ctx: RingRenderContext): string {
                     const sceneEndAngle = position.endAngle;
                     const sceneTitleInset = SCENE_TITLE_INSET + ((fontScale - 1) * 18);
                     const textPathRadius = Math.max(innerR, outerR - sceneTitleInset);
-                    const textPathLargeArcFlag = (sceneEndAngle - (sceneStartAngle + TEXTPATH_START_NUDGE_RAD)) > Math.PI ? 1 : 0;
+                    const textStartAngle = sceneStartAngle + TEXTPATH_START_NUDGE_PX / textPathRadius;
+                    const textPathLargeArcFlag = (sceneEndAngle - textStartAngle) > Math.PI ? 1 : 0;
 
                     const color = getFillForScene(
                         scene,
@@ -399,14 +400,12 @@ export function renderRings(ctx: RingRenderContext): string {
 
                             ${!isBeatNote(scene) ? `
                             <path id="textPath-${act}-${ring}-${idx}" 
-                                  d="M ${formatNumber(textPathRadius * Math.cos(sceneStartAngle + TEXTPATH_START_NUDGE_RAD))} ${formatNumber(textPathRadius * Math.sin(sceneStartAngle + TEXTPATH_START_NUDGE_RAD))} 
+                                  d="M ${formatNumber(textPathRadius * Math.cos(textStartAngle))} ${formatNumber(textPathRadius * Math.sin(textStartAngle))} 
                                      A ${formatNumber(textPathRadius)} ${formatNumber(textPathRadius)} 0 ${textPathLargeArcFlag} 1 ${formatNumber(textPathRadius * Math.cos(sceneEndAngle))} ${formatNumber(textPathRadius * Math.sin(sceneEndAngle))}" 
                                   fill="none"/>
                             <clipPath id="clip-${sceneId}"><use href="#${sceneId}"/></clipPath>
                             <text class="rt-scene-title${scene.path && plugin.openScenePaths.has(scene.path) ? ' rt-scene-is-open' : ''}" clip-path="url(#clip-${sceneId})" data-scene-id="${sceneId}">
-                                <textPath href="#textPath-${act}-${ring}-${idx}" startOffset="4">
-                                    ${text}
-                                </textPath>
+                                <textPath href="#textPath-${act}-${ring}-${idx}" startOffset="${TEXTPATH_START_OFFSET_PX}">${text}</textPath>
                             </text>` : ``}
                         </g>`;
                 });

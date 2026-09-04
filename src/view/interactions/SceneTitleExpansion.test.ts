@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { expandIntoGap, type SceneAngleData } from './SceneTitleExpansion';
+import { buildTextPath, calculateTargetSize, expandIntoGap, needsExpansion, HOVER_EXPAND_FACTOR, PADDING_PX, type SceneAngleData } from './SceneTitleExpansion';
+import { TEXTPATH_START_NUDGE_PX, TEXTPATH_START_OFFSET_PX } from '../../renderer/layout/LayoutConstants';
 
 const SEGMENT_END = 10;
 
@@ -54,5 +55,25 @@ describe('expandIntoGap', () => {
         const elements = [scene('a', 0, 2), scene('b', 2, 3)];
 
         expect(expandIntoGap(elements, 'a', 1.5, SEGMENT_END)).toEqual([]);
+    });
+});
+
+describe('scene title start gap', () => {
+    it('starts the text path a fixed pixel distance after the scene edge on every ring', () => {
+        // 1px along the arc at radius r is 1/r radians: the same gap inside and out.
+        for (const radius of [200, 450, 720]) {
+            const d = buildTextPath(radius, 0, Math.PI / 4);
+            const [x, y] = d.replace(/^M\s*/, '').split(/\s+/).slice(0, 2).map(Number);
+            expect(Math.atan2(y, x) * radius).toBeCloseTo(TEXTPATH_START_NUDGE_PX, 6);
+        }
+    });
+
+    it('needs the same arc length for a title regardless of ring radius', () => {
+        const width = 100;
+        const needed = width + PADDING_PX + TEXTPATH_START_OFFSET_PX + TEXTPATH_START_NUDGE_PX;
+        expect(needsExpansion(width, needed, 200)).toBe(false);
+        expect(needsExpansion(width, needed, 720)).toBe(false);
+        expect(needsExpansion(width, needed - 1, 720)).toBe(true);
+        expect(calculateTargetSize(width, 720) * 720).toBeCloseTo(needed * HOVER_EXPAND_FACTOR, 6);
     });
 });

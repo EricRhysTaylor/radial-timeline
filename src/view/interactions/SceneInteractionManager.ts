@@ -23,9 +23,9 @@ import {
     redistributeAngles,
     expandIntoGap,
     buildArcPath,
-    buildTextPath,
-    SCENE_TITLE_INSET
+    buildTextPath
 } from './SceneTitleExpansion';
+import { SCENE_TITLE_INSET } from '../../renderer/layout/LayoutConstants';
 
 export class SceneInteractionManager {
     private svg: SVGSVGElement;

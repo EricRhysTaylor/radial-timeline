@@ -13,10 +13,9 @@
  * Separated from DOM manipulation to enable unit testing and reuse.
  */
 
+import { SCENE_TITLE_INSET, TEXTPATH_START_NUDGE_PX, TEXTPATH_START_OFFSET_PX } from '../../renderer/layout/LayoutConstants';
+
 export const HOVER_EXPAND_FACTOR = 1.05;
-export const SCENE_TITLE_INSET = 22;
-export const TEXTPATH_START_NUDGE_RAD = 0.02;
-export const TEXTPATH_START_OFFSET_PX = 4;
 export const PADDING_PX = 8;
 
 export interface SceneAngleData {
@@ -42,8 +41,7 @@ export function needsExpansion(
     currentArcLength: number,
     midRadius: number
 ): boolean {
-    const angularNudgePx = TEXTPATH_START_NUDGE_RAD * midRadius;
-    const requiredArcPx = textWidth + PADDING_PX + TEXTPATH_START_OFFSET_PX + angularNudgePx;
+    const requiredArcPx = textWidth + PADDING_PX + TEXTPATH_START_OFFSET_PX + TEXTPATH_START_NUDGE_PX;
     return currentArcLength < requiredArcPx;
 }
 
@@ -54,8 +52,7 @@ export function calculateTargetSize(
     textWidth: number,
     midRadius: number
 ): number {
-    const angularNudgePx = TEXTPATH_START_NUDGE_RAD * midRadius;
-    const requiredArcPx = textWidth + PADDING_PX + TEXTPATH_START_OFFSET_PX + angularNudgePx;
+    const requiredArcPx = textWidth + PADDING_PX + TEXTPATH_START_OFFSET_PX + TEXTPATH_START_NUDGE_PX;
     const targetArcPx = requiredArcPx * HOVER_EXPAND_FACTOR;
     return targetArcPx / midRadius;
 }
@@ -226,7 +223,7 @@ export function buildTextPath(
     endAngle: number
 ): string {
     const formatNumber = (n: number) => n.toFixed(6);
-    const textStart = startAngle + TEXTPATH_START_NUDGE_RAD;
+    const textStart = startAngle + TEXTPATH_START_NUDGE_PX / radius;
     const largeArcFlag = (endAngle - textStart) > Math.PI ? 1 : 0;
     
     return `M ${formatNumber(radius * Math.cos(textStart))} ${formatNumber(radius * Math.sin(textStart))} A ${formatNumber(radius)} ${formatNumber(radius)} 0 ${largeArcFlag} 1 ${formatNumber(radius * Math.cos(endAngle))} ${formatNumber(radius * Math.sin(endAngle))}`;

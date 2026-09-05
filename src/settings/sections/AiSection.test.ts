@@ -191,8 +191,7 @@ describe('AI settings models table', () => {
         expect(source.includes("t('settings.ai.localLlm.statusTitle')")).toBe(true);
         expect(source.includes("rowEl.addClass('ert-ai-models-row--active')")).toBe(true);
         expect(source.includes('setActiveCostComparisonRow(provider, displayModel.id)')).toBe(true);
-        expect(source.includes('return cloudModels;')).toBe(true);
-        expect(source.includes('return cloudModels.concat')).toBe(false);
+        // Local models never reach the table: listCostComparisonModels is covered in ai/cost/costComparison.test.ts.
         expect(source.includes("freshText: 'Local compute'")).toBe(false);
         expect(source.includes("cachedText: 'Local compute'")).toBe(false);
         expect(source.includes('Request composition')).toBe(false);
@@ -258,9 +257,9 @@ describe('AI settings models table', () => {
         expect(source.includes('providerRouter')).toBe(false);
         expect(source.includes('document blocks')).toBe(false);
         expect(source.includes('buildDisplayCorpusEstimateFromManifestEntries(currentCorpus.manifestEntries)')).toBe(false);
-        expect(source.includes('sceneCount: currentCorpus?.corpus.sceneCount ?? 0')).toBe(true);
         expect(source.includes('resolveActiveRoleTemplate')).toBe(true);
-        expect(source.includes('buildOutputRulesText')).toBe(true);
+        // The forecast arithmetic lives in ai/forecast/vaultForecast.ts.
+        expect(source.includes('forecastVaultFeatures({')).toBe(true);
     });
 
     it('renders provider key status states without saved-not-tested phrasing', () => {
@@ -312,26 +311,13 @@ describe('AI settings models table', () => {
         expect(source.includes("`Full Request: unavailable — provider token count failed${citationsSuffix}`")).toBe(true);
     });
 
-    it('cost comparison rows route through the canonical TokenEstimate contract (no false-zero cost fabrication)', () => {
+    it('cost comparison rows are built by the shared engine, not re-implemented in the section', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
-        // Pin: cost rows convert raw method+tokens to a typed TokenEstimate
-        // BEFORE doing any cost math. This prevents the original bug
-        // (Gemini countTokens fails → tokens = 0 → cost rounds to fake
-        // "$0.01" via the pricing math).
-        expect(source.includes("tokenEstimateFromMethod(\n                executionEstimate.method")).toBe(true);
-        // Pin: when the input estimate is unavailable/pending, the row
-        // refuses to compute and renders "Unavailable" instead of a fake
-        // dollar value.
-        expect(source.includes("if (inputEstimate.source === 'unavailable' || inputEstimate.source === 'pending')")).toBe(true);
-        // Pin: the cost label discloses when the input came from a local
-        // chars/4 heuristic rather than the authoritative provider count.
-        expect(source.includes("inputProvenanceSuffix")).toBe(true);
-        // Pin: the canonical contract is imported from src/ai/estimates,
-        // not re-implemented per surface.
+        // The false-zero and provenance rules are behavioural tests in ai/cost/costComparison.test.ts.
+        expect(source.includes("from '../../ai/cost/costComparison'")).toBe(true);
+        expect(source.includes('buildCostComparisonRows(listCostComparisonModels(registryModels), {')).toBe(true);
+        expect(source.includes('tokenEstimateFromMethod(')).toBe(false);
         expect(source.includes("from '../../ai/estimates'")).toBe(true);
-        // Pin: the local methodToPanelEstimate wrapper now delegates to
-        // the shared converter (no per-surface mapping divergence).
-        expect(source.includes('return tokenEstimateFromMethod(method, tokens);')).toBe(true);
     });
 
     it('renders OpenAI quota failures as quota exceeded in the preview card', () => {
@@ -376,8 +362,6 @@ describe('AI settings models table', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
         expect(source.includes('const cacheSession = activeCacheSession;')).toBe(true);
         expect(source.includes('fallbackCacheSession')).toBe(false);
-        expect(source.includes("cachedText: 'Output sample needed'")).toBe(true);
-        expect(source.includes("'No active cache'")).toBe(true);
     });
 
     it('distinguishes static cache capability from an expired cache window in the preview card', () => {

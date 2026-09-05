@@ -13,32 +13,46 @@ const normalizeChars = (value: number | undefined): number => (
         : 0
 );
 
+export type RTCorpusCharCounts = {
+    sceneCount: number;
+    outlineCount: number;
+    referenceCount: number;
+    sceneChars: number;
+    outlineChars: number;
+    referenceChars: number;
+};
+
+/** The one chars-to-tokens arithmetic behind every RT corpus estimate. */
+export function buildRTCorpusEstimateFromChars(counts: RTCorpusCharCounts): RTCorpusTokenEstimate {
+    const breakdown = {
+        scenesTokens: estimateTokensFromChars(counts.sceneChars, RT_CORPUS_CHARS_PER_TOKEN),
+        outlineTokens: estimateTokensFromChars(counts.outlineChars, RT_CORPUS_CHARS_PER_TOKEN),
+        referenceTokens: estimateTokensFromChars(counts.referenceChars, RT_CORPUS_CHARS_PER_TOKEN)
+    };
+    return {
+        sceneCount: counts.sceneCount,
+        outlineCount: counts.outlineCount,
+        referenceCount: counts.referenceCount,
+        evidenceChars: counts.sceneChars + counts.outlineChars + counts.referenceChars,
+        estimatedTokens: breakdown.scenesTokens + breakdown.outlineTokens + breakdown.referenceTokens,
+        method: 'rt_chars_heuristic',
+        breakdown
+    };
+}
+
 export function buildRTCorpusEstimate(payloadStats: InquiryPayloadStats): RTCorpusTokenEstimate {
     const sceneChars = normalizeChars(payloadStats.sceneChars);
     const outlineChars = normalizeChars(payloadStats.outlineChars);
     const referenceChars = normalizeChars(payloadStats.referenceChars);
-    const normalizedEvidenceChars = normalizeChars(payloadStats.evidenceChars);
-    const breakdownCharsTotal = sceneChars + outlineChars + referenceChars;
-    const evidenceChars = breakdownCharsTotal > 0 ? breakdownCharsTotal : normalizedEvidenceChars;
-    const breakdown = breakdownCharsTotal > 0
-        ? {
-            scenesTokens: estimateTokensFromChars(sceneChars, RT_CORPUS_CHARS_PER_TOKEN),
-            outlineTokens: estimateTokensFromChars(outlineChars, RT_CORPUS_CHARS_PER_TOKEN),
-            referenceTokens: estimateTokensFromChars(referenceChars, RT_CORPUS_CHARS_PER_TOKEN)
-        }
-        : {
-            scenesTokens: estimateTokensFromChars(evidenceChars, RT_CORPUS_CHARS_PER_TOKEN),
-            outlineTokens: 0,
-            referenceTokens: 0
-        };
-    const estimatedTokens = breakdown.scenesTokens + breakdown.outlineTokens + breakdown.referenceTokens;
-    return {
+    // Stats with no per-class split carry only the evidence total; it is
+    // attributed to scenes so the estimate still adds up.
+    const hasBreakdown = sceneChars + outlineChars + referenceChars > 0;
+    return buildRTCorpusEstimateFromChars({
         sceneCount: Math.max(0, Math.floor(payloadStats.sceneTotal || 0)),
         outlineCount: Math.max(0, Math.floor((payloadStats.bookOutlineCount || 0) + (payloadStats.sagaOutlineCount || 0))),
         referenceCount: Math.max(0, Math.floor(payloadStats.referenceCounts?.total || 0)),
-        evidenceChars,
-        estimatedTokens,
-        method: 'rt_chars_heuristic',
-        breakdown
-    };
+        sceneChars: hasBreakdown ? sceneChars : normalizeChars(payloadStats.evidenceChars),
+        outlineChars: hasBreakdown ? outlineChars : 0,
+        referenceChars: hasBreakdown ? referenceChars : 0
+    });
 }

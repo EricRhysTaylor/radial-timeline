@@ -1,9 +1,10 @@
-import { Setting as Settings, Notice, DropdownComponent, TFile, setIcon, setTooltip } from 'obsidian';
+import { Setting as Settings, Notice, DropdownComponent,setIcon, setTooltip } from 'obsidian';
 import type { App, TextComponent } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
-import { fetchAnthropicModels } from '../../api/anthropicApi';
-import { fetchOpenAiModels } from '../../api/openaiApi';
-import { fetchGeminiModels as fetchGoogleModels } from '../../api/geminiApi';
+import { validateProviderKeyQuick } from '../../ai/credentials/keyValidation';
+import { buildCostComparisonRows, costComparisonRowKey, listCostComparisonModels, type CostComparisonRow } from '../../ai/cost/costComparison';
+import { chooseAutoLocalModel, chooseAutoLocalServer, listLocalServerCandidates, probeLocalServers, type DetectedLocalServer } from '../../ai/localLlm/detection';
+import { forecastVaultFeatures, type PromptRequestBreakdown, type VaultForecasts } from '../../ai/forecast/vaultForecast';
 import { AiContextModal } from '../AiContextModal';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
 import { ERT_CLASSES } from '../../ui/classes';
@@ -26,36 +27,23 @@ import {
     setCredentialSecretId
 } from '../../ai/credentials/credentials';
 import { hasSecret, isSecretStorageAvailable, setSecret } from '../../ai/credentials/secretStorage';
-import type { AccessTier, AIProviderId, Capability, LocalLlmConfigurationMode, LocalLlmSettings, ModelInfo, RTCorpusTokenBreakdown } from '../../ai/types';
+import type { AccessTier, AIProviderId, Capability, LocalLlmConfigurationMode, LocalLlmSettings, ModelInfo } from '../../ai/types';
 import {
     getLocalLlmDiagnosticTimeoutMs,
     type LocalLlmDiagnosticsReport
 } from '../../ai/localLlm/diagnostics';
 import {
-    buildCanonicalExecutionEstimate,
-    estimateGossamerTokens
+    buildCanonicalExecutionEstimate
 } from '../../ai/forecast/estimateTokensFromVault';
-import {
-    estimateCorpusCost,
-    estimateUsageCost,
-    formatExactUsdCost,
-    formatUsdCost
+import {estimateUsageCost,
+    formatExactUsdCost
 } from '../../ai/cost/estimateCorpusCost';
 import { getActivePricingMeta, getActivePromos, getPricingFreshnessLabel, getActivePricingTable } from '../../ai/cost/providerPricing';
-import { buildOutputRulesText } from '../../ai/prompts/outputRules';
-import { buildUnifiedBeatAnalysisPromptParts, getUnifiedBeatAnalysisJsonSchema } from '../../ai/prompts/unifiedBeatAnalysis';
 import { resolveActiveRoleTemplate } from '../../ai/roleTemplate';
 import { INQUIRY_CANONICAL_ESTIMATE_QUESTION } from '../../inquiry/constants';
-import { buildInquiryJsonSchema } from '../../inquiry/jsonSchema';
-import type { CorpusManifestEntry } from '../../inquiry/runner/types';
-import { buildInquiryPromptParts, INQUIRY_ROLE_TEMPLATE_GUARDRAIL } from '../../inquiry/promptScaffold';
-import { extractSummary, getActiveFrontmatterMappings, normalizeFrontmatterKeys } from '../../utils/frontmatter';
-import { cleanEvidenceBody } from '../../inquiry/utils/evidenceCleaning';
-import { getSortedSceneFiles } from '../../utils/manuscript';
+import {getActiveFrontmatterMappings } from '../../utils/frontmatter';
 import { InquirySessionStore } from '../../inquiry/InquirySessionStore';
 import { t } from '../../i18n';
-import { extractBeatOrder } from '../../utils/gossamer';
-import { resolveSelectedBeatModelFromSettings } from '../../utils/beatSystemState';
 import { getSynopsisGenerationWordLimit, getSynopsisHoverLineLimit } from '../../utils/synopsisLimits';
 import { getResolvedModelId } from '../../utils/modelResolver';
 import {
@@ -74,9 +62,7 @@ import type { LocalLlmModelEntry } from '../../ai/localLlm/transport';
 import { withTimeout } from '../../ai/localLlm/transport';
 import type { LocalLlmBackendId, LocalLlmJsonMode } from '../../ai/types';
 import {
-    CACHE_ARMED_PILL_TEXT,
-    estimateTokensFromChars,
-    formatCorpusStructureSummary,
+    CACHE_ARMED_PILL_TEXT,formatCorpusStructureSummary,
     formatCorpusTokenSummary,
     formatPreviewCacheObservedLabel,
     formatPreviewCacheRemaining,
@@ -92,30 +78,13 @@ import {
     formatTokenRowText,
     formatTotalRowText,
     type FeatureForecastInput,
-    type PanelTokenEstimate,
     type PanelViewModel
 } from './aiPanelEstimate';
-import { tokenEstimateFromMethod, formatTokenHeadline } from '../../ai/estimates';
+import {formatTokenHeadline } from '../../ai/estimates';
 import { resolveAccessTier } from '../../ai/runtime/runtimeSelection';
 
 type Provider = 'anthropic' | 'google' | 'openai' | 'ollama';
 type CapacityItem = string | { text: string; dividerBefore?: boolean; extraCls?: string };
-type PromptRequestBreakdown = {
-    requestTokens: number | null;
-    roleTemplateTokens: number | null;
-    instructionTokens: number | null;
-    outputContractTokens: number | null;
-    transformTokens: number | null;
-};
-type DetectedLocalServer = {
-    serverKey: string;
-    label: string;
-    backend: LocalLlmBackendId;
-    baseUrl: string;
-    models: LocalLlmModelEntry[];
-    detectedAt: string;
-};
-
 export type AiSectionLifecycle = {
     dispose: () => void;
 };
@@ -143,16 +112,6 @@ export function renderAiSection(params: {
     );
     const getActiveTemplateName = (): string => getResolvedRoleTemplate().name;
     const getActiveTemplatePrompt = (): string => getResolvedRoleTemplate().prompt.trim();
-    const splitLeadSentence = (text: string): { lead: string; remainder: string } => {
-        const trimmed = text.trim();
-        if (!trimmed) return { lead: '', remainder: '' };
-        const punctuationIndex = trimmed.search(/[.!?](\s|$)/);
-        if (punctuationIndex === -1) return { lead: trimmed, remainder: '' };
-        const lead = trimmed.slice(0, punctuationIndex + 1).trim();
-        const remainder = trimmed.slice(punctuationIndex + 1).trim();
-        return { lead, remainder };
-    };
-
     const aiHero = containerEl.createDiv({
         cls: `${ERT_CLASSES.CARD} ${ERT_CLASSES.CARD_HERO} ${ERT_CLASSES.STACK} ert-ai-hero-card`
     });
@@ -385,15 +344,6 @@ export function renderAiSection(params: {
     const getOllamaBaseUrl = (): string => {
         const configuredBaseUrl = getLocalLlmSettings(ensureCanonicalAiSettings()).baseUrl.trim();
         return configuredBaseUrl ? configuredBaseUrl : 'http://localhost:11434/v1';
-    };
-    const buildLocalServerOptionLabel = (backend: LocalLlmBackendId, baseUrl: string): string => {
-        const normalizedUrl = normalizeLocalLlmServerBaseUrl(baseUrl);
-        try {
-            const parsed = new URL(normalizedUrl);
-            return `${LOCAL_LLM_BACKEND_LABELS[backend]} · ${parsed.host}`;
-        } catch {
-            return `${LOCAL_LLM_BACKEND_LABELS[backend]} · ${normalizedUrl}`;
-        }
     };
     const getConfiguredLocalServerKey = (): string => buildLocalLlmServerKey(getLocalLlmBackendId(), getOllamaBaseUrl());
 
@@ -637,65 +587,6 @@ export function renderAiSection(params: {
             setTooltip(providerInputEl, viewModel.header.headlineDisclosure);
         }
     };
-    const toBreakdown = (sceneChars: number, outlineChars: number, referenceChars: number): RTCorpusTokenBreakdown => ({
-        scenesTokens: estimateTokensFromChars(sceneChars),
-        outlineTokens: estimateTokensFromChars(outlineChars),
-        referenceTokens: estimateTokensFromChars(referenceChars)
-    });
-    const buildDisplayCorpusEstimateFromManifestEntries = async (entries: CorpusManifestEntry[]) => {
-        let sceneCount = 0;
-        let outlineCount = 0;
-        let referenceCount = 0;
-        let sceneChars = 0;
-        let outlineChars = 0;
-        let referenceChars = 0;
-
-        for (const entry of entries) {
-            if (entry.class === 'scene') {
-                sceneCount += 1;
-            } else if (entry.class === 'outline') {
-                outlineCount += 1;
-            } else {
-                referenceCount += 1;
-            }
-
-            const file = app.vault.getAbstractFileByPath(entry.path);
-            if (!(file instanceof TFile)) continue;
-
-            let chars = 0;
-            if (entry.mode === 'summary') {
-                const cache = app.metadataCache.getFileCache(file);
-                const rawFrontmatter = cache?.frontmatter;
-                const frontmatter = rawFrontmatter
-                    ? normalizeFrontmatterKeys(rawFrontmatter, getActiveFrontmatterMappings(plugin.settings))
-                    : {};
-                chars = extractSummary(frontmatter).length;
-            } else if (entry.mode === 'full') {
-                const raw = await app.vault.read(file);
-                chars = cleanEvidenceBody(raw).length;
-            }
-
-            if (entry.class === 'scene') {
-                sceneChars += chars;
-            } else if (entry.class === 'outline') {
-                outlineChars += chars;
-            } else {
-                referenceChars += chars;
-            }
-        }
-
-        const breakdown = toBreakdown(sceneChars, outlineChars, referenceChars);
-        return {
-            sceneCount,
-            outlineCount,
-            referenceCount,
-            evidenceChars: sceneChars + outlineChars + referenceChars,
-            estimatedTokens: breakdown.scenesTokens + breakdown.outlineTokens + breakdown.referenceTokens,
-            method: 'rt_chars_heuristic' as const,
-            breakdown
-        };
-    };
-
     const capacityInquiry = createCapacityCell('Inquiry');
     capacityInquiry.labelEl.addClass('ert-ai-capacity-label--forecast');
     const capacityInquiryToken = capacityInquiry.valueEl.createDiv({
@@ -1776,70 +1667,8 @@ export function renderAiSection(params: {
         applyResolvedPreviewCertificate();
     };
 
-    type FeatureForecast = {
-        available: boolean;
-        corpusTokens: number;
-        /**
-         * Typed provider-count estimate carrying source provenance. When the
-         * provider count succeeds, source is 'provider_count'; when it fails
-         * (e.g. Gemini countTokens throws), source is 'unavailable' — NOT a
-         * misleading 0. The panel view-model uses this to render honest
-         * labels instead of conflating failure with zero tokens.
-         */
-        providerCount: PanelTokenEstimate;
-        sceneCount: number;
-        outlineCount: number;
-        referenceCount: number;
-        breakdown: RTCorpusTokenBreakdown;
-        promptBreakdown: PromptRequestBreakdown;
-        expectedPassCount?: number;
-    };
-
-    type CostComparisonModel = {
-        provider: AIProviderId;
-        modelId: string;
-        providerLabel: string;
-        modelLabel: string;
-    };
-
-    type CostComparisonRow = {
-        model: CostComparisonModel;
-        freshText: string;
-        cachedText: string;
-        passesText: string;
-        promoLabel?: string;
-    };
-
-    const getCostComparisonRowKey = (provider: AIProviderId, modelId: string): string =>
-        `${provider}::${modelId}`;
-
     const getProviderCacheWindowLabel = (provider: AIProviderId): string | null =>
         formatProviderCacheWindowLabel(provider, ensureCanonicalAiSettings());
-
-    const COST_PROVIDER_ORDER: ReadonlyArray<Exclude<AIProviderId, 'none' | 'ollama'>> = ['anthropic', 'openai', 'google'];
-
-    const supportsCostComparisonModel = (provider: AIProviderId, modelId: string): boolean => {
-        if (provider === 'none' || provider === 'ollama') return false;
-        return !!getActivePricingTable()[provider]?.[modelId];
-    };
-
-    const getCostComparisonModels = (registryModels?: ModelInfo[]): CostComparisonModel[] => {
-        const models = registryModels?.length ? registryModels : BUILTIN_MODELS;
-        const cloudModels: CostComparisonModel[] = COST_PROVIDER_ORDER.flatMap(provider => {
-            const providerModels = getPickerModelsForProvider(models, provider)
-                .filter(model => !model.id.endsWith('-latest'))
-                .filter(model => supportsCostComparisonModel(provider, model.id));
-
-            return providerModels.map(model => ({
-                provider,
-                modelId: model.id,
-                providerLabel: PROVIDER_DISPLAY_LABELS[provider],
-                modelLabel: model.label
-            }));
-        });
-
-        return cloudModels;
-    };
 
     const createCostTableCell = (rowEl: HTMLElement, text: string, extraCls?: string): HTMLDivElement => {
         return rowEl.createDiv({
@@ -1897,7 +1726,7 @@ export function renderAiSection(params: {
         if (!activeCacheSession?.cacheWindowExpiresAt || activeCacheSession.cacheWindowExpiresAt <= Date.now()) {
             return null;
         }
-        return getCostComparisonRowKey(activeEngine.provider, activeEngine.modelId);
+        return costComparisonRowKey(activeEngine.provider, activeEngine.modelId);
     };
 
     const buildCurrentInquiryExecutionEstimate = async (params: {
@@ -1947,7 +1776,7 @@ export function renderAiSection(params: {
 
         sorted.forEach(row => {
             const rowEl = costEstimateTable.createDiv({ cls: 'ert-ai-models-row' });
-            if (activeCostComparisonRowKey === getCostComparisonRowKey(row.model.provider, row.model.modelId)) {
+            if (activeCostComparisonRowKey === costComparisonRowKey(row.model.provider, row.model.modelId)) {
                 rowEl.addClass('ert-ai-models-row--active');
                 if (activeCostRowCredentialState === 'ready') {
                     rowEl.addClass('ert-ai-models-row--ready');
@@ -1971,7 +1800,7 @@ export function renderAiSection(params: {
             }
             createCostTableCell(rowEl, row.freshText);
             const cachedCell = createCostTableCell(rowEl, row.cachedText);
-            if (activeCacheRowKey === getCostComparisonRowKey(row.model.provider, row.model.modelId)) {
+            if (activeCacheRowKey === costComparisonRowKey(row.model.provider, row.model.modelId)) {
                 cachedCell.addClass('ert-ai-models-cell--cache-active');
             }
             createCostTableCell(rowEl, row.passesText);
@@ -1980,7 +1809,7 @@ export function renderAiSection(params: {
 
     const setActiveCostComparisonRow = (provider: AIProviderId | null, modelId: string | null): void => {
         activeCostComparisonRowKey = provider && modelId
-            ? getCostComparisonRowKey(provider, modelId)
+            ? costComparisonRowKey(provider, modelId)
             : null;
         activeCostRowCredentialState = provider ? (providerKeyStates[provider] ?? null) : null;
         if (lastCostComparisonRows.length > 0) {
@@ -1995,7 +1824,7 @@ export function renderAiSection(params: {
         }
     };
 
-    const buildLoadingCostRows = (): CostComparisonRow[] => getCostComparisonModels().map(model => ({
+    const buildLoadingCostRows = (): CostComparisonRow[] => listCostComparisonModels().map(model => ({
         model,
         freshText: 'Calculating...',
         cachedText: 'Calculating...',
@@ -2051,137 +1880,25 @@ export function renderAiSection(params: {
         };
     };
 
-    const computeCostComparisonRows = async (registryModels?: ModelInfo[]): Promise<CostComparisonRow[]> => {
+    const computeCostComparisonRows = (registryModels?: ModelInfo[]): Promise<CostComparisonRow[]> => {
         const currentCorpus = getCurrentCorpusContext();
-        const currentFingerprint = getPreviewCurrentCacheReuseFingerprint();
-        const getBillableOutputTokensFromUsage = (
-            provider: AIProviderId,
-            usage: { outputTokens?: number; inputTokens?: number; totalTokens?: number } | undefined
-        ): number | null => {
-            if (!usage || typeof usage.outputTokens !== 'number') return null;
-            if (!Number.isFinite(usage.outputTokens) || usage.outputTokens <= 0) return null;
-            if (
-                provider === 'google'
-                && typeof usage.inputTokens === 'number'
-                && Number.isFinite(usage.inputTokens)
-                && typeof usage.totalTokens === 'number'
-                && Number.isFinite(usage.totalTokens)
-            ) {
-                return Math.max(usage.outputTokens, usage.totalTokens - usage.inputTokens);
-            }
-            return Math.floor(usage.outputTokens);
-        };
-        const getLatestOutputSampleForModel = (model: CostComparisonModel): number | null => {
-            if (!currentCorpus || model.provider === 'ollama' || model.provider === 'none') return null;
-            const session = getInquirySessionStoreSnapshot().getLatestSessionForEngineInScope(
-                model.provider,
-                model.modelId,
-                currentCorpus.scope
-            );
-            if (!session) return null;
-            return getBillableOutputTokensFromUsage(model.provider, session.result.tokenUsage);
-        };
-        const getActiveCacheReuseRatioForModel = (model: CostComparisonModel): number | null => {
-            if (!currentCorpus || !currentFingerprint) return null;
-            if (model.provider === 'ollama' || model.provider === 'none') return null;
-            const session = getInquirySessionStoreSnapshot().getLatestActiveCacheSessionForEngine(
-                model.provider,
-                model.modelId,
-                {
-                    cacheReuseFingerprint: currentFingerprint,
-                    scope: currentCorpus.scope
+        return buildCostComparisonRows(listCostComparisonModels(registryModels), {
+            session: currentCorpus
+                ? {
+                    sessionStore: getInquirySessionStoreSnapshot(),
+                    scope: currentCorpus.scope,
+                    cacheReuseFingerprint: getPreviewCurrentCacheReuseFingerprint()
                 }
-            );
-            if (!session?.cacheWindowExpiresAt || session.cacheWindowExpiresAt <= Date.now()) return null;
-            if (typeof session.cachedStableRatio !== 'number' || !Number.isFinite(session.cachedStableRatio) || session.cachedStableRatio <= 0) return null;
-            return Math.min(1, Math.max(0, session.cachedStableRatio));
-        };
-        return await Promise.all(getCostComparisonModels(registryModels).map(async model => {
-            const executionEstimate = await buildCurrentInquiryExecutionEstimate({
-                provider: model.provider,
-                modelId: model.modelId,
+                : null,
+            estimateExecution: (provider, modelId) => buildCurrentInquiryExecutionEstimate({
+                provider,
+                modelId,
                 questionText: INQUIRY_CANONICAL_ESTIMATE_QUESTION
-            });
-            if (!executionEstimate?.expectedPassCount || !executionEstimate.maxOutputTokens) {
-                throw new Error(`Canonical execution estimate unavailable for ${model.modelLabel}.`);
-            }
-            const passLabel = `${executionEstimate.expectedPassCount} ${executionEstimate.expectedPassCount === 1 ? 'pass' : 'passes'}`;
-            // Convert the runner's raw method+tokens into the typed
-            // estimate. provider-count failure (e.g. Gemini countTokens
-            // throws) becomes { source: 'unavailable' } — NOT a 0-token
-            // count that would round to a fake "$0.01" via the pricing
-            // math. This is the cross-surface contract from
-            // src/ai/estimates.
-            const inputEstimate = tokenEstimateFromMethod(
-                executionEstimate.method,
-                executionEstimate.estimatedTokens
-            );
-            if (inputEstimate.source === 'unavailable' || inputEstimate.source === 'pending') {
-                // Refuse to compute cost from an unknown input. The user
-                // sees "Unavailable" instead of a fabricated dollar value.
-                return {
-                    model,
-                    freshText: 'Unavailable',
-                    cachedText: 'Unavailable',
-                    passesText: passLabel
-                };
-            }
-            const learnedOutput = plugin.getOutputProfileStore().predictExpectedOutput(
-                model.provider,
-                model.modelId,
-                inputEstimate.tokens
-            );
-            const latestOutput = learnedOutput !== null ? learnedOutput : getLatestOutputSampleForModel(model);
-            if (latestOutput === null) {
-                return {
-                    model,
-                    freshText: 'Output sample needed',
-                    cachedText: 'Output sample needed',
-                    passesText: passLabel
-                };
-            }
-            const activeCacheReuseRatio = getActiveCacheReuseRatioForModel(model);
-            const cacheReuseRatio = activeCacheReuseRatio !== null ? activeCacheReuseRatio : 0;
-            const cost = estimateCorpusCost(
-                model.provider,
-                model.modelId,
-                inputEstimate.tokens,
-                Math.min(latestOutput, executionEstimate.maxOutputTokens),
-                executionEstimate.expectedPassCount,
-                // Anthropic Inquiry runs always request 1h cache (per
-                // ANTHROPIC_REQUESTED_CACHE_TTL). Without this, the cost
-                // panel would price the priming pass at the 5m rate and
-                // under-estimate by ~33% on the first run.
-                {
-                    ...(model.provider === 'anthropic' ? { cacheWriteTtl: ANTHROPIC_REQUESTED_CACHE_TTL } : {}),
-                    cacheReuseRatio
-                }
-            );
-            const finalPassLabel = `${cost.expectedPasses} ${cost.expectedPasses === 1 ? 'pass' : 'passes'}`;
-            const promoLabel = cost.promo?.label;
-            const cacheWindowLabel = getProviderCacheWindowLabel(model.provider);
-            const cachedSuffix = activeCacheReuseRatio !== null && cacheWindowLabel && typeof cost.cachedCostUSD === 'number' ? ` (${cacheWindowLabel})` : '';
-            // Anthropic Inquiry primes the cache on the first run, so the
-            // "Fresh Run" estimate includes the 1h cache-write surcharge.
-            // Mirror the cached-run TTL suffix so the price label is honest
-            // about what's baked in.
-            const freshSuffix = model.provider === 'anthropic' && cacheWindowLabel ? ` (${cacheWindowLabel})` : '';
-            const storageFootnote = model.provider === 'google' ? '**' : '';
-            // Disclosure suffix when the input estimate came from a local
-            // chars/4 heuristic instead of the authoritative provider
-            // count. Keeps the user from mistaking "$1.24" for an exact
-            // provider number when the count was a heuristic.
-            const inputProvenanceSuffix = inputEstimate.source === 'local_estimate' ? ' (local input)' : '';
-            return {
-                model,
-                freshText: `${formatUsdCost(cost.freshCostUSD)}${freshSuffix}${inputProvenanceSuffix}`,
-                cachedText: activeCacheReuseRatio !== null && typeof cost.cachedCostUSD === 'number'
-                    ? `${formatUsdCost(cost.cachedCostUSD)}${cachedSuffix}${storageFootnote}${inputProvenanceSuffix}`
-                    : 'No active cache',
-                passesText: finalPassLabel,
-                promoLabel
-            };
-        }));
+            }),
+            predictExpectedOutput: (provider, modelId, inputTokens) =>
+                plugin.getOutputProfileStore().predictExpectedOutput(provider, modelId, inputTokens),
+            cacheWindowLabel: getProviderCacheWindowLabel
+        });
     };
 
     const refreshCostComparisonTable = async (): Promise<void> => {
@@ -2222,151 +1939,19 @@ export function renderAiSection(params: {
         }
     };
 
-    const computeVaultForecasts = async (engine?: {
-        provider: AIProviderId;
-        modelId: string;
-    }): Promise<{ inquiry: FeatureForecast; gossamer: FeatureForecast }> => {
-        const currentCorpus = getCurrentCorpusContext();
-        const roleTemplateTokens = estimateTokensFromChars(getActiveTemplatePrompt().length);
-        const inquiryPromptParts = buildInquiryPromptParts('');
-        const inquiryRequestTokens = estimateTokensFromChars(INQUIRY_CANONICAL_ESTIMATE_QUESTION.length);
-        const inquiryInstructionTokens = estimateTokensFromChars(
-            inquiryPromptParts.systemPrompt.length
-            + inquiryPromptParts.instructionText.length
-            + INQUIRY_ROLE_TEMPLATE_GUARDRAIL.length
-        );
-        const inquiryOutputContractTokens = estimateTokensFromChars(
-            inquiryPromptParts.schemaText.length
-            + buildOutputRulesText({
-                returnType: 'json',
-                responseSchema: buildInquiryJsonSchema()
-            }).length
-        );
-        const inquiryCorpusTokens = currentCorpus?.corpus.estimatedTokens ?? 0;
-        const inquiryExecutionEstimate = currentCorpus && engine
-            ? await buildCurrentInquiryExecutionEstimate({
-                provider: engine.provider,
-                modelId: engine.modelId,
+    const computeVaultForecasts = (engine?: { provider: AIProviderId; modelId: string }): Promise<VaultForecasts> =>
+        forecastVaultFeatures({
+            plugin,
+            app,
+            corpus: getCurrentCorpusContext(),
+            roleTemplatePrompt: getActiveTemplatePrompt(),
+            engine,
+            estimateInquiryExecution: (provider, modelId) => buildCurrentInquiryExecutionEstimate({
+                provider,
+                modelId,
                 questionText: INQUIRY_CANONICAL_ESTIMATE_QUESTION
             })
-            : null;
-
-        const sceneData = await plugin.getSceneData();
-        const selectedBeatModel = resolveSelectedBeatModelFromSettings(plugin.settings);
-        const beatOrder = extractBeatOrder(
-            sceneData,
-            selectedBeatModel
-        );
-        const gossamerEstimate = await estimateGossamerTokens({
-            plugin,
-            vault: app.vault,
-            metadataCache: app.metadataCache,
-            frontmatterMappings: getActiveFrontmatterMappings(plugin.settings),
-            provider: engine?.provider,
-            modelId: engine?.modelId,
-            beatSystem: selectedBeatModel || 'Save The Cat',
-            beats: beatOrder.map((beatName, index) => ({
-                beatName,
-                beatNumber: index + 1,
-                idealRange: '0-100'
-            }))
         });
-        const { files: gossamerSceneFiles } = await getSortedSceneFiles(plugin);
-        const gossamerPromptParts = beatOrder.length > 0
-            ? buildUnifiedBeatAnalysisPromptParts(
-                '',
-                beatOrder.map((beatName, index) => ({
-                    beatName,
-                    beatNumber: index + 1,
-                    idealRange: '0-100'
-                })),
-                selectedBeatModel || 'Save The Cat'
-            )
-            : { transformText: '', instructionText: '', prompt: '' };
-        const gossamerPromptSplit = splitLeadSentence(gossamerPromptParts.instructionText);
-        const gossamerRequestTokens = estimateTokensFromChars(gossamerPromptSplit.lead.length);
-        const gossamerInstructionTokens = estimateTokensFromChars(gossamerPromptSplit.remainder.length);
-        const gossamerTransformTokens = estimateTokensFromChars(gossamerPromptParts.transformText.length);
-        const gossamerOutputContractTokens = estimateTokensFromChars(
-            buildOutputRulesText({
-                returnType: 'json',
-                responseSchema: getUnifiedBeatAnalysisJsonSchema()
-            }).length
-        );
-        const gossamerDisplayCorpus = await buildDisplayCorpusEstimateFromManifestEntries(
-            gossamerSceneFiles.map(file => ({
-                path: file.path,
-                mtime: file.stat?.mtime ?? Date.now(),
-                class: 'scene',
-                mode: 'full',
-                isTarget: false
-            }))
-        );
-        const gossamerCorpusTokens = gossamerDisplayCorpus.estimatedTokens;
-        const gossamerProviderTokens = gossamerEstimate.providerExecutionEstimate.estimatedTokens;
-        const inquiryPromptBreakdown: PromptRequestBreakdown = {
-            requestTokens: inquiryRequestTokens,
-            roleTemplateTokens,
-            instructionTokens: inquiryInstructionTokens,
-            outputContractTokens: inquiryOutputContractTokens,
-            transformTokens: 0
-        };
-        const gossamerPromptBreakdown: PromptRequestBreakdown = {
-            requestTokens: gossamerRequestTokens,
-            roleTemplateTokens,
-            instructionTokens: gossamerInstructionTokens,
-            outputContractTokens: gossamerOutputContractTokens,
-            transformTokens: gossamerTransformTokens
-        };
-
-        const inquiryProviderCount = methodToPanelEstimate(
-            inquiryExecutionEstimate?.method,
-            inquiryExecutionEstimate?.estimatedTokens
-        );
-        const gossamerProviderCount = methodToPanelEstimate(
-            gossamerEstimate.providerExecutionEstimate.method,
-            gossamerProviderTokens
-        );
-        return {
-            inquiry: {
-                available: Boolean(currentCorpus),
-                corpusTokens: inquiryCorpusTokens,
-                providerCount: inquiryProviderCount,
-                sceneCount: currentCorpus?.corpus.sceneCount ?? 0,
-                outlineCount: currentCorpus?.corpus.outlineCount ?? 0,
-                referenceCount: currentCorpus?.corpus.referenceCount ?? 0,
-                breakdown: currentCorpus?.corpus.breakdown ?? {
-                    scenesTokens: 0,
-                    outlineTokens: 0,
-                    referenceTokens: 0
-                },
-                promptBreakdown: inquiryPromptBreakdown,
-                expectedPassCount: inquiryExecutionEstimate?.expectedPassCount ?? currentCorpus?.expectedPassCount ?? 1
-            },
-            gossamer: {
-                available: true,
-                corpusTokens: gossamerCorpusTokens,
-                providerCount: gossamerProviderCount,
-                sceneCount: gossamerDisplayCorpus.sceneCount,
-                outlineCount: gossamerDisplayCorpus.outlineCount,
-                referenceCount: gossamerDisplayCorpus.referenceCount,
-                breakdown: gossamerDisplayCorpus.breakdown,
-                promptBreakdown: gossamerPromptBreakdown
-            },
-        };
-    };
-
-    /**
-     * Map the InputTokenEstimateMethod to a PanelTokenEstimate. Delegates
-     * to the canonical `tokenEstimateFromMethod` in `src/ai/estimates` so
-     * every surface (panel, cost table, inquiry HUD) uses the same shape.
-     */
-    const methodToPanelEstimate = (
-        method: import('../../ai/tokens/inputTokenEstimate').TokenEstimateMethod | undefined,
-        tokens: number | undefined
-    ): PanelTokenEstimate => {
-        return tokenEstimateFromMethod(method, tokens);
-    };
 
     /**
      * Convert promptBreakdown's nullable fields into the non-null shape the
@@ -2771,56 +2356,7 @@ export function renderAiSection(params: {
         inputEl.autocomplete = 'new-password';
         inputEl.spellcheck = false;
     };
-    const extractStatusCodeFromError = (message: string): number | null => {
-        const wrapped = message.match(/\((\d{1,3})\)/);
-        if (wrapped) return Number(wrapped[1]);
-        const direct = message.match(/\b(?:status|http)\s*(\d{1,3})\b/i);
-        if (direct) return Number(direct[1]);
-        return null;
-    };
-    const isAuthError = (message: string, statusCode: number | null): boolean => {
-        if (statusCode === 400 || statusCode === 401 || statusCode === 403) return true;
-        return /unauthorized|forbidden|invalid (?:api )?key|invalid auth|authentication/i.test(message);
-    };
-    const buildProviderValidationDetail = (message: string, statusCode: number | null): string => {
-        if (statusCode === 429) return 'Provider rate limit reached (HTTP 429). Wait briefly and retry.';
-        if (statusCode !== null && statusCode >= 500) return `Provider service error (HTTP ${statusCode}). Try again shortly.`;
-        if (statusCode !== null) return `Provider returned HTTP ${statusCode} while validating the key.`;
-        return `No HTTP status returned during validation (${message}).`;
-    };
-    interface ProviderKeyValidationResult {
-        state: 'ready' | 'rejected' | 'network_blocked';
-        detail: string;
-    }
     const SAVED_KEY_ENTRY_COPY = 'Saved privately on this device. Paste a key, then click outside this field or press Enter/Return to save or replace it. Keys are never written to your settings file.';
-
-    const validateProviderKeyQuick = async (
-        provider: 'openai' | 'anthropic' | 'google',
-        key: string
-    ): Promise<ProviderKeyValidationResult> => {
-        try {
-            if (provider === 'anthropic') await fetchAnthropicModels(key);
-                else if (provider === 'google') await fetchGoogleModels(key);
-            else await fetchOpenAiModels(key);
-            return {
-                state: 'ready',
-                detail: ''
-            };
-        } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            const statusCode = extractStatusCodeFromError(message);
-            if (isAuthError(message, statusCode)) {
-                return {
-                    state: 'rejected',
-                    detail: ''
-                };
-            }
-            return {
-                state: 'network_blocked',
-                detail: buildProviderValidationDetail(message, statusCode)
-            };
-        }
-    };
 
     const renderCredentialSettings = (options: {
         section: HTMLElement;
@@ -3140,29 +2676,6 @@ export function renderAiSection(params: {
         }
     };
 
-    const getDetectedLocalServerCandidates = (): Array<{ backend: LocalLlmBackendId; baseUrl: string; label: string }> => {
-        const configured = getLocalLlmSettings(ensureCanonicalAiSettings());
-        const candidates: Array<{ backend: LocalLlmBackendId; baseUrl: string; label: string }> = [
-            { backend: 'ollama', baseUrl: 'http://localhost:11434/v1', label: buildLocalServerOptionLabel('ollama', 'http://localhost:11434/v1') },
-            { backend: 'lmStudio', baseUrl: 'http://localhost:1234/v1', label: buildLocalServerOptionLabel('lmStudio', 'http://localhost:1234/v1') },
-            // mlx_lm.server (Apple MLX) defaults to :8080 and is OpenAI-compatible.
-            { backend: 'openaiCompatible', baseUrl: 'http://localhost:8080/v1', label: buildLocalServerOptionLabel('openaiCompatible', 'http://localhost:8080/v1') }
-        ];
-        if (configured.baseUrl.trim()) {
-            candidates.push({
-                backend: configured.backend,
-                baseUrl: configured.baseUrl.trim(),
-                label: buildLocalServerOptionLabel(configured.backend, configured.baseUrl)
-            });
-        }
-        const seen = new Set<string>();
-        return candidates.filter(candidate => {
-            const serverKey = buildLocalLlmServerKey(candidate.backend, candidate.baseUrl);
-            if (seen.has(serverKey)) return false;
-            seen.add(serverKey);
-            return true;
-        });
-    };
     const getDetectedLocalServerByKey = (serverKey: string): DetectedLocalServer | null =>
         localLlmDetectedServers.find(server => server.serverKey === serverKey) ?? null;
 
@@ -3210,17 +2723,6 @@ export function renderAiSection(params: {
             diagnostics,
             declaredCapabilities: getLocalLlmSettings(ensureCanonicalAiSettings()).declaredCapabilities
         });
-    };
-
-    // Auto-pick: the most capable loaded model (highest tier), tie-broken by the
-    // larger context window. Drives hands-off model selection in auto mode.
-    const pickBestLocalModel = (models: LocalLlmModelEntry[]): LocalLlmModelEntry | null => {
-        if (!models.length) return null;
-        return models.slice().sort((a, b) => {
-            const tierDelta = getLocalCapabilityAssessment(b.id, b).tier - getLocalCapabilityAssessment(a.id, a).tier;
-            if (tierDelta !== 0) return tierDelta;
-            return (b.contextWindow ?? 0) - (a.contextWindow ?? 0); // SAFE: sort comparator — models with no published context window sort last
-        })[0];
     };
 
     const localLlmConfigSection = quickSetupPreviewSection.createDiv({
@@ -3328,27 +2830,14 @@ export function renderAiSection(params: {
         // not the validation one -- and the guard above then hands the same stuck
         // promise to every later caller, wedging the panel until Settings is reopened.
         localLlmServerDetectionPromise = withTimeout((async () => {
-            const candidates = getDetectedLocalServerCandidates();
-            const settled = await Promise.allSettled(candidates.map(async candidate => {
-                const models = await getLocalLlmClient(plugin).listModels({
+            localLlmDetectedServers = await probeLocalServers(
+                listLocalServerCandidates(getLocalLlmSettings(ensureCanonicalAiSettings())),
+                candidate => getLocalLlmClient(plugin).listModels({
                     backend: candidate.backend,
                     baseUrl: candidate.baseUrl,
                     timeoutMs: getLocalLlmUiTimeoutMs()
-                });
-                if (!models.length) {
-                    throw new Error('No models reported by this local server.');
-                }
-                return {
-                    serverKey: buildLocalLlmServerKey(candidate.backend, candidate.baseUrl),
-                    label: candidate.label,
-                    backend: candidate.backend,
-                    baseUrl: normalizeLocalLlmServerBaseUrl(candidate.baseUrl),
-                    models: [...models].sort((left, right) => left.id.localeCompare(right.id)),
-                    detectedAt: new Date().toISOString()
-                } satisfies DetectedLocalServer;
-            }));
-            localLlmDetectedServers = settled
-                .flatMap(result => result.status === 'fulfilled' ? [result.value] : []);
+                })
+            );
             localLlmServerDetectionError = localLlmDetectedServers.length
                 ? null
                 : 'No healthy local servers were detected automatically.';
@@ -3359,10 +2848,7 @@ export function renderAiSection(params: {
             }
 
             if (getLocalLlmConfigurationMode() === 'auto') {
-                const configuredServerKey = getConfiguredLocalServerKey();
-                const selectedServer = localLlmDetectedServers.length === 1
-                    ? localLlmDetectedServers[0]
-                    : (getDetectedLocalServerByKey(configuredServerKey) ?? localLlmDetectedServers[0] ?? null);
+                const selectedServer = chooseAutoLocalServer(localLlmDetectedServers, getConfiguredLocalServerKey());
                 if (selectedServer) {
                     const current = getLocalLlmSettings(ensureCanonicalAiSettings());
                     const serverChanged = current.backend !== selectedServer.backend
@@ -3370,23 +2856,18 @@ export function renderAiSection(params: {
                     localLlmLoadedModels = [...selectedServer.models];
                     localLlmModelLoadError = null;
                     localLlmLastLoadedAt = selectedServer.detectedAt;
-                    // Auto-select a model when the saved one isn't among the loaded
-                    // models (or none is set) — the hands-off half of the 1-click flow.
-                    let modelChanged = false;
-                    const currentModelId = getOllamaModelId().trim();
-                    const hasCurrentModel = currentModelId.length > 0
-                        && selectedServer.models.some(model => model.id === currentModelId);
-                    if (!hasCurrentModel) {
-                        const best = pickBestLocalModel(selectedServer.models);
-                        if (best && best.id !== currentModelId) {
-                            setOllamaModelId(best.id);
-                            modelChanged = true;
-                        }
-                    }
+                    // The hands-off half of the 1-click flow: pick a model when
+                    // the saved one is not among the loaded ones (or none is set).
+                    const nextModel = chooseAutoLocalModel(
+                        selectedServer.models,
+                        getOllamaModelId().trim(),
+                        model => getLocalCapabilityAssessment(model.id, model).tier
+                    );
+                    if (nextModel) setOllamaModelId(nextModel.id);
                     if (serverChanged) {
                         setLocalServerSelection(selectedServer.backend, selectedServer.baseUrl);
                     }
-                    if (serverChanged || modelChanged) {
+                    if (serverChanged || nextModel) {
                         await persistCanonical();
                     }
                 }

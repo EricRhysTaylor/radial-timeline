@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildRTCorpusEstimate } from './buildRTCorpusEstimate';
+import { buildRTCorpusEstimate, buildRTCorpusEstimateFromChars } from './buildRTCorpusEstimate';
 import type { InquiryPayloadStats } from '../types';
 
 function makeStats(overrides: Partial<InquiryPayloadStats> = {}): InquiryPayloadStats {
@@ -77,5 +77,18 @@ describe('buildRTCorpusEstimate', () => {
             + estimate.breakdown.outlineTokens
             + estimate.breakdown.referenceTokens;
         expect(estimate.estimatedTokens).toBe(breakdownTotal);
+    });
+});
+
+describe('buildRTCorpusEstimateFromChars', () => {
+    it('is the arithmetic the payload-stats path runs on', () => {
+        const fromStats = buildRTCorpusEstimate(makeStats());
+        const fromChars = buildRTCorpusEstimateFromChars({
+            sceneCount: 53, outlineCount: 1, referenceCount: 4,
+            sceneChars: 572410, outlineChars: 8935, referenceChars: 7620
+        });
+        expect(fromChars).toEqual(fromStats);
+        expect(fromChars.method).toBe('rt_chars_heuristic');
+        expect(fromChars.evidenceChars).toBe(572410 + 8935 + 7620);
     });
 });

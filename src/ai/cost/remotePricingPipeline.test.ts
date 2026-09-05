@@ -615,9 +615,10 @@ describe('AiSection cost table BUILTIN_MODELS fallback', () => {
         const { readFileSync } = require('node:fs');
         const { resolve } = require('node:path');
         const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
+        const costSource = readFileSync(resolve(process.cwd(), 'src/ai/cost/costComparison.ts'), 'utf8');
 
-        // The fallback line
-        expect(source).toContain("registryModels?.length ? registryModels : BUILTIN_MODELS");
+        // The fallback line (the model list now lives in ai/cost/costComparison.ts)
+        expect(costSource).toContain("registryModels?.length ? registryModels : BUILTIN_MODELS");
 
         // The cost table refresh path fetches registry models from the AI client
         expect(source).toContain("aiClient.getRegistryModels()");

@@ -7,8 +7,7 @@ import { renderBeatPropertiesSection } from './sections/BeatPropertiesSection';
 import { renderAuthorProgressSection } from './sections/AuthorProgressSection';
 import { renderCommunityShareSection } from './sections/CommunityShareSection';
 import { renderInquirySection } from './sections/InquirySection';
-import { fetchAnthropicModels } from '../api/anthropicApi';
-import { fetchOpenAiModels } from '../api/openaiApi';
+import { validateProviderKeyQuick } from '../ai/credentials/keyValidation';
 import RadialTimelinePlugin from '../main';
 import { renderColorsSection } from './sections/ColorsSection';
 import { renderConfigurationSection } from './sections/ConfigurationSection';
@@ -39,7 +38,6 @@ import { acknowledgeHotfixHistory } from '../utils/pandocBundledLayouts';
 import { DEFAULT_SETTINGS } from './defaults';
 import { getCredential } from '../ai/credentials/credentials';
 import type { AIProviderId } from '../ai/types';
-import { fetchGeminiModels as fetchGoogleModels } from '../api/geminiApi';
 import { getCanonicalAiSettings } from '../ai/runtime/runtimeSelection';
 import { getLocalLlmBackend } from '../ai/localLlm/backends';
 import { getLocalLlmSettings } from '../ai/localLlm/settings';
@@ -329,18 +327,13 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             inputEl.removeClass('ert-setting-input-success');
             inputEl.removeClass('ert-setting-input-error');
 
-            try {
-                if (provider === 'anthropic') await fetchAnthropicModels(key);
-                else if (provider === 'google') await fetchGoogleModels(key);
-                else await fetchOpenAiModels(key);
+            const validation = await validateProviderKeyQuick(provider, key);
+            if (validation.state === 'ready') {
                 inputEl.addClass('ert-setting-input-success');
                 window.setTimeout(() => inputEl.removeClass('ert-setting-input-success'), 1200);
-            } catch (e) {
-                const msg = e instanceof Error ? e.message : String(e);
-                if (/401|unauthorized|invalid/i.test(msg)) {
-                    inputEl.addClass('ert-setting-input-error');
-                    window.setTimeout(() => inputEl.removeClass('ert-setting-input-error'), 1400);
-                }
+            } else if (validation.state === 'rejected') {
+                inputEl.addClass('ert-setting-input-error');
+                window.setTimeout(() => inputEl.removeClass('ert-setting-input-error'), 1400);
             }
         })(); }, 800);
     }

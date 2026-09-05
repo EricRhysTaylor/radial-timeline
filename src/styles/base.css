@@ -987,12 +987,8 @@ body.rt-modal-open .radial-timeline-container * {
   fill: var(--rt-color-empty-selected);
 }
 
-.radial-timeline-container .rt-scene-path.rt-selected {
-  /* Hover emphasis as a stroke, never a filter: rt-selected flips on every scene hover. */
-  stroke: var(--rt-legacy-black);
-  stroke-opacity: 0.35;
-  stroke-width: 1.5px;
-}
+/* .rt-scene-path.rt-selected: no stroke and no filter on hover. The hovered
+   scene is announced by its title and synopsis, not by an edge on the slice. */
 
 .radial-timeline-container .rt-scene-title {
   cursor: pointer;

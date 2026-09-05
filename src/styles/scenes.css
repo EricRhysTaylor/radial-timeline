@@ -15,14 +15,9 @@
 .rt-scene-group.rt-gossamer-hover .rt-storybeat-title,
 .radial-timeline-svg[data-gossamer-mode="true"] .rt-scene-group.beats:hover .rt-storybeat-title,
 .radial-timeline-svg[data-gossamer-mode="true"] .rt-scene-group[data-item-type="Beat"]:hover .rt-storybeat-title {
-  /* Black halo drawn as a stroke under the fill: no SVG filter on the hover path. */
-  paint-order: stroke fill;
-  stroke: var(--rt-legacy-black);
-  stroke-width: 3.6px;
-  stroke-linejoin: round;
+  /* Hover cue is weight and fill only: no halo, no filter on the hover path. */
   fill: var(--rt-color-empty);
   font-weight: 700;
-  /* heavier for readability */
 }
 
 .radial-timeline-container .ert-chapter-marker {
@@ -286,15 +281,8 @@
   font-size: calc(16px * var(--rt-number-font-scale, 1));
 }
 
-.radial-timeline-container .rt-scene-title.rt-selected {
-  /* Halo drawn as a stroke under the fill; rt-selected is applied on every
-     scene hover, so this rule must never carry a filter. */
-  paint-order: stroke fill;
-  stroke: var(--rt-legacy-black);
-  stroke-opacity: 0.85;
-  stroke-width: 2.4px;
-  stroke-linejoin: round;
-}
+/* .rt-scene-title.rt-selected carries no halo and no filter: rt-selected is
+   applied on every scene hover, and the title reads fine as it is. */
 
 /* Scene is open: non-selected state */
 .rt-number-square.rt-scene-is-open.rt-non-selected {

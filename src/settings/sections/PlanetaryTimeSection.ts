@@ -1,4 +1,5 @@
-import { App, Modal, Notice, Setting as Settings, TextAreaComponent, TextComponent, ButtonComponent, setIcon, setTooltip } from 'obsidian';
+import { App, Setting as Settings, TextAreaComponent, TextComponent, setIcon, setTooltip } from 'obsidian';
+import { NamePromptModal } from '../../ui/NamePromptModal';
 import type RadialTimelinePlugin from '../../main';
 import type { PlanetaryProfile } from '../../types';
 import { convertFromEarth, parseCommaNames, validatePlanetaryProfile } from '../../utils/planetaryTime';
@@ -6,7 +7,6 @@ import { createMarsPlanetaryProfile, MARS_TEMPLATE_ID } from '../../utils/planet
 import { t } from '../../i18n';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
 import { ERT_CLASSES } from '../../ui/classes';
-import { scheduleFocusAfterPaint } from '../../utils/domFocus';
 import { IMPACT_FULL } from '../SettingImpact';
 
 interface SectionParams {
@@ -29,83 +29,6 @@ const DEFAULT_PROFILE = (): PlanetaryProfile => ({
 
 // Mars template - built-in for fun! Based on the Darian calendar.
 const MARS_PROFILE = createMarsPlanetaryProfile;
-
-class PlanetaryProfileNameModal extends Modal {
-    private readonly initialValue: string;
-    private readonly onSubmit: (value: string) => Promise<void>;
-    private readonly titleText: string;
-    private readonly subtitleText: string;
-    private readonly submitText: string;
-    private readonly placeholderText: string;
-
-    constructor(
-        app: App,
-        initialValue: string,
-        onSubmit: (value: string) => Promise<void>,
-        options?: {
-            titleText?: string;
-            subtitleText?: string;
-            submitText?: string;
-            placeholderText?: string;
-        }
-    ) {
-        super(app);
-        this.initialValue = initialValue;
-        this.onSubmit = onSubmit;
-        this.titleText = options?.titleText ?? 'Rename profile';
-        this.subtitleText = options?.subtitleText ?? 'Choose the label shown in the active profile selector and preview.';
-        this.submitText = options?.submitText ?? 'Rename';
-        this.placeholderText = options?.placeholderText ?? 'Planet name';
-    }
-
-    onOpen(): void {
-        const { contentEl, modalEl } = this;
-        contentEl.empty();
-
-        if (modalEl) {
-            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal-shell--sm');
-        }
-
-        contentEl.addClass('ert-modal-container', 'ert-stack');
-        contentEl.createDiv({ cls: 'ert-modal-title', text: this.titleText });
-        contentEl.createDiv({ cls: 'ert-modal-subtitle', text: this.subtitleText });
-
-        const inputWrap = contentEl.createDiv({ cls: 'ert-search-input-container' });
-        const inputEl = inputWrap.createEl('input', {
-            type: 'text',
-            value: this.initialValue,
-            cls: 'ert-input ert-input--full'
-        });
-        inputEl.setAttr('placeholder', this.placeholderText);
-
-        const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
-        const save = async () => {
-            const value = inputEl.value.trim();
-            if (!value) {
-                new Notice('Please enter a profile name.');
-                return;
-            }
-            await this.onSubmit(value);
-            this.close();
-        };
-
-        new ButtonComponent(actions).setButtonText(this.submitText).setCta().onClick(() => { void save(); });
-        new ButtonComponent(actions).setButtonText('Cancel').onClick(() => this.close());
-
-        scheduleFocusAfterPaint(inputEl, { selectText: true });
-
-        inputEl.addEventListener('keydown', (evt: KeyboardEvent) => {
-            if (evt.key === 'Enter') {
-                evt.preventDefault();
-                void save();
-            }
-        });
-    }
-
-    onClose(): void {
-        this.contentEl.empty();
-    }
-}
 
 export function renderPlanetaryTimeSection({ app, plugin, containerEl }: SectionParams): void {
     containerEl.classList.add(ERT_CLASSES.STACK);
@@ -229,23 +152,27 @@ export function renderPlanetaryTimeSection({ app, plugin, containerEl }: Section
             btn.setIcon('plus');
             btn.setTooltip(t('planetary.actions.add'));
             btn.onClick(() => {
-                new PlanetaryProfileNameModal(app, '', async (value) => {
-                    const profile = DEFAULT_PROFILE();
-                    profile.label = value;
-                    profiles.push(profile);
-                    activeProfileId = profile.id;
-                    plugin.settings.activePlanetaryProfileId = activeProfileId;
-                    await plugin.saveSettings();
-                    plugin.onSettingChanged(IMPACT_FULL);
-                    renderSelector();
-                    renderFields();
-                    renderPreview();
-                    updateActiveIcon();
-                }, {
-                    titleText: 'Create a new planet',
-                    subtitleText: 'Choose the label shown in the active profile selector and preview.',
-                    submitText: 'Create',
-                    placeholderText: 'Planet name'
+                new NamePromptModal(app, {
+                    title: 'Create a new planet',
+                    subtitle: 'Choose the label shown in the active profile selector and preview.',
+                    initialValue: '',
+                    placeholder: 'Planet name',
+                    actionLabel: 'Create',
+                    emptyNotice: 'Please enter a profile name.',
+                    shell: { size: 'sm' },
+                    onSubmit: async (value) => {
+                        const profile = DEFAULT_PROFILE();
+                        profile.label = value;
+                        profiles.push(profile);
+                        activeProfileId = profile.id;
+                        plugin.settings.activePlanetaryProfileId = activeProfileId;
+                        await plugin.saveSettings();
+                        plugin.onSettingChanged(IMPACT_FULL);
+                        renderSelector();
+                        renderFields();
+                        renderPreview();
+                        updateActiveIcon();
+                    }
                 }).open();
             });
         });
@@ -256,12 +183,21 @@ export function renderPlanetaryTimeSection({ app, plugin, containerEl }: Section
             btn.onClick(() => {
                 const profile = getActiveProfile();
                 if (!profile) return;
-                new PlanetaryProfileNameModal(app, profile.label || '', async (value) => {
-                    profile.label = value;
-                    await saveProfile(profile);
-                    renderSelector();
-                    renderFields();
-                    renderPreview();
+                new NamePromptModal(app, {
+                    title: 'Rename profile',
+                    subtitle: 'Choose the label shown in the active profile selector and preview.',
+                    initialValue: profile.label || '',
+                    placeholder: 'Planet name',
+                    actionLabel: 'Rename',
+                    emptyNotice: 'Please enter a profile name.',
+                    shell: { size: 'sm' },
+                    onSubmit: async (value) => {
+                        profile.label = value;
+                        await saveProfile(profile);
+                        renderSelector();
+                        renderFields();
+                        renderPreview();
+                    }
                 }).open();
             });
         });

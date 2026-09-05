@@ -1,3 +1,4 @@
+import { sleep } from '../../utils/sleep';
 import { Setting as Settings, TextComponent, setIcon } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import type { PluginRendererFacade } from '../../utils/sceneHelpers';
@@ -31,7 +32,7 @@ async function getTimelineSubplotOrder(plugin: RadialTimelinePlugin): Promise<st
         );
     }
 
-    await new Promise<void>(resolve => window.setTimeout(resolve, 150));
+    await sleep(150);
     let fetched: unknown;
     try {
         fetched = await plugin.getSceneData();

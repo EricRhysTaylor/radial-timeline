@@ -1,3 +1,4 @@
+import { sleep } from '../../utils/sleep';
 import { Notice, TFile } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import {
@@ -829,21 +830,21 @@ export class OuterRingDragController {
             await this.runRippleRenameIfEnabled((message) => modal.updateProgress(message));
             modal.updateProgress('Refreshing timeline...');
             // Small delay to allow Obsidian's metadata cache to update before refresh
-            await new Promise(resolve => window.setTimeout(resolve, 100));
+            await sleep(100);
             this.options.onRefresh();
             await modal.finishWithDismiss('Reorder complete.');
         } catch (error) {
             if (error instanceof SceneReorderVerificationError) {
                 console.error('Drag reorder verification warning:', error);
                 modal.updateProgress('Refreshing timeline...');
-                await new Promise(resolve => window.setTimeout(resolve, 100));
+                await sleep(100);
                 this.options.onRefresh();
                 await modal.finishWithDismiss(`Reorder applied, but RT detected a potential issue: ${describeFollowUpIssue(error)}. Please review the affected notes, then dismiss.`, true);
             } else if (reorderApplied) {
                 console.error('Drag reorder post-apply warning:', error);
                 try {
                     modal.updateProgress('Refreshing timeline...');
-                    await new Promise(resolve => window.setTimeout(resolve, 100));
+                    await sleep(100);
                     this.options.onRefresh();
                 } catch (refreshError) {
                     console.error('Drag reorder refresh after post-apply warning failed:', refreshError);
@@ -1024,21 +1025,21 @@ export class OuterRingDragController {
             await this.runRippleRenameIfEnabled((message) => modal.updateProgress(message));
             modal.updateProgress('Refreshing timeline...');
             // Small delay to allow Obsidian's metadata cache to update before refresh
-            await new Promise(resolve => window.setTimeout(resolve, 100));
+            await sleep(100);
             this.options.onRefresh();
             await modal.finishWithDismiss('Reorder complete.');
         } catch (error) {
             if (error instanceof SceneReorderVerificationError) {
                 console.error('Drag reorder verification warning:', error);
                 modal.updateProgress('Refreshing timeline...');
-                await new Promise(resolve => window.setTimeout(resolve, 100));
+                await sleep(100);
                 this.options.onRefresh();
                 await modal.finishWithDismiss(`Reorder applied, but RT detected a potential issue: ${describeFollowUpIssue(error)}. Please review the affected notes, then dismiss.`, true);
             } else if (reorderApplied) {
                 console.error('Drag reorder post-apply warning:', error);
                 try {
                     modal.updateProgress('Refreshing timeline...');
-                    await new Promise(resolve => window.setTimeout(resolve, 100));
+                    await sleep(100);
                     this.options.onRefresh();
                 } catch (refreshError) {
                     console.error('Drag reorder refresh after post-apply warning failed:', refreshError);
@@ -1269,7 +1270,7 @@ export class OuterRingDragController {
     }
 
     private resolveSubplotColorFromGroup(group: SVGGElement): string | undefined {
-        return resolveSubplotColorFromGroup(group, this.view.plugin.settings.subplotColors);
+        return resolveSubplotColorFromGroup(group);
     }
 
     /**

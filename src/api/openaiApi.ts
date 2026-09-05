@@ -4,6 +4,7 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 // DEPRECATED: Legacy provider adapter; prefer aiClient entrypoints.
+import { sleep } from '../utils/sleep';
 import { requestUrl } from 'obsidian'; // Use requestUrl for consistency
 import { warnLegacyAccess } from './legacyAccessGuard';
 import { modelSupportsSystemRole } from './providerCapabilities';
@@ -107,10 +108,6 @@ function shouldUseOpenAiBackgroundMode(modelId: string): boolean {
 
 function isPendingBackgroundStatus(status: unknown): boolean {
     return status === 'queued' || status === 'in_progress';
-}
-
-async function sleep(ms: number): Promise<void> {
-    await new Promise(resolve => window.setTimeout(resolve, ms));
 }
 
 function buildOpenAiChatMessages(

@@ -1,3 +1,4 @@
+import { sleep } from '../utils/sleep';
 import {
     ItemView,
     Menu,
@@ -6677,7 +6678,7 @@ export class InquiryView extends ItemView {
 
             const elapsed = Date.now() - startTime;
             if (elapsed < MIN_PROCESSING_MS) {
-                await new Promise(resolve => window.setTimeout(resolve, MIN_PROCESSING_MS - elapsed));
+                await sleep(MIN_PROCESSING_MS - elapsed);
             }
 
             if (this.shouldDiscardInquiryRunOutcome(runToken)) {

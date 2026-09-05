@@ -1,3 +1,4 @@
+import { readSubplotColor } from '../utils/subplotColors';
 import type { TimelineItem } from '../../types';
 import { formatNumber, escapeXml } from '../../utils/svg';
 import { parseSceneTitle } from '../../utils/text';
@@ -89,19 +90,7 @@ export function renderRings(ctx: RingRenderContext): string {
     };
 
     // Helper for subplot color check
-    const subplotColorFor = (subplotName: string) => {
-        const normalized = resolveSubplotColorIndex(subplotName) % 16;
-        const varName = `--rt-subplot-colors-${normalized}`;
-        // Note: getComputedStyle is DOM-dependent, might not be ideal in all contexts but keeping extracted logic same
-        try {
-            // In node env or non-browser this might fail or return empty.
-            // Assuming this runs in browser context where document exists.
-            const computed = getComputedStyle(activeDocument.documentElement).getPropertyValue(varName).trim();
-            return computed || '#EFBDEB';
-        } catch {
-            return '#EFBDEB';
-        }
-    };
+    const subplotColorFor = (subplotName: string) => readSubplotColor(activeDocument, resolveSubplotColorIndex(subplotName));
 
     // Check if we need to force subplot fill colors
     const currentMode = plugin.settings.currentMode || 'narrative';

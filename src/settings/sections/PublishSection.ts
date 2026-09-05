@@ -19,7 +19,8 @@ import { ImportTemplateModal, type ImportedTemplateCommit } from '../../modals/I
 import { DesignedStyleWizardModal } from '../../modals/DesignedStyleWizardModal';
 import { confirmWithErtModal } from '../../modals/ErtConfirmModal';
 import { getActiveBookExportContext } from '../../utils/exportContext';
-import { getActiveBook, slugifyToFileStem } from '../../utils/books';
+import { getActiveBook } from '../../utils/books';
+import { slugifyToFileStem } from '../../utils/slug';
 import { resolveBookPages, applyBookPageOrder, inferRoleFromFilename, ROLE_SIDE, type BookPageRole, type ResolvedPage } from '../../utils/bookPagesResolver';
 import { resolveManuscriptOutputFolder } from '../../utils/aiOutput';
 import { systemFolderPath } from '../../utils/systemFolder';

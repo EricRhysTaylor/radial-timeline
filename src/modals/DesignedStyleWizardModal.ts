@@ -48,7 +48,7 @@ import { compactTemplatePathForStorage } from '../utils/templateImport';
 import { clearFontAvailabilityCache, getFontDiagnosticForFontKey, getPandocFolder } from '../utils/exportFormats';
 import { assertNever } from '../utils/assertNever';
 import { LatexPreviewModal } from './LatexPreviewModal';
-import { slugifyToFileStem } from '../utils/books';
+import { slugifyToFileStem } from '../utils/slug';
 
 type WizardCategory =
     | 'page'

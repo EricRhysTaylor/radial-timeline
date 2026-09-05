@@ -1,3 +1,4 @@
+import { slugifyToFileStem } from './slug';
 import { normalizePath, TFile } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type {
@@ -96,7 +97,7 @@ export function compactTemplatePathForStorage(plugin: RadialTimelinePlugin, rawP
 }
 
 export function buildImportedTemplateId(name: string, preset: UsageContext, existingIds: Iterable<string>): string {
-    const base = `imported-${slugify(name)}-${preset}`;
+    const base = `imported-${slugifyToFileStem(name, 'template').toLowerCase()}-${preset}`;
     let candidate = base;
     let index = 2;
     const used = new Set(existingIds);
@@ -278,11 +279,3 @@ function stripTemplateExtension(name: string): string {
     return name.replace(/\.(tex|ltx|latex)$/i, '').trim();
 }
 
-function slugify(value: string): string {
-    return value
-        .replace(/[/\\:*?"<>|]+/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-{2,}/g, '-')
-        .replace(/^-|-$/g, '')
-        .toLowerCase() || 'template';
-}

@@ -4,6 +4,8 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 
+import { readSubplotColor } from '../../renderer/utils/subplotColors';
+
 /**
  * Update scene title color in synopsis based on mode
  */
@@ -23,11 +25,9 @@ export function updateSynopsisTitleColor(synopsis: Element, sceneId: string, mod
                 // Use the max publish stage color for Backdrops
                 color = getComputedStyle(doc.documentElement).getPropertyValue('--rt-max-publish-stage-color').trim();
             } else {
-                const subplotIndex = sceneGroup.getAttribute('data-subplot-color-index') || sceneGroup.getAttribute('data-subplot-index');
-                if (subplotIndex) {
-                    const idx = ((parseInt(subplotIndex, 10) % 16) + 16) % 16;
-                    const varName = `--rt-subplot-colors-${idx}`;
-                    color = getComputedStyle(doc.documentElement).getPropertyValue(varName).trim();
+                const subplotIndex = Number(sceneGroup.getAttribute('data-subplot-color-index') || sceneGroup.getAttribute('data-subplot-index'));
+                if (Number.isFinite(subplotIndex)) {
+                    color = readSubplotColor(doc, subplotIndex);
                 }
             }
         }

@@ -1,3 +1,4 @@
+import { kebabSlug } from './slug';
 import { systemFolderPath } from './systemFolder';
 
 export type AprSize = 'small' | 'medium' | 'large';
@@ -32,15 +33,6 @@ export type AprExportQuality = 'standard' | 'ultra' | 'print';
  *   apr-{campaignSlug}-{mode}-{size}.{format}  (size = thumb|small|medium|large)
  */
 
-export function slugify(value: string | undefined, fallback: string): string {
-    const cleaned = (value ?? '')
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '');
-    return cleaned || fallback;
-}
-
 function formatAprMode(updateFrequency?: AprFrequency): string {
     if (!updateFrequency || updateFrequency === 'manual') return 'manual';
     return `auto-${updateFrequency}`;
@@ -72,7 +64,7 @@ export function buildDefaultEmbedPath(options: {
     aprSize?: AprSize;
     exportFormat?: AprExportFormat;
 }): string {
-    const bookSlug = slugify(options.bookTitle, 'book');
+    const bookSlug = kebabSlug(options.bookTitle ?? '', 'book');
     const mode = formatAprMode(options.updateFrequency);
     const quality = resolveQuality(options.aprExportQuality);
     const format = normalizeAprExportFormat(options.exportFormat);
@@ -93,8 +85,8 @@ export function buildCampaignEmbedPath(options: {
     teaserEnabled?: boolean;
     exportFormat?: AprExportFormat;
 }): string {
-    const bookSlug = slugify(options.bookTitle, 'book');
-    const campaignSlug = slugify(options.campaignName, 'campaign');
+    const bookSlug = kebabSlug(options.bookTitle ?? '', 'book');
+    const campaignSlug = kebabSlug(options.campaignName ?? '', 'campaign');
     const mode = formatAprMode(options.updateFrequency);
     const quality = resolveQuality(options.aprExportQuality);
     const teaserSuffix = options.teaserEnabled ? '-teaser' : '';

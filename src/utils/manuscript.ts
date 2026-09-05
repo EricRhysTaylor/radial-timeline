@@ -1,6 +1,7 @@
 /*
  * Manuscript Assembly Utilities
  */
+import { stripFrontmatter } from './frontmatterDocument';
 import { TFile, Vault, App, getFrontMatterInfo, parseYaml } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { TimelineItem, BookMeta, MatterMeta, LegacyMatterOrder } from '../types';
@@ -147,10 +148,7 @@ export function extractBodyText(content: string): string {
 }
 
 function extractBodyTextAfterFrontmatter(content: string): string {
-  const normalized = content.replace(/\r\n?/g, '\n').trim();
-  const match = normalized.match(/^---\n[\s\S]*?\n---(?:\n|$)/);
-  if (!match) return normalized;
-  return normalized.slice(match[0].length).trim();
+  return stripFrontmatter(content.replace(/\r\n?/g, '\n').trim()).trim();
 }
 
 /**

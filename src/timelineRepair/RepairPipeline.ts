@@ -7,6 +7,7 @@
  * Coordinates deterministic scaffold assignment and optional text-cue refinement.
  */
 
+import { stripFrontmatter } from '../utils/frontmatterDocument';
 import type { TFile, Vault } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { TimelineItem } from '../types';
@@ -128,15 +129,7 @@ export async function runRepairPipeline(
  */
 async function getSceneBodyText(vault: Vault, entry: RepairSceneEntry): Promise<string> {
     try {
-        const content = await vault.cachedRead(entry.file);
-        
-        // Strip frontmatter
-        const fmMatch = content.match(/^---\n[\s\S]*?\n---\n?/);
-        if (fmMatch) {
-            return content.slice(fmMatch[0].length);
-        }
-        
-        return content;
+        return stripFrontmatter(await vault.cachedRead(entry.file));
     } catch {
         return '';
     }

@@ -4,6 +4,7 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 
+import { readSubplotColor } from '../utils/subplotColors';
 import type { TimelineItem } from '../../types';
 import type { PluginRendererFacade } from '../../utils/sceneHelpers';
 import { getMostAdvancedStageColor } from '../../utils/colour';
@@ -81,7 +82,7 @@ export function updateSceneFills(
                 const arc = group.querySelector('.rt-scene-arc');
                 if (!arc) return;
                 const subplotColorIndex = Number(group.getAttribute('data-subplot-color-index') ?? 0);
-                const subplotColorResolver = () => resolveSubplotColorByIndex(subplotColorIndex);
+                const subplotColorResolver = () => readSubplotColor(svg.ownerDocument, subplotColorIndex);
                 
                 const fill = getFillForScene(
                     scene,
@@ -129,14 +130,3 @@ function getMasterSubplotOrder(svg: SVGSVGElement): string[] {
         .filter((name): name is string => name !== null);
 }
 
-function resolveSubplotColorByIndex(subplotColorIndex: number): string {
-    const normalized = Number.isFinite(subplotColorIndex) ? Math.max(0, subplotColorIndex) % 16 : 0;
-    try {
-        const computed = getComputedStyle(activeDocument.documentElement)
-            .getPropertyValue(`--rt-subplot-colors-${normalized}`)
-            .trim();
-        return computed || '#EFBDEB';
-    } catch {
-        return '#EFBDEB';
-    }
-}

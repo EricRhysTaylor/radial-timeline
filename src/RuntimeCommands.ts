@@ -6,6 +6,7 @@
  * Runtime Estimation Commands
  */
 
+import { stripFrontmatter } from './utils/frontmatterDocument';
 import { TFile, Notice } from 'obsidian';
 import type RadialTimelinePlugin from './main';
 import { RuntimeProcessingModal, type RuntimeScope, type RuntimeStatusFilters, type RuntimeMode, type RuntimeProcessResult } from './modals/RuntimeProcessingModal';
@@ -127,7 +128,7 @@ async function getScenesForScope(
 
         // Read file content to get the body (excluding frontmatter)
         const content = await vault.read(file);
-        const body = extractBody(content);
+        const body = stripFrontmatter(content);
 
         result.push({
             file,
@@ -141,17 +142,6 @@ async function getScenesForScope(
     }
 
     return result;
-}
-
-/**
- * Extract body content from file (excluding frontmatter)
- */
-function extractBody(content: string): string {
-    const frontmatterMatch = content.match(/^---\s*\n[\s\S]*?\n---\s*\n?/);
-    if (frontmatterMatch) {
-        return content.slice(frontmatterMatch[0].length);
-    }
-    return content;
 }
 
 /**

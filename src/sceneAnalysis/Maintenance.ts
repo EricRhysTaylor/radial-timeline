@@ -3,6 +3,7 @@
  * Scene maintenance utilities (template creation, YAML test, purge helpers)
  */
 
+import { extractBodyAfterFrontmatter } from '../utils/frontmatterDocument';
 import { App, Notice, stringifyYaml, Modal, ButtonComponent, TFile, getFrontMatterInfo, parseYaml, type Vault } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { getAllSceneData, getSubplotNamesFromFM } from './data';
@@ -169,13 +170,7 @@ export async function testYamlUpdateFormatting(
 
         const fmText = fmInfo.frontmatter ?? '';
         const currentFrontmatter = fmText ? (parseYaml(fmText) || {}) : {};
-        let currentBody = currentContent;
-        const endOffset = fmInfo.position?.end?.offset;
-        if (typeof endOffset === 'number' && endOffset >= 0 && endOffset <= currentContent.length) {
-            currentBody = currentContent.slice(endOffset).trim();
-        } else {
-            currentBody = currentContent.replace(/^---[\s\S]*?\n---/, '').trim();
-        }
+        const currentBody = extractBodyAfterFrontmatter(currentContent, fmInfo).trim();
 
         const dummySceneData: SceneData = {
             file,

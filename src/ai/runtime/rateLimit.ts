@@ -1,3 +1,5 @@
+import { sleep } from '../../utils/sleep';
+
 export class AIRateLimiter {
     private history = new Map<string, number[]>();
 
@@ -11,7 +13,7 @@ export class AIRateLimiter {
         if (recent.length >= requestsPerMinute) {
             const earliest = recent[0];
             const waitMs = Math.max(0, windowMs - (now - earliest));
-            await new Promise(resolve => window.setTimeout(resolve, waitMs));
+            await sleep(waitMs);
         }
 
         const after = (this.history.get(key) || []).filter(ts => Date.now() - ts < windowMs);

@@ -16,6 +16,7 @@
  *
  * The resolver is shared by the Settings preview and export assembly.
  */
+import { kebabSlug } from './slug';
 import type { BookMeta } from '../types';
 import type { MatterBodyMode } from './matterMeta';
 
@@ -147,11 +148,8 @@ function stripFilenamePrefix(filenameOrPath: string): string {
  * Lenient with separators (spaces, hyphens, underscores, periods).
  */
 function normalizeForRoleMatch(label: string): string {
-    return label
-        .toLowerCase()
-        .replace(/['']/g, '')              // drop apostrophes ("author's" → "authors")
-        .replace(/[^a-z0-9]+/g, '-')       // collapse non-alphanumeric → hyphen
-        .replace(/^-+|-+$/g, '');          // trim hyphens
+    // Apostrophes go first so "author's" reads as "authors", not "author-s".
+    return kebabSlug(label.replace(/['']/g, ''), '');
 }
 
 /**

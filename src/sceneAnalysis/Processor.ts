@@ -4,6 +4,7 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 
+import { sleep } from '../utils/sleep';
 import { Notice, type Vault } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { buildDefaultAiSettings } from '../ai/settings/aiSettings';
@@ -467,7 +468,7 @@ export async function processBySubplotOrder(
 
                 totalProcessedCount++;
                 notice.setMessage(t('sceneAnalysis.pipeline.notices.progressUpdate', { current: totalProcessedCount, total: totalTripletsAcrossSubplots }));
-                await new Promise(resolve => window.setTimeout(resolve, 200));
+                await sleep(200);
             }
         }
 

@@ -4,6 +4,7 @@
  */
 
 import { App, Setting, setIcon, setTooltip, ButtonComponent, Notice, Modal, DropdownComponent } from 'obsidian';
+import { NamePromptModal } from '../../ui/NamePromptModal';
 import type RadialTimelinePlugin from '../../main';
 import type { AprStyleProfile, AuthorProgressCampaign, TeaserPreset, TeaserRevealLevel } from '../../types/settings';
 import { AprProgressService } from '../../services/apr/AprProgressService';
@@ -23,7 +24,6 @@ import { resolveBookTitle } from '../../renderer/apr/aprHelpers';
 
 import { ERT_CLASSES } from '../../ui/classes';
 import { fitSelectToSelectedLabel } from '../selectSizing';
-import { scheduleFocusAfterPaint } from '../../utils/domFocus';
 import { mountSvgMarkup } from '../../utils/svgDom';
 import { getActiveBook } from '../../utils/books';
 import { AuthorProgressService } from '../../services/AuthorProgressService';
@@ -41,85 +41,6 @@ export interface CampaignManagerProps {
      * (unsaved-changes note, tracked stage pill, etc) in-place without rebuilding the whole list.
      */
     registerStyleRefresh?: (fn: () => void) => void;
-}
-
-interface CampaignNameModalOptions {
-    badgeLabel?: string;
-    title: string;
-    subtitle: string;
-    initialValue: string;
-    actionLabel: string;
-    onSubmit: (value: string) => Promise<boolean>;
-}
-
-class CampaignNameModal extends Modal {
-    private readonly options: CampaignNameModalOptions;
-
-    constructor(app: App, options: CampaignNameModalOptions) {
-        super(app);
-        this.options = options;
-    }
-
-    onOpen() {
-        const { contentEl, modalEl } = this;
-        contentEl.empty();
-
-        if (modalEl) {
-            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-campaign-name-modal');
-            modalEl.setCssStyles({ width: '420px', maxWidth: '92vw' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
-        }
-
-        contentEl.addClass('ert-modal-container', 'ert-stack');
-
-        const header = contentEl.createDiv({ cls: 'ert-modal-header' });
-        header.createSpan({ cls: 'ert-modal-badge', text: this.options.badgeLabel ?? 'Edit' });
-        header.createDiv({ cls: 'ert-modal-title', text: this.options.title });
-        header.createDiv({ cls: 'ert-modal-subtitle', text: this.options.subtitle });
-
-        const inputContainer = contentEl.createDiv({ cls: 'ert-search-input-container' });
-        const inputEl = inputContainer.createEl('input', {
-            type: 'text',
-            value: this.options.initialValue,
-            cls: 'ert-input ert-input--full'
-        });
-        inputEl.setAttr('placeholder', 'Campaign name');
-
-        scheduleFocusAfterPaint(inputEl, { selectText: true });
-
-        const buttonRow = contentEl.createDiv({ cls: 'ert-modal-actions' });
-        const save = async () => {
-            const val = inputEl.value.trim();
-            if (!val) {
-                new Notice('Please enter a campaign name');
-                return;
-            }
-            const shouldClose = await this.options.onSubmit(val);
-            if (shouldClose) {
-                this.close();
-            }
-        };
-
-        new ButtonComponent(buttonRow)
-            .setButtonText(this.options.actionLabel)
-            .setCta()
-            .onClick(() => { void save(); });
-
-        new ButtonComponent(buttonRow)
-            .setButtonText('Cancel')
-            .onClick(() => this.close());
-
-        // SAFE: Modal classes do not have registerDomEvent; Obsidian manages Modal lifecycle
-        inputEl.addEventListener('keydown', (evt: KeyboardEvent) => {
-            if (evt.key === 'Enter') {
-                evt.preventDefault();
-                void save();
-            }
-        });
-    }
-
-    onClose() {
-        this.contentEl.empty();
-    }
 }
 
 /**
@@ -311,8 +232,10 @@ export function renderCampaignManagerSection({ app, plugin, containerEl, onCampa
             button.setButtonText('Add campaign');
             button.buttonEl.addClass('ert-btn', 'ert-btn--standard-pro');
             button.onClick(async () => {
-                const modal = new CampaignNameModal(app, {
-                    badgeLabel: 'New',
+                const modal = new NamePromptModal(app, {
+                    badge: 'New',
+                    placeholder: 'Campaign name',
+                    emptyNotice: 'Please enter a campaign name',
                     title: 'New campaign',
                     subtitle: 'Give your campaign a name (e.g., "Website Hero Page", "Kickstarter Campaign", "Newsletter")',
                     initialValue: '',
@@ -524,7 +447,10 @@ function renderCampaignRow(
     nameEl.setAttr('tabindex', '0');
     nameEl.setAttr('aria-label', `Rename campaign ${campaign.name}`);
     const openRenameModal = () => {
-        const modal = new CampaignNameModal(plugin.app, {
+        const modal = new NamePromptModal(plugin.app, {
+            badge: 'Edit',
+            placeholder: 'Campaign name',
+            emptyNotice: 'Please enter a campaign name',
             title: 'Rename Campaign',
             subtitle: `Enter a new name for "${campaign.name}"`,
             initialValue: campaign.name,
@@ -751,8 +677,10 @@ function renderCampaignDetails(
 
         const openSaveStyleModal = () => {
             const suggestedName = selectedProfile?.name ?? `${campaign.name} Style`;
-            const modal = new CampaignNameModal(plugin.app, {
-                badgeLabel: 'Style',
+            const modal = new NamePromptModal(plugin.app, {
+                badge: 'Style',
+                placeholder: 'Style name',
+                emptyNotice: 'Please enter a style name',
                 title: 'Save APR Style',
                 subtitle: 'Save the current APR preview as a reusable style preset. Using an existing name will update that preset.',
                 initialValue: suggestedName,
@@ -1368,7 +1296,7 @@ async function renderTeaserStagesPreviews(
     // Current progress drives which stage is "live" — highlight it in the publish-stage color.
     const currentProgress = progressService.resolveProgress(scenes, settings);
     const currentTeaserLevel = getTeaserRevealLevel(currentProgress.percent, thresholds, disabledStages);
-    const currentStageColor = plugin.settings.publishStageColors?.[currentProgress.displayStage] ?? '#808080';
+    const currentStageColor = plugin.settings.publishStageColors[currentProgress.displayStage];
 
     // 4 stages with their properties (labels/icons from TEASER_LEVEL_INFO)
     // Note: Ring stage uses 5% for preview (shows ring) even though threshold is 0%

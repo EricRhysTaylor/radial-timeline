@@ -1,3 +1,4 @@
+import { kebabSlug } from '../../utils/slug';
 import type RadialTimelinePlugin from '../../main';
 import {
     buildDefaultAuthorProgressDefaults,
@@ -41,13 +42,6 @@ type AprRenderStyleOptions = Pick<
     | 'rtBadgeFontSize'
 >;
 
-function sanitizeName(name: string): string {
-    return name
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '') || 'style';
-}
 
 export class AprStyleService {
     constructor(private plugin: RadialTimelinePlugin) {}
@@ -208,7 +202,7 @@ export class AprStyleService {
     public createStyleProfile(name: string, defaults: AuthorProgressDefaults = this.getDefaults()): AprStyleProfile {
         const timestamp = Date.now();
         return {
-            id: `apr-style-${sanitizeName(name)}-${timestamp}`,
+            id: `apr-style-${kebabSlug(name, 'style')}-${timestamp}`,
             name: name.trim(),
             createdAt: new Date(timestamp).toISOString(),
             style: this.captureCurrentStyle(defaults),

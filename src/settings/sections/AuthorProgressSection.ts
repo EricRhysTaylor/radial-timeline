@@ -371,7 +371,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
     const flowSegments: Record<(typeof STAGE_ORDER)[number], HTMLDivElement> = {} as Record<(typeof STAGE_ORDER)[number], HTMLDivElement>;
     STAGE_ORDER.forEach(stage => {
         const seg = flowBarTrack.createDiv({ cls: `ert-apr-flow__segment ert-apr-flow__segment--${stage.toLowerCase()}` });
-        const color = plugin.settings.publishStageColors?.[stage] ?? '#808080';
+        const color = plugin.settings.publishStageColors[stage];
         seg.style.setProperty('--ert-flow-color', color);
         setTooltip(seg, `${stage}: 0`);
         flowSegments[stage] = seg;
@@ -379,7 +379,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
     const flowLegend = flowBar.createDiv({ cls: 'ert-apr-flow__legend' });
 
     const applyStageBadgeTone = (stage: (typeof STAGE_ORDER)[number]) => {
-        const color = plugin.settings.publishStageColors?.[stage] ?? '#808080';
+        const color = plugin.settings.publishStageColors[stage];
         stageBadge.style.setProperty('--ert-chip-bg', `color-mix(in srgb, ${color} 18%, var(--background-secondary) 82%)`);
         stageBadge.style.setProperty('border', `1px solid ${color}`);
         stageBadge.style.setProperty('color', color);
@@ -599,7 +599,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
         flowLegend.empty();
         STAGE_ORDER.forEach(stage => {
             const label = flowLegend.createSpan({ cls: 'ert-apr-flow__legend-item' });
-            const color = plugin.settings.publishStageColors?.[stage] ?? '#808080';
+            const color = plugin.settings.publishStageColors[stage];
             label.style.setProperty('--ert-flow-color', color);
             label.createSpan({ cls: 'ert-apr-flow__legend-dot' });
             label.createSpan({ cls: 'ert-apr-flow__legend-text', text: `${stage} ${breakdown[stage] ?? 0}` });
@@ -735,7 +735,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
 
     applyErtHeaderLayout(themeHeading);
 
-    const bookTitleColorFallback = plugin.settings.publishStageColors?.Press || '#6FB971';
+    const bookTitleColorFallback = plugin.settings.publishStageColors.Press;
 
     // Font availability check — canvas measurement against monospace baseline
     const fontCheckCtx = containerEl.ownerDocument.win.createEl('canvas').getContext('2d') ?? null;

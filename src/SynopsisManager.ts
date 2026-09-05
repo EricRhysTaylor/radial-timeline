@@ -3,6 +3,7 @@
  * Copyright (c) 2025 Eric Rhys Taylor
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
+import { readSubplotColor } from './renderer/utils/subplotColors';
 import type RadialTimelinePlugin from './main';
 import type { TimelineItem } from './types';
 import type { HoverMetadataField } from './types/settings';
@@ -972,7 +973,7 @@ export default class SynopsisManager {
     const fontScale = this.getReadabilityScale();
 
     // Determine beat-specific Gossamer stage color (latest Gossamer run), fallback to publish stage color
-    const stageColors = this.plugin.settings.publishStageColors || { Zero: '#9370DB', Author: '#4169E1', House: '#228B22', Press: '#FF8C00' };
+    const stageColors = this.plugin.settings.publishStageColors;
     let beatStageColor: string | null = null;
     if (scene.itemType === 'Beat' || scene.itemType === 'Plot') {
       const fm = scene.rawFrontmatter || {};
@@ -1003,15 +1004,7 @@ export default class SynopsisManager {
 
     // Deterministic subplot color from stylesheet variables
     const getSubplotColor = (subplot: string, sceneIdentifier: string): string => {
-      const resolveCssVariable = (index: number): string => {
-        const normalizedIndex = Math.max(0, index) % 15;
-        const varName = `--rt-subplot-colors-${normalizedIndex}`;
-        const value = getComputedStyle(activeDocument.documentElement).getPropertyValue(varName).trim();
-        if (!value) {
-          throw new Error(`CSS variable ${varName} is not defined for subplot coloring.`);
-        }
-        return value;
-      };
+      const resolveCssVariable = (index: number): string => readSubplotColor(activeDocument, index);
 
       const resolveIndex = (): number => {
         if (subplotIndexResolver) {

@@ -4,6 +4,7 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 
+import { SUBPLOT_COLOR_SLOTS, readSubplotColor } from '../../renderer/utils/subplotColors';
 import { setIcon } from 'obsidian';
 import type { TimelineItem } from '../../types';
 import type { RadialTimelineSettings, RuntimeContentType } from '../../types/settings';
@@ -121,10 +122,8 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
 
     // Pre-compute and cache all subplot colors to avoid getComputedStyle() calls
     const subplotColors: string[] = [];
-    for (let i = 0; i < 16; i++) {
-        const varName = `--rt-subplot-colors-${i}`;
-        const computed = getComputedStyle(doc.documentElement).getPropertyValue(varName).trim();
-        subplotColors[i] = computed || '#EFBDEB';
+    for (let i = 0; i < SUBPLOT_COLOR_SLOTS; i++) {
+        subplotColors[i] = readSubplotColor(doc, i);
     }
 
     // Cache synopsis elements for fast lookup (avoiding querySelectorAll on every hover)

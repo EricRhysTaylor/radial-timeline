@@ -111,7 +111,7 @@ function createEstimateTickIcon(color: string, size = 16): SVGElement {
  * Get the stage color from plugin settings
  */
 function getStageColor(plugin: RadialTimelinePlugin, stage: Stage): string {
-    return plugin.settings.publishStageColors?.[stage] ?? '#9E70CF';
+    return plugin.settings.publishStageColors[stage];
 }
 
 /**
@@ -919,7 +919,7 @@ export function renderProgressSection(params: {
 
     // Add estimate icon (line with dot at end, like the estimated completion tick)
     estimateToggle.nameEl.empty();
-    const estimateIcon = createEstimateTickIcon('#6FB971'); // Default to Press color
+    const estimateIcon = createEstimateTickIcon(getStageColor(plugin, 'Press'));
     estimateToggle.nameEl.appendChild(estimateIcon);
     estimateToggle.nameEl.appendText(` ${t('settings.configuration.showEstimate.name')}`);
 

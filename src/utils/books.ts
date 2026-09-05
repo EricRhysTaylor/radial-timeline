@@ -1,6 +1,7 @@
 /*
  * Book profile helpers
  */
+import { slugifyToFileStem } from './slug';
 import type { BeatDefinition, BeatSystemConfig, BeatWorkspaceState, BookProfile, LoadedBeatTab, ManuscriptSceneHeadingMode, RadialTimelineSettings } from '../types/settings';
 import type { TimelineItem } from '../types/timeline';
 import { normalizeRecentStructuralMoves } from './recentStructuralMoves';
@@ -217,14 +218,6 @@ export function getActiveBookExportContext(settings: RadialTimelineSettings): { 
   return { sourceFolder, title, fileStem };
 }
 
-export function slugifyToFileStem(title: string): string {
-  return title
-    .replace(/[/\\:*?"<>|]+/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-{2,}/g, '-')
-    .replace(/^-|-$/g, '')
-    || 'Manuscript';
-}
   const normalizeBeatDefinition = (beat: BeatDefinition): BeatDefinition => {
     const name = typeof beat?.name === 'string' ? beat.name.trim() : '';
     return {

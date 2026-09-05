@@ -22,7 +22,8 @@ export interface SynopsisScene {
 export function getPublishStageStyle(stageInput: unknown, publishStageColors: Record<string, string>): { stageClass: string; titleColor: string } {
   const stage = (stageInput as string) || 'Zero';
   const stageClass = `rt-title-stage-${String(stage).toLowerCase()}`;
-  const titleColor = publishStageColors[stage] || '#808080';
+  // A stage string the settings do not know has no colour of its own; show it muted.
+  const titleColor = publishStageColors[stage] || 'var(--text-muted)';
   return { stageClass, titleColor };
 }
 

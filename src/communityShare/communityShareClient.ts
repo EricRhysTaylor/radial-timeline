@@ -20,7 +20,7 @@ interface ActivationConfirmSuccess {
     project_title?: string;
 }
 
-interface ActivationConfirmError {
+interface CommunityErrorBody {
     error?: {
         code?: string;
         message?: string;
@@ -83,6 +83,53 @@ function parseResponseJson(text: string): unknown {
     } catch {
         return {};
     }
+}
+
+interface OkResponse {
+    ok: true;
+}
+
+function isOkResponse(value: unknown): value is OkResponse {
+    return (value as Partial<OkResponse>)?.ok === true;
+}
+
+interface CommunityCallFailure {
+    code: string;
+    message: string;
+}
+
+/**
+ * POST one community function and return its parsed success body. A non-2xx
+ * answer becomes a CommunityShareError carrying the server's code and message
+ * when it sent them and `failure` otherwise; a 2xx body that fails `isSuccess`
+ * is an invalid_response. Callers check consent (assertStillSendable) first.
+ */
+async function postCommunityFunction<T>(
+    endpoint: string,
+    body: Record<string, unknown>,
+    isSuccess: (value: unknown) => value is T,
+    failure: CommunityCallFailure,
+    unexpectedMessage: string
+): Promise<T> {
+    const response = await requestUrl({
+        url: `${FUNCTIONS_BASE_URL}/${endpoint}`,
+        method: 'POST',
+        contentType: 'application/json',
+        body: JSON.stringify(body),
+        throw: false
+    });
+    const parsed = parseResponseJson(response.text);
+    if (response.status < 200 || response.status >= 300) {
+        const error = (parsed as CommunityErrorBody).error;
+        throw new CommunityShareError(
+            error?.code || failure.code, // SAFE: non-2xx response carrying no structured code; the caller names the call that failed
+            error?.message || failure.message // SAFE: user-facing text used only when the error body carries no message
+        );
+    }
+    if (!isSuccess(parsed)) {
+        throw new CommunityShareError('invalid_response', unexpectedMessage);
+    }
+    return parsed;
 }
 
 function isActivationConfirmSuccess(value: unknown): value is ActivationConfirmSuccess {
@@ -202,28 +249,16 @@ export async function confirmCommunityShareActivation(
 
     const installationId = await getOrCreateInstallationId(plugin);
     const pluginInstallationIdHash = await sha256Hex(installationId);
-    const response = await requestUrl({
-        url: `${FUNCTIONS_BASE_URL}/community-activation-confirm`,
-        method: 'POST',
-        contentType: 'application/json',
-        body: JSON.stringify({
+    const parsed = await postCommunityFunction(
+        'community-activation-confirm',
+        {
             activation_token: token,
             plugin_installation_id_hash: pluginInstallationIdHash
-        }),
-        throw: false
-    });
-
-    const parsed = parseResponseJson(response.text);
-    if (response.status < 200 || response.status >= 300) {
-        const body = parsed as ActivationConfirmError;
-        throw new CommunityShareError(
-            body.error?.code || 'activation_failed', // SAFE: non-2xx activation response carrying no structured code; this names the call that failed
-            body.error?.message || 'Community connection failed. Generate a new code and try again.' // SAFE: user-facing text used only when the activation error body carries no message
-        );
-    }
-    if (!isActivationConfirmSuccess(parsed)) {
-        throw new CommunityShareError('invalid_response', 'Community connection returned an unexpected response.');
-    }
+        },
+        isActivationConfirmSuccess,
+        { code: 'activation_failed', message: 'Community connection failed. Generate a new code and try again.' },
+        'Community connection returned an unexpected response.'
+    );
 
     const secretId = connectionSecretId();
     // The connection secret lives under a fixed key, so a reconnect/replace
@@ -303,11 +338,9 @@ export async function publishCommunityShareReport(
     }
     assertStillSendable(plugin);
 
-    const response = await requestUrl({
-        url: `${FUNCTIONS_BASE_URL}/community-share-publish`,
-        method: 'POST',
-        contentType: 'application/json',
-        body: JSON.stringify({
+    const parsed = await postCommunityFunction(
+        'community-share-publish',
+        {
             connection_id: current.connection.connectionId,
             current_secret: currentSecret,
             publish_mode: mode,
@@ -319,21 +352,11 @@ export async function publishCommunityShareReport(
             schema_version: COMMUNITY_SHARE_REPORT_SCHEMA_VERSION,
             preview_hash: preview.previewHash,
             report_period: preview.reportPeriod
-        }),
-        throw: false
-    });
-
-    const parsed = parseResponseJson(response.text);
-    if (response.status < 200 || response.status >= 300) {
-        const body = parsed as ActivationConfirmError;
-        throw new CommunityShareError(
-            body.error?.code || 'publish_failed', // SAFE: non-2xx publish response carrying no structured code; this names the call that failed
-            body.error?.message || 'Community sharing failed. Review the preview and try again.' // SAFE: user-facing text used only when the publish error body carries no message
-        );
-    }
-    if (!isPublishSuccess(parsed)) {
-        throw new CommunityShareError('invalid_response', 'Community sharing returned an unexpected response.');
-    }
+        },
+        isPublishSuccess,
+        { code: 'publish_failed', message: 'Community sharing failed. Review the preview and try again.' },
+        'Community sharing returned an unexpected response.'
+    );
 
     // The payload has left; record that against the live state so a Pause or
     // Disconnect that landed while the request was in flight is kept.
@@ -501,11 +524,9 @@ export async function uploadAprToCommunity(
     }
     assertStillSendable(plugin);
 
-    const response = await requestUrl({
-        url: `${FUNCTIONS_BASE_URL}/community-apr-upload`,
-        method: 'POST',
-        contentType: 'application/json',
-        body: JSON.stringify({
+    const parsed = await postCommunityFunction(
+        'community-apr-upload',
+        {
             connection_id: connectionId,
             current_secret: currentSecret,
             plugin_book_key: bookKey,
@@ -515,21 +536,11 @@ export async function uploadAprToCommunity(
             width: args.width,
             height: args.height,
             campaign_label: args.campaignLabel?.slice(0, 60)
-        }),
-        throw: false
-    });
-
-    const parsed = parseResponseJson(response.text);
-    if (response.status < 200 || response.status >= 300) {
-        const body = parsed as ActivationConfirmError;
-        throw new CommunityShareError(
-            body.error?.code || 'apr_upload_failed', // SAFE: non-2xx APR upload response carrying no structured code; this names the call that failed
-            body.error?.message || 'Could not send the progress report to the community site.' // SAFE: user-facing text used only when the APR upload error body carries no message
-        );
-    }
-    if (!isAprUploadSuccess(parsed)) {
-        throw new CommunityShareError('invalid_response', 'The progress report upload returned an unexpected response.');
-    }
+        },
+        isAprUploadSuccess,
+        { code: 'apr_upload_failed', message: 'Could not send the progress report to the community site.' },
+        'The progress report upload returned an unexpected response.'
+    );
     return parsed;
 }
 
@@ -544,28 +555,16 @@ export async function fetchCommunityShareContext(plugin: RadialTimelinePlugin): 
     const { connectionId, currentSecret } = await requireActiveConnection(plugin);
     assertStillSendable(plugin, true);
 
-    const response = await requestUrl({
-        url: `${FUNCTIONS_BASE_URL}/community-share-context`,
-        method: 'POST',
-        contentType: 'application/json',
-        body: JSON.stringify({
+    const parsed = await postCommunityFunction(
+        'community-share-context',
+        {
             connection_id: connectionId,
             current_secret: currentSecret
-        }),
-        throw: false
-    });
-
-    const parsed = parseResponseJson(response.text);
-    if (response.status < 200 || response.status >= 300) {
-        const body = parsed as ActivationConfirmError;
-        throw new CommunityShareError(
-            body.error?.code || 'share_context_failed', // SAFE: non-2xx share-context response carrying no structured code; this names the call that failed
-            body.error?.message || 'Could not load your public profile from the website.' // SAFE: user-facing text used only when the share-context error body carries no message
-        );
-    }
-    if (!isCommunityShareContext(parsed)) {
-        throw new CommunityShareError('invalid_response', 'The website profile lookup returned an unexpected response.');
-    }
+        },
+        isCommunityShareContext,
+        { code: 'share_context_failed', message: 'Could not load your public profile from the website.' },
+        'The website profile lookup returned an unexpected response.'
+    );
     return parsed;
 }
 
@@ -592,11 +591,9 @@ export async function syncCommunityProjects(plugin: RadialTimelinePlugin): Promi
     const activeBookId = plugin.settings.activeBookId;
     assertStillSendable(plugin);
 
-    const response = await requestUrl({
-        url: `${FUNCTIONS_BASE_URL}/community-project-sync`,
-        method: 'POST',
-        contentType: 'application/json',
-        body: JSON.stringify({
+    const parsed = await postCommunityFunction(
+        'community-project-sync',
+        {
             connection_id: connectionId,
             current_secret: currentSecret,
             projects: books.map((book, index) => ({
@@ -613,21 +610,11 @@ export async function syncCommunityProjects(plugin: RadialTimelinePlugin): Promi
                     zero_draft_mode: plugin.settings.enableZeroDraftMode === true
                 } : {})
             }))
-        }),
-        throw: false
-    });
-
-    const parsed = parseResponseJson(response.text);
-    if (response.status < 200 || response.status >= 300) {
-        const body = parsed as ActivationConfirmError;
-        throw new CommunityShareError(
-            body.error?.code || 'project_sync_failed', // SAFE: non-2xx project-sync response carrying no structured code; this names the call that failed
-            body.error?.message || 'Could not sync books to the community site.' // SAFE: user-facing text used only when the project-sync error body carries no message
-        );
-    }
-    if (!isProjectSyncSuccess(parsed)) {
-        throw new CommunityShareError('invalid_response', 'The project sync returned an unexpected response.');
-    }
+        },
+        isProjectSyncSuccess,
+        { code: 'project_sync_failed', message: 'Could not sync books to the community site.' },
+        'The project sync returned an unexpected response.'
+    );
     return parsed;
 }
 
@@ -751,13 +738,6 @@ const SYNC_STOP_CODES = new Set([
     'sensitive_field_not_public'
 ]);
 
-interface DailySyncSuccess {
-    ok: true;
-}
-
-function isDailySyncSuccess(value: unknown): value is DailySyncSuccess {
-    return (value as Partial<DailySyncSuccess>)?.ok === true;
-}
 
 /**
  * Fire-and-forget daily-activity sync: sends the last two weeks of per-day
@@ -791,30 +771,18 @@ export async function syncCommunityDailyIfEligible(plugin: RadialTimelinePlugin)
         // honour either if it landed while the aggregates were building.
         if (!isStillSendable(normalizeCommunityShareSettings(plugin.settings.communityShare))) return;
 
-        const response = await requestUrl({
-            url: `${FUNCTIONS_BASE_URL}/community-daily-sync`,
-            method: 'POST',
-            contentType: 'application/json',
-            body: JSON.stringify({
+        await postCommunityFunction(
+            'community-daily-sync',
+            {
                 connection_id: current.connection.connectionId,
                 current_secret: currentSecret,
                 days,
                 hour_mode_mix: hourModeMix
-            }),
-            throw: false
-        });
-
-        const parsed = parseResponseJson(response.text);
-        if (response.status < 200 || response.status >= 300) {
-            const body = parsed as ActivationConfirmError;
-            throw new CommunityShareError(
-                body.error?.code || 'daily_sync_failed', // SAFE: non-2xx daily-sync response carrying no structured code; this names the call that failed
-                body.error?.message || 'Daily activity sync failed.' // SAFE: user-facing text used only when the daily-sync error body carries no message
-            );
-        }
-        if (!isDailySyncSuccess(parsed)) {
-            throw new CommunityShareError('invalid_response', 'Daily activity sync returned an unexpected response.');
-        }
+            },
+            isOkResponse,
+            { code: 'daily_sync_failed', message: 'Daily activity sync failed.' },
+            'Daily activity sync returned an unexpected response.'
+        );
     } catch (error) {
         const code = error instanceof CommunityShareError ? error.code : 'daily_sync_failed';
         const message = error instanceof Error ? error.message : 'Daily activity sync failed.';
@@ -920,25 +888,13 @@ async function callReportAction(
     endpoint: 'community-share-revoke' | 'community-share-delete' | 'community-share-disconnect',
     body: Record<string, unknown>
 ): Promise<ReportActionSuccess> {
-    const response = await requestUrl({
-        url: `${FUNCTIONS_BASE_URL}/${endpoint}`,
-        method: 'POST',
-        contentType: 'application/json',
-        body: JSON.stringify(body),
-        throw: false
-    });
-    const parsed = parseResponseJson(response.text);
-    if (response.status < 200 || response.status >= 300) {
-        const errorBody = parsed as ActivationConfirmError;
-        throw new CommunityShareError(
-            errorBody.error?.code || 'community_share_action_failed',
-            errorBody.error?.message || 'Community Share action failed. Try again.'
-        );
-    }
-    if (!isReportActionSuccess(parsed)) {
-        throw new CommunityShareError('invalid_response', 'Community Share returned an unexpected response.');
-    }
-    return parsed;
+    return postCommunityFunction(
+        endpoint,
+        body,
+        isReportActionSuccess,
+        { code: 'community_share_action_failed', message: 'Community Share action failed. Try again.' },
+        'Community Share returned an unexpected response.'
+    );
 }
 
 export async function revokeCommunityShareReport(plugin: RadialTimelinePlugin): Promise<ReportActionSuccess> {
@@ -1079,23 +1035,16 @@ export async function postSessionToCommunityFeed(
     }
     const secret = await getConnectedSecret(plugin, current);
     assertStillSendable(plugin);
-    const response = await requestUrl({
-        url: `${FUNCTIONS_BASE_URL}/community-session-post`,
-        method: 'POST',
-        contentType: 'application/json',
-        body: JSON.stringify({
+    await postCommunityFunction(
+        'community-session-post',
+        {
             connection_id: current.connection.connectionId,
             current_secret: secret,
             body: post.body,
             session: post.stats
-        }),
-        throw: false
-    });
-    const parsed = parseResponseJson(response.text) as ActivationConfirmError & { ok?: boolean };
-    if (response.status < 200 || response.status >= 300 || parsed.ok !== true) {
-        throw new CommunityShareError(
-            parsed.error?.code || 'post_failed', // SAFE: non-2xx session-post response carrying no structured code; this names the call that failed
-            parsed.error?.message || 'Could not post this session to the community feed.' // SAFE: user-facing text used only when the session-post error body carries no message
-        );
-    }
+        },
+        isOkResponse,
+        { code: 'post_failed', message: 'Could not post this session to the community feed.' },
+        'The session post returned an unexpected response.'
+    );
 }

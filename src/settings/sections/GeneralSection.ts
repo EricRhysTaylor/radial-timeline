@@ -1,5 +1,6 @@
 import type { App, TextComponent } from 'obsidian';
 import { Setting as ObsidianSetting, normalizePath, Notice, Modal, ButtonComponent, setIcon, setTooltip, TFolder } from 'obsidian';
+import { NamePromptModal } from '../../ui/NamePromptModal';
 import type RadialTimelinePlugin from '../../main';
 import type { BookProfile } from '../../types/settings';
 import { ModalFolderSuggest } from '../FolderSuggest';
@@ -13,67 +14,8 @@ import {
     suggestNextDraftLabel
 } from '../../utils/draftBook';
 import { ERT_CLASSES } from '../../ui/classes';
-import { scheduleFocusAfterPaint } from '../../utils/domFocus';
 import { addHeadingIcon, applyErtHeaderLayout } from '../wikiLink';
 import { consumeBookManagerAutoloadHighlight } from '../bookManagerAutoloadHighlight';
-
-// ── Rename modal (mirrors CampaignNameModal pattern) ────────────────────
-class BookRenameModal extends Modal {
-    private initialValue: string;
-    private onSubmit: (value: string) => Promise<boolean>;
-
-    constructor(app: App, initialValue: string, onSubmit: (value: string) => Promise<boolean>) {
-        super(app);
-        this.initialValue = initialValue;
-        this.onSubmit = onSubmit;
-    }
-
-    onOpen() {
-        const { contentEl, modalEl } = this;
-        contentEl.empty();
-
-        if (modalEl) {
-            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell');
-            modalEl.setCssStyles({ width: '420px', maxWidth: '92vw' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
-        }
-        contentEl.addClass('ert-modal-container', 'ert-stack');
-
-        const header = contentEl.createDiv({ cls: 'ert-modal-header' });
-        header.createSpan({ cls: 'ert-modal-badge', text: 'Edit' });
-        header.createDiv({ cls: 'ert-modal-title', text: 'Rename book' });
-        header.createDiv({ cls: 'ert-modal-subtitle', text: 'This name appears in the timeline header, tab, and exports.' });
-
-        const inputContainer = contentEl.createDiv({ cls: 'ert-search-input-container' });
-        const inputEl = inputContainer.createEl('input', {
-            type: 'text',
-            value: this.initialValue,
-            cls: 'ert-input ert-input--full'
-        });
-        inputEl.setAttr('placeholder', DEFAULT_BOOK_TITLE);
-
-        scheduleFocusAfterPaint(inputEl, { selectText: true });
-
-        const buttonRow = contentEl.createDiv({ cls: 'ert-modal-actions' });
-        const save = async () => {
-            const val = inputEl.value.trim();
-            if (!val) {
-                new Notice('Please enter a book title.');
-                return;
-            }
-            const shouldClose = await this.onSubmit(val);
-            if (shouldClose) this.close();
-        };
-
-        new ButtonComponent(buttonRow).setButtonText('Rename').setCta().onClick(() => { void save(); });
-        new ButtonComponent(buttonRow).setButtonText('Cancel').onClick(() => this.close());
-
-        inputEl.addEventListener('keydown', (evt: KeyboardEvent) => { // SAFE: direct addEventListener; Modal lifecycle manages cleanup
-            if (evt.key === 'Enter') { evt.preventDefault(); void save(); }
-        });
-    }
-
-    onClose() { this.contentEl.empty(); }
-}
 
 class CreateDraftModal extends Modal {
     private defaultName: string;
@@ -445,13 +387,22 @@ export function renderGeneralSection(params: {
             titleSpan.setAttr('tabindex', '0');
             titleSpan.setAttr('aria-label', `Rename "${label}"`);
             const openRename = () => {
-                new BookRenameModal(app, label, async (newTitle) => {
-                    const trimmed = newTitle.trim();
-                    if (!trimmed) return false;
-                    book.title = trimmed;
-                    await plugin.persistBookSettings();
-                    renderBooksManager();
-                    return true;
+                new NamePromptModal(app, {
+                    badge: 'Edit',
+                    title: 'Rename book',
+                    subtitle: 'This name appears in the timeline header, tab, and exports.',
+                    initialValue: label,
+                    placeholder: DEFAULT_BOOK_TITLE,
+                    actionLabel: 'Rename',
+                    emptyNotice: 'Please enter a book title.',
+                    onSubmit: async (newTitle) => {
+                        const trimmed = newTitle.trim();
+                        if (!trimmed) return false;
+                        book.title = trimmed;
+                        await plugin.persistBookSettings();
+                        renderBooksManager();
+                        return true;
+                    }
                 }).open();
             };
             titleSpan.addEventListener('click', (e) => { e.stopPropagation(); openRename(); }); // SAFE: direct addEventListener; Settings lifecycle manages cleanup

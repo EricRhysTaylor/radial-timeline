@@ -7,7 +7,7 @@
  * Two-phase modal: configuration wizard + review/edit UI for rapid human correction.
  */
 
-import { App, Modal, Menu, ButtonComponent, Notice, setIcon, setTooltip, ToggleComponent } from 'obsidian';
+import { App, Modal, Menu, ButtonComponent, Notice, debounce, setIcon, setTooltip, ToggleComponent } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { EventRef, TFile, WorkspaceLeaf } from 'obsidian';
 import type { TimelineItem } from '../types';
@@ -106,8 +106,13 @@ export class TimelineRepairModal extends Modal {
      * edit, at which point the next render re-sorts to the new chronology.
      */
     private chronoOrderSnapshot?: string[];
-    private resortTimer?: number;
     private pendingResortEditIndex?: number;
+    private readonly resortAfterEdits = debounce(() => {
+        this.chronoOrderSnapshot = undefined;
+        this.lastEditedSceneIndex = this.pendingResortEditIndex;
+        this.pendingResortEditIndex = undefined;
+        this.renderSceneList();
+    }, 500, true);
 
     // Review filters
     private filterNeedsReview = false;
@@ -212,10 +217,7 @@ export class TimelineRepairModal extends Modal {
     onClose(): void {
         this.abortController?.abort();
         this.unregisterOpenNoteListeners();
-        if (this.resortTimer !== undefined) {
-            window.clearTimeout(this.resortTimer);
-            this.resortTimer = undefined;
-        }
+        this.resortAfterEdits.cancel();
     }
 
     private async loadSceneData(): Promise<void> {
@@ -315,10 +317,7 @@ export class TimelineRepairModal extends Modal {
         this.auditFooterEl = undefined;
         this.auditIncluded.clear();
         this.chronoOrderSnapshot = undefined;
-        if (this.resortTimer !== undefined) {
-            window.clearTimeout(this.resortTimer);
-            this.resortTimer = undefined;
-        }
+        this.resortAfterEdits.cancel();
         this.pendingResortEditIndex = undefined;
 
         // Header
@@ -1443,16 +1442,7 @@ export class TimelineRepairModal extends Modal {
      */
     private scheduleResort(sceneIndex: number): void {
         this.pendingResortEditIndex = sceneIndex;
-        if (this.resortTimer !== undefined) {
-            window.clearTimeout(this.resortTimer);
-        }
-        this.resortTimer = window.setTimeout(() => {
-            this.resortTimer = undefined;
-            this.chronoOrderSnapshot = undefined;
-            this.lastEditedSceneIndex = this.pendingResortEditIndex;
-            this.pendingResortEditIndex = undefined;
-            this.renderSceneList();
-        }, 500);
+        this.resortAfterEdits();
     }
 
     private handleDayShift(sceneIndex: number, days: number): void {

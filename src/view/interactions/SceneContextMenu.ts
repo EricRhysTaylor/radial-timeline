@@ -1,3 +1,4 @@
+import { resolveSubplotColorFromGroup } from './dragGeometry';
 import { getFrontMatterInfo, parseYaml, Menu, Notice, TFile, type App } from 'obsidian';
 import { normalizeStatus } from '../../utils/text';
 import { applySceneInsertionPlan, planSceneInsertion } from '../../services/SceneInsertService';
@@ -337,33 +338,6 @@ function resolvePrimarySubplotFromGroup(group: Element): string | undefined {
     return label?.getAttribute('data-subplot-name') ?? undefined;
 }
 
-function resolveSubplotColorFromGroup(view: SceneContextMenuView, group: Element): string | undefined {
-    const readCssVariable = (name: string): string | undefined => {
-        try {
-            const value = getComputedStyle(group.ownerDocument.documentElement).getPropertyValue(name).trim();
-            return value || undefined;
-        } catch {
-            return undefined;
-        }
-    };
-
-    const subplotIdxAttr = group.getAttribute('data-subplot-color-index') || group.getAttribute('data-subplot-index');
-    if (subplotIdxAttr) {
-        const idx = Number(subplotIdxAttr);
-        if (Number.isFinite(idx)) {
-            const normalized = ((Math.trunc(idx) % 16) + 16) % 16;
-            return (
-                readCssVariable(`--rt-subplot-colors-${normalized}`)
-                || view.plugin.settings.subplotColors?.[normalized]
-            );
-        }
-    }
-
-    const scenePath = group.querySelector<SVGPathElement>('.rt-scene-path');
-    const fillAttr = scenePath?.getAttribute('fill')?.trim();
-    return fillAttr && !fillAttr.startsWith('url(') ? fillAttr : undefined;
-}
-
 async function addSceneAfterAnchor(view: SceneContextMenuView, group: Element, file: TFile): Promise<void> {
     if (typeof view.plugin.getSceneData !== 'function') {
         new Notice('Could not add scene because timeline scene data is unavailable.', 5000);
@@ -387,7 +361,7 @@ async function addSceneAfterAnchor(view: SceneContextMenuView, group: Element, f
     const modal = new AddSceneConfirmModal(
         view.plugin.app,
         plan,
-        resolveSubplotColorFromGroup(view, group)
+        resolveSubplotColorFromGroup(group)
     );
     const started = await modal.waitForBegin();
     if (!started) return;

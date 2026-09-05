@@ -22,6 +22,7 @@
  * intentionally free of Obsidian imports so it is unit-testable in node.
  */
 
+import { kebabSlug } from '../../utils/slug';
 import { Notice, normalizePath } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import type { App } from 'obsidian';
@@ -801,18 +802,9 @@ export class TimelineExportService {
         );
     }
 
-    private slugify(value: string): string {
-        return value
-            .trim()
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/-+/g, '-')
-            .replace(/^-|-$/g, '') || 'timeline'; // SAFE: a title made only of punctuation slugifies to empty, and filenames must be non-empty
-    }
-
     private buildFileName(mode: string, extension: string): string {
-        const bookSlug = this.slugify(this.plugin.getActiveBookTitle() || 'timeline'); // SAFE: filename slug for an untitled book; the timestamp still makes the name unique
-        const modeSlug = this.slugify(mode || 'timeline'); // SAFE: filename slug only; guards an empty mode string from collapsing the name
+        const bookSlug = kebabSlug(this.plugin.getActiveBookTitle(), 'timeline'); // SAFE: filename slug for an untitled book; the timestamp still makes the name unique
+        const modeSlug = kebabSlug(mode, 'timeline'); // SAFE: filename slug only; guards an empty mode string from collapsing the name
         const stamp = new Date().toISOString().replace(/[:.]/g, '-');
         return `timeline-${bookSlug}-${modeSlug}-${stamp}.${extension}`;
     }

@@ -11,6 +11,7 @@
  * controllers cannot drift apart visually.
  */
 
+import { readSubplotColor } from '../../renderer/utils/subplotColors';
 import { TFile, type App } from 'obsidian';
 import { normalizeAngleSigned } from '../../renderer/utils/angles';
 import {
@@ -96,25 +97,13 @@ export function resolvePublishStageColorFromGroup(app: App, group: SVGGElement):
         || '#9370DB'; // SAFE: brand Zero-draft violet, used only if the theme defines no stage variables at all
 }
 
-export function resolveSubplotColorFromGroup(
-    group: SVGGElement,
-    subplotColors: string[] | undefined
-): string | undefined {
-    const readCssVariable = (name: string): string | undefined => {
-        const value = getComputedStyle(group.ownerDocument.documentElement).getPropertyValue(name).trim();
-        return value || undefined; // SAFE: an unset CSS variable reads as empty; undefined drives the next lookup
-    };
-
+/** The subplot colour a scene group is painted with, or its literal fill when the group carries no slot. */
+export function resolveSubplotColorFromGroup(group: Element): string | undefined {
     const subplotIdxAttr = group.getAttribute('data-subplot-color-index')
         || group.getAttribute('data-subplot-index');
     if (subplotIdxAttr) {
         const idx = Number(subplotIdxAttr);
-        if (Number.isFinite(idx)) {
-            const normalized = ((Math.trunc(idx) % 16) + 16) % 16;
-            const subplotColor = readCssVariable(`--rt-subplot-colors-${normalized}`)
-                || subplotColors?.[normalized];
-            if (subplotColor) return subplotColor;
-        }
+        if (Number.isFinite(idx)) return readSubplotColor(group.ownerDocument, idx);
     }
 
     const scenePath = group.querySelector<SVGPathElement>('.rt-scene-path');

@@ -7,6 +7,7 @@
  * Hover blurb = concise scene text (strict word-capped), persisted to the legacy `Synopsis` key when enabled.
  */
 
+import { sleep } from '../utils/sleep';
 import { Vault, Notice, TFile } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { SceneAnalysisProcessingModal, type ProcessingMode, type SceneQueueItem } from '../modals/SceneAnalysisProcessingModal';
@@ -525,7 +526,7 @@ export async function runSynopsisBatch(
         }
 
         // Small delay to let UI render
-        await new Promise(r => window.setTimeout(r, 100));
+        await sleep(100);
     }
 
     // Results are written per-scene during processing; nothing left to apply at completion.

@@ -1,3 +1,4 @@
+import { sleep } from '../../utils/sleep';
 import { App, Notice, Setting as Settings, Modal, setIcon, setTooltip, ButtonComponent, getIconIds, TFile, normalizePath, Menu } from 'obsidian';
 import { t } from '../../i18n';
 import type RadialTimelinePlugin from '../../main';
@@ -5771,7 +5772,7 @@ export function renderBeatPropertiesSection(params: {
                         }
                     }
                     if (pending.size === 0) break;
-                    await new Promise(resolve => window.setTimeout(resolve, 120));
+                    await sleep(120);
                 }
             };
             await waitForCreatedBeatCaches(createdPaths);

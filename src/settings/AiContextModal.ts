@@ -1,102 +1,10 @@
 import { App, Modal, ButtonComponent, DropdownComponent, Notice } from 'obsidian';
+import { NamePromptModal } from '../ui/NamePromptModal';
 import type RadialTimelinePlugin from '../main';
 import { AiContextTemplate } from '../types/settings';
 import { buildDefaultAiSettings } from '../ai/settings/aiSettings';
 import { validateAiSettings } from '../ai/settings/validateAiSettings';
-import { scheduleFocusAfterPaint } from '../utils/domFocus';
 import { confirmWithErtModal } from '../modals/ErtConfirmModal';
-
-/**
- * Simple text input modal to replace prompt()
- */
-class TextInputModal extends Modal {
-    private result: string | null = null;
-    private readonly title: string;
-    private readonly defaultValue: string;
-    private readonly onSubmit: (result: string) => void;
-    private inputEl?: HTMLInputElement;
-    private _keydownHandler?: (e: KeyboardEvent) => void;
-
-    constructor(app: App, title: string, defaultValue: string, onSubmit: (result: string) => void) {
-        super(app);
-        this.title = title;
-        this.defaultValue = defaultValue;
-        this.onSubmit = onSubmit;
-    }
-
-    onOpen(): void {
-        const { contentEl, titleEl, modalEl } = this;
-        titleEl.setText('');
-        
-        if (modalEl) {
-            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell');
-            modalEl.setCssStyles({ width: '480px', maxWidth: '92vw' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
-        }
-        contentEl.addClass('ert-modal-container');
-        contentEl.addClass('ert-modal--textInput');
-
-        // Header
-        const header = contentEl.createDiv({ cls: 'ert-modal-header' });
-        header.createDiv({ cls: 'ert-modal-title', text: this.title });
-
-        // Input field in a container
-        const inputContainer = contentEl.createDiv({ cls: 'ert-search-input-container' });
-        this.inputEl = inputContainer.createEl('input', {
-            type: 'text',
-            value: this.defaultValue,
-            cls: 'ert-input ert-input--full'
-        });
-
-        if (this.inputEl) {
-            scheduleFocusAfterPaint(this.inputEl, { selectText: true });
-        }
-
-        // Handle Enter key - using arrow function to maintain 'this' context
-        const handleKeydown = (e: KeyboardEvent) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                this.submit(this.inputEl?.value || '');
-            } else if (e.key === 'Escape') {
-                this.close();
-            }
-        };
-        // Note: Modal classes don't have registerDomEvent, use addEventListener instead
-        // Cleanup handled in onClose()
-        this.inputEl.addEventListener('keydown', handleKeydown);
-
-        // Store handler reference for cleanup
-        this._keydownHandler = handleKeydown;
-
-        // Buttons
-        const buttonRow = contentEl.createDiv({ cls: 'ert-modal-actions' });
-
-        new ButtonComponent(buttonRow)
-            .setButtonText('OK')
-            .setCta()
-            .onClick(() => this.submit(this.inputEl?.value || ''));
-
-        new ButtonComponent(buttonRow)
-            .setButtonText('Cancel')
-            .onClick(() => this.close());
-    }
-
-    onClose(): void {
-        // Clean up event listeners to prevent memory leaks
-        if (this.inputEl && this._keydownHandler) {
-            this.inputEl.removeEventListener('keydown', this._keydownHandler);
-        }
-    }
-
-    private submit(value: string): void {
-        const trimmedValue = value.trim();
-        if (trimmedValue) {
-            this.onSubmit(trimmedValue);
-            this.close();
-        } else {
-            new Notice('Please enter a template name');
-        }
-    }
-}
 
 /**
  * AiContextModal allows users to manage AI context templates for story analysis.
@@ -334,11 +242,13 @@ export class AiContextModal extends Modal {
         const currentTemplate = this.getCurrentTemplate();
         const basePrompt = currentTemplate?.prompt || '';
         
-        const modal = new TextInputModal(
-            this.app,
-            'Enter template name',
-            '',
-            (name) => {
+        const modal = new NamePromptModal(this.app, {
+            title: 'Enter template name',
+            initialValue: '',
+            actionLabel: 'OK',
+            emptyNotice: 'Please enter a template name',
+            shell: { width: '480px' },
+            onSubmit: (name) => {
                 // Generate unique ID
                 const id = `custom-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
                 
@@ -358,7 +268,7 @@ export class AiContextModal extends Modal {
                 
                 void this.persistTemplates(`Created template: ${name}`);
             }
-        );
+        });
         modal.open();
     }
 
@@ -366,17 +276,19 @@ export class AiContextModal extends Modal {
         const currentTemplate = this.getCurrentTemplate();
         if (!currentTemplate || currentTemplate.isBuiltIn) return;
         
-        const modal = new TextInputModal(
-            this.app,
-            'Enter new name',
-            currentTemplate.name,
-            (newName) => {
+        const modal = new NamePromptModal(this.app, {
+            title: 'Enter new name',
+            initialValue: currentTemplate.name,
+            actionLabel: 'OK',
+            emptyNotice: 'Please enter a template name',
+            shell: { width: '480px' },
+            onSubmit: (newName) => {
                 currentTemplate.name = newName;
                 this.updateDropdownOptions();
                 this.dropdownComponent?.setValue(this.currentTemplateId);
                 void this.persistTemplates(`Renamed to: ${newName}`);
             }
-        );
+        });
         modal.open();
     }
 
@@ -384,11 +296,13 @@ export class AiContextModal extends Modal {
         const currentTemplate = this.getCurrentTemplate();
         if (!currentTemplate) return;
         
-        const modal = new TextInputModal(
-            this.app,
-            'Enter name for copy',
-            `${currentTemplate.name} (Copy)`,
-            (name) => {
+        const modal = new NamePromptModal(this.app, {
+            title: 'Enter name for copy',
+            initialValue: `${currentTemplate.name} (Copy)`,
+            actionLabel: 'OK',
+            emptyNotice: 'Please enter a template name',
+            shell: { width: '480px' },
+            onSubmit: (name) => {
                 // Generate unique ID
                 const id = `custom-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
                 
@@ -407,7 +321,7 @@ export class AiContextModal extends Modal {
                 
                 void this.persistTemplates(`Created copy: ${name}`);
             }
-        );
+        });
         modal.open();
     }
 

@@ -1,3 +1,4 @@
+import { kebabSlug } from '../../utils/slug';
 import type RadialTimelinePlugin from '../../main';
 import type { AiSettingsV1, Capability, DeclarableLocalCapability, LocalLlmBackendId, LocalLlmJsonMode, LocalLlmSettings, ModelInfo, ModelSelectionResult } from '../types';
 import { buildDefaultAiSettings, cloneDefaultLocalLlmSettings } from '../settings/aiSettings';
@@ -98,7 +99,7 @@ function buildCustomLocalModelInfo(modelId: string): ModelInfo {
     return {
         ...fallback,
         id: normalizedId,
-        alias: `ollama-${normalizedId.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'local-model'}`,
+        alias: `ollama-${kebabSlug(normalizedId, 'local-model')}`,
         label: normalizedId
     };
 }

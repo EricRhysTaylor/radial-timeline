@@ -1,3 +1,4 @@
+import { kebabSlug } from '../../utils/slug';
 import type { App } from 'obsidian';
 
 type MaybePromise<T> = T | Promise<T>;
@@ -23,12 +24,7 @@ function getStorage(app: App): AnySecretStorage | null {
 }
 
 function normalizeSecretId(secretId: string): string {
-    return secretId
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9-]+/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-+|-+$/g, '');
+    return kebabSlug(secretId, '');
 }
 
 function getReadCandidates(storage: AnySecretStorage, secretId: string): string[] {

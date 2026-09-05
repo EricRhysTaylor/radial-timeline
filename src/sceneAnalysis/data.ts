@@ -4,6 +4,7 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 
+import { extractBodyAfterFrontmatter } from '../utils/frontmatterDocument';
 import { getFrontMatterInfo, parseYaml, type Vault, type TFile } from 'obsidian';
 import { getActiveFrontmatterMappings, normalizeFrontmatterKeys } from '../utils/frontmatter';
 import { stripObsidianComments } from '../utils/text';
@@ -195,16 +196,9 @@ export async function getAllSceneData(
             }
 
             const sceneNumber = extractSceneNumber(file.name);
-            const endOffset = (fmInfo as { position?: { end?: { offset?: number } } }).position?.end?.offset;
-            let body = '';
-
-            if (typeof endOffset === 'number' && endOffset >= 0) {
-                body = content.slice(endOffset).trim();
-            } else {
-                body = content.replace(/^---[\s\S]*?\n---/, '').trim();
-            }
-
-            body = stripObsidianComments(body);
+            const body = stripObsidianComments(
+                extractBodyAfterFrontmatter(content, fmInfo).trim()
+            );
             return { file, frontmatter, sceneNumber, body };
         } catch { // SAFE: unreadable scene file — null skips just this file; the remaining vault files still produce scene data
             return null;

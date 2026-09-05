@@ -13,6 +13,7 @@
  * to show — so the only thing written is `When`.
  */
 
+import { sleep } from '../../utils/sleep';
 import { Notice, TFile } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import type { TimelineItem } from '../../types';
@@ -114,7 +115,7 @@ export class ChronologueDragController {
             if (this.dragging || this.subModeActive()) return;
             const group = (evt.target as Element).closest<SVGGElement>('.rt-scene-group[data-draggable="true"]');
             if (group) {
-                this.overlays.showIndicator(group, resolveSubplotColorFromGroup(group, this.view.plugin.settings.subplotColors));
+                this.overlays.showIndicator(group, resolveSubplotColorFromGroup(group));
             }
         });
         this.view.renderScope.registerDomEvent(this.svg as unknown as HTMLElement, 'pointerout', (evt: PointerEvent) => {
@@ -150,7 +151,7 @@ export class ChronologueDragController {
         const startAngle = Number(group.getAttribute('data-start-angle') ?? '');
         this.sourceStartAngle = Number.isFinite(startAngle) ? startAngle : undefined;
         this.accentColor = resolvePublishStageColorFromGroup(this.view.plugin.app, group);
-        this.modalAccent = resolveSubplotColorFromGroup(group, this.view.plugin.settings.subplotColors);
+        this.modalAccent = resolveSubplotColorFromGroup(group);
 
         if (this.holdTimer !== null) window.clearTimeout(this.holdTimer);
         this.holdTimer = window.setTimeout(() => {
@@ -317,7 +318,7 @@ export class ChronologueDragController {
             new Notice(`${draggedScene.title || file.basename} → ${placement.storedWhen}`, 2000); // SAFE: filename identity again, same rule as the modal title
             modal.updateProgress('Refreshing timeline...');
             // Let Obsidian's metadata cache catch up before the re-render reads it.
-            await new Promise(resolve => window.setTimeout(resolve, 100));
+            await sleep(100);
             this.options.onRefresh();
             await modal.finishWithDismiss('Placed.');
         } catch (error) {

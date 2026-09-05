@@ -1,3 +1,17 @@
+/** One YAML frontmatter block at the top of a note: opening fence, contents, closing fence. */
+const FRONTMATTER_BLOCK_SOURCE = '^---[ \\t]*\\r?\\n[\\s\\S]*?\\r?\\n---[ \\t]*';
+const FRONTMATTER_BLOCK_RE = new RegExp(FRONTMATTER_BLOCK_SOURCE);
+/** The block plus the line break that ends its closing fence. */
+const FRONTMATTER_BLOCK_WITH_BREAK_RE = new RegExp(`${FRONTMATTER_BLOCK_SOURCE}(?:\\r?\\n|$)`);
+
+/**
+ * Body text with the leading frontmatter block (and its closing line break)
+ * removed. CRLF tolerant. Content with no frontmatter is returned unchanged.
+ */
+export function stripFrontmatter(content: string): string {
+    return content.replace(FRONTMATTER_BLOCK_WITH_BREAK_RE, '');
+}
+
 export interface FrontmatterBounds {
     to?: number;
     position?: { end?: { offset?: number } };
@@ -15,7 +29,7 @@ export function extractBodyAfterFrontmatter(content: string, bounds: Frontmatter
         return content.slice(endOffset);
     }
 
-    const stripped = content.replace(/^---[ \t]*\r?\n[\s\S]*?\r?\n---[ \t]*/, '');
+    const stripped = content.replace(FRONTMATTER_BLOCK_RE, '');
     if (stripped !== content) return stripped;
 
     if (typeof bounds.to === 'number' && bounds.to >= 0 && bounds.to <= content.length) {

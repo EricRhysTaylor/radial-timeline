@@ -4,6 +4,7 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 
+import { readSubplotColor } from './utils/subplotColors';
 import { STAGE_ORDER, STAGES_FOR_GRID, STATUSES_FOR_GRID, SceneNumberInfo } from '../utils/constants';
 import {
     GRID_CELL_BASE,
@@ -299,13 +300,7 @@ export function createTimelineSVG(
         })
         : null;
 
-    const subplotColorFor = (subplotName: string) => {
-        const idx = resolveSubplotColorIndex(subplotName);
-        const normalized = idx % 16;
-        const varName = `--rt-subplot-colors-${normalized}`;
-        const computed = getComputedStyle(activeDocument.documentElement).getPropertyValue(varName).trim();
-        return computed || '#EFBDEB';
-    };
+    const subplotColorFor = (subplotName: string) => readSubplotColor(activeDocument, resolveSubplotColorIndex(subplotName));
 
     // Determine sorting method (needed for later logic; pulled out for readability)
     const timelineSegments = buildTimelineSegments(settings);

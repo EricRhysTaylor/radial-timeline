@@ -62,13 +62,11 @@ import {
 import {
     bindInquiryBriefingPanelEvents,
     bindInquiryBriefingSessionItemEvents,
-    bindInquiryDetailsToggleEvent,
     bindInquiryDesktopShellEvents,
     bindInquiryEngineActionButtons,
     bindInquiryEnginePanelEvents,
     bindInquiryMobileGateEvents,
-    bindInquiryPreviewPanelEvents,
-    bindInquiryZonePodEvents
+    bindInquiryPreviewPanelEvents
 } from './interactions/inquiryEventBinder';
 import { buildInquiryBriefingSections } from './briefing/inquiryBriefingGrouping';
 import { renderInquiryBriefingSessionItem } from './briefing/inquiryBriefingRenderer';
@@ -104,8 +102,6 @@ import { openOrRevealFile, openOrRevealFileAtSubpath } from '../utils/fileUtils'
 import { extractTokenUsage } from '../ai/log';
 import {
     InquiryGlyph,
-    FLOW_RADIUS,
-    FLOW_STROKE
 } from './components/InquiryGlyph';
 import { InquiryRunnerService } from './runner/InquiryRunnerService';
 import { getLastAiAdvancedContext } from '../ai/runtime/aiClient';
@@ -157,13 +153,11 @@ import type {
 } from './types';
 import {
     buildReadinessUiState as buildReadinessUiStatePure,
-    buildRunScopeLabel as buildRunScopeLabelPure,
     resolveEnginePopoverState,
     getCurrentPassPlan as getCurrentPassPlanPure,
     buildAdvisoryInputKey,
     formatTokenEstimate,
-    getTokenTier,
-    getTokenTierFromSnapshot as getTokenTierFromSnapshotPure
+    getTokenTier
 } from './services/inquiryReadinessBuilder';
 import { buildPendingCorpusEstimateFromManifestEntries } from './services/buildExactCorpusEstimate';
 import {
@@ -176,7 +170,6 @@ import {
     getCorpusGroupKey as getCorpusGroupKeyPure,
     getCorpusGroupBaseClass,
     getCorpusItemKey as getCorpusItemKeyPure,
-    parseCorpusItemKey as parseCorpusItemKeyPure,
     getCorpusCycleModes,
     getNextCorpusMode,
     getCorpusGroupKeys as getCorpusGroupKeysPure,
@@ -238,7 +231,6 @@ import { buildInquiryEngineCorpusSummary } from './engine/inquiryEngineViewModel
 import {
     renderInquiryPromptPreviewLayout,
     renderInquiryRunningHud,
-    updateInquiryPreviewClickTargetLayout,
     updateInquiryPreviewShimmerLayout,
     updateInquiryPreviewShimmerText,
     updateInquiryResultsFooterPosition
@@ -356,11 +348,9 @@ import {
     getFindingRole,
     getResultSummaryForMode,
     getOrderedFindings,
-    normalizeInquiryBriefText as normalizeInquiryBriefTextPure,
     buildInquiryReferenceLabelMap as buildInquiryReferenceLabelMapPure,
     buildInquirySceneReferenceIndex as buildInquirySceneReferenceIndexPure,
     getInquiryActionText as getInquiryActionTextPure,
-    buildInquiryPendingAction as buildInquiryPendingActionPure,
     buildBriefPendingActions as buildBriefPendingActionsPure,
     buildInquirySceneNotes as buildInquirySceneNotesPure,
     buildInquiryBriefModel as buildInquiryBriefModelPure
@@ -378,7 +368,6 @@ import {
     getCorpusCcHeaderLabel as getCorpusCcHeaderLabelPure,
     getCorpusCcHeaderTooltip as getCorpusCcHeaderTooltipPure
 } from './utils/inquiryCorpusStripMinimap';
-import { polarToCartesian } from './utils/inquiryGeometry';
 import { buildIconSymbols, buildSceneDossierResources, buildZoneGradients } from './render/inquirySvgDefs';
 
 const INQUIRY_PAYLOAD_STATS_REFRESH_DEBOUNCE_MS = 150;
@@ -467,10 +456,8 @@ export class InquiryView extends ItemView {
     });
     private engineBadgeGroup?: SVGGElement;
     private enginePanelEl?: HTMLDivElement;
-    private enginePanelAllLabelEl?: HTMLDivElement;
     private enginePanelGuardEl?: HTMLDivElement;
     private enginePanelGuardNoteEl?: HTMLDivElement;
-    private enginePanelGuardTokenEl?: HTMLElement;
     private enginePanelListEl?: HTMLDivElement;
     private enginePanelMetaEl?: HTMLDivElement;
     private enginePanelReadinessEl?: HTMLDivElement;
@@ -479,8 +466,6 @@ export class InquiryView extends ItemView {
     private enginePanelReadinessMessageEl?: HTMLDivElement;
     private enginePanelReadinessActionsEl?: HTMLDivElement;
     private enginePanelReadinessScopeEl?: HTMLDivElement;
-    private pendingGuardQuestion?: InquiryQuestion;
-    private enginePanelFailureGuidance: EngineFailureGuidance | null = null;
     private lastEngineAdvisoryContext: InquiryAdvisoryContext | null = null;
     private lastEngineAdvisoryInputKey = '';
     /** Memoized per-refresh-cycle. Invalidated at top of refreshUI(). */
@@ -503,19 +488,12 @@ export class InquiryView extends ItemView {
     private glyphHit?: SVGRectElement;
     private flowRingHit?: SVGCircleElement;
     private depthRingHit?: SVGCircleElement;
-    private flowModeIconEl?: SVGSVGElement;
-    private depthModeIconEl?: SVGSVGElement;
     private modeIconToggleHit?: SVGRectElement;
     private findingsTitleEl?: SVGTextElement;
     private summaryEl?: SVGTextElement;
     private verdictEl?: SVGTextElement;
     private findingsListEl?: SVGGElement;
     private detailsToggle?: SVGGElement;
-    private detailsIcon?: SVGUseElement;
-    private detailsEl?: SVGGElement;
-    private detailRows: SVGTextElement[] = [];
-    private artifactPreviewEl?: SVGGElement;
-    private artifactPreviewBg?: SVGRectElement;
     private hoverTextEl?: SVGTextElement;
     private sceneDossierGroup?: SVGGElement;
     private sceneDossierComposition?: SVGGElement;
@@ -596,8 +574,6 @@ export class InquiryView extends ItemView {
     private engineTimerIcon?: SVGUseElement;
     private engineTimerLabel?: SVGTextElement;
     private helpToggleButton?: SVGGElement;
-    private helpTipsEnabled = false;
-    private iconSymbols = new Set<string>();
     private svgDefs?: SVGDefsElement;
     private startupFreshMode = false;
     private freshModeTouchedBookIds = new Set<string>();
@@ -888,7 +864,7 @@ export class InquiryView extends ItemView {
             contentEl: this.contentEl,
             populateDefs: defs => {
                 this.svgDefs = defs;
-                this.iconSymbols = new Set(buildIconSymbols(defs, (holder, icon) => this.createIconSymbol(holder, icon)));
+                buildIconSymbols(defs, (holder, icon) => this.createIconSymbol(holder, icon));
                 buildZoneGradients(defs, { styleSource: this.getStyleSource(), minimap: this.minimap });
                 buildSceneDossierResources(defs);
             },
@@ -1191,7 +1167,6 @@ export class InquiryView extends ItemView {
         this.lastEngineAdvisoryContext = advisoryContext;
 
         const failureGuidance = this.getEngineFailureGuidance();
-        this.enginePanelFailureGuidance = failureGuidance;
 
         // ── 1. Header summary (non-repeated) ──
         if (this.enginePanelMetaEl) {
@@ -1245,7 +1220,6 @@ export class InquiryView extends ItemView {
             this.enginePanelGuardEl.classList.toggle('is-error-guidance', Boolean(failureGuidance));
             if (this.enginePanelGuardNoteEl && failureGuidance) {
                 this.enginePanelGuardNoteEl.empty();
-                this.enginePanelGuardTokenEl = undefined;
                 this.enginePanelGuardNoteEl.setText(failureGuidance.message);
             }
         }
@@ -1328,17 +1302,6 @@ export class InquiryView extends ItemView {
             };
         }
         return null;
-    }
-
-    private getEngineContextQuestion(): string | null {
-        if (this.pendingGuardQuestion) {
-            return this.resolveQuestionPromptForRun(
-                this.pendingGuardQuestion,
-                this.getSelectionMode(this.getActiveTargetSceneIds())
-            );
-        }
-        const activeQuestion = this.getQuestionTextById(this.state.activeQuestionId);
-        return activeQuestion ?? null;
     }
 
     private buildEnginePayloadSummary(): {
@@ -1502,10 +1465,6 @@ export class InquiryView extends ItemView {
             hasAnyBodyEvidence: this.hasAnyBodyEvidence(),
             estimateSummaryOnlyTokens: this.estimateSummaryOnlyTokens('')
         });
-    }
-
-    private buildRunScopeLabel(stats: InquiryPayloadStats, selectedSceneCount: number): string {
-        return buildRunScopeLabelPure(stats, selectedSceneCount, this.state.scope, this.getScopeLabel());
     }
 
     private getCurrentPassPlan(readinessUi: InquiryReadinessUiState): PassPlanResult {
@@ -1678,16 +1637,6 @@ export class InquiryView extends ItemView {
             fallbackLabel
         });
         return questionPrefix ?? `${zoneLabel}: ${fallbackLabel}`; // SAFE: no custom question prefix — zone and lens labels compose the fallback
-    }
-
-    private ensurePendingEditsEmpty(session: InquirySession): boolean {
-        const pendingEditsEmpty = this.resolvePendingEditsEmpty(session.result, session.activeBookId);
-        const prior = session.pendingEditsEmpty;
-        session.pendingEditsEmpty = pendingEditsEmpty;
-        if (session.key && prior !== pendingEditsEmpty) {
-            this.sessionStore.updateSession(session.key, { pendingEditsEmpty });
-        }
-        return pendingEditsEmpty;
     }
 
     private resolvePendingEditsEmpty(result: InquiryResult, activeBookId?: string): boolean {
@@ -2160,15 +2109,6 @@ export class InquiryView extends ItemView {
             corpusOnlyFingerprint: manifest.corpusOnlyFingerprint,
             snapshot: manifest.snapshot
         };
-    }
-
-    private isSessionCorpusStale(session: { result?: InquiryResult } | null | undefined): boolean {
-        const prior = session?.result;
-        if (!prior) return false;
-        const priorCorpusOnly = prior.corpusOnlyFingerprint;
-        if (!priorCorpusOnly) return false; // pre-upgrade session — can't judge without a baseline
-        const current = this.buildCurrentCorpusSnapshot(prior.questionId, prior.questionZone);
-        return priorCorpusOnly !== current.corpusOnlyFingerprint;
     }
 
     /**
@@ -2808,38 +2748,6 @@ export class InquiryView extends ItemView {
         this.updateGlyphPromptState();
     }
 
-    private handlePromptClick(zone: InquiryZone, event?: MouseEvent): void {
-        if (this.isInquiryRunDisabled()) return;
-        if (this.state.isRunning) {
-            this.notifyInteraction(t('inquiry.interaction.running'));
-            return;
-        }
-        const options = this.getPromptOptions(zone);
-        if (!options.length) {
-            this.notifyInteraction(t('inquiry.interaction.noQuestionsForZone'));
-            return;
-        }
-        const currentId = this.state.selectedPromptIds[zone];
-        const currentIdx = options.findIndex(prompt => prompt.id === currentId);
-        const nextIdx = options.length > 1
-            ? (currentIdx >= 0 ? (currentIdx + 1) % options.length : 0)
-            : (currentIdx >= 0 ? currentIdx : 0);
-        const nextPrompt = options[nextIdx] ?? options[0];
-        if (!nextPrompt) {
-            this.notifyInteraction(t('inquiry.interaction.noQuestionsForZone'));
-            return;
-        }
-        if (!event?.shiftKey && this.isErrorState() && this.state.activeResult?.questionId === nextPrompt.id) {
-            void this.openInquiryErrorLog();
-            return;
-        }
-        this.clearErrorStateForAction();
-        if (nextPrompt.id !== currentId) {
-            this.setSelectedPrompt(zone, nextPrompt.id);
-        }
-        void this.handleQuestionClick(nextPrompt, { forceRerun: event?.shiftKey });
-    }
-
     private showQuestionRunMenu(question: InquiryQuestion, event: MouseEvent): void {
         const menu = new Menu();
         const current = this.state.promptFormOverrides[question.id] ?? 'auto'; // SAFE: no per-question override recorded — auto is the default form
@@ -2880,70 +2788,6 @@ export class InquiryView extends ItemView {
         const override = this.state.promptFormOverrides[questionId];
         if (!override || override === 'auto') return undefined;
         return override;
-    }
-
-    private renderZonePods(parent: SVGGElement): void {
-        const rZone = FLOW_RADIUS + FLOW_STROKE + 90;
-        const zones: Array<{ id: InquiryZone; angle: number }> = [
-            { id: 'setup', angle: 210 },
-            { id: 'pressure', angle: 330 },
-            { id: 'payoff', angle: 90 }
-        ];
-
-        this.zonePromptElements.clear();
-
-        zones.forEach(zone => {
-            const pos = polarToCartesian(rZone, zone.angle);
-            const zoneEl = createSvgGroup(parent, `ert-inquiry-zone-pod ert-inquiry-zone--${zone.id}`, pos.x, pos.y);
-            zoneEl.setAttribute('role', 'button');
-            zoneEl.setAttribute('tabindex', '0');
-            const bg = createSvgElement('rect');
-            bg.classList.add('ert-inquiry-zone-pill');
-            zoneEl.appendChild(bg);
-            const glow = createSvgElement('rect');
-            glow.classList.add('ert-inquiry-zone-pill-glow');
-            zoneEl.appendChild(glow);
-
-            const text = createSvgText(zoneEl, 'ert-inquiry-zone-pill-text', '', 0, 0);
-            text.setAttribute('text-anchor', 'middle');
-            text.setAttribute('dominant-baseline', 'middle');
-            text.setAttribute('alignment-baseline', 'middle');
-
-            this.zonePromptElements.set(zone.id, { group: zoneEl, bg, glow, text });
-            bindInquiryZonePodEvents({
-                registerSvgEvent: this.registerSvgEvent.bind(this),
-                zoneEl,
-                onClick: (event) => this.handlePromptClick(zone.id, event),
-                onContextMenu: (event) => {
-                    if (this.isInquiryRunDisabled()) return;
-                    const prompt = this.getActivePrompt(zone.id);
-                    if (!prompt) {
-                        this.notifyInteraction(t('inquiry.interaction.noQuestionsForZone'));
-
-                        return;
-                    }
-                    this.showQuestionRunMenu(prompt, event);
-                },
-                onPointerEnter: () => {
-                    if (this.isInquiryRunDisabled()) return;
-                    const prompt = this.getActivePrompt(zone.id);
-                    if (prompt) {
-                        this.showPromptPreview(
-                            zone.id,
-                            this.state.mode,
-                            this.resolveQuestionPromptForRun(prompt, this.getSelectionMode(this.getActiveTargetSceneIds()), this.getEffectivePromptOverride(prompt.id)),
-                            prompt.id
-                        );
-                    }
-                    this.setHoverText(this.buildZoneHoverText(zone.id));
-                },
-                onPointerLeave: () => {
-                    if (this.isInquiryRunDisabled()) return;
-                    this.clearHoverText();
-                    this.hidePromptPreview();
-                }
-            });
-        });
     }
 
     private buildDebugOverlay(parent: SVGElement): void {
@@ -3035,8 +2879,8 @@ export class InquiryView extends ItemView {
             return group;
         };
 
-        this.flowModeIconEl = createIcon('ert-inquiry-mode-icon--flow', FLOW_ICON_PATHS);
-        this.depthModeIconEl = createIcon('ert-inquiry-mode-icon--depth', DEPTH_ICON_PATHS, 90);
+        createIcon('ert-inquiry-mode-icon--flow', FLOW_ICON_PATHS);
+        createIcon('ert-inquiry-mode-icon--depth', DEPTH_ICON_PATHS, 90);
 
         const hit = createSvgElement('rect');
         hit.classList.add('ert-inquiry-mode-icon-hit');
@@ -3082,79 +2926,6 @@ export class InquiryView extends ItemView {
             },
             { hoverDelayMs: SCENE_DOSSIER_HOVER_DELAY_MS, hideDelayMs: SCENE_DOSSIER_HIDE_DELAY_MS }
         );
-    }
-
-    private renderWaveHeader(parent: SVGElement): void {
-        const flowWidth = 2048;
-        const flowOffsetY = 740;
-        const targetWidth = VIEWBOX_SIZE * 0.5;
-        const scale = targetWidth / flowWidth;
-        const y = VIEWBOX_MIN + 50;
-        const group = createSvgGroup(parent, 'ert-inquiry-wave-header');
-        group.setAttribute('transform', `translate(0 ${y}) scale(${scale.toFixed(4)}) translate(${-flowWidth / 2} ${-flowOffsetY})`);
-        group.setAttribute('pointer-events', 'none');
-
-        // Path data is internal to the inquiry renderer.
-        const paths = [
-            'M1873.99,900.01c.23,1.74-2.27.94-3.48.99-14.3.59-28.74-.35-43.05-.04-2.37.05-4.55,1.03-6.92,1.08-124.15,2.86-248.6,8.35-373,4.92-91.61-2.53-181.2-15.53-273.08-17.92-101.98-2.65-204.05,7.25-305.95.95-83.2-5.14-164.18-24.05-247.02-31.98-121.64-11.65-245.9-13.5-368.04-15.96-2.37-.05-4.55-1.04-6.92-1.08-17.31-.34-34.77.75-52.05.04-1.22-.05-3.72.75-3.48-.99,26.49-.25,53.03.28,79.54.03,144.74-1.38,289.81-5.3,433.95,8.97,18.67,1.85,37.34,5.16,56.01,6.99,165.31,16.18,330.85-3.46,495.99,14.01,118.64,12.56,236.15,30.42,355.97,28.03,87.15,0,174.3,2.45,261.54,1.97Z',
-            'M1858.99,840.01c.23,1.74-2.27.94-3.48.99-15.63.64-31.41-.36-47.05-.04-2.37.05-4.55,1.03-6.92,1.08-127.12,2.74-254.28,9.03-381.05,2.97-86.31-4.13-170.32-17.4-256.98-20.02-110.96-3.36-222.13,6.92-333-1-62.18-4.44-123.32-15.98-185.14-22.86-130.81-14.57-267.28-16.86-398.92-19.08-2.36-.04-4.55-1.04-6.92-1.08-20.56-.33-41.57.88-62.05.04-1.22-.05-3.72.75-3.48-.99,27.83-.25,55.7.28,83.54.03,110.53-1,221.67-2.9,331.92,2,82.52,3.67,164.67,14.08,247,17,120.4,4.27,240.84-7.91,361.03,1.97,68.04,5.59,135.16,18.98,203.02,25.98,102.05,10.53,205.5,10.76,307.95,12.05,50.17.63,100.37.51,150.54.97Z',
-            'M1842.99,961.01c.23,1.74-2.27.94-3.48.99-25.56,1.05-51.45.11-77.05.96l-79.92,3.08c-11.35.14-22.73-.31-34.08-.08-75.38,1.5-150.52,3.23-225.92,0-70.84-3.04-141.24-10.76-212.08-12.92-110.8-3.38-221.44,7.94-331.95.95-87.75-5.56-170.98-27.28-258.02-35.98-121.12-12.11-248.16-13.39-370.03-15.97-2.37-.05-4.55-1.03-6.92-1.08-16.64-.35-33.43.72-50.05.04-1.22-.05-3.72.75-3.48-.99,21.16-.25,42.37.28,63.54.03,120.89-1.45,244.31-4.94,364.95,1.97,92.31,5.29,182.02,23.64,274.97,26.03,97.61,2.52,194.76-4.98,292.08-1.08,102.89,4.12,204.72,22.93,307.92,28.08,108.68,5.42,217.3,1.72,326.08,4.92,7.47.22,15.65,1.96,23.45,1.05Z',
-            'M1892.99,1020.01c.23,1.74-2.27.94-3.48.99-16.61.68-33.41-.29-50.05-.04-2.36.04-4.55,1.04-6.92,1.08-127.73,2.28-255.33,8.29-383,4.92-71.58-1.89-142.68-9.43-214.03-11.97-125.84-4.47-251.12,11.24-377,0-78-6.96-152.8-27.94-231.01-35.99-132.21-13.59-267.3-12.99-400.03-16.97l-19.45-2.03c31.83-.25,63.7.28,95.54.03,135.4-1.07,273.36-5.92,407.82,11.1,42.78,5.42,85.05,13.34,128.15,16.85,139.4,11.34,279.58-5.96,418.98,5.02,46.43,3.66,92.62,10.85,139.01,14.99,108.66,9.68,220.94,10.96,329.95,12.05,55.16.55,110.38-.5,165.54-.03Z',
-            'M1846.99,1081.01c.23,1.74-2.27.94-3.48.99-16.29.67-32.74-.35-49.05-.04-126.07,2.42-250.52,8.4-376.97,3.05-54.11-2.29-108-7.25-162.03-8.97-147.59-4.7-291.2,17.69-438.82-4.18-44.08-6.53-87.24-17.93-131.31-24.69-118.91-18.24-240.1-17.95-359.79-24.21l-138.05-1.96-3.48-.99c45.84-.3,91.68-.55,137.54-.97,118.46-1.08,241.16-3.52,358.95,8.96,49.25,5.22,97.78,15.79,147.01,20.99,134.9,14.23,269.26-2.37,404,4,115.35,5.45,230.26,23.7,345.95,24.05l269.54,3.97Z',
-            'M1886.99,1140.01c.23,1.74-2.27.94-3.48.99-18.28.75-36.75-.35-55.05-.04-2.36.04-4.55,1.04-6.92,1.08-124.58,2.26-249.4,6.27-374,2.92-79.23-2.13-157.79-10.68-237-9.92-111.01,1.07-222.29,15.23-333.04,4.95-80.02-7.42-157.13-29.72-237.13-38.87-109.52-12.53-220.11-13.58-329.83-18.17-30.26-1.04-60.82.28-91.05-.96-1.22-.05-3.72.75-3.48-.99,33.41-1.66,66.99-.63,100.54-.97,132.12-1.34,266.81-5.51,397.79,13.13,35.16,5,70.02,12.4,105.29,16.71,163.13,19.92,325.43-6.76,489.87,7.13,25.01,2.11,50.01,5.78,75.01,7.99,124.74,11,249.78,13.86,374.95,15.05,42.5.4,85.05-.39,127.54-.03Z',
-            'M1827.99,1201.01c.23,1.74-2.27.94-3.48.99-14.29.59-28.74-.28-43.05-.04-115.65,1.92-231.19,6.1-346.92,2-86.12-3.05-168.46-11.59-255-8.92-104.04,3.22-205.73,15.8-310.04,4.95-74.39-7.74-146.25-28.95-221.13-37.87-128.28-15.28-263.63-17.56-392.83-20.17-16.64-.34-33.43.72-50.05.04-1.22-.05-3.72.75-3.48-.99,32.01-2.07,64.38-.68,96.54-.97,143.23-1.26,287.89-5.92,429.79,15.13,72.64,10.78,132.72,21.01,207.21,22.79,120.32,2.88,237.35-12.3,357.95-2.95,126.6,9.81,252.83,24.46,379.97,24.03l154.54,1.97Z',
-            'M1866.99,1260.01c.23,1.74-2.27.94-3.48.99-14.95.61-30.07-.28-45.05-.04-2.36.04-4.55,1.04-6.92,1.08-130.78,2.42-262.55,7.17-393.05.97-74.88-3.56-146.78-13.43-221.95-10.97-102.42,3.35-199.73,18.19-303.03,9.95-86.01-6.86-168.89-32.27-255.13-41.87-122.3-13.61-249.91-14.58-372.92-17.08-2.37-.05-4.55-1.04-6.92-1.08-14.31-.24-28.76.63-43.05.04-1.22-.05-3.72.75-3.48-.99,15.16-.25,30.37.28,45.54.03,2.62-.04,5.06-1.05,7.91-1.09,130.55-1.8,270.66-5.74,400.04,7.06,71.51,7.08,141.22,24.72,213.02,29.98,60.88,4.46,121.1,1.83,181.95-1.03,82.54-3.88,157.04-9.61,240.04-1.95,42.37,3.91,84.57,10.5,127.01,13.99,95.85,7.88,192.07,8.57,287.95,12.05l151.54-.03Z',
-            'M1844.99,780.01c.23,1.74-2.27.94-3.48.99-13.96.57-28.07-.3-42.05-.04-141.3,2.57-283.58,13.37-424.95,1.04-43.21-3.77-85.9-11.58-129.01-15.99-177.25-18.1-353.26,10.99-529.98-14.02l-187.5-24.98c22.83,1.11,45.69,1.89,68.54,2.95,110.04,5.09,214.45,8.65,324.92,6,86.75-2.08,173.41-7.14,260.03.05,62.88,5.22,124.66,18.79,187.15,26.85,142.22,18.35,285.65,13.88,428.91,16.09,2.85.04,5.29,1.04,7.91,1.09,13.16.25,26.38-.28,39.54-.03Z',
-            'M1432.99,1309.01c.23,1.74-2.27.94-3.48.99-5.14.21-10.9.2-16.05.04-95.06-2.94-189.84-5.29-284.95,1.97-64.76,4.95-127.67,14.31-193.05,12.03-95.43-3.32-186.63-31.93-281.08-42.92-123.44-14.36-254.58-17.15-378.83-19.17-15.64-.25-31.43.68-47.05.04-1.22-.05-3.72.75-3.48-.99,8.82-.24,17.71.28,26.54.03,2.37-.07,4.55-1.03,6.92-1.08,128.74-2.8,269.19-5.78,397.03,5.05,70.2,5.95,137.58,23.09,207.02,29.98,53.73,5.33,106.29,4.52,160,2.02,82.26-3.83,161.4-14.61,243.99-7.01,55.59,5.12,110.68,16.34,166.5,19.01Z'
-        ];
-
-        paths.forEach(d => {
-            const path = createSvgElement('path');
-            path.classList.add('ert-inquiry-wave-path');
-            path.setAttribute('d', d);
-            group.appendChild(path);
-        });
-    }
-
-
-    private buildFindingsPanel(findingsGroup: SVGGElement, width: number, height: number): void {
-        const bg = createSvgElement('rect');
-        bg.classList.add('ert-inquiry-panel-bg');
-        bg.setAttribute('width', String(width));
-        bg.setAttribute('height', String(height));
-        bg.setAttribute('rx', '22');
-        bg.setAttribute('ry', '22');
-        findingsGroup.appendChild(bg);
-
-        this.findingsTitleEl = createSvgText(findingsGroup, 'ert-inquiry-findings-title', t('inquiry.findings.findings'), 24, 36);
-        this.detailsToggle = this.createIconButton(findingsGroup, width - 88, 14, 32, 'chevron-down', t('inquiry.details.toggle'), 'ert-inquiry-details-toggle');
-        this.detailsIcon = this.detailsToggle.querySelector('.ert-inquiry-icon') as SVGUseElement;
-        bindInquiryDetailsToggleEvent({
-            registerSvgEvent: this.registerSvgEvent.bind(this),
-            detailsToggle: this.detailsToggle,
-            onClick: () => this.toggleDetails()
-        });
-
-        this.detailsEl = createSvgGroup(findingsGroup, 'ert-inquiry-details ert-hidden', 24, 64);
-        this.detailRows = [
-            createSvgText(this.detailsEl, 'ert-inquiry-detail-row', t('inquiry.findings.corpusFingerprintNotAvailable'), 0, 0),
-            createSvgText(this.detailsEl, 'ert-inquiry-detail-row', t('inquiry.findings.recentSessionsNotAvailable'), 0, 20)
-        ];
-
-        this.summaryEl = createSvgText(findingsGroup, 'ert-inquiry-summary', t('inquiry.findings.noInquiryRun'), 24, 120);
-        this.verdictEl = createSvgText(findingsGroup, 'ert-inquiry-verdict', t('inquiry.findings.runToSeeVerdicts'), 24, 144);
-
-        this.findingsListEl = createSvgGroup(findingsGroup, 'ert-inquiry-findings-list', 24, 176);
-
-        const previewY = height - 210;
-        this.artifactPreviewEl = createSvgGroup(findingsGroup, 'ert-inquiry-report-preview ert-hidden', 24, previewY);
-        this.artifactPreviewBg = createSvgElement('rect');
-        this.artifactPreviewBg.classList.add('ert-inquiry-report-preview-bg');
-        this.artifactPreviewBg.setAttribute('width', String(width - 48));
-        this.artifactPreviewBg.setAttribute('height', '180');
-        this.artifactPreviewBg.setAttribute('rx', '14');
-        this.artifactPreviewBg.setAttribute('ry', '14');
-        this.artifactPreviewEl.appendChild(this.artifactPreviewBg);
     }
 
     private getResolvedEngine(): ResolvedInquiryEngine {
@@ -3970,10 +3741,6 @@ export class InquiryView extends ItemView {
         return getCorpusItemKeyPure(className, filePath, scope, sceneId);
     }
 
-    private parseCorpusItemKey(entryKey: string): { className: string; scope?: InquiryScope; path: string; sceneId?: string } {
-        return parseCorpusItemKeyPure(entryKey);
-    }
-
     private getCorpusItemOverride(
         className: string,
         filePath: string,
@@ -3995,13 +3762,6 @@ export class InquiryView extends ItemView {
         configMap: Map<string, InquiryClassConfig>
     ): SceneInclusion {
         return this.corpusService.getGroupEffectiveMode(className, configMap, this.state.scope, this.ccEntries);
-    }
-
-    private getCorpusItemEffectiveMode(
-        entry: CorpusManifestEntry,
-        configMap: Map<string, InquiryClassConfig>
-    ): SceneInclusion {
-        return this.corpusService.getItemEffectiveMode(entry, configMap, this.state.scope, this.ccEntries);
     }
 
     private getCorpusGroupKeys(sources: InquirySourcesSettings): string[] {
@@ -4709,61 +4469,6 @@ export class InquiryView extends ItemView {
         return a.filePath.localeCompare(b.filePath);
     }
 
-
-    private buildSagaCcEntries(corpus: InquiryCorpusSnapshot): CorpusCcEntry[] {
-        const sources = this.normalizeInquirySources(this.settingsAccessor.getSources());
-        const classScope = this.getClassScopeConfig(sources.classScope);
-        const outlineConfig = (sources.classes || []).find(cfg => cfg.className === 'outline'); // SAFE: settings may omit class configs — missing outline config disables outlines below
-        if (!outlineConfig?.enabled) {
-            return [];
-        }
-        const includeBookOutlines = this.isModeActive(outlineConfig.bookScope);
-        const includeSagaOutlines = this.isModeActive(outlineConfig.sagaScope);
-        const outlineAllowed = includeBookOutlines || includeSagaOutlines;
-        if (!outlineAllowed || (!classScope.allowAll && !classScope.allowed.has('outline'))) {
-            return [];
-        }
-
-        const outlineFiles = this.getOutlineFiles();
-        const bookOutlines = outlineFiles.filter(file => (this.getOutlineScope(file) ?? 'book') === 'book'); // SAFE: outlines without an explicit scope are book-scoped
-        const sagaOutlines = outlineFiles.filter(file => this.getOutlineScope(file) === 'saga');
-
-        const entries: CorpusCcEntry[] = [];
-        if (includeBookOutlines) {
-            entries.push(...corpus.books.map(book => {
-                const outline = bookOutlines.find(file => file.path === book.rootPath || file.path.startsWith(`${book.rootPath}/`));
-                const filePath = outline?.path || ''; // SAFE: book without an outline file — empty path marks a missing outline entry
-                return {
-                    id: outline?.path || book.id,
-                    entryKey: this.getCorpusItemKey('outline', filePath || book.id, 'book'),
-                    label: book.displayLabel,
-                    filePath,
-                    className: 'outline',
-                    classKey: 'outline',
-                    mode: normalizeContributionMode(outlineConfig.bookScope, 'outline'),
-                    isTarget: false
-                };
-            }));
-        }
-
-        if (includeSagaOutlines) {
-            const sagaOutline = sagaOutlines[0];
-            const filePath = sagaOutline?.path || ''; // SAFE: no saga outline file — empty path marks a missing outline entry
-            entries.push({
-                id: sagaOutline?.path || 'saga-outline', // SAFE: stable placeholder id when no saga outline file exists
-                entryKey: this.getCorpusItemKey('outline', filePath || 'saga-outline', 'saga'), // SAFE: stable placeholder key when no saga outline file exists
-                label: 'Saga',
-                filePath,
-                className: 'outline',
-                classKey: 'outline',
-                mode: normalizeContributionMode(outlineConfig.sagaScope, 'outline'),
-                isTarget: false
-            });
-        }
-
-        return entries;
-    }
-
     private getOutlineFiles(): TFile[] {
         const sources = this.normalizeInquirySources(this.settingsAccessor.getSources());
         const classScope = this.getClassScopeConfig(sources.classScope);
@@ -5120,10 +4825,6 @@ export class InquiryView extends ItemView {
             findingMap,
             balanceTooltipText
         );
-    }
-
-    private updateArtifactPreview(): void {
-        // No-op while findings panel is removed.
     }
 
     private updateFooterStatus(): void {
@@ -5628,10 +5329,6 @@ export class InquiryView extends ItemView {
         this.minimap.startFadeOut();
     }
 
-    private cancelBackboneFadeOut(): void {
-        this.minimap.cancelFadeOut();
-    }
-
     private handleScopeChange(scope: InquiryScope): void {
         this.clearErrorStateForAction();
         if (!scope || scope === this.state.scope) return;
@@ -5757,7 +5454,6 @@ export class InquiryView extends ItemView {
         }
         this.state.isRunning = false;
         this.currentRunProgress = null;
-        this.pendingGuardQuestion = undefined;
         this.unlockPromptPreview();
         this.setApiStatus('idle');
         this.refreshUI({ skipCorpus: true });
@@ -5913,7 +5609,6 @@ export class InquiryView extends ItemView {
         if (!options?.bypassTokenGuard) {
             const readinessUi = this.buildReadinessUiState();
             if (readinessUi.readiness.state === 'blocked') {
-                this.pendingGuardQuestion = question;
                 this.enginePopover.show();
                 return;
             }
@@ -5922,7 +5617,7 @@ export class InquiryView extends ItemView {
         this.clearActiveResultState();
         this.currentRunProgress = null;
         this.currentRunElapsedMs = 0;
-        const durationRange = this.estimateRunDurationRange(questionText);
+        const durationRange = this.estimateRunDurationRange();
         // Use midpoint of the range so the bar is optimistic — better to finish than stall.
         this.currentRunEstimatedMaxMs = durationRange
             ? ((durationRange.minSeconds + durationRange.maxSeconds) / 2) * 1000
@@ -8226,12 +7921,6 @@ export class InquiryView extends ItemView {
         this.setFocusByIndex(next);
     }
 
-    private getFocusIndex(): number {
-        const books = this.getNavigationBooks();
-        if (!books.length) return 1;
-        return this.getNavigationBookIndex(books) + 1;
-    }
-
     private getNavigationBooks(): InquiryBookItem[] {
         return this.corpus?.books ?? []; // SAFE: corpus not loaded yet — no books to navigate
     }
@@ -8449,17 +8138,6 @@ export class InquiryView extends ItemView {
         this.freshModeTouchedBookIds.clear();
     }
 
-    private buildZoneHoverText(zone: InquiryZone): string {
-        const label = zone === 'setup' ? 'Setup' : zone === 'pressure' ? 'Pressure' : 'Payoff';
-        if (!this.state.activeResult) {
-            return `${label} verdict unavailable. Run an inquiry.`;
-        }
-        if (this.state.activeZone !== zone) {
-            return `${label} verdict unavailable for the current inquiry.`;
-        }
-        return `${label}: ${getResultSummaryForMode(this.state.activeResult, this.state.mode)}`;
-    }
-
     private buildMinimapHoverText(label: string): string {
         return label;
     }
@@ -8604,23 +8282,6 @@ export class InquiryView extends ItemView {
         this.sceneDossierGroup?.classList.remove('is-visible');
         this.previewGroup?.classList.remove('is-dossier-muted');
         this.minimapResultPreviewActive = false;
-    }
-
-    private setPositionedWrappedSvgText(
-        textEl: SVGTextElement,
-        text: string,
-        maxWidth: number,
-        maxLines: number,
-        lineHeight: number,
-        startDy: number
-    ): number {
-        textEl.setAttribute('y', '0');
-        const lineCount = this.setWrappedSvgText(textEl, text, maxWidth, maxLines, lineHeight);
-        const firstLine = textEl.firstElementChild;
-        if (firstLine instanceof SVGTSpanElement) {
-            firstLine.setAttribute('dy', String(startDy));
-        }
-        return lineCount;
     }
 
     private computeBalancedSvgLines(
@@ -8947,13 +8608,6 @@ export class InquiryView extends ItemView {
         this.previewHideTimer = window.setTimeout(hide, 140);
     }
 
-    private setPreviewRowLabels(labels: string[]): void {
-        if (!this.previewRows.length) return;
-        this.previewRows.forEach((row, idx) => {
-            row.label = labels[idx] ?? row.label;
-        });
-    }
-
     private resetPreviewRowLabels(): void {
         if (!this.previewRowDefaultLabels.length) return;
         this.previewRows.forEach((row, idx) => {
@@ -9112,7 +8766,7 @@ export class InquiryView extends ItemView {
     }
 
 
-    private estimateRunDurationRange(questionText: string): { minSeconds: number; maxSeconds: number } | null {
+    private estimateRunDurationRange(): { minSeconds: number; maxSeconds: number } | null {
         const readinessUi = this.buildReadinessUiState();
         const estimatedTokens = Math.max(0, readinessUi.estimateInputTokens || 0); // SAFE: estimate unavailable — 0 tokens skips duration prediction
 
@@ -9157,7 +8811,7 @@ export class InquiryView extends ItemView {
 
     private buildRunningStatusNote(questionText: string): string {
         if (!this.cachedRunningStatusStatic || this.cachedRunningStatusQuestion !== questionText) {
-            const estimate = this.estimateRunDurationRange(questionText);
+            const estimate = this.estimateRunDurationRange();
             const estimateLabel = estimate
                 ? formatRunDurationEstimate(estimate.minSeconds, estimate.maxSeconds)
                 : 'unavailable';
@@ -9445,8 +9099,8 @@ export class InquiryView extends ItemView {
         return 'Corpus evidence';
     }
 
-    private async promptCancelInquiryRun(questionText: string): Promise<boolean> {
-        const estimate = this.estimateRunDurationRange(questionText);
+    private async promptCancelInquiryRun(): Promise<boolean> {
+        const estimate = this.estimateRunDurationRange();
         const estimateLabel = estimate
             ? formatRunDurationEstimate(estimate.minSeconds, estimate.maxSeconds)
             : 'unavailable';
@@ -9476,10 +9130,7 @@ export class InquiryView extends ItemView {
             this.notifyInteraction(t('inquiry.interaction.cancelOnlySingleQuestion'));
             return;
         }
-        const questionText = this.previewLast?.question
-            || this.getCurrentPromptQuestion()
-            || ''; // SAFE: no question text available — cancel prompt renders without it
-        const confirmed = await this.promptCancelInquiryRun(questionText);
+        const confirmed = await this.promptCancelInquiryRun();
         if (!confirmed) return;
         this.requestActiveInquiryCancellation();
     }
@@ -9748,12 +9399,6 @@ export class InquiryView extends ItemView {
         }
     }
 
-    private truncatePreviewValue(value: string, maxChars: number): string {
-        const trimmed = value.trim();
-        if (trimmed.length <= maxChars) return trimmed;
-        return `${trimmed.slice(0, Math.max(0, maxChars - 3)).trim()}...`;
-    }
-
     private setBalancedHeroText(
         textEl: SVGTextElement,
         text: string,
@@ -9943,25 +9588,6 @@ export class InquiryView extends ItemView {
         });
     }
 
-    private updatePreviewClickTargetLayout(): void {
-        updateInquiryPreviewClickTargetLayout({
-            refs: {
-                previewGroup: this.previewGroup,
-                previewHero: this.previewHero,
-                previewMeta: this.previewMeta,
-                previewFooter: this.previewFooter,
-                previewClickTarget: this.previewClickTarget,
-                previewRows: this.previewRows,
-                previewRunningNote: this.previewRunningNote,
-                previewShimmerGroup: this.previewShimmerGroup,
-                previewShimmerMask: this.previewShimmerMask,
-                previewShimmerMaskRect: this.previewShimmerMaskRect,
-                previewPanelHeight: this.previewPanelHeight
-            },
-            isRunning: this.state.isRunning
-        });
-    }
-
     private lockPromptPreview(question: InquiryQuestion, questionText: string): void {
         if (!this.previewGroup) return;
         if (this.previewHideTimer) {
@@ -10037,14 +9663,6 @@ export class InquiryView extends ItemView {
         ) ?? 'Prior result ·'; // SAFE: UX default row label when no default label matches the history slot
         const staleState = this.getHoveredQuestionStaleState();
         historyRow.label = staleState.isStale ? 'Stale - corpus changed ·' : defaultLabel;
-    }
-
-    private isHoveredQuestionStale(): boolean {
-        return this.getHoveredQuestionStaleState().isStale;
-    }
-
-    private getHoveredQuestionStaleDiagnosis(): InquiryStaleDiagnosis | null {
-        return this.getHoveredQuestionStaleState().diagnosis;
     }
 
     private getHoveredQuestionStaleState(): { isStale: boolean; diagnosis: InquiryStaleDiagnosis | null } {
@@ -10768,116 +10386,12 @@ export class InquiryView extends ItemView {
         return raw.replace(/-/g, ' ');
     }
 
-
-    private getTokenTierFromSnapshot(): TokenTier {
-        return getTokenTierFromSnapshotPure(this.plugin.getInquiryEstimateService().getSnapshot());
-    }
-
     private estimateTokensFromChars(chars: number): number {
         return estimateTokensFromCharsHeuristic(chars, DEFAULT_CHARS_PER_TOKEN);
     }
 
     private formatApproxCorpusTokens(value: number): string {
         return `~${formatTokenEstimate(value)}`;
-    }
-
-    private toggleDetails(): void {
-        if (!this.detailsEl || !this.detailsToggle) return;
-        const isOpen = !this.detailsEl.classList.contains('ert-hidden');
-        this.detailsEl.classList.toggle('ert-hidden', isOpen);
-        this.setIconUse(this.detailsIcon, isOpen ? 'chevron-down' : 'chevron-up');
-    }
-
-    private toggleHelpTips(): void {
-        this.helpTipsEnabled = !this.helpTipsEnabled;
-        this.applyHelpTips();
-    }
-
-    private applyHelpTips(): void {
-        if (this.helpToggleButton) {
-            this.helpToggleButton.classList.toggle('is-active', this.helpTipsEnabled);
-            this.helpToggleButton.setAttribute('aria-pressed', this.helpTipsEnabled ? 'true' : 'false');
-        }
-        this.syncHelpTooltips();
-    }
-
-    private syncHelpTooltips(): void {
-        const targets = this.getHelpTooltipTargets();
-        targets.forEach(({ element, text, placement }) => {
-            if (!element) return;
-            const balancedText = balanceTooltipText(text);
-            if (this.helpTipsEnabled) {
-                addTooltipData(element, balancedText, placement ?? 'bottom'); // SAFE: optional placement — tooltips default below the element
-                return;
-            }
-            const rtTooltipValue = element.getAttribute('data-rt-tip');
-            if (rtTooltipValue === text || rtTooltipValue === balancedText) {
-                element.removeAttribute('data-rt-tip');
-            }
-            element.removeAttribute('data-rt-tip-placement');
-        });
-    }
-
-    private getHelpTooltipTargets(): Array<{ element?: SVGElement; text: string; placement?: 'top' | 'bottom' | 'left' | 'right' }> {
-        return [
-            {
-                element: this.scopeToggleButton,
-                text: t('inquiry.navTooltip.scopeToggle'),
-                placement: 'bottom'
-            },
-            {
-                element: this.flowRingHit,
-                text: t('inquiry.navTooltip.flowLens'),
-                placement: 'top'
-            },
-            {
-                element: this.depthRingHit,
-                text: t('inquiry.navTooltip.depthLens'),
-                placement: 'top'
-            },
-            {
-                element: this.modeIconToggleHit,
-                text: t('inquiry.navTooltip.modeIconToggle'),
-                placement: 'top'
-            },
-            {
-                element: this.glyphHit,
-                text: t('inquiry.navTooltip.focusRingToggle'),
-                placement: 'top'
-            },
-            {
-                element: this.navPrevButton,
-                text: t('inquiry.navTooltip.previousBook'),
-                placement: 'top'
-            },
-            {
-                element: this.navNextButton,
-                text: t('inquiry.navTooltip.nextBook'),
-                placement: 'top'
-            }
-        ];
-    }
-
-    private openReportPreview(): void {
-        if (!this.state.activeResult) {
-            new Notice(t('inquiry.notice.noRunForPreview'));
-            return;
-        }
-        this.state.reportPreviewOpen = true;
-        this.updateArtifactPreview();
-    }
-
-    private async saveArtifact(): Promise<void> {
-        const result = this.state.activeResult;
-        if (!result) {
-            new Notice(t('inquiry.notice.noRunForSave'));
-            return;
-        }
-        await this.saveBrief(result, {
-            openFile: true,
-            silent: false,
-            sessionKey: this.state.activeSessionId
-        });
     }
 
     private async saveBrief(
@@ -11063,15 +10577,6 @@ export class InquiryView extends ItemView {
         }
     }
 
-    private buildArtifactContent(
-        result: InquiryResult,
-        logPath?: string,
-        rawResponse?: string | null
-    ): string {
-        const brief = this.buildInquiryBriefModel(result, logPath, rawResponse);
-        return renderInquiryBrief(brief);
-    }
-
     private buildInquiryBriefModel(
         result: InquiryResult,
         logPath?: string,
@@ -11140,10 +10645,6 @@ export class InquiryView extends ItemView {
             itemTitle: this.getMinimapItemTitle(item),
             hoverLabel: fallbackLabel || item.displayLabel || item.id || 'Scene' // SAFE: display fallback chain for the scene hover label
         });
-    }
-
-    private normalizeInquiryBriefText(value: string | undefined, referenceLabels: ReadonlyMap<string, string>): string {
-        return normalizeInquiryBriefTextPure(value, referenceLabels);
     }
 
     private resolveInquiryBriefScopeIndicator(result: InquiryResult): string | null {
@@ -11440,15 +10941,6 @@ export class InquiryView extends ItemView {
         const briefLink = formatInquiryBriefLink(briefId, briefAlias);
         const prefix = targetLabel?.trim() ? `${targetLabel.trim()} ` : '';
         return `${briefLink} ${prefix}${actionText}`;
-    }
-
-    private buildInquiryPendingAction(
-        finding: InquiryFinding,
-        result: InquiryResult,
-        items: InquiryCorpusItem[] = this.getResultItems(result),
-        referenceLabels: ReadonlyMap<string, string> = this.buildInquiryReferenceLabelMap(items)
-    ): { targetLabel?: string; text: string } | null {
-        return buildInquiryPendingActionPure(finding, result, items, referenceLabels);
     }
 
     private getInquiryActionText(

@@ -44,6 +44,21 @@ import { getLocalLlmSettings } from '../ai/localLlm/settings';
 import { CORE_ALERTS_SECTION_KEY, type RadialTimelineSettingsTabId } from './settingsAnchors';
 
 export class RadialTimelineSettingsTab extends PluginSettingTab {
+    private _beatSectionScope: Component | null = null;
+
+    private disposeBeatSection(): void {
+        this._beatSectionScope?.unload();
+        this._beatSectionScope = null;
+    }
+
+    private resetBeatSectionScope(): Component {
+        this.disposeBeatSection();
+        const scope = new Component();
+        scope.load();
+        this._beatSectionScope = scope;
+        return scope;
+    }
+
     private releaseNotesComponent: Component | null = null;
     private _aiSectionLifecycle: AiSectionLifecycle | null = null;
 
@@ -54,6 +69,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
 
     /** Stop settings-owned async work when the plugin itself is reloaded. */
     public disposeAsyncWork(): void {
+        this.disposeBeatSection();
         this.disposeAiSection();
         this._aiTabActivationHandler = null;
     }
@@ -102,8 +118,10 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
     public refreshBeatPropertiesSection(): void {
         const wrapper = this._beatsWrapper;
         if (!wrapper || !wrapper.isConnected) return;
+        const scope = this.resetBeatSectionScope();
         wrapper.empty();
         renderBeatPropertiesSection({
+            scope,
             app: this.app,
             plugin: this.plugin,
             containerEl: wrapper,
@@ -884,7 +902,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
 
     display(): void {
         const { containerEl } = this;
-        this.disposeAiSection();
+        this.disposeAsyncWork();
         containerEl.empty();
         containerEl.addClass('ert-ui', 'ert-settings-root', 'ert-scope--settings');
         containerEl.closest('.vertical-tab-content')?.classList.add('ert-settings-scroll-host');
@@ -1082,7 +1100,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         this._beatsWrapper = beatsWrapper;
         this._backdropYamlTarget = backdropYamlTarget;
         this.renderGuarded('Story and scene properties', beatsWrapper, () => {
-            renderBeatPropertiesSection({ app: this.app, plugin: this.plugin, containerEl: beatsWrapper, backdropYamlTargetEl: backdropYamlTarget });
+            renderBeatPropertiesSection({ app: this.app, plugin: this.plugin, containerEl: beatsWrapper, backdropYamlTargetEl: backdropYamlTarget, scope: this.resetBeatSectionScope() });
             beatsStorySection = beatsWrapper.querySelector<HTMLElement>(`[${ERT_DATA.SECTION}="beats-story"]`);
             const beatsActsSection = beatsWrapper.querySelector<HTMLElement>(`[${ERT_DATA.SECTION}="beats-acts"]`);
             const beatsYamlSection = beatsWrapper.querySelector<HTMLElement>(`[${ERT_DATA.SECTION}="beats-yaml"]`);

@@ -95,10 +95,6 @@
 }
 
 .ert-inquiry-context-badge-label,
-.ert-inquiry-findings-title,
-.ert-inquiry-detail-row,
-.ert-inquiry-summary,
-.ert-inquiry-verdict,
 .ert-inquiry-finding-head,
 .ert-inquiry-finding-meta,
 .ert-inquiry-finding-bullet,
@@ -1061,15 +1057,6 @@
   filter: drop-shadow(0 0 3px color-mix(in srgb, var(--ert-inquiry-corpus-mode-excluded) 85%, transparent));
 }
 
-.ert-inquiry-wave-header {
-  color: var(--text-normal);
-}
-
-.ert-inquiry-wave-path {
-  fill: currentColor;
-  stroke: none;
-}
-
 .ert-inquiry-minimap-tick.is-active {
   opacity: 1;
   --ert-inquiry-minimap-tick-color: var(--interactive-accent);
@@ -1183,21 +1170,6 @@
   animation: none;
 }
 
-.ert-inquiry-zone--setup {
-  --ert-inquiry-zone-color: var(--ert-inquiry-zone-setup);
-  --ert-inquiry-zone-stroke: var(--ert-inquiry-zone-setup-stroke);
-}
-
-.ert-inquiry-zone--pressure {
-  --ert-inquiry-zone-color: var(--ert-inquiry-zone-pressure);
-  --ert-inquiry-zone-stroke: var(--ert-inquiry-zone-pressure-stroke);
-}
-
-.ert-inquiry-zone--payoff {
-  --ert-inquiry-zone-color: var(--ert-inquiry-zone-payoff);
-  --ert-inquiry-zone-stroke: var(--ert-inquiry-zone-payoff-stroke);
-}
-
 .ert-inquiry-zone-pill {
   fill: var(--ert-inquiry-zone-color, var(--background-secondary));
   fill-opacity: 1;
@@ -1207,24 +1179,9 @@
   transition: fill 180ms ease, fill-opacity 180ms ease;
 }
 
-.ert-inquiry-zone-pill-glow {
-  fill: var(--ert-inquiry-zone-color, var(--background-secondary));
-  fill-opacity: 1;
-  stroke: none;
-  stroke-width: 0;
-  filter: url(#ert-inquiry-zone-pill-in);
-  opacity: 0;
-  transition: opacity 260ms ease-in-out;
-}
-
 .ert-inquiry-zone-pod {
   pointer-events: auto;
   cursor: pointer;
-}
-
-.ert-inquiry-zone-pod.is-active .ert-inquiry-zone-pill-glow,
-.ert-inquiry-zone-pod:hover .ert-inquiry-zone-pill-glow {
-  opacity: 1;
 }
 
 .ert-inquiry-svg:not(.is-running) .ert-inquiry-zone-pod.is-processed .ert-inquiry-zone-pill {
@@ -1232,21 +1189,8 @@
   stroke-width: 1.2;
 }
 
-.ert-inquiry-svg:not(.is-running) .ert-inquiry-zone-pod.is-processed .ert-inquiry-zone-pill-glow {
-  opacity: 1;
-}
-
-.ert-inquiry-svg:not(.is-running) .ert-inquiry-zone-pod.is-processed .ert-inquiry-zone-pill-text {
-  fill: var(--ert-inquiry-zone-color);
-  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--ert-inquiry-zone-color) 70%, transparent));
-}
-
 .ert-inquiry-svg:not(.is-running) .ert-inquiry-zone-pod.is-processed-error .ert-inquiry-zone-pill {
   stroke: color-mix(in srgb, var(--ert-inquiry-ai-error) 70%, #ffffff);
-}
-
-.ert-inquiry-svg:not(.is-running) .ert-inquiry-zone-pod.is-processed-error .ert-inquiry-zone-pill-text {
-  fill: var(--ert-inquiry-ai-error);
 }
 
 /* Demo browse (keyless vault with saved briefings): the whole dial reads as
@@ -1268,26 +1212,9 @@
   animation: ert-inquiry-zone-pulse 1.1s ease;
 }
 
-.ert-inquiry-zone-pod.is-duplicate-pulse .ert-inquiry-zone-pill-glow {
-  opacity: 1;
-}
-
-.ert-inquiry-zone-pod.is-duplicate-pulse .ert-inquiry-zone-pill-text {
-  fill: var(--ert-inquiry-zone-color);
-  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--ert-inquiry-zone-color) 70%, transparent));
-}
-
 .ert-inquiry-svg.is-running .ert-inquiry-zone-pill {
   fill: #8a8a8a;
   fill-opacity: 0.4;
-}
-
-.ert-inquiry-svg.is-running .ert-inquiry-zone-pill-glow {
-  opacity: 0;
-}
-
-.ert-inquiry-svg.is-running .ert-inquiry-zone-pill-text {
-  fill: var(--text-muted);
 }
 
 .ert-inquiry-svg.is-running .ert-inquiry-zone-pod.is-locked .ert-inquiry-zone-pill {
@@ -1295,24 +1222,6 @@
   fill-opacity: 0.9;
   stroke: color-mix(in srgb, var(--ert-inquiry-zone-color) 65%, #ffffff);
   stroke-width: 1.2;
-}
-
-.ert-inquiry-svg.is-running .ert-inquiry-zone-pod.is-locked .ert-inquiry-zone-pill-glow {
-  opacity: 1;
-}
-
-.ert-inquiry-svg.is-running .ert-inquiry-zone-pod.is-locked .ert-inquiry-zone-pill-text {
-  fill: var(--ert-inquiry-zone-color);
-  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--ert-inquiry-zone-color) 70%, transparent));
-}
-
-.ert-inquiry-zone-pill-text {
-  font-size: 14px;
-  font-weight: 600;
-  fill: var(--ert-inquiry-zone-stroke, var(--text-normal));
-  font-family: 'Inter', var(--font-ui), sans-serif;
-  letter-spacing: -0.01em;
-  pointer-events: none;
 }
 
 .ert-inquiry-zone-icons {
@@ -1980,67 +1889,16 @@
   }
 }
 
-.ert-inquiry-panel-bg {
-  fill: var(--background-primary);
-  stroke: var(--background-modifier-border);
-  stroke-width: 1;
-}
-
-.ert-inquiry-findings-title {
-  font-size: 14px;
-  font-weight: 600;
-  fill: var(--text-normal);
-}
-
-.ert-inquiry-details-toggle {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 160ms ease;
-}
-
-.ert-inquiry-findings:hover .ert-inquiry-details-toggle {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.ert-inquiry-details {
-  font-size: 12px;
-  fill: var(--text-muted);
-}
-
-.ert-inquiry-summary {
-  font-size: 13px;
-  fill: var(--text-normal);
-}
-
-.ert-inquiry-verdict {
-  font-size: 12px;
-  fill: var(--text-muted);
-}
-
-.ert-inquiry-findings-title.is-role-validation-warning,
-.ert-inquiry-summary.is-role-validation-warning,
-.ert-inquiry-verdict.is-role-validation-warning {
-  fill: var(--ert-inquiry-ai-warning);
-}
-
-.ert-inquiry-verdict.is-citation-integrity-warning,
 .ert-inquiry-finding-section.is-citation-integrity-warning,
 .ert-inquiry-finding-head.is-citation-integrity-warning,
 .ert-inquiry-finding-meta.is-citation-integrity-warning {
   fill: var(--ert-inquiry-ai-warning);
 }
-
-.ert-inquiry-verdict.is-citation-evidence-compromised,
 .ert-inquiry-finding-section.is-citation-evidence-compromised,
 .ert-inquiry-finding-head.is-citation-evidence-compromised,
 .ert-inquiry-finding-meta.is-citation-evidence-compromised {
   fill: var(--text-error, #e06666);
   font-weight: 700;
-}
-
-.ert-inquiry-findings-list {
-  pointer-events: auto;
 }
 
 .ert-inquiry-finding-section {
@@ -2073,16 +1931,6 @@
 .ert-inquiry-finding-bullet {
   font-size: 12px;
   fill: var(--text-normal);
-}
-
-.ert-inquiry-report-preview {
-  pointer-events: auto;
-}
-
-.ert-inquiry-report-preview-bg {
-  fill: var(--background-secondary);
-  stroke: var(--background-modifier-border);
-  stroke-width: 1;
 }
 
 .ert-inquiry-nav {

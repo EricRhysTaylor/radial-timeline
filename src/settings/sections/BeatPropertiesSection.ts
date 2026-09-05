@@ -1,4 +1,4 @@
-import { App, Notice, Setting as Settings, Modal, setIcon, setTooltip, ButtonComponent, getIconIds, TFile, normalizePath, Menu } from 'obsidian';
+import { Component, App, Notice, Setting as Settings, Modal, setIcon, setTooltip, ButtonComponent, getIconIds, TFile, normalizePath, Menu } from 'obsidian';
 import { t } from '../../i18n';
 import type RadialTimelinePlugin from '../../main';
 import type { TimelineItem } from '../../types';
@@ -118,27 +118,39 @@ function isMeaningfulFrontmatterValue(value: unknown): boolean {
 let _currentInnerStage: InnerStage = 'preview';
 const isBeatLibraryMode = (): boolean => _currentInnerStage === 'library';
 
-/**
- * Session-local registry of custom set ids that have been explicitly saved.
- * Used to gate safe auto-fill actions to "official" schema commits.
- */
-let _unsubTopBeatTabsDirty: (() => void) | null = null;
-let _unsubBeatAuditDirty: (() => void) | null = null;
-let _disconnectBeatTabsResizeObserver: (() => void) | null = null;
-
 export function renderBeatPropertiesSection(params: {
     app: App;
     plugin: RadialTimelinePlugin;
     containerEl: HTMLElement;
     backdropYamlTargetEl?: HTMLElement;
+    scope: Component;
 }): void {
-    const { app, plugin, containerEl, backdropYamlTargetEl } = params;
-    _unsubTopBeatTabsDirty?.();
-    _unsubTopBeatTabsDirty = null;
-    _unsubBeatAuditDirty?.();
-    _unsubBeatAuditDirty = null;
-    _disconnectBeatTabsResizeObserver?.();
-    _disconnectBeatTabsResizeObserver = null;
+    const { app, plugin, containerEl, backdropYamlTargetEl, scope } = params;
+    let disposed = false;
+    let _unsubTopBeatTabsDirty: (() => void) | null = null;
+    let _unsubBeatAuditDirty: (() => void) | null = null;
+    let _unsubDesignDirty: (() => void) | null = null;
+    let _disconnectBeatTabsResizeObserver: (() => void) | null = null;
+    let customBeatsObserver: IntersectionObserver | null = null;
+    const auditRefreshTimers = new Set<number>();
+    scope.register(() => {
+        disposed = true;
+        _unsubTopBeatTabsDirty?.();
+        _unsubBeatAuditDirty?.();
+        _unsubDesignDirty?.();
+        _disconnectBeatTabsResizeObserver?.();
+        customBeatsObserver?.disconnect();
+        auditRefreshTimers.forEach(id => window.clearTimeout(id));
+        auditRefreshTimers.clear();
+    });
+    const scheduleAuditRefresh = (run: () => Promise<void>) => {
+        if (disposed) return;
+        const id = window.setTimeout(() => {
+            auditRefreshTimers.delete(id);
+            void run();
+        }, 750);
+        auditRefreshTimers.add(id);
+    };
     containerEl.empty();
     ensureBeatWorkspaceState(plugin.settings);
     ensureMaterializedBeatWorkspaceState(app, plugin.settings);
@@ -331,10 +343,6 @@ export function renderBeatPropertiesSection(params: {
     let refreshCustomBeatList: (() => void) | null = null;
     let refreshCustomBeats: ((allowFetch: boolean) => void) | null = null;
     let refreshHealthIcon: (() => void) | null = null;
-    let customBeatsObserver: IntersectionObserver | null = null;
-    // Unsubscribe hooks for dirtyState subscriptions — called before re-render to prevent stale listeners
-    let _unsubDesignDirty: (() => void) | null = null;
-    let _unsubSetsDirty: (() => void) | null = null;
 
     const getBeatSystemTabStatus = (tab: LoadedBeatTab): StructuralHealthState => {
         const isActiveTab = getActiveBeatWorkspaceTabId() === tab.tabId;
@@ -795,6 +803,7 @@ export function renderBeatPropertiesSection(params: {
     };
 
     const renderCustomConfig = () => {
+        if (disposed) return;
         // Unsubscribe previous Design dirty listener before clearing DOM
         _unsubDesignDirty?.();
         _unsubDesignDirty = null;
@@ -1376,10 +1385,6 @@ export function renderBeatPropertiesSection(params: {
     renderCustomConfig();
 
     // IntersectionObserver for lazy-refresh of custom beats when visible
-    if (customBeatsObserver as IntersectionObserver | null) {
-        customBeatsObserver!.disconnect();
-        customBeatsObserver = null;
-    }
     if (typeof IntersectionObserver !== 'undefined') {
         customBeatsObserver = new IntersectionObserver((entries) => {
             if (entries.some(entry => entry.isIntersecting)) {
@@ -1936,6 +1941,7 @@ export function renderBeatPropertiesSection(params: {
     };
 
     function renderBeatSystemTabs(): void {
+        if (disposed) return;
         _disconnectBeatTabsResizeObserver?.();
         _disconnectBeatTabsResizeObserver = null;
         beatSystemTabs.empty();
@@ -2054,10 +2060,13 @@ export function renderBeatPropertiesSection(params: {
             setTooltip(overflowBtn, `${hiddenTabs.length} more ${hiddenTabs.length === 1 ? 'system' : 'systems'}`);
         };
 
-        window.requestAnimationFrame(() => recomputeOverflow());
+        const frameId = window.requestAnimationFrame(() => recomputeOverflow());
         const ro = new ResizeObserver(() => recomputeOverflow());
         ro.observe(beatSystemTabs);
-        _disconnectBeatTabsResizeObserver = () => ro.disconnect();
+        _disconnectBeatTabsResizeObserver = () => {
+            window.cancelAnimationFrame(frameId);
+            ro.disconnect();
+        };
     }
 
     // ─── BEAT YAML EDITOR — always visible in Fields stage ─────────────
@@ -2741,9 +2750,6 @@ export function renderBeatPropertiesSection(params: {
     };
 
     const renderSavedBeatSystems = () => {
-        // Unsubscribe previous Sets dirty listener before clearing DOM
-        _unsubSetsDirty?.();
-        _unsubSetsDirty = null;
         savedControlsContainer.empty();
 
 
@@ -3833,7 +3839,7 @@ export function renderBeatPropertiesSection(params: {
         if (noteType === 'Beat') {
             refreshBeatAuditPrimaryAction = updateAuditPrimaryAction;
             _unsubBeatAuditDirty?.();
-            _unsubBeatAuditDirty = dirtyState.subscribe(updateAuditPrimaryAction);
+            if (!disposed) _unsubBeatAuditDirty = dirtyState.subscribe(updateAuditPrimaryAction);
         }
 
         // ─── Results row: appears inside the Setting info column after audit runs ──────────
@@ -4366,7 +4372,7 @@ export function renderBeatPropertiesSection(params: {
             if (result.failed > 0) parts.push(`${result.failed} failed`);
             new Notice(parts.join(', ') || 'No changes made.');
 
-            window.setTimeout(() => { void runAudit(); }, 750);
+            scheduleAuditRefresh(runAudit);
         };
 
         // ─── Fix duplicate IDs action ────────────────────────────────────
@@ -4423,7 +4429,7 @@ export function renderBeatPropertiesSection(params: {
             if (result.failed > 0) parts.push(`${result.failed} failed`);
             new Notice(parts.join(', ') || 'No changes made.');
 
-            window.setTimeout(() => { void runAudit(); }, 750);
+            scheduleAuditRefresh(runAudit);
         };
 
         // ─── Backfill action ─────────────────────────────────────────────
@@ -4506,7 +4512,7 @@ export function renderBeatPropertiesSection(params: {
             new Notice(parts.join(', ') || 'No changes made.');
 
             // Wait for Obsidian metadata cache to re-index before refreshing audit
-            window.setTimeout(() => { void runAudit(); }, 750);
+            scheduleAuditRefresh(runAudit);
         };
 
         const handleFillEmptyValues = async () => {
@@ -4568,7 +4574,7 @@ export function renderBeatPropertiesSection(params: {
             new Notice(parts.join(', ') || 'No changes made.');
 
             // Wait for Obsidian metadata cache to re-index before refreshing audit
-            window.setTimeout(() => { void runAudit(); }, 750);
+            scheduleAuditRefresh(runAudit);
         };
 
         const handleMigrateDeprecatedFields = async () => {
@@ -4645,7 +4651,7 @@ export function renderBeatPropertiesSection(params: {
                 new Notice(parts.join(', ') || 'No changes made.');
             }
 
-            window.setTimeout(() => { void runAudit(); }, 750);
+            scheduleAuditRefresh(runAudit);
         };
 
         // ─── Delete custom fields action ────────────────────────────────
@@ -4845,7 +4851,7 @@ export function renderBeatPropertiesSection(params: {
             if (result.failed > 0) msgParts.push(`${result.failed} failed`);
             new Notice(msgParts.join(', ') || 'No changes made.');
 
-            window.setTimeout(() => { void runAudit(); }, 750);
+            scheduleAuditRefresh(runAudit);
         };
 
         // ─── Reorder fields action ──────────────────────────────────────
@@ -4968,7 +4974,7 @@ export function renderBeatPropertiesSection(params: {
             if (result.failed > 0) parts.push(`${result.failed} failed`);
             new Notice(parts.join(', ') || 'No changes made.');
 
-            window.setTimeout(() => { void runAudit(); }, 750);
+            scheduleAuditRefresh(runAudit);
         };
 
         // Allow the YAML fields editor to refresh the fill plan when defaults change

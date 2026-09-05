@@ -293,17 +293,6 @@ describe('InquiryView payload accounting', () => {
         expect(viewSource.includes('this.reconcileEngineTimerInterval(hasLiveContextCountdown);')).toBe(true);
     });
 
-    it('self-heals stale pending-edits flags and aligns brief actions with writeback suggestions', () => {
-        const viewSource = readFileSync(resolve(process.cwd(), 'src/inquiry/InquiryView.ts'), 'utf8');
-        expect(viewSource.includes('const prior = session.pendingEditsEmpty;')).toBe(true);
-        expect(viewSource.includes('if (session.key && prior !== pendingEditsEmpty) {')).toBe(true);
-        expect(viewSource.includes('private buildBriefPendingActions(')).toBe(true);
-        // R1 brief/dossier B4e: brief-model assembly moved to the pure
-        // module; the wrapper passes pendingActions through the options
-        // bag instead of materializing it as a local.
-        expect(viewSource.includes('pendingActions: this.buildBriefPendingActions(result, items, referenceLabels),')).toBe(true);
-    });
-
     it('prefers the strongest live warm-cache metrics over stale persisted reuse data (via pure picker)', () => {
         const viewSource = readFileSync(resolve(process.cwd(), 'src/inquiry/InquiryView.ts'), 'utf8');
         // R1 chunk 3a: selection moved to the pure inquiryCacheStatus

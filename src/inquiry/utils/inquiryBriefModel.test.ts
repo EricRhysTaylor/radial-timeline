@@ -933,14 +933,13 @@ describe('InquiryView wrappers delegate (B1+B2+B3+B4a+B4b+B4c+B4d+B4e source-loc
         // assertion above is the proof the wrapper landed.)
         expect(src.includes("sceneTitle: stripNumericTitlePrefix(this.getMinimapItemTitle(item))")).toBe(false);
     });
-    it('B4a: 5 pure leaves delegate; bodies are gone from InquiryView', () => {
+    it('B4a: live pure leaves delegate; bodies are gone from InquiryView', () => {
         // Exact pass-through forwarders were deleted (CH-2026-09-04-#9); the view calls the pure helper directly.
         expect(src.includes('isFindingHit(')).toBe(true);
         expect(src.includes('getFindingRole(')).toBe(true);
         expect(src.includes('getResultSummaryForMode(')).toBe(true);
         expect(src.includes('getOrderedFindings(')).toBe(true);
         expect(src.includes('isFindingHitPure')).toBe(false);
-        expect(src.includes('return normalizeInquiryBriefTextPure(value, referenceLabels);')).toBe(true);
         // Original inline bodies must be gone.
         expect(src.includes("return finding.kind !== 'none' && finding.kind !== 'strength';")).toBe(false);
         expect(src.includes("return finding.role === 'target' ? 'target' : 'context';")).toBe(false);
@@ -958,9 +957,8 @@ describe('InquiryView wrappers delegate (B1+B2+B3+B4a+B4b+B4c+B4d+B4e source-loc
         expect(src.includes('const labels = new Map<string, string>();')).toBe(false);
         expect(src.includes('item.filePaths?.forEach(path => add(path, display));')).toBe(false);
     });
-    it('B4c: pending-action wrappers delegate; default-arg resolution stays in the wrappers', () => {
+    it('B4c: live pending-action wrappers delegate; default-arg resolution stays in the wrappers', () => {
         expect(src.includes('return getInquiryActionTextPure(finding, referenceLabels);')).toBe(true);
-        expect(src.includes('return buildInquiryPendingActionPure(finding, result, items, referenceLabels);')).toBe(true);
         expect(src.includes('return buildBriefPendingActionsPure(result, items, referenceLabels);')).toBe(true);
         // Defaults still resolve through the InquiryView (corpus access stays here).
         expect(src.includes('items: InquiryCorpusItem[] = this.getResultItems(result),')).toBe(true);

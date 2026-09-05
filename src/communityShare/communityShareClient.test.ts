@@ -222,6 +222,103 @@ describe('Community Share mutators write against live state, not a pre-await sna
 });
 
 describe('Community Share checks the live state right before each request leaves', () => {
+    it.each([
+        ['connection replacement', 'connection_changed', (s: ReturnType<typeof buildDefaultCommunityShareSettings>) => { s.connection.connectionId = 'conn-2'; }],
+        ['secret slot replacement', 'connection_changed', (s: ReturnType<typeof buildDefaultCommunityShareSettings>) => { s.connection.secretId = 'different-secret'; }],
+        ['project replacement', 'connection_changed', (s: ReturnType<typeof buildDefaultCommunityShareSettings>) => { s.connection.projectId = 'project-2'; }],
+        ['private audience', 'publish_locked', (s: ReturnType<typeof buildDefaultCommunityShareSettings>) => { s.audience = 'private_draft'; }],
+        ['manual publishing disabled', 'publish_locked', (s: ReturnType<typeof buildDefaultCommunityShareSettings>) => { s.manualPublishEnabled = false; }],
+        ['tier changed', 'preview_stale', (s: ReturnType<typeof buildDefaultCommunityShareSettings>) => { s.tier = 2; }],
+        ['field permission withdrawn', 'preview_stale', (s: ReturnType<typeof buildDefaultCommunityShareSettings>) => { s.fieldPolicy['project.title'] = false; }],
+        ['preview invalidated', 'preview_stale', (s: ReturnType<typeof buildDefaultCommunityShareSettings>) => { s.preview.status = 'stale'; }],
+    ] as const)('blocks a report after %s during preview preparation', async (_label, code, mutate) => {
+        const harness = createPluginHarness();
+        await armReadyToPublish(harness);
+        const { plugin } = harness;
+        const request = vi.spyOn(obsidian, 'requestUrl');
+        request.mockClear();
+        const realBuild = (await vi.importActual<typeof import('./communitySharePreview')>('./communitySharePreview')).buildCommunitySharePreview;
+        vi.mocked(buildCommunitySharePreview).mockImplementationOnce(async p => {
+            const preview = await realBuild(p);
+            mutate(plugin.settings.communityShare);
+            return preview;
+        });
+        await expect(publishCommunityShareReport(plugin as never)).rejects.toMatchObject({ code });
+        expect(request).not.toHaveBeenCalled();
+        expect(plugin.settings.communityShare.publishHistory).toEqual([]);
+    });
+
+    it('blocks a scheduled report if scheduling is disabled during its own preview build', async () => {
+        const harness = createPluginHarness();
+        await armReadyToPublish(harness);
+        const { plugin } = harness;
+        plugin.settings.communityShare.scheduledPublishEnabled = true;
+        const request = vi.spyOn(obsidian, 'requestUrl');
+        request.mockClear();
+        const realBuild = (await vi.importActual<typeof import('./communitySharePreview')>('./communitySharePreview')).buildCommunitySharePreview;
+        vi.mocked(buildCommunitySharePreview).mockImplementationOnce(async p => {
+            const preview = await realBuild(p);
+            plugin.settings.communityShare.scheduledPublishEnabled = false;
+            return preview;
+        });
+        await expect(publishCommunityShareReport(plugin as never, 'scheduled')).rejects.toMatchObject({ code: 'publish_locked' });
+        expect(request).not.toHaveBeenCalled();
+    });
+
+    it.each(['projects', 'context', 'apr', 'session', 'revoke'] as const)('blocks %s on connection replacement during secret lookup', async operation => {
+        const harness = createPluginHarness();
+        await armReadyToPublish(harness);
+        const { plugin } = harness;
+        plugin.settings.communityShare.publishHistory = [{ id: 'publish-1', publishId: 'publish-1', action: 'publish', status: 'success', at: '2026-09-05T12:00:00Z' }];
+        const request = vi.spyOn(obsidian, 'requestUrl');
+        request.mockClear();
+        const storage = plugin.app.secretStorage;
+        const original = storage.getSecret;
+        storage.getSecret = id => {
+            plugin.settings.communityShare.connection.connectionId = 'replacement';
+            return original(id);
+        };
+        const calls = {
+            projects: () => syncCommunityProjects(plugin as never),
+            context: () => fetchCommunityShareContext(plugin as never),
+            apr: () => uploadAprToCommunity(plugin as never, { svg: '<svg/>', width: 100, height: 100, teaserLevel: 'full', updateFrequency: 'manual', bookKey: 'book-1' }),
+            session: () => postSessionToCommunityFeed(plugin as never, { audience: 'community', body: 'Session', stats: { minutes: 30, words: 500, mode: 'drafting' } }),
+            revoke: () => revokeCommunityShareReport(plugin as never),
+        };
+        await expect(calls[operation]()).rejects.toMatchObject({ code: 'connection_changed' });
+        expect(request).not.toHaveBeenCalled();
+    });
+
+    it.each(['apr', 'session', 'daily'] as const)('blocks %s when sharing level drops during secret lookup', async operation => {
+        const harness = createPluginHarness();
+        await armReadyToPublish(harness, 4);
+        const { plugin } = harness;
+        const request = vi.spyOn(obsidian, 'requestUrl');
+        request.mockClear();
+        if (operation === 'daily') {
+            const now = new Date();
+            const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            (plugin as { getWritingSessionService: unknown }).getWritingSessionService = () => ({
+                getSettings: () => ({ records: [{ id: 'today', mode: 'drafting', startedAt: now.toISOString(), endedAt: now.toISOString(), sessionDate: date, elapsedMs: 60000, wordsAdded: 50 }] })
+            });
+        }
+        const storage = plugin.app.secretStorage;
+        const original = storage.getSecret;
+        storage.getSecret = id => {
+            plugin.settings.communityShare.tier = 1;
+            return original(id);
+        };
+        if (operation === 'daily') {
+            await syncCommunityDailyIfEligible(plugin as never);
+        } else {
+            const send = operation === 'apr'
+                ? uploadAprToCommunity(plugin as never, { svg: '<svg/>', width: 100, height: 100, teaserLevel: 'full', updateFrequency: 'manual', bookKey: 'book-1' })
+                : postSessionToCommunityFeed(plugin as never, { audience: 'community', body: 'Session', stats: { minutes: 30, words: 500, mode: 'drafting' } });
+            await expect(send).rejects.toMatchObject({ code: 'sharing_level_required' });
+        }
+        expect(request).not.toHaveBeenCalled();
+    });
+
     it('refuses to publish when a Pause lands while the preview is building', async () => {
         const harness = createPluginHarness();
         const { plugin } = harness;

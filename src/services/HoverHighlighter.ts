@@ -30,7 +30,7 @@ export class HoverHighlighter {
                 }
                 this.highlighter.highlight(file.path, true);
                 this.lastHighlightedFile = file.path;
-                if (this.highlighter.isSceneFile(file.path)) {
+                if (this.plugin.isSceneFile(file.path)) {
                     this.plugin.openScenePaths.add(file.path);
                     this.plugin.refreshTimelineIfNeeded(null);
                 }
@@ -55,7 +55,7 @@ export class HoverHighlighter {
             if (!filePath) return;
             if (this.currentHoverPath === filePath) return;
             this.currentHoverPath = filePath;
-            if (this.highlighter.isSceneFile(filePath)) {
+            if (this.plugin.isSceneFile(filePath)) {
                 this.highlighter.highlight(filePath, true);
             }
         });
@@ -69,7 +69,7 @@ export class HoverHighlighter {
             const filePath = navFile.getAttribute('data-path');
             if (!filePath || this.currentHoverPath !== filePath) return;
             this.currentHoverPath = null;
-            if (this.highlighter.isSceneFile(filePath)) {
+            if (this.plugin.isSceneFile(filePath)) {
                 this.highlighter.highlight(filePath, false);
             }
         });
@@ -87,7 +87,7 @@ export class HoverHighlighter {
             if (!filePath || state?.type !== 'markdown') return;
             if (this.currentTabHoverPath === filePath) return;
             this.currentTabHoverPath = filePath;
-            if (this.highlighter.isSceneFile(filePath)) {
+            if (this.plugin.isSceneFile(filePath)) {
                 this.highlighter.highlight(filePath, true);
             }
         });
@@ -103,7 +103,7 @@ export class HoverHighlighter {
             const filePath = state?.state?.file as string | undefined;
             if (!filePath || state?.type !== 'markdown' || this.currentTabHoverPath !== filePath) return;
             this.currentTabHoverPath = null;
-            if (this.highlighter.isSceneFile(filePath)) {
+            if (this.plugin.isSceneFile(filePath)) {
                 this.highlighter.highlight(filePath, false);
             }
         });

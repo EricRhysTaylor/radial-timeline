@@ -767,8 +767,9 @@ export default class RadialTimelinePlugin extends Plugin {
         }
     }
 
+    /** Whether a vault path is a scene note (Class: Scene), whether or not a timeline is open. */
     public isSceneFile(path: string): boolean {
-        return this.sceneHighlighter.isSceneFile(path);
+        return this.sceneDataService.isSceneFile(path);
     }
 
     public async processSceneAnalysisByManuscriptOrder(): Promise<void> {

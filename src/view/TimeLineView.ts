@@ -14,7 +14,7 @@ import type { SubplotAlignment, TimelineItem } from '../types';
 import { renderSvgFromString } from '../utils/svgDom';
 import { openOrRevealFileByPath } from '../utils/fileUtils';
 import { setupRotationController, setupSearchControls as setupSearchControlsExt, addHighlightRectangles as addHighlightRectanglesExt, setupModeToggleController, setupVersionIndicatorController, setupHelpIconController, setupTooltips, setupSubplotKeyController } from './interactions';
-import { isShiftModeActive } from './interactions/ChronologueShiftController';
+import { isRuntimeModeActive, isShiftModeActive } from './interactions/ChronologueShiftController';
 import { RendererService } from '../services/RendererService';
 import { ModeManager, createModeManager } from '../modes/ModeManager';
 import { getModeDefinition, getToggleableModes } from '../modes/ModeRegistry';
@@ -235,8 +235,8 @@ export class RadialTimelineView extends ItemView {
     
     // Mode system
     private _currentMode: string = 'narrative'; // TimelineMode enum value
-    private modeManager?: ModeManager; // Centralized mode management
-    private interactionController?: ModeInteractionController; // Interaction handler management
+    private readonly modeManager: ModeManager; // Centralized mode management
+    private readonly interactionController: ModeInteractionController; // Interaction handler management
     
     // Store event handler references for clean removal
     private normalEventHandlers: Map<string, EventListener> = new Map();
@@ -267,7 +267,7 @@ export class RadialTimelineView extends ItemView {
      * Get the ModeManager instance
      * Provides centralized mode switching with lifecycle management
      */
-    public getModeManager(): ModeManager | undefined {
+    public getModeManager(): ModeManager {
         return this.modeManager;
     }
 
@@ -275,7 +275,7 @@ export class RadialTimelineView extends ItemView {
      * Get the InteractionController instance
      * Manages event handler registration and cleanup
      */
-    public getInteractionController(): ModeInteractionController | undefined {
+    public getInteractionController(): ModeInteractionController {
         return this.interactionController;
     }
 
@@ -288,12 +288,8 @@ export class RadialTimelineView extends ItemView {
         
         // Initialize mode management
         this._currentMode = plugin.settings.currentMode || 'narrative';
-        try {
-            this.modeManager = createModeManager(plugin, this);
-            this.interactionController = createInteractionController(this);
-        } catch {
-            // Mode management initialization failed
-        }
+        this.modeManager = createModeManager(plugin, this);
+        this.interactionController = createInteractionController(this);
     }
 
     getViewType(): string {
@@ -961,16 +957,7 @@ export class RadialTimelineView extends ItemView {
     private async switchTimelineModeFromNav(modeId: string): Promise<void> {
         if (modeId === this._currentMode) return;
         this.closeWritingSessionPanel();
-        const modeManager = this.getModeManager();
-        if (modeManager) {
-            await modeManager.switchMode(modeId as TimelineMode);
-            return;
-        }
-        // Fallback mirrors ModeToggleController when no manager is present.
-        this.currentMode = modeId;
-        this.plugin.settings.currentMode = modeId;
-        await this.plugin.saveSettings();
-        this.refreshTimeline();
+        await this.modeManager.switchMode(modeId as TimelineMode);
     }
 
     private formatSessionClock(ms: number): string {
@@ -2716,7 +2703,8 @@ export class RadialTimelineView extends ItemView {
                     this.plugin.searchState,
                     this._currentMode,
                     this.plugin.settings,
-                    this.plugin._gossamerLastRun
+                    this.plugin._gossamerLastRun,
+                    isRuntimeModeActive()
                 );
                 
                 // Detect changes from last render
@@ -2896,7 +2884,7 @@ export class RadialTimelineView extends ItemView {
         }
 
         // If starting in Gossamer mode, initialize it before the first render
-        if (this._currentMode === 'gossamer' && this.modeManager) {
+        if (this._currentMode === 'gossamer') {
             const { TimelineMode } = await import('../modes/ModeDefinition');
             const { getModeDefinition } = await import('../modes/ModeRegistry');
             const gossamerDef = getModeDefinition(TimelineMode.GOSSAMER);

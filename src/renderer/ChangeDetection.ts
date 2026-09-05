@@ -7,7 +7,6 @@
 import type { TimelineItem, RadialTimelineSettings, LegacyPersistedSettings, LegacyBeatDescription } from '../types';
 import type { GossamerRun } from '../utils/gossamer';
 import { getVersionCheckService } from '../services/VersionCheckService';
-import { isRuntimeModeActive } from '../view/interactions/ChronologueShiftController';
 import { DEFAULT_BOOK_TITLE, getActiveBook, getActiveBookTitle } from '../utils/books';
 import { getActiveRecentStructuralMoves } from '../utils/recentStructuralMoves';
 import { readSharedChapterTitle } from '../utils/timelineChapters';
@@ -119,7 +118,8 @@ export function createSnapshot(
     searchState: TimelineSearchState,
     currentMode: string,
     settings: RadialTimelineSettings,
-    gossamerRun: GossamerRun | null | undefined
+    gossamerRun: GossamerRun | null | undefined,
+    runtimeModeActive = false
 ): TimelineSnapshot {
     // Create a structural hash for fields that affect scene presence, ordering, geometry, labels, or layout.
     const sceneHash = scenes
@@ -277,7 +277,7 @@ export function createSnapshot(
         gossamerRunExists: !!gossamerRun,
         gossamerRunHash,
         updateAvailable: getVersionCheckService()?.isUpdateAvailable() ?? false,
-        runtimeModeActive: isRuntimeModeActive(),
+        runtimeModeActive,
         recentMovesHash,
         timestamp: Date.now()
     };

@@ -548,77 +548,8 @@ async function enterGossamerMode(plugin: RadialTimelinePlugin) {
   const view = getFirstView(plugin);
   if (!view) return;
   
-  // Try using ModeManager first
-  const modeManager = view.getModeManager();
-
-  if (modeManager) {
-    // Use new ModeManager for mode switching
-    await modeManager.switchMode(TimelineMode.GOSSAMER);
-    // ModeManager handles: settings persistence, lifecycle hooks, and refresh
-  } else {
-    // Fallback mode switching
-    // Update mode system
-    view.currentMode = 'gossamer';
-
-    // Update settings
-    plugin.settings.currentMode = 'gossamer';
-    void plugin.saveSettings();
-  }
-
-  // Only do selective update if not using ModeManager
-  // (ModeManager handles refresh through lifecycle hooks)
-  if (!modeManager) {
-    // Prefer selective update: build layer in-place without full refresh
-    const svg = view.containerEl.querySelector<SVGSVGElement>('.radial-timeline-svg');
-    let didSelective = false;
-    try {
-      const rs = plugin.getRendererService();
-      if (rs) {
-        // Attach scene data to view if available for color/path mapping
-        view.sceneData = plugin.lastSceneData || view.sceneData;
-        view.currentMode = 'gossamer';
-        didSelective = rs.updateGossamerLayer({
-          containerEl: view.containerEl,
-          plugin,
-          sceneData: view.sceneData,
-          currentMode: 'gossamer'
-        });
-      }
-      if (didSelective && svg) {
-        // Apply gossamer-mode styling: mute non-plot elements
-        svg.setAttribute('data-gossamer-mode', 'true');
-        const allElements = svg.querySelectorAll('.rt-scene-path, .rt-number-square, .rt-number-text, .rt-scene-title');
-        allElements.forEach(el => {
-          const group = el.closest('.rt-scene-group');
-          const itemType = group?.getAttribute('data-item-type');
-          // Keep beats (story structure) unmuted, mute everything else
-          if (itemType !== 'Beat') {
-            el.classList.add('rt-non-selected');
-          }
-        });
-        
-        // Update mode toggle button to show it will return to the original mode
-        const modeToggle = svg.querySelector('#mode-toggle');
-        if (modeToggle) {
-          const originalMode = _previousBaseMode || 'narrative';
-          modeToggle.setAttribute('data-current-mode', originalMode);
-          const title = modeToggle.querySelector('title');
-          if (title) {
-            title.textContent = originalMode === 'allscenes'
-              ? t('gossamer.notices.modeToggleSwitchMain')
-              : t('gossamer.notices.modeToggleSwitchAll');
-          }
-        }
-        
-        // Set up gossamer handlers on existing DOM
-        view.setupGossamerEventListeners(svg);
-      }
-    } catch { /* selective refresh is best-effort */ }
-    if (!didSelective) {
-      // Fall back to full refresh if selective failed
-      plugin.refreshTimelineIfNeeded(undefined);
-    }
-  }
+  // ModeManager handles settings persistence, lifecycle hooks, and refresh.
+  await view.getModeManager().switchMode(TimelineMode.GOSSAMER);
 }
 
 async function exitGossamerMode(plugin: RadialTimelinePlugin) {
@@ -635,52 +566,11 @@ async function exitGossamerMode(plugin: RadialTimelinePlugin) {
   // Set guard flag
   _isExitingGossamer = true;
   
-  // Try using ModeManager first
-  const modeManager = view.getModeManager();
-
-  if (modeManager) {
-    // Use new ModeManager for mode switching
-    const restoredMode = restoreBaseMode(plugin);
-
-    // Use ModeManager to switch (handles lifecycle hooks and refresh)
-    await modeManager.switchMode(coerceTimelineMode(restoredMode));
-
-    // Reset guard flag after a short delay
-    window.setTimeout(() => {
-      _isExitingGossamer = false;
-    }, 100);
-
-    return;
-  }
-
-  // Fallback mode exit
-  // Get SVG element
-  const svg = view.containerEl.querySelector<SVGSVGElement>('.radial-timeline-svg');
-
-  // Remove all Gossamer muting classes FIRST
-  if (svg) {
-    const allElements = svg.querySelectorAll('.rt-scene-path, .rt-number-square, .rt-number-text, .rt-scene-title, .rt-subplot-ring-label-text');
-    allElements.forEach(el => el.classList.remove('rt-non-selected'));
-    svg.removeAttribute('data-gossamer-mode');
-
-    // Remove Gossamer event listeners
-    view.removeGossamerEventListeners(svg);
-  }
-
   const restoredMode = restoreBaseMode(plugin);
+  // ModeManager handles lifecycle hooks and the refresh.
+  await view.getModeManager().switchMode(coerceTimelineMode(restoredMode));
 
-  // Update new mode system
-  view.currentMode = restoredMode;
-
-  // Update settings
-  plugin.settings.currentMode = restoredMode;
-  void plugin.saveSettings();
-
-  // Force an immediate full refresh when exiting Gossamer mode
-  // Use direct refreshTimeline() to avoid debounce delay
-  view.refreshTimeline();
-
-  // Reset guard flag after a short delay to allow the refresh to complete
+  // Reset guard flag after a short delay
   window.setTimeout(() => {
     _isExitingGossamer = false;
   }, 100);

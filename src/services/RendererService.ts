@@ -6,6 +6,7 @@
 import type { TimelineItem } from '../types';
 import type RadialTimelinePlugin from '../main';
 import { addHighlightRectangles as addHighlightRectanglesExt } from '../view/interactions';
+import { isRuntimeModeActive } from '../view/interactions/ChronologueShiftController';
 import { renderGossamerLayer } from '../renderer/gossamerLayer';
 import { renderGossamerMonthSpokes } from '../renderer/components/MonthSpokes';
 import { renderProgressRing, resolveProgressEstimate, resolveProgressRingDate } from '../renderer/components/ProgressRing';
@@ -80,7 +81,7 @@ export class RendererService {
         // Detect progress milestones (stage completions, staleness encouragement)
         const milestone = this.detectProgressMilestone(scenes);
         
-        return buildTimelineSVG(pluginFacade, scenes, { aprNeedsRefresh, milestone });
+        return buildTimelineSVG(pluginFacade, scenes, { aprNeedsRefresh, milestone, runtimeModeActive: isRuntimeModeActive() });
     }
 
     /**

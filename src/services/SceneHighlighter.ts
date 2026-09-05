@@ -1,4 +1,3 @@
-import type { TimelineItem } from '../types';
 import type RadialTimelinePlugin from '../main';
 
 export class SceneHighlighter {
@@ -74,40 +73,5 @@ export class SceneHighlighter {
                 // Ignore highlighting errors.
             }
         }
-    }
-
-    isSceneFile(filePath: string): boolean {
-        const views = this.plugin.getTimelineViews();
-        if (views.length === 0) return false;
-
-        for (const view of views) {
-            const scenes = (view)['sceneData'] || [];
-            if (scenes.length > 0) {
-                const match = scenes.find((scene: TimelineItem) => {
-                    if (!scene.path) return false;
-                    if (scene.path === filePath) return true;
-                    if (scene.path === `/${filePath}`) return true;
-                    if (`/${scene.path}` === filePath) return true;
-                    return false;
-                });
-                if (match) return true;
-            } else {
-                const container = view.contentEl.querySelector('.radial-timeline-container');
-                if (!container) continue;
-                const svgElement = container.querySelector('svg');
-                if (!svgElement) continue;
-                let encodedPath = encodeURIComponent(filePath);
-                let sceneGroup = svgElement.querySelector(`.scene-group[data-path="${encodedPath}"]`);
-                if (!sceneGroup && filePath.startsWith('/')) {
-                    encodedPath = encodeURIComponent(filePath.substring(1));
-                    sceneGroup = svgElement.querySelector(`.scene-group[data-path="${encodedPath}"]`);
-                } else if (!sceneGroup && !filePath.startsWith('/')) {
-                    encodedPath = encodeURIComponent(`/${filePath}`);
-                    sceneGroup = svgElement.querySelector(`.scene-group[data-path="${encodedPath}"]`);
-                }
-                if (sceneGroup) return true;
-            }
-        }
-        return false;
     }
 }

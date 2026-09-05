@@ -1,5 +1,4 @@
 import { Notice } from 'obsidian';
-import { resetGossamerModeState } from '../../GossamerCommands';
 import { TimelineMode } from '../../modes/ModeDefinition';
 // Value import used only inside event handlers (call-time), keeping the
 // TimeLineView <-> controller cycle inert at module init.
@@ -189,25 +188,15 @@ async function switchToMode(view: RadialTimelineView, modeId: string, modeSelect
     updateModeSelectorState(modeSelector, modeId);
 
     try {
-        if (modeManager) {
-            await modeManager.switchMode(modeId as TimelineMode);
-            // Re-sync UI to the actual active mode (guarded switches may no-op)
-            const finalMode = modeManager.getCurrentMode();
-            if (finalMode !== (modeId as TimelineMode)) {
-                updateModeSelectorState(modeSelector, finalMode);
-            }
-        } else {
-            // Fallback: try direct refresh first, then debounced
-            view.plugin.settings.currentMode = modeId;
-            await view.plugin.saveSettings();
-            resetGossamerModeState();
-
-            // Use direct refresh (bypasses 400ms debounce)
-            view.refreshTimeline();
+        await modeManager.switchMode(modeId as TimelineMode);
+        // Re-sync UI to the actual active mode (guarded switches may no-op)
+        const finalMode = modeManager.getCurrentMode();
+        if (finalMode !== (modeId as TimelineMode)) {
+            updateModeSelectorState(modeSelector, finalMode);
         }
     } catch (error) {
         // Revert UI on unhandled error and notify user
-        const fallbackMode = modeManager?.getCurrentMode?.() ?? view.plugin.settings.currentMode ?? 'narrative';
+        const fallbackMode = modeManager.getCurrentMode();
         updateModeSelectorState(modeSelector, fallbackMode);
         console.error(`[ModeToggle] Failed to switch to ${modeId}:`, error);
         new Notice(`Could not switch to ${modeId} mode. Check the developer console for details.`, 6000);

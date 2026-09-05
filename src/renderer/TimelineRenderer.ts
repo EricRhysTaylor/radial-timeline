@@ -28,7 +28,6 @@ import {
 import { makeSceneId } from '../utils/numberSquareHelpers';
 import type { PositionInfo } from './utils/SceneLayout';
 import { buildChronologueOuterLabels, renderChronologueOverlays, renderOuterLabelTexts, renderChronologueOuterTicks } from './utils/Chronologue';
-import { isRuntimeModeActive } from '../view/interactions/ChronologueShiftController';
 import { computeCacheableValues } from './utils/Precompute';
 import {
     SVG_SIZE,
@@ -247,7 +246,7 @@ function calculateTargetTickEnhancedData(
 export function createTimelineSVG(
     plugin: PluginRendererFacade,
     scenes: TimelineItem[],
-    options?: { aprNeedsRefresh?: boolean; milestone?: MilestoneInfo | null }
+    options?: { aprNeedsRefresh?: boolean; milestone?: MilestoneInfo | null; runtimeModeActive?: boolean }
 ): { svgString: string; maxStageColor: string } {
     const stopTotalPerf = startPerfSegment(plugin, 'timeline.total');
     const size = SVG_SIZE;
@@ -749,7 +748,7 @@ export function createTimelineSVG(
             durationArcRadius: CHRONOLOGUE_DURATION_ARC_RADIUS,
             synopsesElements,
             maxTextWidth,
-            useRuntimeMode: isRuntimeModeActive(),
+            useRuntimeMode: options?.runtimeModeActive ?? false,
             microRingLayout,
             microRingBaseRadius,
             backdropLayout

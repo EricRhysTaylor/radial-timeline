@@ -1,0 +1,648 @@
+/* -------------------------------------------------------------------------- */
+/* Progress completion preview (ERT)                                          */
+/* -------------------------------------------------------------------------- */
+
+.ert-ui.ert-scope--settings .ert-completion-preview-body {
+  font-size: 1rem;
+  font-weight: 400;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ert-group-gap);
+}
+
+.ert-ui.ert-scope--settings .ert-previewFrame[data-preview="completion"] .ert-planetary-preview-heading {
+  text-align: center;
+  width: 100%;
+}
+
+.ert-ui.ert-scope--settings .ert-previewFrame[data-preview="completion"] .ert-completion-summary-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+}
+
+.ert-ui.ert-scope--settings .ert-previewFrame[data-preview="completion"] .ert-completion-summary {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.95rem;
+  font-style: italic;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 0.625rem var(--ert-pad-md);
+  background: transparent;
+  border-radius: var(--ert-gap-sm);
+  line-height: 1.5;
+}
+
+.ert-ui.ert-scope--settings .ert-previewFrame[data-preview="completion"] .ert-completion-summary-text {
+  display: block;
+  color: var(--text-muted);
+}
+
+.ert-ui.ert-scope--settings .ert-previewFrame[data-preview="completion"] .ert-completion-summary-author {
+  display: block;
+  margin-top: calc(var(--ert-gap-xs) * 0.5);
+  color: var(--text-faint);
+  font-size: 0.8rem;
+  font-style: normal;
+  text-align: center;
+}
+
+.ert-ui.ert-scope--settings .ert-previewFrame[data-preview="completion"] .ert-completion-summary-toggle {
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+.ert-ui.ert-scope--settings .ert-previewFrame[data-preview="completion"].ert-completion-preview-collapsed .ert-completion-summary {
+  margin-bottom: 0;
+}
+
+.ert-ui.ert-scope--settings .ert-completion-stage-Zero {
+  border-color: color-mix(in srgb, var(--rt-color-zero) 40%, transparent);
+  background: color-mix(in srgb, var(--rt-color-zero) 8%, transparent);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-stage-Zero .ert-planetary-preview-heading {
+  color: var(--rt-color-zero);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-stage-Author {
+  border-color: color-mix(in srgb, var(--rt-color-author) 40%, transparent);
+  background: color-mix(in srgb, var(--rt-color-author) 8%, transparent);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-stage-Author .ert-planetary-preview-heading {
+  color: var(--rt-color-author);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-stage-House {
+  border-color: color-mix(in srgb, var(--rt-color-house) 40%, transparent);
+  background: color-mix(in srgb, var(--rt-color-house) 8%, transparent);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-stage-House .ert-planetary-preview-heading {
+  color: var(--rt-color-house);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-stage-Press {
+  border-color: color-mix(in srgb, var(--rt-color-press) 40%, transparent);
+  background: color-mix(in srgb, var(--rt-color-press) 8%, transparent);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-stage-Press .ert-planetary-preview-heading {
+  color: var(--rt-color-press);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-warn {
+  border-color: color-mix(in srgb, var(--rt-completion-warn) 50%, transparent);
+  box-shadow: inset 0 0 1.25rem color-mix(in srgb, var(--rt-completion-warn) 8%, transparent);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-late {
+  border-color: color-mix(in srgb, var(--rt-completion-late) 50%, transparent);
+  box-shadow: inset 0 0 1.25rem color-mix(in srgb, var(--rt-completion-late) 8%, transparent);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-stalled {
+  border-color: color-mix(in srgb, var(--rt-completion-stalled) 60%, transparent);
+  box-shadow: inset 0 0 1.25rem color-mix(in srgb, var(--rt-completion-stalled) 10%, transparent);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-metrics-row {
+  display: flex;
+  justify-content: space-around;
+  gap: var(--ert-group-gap);
+  padding: var(--ert-pad-sm) 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--background-modifier-border) 70%, transparent);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ert-gap-xs);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-metric-value {
+  font-size: 1.8em;
+  font-weight: 700;
+  color: var(--text-normal);
+  line-height: 1;
+}
+
+.ert-ui.ert-scope--settings .ert-completion-metric-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ert-ui.ert-scope--settings .ert-completion-staleness-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+  padding: 0.625rem 0.875rem;
+  background: color-mix(in srgb, var(--background-secondary) 85%, transparent);
+  border-radius: var(--ert-gap-sm);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-staleness-icon {
+  font-size: 1.1rem;
+}
+
+.ert-ui.ert-scope--settings .ert-completion-staleness-text {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-warn .ert-completion-staleness-text {
+  color: var(--rt-completion-warn);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-late .ert-completion-staleness-text {
+  color: var(--rt-completion-late);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-stalled .ert-completion-staleness-text {
+  color: var(--rt-completion-stalled);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-date-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ert-gap-sm);
+  padding: var(--ert-pad-sm) 0;
+}
+
+.ert-ui.ert-scope--settings .ert-completion-date-label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-date-value {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-date-value.ert-completion-date-unknown {
+  font-size: 1.5rem;
+  color: var(--text-faint);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-days-until {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-projection {
+  margin-top: var(--ert-gap-sm);
+  padding-top: var(--ert-pad-sm);
+  border-top: 1px solid color-mix(in srgb, var(--background-modifier-border) 60%, transparent);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-projection-heading {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: var(--ert-pad-sm);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-projection-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.ert-ui.ert-scope--settings .ert-completion-projection-header {
+  display: grid;
+  grid-template-columns: 4.375rem 4.0625rem 3.4375rem 1fr;
+  gap: var(--ert-gap-sm);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+  padding-bottom: 0.375rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--background-modifier-border) 70%, transparent);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-projection-row {
+  display: grid;
+  grid-template-columns: 4.375rem 4.0625rem 3.4375rem 1fr;
+  gap: var(--ert-gap-sm);
+  font-size: 0.9rem;
+  padding: 0.375rem 0;
+  align-items: center;
+}
+
+.ert-ui.ert-scope--settings .ert-completion-projection-row.ert-completion-projection-final {
+  background: color-mix(in srgb, var(--text-success) 8%, transparent);
+  border-radius: 0.375rem;
+  padding: var(--ert-gap-sm);
+  margin: 0 calc(-1 * var(--ert-gap-sm));
+}
+
+.ert-ui.ert-scope--settings .ert-completion-projection-month {
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+  font-weight: 500;
+  color: var(--text-normal);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-projection-added {
+  color: var(--rt-color-press);
+  font-weight: 500;
+}
+
+.ert-ui.ert-scope--settings .ert-completion-projection-cumulative {
+  color: var(--text-muted);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-projection-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+  height: var(--ert-gap-md);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-projection-bar {
+  height: var(--ert-gap-sm);
+  background: var(--rt-completion-progress-grad);
+  border-radius: calc(var(--ert-gap-sm) / 2);
+  min-width: var(--ert-gap-xs);
+  max-width: calc(100% - 2.5rem);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-bar-warn {
+  background: var(--rt-completion-bar-warn);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-bar-late {
+  background: var(--rt-completion-bar-late);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-bar-stalled {
+  background: var(--rt-completion-bar-stalled);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-projection-warn .ert-completion-projection-added {
+  color: var(--rt-completion-warn);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-projection-late .ert-completion-projection-added {
+  color: var(--rt-completion-late);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-projection-stalled .ert-completion-projection-added {
+  color: var(--rt-completion-stalled);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-projection-stalled .ert-completion-projection-added::after {
+  content: ' ?';
+  opacity: 0.7;
+}
+
+.ert-ui.ert-scope--settings .ert-completion-projection-percent {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  min-width: 2rem;
+}
+
+.ert-ui.ert-scope--settings .ert-completion-target-markers {
+  display: flex;
+  gap: 0.1875rem;
+  align-items: center;
+}
+
+.ert-ui.ert-scope--settings .ert-completion-target-marker {
+  width: var(--ert-gap-sm);
+  height: var(--ert-gap-sm);
+  border-radius: 0.125rem;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.ert-ui.ert-scope--settings .ert-completion-target-marker:hover {
+  transform: scale(1.3);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-projection-has-target {
+  background: color-mix(in srgb, var(--background-secondary) 92%, transparent);
+  border-radius: 0.25rem;
+  margin: 0 calc(-1 * var(--ert-gap-xs));
+  padding-left: var(--ert-gap-xs);
+  padding-right: var(--ert-gap-xs);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-last-progress {
+  font-size: 0.8rem;
+  color: var(--text-faint);
+  padding-top: var(--ert-gap-sm);
+  border-top: 1px solid color-mix(in srgb, var(--background-modifier-border) 70%, transparent);
+  text-align: center;
+}
+
+.ert-ui.ert-scope--settings .ert-completion-no-data {
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+  padding: var(--ert-pad-md);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-error {
+  color: var(--text-error);
+  font-style: italic;
+  text-align: center;
+  padding: var(--ert-pad-md);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-complete {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+  text-align: center;
+  padding: calc(var(--ert-pad-md) + var(--ert-gap-sm)) calc(var(--ert-pad-md) + var(--ert-gap-xs));
+  position: relative;
+  z-index: 1;
+}
+
+.ert-ui.ert-scope--settings .ert-completion-complete-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--rt-color-empty);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-complete-subtitle {
+  font-size: 1rem;
+  color: color-mix(in srgb, var(--text-on-accent) 85%, transparent);
+  font-weight: 500;
+}
+
+.ert-ui.ert-scope--settings :is(.ert-completion-preview-press-complete,.ert-ui.ert-scope--settings 
+  .ert-completion-preview-book-complete,.ert-ui.ert-scope--settings 
+  .ert-completion-preview-zero-complete,.ert-ui.ert-scope--settings 
+  .ert-completion-preview-author-complete,.ert-ui.ert-scope--settings 
+  .ert-completion-preview-house-complete) {
+  position: relative;
+  overflow: hidden;
+}
+
+.ert-ui.ert-scope--settings :is(.ert-completion-preview-press-complete, .ert-completion-preview-book-complete) {
+  background: var(--rt-completion-press-grad);
+  border: 0.125rem solid var(--rt-completion-gold);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--rt-completion-gold) 18%, transparent);
+}
+
+.ert-ui.ert-scope--settings :is(.ert-completion-preview-press-complete, .ert-completion-preview-book-complete) .ert-planetary-preview-heading {
+  color: color-mix(in srgb, var(--text-on-accent) 95%, transparent);
+  position: relative;
+  z-index: 1;
+}
+
+.ert-ui.ert-scope--settings :is(.ert-completion-preview-press-complete, .ert-completion-preview-book-complete) .ert-completion-complete-title {
+  font-size: 1.8rem;
+  background: var(--rt-completion-title-grad);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: none;
+}
+
+.ert-ui.ert-scope--settings :is(.ert-completion-preview-press-complete, .ert-completion-preview-book-complete) .ert-completion-complete-subtitle {
+  color: color-mix(in srgb, var(--text-on-accent) 90%, transparent);
+}
+
+.ert-ui.ert-scope--settings :is(.ert-completion-preview-press-complete, .ert-completion-preview-book-complete) .ert-completion-complete-bg-icon {
+  opacity: 0.18;
+}
+
+.ert-ui.ert-scope--settings :is(.ert-completion-preview-press-complete, .ert-completion-preview-book-complete) .ert-completion-complete-bg-icon svg {
+  width: 12.5rem;
+  height: 12.5rem;
+  color: var(--rt-completion-gold);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-zero-complete {
+  background: var(--rt-completion-zero-grad);
+  border: 0.125rem solid var(--rt-color-zero);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--rt-color-zero) 18%, transparent);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-zero-complete .ert-planetary-preview-heading {
+  color: color-mix(in srgb, var(--text-on-accent) 90%, transparent);
+  position: relative;
+  z-index: 1;
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-zero-complete .ert-completion-complete-title {
+  color: var(--rt-color-empty);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-zero-complete .ert-completion-complete-bg-icon {
+  opacity: 0.15;
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-zero-complete .ert-completion-complete-bg-icon svg {
+  color: var(--rt-completion-zero-soft);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-author-complete {
+  background: var(--rt-completion-author-grad);
+  border: 0.125rem solid var(--rt-color-author);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--rt-color-author) 18%, transparent);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-author-complete .ert-planetary-preview-heading {
+  color: color-mix(in srgb, var(--text-on-accent) 90%, transparent);
+  position: relative;
+  z-index: 1;
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-author-complete .ert-completion-complete-title {
+  color: var(--rt-color-empty);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-author-complete .ert-completion-complete-bg-icon {
+  opacity: 0.15;
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-author-complete .ert-completion-complete-bg-icon svg {
+  color: var(--rt-completion-author-soft);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-house-complete {
+  background: var(--rt-completion-house-grad);
+  border: 0.125rem solid var(--rt-color-house);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--rt-color-house) 18%, transparent);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-house-complete .ert-planetary-preview-heading {
+  color: color-mix(in srgb, var(--text-on-accent) 90%, transparent);
+  position: relative;
+  z-index: 1;
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-house-complete .ert-completion-complete-title {
+  color: var(--rt-color-empty);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-house-complete .ert-completion-complete-bg-icon {
+  opacity: 0.15;
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-house-complete .ert-completion-complete-bg-icon svg {
+  color: var(--rt-completion-house-soft);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-complete-bg-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.12;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ert-ui.ert-scope--settings .ert-completion-complete-bg-icon svg {
+  width: 11.25rem;
+  height: 11.25rem;
+  color: var(--rt-color-empty);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-empty-quote {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+  padding: calc(var(--ert-pad-md) + var(--ert-gap-sm)) var(--ert-pad-md);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-quote-text {
+  display: block;
+  font-size: 1.15rem;
+  font-style: italic;
+  color: var(--text-normal);
+  text-align: center;
+  line-height: 1.5;
+  max-width: 25rem;
+}
+
+.ert-ui.ert-scope--settings .ert-completion-quote-line {
+  display: block;
+}
+
+.ert-ui.ert-scope--settings .ert-completion-quote-author {
+  display: block;
+  margin-top: calc(var(--ert-gap-xs) * 0.75);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  font-style: normal;
+  text-align: center;
+}
+
+.ert-ui.ert-scope--settings .ert-completion-empty-hint {
+  font-size: 0.85rem;
+  color: var(--text-faint);
+  margin-top: var(--ert-gap-sm);
+  padding-top: var(--ert-gap-sm);
+  border-top: 1px solid color-mix(in srgb, var(--background-modifier-border) 70%, transparent);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-encouragement {
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 0.625rem var(--ert-pad-md);
+  margin-bottom: var(--ert-gap-xs);
+  background: color-mix(in srgb, var(--background-secondary) 90%, transparent);
+  border-radius: var(--ert-gap-sm);
+  line-height: 1.5;
+}
+
+.ert-ui.ert-scope--settings .ert-completion-encouragement-text {
+  display: block;
+  color: var(--text-muted);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-encouragement-author {
+  display: block;
+  margin-top: calc(var(--ert-gap-xs) * 0.5);
+  color: var(--text-faint);
+  font-size: 0.8rem;
+  font-style: normal;
+  text-align: center;
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-warn .ert-completion-encouragement {
+  background: color-mix(in srgb, var(--rt-completion-warn) 6%, transparent);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-warn .ert-completion-summary {
+  background: color-mix(in srgb, var(--rt-completion-warn) 6%, transparent);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-late .ert-completion-encouragement {
+  background: color-mix(in srgb, var(--rt-completion-late) 6%, transparent);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-late .ert-completion-summary {
+  background: color-mix(in srgb, var(--rt-completion-late) 6%, transparent);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-stalled .ert-completion-encouragement {
+  background: color-mix(in srgb, var(--rt-completion-stalled) 8%, transparent);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-stalled .ert-completion-summary {
+  background: color-mix(in srgb, var(--rt-completion-stalled) 8%, transparent);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-warn .ert-completion-summary-text,
+.ert-ui.ert-scope--settings .ert-completion-preview-warn .ert-completion-summary-author {
+  color: var(--rt-completion-warn);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-late .ert-completion-summary-text,
+.ert-ui.ert-scope--settings .ert-completion-preview-late .ert-completion-summary-author {
+  color: var(--rt-completion-late);
+}
+
+.ert-ui.ert-scope--settings .ert-completion-preview-stalled .ert-completion-summary-text,
+.ert-ui.ert-scope--settings .ert-completion-preview-stalled .ert-completion-summary-author {
+  color: var(--rt-completion-stalled);
+}
+
+/* Stage target tick icons and overdue rows */
+.ert-ui.ert-scope--settings .ert-target-tick-icon,
+.ert-ui.ert-scope--settings .ert-estimate-tick-icon {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: var(--ert-gap-xs);
+  flex-shrink: 0;
+}
+
+.ert-ui.ert-scope--settings .ert-settings-root .ert-stage-target-zero .setting-item-name,
+.ert-ui.ert-scope--settings .ert-settings-root .ert-stage-target-author .setting-item-name,
+.ert-ui.ert-scope--settings .ert-settings-root .ert-stage-target-house .setting-item-name,
+.ert-ui.ert-scope--settings .ert-settings-root .ert-stage-target-press .setting-item-name {
+  display: flex;
+  align-items: center;
+}
+
+.ert-ui.ert-scope--settings .ert-settings-root .ert-stage-target-overdue .setting-item-name {
+  color: var(--rt-color-due);
+}
+
+.ert-ui.ert-scope--settings .ert-settings-root .ert-stage-target-overdue .setting-item-description {
+  color: var(--rt-color-due);
+  opacity: 0.85;
+}
+

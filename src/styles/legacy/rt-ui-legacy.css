@@ -1,0 +1,635 @@
+/* Legacy selector remnants extracted from the shared UI stylesheet during ERT migration. */
+
+
+/* Pro Target Dropdown */
+.ert-apr-pro-target .dropdown {
+  background: color-mix(in srgb, var(--ert-pro-accent-color) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ert-pro-accent-color) 30%, transparent);
+  color: var(--text-normal);
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.ert-apr-pro-target .dropdown:hover,
+.ert-apr-pro-target .dropdown:focus {
+  border-color: var(--ert-pro-accent-color);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ert-pro-accent-color) 20%, transparent);
+}
+
+/* -------------------------------------------------------------------------- */
+/* MIGRATED FROM settings.css (legacy selectors)                              */
+/* -------------------------------------------------------------------------- */
+
+.ert-settings-root .documentation-container {
+  padding: 0 1em;
+}
+
+.ert-settings-root .documentation-container h1 {
+  font-size: 2.2em;
+  margin-top: 0.5em;
+}
+
+.ert-settings-root .documentation-container h2 {
+  font-size: 1.5em;
+  margin-top: 1.5em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.ert-settings-root .documentation-container h3 {
+  font-size: 1.2em;
+  margin-top: 1em;
+}
+
+.ert-settings-root .documentation-container img {
+  max-width: 100%;
+  border-radius: 5px;
+  margin: 1em 0;
+}
+
+.ert-settings-root .documentation-container img[alt="Radial Timeline Logo"] {
+  border-radius: 0;
+}
+
+.ert-settings-root .documentation-container code {
+  background-color: var(--background-primary);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+}
+
+.ert-settings-root .documentation-container pre {
+  background-color: var(--background-primary);
+  padding: 1em;
+  border-radius: 5px;
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
+/* Default sizing for settings inputs (override with utilities above when needed) */
+.ert-settings-root .setting-item .setting-item-control input[type="text"]:not(.ert-input--xs):not(.ert-input--2digit):not(.ert-input--sm):not(.ert-input--md):not(.ert-input--lg):not(.ert-input--xl):not(.ert-input--full):not(.ert-hex-input),
+.ert-settings-root .setting-item .setting-item-control input[type="number"]:not(.ert-input--xs):not(.ert-input--2digit):not(.ert-input--sm):not(.ert-input--md):not(.ert-input--lg):not(.ert-input--xl):not(.ert-input--full),
+.ert-settings-root .setting-item .setting-item-control input[type="password"]:not(.ert-input--xs):not(.ert-input--2digit):not(.ert-input--sm):not(.ert-input--md):not(.ert-input--lg):not(.ert-input--xl):not(.ert-input--full) {
+  width: var(--ert-input-width-md);
+  max-width: 100%;
+}
+
+.ert-settings-root .setting-item .setting-item-control textarea {
+  width: 100%;
+}
+
+.ert-settings-root .setting-item .setting-item-control textarea.ert-input--lg {
+  width: var(--ert-input-width-lg);
+  min-width: var(--ert-input-width-lg);
+  max-width: 100%;
+}
+
+/* Align settings rows to the top when descriptions wrap */
+
+.ert-settings-root .setting-item.setting-item-heading .setting-item-name {
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-tight);
+}
+
+.ert-settings-root .setting-item.setting-item-heading .ert-setting-heading-icon {
+  display: inline-flex;
+  width: var(--icon-size, 16px);
+  height: var(--icon-size, 16px);
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  align-self: center;
+  line-height: 1;
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.ert-settings-root .setting-item.setting-item-heading .ert-setting-heading-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  flex: 0 0 auto;
+}
+
+
+.ert-settings-root .clickable-icon.extra-setting-button {
+  align-self: center;
+  margin-top: 0;
+}
+
+/* template input consolidated in base.css */
+
+/* Ensure all settings buttons/toggles use pointer cursor */
+.ert-settings-root .setting-item-control button,
+.ert-settings-root .setting-item-control .clickable-icon,
+.ert-settings-root .setting-item-control input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.ert-runtime-count {
+  padding: var(--ert-pad-sm);
+  background: var(--background-secondary);
+  border-radius: 6px;
+  text-align: center;
+}
+
+.ert-runtime-count-text {
+  font-size: 16px;
+}
+
+.ert-runtime-number {
+  font-weight: 600;
+  color: var(--ert-pro-accent-color);
+}
+
+.ert-runtime-hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.ert-runtime-label {
+  font-weight: 500;
+  color: var(--text-normal);
+}
+
+.ert-runtime-running-total {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--background-modifier-border);
+  font-size: 16px;
+}
+
+.ert-runtime-queue {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 12px;
+}
+
+/* Utility class for hiding elements */
+.ert-hidden {
+  display: none;
+}
+
+/* -------------------------------------------------------------------------- */
+/* RUNTIME MODAL - ENHANCED LAYOUT                                            */
+/* -------------------------------------------------------------------------- */
+
+/* Section spacing */
+.ert-runtime-section {
+  margin-bottom: 16px;
+  box-shadow: none;
+}
+
+.ert-runtime-section:last-of-type {
+  margin-bottom: 12px;
+}
+
+/* runtime section header uses the shared section-title pattern */
+
+.ert-runtime-section-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.ert-runtime-section-top,
+.ert-runtime-scope-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ert-gap-sm);
+}
+
+.ert-runtime-scope-row,
+.ert-runtime-mode-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+}
+
+.ert-runtime-dropdown-container {
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.ert-runtime-dropdown-container .dropdown:not([class*="ert-input--"]) {
+  width: auto;
+  max-width: 100%;
+}
+
+.ert-runtime-dropdown-disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.ert-runtime-dropdown-disabled .dropdown {
+  cursor: not-allowed;
+}
+
+/* Current scene display */
+.ert-runtime-current-scene {
+  margin-top: 12px;
+  padding: var(--ert-pad-cozy) var(--ert-pad-sm);
+  background: var(--background-secondary);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-xs);
+}
+
+.ert-runtime-current-scene-muted {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.ert-runtime-current-scene-name {
+  font-weight: 500;
+  color: var(--text-normal);
+}
+
+.ert-runtime-current-scene-name.ert-runtime-no-scene {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.ert-runtime-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ert-gap-sm) var(--ert-gap-lg);
+}
+
+.ert-runtime-status-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ert-runtime-status-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+.ert-runtime-status-checkbox label {
+  font-size: 14px;
+  color: var(--text-normal);
+  cursor: pointer;
+}
+
+.ert-runtime-override-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ert-gap-sm);
+}
+
+.ert-runtime-override-row input[type="checkbox"] {
+  margin: var(--ert-gap-2xs) 0 0;
+  flex: 0 0 auto;
+}
+
+.ert-runtime-override-label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ert-runtime-override-label span {
+  font-weight: 500;
+  color: var(--text-normal);
+}
+
+.ert-runtime-field-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Accordion for settings */
+.ert-runtime-accordion-header {
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+  cursor: pointer;
+  padding: var(--ert-pad-xs) 0;
+  user-select: none;
+}
+
+.ert-runtime-accordion-header:hover {
+  color: var(--ert-pro-accent-color);
+}
+
+.ert-runtime-accordion-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.ert-runtime-accordion-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.ert-runtime-accordion-title {
+  font-weight: 500;
+  color: var(--text-normal);
+}
+
+.ert-runtime-accordion-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.ert-runtime-accordion-content {
+  padding: var(--ert-pad-sm) 0 0 calc(var(--ert-pad-lg) + var(--ert-gap-sm));
+  border-top: 1px solid color-mix(in srgb, var(--ert-pro-border) 78%, transparent);
+  margin-top: 8px;
+}
+
+/* Settings display rows */
+.ert-runtime-setting-row {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--ert-pad-tight) 0;
+  font-size: 13px;
+}
+
+.ert-runtime-setting-label {
+  color: var(--text-muted);
+}
+
+.ert-runtime-setting-value {
+  color: var(--text-normal);
+  font-weight: 500;
+}
+
+.ert-runtime-setting-subheader {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: var(--ert-pad-sm) 0 var(--ert-gap-sm) 0;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--ert-pro-border) 78%, transparent);
+}
+
+.ert-runtime-settings-hint {
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-top: 12px;
+  font-style: italic;
+}
+
+/* Books settings (moved from the shared UI stylesheet during ERT migration) */
+
+/* "+" add-book button in heading (ert-iconBtn ert-mod-cta base) */
+.ert-books-add-btn--pulse {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text-success) 28%, transparent);
+}
+
+.ert-books-panel {
+  gap: var(--ert-gap-sm);
+}
+
+/* Book card: single-row Setting with bordered card look */
+:is(.ert-ui.ert-scope--settings.ert-settings-root, .ert-ui.ert-scope--settings .ert-settings-root) .ert-book-card.setting-item {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: var(--ert-gap-sm) var(--ert-gap-sm);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m, 8px);
+  padding: var(--ert-pad-xs) var(--ert-pad-sm);
+  background: var(--background-primary);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    opacity 0.15s ease;
+}
+
+/* Override generic .is-inactive muting — book cards must stay interactive */
+:is(.ert-ui.ert-scope--settings.ert-settings-root, .ert-ui.ert-scope--settings .ert-settings-root) .ert-book-card.setting-item.is-inactive {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+:is(.ert-ui.ert-scope--settings.ert-settings-root, .ert-ui.ert-scope--settings .ert-settings-root) .ert-book-card.setting-item.is-active {
+  border-color: color-mix(in srgb, var(--text-success) 50%, transparent);
+}
+
+:is(.ert-ui.ert-scope--settings.ert-settings-root, .ert-ui.ert-scope--settings .ert-settings-root) .ert-book-card.setting-item.ert-book-card--autoloaded {
+  border-color: color-mix(in srgb, var(--text-success) 74%, var(--background-modifier-border));
+  animation: ert-book-autoload-pulse 1.6s ease-in-out 3;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--text-success) 26%, transparent),
+    0 0 24px color-mix(in srgb, var(--text-success) 16%, transparent);
+}
+
+:is(.ert-ui.ert-scope--settings.ert-settings-root, .ert-ui.ert-scope--settings .ert-settings-root) .ert-book-card.setting-item.ert-book-card--link-broken {
+  border-color: color-mix(in srgb, var(--text-error) 42%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--text-error) 6%, var(--background-primary));
+}
+
+/* Name column: status icon + title stacked above desc */
+.ert-book-card__name {
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+  min-width: 0;
+}
+
+:is(.ert-ui.ert-scope--settings.ert-settings-root, .ert-ui.ert-scope--settings .ert-settings-root) .ert-book-card.setting-item > .setting-item-info {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+}
+
+:is(.ert-ui.ert-scope--settings.ert-settings-root, .ert-ui.ert-scope--settings .ert-settings-root) .ert-book-card.setting-item > .setting-item-control {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+  justify-content: stretch;
+}
+
+:is(.ert-ui.ert-scope--settings.ert-settings-root, .ert-ui.ert-scope--settings .ert-settings-root) .ert-book-card.setting-item > .setting-item-control input[type="text"] {
+  width: 100%;
+  min-width: 0;
+}
+
+.ert-book-card__drag {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  min-width: 28px;
+  color: var(--text-faint);
+  cursor: grab;
+}
+
+.ert-book-card__drag svg {
+  width: 16px;
+  height: 16px;
+}
+
+.ert-book-card__meta {
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ert-book-card .setting-item-name {
+  min-width: 0;
+}
+
+.ert-book-card .setting-item-description {
+  min-width: 0;
+}
+
+.ert-book-card .ert-book-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ert-book-card__status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--text-faint);
+}
+
+.ert-book-card__status svg {
+  width: 16px;
+  height: 16px;
+}
+
+.ert-book-card__status--active {
+  color: var(--text-success);
+}
+
+.ert-book-card__status--invalid {
+  color: var(--text-error);
+}
+
+/* Clickable row to activate inactive book */
+.ert-book-card--clickable {
+  cursor: pointer;
+}
+
+.ert-book-card--clickable:hover {
+  border-color: color-mix(in srgb, var(--text-success) 40%, transparent);
+}
+
+.ert-book-card--clickable:hover .ert-book-card__status {
+  color: var(--text-success);
+}
+
+.ert-book-card--clickable.ert-book-card--link-broken:hover {
+  border-color: color-mix(in srgb, var(--text-error) 42%, var(--background-modifier-border));
+}
+
+.ert-book-card--clickable.ert-book-card--link-broken:hover .ert-book-card__status--invalid {
+  color: var(--text-error);
+}
+
+.ert-book-card__stat--warn {
+  color: var(--text-faint);
+}
+
+.ert-book-card__stat--invalid {
+  color: var(--text-error);
+}
+
+.ert-book-card__trash.is-disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.ert-books-panel--dragging .ert-book-card .setting-item-control,
+.ert-books-panel--dragging .ert-book-card .ert-book-name {
+  pointer-events: none;
+}
+
+.ert-book-card.setting-item.is-dragging {
+  opacity: 0.36;
+  box-shadow: none;
+}
+
+.ert-book-card.setting-item.is-dragover {
+  border-color: color-mix(in srgb, var(--interactive-accent) 72%, var(--background-modifier-border));
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--interactive-accent) 28%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--interactive-accent) 16%, transparent);
+}
+
+.ert-book-card--dragPreview {
+  position: fixed;
+  top: -10000px;
+  left: -10000px;
+  width: var(--ert-book-drag-preview-width, auto);
+  min-height: var(--ert-book-drag-preview-height, auto);
+  margin: 0;
+  pointer-events: none;
+  box-shadow:
+    0 16px 36px color-mix(in srgb, var(--background-modifier-border) 72%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--background-modifier-border) 90%, transparent);
+}
+
+@keyframes ert-book-autoload-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--text-success) 22%, transparent),
+      0 0 16px color-mix(in srgb, var(--text-success) 12%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--text-success) 46%, transparent),
+      0 0 34px color-mix(in srgb, var(--text-success) 28%, transparent);
+  }
+}
+
+/* Book title: clickable rename link */
+.ert-book-name {
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.ert-book-name--clickable {
+  cursor: pointer;
+  text-decoration: underline dashed;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+}
+
+.ert-book-name--clickable:hover {
+  text-decoration-style: solid;
+  text-decoration-color: currentColor;
+}
+
+.ert-book-name--clickable:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--interactive-accent) 45%, transparent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

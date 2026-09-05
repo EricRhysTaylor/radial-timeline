@@ -1,0 +1,112 @@
+/* -------------------------------------------------------------------------- */
+/* Platform Background Presets                                                */
+/* -------------------------------------------------------------------------- */
+
+/* Source label: shows which preset matches the current bg color */
+.ert-ui.ert-scope--settings .ert-bg-source-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: var(--ert-gap-2xs);
+  text-align: right;
+  flex-basis: 100%;
+}
+
+.ert-ui.ert-scope--settings .ert-bg-source-label.is-hidden {
+  display: none;
+}
+
+.ert-ui.ert-scope--settings .ert-platform-presets {
+  margin-top: var(--ert-gap-xs);
+  margin-bottom: var(--ert-gap-md);
+}
+
+.ert-ui.ert-scope--settings .ert-platform-presets__label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: var(--ert-gap-tight);
+}
+
+.ert-ui.ert-scope--settings .ert-platform-presets__swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ert-gap-tight);
+  align-items: center;
+}
+
+.ert-ui.ert-scope--settings .ert-platform-presets__divider {
+  color: var(--text-faint);
+  font-size: 0.8rem;
+  user-select: none;
+  padding: 0 var(--ert-gap-2xs);
+}
+
+.ert-ui.ert-scope--settings .ert-platform-presets__custom-inline {
+  display: contents;
+}
+
+.ert-ui.ert-scope--settings .ert-platform-swatch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ert-gap-tight);
+  padding: var(--ert-gap-xs) var(--ert-pad-cozy) var(--ert-gap-xs) var(--ert-pad-tight);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  line-height: 1;
+}
+
+.ert-ui.ert-scope--settings .ert-platform-swatch:hover {
+  border-color: var(--ert-accent, var(--interactive-accent));
+  background: var(--background-primary);
+}
+
+.ert-ui.ert-scope--settings .ert-platform-swatch__color {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: var(--swatch-color);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+}
+
+.ert-ui.ert-scope--settings .ert-platform-swatch__name {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.ert-ui.ert-scope--settings .ert-platform-swatch:hover .ert-platform-swatch__name {
+  color: var(--text-normal);
+}
+
+.ert-ui.ert-scope--settings .ert-platform-swatch--empty {
+  border-style: dashed;
+  opacity: 0.7;
+}
+
+.ert-ui.ert-scope--settings .ert-platform-swatch--empty:hover {
+  opacity: 1;
+}
+
+.ert-ui.ert-scope--settings .ert-platform-swatch__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--text-faint);
+}
+
+.ert-ui.ert-scope--settings .ert-platform-swatch__icon svg {
+  width: 12px;
+  height: 12px;
+}
+
+.ert-ui.ert-scope--settings .ert-platform-swatch--empty:hover .ert-platform-swatch__icon {
+  color: var(--text-muted);
+}

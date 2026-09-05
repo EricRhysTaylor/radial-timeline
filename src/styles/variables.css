@@ -1,0 +1,165 @@
+/*
+ * Radial Timeline (tm) Plugin for Obsidian
+ * Copyright (c) 2025 Eric Rhys Taylor
+ * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
+ */
+
+
+/* Main color variables for the radial timeline */
+:root {
+  /* Publish Stage Colors */
+  --rt-color-zero: #9E70CF;
+  /* Purple */
+  --rt-color-author: #5E85CF;
+  /* Blue   */
+  --rt-color-house: #DA7847;
+  /* Orange */
+  --rt-color-press: #6FB971;
+  /* Green  */
+  --rt-pro-color-base: #d946ef;
+  --rt-social-color-base: #ffd41d;
+  --ert-pro-accent-rgb-base: 217, 70, 239;
+  --ert-social-accent-color-base: #ffd41d;
+  --ert-social-accent-rgb-base: 255, 212, 29;
+  --rt-legacy-black: #000000;
+  --rt-legacy-gray: #666666;
+  --rt-legacy-gray-light: #888888;
+  --rt-legacy-warning: #ff9500;
+
+  /* Runtime colours – the plugin overwrites these on load */
+  --rt-publishStageColors-Zero: var(--rt-color-zero);
+  --rt-publishStageColors-Author: var(--rt-color-author);
+  --rt-publishStageColors-House: var(--rt-color-house);
+  --rt-publishStageColors-Press: var(--rt-color-press);
+  /* most-common stage (used for ACT labels &c.) */
+  --rt-max-publish-stage-color: var(--rt-publishStageColors-Zero);
+  --ert-max-publish-stage-color: var(--rt-max-publish-stage-color);
+
+  /* Status Colors */
+  --rt-color-due: #d05e5e;
+  /* Red */
+  --rt-color-empty: #ffffff;
+  /* becomes gray when transparent added */
+  --rt-color-empty-selected: #EFEFEF;
+  /* Slightly darker gray for selected empty cells */
+  --rt-color-empty-recessed: #E3E3E3;
+  /* Sequence alignment: empty cells are most of a subplot ring, so they step
+     back from the scenes — a shade, not a different colour */
+
+  /* Chronologue sub-mode overlay hues — the same colours the in-view Runtime
+     and Alt (planetary/alien) overlays and keycaps already use, promoted from
+     scattered raw rgba() literals to tokens (single source). Base colour at
+     full opacity; callers apply transparency via color-mix as needed. */
+  --rt-color-runtime: rgb(60, 140, 220);
+  /* Runtime overlay/keycap blue (was rgba(60,140,220,…)) */
+  --rt-color-alt: rgb(180, 60, 60);
+  /* Alt / Alien planetary-calendar red (was rgba(180,60,60,…)) */
+
+  /* Inquiry Zone Colors */
+  --ert-inquiry-zone-setup: #2fbf6a;
+  --ert-inquiry-zone-setup-stroke: color-mix(in srgb, var(--ert-inquiry-zone-setup) 35%, #ffffff);
+  --ert-inquiry-zone-pressure: #3b7ddd;
+  --ert-inquiry-zone-pressure-stroke: color-mix(in srgb, var(--ert-inquiry-zone-pressure) 35%, #ffffff);
+  --ert-inquiry-zone-payoff: #d65252;
+  --ert-inquiry-zone-payoff-stroke: color-mix(in srgb, var(--ert-inquiry-zone-payoff) 35%, #ffffff);
+
+  /* Search and UI Colors */
+  --rt-color-search: #ffd700;
+  /* Pure gold yellow for search highlighting */
+  /* Search highlight tuning */
+  --rt-search-stroke-width: 4px;
+  /* stroke thickness for search outline */
+  --rt-search-stroke-opacity: 1;
+  /* stroke opacity for search outline */
+
+  /* Plaid Colors and Opacity */
+  --rt-color-working: #f3b3ef;
+  /* Muted active-draft pink for Working scene fills */
+  --rt-color-todo: #f6d8f3;
+  /* Quiet Todo pink; no motif so Working carries the visual activity */
+  --rt-color-plaid-opacity: 0.82;
+  --rt-color-plaid-stroke-opacity: 0.4;
+  /* Current Stage Color motif set in SVG patterns */
+
+  /* Readability controls */
+  --rt-font-scale: 1;
+  --rt-synopsis-font-scale: var(--rt-font-scale);
+  --rt-number-font-scale: 1;
+  --rt-synopsis-line-height: 24px;
+  --rt-pulse-line-height: 18px;
+  --rt-synopsis-metadata-line-height: 24px;
+
+  /* Settings UI sizing (character-based for consistency) */
+  --rt-input-width-xs: 6ch;
+  /* very short numbers / codes */
+  --rt-input-width-2digit: 4.75ch;
+  /* compact numeric controls capped at two digits */
+  --rt-input-width-sm: 10ch;
+  /* small text / short IDs */
+  --rt-input-width-md: 18ch;
+  /* medium text (dropdowns, model names, standard labels) */
+  --rt-input-width-lg: 24ch;
+  /* longer tokens/IDs */
+  --rt-input-width-xl: 48ch;
+  /* API keys, URLs, long strings */
+  --rt-settings-select-width: var(--rt-input-width-md);
+  /* consistent width for dropdowns */
+
+  /* ============================================
+     GOSSAMER VISUAL CONFIGURATION
+     All gossamer beat system appearance settings in one place
+     ============================================ */
+  /* Colors */
+  --rt-gossamer-error-color: #ff4444;
+  /* Missing data / zero scores (red) */
+  --rt-gossamer-default-color: #7a7a7a;
+  /* Default fallback (gray) */
+  --rt-color-muted-gray: #c0c0c0;
+  /* Light gray for de-emphasized scene states (pending edits, gossamer historical runs) */
+
+  /* Pulse AI grade colors (applied to scene number text) */
+  --rt-grade-a-color: #00ff48;
+  --rt-grade-b-color: #ffbb00;
+  --rt-grade-c-color: #ff0000;
+
+  /* Dot Sizes */
+  --rt-gossamer-dot-current: 7px;
+  /* Current run (Gossamer1) dot radius */
+  --rt-gossamer-dot-historical: 5px;
+  /* Historical runs (Gossamer2-5) dot radius */
+
+  /* Strokes & Lines */
+  --rt-gossamer-line-width: 2px;
+  /* beat line thickness */
+  --rt-gossamer-line-historical-width: 1.5px;
+  /* Historical beat line thickness */
+  --rt-gossamer-spoke-width: 1px;
+  /* Spoke line thickness */
+  --rt-gossamer-spoke-color: var(--rt-max-publish-stage-color);
+  /* Spoke line color - use publish stage color */
+
+  /* Opacity & Transparency */
+  --rt-gossamer-band-opacity: 0.5;
+  /* Min/max shading band opacity */
+  --rt-gossamer-line-historical-opacity: 0.6;
+  /* Historical line opacity */
+
+  /* Subplot palette - 16 fixed colors provided */
+  --rt-subplot-colors-0: #EFBDEB;
+  --rt-subplot-colors-1: #a35ca7;
+  --rt-subplot-colors-2: #6461A0;
+  --rt-subplot-colors-3: #314CB6;
+  --rt-subplot-colors-4: #0A81D1;
+  --rt-subplot-colors-5: #98CE00;
+  --rt-subplot-colors-6: #16E0BD;
+  --rt-subplot-colors-7: #78C3FB;
+  --rt-subplot-colors-8: #273C2C;
+  --rt-subplot-colors-9: #A6D8D4;
+  --rt-subplot-colors-10: #FF8600;
+  --rt-subplot-colors-11: #F9E784;
+  --rt-subplot-colors-12: #CEC3C1;
+  --rt-subplot-colors-13: #F3D34A;
+  --rt-subplot-colors-14: #004777;
+  --rt-subplot-colors-15: #8B4513;
+  /* Ring 16 default (Brown) */
+}

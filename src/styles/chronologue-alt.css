@@ -1,0 +1,40 @@
+/* Chronologue: ALT (alien) mode */
+
+/* Base tinting */
+.radial-timeline-svg[data-shift-mode="alien"] .rt-backdrop-ring-background {
+  stroke: rgba(255, 0, 0, 0.5);
+  stroke-opacity: 0.15;
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-backdrop-micro-ring-background {
+  stroke: rgba(255, 0, 0, 0.5);
+  stroke-opacity: 0.15;
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-backdrop-border {
+  stroke: rgba(180, 60, 60, 0.5);
+  opacity: 1;
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-backdrop-label {
+  fill: rgba(200, 50, 50, 0.8);
+  opacity: 0.3;
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-backdrop-segment {
+  fill: rgba(180, 60, 60, 0.05);
+  stroke: rgba(180, 60, 60, 0.3);
+  stroke-width: 1px;
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-scene-group[data-item-type="Backdrop"],
+.radial-timeline-svg[data-shift-mode="alien"] .rt-scene-group[data-item-type="Backdrop"] * {
+  pointer-events: none;
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-backdrop-micro-ring,
+.radial-timeline-svg[data-shift-mode="alien"] .rt-backdrop-micro-tick {
+  stroke: rgba(200, 50, 50, 0.8);
+  opacity: 0.3;
+  pointer-events: none;
+}

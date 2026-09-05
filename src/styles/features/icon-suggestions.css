@@ -1,0 +1,30 @@
+/* -------------------------------------------------------------------------- */
+/* Icon suggestions (ERT)                                                     */
+/* -------------------------------------------------------------------------- */
+
+:is(.ert-ui.ert-scope--settings.ert-icon-suggestion, .ert-ui.ert-scope--settings .ert-icon-suggestion) {
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-cozy);
+  padding: var(--ert-gap-sm) var(--ert-gap-md);
+}
+
+:is(.ert-ui.ert-scope--settings.ert-icon-suggestion, .ert-ui.ert-scope--settings .ert-icon-suggestion) .ert-icon-suggestion-preview {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--text-normal);
+}
+
+:is(.ert-ui.ert-scope--settings.ert-icon-suggestion, .ert-ui.ert-scope--settings .ert-icon-suggestion) .ert-icon-suggestion-preview svg {
+  width: 16px;
+  height: 16px;
+}
+
+:is(.ert-ui.ert-scope--settings.ert-icon-suggestion, .ert-ui.ert-scope--settings .ert-icon-suggestion) .ert-icon-suggestion-text {
+  color: var(--text-normal);
+  font-size: 13px;
+}

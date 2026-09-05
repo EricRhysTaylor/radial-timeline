@@ -1,0 +1,529 @@
+/* Book Designer / Manuscript Modal Styles - Shared Surface */
+
+/* --- Container & Layout --- */
+.ert-manuscript-surface {
+    /* Grid column defaults (overridable in media queries) */
+    --ert-duo-grid-cols: repeat(2, minmax(0, 1fr));
+    --ert-trio-grid-cols: minmax(0, 1fr) minmax(0, 1fr) 200px;
+}
+
+.ert-manuscript-surface .ert-card-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ert-gap-md);
+    margin-top: var(--ert-gap-tight);
+}
+
+/* Glass Card Base */
+.ert-manuscript-surface .ert-glass-card.ert-sub-card {
+    box-shadow: none;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: var(--ert-pad-xs) var(--ert-pad-md) var(--ert-pad-loose);
+    gap: var(--ert-gap-cozy);
+    margin-top: 0; /* remove inherited pulse margin in Book Designer */
+}
+
+.ert-book-designer-modal .ert-book-designer-badge {
+    flex-wrap: wrap;
+    gap: var(--ert-gap-sm);
+}
+
+.ert-book-designer-modal .ert-book-designer-badge-label {
+    letter-spacing: 0.08em;
+}
+
+.ert-book-designer-modal :is(.ert-book-designer-badge-detail, .ert-book-designer-badge-sep) {
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.ert-book-designer-modal .ert-book-designer-badge-detail {
+    font-size: 0.78rem;
+    color: var(--text-normal);
+}
+
+.ert-book-designer-modal .ert-book-designer-badge-sep {
+    color: var(--text-faint);
+}
+
+.ert-book-designer-modal .ert-book-designer-badge-mode.ert-meta-auto {
+    color: var(--text-muted);
+}
+
+.ert-book-designer-modal .ert-book-designer-badge-mode.ert-meta-manual {
+    color: var(--text-normal);
+}
+
+/* Inner Block (Group) */
+.ert-manuscript-surface .ert-manuscript-card-block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ert-gap-xs);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 10px;
+    padding: var(--ert-pad-cozy) var(--ert-pad-sm);
+    height: 100%;
+}
+
+/* Group block padding - handles consistent padding for all children */
+.ert-manuscript-surface .ert-manuscript-card-block.ert-manuscript-group-block {
+    padding-left: 16px;
+    padding-right: 16px;
+}
+
+.ert-manuscript-surface .ert-manuscript-card-block + .ert-manuscript-card-block {
+    margin-top: 8px;
+}
+
+.ert-manuscript-surface .ert-manuscript-duo-row .ert-manuscript-card-block + .ert-manuscript-card-block {
+    margin-top: 0;
+}
+
+/* --- Settings Components Resets & Defaults --- */
+
+/* Reset Obsidian default setting item styles */
+.ert-manuscript-surface .setting-item {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    min-height: unset;
+}
+
+/* Group Setting Cell (Used inside Grids) */
+.ert-manuscript-surface .ert-manuscript-group-setting {
+    border: none;
+    background: transparent;
+    border-radius: 0;
+    padding: 0; /* Handled by grid logic */
+    height: 100%;
+    margin: 0;
+}
+
+/* Global snug fit for settings inside the designer */
+.ert-manuscript-surface .ert-manuscript-group-setting .setting-item-info,
+.ert-manuscript-surface .ert-manuscript-group-setting .setting-item-control {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
+/* Horizontal Layout (Default for Group Setting) - Top Aligned */
+.ert-manuscript-surface .ert-manuscript-group-setting:not(.ert-setting-stacked) {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+}
+
+/* Duo grid: column-specific padding tweaks */
+.ert-manuscript-duo-grid > .ert-manuscript-group-setting:first-child {
+    padding-right: 16px;
+}
+
+.ert-manuscript-duo-grid > .ert-manuscript-group-setting:nth-child(2) {
+    padding-left: 16px;
+}
+
+/* Stacked Layout */
+.ert-manuscript-surface .ert-setting-stacked {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--ert-gap-sm);
+}
+
+/* Stacked settings don't need extra horizontal padding - parent provides it */
+.ert-book-designer-modal .ert-setting-stacked.ert-manuscript-group-setting,
+.ert-book-designer-modal .ert-manuscript-content-left > .ert-setting-stacked {
+    padding: 0;
+}
+
+/* Remove left padding from setting info in stacked layouts - align with input fields */
+.ert-book-designer-modal .ert-setting-stacked .setting-item-info {
+    padding-left: 0;
+    margin-left: 0;
+    margin-right: 0;
+    width: 100%;
+    text-align: left;
+    align-self: flex-start;
+}
+
+.ert-manuscript-surface .ert-setting-stacked .setting-item-control {
+    width: 100%;
+    display: flex;
+}
+
+.ert-manuscript-surface .ert-setting-stacked textarea {
+    width: 100%;
+    resize: none;
+    min-height: 100px;
+    font-family: var(--font-monospace);
+    font-size: 0.85rem;
+    line-height: 1.4;
+    padding: var(--ert-pad-xs);
+    background-color: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+}
+
+.ert-manuscript-surface textarea:focus {
+    border-color: var(--interactive-accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent) 20%, transparent);
+}
+
+.ert-book-designer-modal .ert-subplot-color-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ert-gap-sm);
+    margin-top: var(--ert-gap-cozy);
+    align-items: center;
+}
+
+.ert-book-designer-modal .ert-subplot-color-row {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ert-gap-sm);
+    min-height: 22px;
+    max-width: 100%;
+    padding: var(--ert-gap-xs) var(--ert-pad-cozy);
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--background-modifier-border) 88%, transparent);
+    background: color-mix(in srgb, var(--background-secondary) 92%, transparent);
+}
+
+.ert-book-designer-modal .ert-subplot-color-swatch {
+    width: 10px;
+    height: 10px;
+    background-color: var(--ert-subplot-swatch-color, var(--interactive-accent));
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--background-modifier-border) 75%, transparent);
+    flex: 0 0 auto;
+}
+
+.ert-book-designer-modal .ert-subplot-color-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+/* --- Grid System --- */
+
+/* Base Grid */
+.ert-manuscript-surface .ert-manuscript-duo-grid {
+    display: grid;
+    align-items: start;
+    width: 100%;
+    grid-template-columns: var(--ert-duo-grid-cols);
+    gap: var(--ert-gap-lg) 0;
+}
+
+.ert-manuscript-surface .ert-manuscript-trio-grid {
+    display: grid;
+    gap: 0;
+    align-items: start;
+    width: 100%;
+    grid-template-columns: var(--ert-trio-grid-cols);
+}
+
+/* Book Designer content grid: left (form) / right (preview) */
+.ert-book-designer-modal .ert-manuscript-content-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: var(--ert-gap-md);
+    align-items: stretch;
+}
+
+.ert-book-designer-modal .ert-manuscript-content-left {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ert-gap-md);
+    /* Don't stretch with the grid row — Settings inside have height: 100% (for
+       grid-cell uses elsewhere), which would otherwise force them to fight for
+       leftCol's stretched height and shove the textarea away from its label. */
+    align-self: start;
+    min-height: 0;
+}
+
+.ert-book-designer-modal .ert-manuscript-content-left > .ert-manuscript-group-setting {
+    height: auto;
+    justify-content: flex-start;
+}
+
+/* Scoped divider between duo grid columns */
+.ert-book-designer-modal .ert-manuscript-duo-grid > .ert-manuscript-group-setting {
+    border-top: none;
+    padding: 0 0 var(--ert-pad-md) 0;
+}
+
+.ert-book-designer-modal .ert-manuscript-duo-grid > .ert-manuscript-group-setting:first-child {
+    padding-right: 24px;
+    border-right: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.ert-book-designer-modal .ert-manuscript-duo-grid > .ert-manuscript-group-setting:nth-child(2) {
+    padding-left: 24px;
+}
+
+.ert-book-designer-modal .ert-manuscript-duo-grid > .ert-manuscript-group-setting + .ert-manuscript-group-setting {
+    border-top: none;
+    padding-top: 0;
+}
+
+/* Standard Row Grid (e.g. Acts checkboxes) */
+.ert-manuscript-surface .ert-manuscript-setting-row {
+    display: grid;
+    gap: var(--ert-gap-sm) var(--ert-gap-md);
+}
+
+.ert-manuscript-surface .ert-manuscript-acts-row {
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+    .ert-manuscript-surface .ert-manuscript-acts-row {
+        grid-template-columns: 220px 1fr;
+        align-items: center;
+    }
+}
+
+.ert-manuscript-surface .ert-manuscript-duo-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ert-gap-md);
+    align-items: stretch;
+    width: 100%;
+}
+
+/* --- Mobile Responsiveness --- */
+@media (max-width: 860px) {
+    /* Collapse Grids via custom properties to avoid duplicate selectors */
+    .ert-manuscript-surface {
+        --ert-duo-grid-cols: 1fr;
+        --ert-trio-grid-cols: 1fr;
+    }
+
+    .ert-book-designer-modal .ert-manuscript-content-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Reset borders and spacing for stack */
+.ert-manuscript-surface .ert-manuscript-duo-grid > div,
+.ert-manuscript-surface .ert-manuscript-trio-grid > div {
+        border-right: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 0 0 var(--ert-pad-sm) 0;
+        margin-bottom: var(--ert-gap-md);
+    }
+
+    /* Remove border from last item in stack */
+    .ert-manuscript-surface .ert-manuscript-duo-grid > div:last-child,
+    .ert-manuscript-surface .ert-manuscript-trio-grid > div:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+        margin-bottom: 0;
+    }
+}
+
+@media (max-width: 760px) {
+    .ert-manuscript-surface .ert-manuscript-duo-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* --- Components --- */
+
+/* Checkboxes */
+.ert-manuscript-surface .ert-manuscript-checkbox-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--ert-gap-cozy);
+}
+
+.ert-manuscript-surface .ert-manuscript-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: var(--ert-gap-tight);
+    padding: var(--ert-pad-tight) var(--ert-pad-cozy);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    height: 100%;
+}
+
+.ert-manuscript-surface .ert-manuscript-checkbox-item input {
+    accent-color: var(--interactive-accent);
+}
+
+/* Pills */
+.ert-manuscript-surface .ert-manuscript-pill-row {
+    gap: var(--ert-gap-sm);
+}
+
+.ert-book-designer-modal .ert-manuscript-pill {
+    min-height: 28px;
+    padding: calc(var(--ert-gap-xs) + var(--ert-gap-3xs)) var(--ert-pad-cozy);
+    font-size: 0.9rem;
+}
+
+.ert-book-designer-modal .ert-book-designer-yesno-row {
+    align-items: center;
+}
+
+.ert-book-designer-modal .ert-book-designer-yesno-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: flex-start;
+    flex: 0 0 auto;
+    min-width: 56px;
+    min-height: 32px;
+    height: 32px;
+    padding: 0 var(--ert-pad-loose);
+    line-height: 1;
+    border-radius: 999px;
+}
+
+/* Card Note */
+.ert-manuscript-surface .ert-sub-card-note {
+    margin-top: 4px;
+}
+
+/* Dropdown */
+.ert-manuscript-surface .dropdown {
+    min-width: 150px;
+}
+
+/* Source Path Label */
+.ert-manuscript-surface .ert-source-path-label {
+    color: var(--text-muted);
+}
+
+/* --- Preview Column --- */
+.ert-manuscript-surface .ert-manuscript-preview-col {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ert-gap-sm);
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+.ert-book-designer-modal .ert-manuscript-preview-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: var(--ert-gap-tight);
+    width: 100%;
+}
+
+.ert-manuscript-surface .ert-manuscript-preview-title {
+    font-weight: 600;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.ert-manuscript-surface .ert-manuscript-preview-host {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    aspect-ratio: auto;
+}
+
+.ert-manuscript-surface .ert-manuscript-preview-svg {
+    height: 330px;
+    max-width: none;
+    max-height: none;
+    aspect-ratio: 1 / 1;
+}
+
+.ert-manuscript-surface .ert-manuscript-preview-guide {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.10);
+    stroke-width: 1;
+}
+
+.ert-manuscript-surface .ert-manuscript-preview-slice {
+    stroke: rgba(0, 0, 0, 0.25);
+    stroke-width: 0.8;
+    cursor: grab;
+}
+
+.ert-book-designer-modal .ert-manuscript-preview-host.ert-preview-dragging,
+.ert-book-designer-modal .ert-manuscript-preview-host.ert-preview-dragging svg {
+    cursor: grabbing;
+}
+
+.ert-manuscript-surface .ert-manuscript-preview-core {
+    fill: rgba(0, 0, 0, 0.0);
+    stroke: rgba(255, 255, 255, 0.10);
+    stroke-width: 1;
+}
+
+.ert-manuscript-surface .ert-manuscript-preview-slice:active {
+    cursor: grabbing;
+}
+
+.ert-manuscript-preview-status {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    text-align: center;
+    width: auto;
+}
+
+.ert-book-designer-modal .ert-template-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ert-gap-sm);
+    margin-top: var(--ert-gap-sm);
+}
+
+.ert-book-designer-modal .ert-template-actions > button {
+    min-height: 30px;
+    padding: var(--ert-pad-tight) var(--ert-pad-sm);
+    box-shadow: none;
+}
+
+.ert-book-designer-modal .ert-book-designer-demo-btn {
+    align-self: flex-start;
+}
+
+.ert-book-designer-modal .ert-layout-templates-card {
+    padding: var(--ert-pad-cozy) var(--ert-pad-md);
+}
+
+/* Override group-block horizontal strip-out for layout templates */
+.ert-book-designer-modal .ert-layout-templates-card.ert-manuscript-group-block {
+    padding-left: 16px;
+    padding-right: 16px;
+}
+
+.ert-book-designer-modal .ert-template-actions .ert-template-delete {
+    margin-left: auto;
+}
+
+/* --- Animations --- */
+@keyframes ert-flash-error {
+    0% { border-color: var(--text-error); box-shadow: 0 0 0 0 color-mix(in srgb, var(--text-error) 40%, transparent); }
+    50% { border-color: var(--text-error); box-shadow: 0 0 0 4px color-mix(in srgb, var(--text-error) 10%, transparent); }
+    100% { border-color: var(--background-modifier-border); box-shadow: none; }
+}
+
+@keyframes ert-flash-success {
+    0% { border-color: var(--interactive-success); background-color: color-mix(in srgb, var(--interactive-success) 10%, transparent); box-shadow: 0 0 0 0 color-mix(in srgb, var(--interactive-success) 40%, transparent); }
+    50% { border-color: var(--interactive-success); background-color: color-mix(in srgb, var(--interactive-success) 20%, transparent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--interactive-success) 10%, transparent); }
+    100% { border-color: var(--background-modifier-border); background-color: var(--background-primary); box-shadow: none; }
+}
+
+.ert-book-designer-modal .ert-input-flash-error {
+    animation: ert-flash-error 0.8s ease-out;
+}
+
+.ert-book-designer-modal .ert-input-flash-success {
+    animation: ert-flash-success 0.5s ease-out;
+}

@@ -1,0 +1,49 @@
+/* Chronologue: Shift mode */
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-backdrop-ring {
+  opacity: 0.1;
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-backdrop-ring-background {
+  stroke-opacity: 0.1;
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-backdrop-micro-ring-background {
+  stroke-opacity: 0.1;
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-backdrop-border {
+  opacity: 0.2;
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-backdrop-label {
+  fill: white;
+  opacity: 1;
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-backdrop-segment {
+  fill: rgba(128, 128, 128, 0.01);
+  stroke: var(--text-muted);
+  stroke-width: 1px;
+}
+
+.radial-timeline-container .radial-timeline-svg[data-shift-mode="active"] .rt-backdrop-segment:hover {
+  opacity: 1;
+  cursor: default;
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-scene-group[data-item-type="Backdrop"]:hover .rt-backdrop-label {
+  opacity: 1;
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-scene-group[data-item-type="Backdrop"],
+.radial-timeline-svg[data-shift-mode="active"] .rt-scene-group[data-item-type="Backdrop"] * {
+  pointer-events: none;
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-backdrop-micro-ring,
+.radial-timeline-svg[data-shift-mode="active"] .rt-backdrop-micro-tick {
+  stroke: white;
+  opacity: 0.1;
+  pointer-events: none;
+}

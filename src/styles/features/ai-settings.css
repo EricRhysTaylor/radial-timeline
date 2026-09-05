@@ -1,0 +1,419 @@
+/* -------------------------------------------------------------------------- */
+/* AI settings (ERT)                                                          */
+/* -------------------------------------------------------------------------- */
+
+.ert-ui.ert-scope--settings .ert-provider-section {
+  transition: opacity 120ms ease;
+}
+
+.ert-ui.ert-scope--settings .ert-provider-section.dimmed {
+  opacity: 0.55;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-key-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ert-gap-tight);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-key-status__icon {
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-key-status.is-saved .ert-ai-key-status__icon {
+  color: var(--interactive-accent);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-key-status.is-not_saved .ert-ai-key-status__icon {
+  color: var(--text-warning);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-provider-key-state {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0 var(--ert-gap-md);
+  align-items: start;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-provider-key-state__icon {
+  width: 46px;
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-provider-key-state__icon svg {
+  width: 46px;
+  height: 46px;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-provider-key-state.is-ready .ert-ai-provider-key-state__icon {
+  color: var(--text-success);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-provider-key-state:is(.is-not_configured, .is-rejected, .is-network_blocked) .ert-ai-provider-key-state__icon {
+  color: var(--text-warning);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-provider-key-state.is-checking .ert-ai-provider-key-state__icon {
+  color: var(--text-muted);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-provider-key-state__text {
+  font-weight: 600;
+  color: var(--text-normal);
+  line-height: 1.35;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-provider-key-state__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ert-gap-tight);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-provider-key-state__helper {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-provider-key-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+  flex-wrap: wrap;
+  overflow: visible;
+  padding: var(--ert-gap-2xs) 0;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-provider-key-action {
+  border: 1px solid var(--background-modifier-border);
+  background: var(--interactive-normal);
+  color: var(--text-normal);
+  font-size: 12px;
+  line-height: 1;
+  min-height: var(--ert-iconBtn-size);
+  padding: 0 var(--ert-pad-loose);
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-provider-key-status-row > .setting-item-info,
+.ert-ui.ert-scope--settings .ert-ai-provider-key-status-row .setting-item-description,
+.ert-ui.ert-scope--settings .ert-ai-provider-key-status-row .ert-ai-provider-key-state,
+.ert-ui.ert-scope--settings .ert-ai-provider-key-status-row .ert-ai-provider-key-state__body {
+  overflow: visible;
+}
+
+.ert-ui.ert-scope--settings .ert-local-llm-advisory {
+  margin: var(--ert-gap-lg) 0 var(--ert-gap-xl) 0;
+  padding: var(--ert-pad-loose) var(--ert-pad-roomy);
+  background: rgba(255, 165, 0, 0.08);
+  border: 1px solid rgba(255, 165, 0, 0.25);
+  border-left: 4px solid rgba(255, 165, 0, 0.6);
+  border-radius: 8px;
+  color: var(--text-normal);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.ert-ui.ert-scope--settings .ert-local-llm-advisory-title {
+  display: block;
+  margin-bottom: var(--ert-gap-sm);
+}
+
+.ert-ui.ert-scope--settings .ert-model-picker-select {
+  flex: 0 0 var(--rt-settings-select-width);
+}
+
+.ert-ui.ert-scope--settings .ert-model-guidance {
+  margin-top: var(--ert-gap-tight);
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-toggle-warning {
+  margin-top: var(--ert-gap-cozy);
+  color: var(--text-error);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-toggle-warning-title {
+  font-weight: 600;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-toggle-warning-list {
+  margin: var(--ert-gap-tight) 0 var(--ert-gap-tight) var(--ert-gap-roomy);
+  padding: 0;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-toggle-warning-list li {
+  margin: 0 0 var(--ert-gap-xs) 0;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-toggle-warning-footer {
+  margin-top: var(--ert-gap-tight);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-models-panel {
+  margin-top: 8px;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-recommendations {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: var(--ert-pad-xs) var(--ert-pad-cozy);
+  background: color-mix(in srgb, var(--background-secondary) 45%, transparent);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-recommendations-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-recommendation-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(320px, 2fr);
+  gap: var(--ert-gap-cozy);
+  align-items: center;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-recommendation-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-recommendation-value {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-recommendation-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-recommendation-model {
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-recommendation-why {
+  color: var(--text-muted);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-recommendation-status {
+  margin-left: 2px;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-recommendation-hint {
+  grid-column: 2 / 3;
+  font-size: 11px;
+  color: var(--text-faint);
+  line-height: 1.35;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-recommendation-action {
+  margin-left: 8px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--interactive-accent);
+  font-size: 11px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-recommendation-action:hover {
+  color: var(--interactive-accent-hover);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-models-refreshed {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-models-table {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-models-row {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 1.5fr 2fr 1.5fr;
+  gap: var(--ert-gap-cozy);
+  padding: var(--ert-pad-xs) var(--ert-pad-cozy);
+  border-bottom: 1px solid var(--background-modifier-border);
+  width: 100%;
+  text-align: left;
+  background: transparent;
+}
+
+.ert-ui.ert-scope--settings button.ert-ai-models-row {
+  border: none;
+  border-radius: 0;
+  margin: 0;
+  box-shadow: none;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-models-row:last-child {
+  border-bottom: none;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-models-row--header {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--background-secondary);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-models-row--active {
+  position: relative;
+  background:
+    linear-gradient(90deg,
+      color-mix(in srgb, var(--interactive-accent) 22%, transparent) 0%,
+      color-mix(in srgb, var(--interactive-accent) 9%, transparent) 14%,
+      color-mix(in srgb, var(--background-secondary) 92%, transparent) 100%);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--interactive-accent) 58%, transparent),
+    inset 0.3rem 0 0 color-mix(in srgb, var(--interactive-accent) 90%, transparent);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-models-row--active .ert-ai-models-cell {
+  color: color-mix(in srgb, var(--text-normal) 96%, white);
+  font-weight: 700;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-models-row--active.ert-ai-models-row--ready {
+  --interactive-accent: var(--text-success);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-models-row--active.ert-ai-models-row--warning {
+  --interactive-accent: var(--text-warning);
+}
+
+.ert-ui.ert-scope--settings button.ert-ai-models-row:hover {
+  background: color-mix(in srgb, var(--background-secondary) 70%, transparent);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-models-provider {
+  padding: var(--ert-pad-tight) var(--ert-pad-cozy);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+  background: color-mix(in srgb, var(--background-secondary) 55%, transparent);
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-models-cell {
+  min-width: 0;
+  font-size: 12px;
+  color: var(--text-normal);
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-tight);
+  flex-wrap: wrap;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-models-cell--model {
+  flex-wrap: nowrap;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-models-row--promo {
+  background: color-mix(in srgb, var(--color-green) 6%, transparent);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-cost-promo-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  padding: var(--ert-gap-2xs) var(--ert-pad-tight);
+  margin-left: var(--ert-gap-tight);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--color-green) 18%, transparent);
+  color: var(--color-green);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-models-provider-mark {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--background-modifier-border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-models-name {
+  font-weight: 600;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-models-alias {
+  color: var(--text-faint);
+  font-family: var(--font-monospace);
+  font-size: 11px;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-models-tags .ert-badgePill {
+  margin: 0;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-model-details {
+  margin-top: 10px;
+  padding: var(--ert-pad-cozy);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background: var(--background-secondary);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-model-details-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-normal);
+}
+
+.ert-ui.ert-scope--settings .ert-ai-model-warning {
+  color: var(--text-warning);
+  font-size: 12px;
+}
+
+.ert-ui.ert-scope--settings .ert-ai-model-raw-pre {
+  max-height: 220px;
+  overflow: auto;
+  margin-top: 8px;
+}
+
+
+/* A green run's one actionable finding: readable, not alarming — nothing is
+   wrong, there is simply a faster setting available. */
+.ert-ai-local-llm-checks-rollup.is-actionable {
+  margin-top: 4px;
+  color: var(--text-normal);
+}

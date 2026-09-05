@@ -1,0 +1,2885 @@
+/* Timeline namespace rule:
+   - New Timeline chrome (legend, trigger, tooltip, panel, badge, overlay) should use ert-timeline-*.
+   - Existing SVG renderer primitives in this legacy island may remain rt-* until intentionally migrated. */
+.rt-scene-title-bold.rt-title-stage-zero {
+  fill: var(--rt-publishStageColors-Zero, var(--rt-color-zero));
+}
+
+.rt-scene-title-bold.rt-title-stage-author {
+  fill: var(--rt-publishStageColors-Author, var(--rt-color-author));
+}
+
+.rt-scene-title-bold.rt-title-stage-house {
+  fill: var(--rt-publishStageColors-House, var(--rt-color-house));
+}
+
+.rt-scene-title-bold.rt-title-stage-press {
+  fill: var(--rt-publishStageColors-Press, var(--rt-color-press));
+}
+
+.radial-timeline-container .rt-month-label {
+  pointer-events: none;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  font-size: 16px;
+  fill: var(--text-normal);
+}
+
+.radial-timeline-container .rt-month-label-outer {
+  pointer-events: none;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  font-size: 18px;
+  fill: var(--text-normal);
+}
+
+/* Hide outer ring month labels in all modes except Chronologue */
+/* Outer ring months are only relevant in Chronologue mode where scenes are chronologically ordered */
+.radial-timeline-svg:not([data-mode="chronologue"]) .rt-month-label-outer {
+  opacity: 0;
+}
+
+/* First and last date labels (beginning/ending dates) */
+.radial-timeline-container .rt-month-label-outer.rt-date-boundary {
+  font-size: 14px;
+  text-transform: uppercase;
+  stroke: #000000;
+  stroke-width: 3px;
+  paint-order: stroke;
+}
+
+/* Beginning date uses Zero stage color */
+.radial-timeline-container .rt-month-label-outer.rt-date-first {
+  fill: var(--rt-publishStageColors-Zero);
+  font-weight: 500;
+
+}
+
+/* Ending date uses Press stage color */
+.radial-timeline-container .rt-month-label-outer.rt-date-last {
+  fill: var(--rt-publishStageColors-Press);
+  font-weight: 500;
+}
+
+/* Chronological tick marks (Chronologue mode) */
+.radial-timeline-container .rt-chronological-tick-major {
+  stroke: var(--text-muted);
+  stroke-width: 2;
+  opacity: 1;
+}
+
+.radial-timeline-container .rt-chronological-tick-minor {
+  stroke: var(--text-muted);
+  stroke-width: 1;
+  stroke-dasharray: 2, 2;
+  opacity: 1;
+}
+
+/* Beginning tick uses Zero stage color to match the date label */
+.radial-timeline-container .rt-chronological-tick.rt-date-first {
+  stroke: var(--rt-publishStageColors-Zero);
+}
+
+/* Ending tick uses Press stage color to match the date label */
+.radial-timeline-container .rt-chronological-tick.rt-date-last {
+  stroke: var(--rt-publishStageColors-Press);
+}
+
+.radial-timeline-container .rt-act-label {
+  pointer-events: none;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  font-size: 20px;
+  font-weight: 700;
+  /* fill: var(--text-normal); */
+  /* Color is now set dynamically in SVG */
+}
+
+.radial-timeline-container .rt-month-spoke-line {
+  stroke: var(--text-normal);
+  stroke-width: 1px;
+  stroke-dasharray: 2, 2;
+  opacity: 1;
+}
+
+.radial-timeline-container .rt-month-spoke-line.rt-month-spoke-intermediate {
+  opacity: 1;
+}
+
+.radial-timeline-container .rt-month-spoke-line.rt-act-boundary {
+  stroke: var(--text-normal);
+  stroke-width: 2px;
+  stroke-dasharray: none;
+  opacity: 1;
+}
+
+.radial-timeline-container .act-border {
+  stroke: var(--text-normal);
+  stroke-width: 2px;
+  stroke-dasharray: none;
+  opacity: 1;
+}
+
+/* Sequence alignment: the spoke crosses void far more often than it crosses a
+   scene, so it goes pure white rather than following the theme's text colour,
+   which sits too close to the empty-cell gray to read against it. */
+.radial-timeline-svg[data-subplot-alignment="sequence"] .act-border {
+  stroke: var(--rt-color-empty);
+}
+
+/* All spokes: soften on hover and shift modes */
+.radial-timeline-svg.scene-hover .act-border,
+.radial-timeline-svg.scene-hover .rt-month-spoke-line {
+  stroke: #ffffff;
+  opacity: 0.35;
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .act-border,
+.radial-timeline-svg[data-shift-mode="active"] .rt-month-spoke-line.rt-act-boundary {
+  stroke: rgba(255, 255, 255, 0.3);
+  opacity: 0.25;
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .act-border,
+.radial-timeline-svg[data-shift-mode="alien"] .rt-month-spoke-line.rt-act-boundary {
+  stroke: rgba(200, 50, 50, 0.8);
+  opacity: 0.7;
+}
+
+/* Hide act spokes and labels in Chronologue mode - act organization not relevant */
+.radial-timeline-svg[data-chronologue-mode="true"] .act-border,
+.radial-timeline-svg[data-chronologue-mode="true"] .rt-month-spoke-line.rt-act-boundary,
+.radial-timeline-svg[data-chronologue-mode="true"] .rt-act-label {
+  display: none;
+}
+
+.radial-timeline-container .rt-scene-title-small {
+  font-size: calc(9px * var(--rt-font-scale, 1));
+}
+
+.radial-timeline-container .rt-scene-title-medium {
+  font-size: calc(16px * var(--rt-font-scale, 1));
+}
+
+.radial-timeline-container .rt-scene-title-large {
+  font-size: calc(18px * var(--rt-font-scale, 1));
+}
+
+.rt-subplot-ring-label-text {
+  fill: color-mix(in srgb, var(--rt-max-publish-stage-color) 72%, #ffffff);
+  opacity: .42;
+  font-family: 'Asimovian', 'Impact', 'Arial Black', Arial, sans-serif;
+  font-weight: 400;
+  /* Regular weight */
+  font-synthesis: none;
+  /* Prevent faux bold/italic synthesis for single-weight font */
+  letter-spacing: -0.02em;
+  /* tighter tracking */
+  font-size: var(--rt-subplot-font-size);
+  dominant-baseline: central;
+  /* Try central for potentially better vertical centering */
+  text-transform: uppercase;
+  pointer-events: none;
+  /* Ignore mouse events */
+}
+
+/* Use .non-selected class for faded state (consistent with other elements) */
+.rt-subplot-ring-label-text.rt-non-selected {
+  opacity: .1;
+  /* Corrected opacity back to 30% */
+}
+
+/* Hide subplot ring labels in Gossamer mode AND on hover */
+.radial-timeline-svg[data-gossamer-mode="true"] .rt-subplot-ring-label-text {
+  opacity: 0;
+}
+
+.radial-timeline-svg.scene-hover .rt-subplot-ring-label-text {
+  opacity: 0;
+}
+
+/* Hide subplot ring labels in shift mode (top left quadrant) */
+.radial-timeline-svg[data-shift-mode="active"] .rt-subplot-ring-label-text {
+  opacity: 0;
+}
+
+/* Hide subplot ring labels in runtime mode (top left quadrant behavior) */
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-subplot-ring-label-text {
+  opacity: 0;
+}
+
+/* Mode selector grid.
+   The mode selector now lives in the view title bar (.ert-timeline-mode-nav); this
+   in-canvas SVG grid is hidden so there is a single, unambiguous mode control.
+   The grid is still rendered (its keyboard 1–4 handler and switch state ride
+   along in ModeToggleController), so hiding here is fully reversible pending a
+   decision to delete the SVG grid entirely. */
+.rt-mode-selector-grid {
+  display: none;
+}
+
+.rt-mode-option {
+  pointer-events: none;
+}
+
+.rt-mode-option .rt-document-bg {
+  pointer-events: visiblePainted;
+  cursor: pointer;
+  fill: var(--interactive-normal);
+  stroke: var(--text-normal);
+  stroke-width: 2px;
+  transition: fill 0.2s ease;
+}
+
+.rt-mode-option:hover .rt-document-bg {
+  fill: var(--interactive-accent);
+  stroke: var(--text-normal);
+  stroke-width: 2px;
+}
+
+.rt-mode-option:hover .rt-mode-acronym-text {
+  fill: var(--text-on-accent);
+}
+
+.rt-mode-option .rt-mode-acronym-text {
+  pointer-events: none;
+  text-anchor: start;
+  dominant-baseline: middle;
+  font-family: var(--font-interface);
+  font-size: 12px;
+  font-weight: normal;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  fill: var(--text-normal);
+  stroke: none;
+  paint-order: fill;
+  transition: fill 0.2s ease;
+}
+
+.rt-mode-option .rt-active.rt-mode-acronym-text {
+  fill: var(--text-on-accent);
+  stroke: none;
+  font-size: 12px;
+  font-weight: normal;
+}
+
+.rt-mode-option .rt-mode-number-label {
+  pointer-events: none;
+  text-anchor: start;
+  dominant-baseline: middle;
+  font-family: var(--font-interface);
+  font-size: 10px;
+  font-weight: normal;
+  fill: var(--text-normal);
+}
+
+.rt-mode-option .rt-active {
+  fill: var(--interactive-accent);
+  stroke: var(--text-normal);
+  stroke-width: 2px;
+}
+
+.rt-mode-option .rt-active.rt-mode-number-label {
+  fill: var(--text-on-accent);
+  stroke: none;
+  font-size: 10px;
+  font-weight: 300;
+
+}
+
+/* Book title text above the mode title - uses Obsidian's text font setting */
+
+/* Mode title text — left-aligned with the leftmost button (x set dynamically) */
+.rt-mode-title-text {
+  pointer-events: none;
+  text-anchor: start;
+  dominant-baseline: baseline;
+  font-family: var(--font-interface);
+  font-size: 26px;
+  font-weight: 100;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  fill: var(--text-normal);
+}
+
+/* Shift mode button - styled like mode pages.
+   The in-view SVG keycaps (Shift / Alt / Runtime) are fully covered by the
+   header sub-nav, so they are hidden here — reversible, same approach as the
+   mode grid. Their keyboard handlers and active-class state (which the header
+   mirrors) keep running while hidden. Drop the display:none to restore the
+   canvas keycaps; the rules below are what they render with. */
+.rt-shift-mode-button {
+  cursor: pointer;
+  display: none;
+}
+
+.rt-shift-mode-button .rt-shift-button-bg {
+  fill: var(--interactive-normal);
+  stroke: var(--text-normal);
+  stroke-width: 2px;
+  transition: fill 0.2s ease;
+}
+
+.rt-shift-mode-button .rt-shift-button-text {
+  pointer-events: none;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  font-family: var(--font-interface);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  fill: var(--text-normal);
+  transition: fill 0.2s ease;
+}
+
+.rt-shift-mode-button:hover .rt-shift-button-bg {
+  fill: var(--interactive-accent);
+  stroke: var(--text-normal);
+  stroke-width: 2px;
+}
+
+.rt-shift-mode-button:hover .rt-shift-button-text {
+  fill: var(--text-on-accent);
+}
+
+/* Alt button hover/click styles - only fill changes to red, stroke/text stay normal */
+.rt-alt-button:hover .rt-shift-button-bg {
+  fill: rgba(180, 60, 60, 0.8);
+  stroke: var(--text-normal);
+  stroke-width: 2px;
+}
+
+.rt-alt-button:hover .rt-shift-button-text {
+  fill: var(--text-normal);
+}
+
+.rt-alt-button:active .rt-shift-button-bg {
+  fill: rgba(180, 60, 60, 0.9);
+  stroke: var(--text-normal);
+  stroke-width: 2px;
+}
+
+.rt-alt-button:active .rt-shift-button-text {
+  fill: var(--text-normal);
+}
+
+/* Generic shift mode active state (excludes alt button which has its own red styling) */
+.rt-shift-mode-active:not(.rt-alt-button) .rt-shift-button-bg {
+  fill: var(--interactive-accent);
+  stroke: var(--text-normal);
+  stroke-width: 2px;
+}
+
+.rt-shift-mode-active:not(.rt-alt-button) .rt-shift-button-text {
+  fill: var(--text-on-accent);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+
+/* Shift mode scene selection */
+/* Shift mode: All scene groups fade to low opacity by default */
+.radial-timeline-svg[data-shift-mode="active"] .rt-scene-group[data-item-type="Scene"] {
+  opacity: 0.15;
+}
+
+/* Shift mode: All scene fills are gray */
+.radial-timeline-svg[data-shift-mode="active"] .rt-scene-group[data-item-type="Scene"] .rt-scene-path {
+  fill: var(--interactive-normal);
+}
+
+/* Void cells match those two: an empty stretch of a subplot ring is a cell
+   like any other, and left at its own fill it would be the brightest thing on
+   screen in the mode whose whole point is muting everything but the
+   comparison. Stated once here rather than joined to the selectors above,
+   which the scene splits across a group rule and a path rule. */
+.radial-timeline-svg[data-shift-mode="active"] .rt-void-cell {
+  fill: var(--interactive-normal);
+  opacity: 0.15;
+}
+
+/* Shift mode: Style the number squares and text to match the grayed-out scenes */
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-square {
+  fill: var(--interactive-normal);
+  /* Dark gray background */
+  stroke: none;
+  /* Remove any borders */
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-text {
+  fill: var(--text-muted);
+  /* Dark muted text to match dark theme */
+  opacity: 0.5;
+  /* Dim the text to match the faded scenes */
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-scene-is-open:not(.rt-shift-active) {
+  fill: var(--interactive-normal);
+  stroke: none;
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-text.rt-scene-is-open:not(.rt-shift-active) {
+  fill: var(--text-muted);
+  opacity: 0.5;
+}
+
+/* Shift mode: Mute pending edits and grade colors when not active */
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-has-edits:not(.rt-shift-active) {
+  fill: var(--interactive-normal);
+  stroke: none;
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-text.rt-has-edits:not(.rt-shift-active),
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-text.rt-grade-A:not(.rt-shift-active),
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-text.rt-grade-B:not(.rt-shift-active),
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-text.rt-grade-C:not(.rt-shift-active) {
+  fill: var(--text-muted);
+  opacity: 0.5;
+}
+
+/* Shift mode: Hover/selected scenes restore full opacity and disable transition */
+.radial-timeline-svg[data-shift-mode="active"] .rt-scene-group[data-item-type="Scene"]:hover,
+.radial-timeline-svg[data-shift-mode="active"] .rt-scene-group[data-item-type="Scene"].rt-shift-hover,
+.radial-timeline-svg[data-shift-mode="active"] .rt-scene-group[data-item-type="Scene"].rt-shift-locked {
+  opacity: 1;
+  transition: none;
+  /* Override parent transition for instant hover */
+}
+
+/* Shift mode: Hover/selected scenes get accent color */
+.radial-timeline-svg[data-shift-mode="active"] .rt-scene-group[data-item-type="Scene"]:hover .rt-scene-path,
+.radial-timeline-svg[data-shift-mode="active"] .rt-scene-group[data-item-type="Scene"].rt-shift-hover .rt-scene-path,
+.radial-timeline-svg[data-shift-mode="active"] .rt-scene-group[data-item-type="Scene"] .rt-scene-path.rt-shift-locked {
+  fill: var(--interactive-accent);
+  stroke: var(--interactive-accent);
+  stroke-width: 2px;
+}
+
+/* Shift mode: A new class, managed by JS, to restore number squares on hover/select */
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active {
+  /* Apply subplot color based on data attribute - avoid inline styles */
+  fill: var(--rt-subplot-colors-0);
+  /* Default fallback */
+}
+
+/* Apply subplot colors via data attributes - avoids inline style recalc */
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="0"] {
+  fill: var(--rt-subplot-colors-0);
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="1"] {
+  fill: var(--rt-subplot-colors-1);
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="2"] {
+  fill: var(--rt-subplot-colors-2);
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="3"] {
+  fill: var(--rt-subplot-colors-3);
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="4"] {
+  fill: var(--rt-subplot-colors-4);
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="5"] {
+  fill: var(--rt-subplot-colors-5);
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="6"] {
+  fill: var(--rt-subplot-colors-6);
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="7"] {
+  fill: var(--rt-subplot-colors-7);
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="8"] {
+  fill: var(--rt-subplot-colors-8);
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="9"] {
+  fill: var(--rt-subplot-colors-9);
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="10"] {
+  fill: var(--rt-subplot-colors-10);
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="11"] {
+  fill: var(--rt-subplot-colors-11);
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="12"] {
+  fill: var(--rt-subplot-colors-12);
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="13"] {
+  fill: var(--rt-subplot-colors-13);
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="14"] {
+  fill: var(--rt-subplot-colors-14);
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="15"] {
+  fill: var(--rt-subplot-colors-15);
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-number-text.rt-shift-active {
+  fill: #000000;
+  /* Black text */
+  opacity: 1;
+  /* Full opacity when active */
+}
+
+/* Ensure active text wins over grade/non-selected rules */
+.radial-timeline-container .radial-timeline-svg[data-shift-mode="active"] .rt-number-text.rt-shift-active {
+  fill: #000000;
+  opacity: 1;
+  /* Full opacity when active */
+}
+
+/* Legacy: Keep for backwards compatibility */
+.rt-shift-selected {
+  stroke: var(--interactive-accent);
+  stroke-width: 3;
+}
+
+/* Elapsed time arc (SHIFT mode) - uses Stage 1 Zero color */
+.rt-elapsed-time-arc {
+  pointer-events: none;
+}
+
+.rt-elapsed-arc-path {
+  fill: none;
+  stroke: var(--rt-publishStageColors-Zero);
+  stroke-width: 3px;
+  pointer-events: none;
+}
+
+.rt-elapsed-endpoint-marker {
+  fill: none;
+  stroke: var(--rt-publishStageColors-Zero);
+  stroke-width: 3px;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+/* When field warning tooltip */
+.rt-when-field-warning {
+  pointer-events: none;
+}
+
+.rt-when-field-warning rect {
+  fill: var(--background-primary);
+  stroke: var(--text-error);
+  stroke-width: 1;
+}
+
+.rt-when-field-warning text {
+
+  font-size: 10px;
+  font-weight: 600;
+  fill: var(--text-error);
+}
+
+/* -------------------------------------------------------------------------- */
+/* ALIEN SHIFT MODE ([data-shift-mode="alien"])                              */
+/* -------------------------------------------------------------------------- */
+
+/* 1. Base State: Scene paths fade out with muted red tint (matching SHIFT mode visibility ~15%).
+      Void cells take the same treatment from this one declaration, so the
+      empty stretches of a Sequence-aligned ring read as part of the planet
+      palette rather than punching through it. */
+.radial-timeline-svg[data-shift-mode="alien"] .rt-scene-group[data-item-type="Scene"] .rt-scene-path,
+.radial-timeline-svg[data-shift-mode="alien"] .rt-void-cell {
+  fill: rgba(180, 60, 60, 0.15);
+  stroke: rgba(180, 60, 60, 0.25);
+  stroke-width: 1px;
+}
+
+/* 2. Base State: Number Squares very muted (like shift mode but with slight red tint) */
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square {
+  fill: var(--interactive-normal);
+  stroke: none;
+  opacity: 0.5;
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-text {
+  fill: rgba(200, 50, 50, 0.8);
+  opacity: 0.7;
+}
+
+/* Alien mode: Mute open scenes, pending edits, and grade colors when not active */
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-scene-is-open:not(.rt-shift-active),
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-has-edits:not(.rt-shift-active) {
+  fill: var(--interactive-normal);
+  stroke: none;
+  opacity: 0.5;
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-text.rt-scene-is-open:not(.rt-shift-active),
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-text.rt-has-edits:not(.rt-shift-active),
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-text.rt-grade-A:not(.rt-shift-active),
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-text.rt-grade-B:not(.rt-shift-active),
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-text.rt-grade-C:not(.rt-shift-active) {
+  fill: rgba(200, 50, 50, 0.8);
+  opacity: 0.7;
+}
+
+/* 3. Scene Text: Match number square text color and opacity */
+.radial-timeline-svg[data-shift-mode="alien"] .rt-scene-title {
+  fill: rgba(200, 50, 50, 0.8);
+  opacity: 0.7;
+}
+
+/* 4. Spokes/Radial Lines/Month Lines: Muted red tint (increased visibility to match SHIFT) */
+.radial-timeline-svg[data-shift-mode="alien"] .rt-ring,
+.radial-timeline-svg[data-shift-mode="alien"] .rt-radial-line,
+.radial-timeline-svg[data-shift-mode="alien"] .rt-month-spoke-line {
+  stroke: rgba(180, 60, 60, 0.5);
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-month-label,
+.radial-timeline-svg[data-shift-mode="alien"] .rt-act-label {
+  fill: rgba(180, 60, 60, 0.5);
+}
+
+/* Outer ring graduated dates (planetary calendar) bright red in alien mode */
+.radial-timeline-svg[data-shift-mode="alien"] .rt-month-label-outer:not(.rt-date-boundary) {
+  fill: rgba(255, 40, 40, 1);
+  stroke: #000000;
+  stroke-width: 0.5px;
+  paint-order: stroke fill;
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-chronological-tick-major,
+.radial-timeline-svg[data-shift-mode="alien"] .rt-chronological-tick-minor {
+  stroke: rgba(180, 60, 60, 0.5);
+}
+
+/* 5. Subplot Headlines: Hidden in Alien Mode (like Shift mode) */
+.radial-timeline-svg[data-shift-mode="alien"] .rt-subplot-ring-label-text {
+  opacity: 0;
+}
+
+/* Planetary Time (Alien Calendar) Synopsis Line */
+.rt-planetary-time-text {
+  fill: var(--text-muted, currentColor);
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.rt-planetary-outline {
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-dasharray: 4 3;
+  stroke-width: 2;
+}
+
+/* 6. Hover State: Full Opacity, Brighter Red */
+.radial-timeline-svg[data-shift-mode="alien"] .rt-scene-group[data-item-type="Scene"]:hover,
+.radial-timeline-svg[data-shift-mode="alien"] .rt-scene-group[data-item-type="Scene"].rt-shift-hover,
+.radial-timeline-svg[data-shift-mode="alien"] .rt-scene-group[data-item-type="Scene"].rt-shift-locked {
+  opacity: 1;
+  transition: none;
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-scene-group[data-item-type="Scene"]:hover .rt-scene-path,
+.radial-timeline-svg[data-shift-mode="alien"] .rt-scene-group[data-item-type="Scene"].rt-shift-hover .rt-scene-path,
+.radial-timeline-svg[data-shift-mode="alien"] .rt-scene-group[data-item-type="Scene"] .rt-scene-path.rt-shift-locked {
+  fill: var(--text-error);
+  stroke: var(--text-error);
+  stroke-width: 2px;
+}
+
+/* Alien scene-hover (global .scene-hover flag): keep AI grade squares/text tinted */
+.radial-timeline-svg[data-shift-mode="alien"].scene-hover .rt-number-square {
+  fill: var(--interactive-normal);
+  stroke: none;
+  opacity: 0.5;
+}
+
+.radial-timeline-svg[data-shift-mode="alien"].scene-hover .rt-number-text {
+  fill: rgba(200, 50, 50, 0.8);
+  opacity: 0.7;
+}
+
+/* Alien hover: keep number squares/text tinted instead of turning white */
+.radial-timeline-svg[data-shift-mode="alien"] .rt-scene-group[data-item-type="Scene"]:hover .rt-number-square,
+.radial-timeline-svg[data-shift-mode="alien"] .rt-scene-group[data-item-type="Scene"].rt-shift-hover .rt-number-square,
+.radial-timeline-svg[data-shift-mode="alien"] .rt-scene-group[data-item-type="Scene"] .rt-number-square.rt-shift-locked {
+  fill: var(--interactive-normal);
+  stroke: none;
+  opacity: 0.5;
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-scene-group[data-item-type="Scene"]:hover .rt-number-text,
+.radial-timeline-svg[data-shift-mode="alien"] .rt-scene-group[data-item-type="Scene"].rt-shift-hover .rt-number-text,
+.radial-timeline-svg[data-shift-mode="alien"] .rt-scene-group[data-item-type="Scene"] .rt-number-text.rt-shift-locked {
+  fill: rgba(200, 50, 50, 0.8);
+  opacity: 0.7;
+}
+
+/* Alien hover: synopsis/info text stays tinted */
+.radial-timeline-svg[data-shift-mode="alien"].scene-hover .rt-scene-info {
+  opacity: 1;
+  color: rgba(200, 50, 50, 0.9);
+  fill: rgba(200, 50, 50, 0.9);
+  stroke: rgba(200, 50, 50, 0.6);
+}
+
+/* Alien hover: synopsis/info text stays tinted */
+.radial-timeline-svg[data-shift-mode="alien"] .rt-scene-info.rt-visible {
+  opacity: 1;
+  color: rgba(200, 50, 50, 0.9);
+  fill: rgba(200, 50, 50, 0.9);
+  stroke: rgba(200, 50, 50, 0.6);
+}
+
+/* 7. Active Number Square in Alien Mode */
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active {
+  fill: var(--interactive-accent);
+  opacity: 1;
+  /* Default if no subplot */
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-text.rt-shift-active {
+  fill: var(--background-primary);
+  opacity: 1;
+}
+
+/* Re-apply per-subplot colors for active squares in Alien Mode */
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="0"] {
+  fill: var(--rt-subplot-colors-0);
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="1"] {
+  fill: var(--rt-subplot-colors-1);
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="2"] {
+  fill: var(--rt-subplot-colors-2);
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="3"] {
+  fill: var(--rt-subplot-colors-3);
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="4"] {
+  fill: var(--rt-subplot-colors-4);
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="5"] {
+  fill: var(--rt-subplot-colors-5);
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="6"] {
+  fill: var(--rt-subplot-colors-6);
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="7"] {
+  fill: var(--rt-subplot-colors-7);
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="8"] {
+  fill: var(--rt-subplot-colors-8);
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="9"] {
+  fill: var(--rt-subplot-colors-9);
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="10"] {
+  fill: var(--rt-subplot-colors-10);
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="11"] {
+  fill: var(--rt-subplot-colors-11);
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="12"] {
+  fill: var(--rt-subplot-colors-12);
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="13"] {
+  fill: var(--rt-subplot-colors-13);
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="14"] {
+  fill: var(--rt-subplot-colors-14);
+}
+
+.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="15"] {
+  fill: var(--rt-subplot-colors-15);
+}
+
+/* 8. ALT Button Active State - only fill is red, stroke/text stay normal */
+.rt-alt-button.rt-shift-mode-active .rt-shift-button-bg {
+  fill: rgba(180, 60, 60, 0.9);
+  stroke: var(--text-normal);
+  stroke-width: 2px;
+}
+
+.rt-alt-button.rt-shift-mode-active .rt-shift-button-text {
+  fill: var(--text-normal);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+
+/* -------------------------------------------------------------------------- */
+/* RUNTIME MODE ([data-shift-mode="runtime"])                                 */
+/* Shows Runtime field values instead of Duration on arc display              */
+/* Blue-tinted styling to distinguish from normal (gray) and alien (red)      */
+/* -------------------------------------------------------------------------- */
+
+/* 1. Act Borders with blue tint */
+.radial-timeline-svg[data-shift-mode="runtime"] .act-border,
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-month-spoke-line.rt-act-boundary {
+  stroke: rgba(60, 120, 200, 0.8);
+  opacity: 0.7;
+}
+
+/* 2. Scene paths with muted blue tint — void cells included, same declaration. */
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"] .rt-scene-path,
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-void-cell {
+  fill: rgba(60, 120, 180, 0.20);
+  stroke: rgba(60, 120, 180, 0.35);
+  stroke-width: 1px;
+}
+
+/* 3. Number Squares with blue-muted styling */
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-number-square {
+  fill: var(--interactive-normal);
+  stroke: none;
+  opacity: 0.6;
+}
+
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-number-text {
+  fill: rgba(60, 140, 200, 0.9);
+  opacity: 0.8;
+}
+
+/* Runtime mode: Mute open scenes, pending edits, and grade colors */
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-number-square.rt-scene-is-open,
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-number-square.rt-has-edits {
+  fill: var(--interactive-normal);
+  stroke: none;
+  opacity: 0.6;
+}
+
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-number-text.rt-scene-is-open,
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-number-text.rt-has-edits,
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-number-text.rt-grade-A,
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-number-text.rt-grade-B,
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-number-text.rt-grade-C {
+  fill: rgba(60, 140, 200, 0.9);
+  opacity: 0.8;
+}
+
+/* 4. Scene Text: Match number square text color */
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-title {
+  fill: rgba(60, 140, 200, 0.9);
+  opacity: 0.8;
+}
+
+/* 5. Spokes/Radial Lines/Month Lines: Blue tint */
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-ring,
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-radial-line,
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-month-spoke-line {
+  stroke: rgba(60, 120, 180, 0.5);
+}
+
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-month-label,
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-act-label {
+  fill: rgba(60, 120, 180, 0.5);
+}
+
+/* Outer ring labels show cumulative runtime values - bright blue for readability */
+/* Exclude boundary labels which keep their Zero/Press stage colors */
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-month-label-outer:not(.rt-date-boundary) {
+  fill: rgba(80, 180, 255, 1);
+  stroke: #000000;
+  stroke-width: 0.5px;
+  paint-order: stroke fill;
+}
+
+/* Runtime mode: boundary labels keep their Zero/Press stage colors */
+/* (No override needed - base styles apply) */
+
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-chronological-tick-major,
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-chronological-tick-minor {
+  stroke: rgba(60, 120, 180, 0.5);
+}
+
+/* 6. Hover State: Full Opacity, Brighter Blue with glow (matches ALT red glow pattern) */
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"]:hover,
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"].rt-shift-hover,
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"].rt-shift-locked {
+  opacity: 1;
+  transition: none;
+}
+
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"]:hover .rt-scene-path,
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"].rt-shift-hover .rt-scene-path,
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"] .rt-scene-path.rt-shift-locked {
+  fill: rgba(80, 160, 255, 1);
+  stroke: rgba(80, 160, 255, 1);
+  stroke-width: 2px;
+}
+
+/* 7. Duration/Runtime arcs get blue tint in runtime mode */
+.radial-timeline-container .radial-timeline-svg[data-shift-mode="runtime"] .rt-duration-arc {
+  stroke: rgba(60, 160, 220, 0.8);
+}
+
+/* Unparseable arcs (no Runtime value) stay RED even in runtime mode */
+.radial-timeline-container .radial-timeline-svg[data-shift-mode="runtime"] .rt-duration-arc.rt-duration-arc-unparseable {
+  stroke: var(--rt-color-due);
+}
+
+/* 8. RT Icon Button Styling - clean like SHIFT/ALT buttons */
+.rt-runtime-button {
+  cursor: pointer;
+}
+
+.rt-runtime-button .rt-runtime-lucide-icon {
+  stroke: var(--text-normal);
+  transition: fill 0.2s ease;
+}
+
+/* Hover state - Runtime blue fill */
+.rt-runtime-button:hover .rt-runtime-icon-bg {
+  fill: rgba(60, 140, 220, 0.85);
+}
+
+.rt-runtime-button:hover .rt-runtime-lucide-icon {
+  stroke: var(--text-on-accent);
+}
+
+/* Active state - Runtime blue fill */
+.rt-runtime-button.rt-runtime-mode-active .rt-runtime-icon-bg {
+  fill: rgba(60, 140, 220, 0.85);
+}
+
+.rt-runtime-button.rt-runtime-mode-active .rt-runtime-lucide-icon {
+  stroke: var(--text-on-accent);
+}
+
+/* Runtime hover: keep number squares/text tinted instead of turning white */
+/* High specificity via attribute + attribute + class chain */
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"]:hover .rt-number-square,
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"].rt-shift-hover .rt-number-square,
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"] .rt-number-square.rt-shift-locked {
+  fill: var(--interactive-normal);
+  stroke: none;
+  opacity: 0.6;
+}
+
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"]:hover .rt-number-text,
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"].rt-shift-hover .rt-number-text,
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"] .rt-number-text.rt-shift-locked {
+  fill: rgba(60, 140, 200, 0.9);
+  opacity: 0.8;
+}
+
+/* Runtime scene-hover (global .scene-hover flag): keep AI grade squares/text tinted */
+.radial-timeline-svg[data-shift-mode="runtime"].scene-hover .rt-number-square {
+  fill: var(--interactive-normal);
+  stroke: none;
+  opacity: 0.6;
+}
+
+.radial-timeline-svg[data-shift-mode="runtime"].scene-hover .rt-number-text {
+  fill: rgba(60, 140, 200, 0.9);
+  opacity: 0.8;
+}
+
+/* Runtime hover: synopsis/info text stays blue-tinted */
+.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-info.rt-visible {
+  opacity: 1;
+  color: rgba(60, 140, 200, 0.9);
+  fill: rgba(60, 140, 200, 0.9);
+  stroke: rgba(60, 140, 200, 0.6);
+}
+
+/* 9. Runtime Total display in grid footer - matches center-key-text size (18px) */
+.rt-runtime-display .rt-runtime-total {
+  fill: rgba(60, 160, 220, 0.9);
+}
+
+/* Book switcher (timeline header) */
+.rt-book-switcher {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 4px;
+}
+
+.rt-book-switcher__select {
+  max-width: 180px;
+  font-size: var(--font-ui-smaller);
+  height: 24px;
+  padding: 0 20px 0 6px;
+  border-radius: var(--radius-s);
+  border: thin solid var(--background-modifier-border);
+  background: var(--interactive-normal);
+  color: var(--text-muted);
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  background-size: 10px 6px;
+}
+
+.rt-book-switcher__select:hover {
+  color: var(--text-normal);
+  border-color: var(--interactive-accent);
+}
+
+.rt-book-switcher__select:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Book selector badged with a leading book icon so it reads as "which book". */
+.rt-book-switcher__books {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-4-1);
+  min-width: 0;
+}
+
+.rt-book-switcher__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  flex: 0 0 auto;
+}
+
+.rt-book-switcher__icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.rt-book-switcher__books:hover .rt-book-switcher__icon {
+  color: var(--text-normal);
+}
+
+/* Center mode navigation — compact text buttons replacing the view title.
+   Active mode uses the theme accent; everything else stays theme-muted. */
+.ert-timeline-mode-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-1);
+  min-width: 0;
+}
+
+.ert-timeline-mode-nav__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-2);
+  height: 24px;
+  padding: 0 var(--size-4-2);
+  border: thin solid transparent;
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+/* Keyboard-hint numeral: mono + fainter than the name so it reads as a hint.
+   Center-aligned with the label (not baseline) so its smaller size never lifts
+   the label or the content off the button's vertical center. A hair of downward
+   nudge optically levels the lining digit (cap-aligned, no descender) against
+   the lowercase label text. */
+.ert-timeline-mode-nav__num {
+  position: relative;
+  top: calc(0.1em - 1px);
+  font-family: var(--font-monospace);
+  font-size: 0.85em;
+  line-height: 1;
+  color: var(--text-faint);
+}
+
+.ert-timeline-mode-nav__label {
+  line-height: 1;
+}
+
+.ert-timeline-mode-nav__btn:hover .ert-timeline-mode-nav__num {
+  color: var(--text-muted);
+}
+
+.ert-timeline-mode-nav__btn.is-active .ert-timeline-mode-nav__num {
+  color: color-mix(in srgb, var(--text-on-accent) 65%, transparent);
+}
+
+.ert-timeline-mode-nav__btn:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+.ert-timeline-mode-nav__btn.is-active {
+  color: var(--text-on-accent);
+  background: var(--interactive-accent);
+}
+
+.ert-timeline-mode-nav__btn.is-active:hover {
+  color: var(--text-on-accent);
+  background: var(--interactive-accent-hover);
+}
+
+.ert-timeline-mode-nav__btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent) 45%, transparent);
+}
+
+/* Mode sub-nav — compact segmented chip group attached to a mode button and
+   shown only while that mode is active. Used by Chronologue (Shift / Alt /
+   Runtime) and by Narrative (Fill / Sequence subplot alignment). Fits the
+   fixed header height; for Chronologue it is an additional trigger surface for
+   the same sub-modes the keyboard and in-view keycaps drive. */
+.ert-timeline-subnav {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-1);
+  /* Sit tight to the Chronologue button, with a clear gap before "4 Gossamer",
+     so the sub-group reads as nested under Chronologue, not part of the row. */
+  margin-inline-start: var(--size-2-2);
+  margin-inline-end: var(--size-4-3);
+}
+
+.ert-timeline-subnav[hidden] {
+  display: none;
+}
+
+/* The alignment toggle leads the row instead of nesting under a mode button:
+   it is a saved layout preference that applies to every mode with an
+   all-scenes outer ring, not a sub-mode of one. Mirror the nested group's
+   margins so it sits clear of "1 Progress" rather than reading as part of it. */
+.ert-timeline-alignment-toggle {
+  margin-inline-start: 0;
+  margin-inline-end: var(--size-4-3);
+}
+
+/* Sub-modes read as tags/annotations, not buttons: shorter than the mode
+   buttons, thin dashed outline with a little padding, transparent fill. Each
+   sub-mode carries its own hue via --ert-subnav-color — Shift neutral, Runtime
+   blue, Alt/Alien red (tokens in variables.css). The glyph/label inherit that
+   colour, so the narrow-width glyphs keep their per-sub-mode colour too. */
+.ert-timeline-subnav__btn {
+  --ert-subnav-color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 18px;
+  padding: 0 var(--size-2-2);
+  /* Opaque mix (not alpha) + explicit 1px: semi-transparent hairlines
+     anti-alias into the header and read as soft/blurry. */
+  border: 1px dashed color-mix(in srgb, var(--ert-subnav-color) 60%, var(--background-primary));
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--ert-subnav-color);
+  font-size: var(--font-ui-smaller);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.ert-timeline-subnav__btn[data-submode="runtime"] {
+  --ert-subnav-color: var(--rt-color-runtime);
+}
+
+.ert-timeline-subnav__btn[data-submode="alt"] {
+  --ert-subnav-color: var(--rt-color-alt);
+}
+
+/* Center-align the label span so it never rides high in the chip. */
+.ert-timeline-subnav__label {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
+.ert-timeline-subnav__btn:hover {
+  border-color: var(--ert-subnav-color);
+}
+
+/* Active: intensify with the sub-mode's own colour — solid outline + fill. */
+.ert-timeline-subnav__btn.is-active {
+  border-style: solid;
+  border-color: var(--ert-subnav-color);
+  background: color-mix(in srgb, var(--ert-subnav-color) 85%, transparent);
+  color: var(--text-on-accent);
+}
+
+/* Neutral sub-modes (Shift, and both subplot alignments) carry no hue, so a
+   colour fill under white text would be low-contrast — intensify with theme
+   neutrals instead, still clearly on vs the dashed idle. */
+.ert-timeline-subnav__btn[data-submode="shift"].is-active,
+.ert-timeline-subnav__btn[data-alignment].is-active {
+  background: var(--background-modifier-hover);
+  border-color: var(--text-normal);
+  color: var(--text-normal);
+}
+
+/* No-data Runtime: keep the blue association but dim it to read "unavailable"
+   (mirrors the in-view keycap's no-data state); still clickable. */
+.ert-timeline-subnav__btn.is-no-data {
+  opacity: 0.5;
+}
+
+.ert-timeline-subnav__btn[hidden] {
+  display: none;
+}
+
+.ert-timeline-subnav__btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ert-subnav-color) 45%, transparent);
+}
+
+/* Glyph is the narrow-width fallback; the word label is the default. Carries
+   the same centering so it sits optically centered when it takes over. */
+.ert-timeline-subnav__glyph {
+  display: none;
+  align-items: center;
+  line-height: 1;
+}
+
+/* Narrow bars (small monitors, split panes): height is fixed, so let the
+   search input surrender width first, then collapse mode-nav padding and the
+   Chronologue sub-nav labels down to glyphs (⇧ / ⌥ / RT). */
+@media (max-width: 900px) {
+  .ert-timeline-search .ert-timeline-search__input[type="search"] {
+    width: clamp(72px, 10vw, 140px);
+    flex: 1 1 auto;
+  }
+  .ert-timeline-mode-nav__btn {
+    padding: 0 var(--size-4-1);
+  }
+  .ert-timeline-subnav__label {
+    display: none;
+  }
+  .ert-timeline-subnav__glyph {
+    display: inline-flex;
+  }
+}
+
+.ert-timeline-session.clickable-icon {
+  width: auto;
+  height: 24px;
+  min-height: 24px;
+  max-height: 24px;
+  box-sizing: border-box;
+  padding-block: 0;
+  padding-inline: 0.7rem;
+  margin-inline-start: var(--size-4-1);
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-family: 'Radial Timeline JetBrains Mono', var(--font-monospace);
+  font-size: var(--font-ui-medium);
+  font-weight: 100;
+  font-synthesis: none;
+  line-height: 1;
+  border-radius: var(--radius-m);
+  background: transparent;
+  cursor: pointer;
+}
+
+.ert-timeline-session.clickable-icon.is-icon-only {
+  width: 24px;
+  height: 24px;
+  padding-block: 0;
+  padding-inline: 0;
+  border-radius: var(--radius-s);
+}
+
+.ert-timeline-session.clickable-icon .ert-timeline-session__icon,
+.ert-timeline-session.clickable-icon .ert-timeline-session__label > .svg-icon {
+  cursor: pointer;
+  width: var(--size-4-4);
+  height: var(--size-4-4);
+  display: block;
+  flex: 0 0 auto;
+  background: none;
+  stroke-width: 2;
+}
+
+.ert-timeline-session.clickable-icon:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+.ert-timeline-session.clickable-icon.is-active {
+  color: var(--rt-max-publish-stage-color, var(--text-accent));
+  background: color-mix(in srgb, currentColor 12%, var(--background-secondary));
+}
+
+.ert-timeline-session.clickable-icon.is-paused {
+  color: var(--text-warning);
+  background: color-mix(in srgb, var(--text-warning) 10%, var(--background-secondary));
+}
+
+.ert-timeline-session.clickable-icon.is-goal-met {
+  color: var(--text-success);
+}
+
+.ert-timeline-session.clickable-icon.is-goal-met:hover {
+  color: var(--text-success);
+  background: color-mix(in srgb, var(--text-success) 10%, var(--background-secondary));
+}
+
+.ert-timeline-session.clickable-icon.is-active.is-progress-0,
+.ert-timeline-session-panel__clock.is-progress-0 {
+  color: var(--rt-max-publish-stage-color, var(--text-accent));
+}
+
+.ert-timeline-session.clickable-icon.is-active.is-progress-5,
+.ert-timeline-session-panel__clock.is-progress-5 {
+  color: color-mix(in srgb, var(--rt-max-publish-stage-color, var(--text-accent)) 95%, var(--text-success) 5%);
+}
+
+.ert-timeline-session.clickable-icon.is-active.is-progress-10,
+.ert-timeline-session-panel__clock.is-progress-10 {
+  color: color-mix(in srgb, var(--rt-max-publish-stage-color, var(--text-accent)) 90%, var(--text-success) 10%);
+}
+
+.ert-timeline-session.clickable-icon.is-active.is-progress-15,
+.ert-timeline-session-panel__clock.is-progress-15 {
+  color: color-mix(in srgb, var(--rt-max-publish-stage-color, var(--text-accent)) 85%, var(--text-success) 15%);
+}
+
+.ert-timeline-session.clickable-icon.is-active.is-progress-20,
+.ert-timeline-session-panel__clock.is-progress-20 {
+  color: color-mix(in srgb, var(--rt-max-publish-stage-color, var(--text-accent)) 80%, var(--text-success) 20%);
+}
+
+.ert-timeline-session.clickable-icon.is-active.is-progress-25,
+.ert-timeline-session-panel__clock.is-progress-25 {
+  color: color-mix(in srgb, var(--rt-max-publish-stage-color, var(--text-accent)) 75%, var(--text-success) 25%);
+}
+
+.ert-timeline-session.clickable-icon.is-active.is-progress-30,
+.ert-timeline-session-panel__clock.is-progress-30 {
+  color: color-mix(in srgb, var(--rt-max-publish-stage-color, var(--text-accent)) 70%, var(--text-success) 30%);
+}
+
+.ert-timeline-session.clickable-icon.is-active.is-progress-35,
+.ert-timeline-session-panel__clock.is-progress-35 {
+  color: color-mix(in srgb, var(--rt-max-publish-stage-color, var(--text-accent)) 65%, var(--text-success) 35%);
+}
+
+.ert-timeline-session.clickable-icon.is-active.is-progress-40,
+.ert-timeline-session-panel__clock.is-progress-40 {
+  color: color-mix(in srgb, var(--rt-max-publish-stage-color, var(--text-accent)) 60%, var(--text-success) 40%);
+}
+
+.ert-timeline-session.clickable-icon.is-active.is-progress-45,
+.ert-timeline-session-panel__clock.is-progress-45 {
+  color: color-mix(in srgb, var(--rt-max-publish-stage-color, var(--text-accent)) 55%, var(--text-success) 45%);
+}
+
+.ert-timeline-session.clickable-icon.is-active.is-progress-50,
+.ert-timeline-session-panel__clock.is-progress-50 {
+  color: color-mix(in srgb, var(--rt-max-publish-stage-color, var(--text-accent)) 50%, var(--text-success) 50%);
+}
+
+.ert-timeline-session.clickable-icon.is-active.is-progress-55,
+.ert-timeline-session-panel__clock.is-progress-55 {
+  color: color-mix(in srgb, var(--rt-max-publish-stage-color, var(--text-accent)) 45%, var(--text-success) 55%);
+}
+
+.ert-timeline-session.clickable-icon.is-active.is-progress-60,
+.ert-timeline-session-panel__clock.is-progress-60 {
+  color: color-mix(in srgb, var(--rt-max-publish-stage-color, var(--text-accent)) 40%, var(--text-success) 60%);
+}
+
+.ert-timeline-session.clickable-icon.is-active.is-progress-65,
+.ert-timeline-session-panel__clock.is-progress-65 {
+  color: color-mix(in srgb, var(--rt-max-publish-stage-color, var(--text-accent)) 35%, var(--text-success) 65%);
+}
+
+.ert-timeline-session.clickable-icon.is-active.is-progress-70,
+.ert-timeline-session-panel__clock.is-progress-70 {
+  color: color-mix(in srgb, var(--rt-max-publish-stage-color, var(--text-accent)) 30%, var(--text-success) 70%);
+}
+
+.ert-timeline-session.clickable-icon.is-active.is-progress-75,
+.ert-timeline-session-panel__clock.is-progress-75 {
+  color: color-mix(in srgb, var(--rt-max-publish-stage-color, var(--text-accent)) 25%, var(--text-success) 75%);
+}
+
+.ert-timeline-session.clickable-icon.is-active.is-progress-80,
+.ert-timeline-session-panel__clock.is-progress-80 {
+  color: color-mix(in srgb, var(--rt-max-publish-stage-color, var(--text-accent)) 20%, var(--text-success) 80%);
+}
+
+.ert-timeline-session.clickable-icon.is-active.is-progress-85,
+.ert-timeline-session-panel__clock.is-progress-85 {
+  color: color-mix(in srgb, var(--rt-max-publish-stage-color, var(--text-accent)) 15%, var(--text-success) 85%);
+}
+
+.ert-timeline-session.clickable-icon.is-active.is-progress-90,
+.ert-timeline-session-panel__clock.is-progress-90 {
+  color: color-mix(in srgb, var(--rt-max-publish-stage-color, var(--text-accent)) 10%, var(--text-success) 90%);
+}
+
+.ert-timeline-session.clickable-icon.is-active.is-progress-95,
+.ert-timeline-session-panel__clock.is-progress-95 {
+  color: color-mix(in srgb, var(--rt-max-publish-stage-color, var(--text-accent)) 5%, var(--text-success) 95%);
+}
+
+.ert-timeline-session.clickable-icon.is-active.is-progress-100,
+.ert-timeline-session-panel__clock.is-progress-100 {
+  color: var(--text-success);
+}
+
+.ert-timeline-session__label {
+  display: inline-block;
+  min-width: 4.5ch;
+  padding-inline: 0.65rem;
+  white-space: nowrap;
+  font-family: 'Radial Timeline JetBrains Mono', var(--font-monospace);
+  font-weight: 100;
+  font-synthesis: none;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'zero' 0, 'tnum' 1;
+  text-align: center;
+  cursor: pointer;
+}
+
+.ert-timeline-session.clickable-icon:not(.is-icon-only) {
+  min-width: calc(4.5ch + 2.7rem);
+}
+
+.ert-timeline-session__label.is-count-pulse {
+  animation: ert-timeline-session-count-pulse 300ms ease-out;
+}
+
+@keyframes ert-timeline-session-count-pulse {
+  0% {
+    color: var(--ert-session-pulse-color, white);
+    text-shadow: 0 0 0.75rem color-mix(in srgb, var(--ert-session-pulse-color, white) 80%, transparent);
+  }
+
+  45% {
+    color: var(--ert-session-pulse-color, white);
+    text-shadow: 0 0 0.55rem color-mix(in srgb, var(--ert-session-pulse-color, white) 65%, transparent);
+  }
+
+  100% {
+    color: var(--ert-session-pulse-color, white);
+    text-shadow: 0 0 0.2rem color-mix(in srgb, var(--ert-session-pulse-color, white) 35%, transparent);
+  }
+}
+
+.ert-timeline-session.clickable-icon.is-icon-only .ert-timeline-session__label {
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ert-timeline-session-panel {
+  position: fixed;
+  width: 18.75rem;
+  max-width: calc(100vw - var(--size-4-6));
+  max-height: calc(100vh - var(--size-4-9));
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+  padding: var(--size-4-3);
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-s);
+  z-index: var(--layer-popover, 1000);
+  pointer-events: auto;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 140ms ease, transform 140ms ease;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.ert-timeline-session-panel.ert-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(calc(var(--size-2-2) * -1));
+}
+
+.ert-timeline-session-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--size-4-2);
+}
+
+.ert-timeline-session-panel__idle-card {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  padding: var(--size-4-2);
+  border: thin solid transparent;
+  border-radius: var(--radius-m);
+  background: color-mix(in srgb, var(--background-secondary) 82%, var(--background-primary));
+}
+
+.ert-timeline-session-panel__idle-card:hover {
+  border-color: color-mix(in srgb, var(--interactive-accent) 70%, transparent);
+  background: color-mix(in srgb, var(--background-secondary) 88%, var(--background-primary));
+}
+
+.ert-timeline-session-panel__idle-icon {
+  width: var(--size-4-8);
+  height: var(--size-4-8);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  color: var(--text-on-accent);
+  background: var(--interactive-accent);
+  border-radius: var(--radius-s);
+}
+
+.ert-timeline-session-panel__idle-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-1);
+}
+
+.ert-timeline-session-panel__idle-title {
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-semibold);
+}
+
+.ert-timeline-session-panel__idle-meta {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.ert-timeline-session-panel__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--size-4-2);
+}
+
+.ert-timeline-session-panel__title {
+  color: var(--text-normal);
+  font-size: var(--font-ui-medium);
+  font-weight: var(--font-semibold);
+}
+
+/* Community-shared state: sessions saved while armed post a progress summary
+   to the author's public feed. Social accent per brand. */
+.ert-timeline-session-panel.is-community-shared {
+  border-color: rgba(var(--ert-social-accent-rgb-base), 0.55);
+}
+
+.ert-timeline-session-panel.is-community-shared .ert-timeline-session-panel__title {
+  color: var(--ert-social-accent-color-base);
+}
+
+.ert-timeline-session-panel__shared-badge {
+  margin-left: auto;
+  padding: 0 var(--size-2-2);
+  border: 1px solid rgba(var(--ert-social-accent-rgb-base), 0.4);
+  border-radius: var(--radius-s);
+  background: rgba(var(--ert-social-accent-rgb-base), 0.12);
+  color: var(--ert-social-accent-color-base);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.6;
+}
+
+.ert-timeline-session.clickable-icon.is-community-shared {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ert-social-accent-color-base) 50%, transparent);
+}
+
+/* Discord chip: title-bar link beside the writing-session control. Muted
+   "Discord" normally; bright green ONLY while Eric is actually online (per the
+   discord-presence endpoint — never green on stale data). */
+.ert-timeline-discord-chip-host {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.ert-timeline-discord-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  box-sizing: border-box;
+  margin-inline-start: var(--size-4-1);
+  padding-inline: 0.5rem;
+  font-family: 'Radial Timeline JetBrains Mono', var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+  font-weight: 100;
+  font-synthesis: none;
+  line-height: 1;
+  color: var(--text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  border-radius: var(--radius-m);
+}
+
+.ert-timeline-discord-chip:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+.ert-timeline-discord-chip.is-live {
+  color: var(--text-success);
+  font-weight: var(--font-semibold);
+  background: color-mix(in srgb, var(--text-success) 10%, var(--background-secondary));
+}
+
+.ert-timeline-discord-chip.is-live:hover {
+  color: var(--text-success);
+  text-decoration: underline;
+}
+
+.ert-timeline-session-panel__icon.clickable-icon {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+}
+
+.ert-timeline-session-panel__icon.clickable-icon:hover {
+  color: var(--text-normal);
+}
+
+.ert-timeline-session-panel__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+}
+
+.ert-timeline-session-panel__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-2);
+  padding: var(--size-4-2);
+  background: color-mix(in srgb, var(--background-secondary) 82%, var(--background-primary));
+  border: thin solid transparent;
+  border-radius: var(--radius-m);
+}
+
+.ert-timeline-session-panel__section:hover,
+.ert-timeline-session-panel__section:focus-within {
+  border-color: color-mix(in srgb, var(--interactive-accent) 70%, transparent);
+  background: color-mix(in srgb, var(--background-secondary) 88%, var(--background-primary));
+}
+
+.ert-timeline-session-panel__section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-3);
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ert-timeline-session-panel__section-icon {
+  width: var(--font-ui-small);
+  height: var(--font-ui-small);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.ert-timeline-session-panel__row--toggle {
+  justify-content: space-between;
+}
+
+.ert-timeline-session-panel__label {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+
+.ert-timeline-session-panel__number {
+  box-sizing: border-box;
+  max-width: 100%;
+  flex: 0 0 auto;
+  font-family: 'Radial Timeline JetBrains Mono', var(--font-monospace);
+  font-size: var(--font-ui-small);
+  font-weight: 100;
+  font-synthesis: none;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'zero' 0, 'tnum' 1;
+  line-height: normal;
+}
+
+.ert-timeline-session-panel__select {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  flex: 0 0 auto;
+  font-size: var(--font-ui-small);
+  line-height: normal;
+  width: var(--ert-input-width-md, 18ch);
+}
+
+.ert-timeline-session-panel__toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-2);
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+}
+
+.ert-timeline-session-panel__goal-controls {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--size-2-2);
+  flex: 0 1 auto;
+}
+
+.ert-timeline-session-panel__goal-controls.is-countdown-disabled .ert-timeline-session-panel__number {
+  opacity: 0.62;
+}
+
+/* Begin Session: the single action of the idle panel. Centered on its own row
+   closing the Target block, wearing the same accent border that carries the
+   panel title — and switching to the social accent with the title and the
+   "Shared" pill whenever saving this session will post to the feed. */
+.ert-timeline-session-panel__begin-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-block-start: var(--size-2-2);
+}
+
+.ert-timeline-session-panel .ert-timeline-session-panel__begin,
+.ert-timeline-session-panel button.ert-timeline-session-panel__begin {
+  /* explicit button reset (the 'all' property is flagged by the plugin scanner) */
+  margin: 0;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: 12ch;
+  height: var(--size-4-8);
+  padding: 0 var(--size-4-4);
+  border: 1px solid color-mix(in srgb, var(--interactive-accent) 70%, transparent);
+  border-radius: var(--radius-s);
+  box-shadow: none;
+  background: color-mix(in srgb, var(--interactive-accent) 14%, transparent);
+  background-image: none;
+  filter: none;
+  text-shadow: none;
+  transform: none;
+  color: var(--text-accent);
+  cursor: pointer;
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-semibold);
+  line-height: 1;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.ert-timeline-session-panel .ert-timeline-session-panel__begin:hover,
+.ert-timeline-session-panel button.ert-timeline-session-panel__begin:hover {
+  border-color: var(--interactive-accent);
+  background: color-mix(in srgb, var(--interactive-accent) 26%, transparent);
+  background-image: none;
+  box-shadow: none;
+  filter: none;
+  transform: none;
+}
+
+.ert-timeline-session-panel .ert-timeline-session-panel__begin:focus-visible,
+.ert-timeline-session-panel button.ert-timeline-session-panel__begin:focus-visible {
+  outline: thin solid currentColor;
+  outline-offset: var(--size-2-1);
+}
+
+.ert-timeline-session-panel.is-community-shared .ert-timeline-session-panel__begin,
+.ert-timeline-session-panel.is-community-shared button.ert-timeline-session-panel__begin {
+  border-color: rgba(var(--ert-social-accent-rgb-base), 0.55);
+  background: rgba(var(--ert-social-accent-rgb-base), 0.12);
+  color: var(--ert-social-accent-color-base);
+}
+
+.ert-timeline-session-panel.is-community-shared .ert-timeline-session-panel__begin:hover,
+.ert-timeline-session-panel.is-community-shared button.ert-timeline-session-panel__begin:hover {
+  border-color: var(--ert-social-accent-color-base);
+  background: rgba(var(--ert-social-accent-rgb-base), 0.22);
+}
+
+.ert-timeline-session-panel__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--size-4-2);
+}
+
+.ert-timeline-session-panel__primary {
+  width: auto;
+  min-width: 0;
+  height: var(--size-4-8);
+  padding: 0 var(--size-4-3);
+  border-radius: var(--radius-s);
+  color: var(--text-on-accent);
+  font-size: var(--font-ui-small);
+  line-height: 1;
+  background: var(--interactive-accent);
+  transition: filter 120ms ease;
+  transform: none;
+}
+
+.ert-timeline-session-panel__primary.is-save-ready {
+  color: var(--text-on-accent);
+  background: var(--text-success);
+}
+
+.ert-timeline-session-panel__secondary {
+  width: auto;
+  min-width: 0;
+  height: var(--size-4-8);
+  padding: 0 var(--size-4-3);
+  border-radius: var(--radius-s);
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+  line-height: 1;
+  background: var(--background-modifier-hover);
+  transition: color 120ms ease, background-color 120ms ease;
+  transform: none;
+}
+
+.ert-timeline-session-panel__ghost {
+  width: auto;
+  min-width: 0;
+  height: var(--size-4-8);
+  padding: 0 var(--size-4-2);
+  border-radius: var(--radius-s);
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  line-height: 1;
+  background: transparent;
+  transition: color 120ms ease, background-color 120ms ease;
+  transform: none;
+}
+
+.ert-timeline-session-panel__primary:hover {
+  background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
+  transform: none;
+}
+
+.ert-timeline-session-panel__secondary:hover,
+.ert-timeline-session-panel__ghost:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+  transform: none;
+}
+
+.ert-timeline-session-panel__icon-action {
+  width: calc(var(--size-4-9) + var(--size-2-1));
+  padding-inline: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ert-timeline-session-panel__icon-action svg {
+  width: var(--size-4-4);
+  height: var(--size-4-4);
+}
+
+.ert-timeline-session-panel__clock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.25rem;
+  padding: 0 var(--size-4-2);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--rt-max-publish-stage-color, var(--text-accent));
+  font-family: 'Radial Timeline JetBrains Mono', var(--font-monospace);
+  font-weight: 100;
+  font-synthesis: none;
+  line-height: 1;
+  letter-spacing: 0;
+  text-align: center;
+  overflow: visible;
+}
+
+.ert-timeline-session-panel__clock-value {
+  max-width: 100%;
+  padding-inline: 0.5rem;
+  box-sizing: border-box;
+  font-family: 'Radial Timeline JetBrains Mono', var(--font-monospace);
+  font-size: 2rem;
+  font-weight: 100;
+  font-synthesis: none;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'zero' 0, 'tnum' 1;
+  line-height: 1.12;
+  overflow: visible;
+  overflow-wrap: anywhere;
+}
+
+/* Live tracking is one line, never wrapped; only the "Save …?" complete
+   summary is allowed to wrap (overflow-wrap above). */
+.ert-timeline-session-panel__clock:not(.is-complete) .ert-timeline-session-panel__clock-value {
+  min-width: 10.5ch;
+  white-space: nowrap;
+}
+
+.ert-timeline-session-panel__clock.is-paused .ert-timeline-session-panel__clock-value,
+.ert-timeline-session-panel__clock.is-complete .ert-timeline-session-panel__clock-value {
+  font-size: 1.375rem;
+  line-height: 1.12;
+}
+
+.ert-timeline-session-panel__clock.is-paused {
+  color: var(--text-warning);
+}
+
+.ert-timeline-session-panel__clock.is-complete {
+  color: var(--text-success);
+}
+
+.ert-timeline-search {
+  --ert-timeline-search-input-x: 7px;
+  --ert-timeline-search-icon-slot: 22px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.ert-timeline-search__button.clickable-icon {
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--text-muted);
+  z-index: 2;
+}
+
+.ert-timeline-search__button.clickable-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.ert-timeline-search__button.clickable-icon:hover,
+.ert-timeline-search__button.clickable-icon.is-clear {
+  color: var(--text-normal);
+}
+
+.ert-timeline-search .ert-timeline-search__input[type="search"] {
+  width: clamp(112px, 14vw, 180px);
+  height: 24px;
+  min-width: 0;
+  padding: 0 var(--ert-timeline-search-input-x) 0 var(--ert-timeline-search-icon-slot);
+  box-sizing: border-box;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--interactive-normal);
+  color: var(--text-normal);
+  font-size: var(--font-ui-smaller);
+  line-height: 22px;
+}
+
+.ert-timeline-search .ert-timeline-search__input[type="search"]::placeholder {
+  color: var(--text-faint);
+}
+
+.ert-timeline-search .ert-timeline-search__input[type="search"]:hover {
+  border-color: var(--background-modifier-border-hover);
+}
+
+.ert-timeline-search .ert-timeline-search__input[type="search"]:focus {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--interactive-accent) 35%, transparent);
+}
+
+/* Expanded: the input and the panel share one border line so they read as a
+   single control rather than a field with a popover floating under it. */
+.ert-timeline-search.is-expanded .ert-timeline-search__input[type="search"] {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-color: transparent;
+}
+
+.ert-timeline-search-panel {
+  position: absolute;
+  top: calc(100% - 1px);
+  left: 0;
+  z-index: var(--layer-popover, 1000);
+  box-sizing: border-box;
+  /* Wider than the input, which clamps to 180px — the option labels need room. */
+  min-width: 232px;
+  max-width: min(300px, calc(100vw - 32px));
+  /* 10px/9px are optical: the panel sits 1px under the input's border, so the
+     bottom pad is nudged to make the two read as one control. No token matches. */
+  padding: var(--size-4-2) 10px 9px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+  border: 1px solid var(--interactive-accent);
+  border-top-color: var(--background-modifier-border);
+  border-radius: 0 var(--radius-s) var(--radius-s) var(--radius-s);
+  background: var(--background-secondary);
+  box-shadow: var(--shadow-s);
+}
+
+/* Narrow panes: anchor to the right edge so the panel never pushes the
+   header into horizontal overflow. */
+.ert-timeline-search-panel.is-right-anchored {
+  left: auto;
+  right: 0;
+  border-radius: var(--radius-s) 0 var(--radius-s) var(--radius-s);
+}
+
+.ert-timeline-search-panel[hidden] {
+  display: none;
+}
+
+.ert-timeline-search-panel__scope {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-3);
+}
+
+.ert-timeline-search-panel__legend {
+  padding: 0;
+  margin-bottom: 2px;
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-semibold);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ert-timeline-search-panel__assist {
+  padding-top: 7px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.ert-timeline-search-panel__row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  column-gap: 7px;
+  row-gap: 1px;
+  cursor: pointer;
+}
+
+.ert-timeline-search-panel__row.is-disabled {
+  cursor: default;
+}
+
+.ert-timeline-search-panel__checkbox {
+  margin: 0;
+  grid-row: 1;
+}
+
+.ert-timeline-search-panel__row-label {
+  grid-row: 1;
+  font-size: var(--font-ui-small);
+  color: var(--text-normal);
+}
+
+.ert-timeline-search-panel__row.is-disabled .ert-timeline-search-panel__row-label {
+  color: var(--text-muted);
+}
+
+/* The hint carries the reason a control is disabled, so it must stay legible
+   even though the control itself is dimmed. */
+.ert-timeline-search-panel__row-hint {
+  grid-column: 2;
+  grid-row: 2;
+  font-size: var(--font-ui-smaller);
+  line-height: 1.3;
+  color: var(--text-muted);
+}
+
+.ert-timeline-search-panel__status {
+  padding-top: 7px;
+  border-top: 1px solid var(--background-modifier-border);
+  display: flex;
+  align-items: baseline;
+  gap: var(--size-4-2);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+.ert-timeline-search-panel__status-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ert-timeline-search-panel__cancel {
+  flex: 0 0 auto;
+  padding: var(--size-2-1) var(--size-4-2);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.4;
+  height: auto;
+  cursor: pointer;
+}
+
+.ert-timeline-search-panel__cancel[hidden] {
+  display: none;
+}
+
+.ert-timeline-title-action.clickable-icon,
+.rt-book-switcher__manage.clickable-icon {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.ert-timeline-title-action.clickable-icon svg,
+.rt-book-switcher__manage.clickable-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.ert-timeline-title-action.clickable-icon:hover,
+.rt-book-switcher__manage.clickable-icon:hover {
+  color: var(--text-normal);
+}
+
+.ert-timeline-legend__trigger.clickable-icon {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.ert-timeline-legend__trigger.clickable-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.ert-timeline-legend__trigger.clickable-icon:hover,
+.ert-timeline-legend__trigger.clickable-icon[aria-expanded="true"] {
+  color: var(--text-normal);
+}
+
+.ert-timeline-legend__trigger[hidden] {
+  display: none;
+}
+
+.ert-timeline-legend {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: min(330px, calc(100vw - 32px));
+  z-index: var(--layer-popover, 1000);
+  opacity: 0;
+  transform: translateY(-4px);
+  transform-origin: top left;
+  pointer-events: none;
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+/* RT view only: the centered view title is redundant — the book selector and
+   the Obsidian tab title both show the current book / Saga, and they update
+   together. TimeLineView stamps .ert-timeline-header on the header when it
+   mounts the book switcher (a class, not :has(), so the rule never forces
+   ancestor re-matching on hover). Hide the in-header title, while
+   updateViewTitle() keeps updating the hidden node and the tab header. */
+.view-header.ert-timeline-header {
+  position: relative;
+}
+
+.view-header.ert-timeline-header .view-header-title-container {
+  display: none;
+}
+
+/* Three true clusters. Obsidian always wraps the left controls in
+   .view-header-left; grow it and the right cluster (.rt-book-switcher) by an
+   equal flex basis so the center mode nav lands at the real center of the bar
+   rather than trailing the left cluster. Left stays left-justified (its own
+   justify-content), the right cluster is right-justified against the native
+   "…" actions, and the mode nav keeps its natural width in the middle. */
+.view-header.ert-timeline-header .view-header-left {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.view-header.ert-timeline-header .rt-book-switcher {
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: flex-end;
+}
+
+.view-header.ert-timeline-header .ert-timeline-mode-nav {
+  flex: 0 0 auto;
+}
+
+.ert-timeline-legend.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.ert-timeline-legend.is-disabled {
+  display: none;
+}
+
+.ert-timeline-legend__surface {
+  padding: var(--size-4-3) var(--size-4-4) var(--size-4-4);
+  border: 2px dashed var(--text-faint);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--background-primary) 92%, transparent);
+  color: var(--text-normal);
+  box-shadow: var(--shadow-s);
+  backdrop-filter: blur(4px);
+}
+
+.ert-timeline-legend__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--size-4-2);
+  margin-bottom: var(--size-4-3);
+}
+
+.ert-timeline-legend__title {
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: var(--text-normal);
+}
+
+.ert-timeline-legend__mode {
+  flex: 0 0 auto;
+  max-width: 132px;
+  padding: var(--size-2-1) var(--size-4-2);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ert-timeline-legend__section {
+  padding-top: var(--size-4-3);
+  margin-top: var(--size-4-3);
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.ert-timeline-legend__section:first-of-type {
+  padding-top: 0;
+  margin-top: 0;
+  border-top: 0;
+}
+
+.ert-timeline-legend__section-title {
+  margin-bottom: var(--size-4-2);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.ert-timeline-legend__row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: start;
+  gap: 0 var(--size-4-2);
+  min-height: 28px;
+  padding: var(--size-2-1) 0;
+}
+
+.ert-timeline-legend__icon {
+  width: 28px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.ert-timeline-legend__icon svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.2;
+}
+
+.ert-timeline-legend__copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-1);
+}
+
+.ert-timeline-legend__label {
+  color: var(--text-normal);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.ert-timeline-legend__detail {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ert-timeline-legend__detail-icon {
+  width: 15px;
+  height: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.ert-timeline-legend__detail-icon svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.4;
+}
+
+.ert-timeline-legend__detail-segment {
+  font-weight: 750;
+  color: var(--ert-legend-segment-color);
+}
+
+.ert-timeline-legend__icon--swatch {
+  color: inherit;
+  width: 28px;
+}
+
+.ert-timeline-legend__swatch {
+  width: 26px;
+  height: 18px;
+  border-radius: 3px;
+  background: var(--ert-legend-swatch-fill, var(--rt-color-empty));
+  border: 1px solid var(--ert-legend-swatch-stroke, var(--background-modifier-border));
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: normal;
+  line-height: 1;
+  color: var(--ert-legend-swatch-text, var(--rt-legacy-black));
+}
+
+/* ============================================================
+ * Subplot Ring Key
+ * Rendered by src/view/interactions/SubplotKeyController.ts.
+ * Compact overlay mapping ring order + subplot color to subplot
+ * name, for books with many subplot rings. Trigger lives in the
+ * view title bar (right of the Discord chip); the panel overlays
+ * the timeline's top-left. Shown on trigger hover, pinned by
+ * click, or while Shift is held.
+ * No backdrop-filter and no transitions here: blur or animation
+ * anywhere near the scene-hover path measurably slows hover
+ * (filter layers re-blur on every repaint; transitions fire on
+ * every scene-hover toggle). Show/hide is instant by design.
+ * ============================================================ */
+
+.ert-timeline-subplot-key__trigger.clickable-icon {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.ert-timeline-subplot-key__trigger.clickable-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.ert-timeline-subplot-key__trigger.clickable-icon:hover,
+.ert-timeline-subplot-key__trigger.clickable-icon.is-pinned {
+  color: var(--text-normal);
+}
+
+.ert-timeline-subplot-key__trigger[hidden] {
+  display: none;
+}
+
+.ert-timeline-subplot-key {
+  position: absolute;
+  top: var(--size-4-3);
+  left: var(--size-4-3);
+  z-index: 4;
+  max-width: min(320px, 45%);
+  display: none;
+}
+
+.ert-timeline-subplot-key.is-visible {
+  display: block;
+}
+
+/* Step aside while a scene synopsis is being read — unless the key is
+   being actively held open with Shift. The panel is a following sibling
+   of the SVG inside the container (cheap selector; :has() here made every
+   hover force wide style invalidation). Instant, not transitioned. */
+.radial-timeline-svg.scene-hover ~ .ert-timeline-subplot-key.is-visible:not(.is-key-held) {
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+.ert-timeline-subplot-key__surface {
+  padding: var(--size-4-2) var(--size-4-3);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--background-primary) 96%, transparent);
+  color: var(--text-normal);
+  box-shadow: var(--shadow-s);
+  max-height: min(70vh, 480px);
+  overflow-y: auto;
+}
+
+.ert-timeline-subplot-key__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--size-4-2);
+  margin-bottom: var(--size-4-1);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: var(--text-normal);
+}
+
+.ert-timeline-subplot-key__hint {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: none;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+/* Flat list: no per-row card/bevel. Rows sit back to back (no gap) so the
+   pointer moves ring→ring with no dead zone; a thin dashed rule separates
+   them. */
+.ert-timeline-subplot-key__rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.ert-timeline-subplot-key__row {
+  display: grid;
+  grid-template-columns: 16px 14px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--size-4-2);
+  padding: var(--size-2-2) var(--size-2-2);
+  border-bottom: 1px dashed var(--background-modifier-border);
+  cursor: default;
+  text-align: left;
+}
+
+.ert-timeline-subplot-key__row:last-child {
+  border-bottom: 0;
+}
+
+.ert-timeline-subplot-key__row:hover {
+  background: var(--background-modifier-hover);
+}
+
+.ert-timeline-subplot-key__num {
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--text-faint);
+}
+
+.ert-timeline-subplot-key__swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--ert-subplot-key-swatch, var(--rt-color-empty));
+  border: 1px solid var(--background-modifier-border);
+  box-sizing: border-box;
+}
+
+/* Full subplot names, always: wrap long titles (Odyssey-length) rather than
+   truncate. */
+.ert-timeline-subplot-key__name {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-normal);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.ert-timeline-subplot-key__name--ring-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+
+/* ============================================================
+ * Session Log List
+ * Rendered by src/renderer/components/SessionLogList.ts.
+ * Two modes: preview (settings card expand) and compact
+ * (timeline session popover footer).
+ * Private-audience surface; never used for friends/community.
+ * ============================================================ */
+
+.ert-session-log-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ert-gap-sm);
+  width: 100%;
+}
+
+.ert-session-log-list--compact {
+  /* Token scope: panel is body-portaled, --ert-gap-* unreachable. Use --size-4-*. */
+  gap: var(--size-4-2);
+}
+
+.ert-session-log-list__empty {
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+  padding: var(--ert-gap-cozy) var(--ert-gap-md);
+  color: var(--text-muted);
+  font-size: 12px;
+  border: 1px dashed var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: color-mix(in srgb, var(--background-secondary) 60%, transparent);
+}
+
+.ert-session-log-list__empty-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-faint);
+}
+
+.ert-session-log-list__empty-icon .svg-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.ert-session-log-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ert-gap-xs);
+}
+
+.ert-session-log-group__header {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+  padding: var(--ert-gap-tight) var(--ert-gap-2xs) var(--ert-gap-2xs);
+}
+
+.ert-session-log-group__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ert-gap-xs);
+}
+
+.ert-session-log-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ert-gap-xs);
+  padding: var(--ert-gap-sm) var(--ert-gap-cozy);
+  border-radius: var(--radius-s);
+  background: color-mix(in srgb, var(--background-secondary) 70%, transparent);
+  border: 1px solid var(--background-modifier-border-hover);
+}
+
+.ert-session-log-row--compact {
+  flex-direction: row;
+  align-items: center;
+  /*
+   * Token scope: this panel (.ert-timeline-session-panel) is appended to
+   * document.body and has no .ert-ui ancestor — --ert-gap-* and --ert-pad-*
+   * are undefined here and would silently resolve to invalid, dropping the
+   * declaration to its initial value (0). Use Obsidian's global --size-4-*.
+   */
+  gap: var(--size-4-2);
+  padding: var(--size-4-1) var(--size-4-2);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-s);
+  font-size: 12px;
+  line-height: 1.3;
+  transition: background-color 100ms ease;
+}
+
+.ert-session-log-row--compact.ert-session-log-row--clickable {
+  cursor: pointer;
+}
+
+.ert-session-log-row--compact.ert-session-log-row--clickable:hover,
+.ert-session-log-row--compact.ert-session-log-row--clickable:focus-visible {
+  background: color-mix(in srgb, var(--text-accent) 12%, transparent);
+  outline: none;
+}
+
+.ert-session-log-row__head {
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+  flex-wrap: wrap;
+}
+
+.ert-session-log-row__time,
+.ert-session-log-row__date {
+  font-size: 12px;
+  color: var(--text-muted);
+  min-width: 56px;
+}
+
+.ert-session-log-row__duration {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.ert-session-log-row__mode {
+  font-size: 11px;
+  font-weight: 500;
+  padding: var(--ert-gap-3xs) var(--ert-gap-tight);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-accent) 14%, transparent);
+  color: var(--text-accent);
+}
+
+.ert-session-log-row__mode--drafting { background: color-mix(in srgb, var(--color-blue) 16%, transparent); color: var(--color-blue); }
+.ert-session-log-row__mode--revising { background: color-mix(in srgb, var(--color-purple) 16%, transparent); color: var(--color-purple); }
+.ert-session-log-row__mode--editing  { background: color-mix(in srgb, var(--color-orange) 16%, transparent); color: var(--color-orange); }
+.ert-session-log-row__mode--planning { background: color-mix(in srgb, var(--color-cyan) 16%, transparent); color: var(--color-cyan); }
+
+.ert-session-log-row__stage {
+  font-size: 11px;
+  font-weight: 600;
+  padding: var(--ert-gap-3xs) var(--ert-gap-tight);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-normal) 8%, transparent);
+  color: var(--text-normal);
+}
+
+.ert-session-log-row__words {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-success, var(--text-accent));
+  margin-left: auto;
+}
+
+.ert-session-log-row__mode-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  flex-shrink: 0;
+}
+
+.ert-session-log-row__mode-dot--drafting { background: var(--color-blue); }
+.ert-session-log-row__mode-dot--revising { background: var(--color-purple); }
+.ert-session-log-row__mode-dot--editing  { background: var(--color-orange); }
+.ert-session-log-row__mode-dot--planning { background: var(--color-cyan); }
+
+.ert-session-log-row__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ert-gap-xs);
+  align-items: center;
+}
+
+.ert-session-log-row--compact .ert-session-log-row__chips {
+  flex: 1;
+  overflow: hidden;
+}
+
+.ert-session-log-row__chip {
+  font-size: 11px;
+  padding: var(--ert-gap-3xs) var(--ert-gap-tight);
+  border-radius: var(--radius-s);
+  background: color-mix(in srgb, var(--text-normal) 6%, transparent);
+  color: var(--text-normal);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ert-session-log-row__chip--completed {
+  background: color-mix(in srgb, var(--text-success, var(--text-accent)) 18%, transparent);
+  color: var(--text-success, var(--text-accent));
+  font-weight: 500;
+}
+
+.ert-session-log-row__chip--more {
+  background: transparent;
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+.ert-session-log-row__chip--clickable {
+  cursor: pointer;
+}
+
+.ert-session-log-row__chip--clickable:hover {
+  background: color-mix(in srgb, var(--text-accent) 22%, transparent);
+  color: var(--text-accent);
+}
+
+.ert-session-log-row__note {
+  font-size: 11px;
+  font-style: italic;
+  color: var(--text-muted);
+  border-left: 2px solid var(--background-modifier-border);
+  padding-left: var(--ert-gap-sm);
+  margin-top: var(--ert-gap-2xs);
+}
+
+/* Per-card expand on the four Writing-stats period cards */
+.ert-goals-stat-card__log {
+  margin-top: var(--ert-gap-cozy);
+  border-top: 1px solid var(--background-modifier-border);
+  padding-top: var(--ert-gap-sm);
+}
+
+.ert-goals-stat-card__log-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-tight);
+  cursor: pointer;
+  list-style: none;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ert-goals-stat-card__log-summary::-webkit-details-marker {
+  display: none;
+}
+
+.ert-goals-stat-card__log-chevron {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-faint);
+}
+
+.ert-goals-stat-card__log-chevron .svg-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.ert-goals-stat-card__log-label {
+  flex: 0 0 auto;
+}
+
+.ert-goals-stat-card__log-count {
+  margin-left: auto;
+  color: var(--text-faint);
+}
+
+.ert-goals-stat-card__log-body {
+  margin-top: var(--ert-gap-sm);
+}
+
+/* Compact log inside the timeline session popover */
+/*
+ * IMPORTANT: this section lives inside .ert-timeline-session-panel which is
+ * appended to document.body — it has NO .ert-ui ancestor, so --ert-gap-*
+ * and --ert-pad-* variables do not resolve here. Use Obsidian's global
+ * --size-4-* / --size-2-* tokens instead. (See css-guidelines.md → Token scope.)
+ */
+.ert-timeline-session-panel__recent {
+  margin-top: var(--size-4-3);
+  padding-top: var(--size-4-3);
+  border-top: 1px solid var(--background-modifier-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+}
+
+.ert-timeline-session-panel__recent-header {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ert-timeline-session-panel__recent-header-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-faint);
+}
+
+.ert-timeline-session-panel__recent-header-icon .svg-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.ert-timeline-session-panel__recent-meta {
+  margin-left: auto;
+  color: var(--text-faint);
+  font-size: 10px;
+}

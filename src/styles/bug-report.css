@@ -1,0 +1,173 @@
+/* Bug Report Modal — compact, draggable */
+
+.ert-bug-report-shell {
+    /* Override default modal centering so transform can move it freely. */
+    transition: none;
+    /* Make room for the dragbar that sits at the top of the shell. */
+    padding-top: 22px;
+    position: relative;
+}
+
+.ert-bug-report-shell.ert-bug-report-shell--dragging {
+    user-select: none;
+}
+
+/* Full-width drag strip on the outer modal shell (the "glassy" top edge). */
+.ert-bug-report-dragbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    border-top-left-radius: inherit;
+    border-top-right-radius: inherit;
+    background: color-mix(in srgb, var(--background-secondary) 70%, transparent);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border-bottom: 1px solid color-mix(in srgb, var(--background-modifier-border) 60%, transparent);
+}
+
+.ert-bug-report-shell--dragging .ert-bug-report-dragbar {
+    cursor: grabbing;
+}
+
+.ert-bug-report-dragbar-grip {
+    display: inline-flex;
+    align-items: center;
+    color: var(--text-faint);
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.ert-bug-report-dragbar:hover .ert-bug-report-dragbar-grip {
+    opacity: 1;
+    color: var(--text-muted);
+}
+
+.ert-bug-report-header {
+    position: relative;
+}
+
+.ert-bug-report-body {
+    gap: var(--ert-gap-sm);
+    padding: var(--ert-gap-xs) 0;
+}
+
+.ert-bug-report-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-top: var(--ert-gap-tight);
+}
+
+.ert-bug-report-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    resize: vertical;
+    font-family: var(--font-text);
+    font-size: 13px;
+    background: var(--background-modifier-form-field);
+    color: var(--text-normal);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    padding: var(--ert-gap-tight) var(--ert-gap-sm);
+    line-height: 1.4;
+}
+
+.ert-bug-report-textarea:focus {
+    border-color: var(--interactive-accent);
+    outline: none;
+}
+
+.ert-bug-report-textarea--mono {
+    font-family: var(--font-monospace);
+    font-size: 12px;
+}
+
+.ert-bug-report-row {
+    display: flex;
+    gap: var(--ert-gap-sm);
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.ert-bug-report-btn-icon {
+    display: inline-flex;
+    margin-right: var(--ert-gap-tight);
+    vertical-align: middle;
+}
+
+.ert-bug-report-file {
+    display: none;
+}
+
+.ert-bug-report-preview {
+    border: 1px dashed var(--background-modifier-border);
+    border-radius: 6px;
+    padding: var(--ert-gap-sm);
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ert-gap-md);
+}
+
+.ert-bug-report-preview--empty {
+    color: var(--text-faint);
+    font-size: 12px;
+    text-align: center;
+}
+
+.ert-bug-report-preview-img {
+    max-height: 140px;
+    max-width: 100%;
+    border-radius: 4px;
+    box-shadow: var(--ert-shadow-soft-tight);
+}
+
+.ert-bug-report-preview-clear {
+    background: transparent;
+    border: 1px solid var(--background-modifier-border);
+    color: var(--text-muted);
+    padding: var(--ert-gap-xs) var(--ert-gap-sm);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.ert-bug-report-preview-clear:hover {
+    color: var(--text-normal);
+    border-color: var(--text-muted);
+}
+
+.ert-bug-report-status {
+    min-height: 18px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.ert-bug-report-status--success {
+    color: var(--color-green);
+}
+
+.ert-bug-report-status--error {
+    color: var(--color-red);
+}
+
+.ert-bug-report-status--info {
+    color: var(--text-muted);
+}
+
+.ert-bug-report-actions {
+    justify-content: flex-end;
+    gap: var(--ert-gap-sm);
+    flex-wrap: wrap;
+}
+
+.ert-bug-report-secondary {
+    margin-right: auto;
+}

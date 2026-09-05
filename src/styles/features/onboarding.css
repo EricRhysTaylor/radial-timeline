@@ -1,0 +1,563 @@
+/*
+ * Onboarding — Checkpoint 2 review accordion.
+ *
+ * A scannable, scroll-bounded list of proposed scenes: each row shows the
+ * headline metadata (title, act, entity counts, guess flag); one row is
+ * expanded at a time into a full RT scene-template preview (frontmatter keys +
+ * pill'd Subplot/Character/Place + Synopsis) so the author sees exactly how a
+ * scene slots into the template before anything is written.
+ *
+ * Tokens only — no hardcoded colors (brand rule). Rides the `.ert-badgePill`
+ * primitive for pills and Obsidian theme vars for surfaces.
+ */
+
+/* Numbered stage header (1 Prepare → 2 Confirm → 3 Review → 4 Complete) */
+.ert-ui .ert-onb-stage {
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-cozy);
+  margin-bottom: var(--ert-gap-cozy);
+}
+
+.ert-ui .ert-onb-stage__num {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--ert-radius-md, 10px);
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.ert-ui .ert-onb-stage__titles {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* Typography comes from the canonical .ert-modal-title / .ert-modal-subtitle
+   classes (see rt-ui.css) so onboarding headers match every other ERT modal.
+   These onboarding classes are layout hooks only. */
+
+/* Top bar: modal pill (left) and stage step indicator (right) on one line. */
+.ert-ui .ert-onb-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ert-gap-sm);
+  margin-bottom: var(--ert-gap-sm);
+}
+
+/* The pill's own bottom margin is redundant inside the flex top bar. */
+.ert-ui .ert-onb-topbar .ert-modal-badge {
+  margin-bottom: 0;
+}
+
+/*
+ * Spend forecast pill. Sits immediately beside the model pill because the two
+ * facts belong together — which model is running, and what running it costs.
+ * The step pips are pushed hard right so a second badge does not spread the row.
+ */
+.ert-ui .ert-onb-topbar .ert-onb-steps {
+  margin-left: auto;
+}
+
+.ert-ui .ert-onb-spend {
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+/*
+ * Free is a different KIND of answer from a dollar figure, not a cheaper one,
+ * so it reads in the affirmative colour rather than as muted cost text.
+ */
+.ert-ui .ert-onb-spend.is-free {
+  color: var(--ert-color-success, var(--text-success, var(--text-muted)));
+}
+
+.ert-ui .ert-onb-steps {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-xs);
+}
+
+.ert-ui .ert-onb-step {
+  width: 22px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--background-modifier-border);
+}
+
+.ert-ui .ert-onb-step.is-done {
+  background: color-mix(in srgb, var(--interactive-accent) 55%, transparent);
+}
+
+.ert-ui .ert-onb-step.is-current {
+  background: var(--interactive-accent);
+}
+
+/* Report — name the scenes that still need review */
+.ert-ui .ert-onb-review-list {
+  gap: var(--ert-gap-xs);
+  padding-left: var(--ert-pad-sm);
+}
+
+.ert-ui .ert-onb-review-item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ert-gap-sm);
+}
+
+.ert-ui .ert-onb-review-item__name {
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.ert-ui .ert-onb-review-item__reason {
+  font-size: 12px;
+  color: var(--text-warning, var(--text-accent));
+}
+
+/* Checkpoint 1 — marker discoverability tip */
+.ert-ui .ert-onb-tip {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ert-gap-sm);
+  margin-bottom: var(--ert-gap-sm);
+  padding: var(--ert-pad-sm) var(--ert-pad-cozy);
+  border-left: 3px solid var(--interactive-accent);
+  border-radius: var(--ert-radius-sm, 4px);
+  background: color-mix(in srgb, var(--interactive-accent) 6%, transparent);
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.ert-ui .ert-onb-tip__icon {
+  flex: 0 0 auto;
+}
+
+/* Marker glyph chips inside the tip — symbols lead, prose follows. */
+.ert-ui .ert-onb-tip__marker {
+  display: inline-block;
+  margin-right: var(--ert-gap-xs);
+  padding: 1px 6px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--ert-radius-sm, 4px);
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-family: var(--font-monospace);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* Checkpoint 1 — scene split editor */
+.ert-ui .ert-onb-split-hint {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ert-gap-xs);
+  margin-bottom: var(--ert-gap-sm);
+}
+
+.ert-ui .ert-onb-split-note {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.ert-ui .ert-onb-para-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.ert-ui .ert-onb-seg-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ert-gap-sm);
+  margin: var(--ert-gap-sm) 0 var(--ert-gap-xs);
+  padding-left: var(--ert-pad-xs);
+  border-left: 3px solid var(--interactive-accent);
+}
+
+.ert-ui .ert-onb-seg-num {
+  font-family: var(--font-monospace);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--interactive-accent);
+}
+
+.ert-ui .ert-onb-seg-label {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.ert-ui .ert-onb-para {
+  display: flex;
+  gap: var(--ert-gap-sm);
+  padding: var(--ert-gap-xs) 0 var(--ert-gap-xs) var(--ert-pad-sm);
+  border-left: 3px solid var(--background-modifier-border);
+}
+
+.ert-ui .ert-onb-para__idx {
+  flex: 0 0 auto;
+  font-family: var(--font-monospace);
+  font-size: 11px;
+  color: var(--text-faint);
+  min-width: 2em;
+  text-align: right;
+}
+
+.ert-ui .ert-onb-para__text {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* Break divider between paragraphs — click to toggle a scene boundary */
+.ert-ui .ert-onb-break {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ert-gap-xs) 0;
+}
+
+.ert-ui .ert-onb-break__btn {
+  font-size: 11px;
+  padding: 2px var(--ert-pad-sm);
+  border-radius: 999px;
+  border: 1px dashed var(--background-modifier-border);
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 100ms ease, color 100ms ease, border-color 100ms ease;
+}
+
+.ert-ui .ert-onb-break__btn:hover {
+  opacity: 1;
+  color: var(--text-normal);
+  border-color: var(--interactive-accent);
+}
+
+.ert-ui .ert-onb-break.is-break .ert-onb-break__btn {
+  opacity: 1;
+  border-style: solid;
+  border-color: var(--interactive-accent);
+  color: var(--interactive-accent);
+  background: color-mix(in srgb, var(--interactive-accent) 10%, transparent);
+}
+
+/* Publish-stage row — breathing room between the dropdown and its hint text. */
+.ert-ui .ert-onb-stagerow {
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+  flex-wrap: wrap;
+}
+
+/* Scrivener metadata mapping table — field name | disposition dropdown */
+.ert-ui .ert-onb-map__bulk {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--ert-gap-xs);
+}
+
+.ert-ui .ert-onb-map {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--ert-gap-xs) var(--ert-gap-cozy);
+  align-items: center;
+}
+
+.ert-ui .ert-onb-map__field {
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  color: var(--text-normal);
+  white-space: nowrap;
+}
+
+.ert-ui .ert-onb-map__choice {
+  min-width: 0;
+}
+
+/* Checkpoint 1 — opt-in extra actions */
+.ert-ui .ert-onb-options {
+  gap: var(--ert-gap-xs);
+  padding: var(--ert-pad-sm) var(--ert-pad-cozy);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--ert-radius-md, 8px);
+  background: var(--background-secondary);
+}
+
+.ert-ui .ert-onb-check {
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+  cursor: pointer;
+  color: var(--text-normal);
+}
+
+.ert-ui .ert-onb-check input {
+  cursor: pointer;
+}
+
+.ert-ui .ert-onb-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ert-gap-sm);
+  max-height: 52vh;
+  overflow-y: auto;
+  padding-right: var(--ert-pad-xs);
+}
+
+.ert-ui .ert-onb-scene {
+  /* Never let flex shrink collapsed rows to make an open card fit — rows keep
+     their natural height and the list scrolls instead. */
+  flex: 0 0 auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--ert-radius-md, 8px);
+  background: var(--background-secondary);
+  overflow: hidden;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.ert-ui .ert-onb-scene.is-open {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 1px var(--interactive-accent) inset;
+}
+
+/* Row status tints: green = processed, orange = needs attention, red = failed.
+   Solid muted border + faint background wash; status text carries the detail. */
+.ert-ui .ert-onb-scene.is-failed {
+  border-color: color-mix(in srgb, var(--text-error) 55%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--text-error) 5%, var(--background-secondary));
+}
+
+.ert-ui .ert-onb-scene.is-warn {
+  border-color: color-mix(in srgb, var(--color-orange) 55%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--color-orange) 5%, var(--background-secondary));
+}
+
+.ert-ui .ert-onb-scene.is-ok {
+  border-color: color-mix(in srgb, var(--color-green) 45%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--color-green) 4%, var(--background-secondary));
+}
+
+/* Issue rows carry their message inside the collapsed row — slightly taller,
+   message under the title line. */
+.ert-ui .ert-onb-scene__status {
+  /* Balanced vertical spacing so the message never butts against the row border. */
+  padding: var(--ert-gap-xs) var(--ert-pad-cozy) var(--ert-pad-sm) calc(var(--ert-pad-cozy) + 28px);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.ert-ui .ert-onb-scene.is-failed .ert-onb-scene__status {
+  color: color-mix(in srgb, var(--text-error) 80%, var(--text-normal));
+}
+
+.ert-ui .ert-onb-scene.is-warn .ert-onb-scene__status {
+  color: color-mix(in srgb, var(--color-orange) 80%, var(--text-normal));
+}
+
+/* Post-auto-split summary — the "what just happened" line. */
+.ert-ui .ert-onb-splitdone {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ert-gap-sm);
+  padding: var(--ert-pad-sm) var(--ert-pad-cozy);
+  border-left: 3px solid var(--color-green);
+  border-radius: var(--ert-radius-sm, 4px);
+  background: color-mix(in srgb, var(--color-green) 7%, transparent);
+  color: var(--text-normal);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ert-ui .ert-onb-splitdone__icon {
+  flex: 0 0 auto;
+  color: var(--color-green);
+  font-weight: 800;
+}
+
+/* Row header — always visible, click to toggle */
+.ert-ui .ert-onb-scene__head {
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+  width: 100%;
+  padding: var(--ert-pad-sm) var(--ert-pad-cozy);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-normal);
+}
+
+.ert-ui .ert-onb-scene__head:hover {
+  background: color-mix(in srgb, var(--interactive-accent) 8%, transparent);
+}
+
+.ert-ui .ert-onb-scene__idx {
+  flex: 0 0 auto;
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  min-width: 2.2em;
+}
+
+.ert-ui .ert-onb-scene__title {
+  flex: 1 1 auto;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ert-ui .ert-onb-scene__meta {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-xs);
+}
+
+.ert-ui .ert-onb-caret {
+  flex: 0 0 auto;
+  display: inline-flex;
+  color: var(--text-muted);
+  transition: transform 120ms ease;
+}
+
+.ert-ui .ert-onb-scene.is-open .ert-onb-caret {
+  transform: rotate(90deg);
+}
+
+.ert-ui .ert-onb-flag {
+  color: var(--text-warning, var(--text-accent));
+  font-size: 12px;
+}
+
+/* Expanded body — the RT scene-template preview */
+.ert-ui .ert-onb-scene__body {
+  padding: var(--ert-pad-cozy) var(--ert-pad-cozy) var(--ert-pad-comfy);
+  border-top: 1px solid var(--background-modifier-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ert-gap-cozy);
+}
+
+.ert-ui .ert-onb-scene:not(.is-open) .ert-onb-scene__body {
+  display: none;
+}
+
+.ert-ui .ert-onb-fm {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--ert-gap-xs) var(--ert-gap-cozy);
+  align-items: baseline;
+}
+
+.ert-ui .ert-onb-fm__key {
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.ert-ui .ert-onb-fm__val {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ert-gap-xs);
+  align-items: center;
+  min-width: 0;
+}
+
+.ert-ui .ert-onb-fm__val--mono {
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  color: var(--text-normal);
+}
+
+.ert-ui .ert-onb-fm__val--empty {
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+/* Pills — set the badgePill custom props so they ride the base primitive */
+.ert-ui .ert-onb-pill--act {
+  --ert-badgePill-bg: color-mix(in srgb, var(--interactive-accent) 20%, var(--background-secondary));
+  --ert-badgePill-border: color-mix(in srgb, var(--interactive-accent) 40%, transparent);
+  --ert-badgePill-color: var(--text-normal);
+}
+
+.ert-ui .ert-onb-pill--subplot {
+  --ert-badgePill-bg: color-mix(in srgb, var(--text-accent) 14%, var(--background-secondary));
+  --ert-badgePill-border: color-mix(in srgb, var(--text-accent) 34%, transparent);
+}
+
+.ert-ui .ert-onb-pill--char {
+  --ert-badgePill-bg: color-mix(in srgb, var(--color-green, var(--interactive-accent)) 14%, var(--background-secondary));
+  --ert-badgePill-border: color-mix(in srgb, var(--color-green, var(--interactive-accent)) 32%, transparent);
+}
+
+.ert-ui .ert-onb-pill--place {
+  --ert-badgePill-bg: color-mix(in srgb, var(--color-orange, var(--text-accent)) 14%, var(--background-secondary));
+  --ert-badgePill-border: color-mix(in srgb, var(--color-orange, var(--text-accent)) 32%, transparent);
+}
+
+/* A chapter not yet split into scenes — muted, dashed: a pending state, not a count. */
+.ert-ui .ert-onb-pill--undecided {
+  --ert-badgePill-bg: transparent;
+  --ert-badgePill-border: var(--background-modifier-border);
+  --ert-badgePill-color: var(--text-faint);
+  border-style: dashed;
+  font-weight: 600;
+}
+
+.ert-ui .ert-onb-pill--count {
+  --ert-badgePill-bg: var(--background-primary);
+  --ert-badgePill-color: var(--text-muted);
+  font-weight: 600;
+}
+
+.ert-ui .ert-onb-pill--warn {
+  --ert-badgePill-bg: color-mix(in srgb, var(--text-warning, var(--text-accent)) 20%, transparent);
+  --ert-badgePill-border: transparent;
+  --ert-badgePill-color: var(--text-warning, var(--text-accent));
+}
+
+/* Synopsis + carried body */
+.ert-ui .ert-onb-synopsis {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ert-gap-xs);
+}
+
+.ert-ui .ert-onb-synopsis__label {
+  font-family: var(--font-monospace);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.ert-ui .ert-onb-synopsis__text {
+  color: var(--text-normal);
+  line-height: 1.45;
+}
+
+.ert-ui .ert-onb-error {
+  color: var(--text-error);
+  font-size: 13px;
+}

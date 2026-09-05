@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { TFile } from 'obsidian';
 import { createInMemoryApp, type InMemoryApp } from '../../tests/helpers/inMemoryObsidian';
-import { buildOrderedKeyList, previewReorder, runYamlReorder } from './yamlManager';
+import { buildOrderedKeyList, previewReorder, runYamlReorder, summarizeDeletePreview } from './yamlManager';
 
 const BACKDROP_CANONICAL_ORDER = ['ID', 'Class', 'When', 'End', 'Context'];
 const noDynamic = (_key: string): boolean => false;
@@ -137,5 +137,31 @@ describe('buildOrderedKeyList', () => {
         expect(buildOrderedKeyList(current, canonical, isGossamer)).toEqual([
             'ID', 'Editorial', 'Class', 'Gossamer1',
         ]);
+    });
+});
+
+describe('summarizeDeletePreview', () => {
+    it('splits empty from valued fields and shortens sample values', () => {
+        const long = 'x'.repeat(80);
+        const preview = new Map([
+            [new TFile('a.md'), { fields: ['Empty', 'Tags', 'Note'], values: { Empty: '', Tags: ['one', 'two'], Note: long } }],
+            [new TFile('b.md'), { fields: ['Empty2'], values: { Empty2: [] } }]
+        ]);
+        const summary = summarizeDeletePreview(preview);
+        expect(summary.emptyFieldCount).toBe(2);
+        expect(summary.valuedFieldCount).toBe(2);
+        expect(summary.samples).toEqual([
+            { key: 'Tags', value: 'one, two' },
+            { key: 'Note', value: 'x'.repeat(57) + '...' }
+        ]);
+    });
+
+    it('caps the samples but keeps counting', () => {
+        const values: Record<string, unknown> = {};
+        const fields: string[] = [];
+        for (let i = 0; i < 10; i++) { fields.push(`k${i}`); values[`k${i}`] = 'v'; }
+        const summary = summarizeDeletePreview(new Map([[new TFile('a.md'), { fields, values }]]), 3);
+        expect(summary.samples).toHaveLength(3);
+        expect(summary.valuedFieldCount).toBe(10);
     });
 });

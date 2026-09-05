@@ -1,3 +1,4 @@
+import { CustomBgPresetModal } from '../../modals/CustomBgPresetModal';
 import { App, Setting, setIcon, setTooltip, normalizePath, DropdownComponent, TextComponent, Modal, ButtonComponent } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import { buildDefaultAuthorProgressDefaults } from '../../authorProgress/authorProgressConfig';
@@ -1598,7 +1599,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
     };
 
     const openCustomPresetModal = (index: number, existing: { label: string; color: string } | null) => {
-        const modal = new CustomBgPresetModal(app, plugin, {
+        const modal = new CustomBgPresetModal(app, {
             index,
             existing,
             currentBg: getActiveStyleSettings().aprBackgroundColor ?? '#0d0d0f',
@@ -2108,122 +2109,5 @@ async function renderHeroPreview(
             text: t('settings.authorProgress.preview.renderError')
         });
         console.error('Social settings preview error:', e);
-    }
-}
-
-// ── Custom Background Preset Modal ───────────────────────────────────────────
-// Small modal to create, rename, or delete a user-saved background color preset.
-
-interface CustomBgPresetModalOpts {
-    index: number;
-    existing: { label: string; color: string } | null;
-    currentBg: string;
-    onSave: (preset: { label: string; color: string }) => Promise<void>;
-    onDelete: () => Promise<void>;
-}
-
-class CustomBgPresetModal extends Modal {
-    private opts: CustomBgPresetModalOpts;
-    private plugin: RadialTimelinePlugin;
-
-    constructor(app: App, plugin: RadialTimelinePlugin, opts: CustomBgPresetModalOpts) {
-        super(app);
-        this.plugin = plugin;
-        this.opts = opts;
-    }
-
-    onOpen(): void {
-        const { contentEl, modalEl, titleEl } = this;
-        contentEl.empty();
-        titleEl.setText('');
-
-        modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal-shell--sm');
-        contentEl.addClass('ert-modal-container', 'ert-stack');
-
-        const isEdit = !!this.opts.existing;
-        const initialColor = this.opts.existing?.color ?? this.opts.currentBg;
-        const initialLabel = this.opts.existing?.label ?? '';
-
-        // Title
-        contentEl.createDiv({
-            cls: 'ert-modal-header',
-        }).createDiv({
-            cls: 'ert-modal-title',
-            text: isEdit ? 'Edit custom preset' : 'Save custom preset',
-        });
-
-        // Color row
-        const colorRow = new Setting(contentEl)
-            .setName('Color');
-        colorRow.settingEl.addClass('ert-settingRow');
-
-        let pickedColor = initialColor;
-
-        const swatch = colorSwatch(colorRow.controlEl, {
-            value: initialColor,
-            ariaLabel: 'Preset color',
-            onChange: (val) => {
-                pickedColor = val;
-                hexInput?.setValue(val);
-            }
-        });
-
-        let hexInput: TextComponent | null = null;
-        colorRow.addText(text => {
-            hexInput = text;
-            text.setPlaceholder('#000000').setValue(initialColor);
-            text.inputEl.classList.add('ert-input', 'ert-input--hex');
-            text.onChange((val) => {
-                if (/^#[0-9a-f]{6}$/i.test(val)) {
-                    pickedColor = val;
-                    swatch.setValue(val);
-                }
-            });
-        });
-
-        // Name row
-        const nameRow = new Setting(contentEl)
-            .setName('Name');
-        nameRow.settingEl.addClass('ert-settingRow');
-
-        let pickedLabel = initialLabel;
-        nameRow.addText(text => {
-            text.setPlaceholder('e.g. My Blog').setValue(initialLabel);
-            text.onChange((val) => { pickedLabel = val.trim(); });
-            // Auto-focus the name input for quick entry
-            window.setTimeout(() => text.inputEl.focus(), 50);
-        });
-
-        // Action buttons
-        const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
-
-        if (isEdit) {
-            const deleteBtn = new ButtonComponent(actions)
-                .setButtonText('Delete')
-                .setDestructive();
-            deleteBtn.buttonEl.addClass('ert-btn--fit');
-            deleteBtn.onClick(async () => {
-                await this.opts.onDelete();
-                this.close();
-            });
-        }
-
-        // Spacer pushes save to the right
-        actions.createDiv({ cls: 'ert-modal-actions-spacer' });
-
-        const cancelBtn = new ButtonComponent(actions)
-            .setButtonText('Cancel');
-        cancelBtn.buttonEl.addClass('ert-btn--fit');
-        cancelBtn.onClick(() => this.close());
-
-        const saveBtn = new ButtonComponent(actions)
-            .setButtonText('Save')
-            .setCta();
-        saveBtn.buttonEl.addClass('ert-btn--fit');
-        saveBtn.onClick(async () => {
-            const label = pickedLabel || `Custom ${this.opts.index + 1}`;
-            await this.opts.onSave({ label, color: pickedColor });
-            this.close();
-        });
     }
 }

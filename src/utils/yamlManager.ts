@@ -19,7 +19,7 @@ import {
     type FrontmatterSafetyResult,
     scanFrontmatterSafety,
 } from './yamlSafety';
-import { normalizeFrontmatterKeys } from './frontmatter';
+import { frontmatterValueToText, normalizeFrontmatterKeys } from './frontmatter';
 import { buildFrontmatterDocument } from './frontmatterDocument';
 import {
     formatAliasConflictMessage,
@@ -524,4 +524,34 @@ export function previewReorder(
 
     if (arraysEqual(currentKeys, orderedKeys)) return null;
     return { before: currentKeys, after: orderedKeys };
+}
+
+export interface DeletePreviewSummary {
+    emptyFieldCount: number;
+    valuedFieldCount: number;
+    /** The first few valued fields, for the confirmation dialog. Values are shortened for display. */
+    samples: Array<{ key: string; value: string }>;
+}
+
+/** Split a delete preview into fields that are empty (no data loss) and fields that hold values. */
+export function summarizeDeletePreview(
+    preview: Map<TFile, { fields: string[]; values: Record<string, unknown> }>,
+    sampleLimit = 8
+): DeletePreviewSummary {
+    const summary: DeletePreviewSummary = { emptyFieldCount: 0, valuedFieldCount: 0, samples: [] };
+    for (const detail of preview.values()) {
+        for (const field of detail.fields) {
+            const value = detail.values[field];
+            if (isTrulyEmpty(value)) {
+                summary.emptyFieldCount++;
+                continue;
+            }
+            summary.valuedFieldCount++;
+            if (summary.samples.length < sampleLimit) {
+                const text = Array.isArray(value) ? value.join(', ') : frontmatterValueToText(value);
+                summary.samples.push({ key: field, value: text.length > 60 ? text.slice(0, 57) + '...' : text });
+            }
+        }
+    }
+    return summary;
 }

@@ -25,7 +25,7 @@ import type {
 import { getActiveLoadedBeatTab } from './workspaceState';
 import { resolveSelectedBeatModelFromSettings } from '../utils/beatSystemState';
 
-function normalizeBeatTitle(value: string): string {
+export function normalizeBeatTitle(value: string): string {
     return toBeatMatchKey(value);
 }
 
@@ -37,7 +37,7 @@ function inferActForIndex(index: number, total: number): number {
     return 3;
 }
 
-function clampBeatAct(act: number, maxActs: number): number {
+export function clampBeatAct(act: number, maxActs: number): number {
     const n = Number.isFinite(act) ? Math.round(act) : 1;
     return Math.min(Math.max(1, n), maxActs);
 }
@@ -499,4 +499,90 @@ export function getBeatSystemStructuralStatus(params: {
             missingModelByBeatKey,
         },
     };
+}
+
+// ─── Reading a structural status ───────────────────────────────────────────
+
+export type PreviewIssueKind = 'missing' | 'incomplete';
+
+export type PreviewIssueEntry = {
+    beat: BeatStructuralBeatStatus;
+    kind: PreviewIssueKind;
+};
+
+/** A beat is "missing" when absent, "incomplete" when it has an issue other than act placement. */
+export function getPreviewIssueKind(status: BeatStructuralBeatStatus | null): PreviewIssueKind | null {
+    if (!status) return null;
+    if (status.kind === 'missing') return 'missing';
+    const hasNonPlacementIssue = status.issues.some((issue) => issue.code !== 'act_mismatch');
+    return hasNonPlacementIssue ? 'incomplete' : null;
+}
+
+export function getPreviewIssueEntries(structuralStatus: BeatSystemStructuralStatus | null): PreviewIssueEntry[] {
+    return (structuralStatus?.beats ?? [])
+        .map((beat) => {
+            const kind = getPreviewIssueKind(beat);
+            return kind ? { beat, kind } : null;
+        })
+        .filter((entry): entry is PreviewIssueEntry => !!entry)
+        .sort((a, b) => a.beat.expected.ordinal - b.beat.expected.ordinal);
+}
+
+export function getPreviewIssueSummaryLabel(issues: PreviewIssueEntry[]): string[] {
+    const labels: string[] = [];
+    if (issues.some((entry) => entry.kind === 'missing')) labels.push('Missing');
+    if (issues.some((entry) => entry.kind === 'incomplete')) labels.push('Incomplete');
+    return labels;
+}
+
+function plural(count: number, one: string, many: string): string {
+    return count !== 1 ? many : one;
+}
+
+/** The audit panel's structure lines for a beat system: one headline, then one line per kind of drift. */
+export function describeStructuralStatus(structuralStatus: BeatSystemStructuralStatus | null): string[] {
+    if (!structuralStatus) return [];
+    const summary = structuralStatus.summary;
+    if (summary.expectedCount === 0) {
+        return ['Structure: No beats are defined for this system yet.'];
+    }
+    if (summary.matchedCount === 0) {
+        if (summary.wrongModelBeatCount > 0) {
+            return ['Structure: Matching beat titles exist, but they belong to a different Beat Model.'];
+        }
+        if (summary.missingModelNoteCount > 0) {
+            return ['Structure: Matching beat titles exist, but some notes are missing Beat Model.'];
+        }
+        return ['Structure: This system is not active in the manuscript yet.'];
+    }
+
+    const lines: string[] = [];
+    const topLevelLabels = getPreviewIssueSummaryLabel(getPreviewIssueEntries(structuralStatus));
+    if (topLevelLabels.length > 0) {
+        if (topLevelLabels.length === 1 && topLevelLabels[0] === 'Incomplete') {
+            lines.push(`Structure: ${summary.issueCount} beat${plural(summary.issueCount, ' is', 's are')} incomplete.`);
+        } else if (topLevelLabels.length === 1 && topLevelLabels[0] === 'Missing') {
+            lines.push(`Structure: ${summary.missingCount} beat${plural(summary.missingCount, ' is', 's are')} missing from the manuscript.`);
+        } else {
+            lines.push(`Structure: ${topLevelLabels.join(' • ')}.`);
+        }
+    } else {
+        lines.push('Structure: Aligned to the current beat template.');
+    }
+
+    if (summary.misalignedCount > 0) {
+        lines.push(`${summary.misalignedCount} beat${plural(summary.misalignedCount, ' is', 's are')} placed in a different act than the template.`);
+    }
+    if (summary.outOfSequenceCount > 0) {
+        lines.push(`${summary.outOfSequenceCount} beat${plural(summary.outOfSequenceCount, ' is', 's are')} out of manuscript sequence — filename prefixes do not match the template order.`);
+    } else if (summary.misalignedCount > 0) {
+        lines.push('Order remains intact.');
+    }
+    if (summary.missingModelNoteCount > 0) {
+        lines.push(`${summary.missingModelNoteCount} matching note${plural(summary.missingModelNoteCount, ' is', 's are')} missing Beat Model.`);
+    }
+    if (summary.duplicateCount > 0) {
+        lines.push(`${summary.duplicateCount} duplicate beat note${plural(summary.duplicateCount, ' was', 's were')} found.`);
+    }
+    return lines;
 }

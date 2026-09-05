@@ -3,6 +3,7 @@
  *
  * Compatibility aliases here are limited to the export/template boundary.
  */
+import type { LoadedBeatTab } from '../types/settings';
 import { Vault, TFile, normalizePath } from 'obsidian';
 import { PLOT_SYSTEM_NAMES, STARTER_BEAT_SETS, PlotSystemPreset, PlotBeatInfo, getPlotSystem } from './beatsSystems';
 import type { BeatSystemConfig, RadialTimelineSettings } from '../types/settings';
@@ -519,3 +520,22 @@ export async function createBeatNotesFromSet(
   return { created, skipped, errors, createdPaths };
 }
 
+
+/** A loaded custom beat tab as a plot system the note creator can consume, or null when it has no beats. */
+export function buildPlotSystemFromLoadedTab(tab: LoadedBeatTab): PlotSystemPreset | null {
+    if (tab.beats.length === 0) return null;
+    return {
+        name: tab.name,
+        category: 'blank',
+        icon: 'square',
+        beatCount: tab.beats.length,
+        beats: tab.beats.map((beat) => beat.name),
+        beatDetails: tab.beats.map((beat) => ({
+            name: beat.name,
+            id: beat.id,
+            description: beat.purpose ?? '',
+            range: beat.range ?? '',
+            act: beat.act,
+        })),
+    };
+}

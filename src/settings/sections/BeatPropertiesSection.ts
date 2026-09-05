@@ -1,12 +1,14 @@
-import { sleep } from '../../utils/sleep';
 import { App, Notice, Setting as Settings, Modal, setIcon, setTooltip, ButtonComponent, getIconIds, TFile, normalizePath, Menu } from 'obsidian';
 import { t } from '../../i18n';
 import type RadialTimelinePlugin from '../../main';
 import type { TimelineItem } from '../../types';
 import { CreateBeatSetModal } from '../../modals/CreateBeatsTemplatesModal';
 import { getPlotSystem } from '../../utils/beatsSystems';
-import { buildBeatDecimalPrefixes, createBeatNotesFromSet, getBeatConfigForSystem } from '../../utils/beatsTemplates';
-import { getBeatSystemStructuralStatus } from '../../storyBeats/beatSystemStatus';
+import { buildBeatDecimalPrefixes, buildPlotSystemFromLoadedTab, createBeatNotesFromSet, getBeatConfigForSystem } from '../../utils/beatsTemplates';
+import { clampBeatAct, describeStructuralStatus, getBeatSystemStructuralStatus, getPreviewIssueEntries, getPreviewIssueKind, getPreviewIssueSummaryLabel, normalizeBeatTitle } from '../../storyBeats/beatSystemStatus';
+import { orderBeatsByAct, parseBeatRow } from '../../storyBeats/beatRows';
+import { applyBeatNoteMerge, planBeatNoteMerge } from '../../storyBeats/mergeBeatNotes';
+import { waitForFileCaches, waitForMetadataResolved } from '../../utils/metadataCacheWait';
 import type { BeatLibraryItem, BeatSystemConfig, BeatDefinition, LoadedBeatTab } from '../../types/settings';
 import type { BeatStructuralBeatStatus, BeatSystemStructuralStatus } from '../../storyBeats/types';
 import { DEFAULT_SETTINGS } from '../defaults';
@@ -18,7 +20,7 @@ import { clampActNumber, parseActLabels, resolveActLabel } from '../../utils/act
 import { ERT_CLASSES, ERT_DATA } from '../../ui/classes';
 import { getScenePrefixNumber } from '../../utils/text';
 import { comparePrefixTokens, extractPrefixToken } from '../../utils/prefixOrder';
-import { frontmatterValueToText, getActiveFrontmatterMappings, normalizeFrontmatterKeys } from '../../utils/frontmatter';
+import { getActiveFrontmatterMappings, normalizeFrontmatterKeys } from '../../utils/frontmatter';
 import { openOrRevealFile } from '../../utils/fileUtils';
 import { tooltipForComponent } from '../../utils/tooltip';
 import {
@@ -34,9 +36,7 @@ import {
     normalizeBeatFieldListValueInput,
     normalizeBeatFieldValueInput,
     normalizeBeatNameInput,
-    normalizeBeatSetNameInput,
-    toBeatMatchKey,
-} from '../../utils/beatsInputNormalize';
+    normalizeBeatSetNameInput,} from '../../utils/beatsInputNormalize';
 import {
     type NoteType,
     extractKeysInOrder as sharedExtractKeysInOrder,
@@ -61,9 +61,9 @@ import {
     type YamlAuditResult,
     type NoteAuditEntry,
 } from '../../utils/yamlAudit';
-import { runBackdropSynopsisToContextMigration, runBeatDescriptionToPurposeMigration, runYamlBackfill, runYamlFillEmptyValues, type BackfillResult } from '../../utils/yamlBackfill';
+import { planDeprecatedFieldMigration, planFillEmptyValues, runBackdropSynopsisToContextMigration, runBeatDescriptionToPurposeMigration, runYamlBackfill, runYamlFillEmptyValues, type BackfillResult, type DeprecatedMigrationPlan, type FillEmptyPlan } from '../../utils/yamlBackfill';
 import { runReferenceIdBackfill, runReferenceIdDuplicateRepair } from '../../utils/referenceIdBackfill';
-import { runYamlDeleteFields, runYamlReorder, previewDeleteFields, previewReorder, type DeleteResult, type ReorderResult } from '../../utils/yamlManager';
+import { runYamlDeleteFields, runYamlReorder, previewDeleteFields, previewReorder, summarizeDeletePreview, type DeleteResult, type ReorderResult } from '../../utils/yamlManager';
 import { formatSafetyIssues } from '../../utils/yamlSafety';
 import { SHARED_CHAPTER_FIELD_KEY } from '../../utils/timelineChapters';
 import { IMPACT_FULL } from '../SettingImpact';
@@ -171,50 +171,9 @@ export function renderBeatPropertiesSection(params: {
         actsPreviewBody.setText(previewLabels.join(' · '));
     };
 
-    const clampBeatAct = (val: number, maxActs: number) => {
-        const n = Number.isFinite(val) ? val : 1;
-        return Math.min(Math.max(1, n), maxActs);
-    };
-
-    const normalizeBeatTitle = (value: string): string => {
-        return toBeatMatchKey(value);
-    };
-
     const stripActPrefix = (name: string): string => {
         const m = name.match(/^Act\s*\d+\s*:\s*(.+)$/i);
         return m ? m[1].trim() : name.trim();
-    };
-
-    const parseBeatRow = (item: unknown): BeatRow => {
-        if (typeof item === 'object' && item !== null && (item as { name?: unknown }).name) {
-            const obj = item as {
-                name?: unknown;
-                act?: unknown;
-                purpose?: unknown;
-                id?: unknown;
-                range?: unknown;
-            };
-            const objName = normalizeBeatNameInput(frontmatterValueToText(obj.name), '');
-            const objAct = typeof obj.act === 'number' ? obj.act : 1;
-            const objPurpose = typeof obj.purpose === 'string' ? obj.purpose.trim() : '';
-            const objId = typeof obj.id === 'string' ? obj.id : undefined;
-            const objRange = typeof obj.range === 'string' ? obj.range.trim() : undefined;
-            return {
-                name: objName,
-                act: objAct,
-                purpose: objPurpose || undefined,
-                id: objId,
-                range: objRange || undefined,
-            };
-        }
-        const raw = normalizeBeatNameInput(frontmatterValueToText(item), '');
-        if (!raw) return { name: '', act: 1 };
-        const m = raw.match(/^(.*?)\[(\d+)\]$/);
-        if (m) {
-            const actNum = parseInt(m[2], 10);
-            return { name: normalizeBeatNameInput(m[1], ''), act: !Number.isNaN(actNum) ? actNum : 1 };
-        }
-        return { name: raw, act: 1 };
     };
 
     const getLoadedBeatWorkspaceTabs = () => getMaterializedBeatTabs(app, plugin.settings);
@@ -354,15 +313,6 @@ export function renderBeatPropertiesSection(params: {
             actSceneNumbers.set(actNumber, range.sceneNumbers);
         });
         return buildBeatDecimalPrefixes(beatActs, actSceneNumbers);
-    };
-
-    const orderBeatsByAct = (beats: BeatRow[], maxActs: number): BeatRow[] => {
-        const beatsByAct: BeatRow[][] = Array.from({ length: maxActs }, () => []);
-        beats.forEach((beatLine) => {
-            const actNum = clampBeatAct(beatLine.act, maxActs);
-            beatsByAct[actNum - 1].push({ ...beatLine, act: actNum });
-        });
-        return beatsByAct.flat();
     };
 
     type BeatMissingDiagnostic = {
@@ -563,40 +513,6 @@ export function renderBeatPropertiesSection(params: {
         text: string;
         tone: PreviewStatusTone;
         icon: 'check' | 'circle-alert' | null;
-    };
-
-    type PreviewIssueKind = 'missing' | 'incomplete';
-
-    type PreviewIssueEntry = {
-        beat: BeatStructuralBeatStatus;
-        kind: PreviewIssueKind;
-    };
-
-    const getPreviewIssueKind = (status: BeatStructuralBeatStatus | null): PreviewIssueKind | null => {
-        if (!status) return null;
-        if (status.kind === 'missing') return 'missing';
-        const hasNonPlacementIssue = status.issues.some((issue) => issue.code !== 'act_mismatch');
-        return hasNonPlacementIssue ? 'incomplete' : null;
-    };
-
-    const getPreviewIssueEntries = (
-        structuralStatus: BeatSystemStructuralStatus | null
-    ): PreviewIssueEntry[] =>
-        (structuralStatus?.beats ?? [])
-            .map((beat) => {
-                const kind = getPreviewIssueKind(beat);
-                return kind ? { beat, kind } : null;
-            })
-            .filter((entry): entry is PreviewIssueEntry => !!entry)
-            .sort((a, b) => a.beat.expected.ordinal - b.beat.expected.ordinal);
-
-    const getPreviewIssueSummaryLabel = (issues: PreviewIssueEntry[]): string[] => {
-        const hasMissing = issues.some((entry) => entry.kind === 'missing');
-        const hasIncomplete = issues.some((entry) => entry.kind === 'incomplete');
-        const labels: string[] = [];
-        if (hasMissing) labels.push('Missing');
-        if (hasIncomplete) labels.push('Incomplete');
-        return labels;
     };
 
     const getPreviewPlacementActNumber = (
@@ -3727,22 +3643,6 @@ export function renderBeatPropertiesSection(params: {
         let auditResult: YamlAuditResult | null = null;
         let structuralStatus: BeatSystemStructuralStatus | null = null;
         let auditScopeSummary = '';
-        type FillEmptyPlan = {
-            files: TFile[];
-            entries: Array<{ file: TFile; emptyKeys: string[] }>;
-            fieldsToInsert: Record<string, string | string[]>;
-            filledFields: number;
-            touchedKeys: string[];
-            sourcePath: string;
-        };
-        type DeprecatedMigrationPlan = {
-            legacyKey: 'Description' | 'Synopsis';
-            canonicalKey: 'Purpose' | 'Context';
-            files: TFile[];
-            moveCount: number;
-            removeEmptyCount: number;
-            preservedCount: number;
-        };
         let fillEmptyPlan: FillEmptyPlan | null = null;
         let deprecatedMigrationPlan: DeprecatedMigrationPlan | null = null;
 
@@ -3774,127 +3674,19 @@ export function renderBeatPropertiesSection(params: {
             if (!isEditableActiveBeatWorkspace()) return true;
             return isCustomBeatSetOfficial();
         };
-        const getScopedBookFiles = (files: TFile[]): { sourcePath: string; files: TFile[] } => {
-            const sourcePath = normalizePath((plugin.settings.sourcePath || '').trim());
-            if (!sourcePath) return { sourcePath: '', files: [] };
-            const prefix = sourcePath.endsWith('/') ? sourcePath : `${sourcePath}/`;
-            return {
-                sourcePath,
-                files: files.filter(file => file.path === sourcePath || file.path.startsWith(prefix))
-            };
-        };
-        const isEmptyValue = (value: unknown): boolean => {
-            if (value === undefined || value === null) return true;
-            if (typeof value === 'string') return value.trim().length === 0;
-            if (Array.isArray(value)) return value.length === 0;
-            return false;
-        };
-        const hasDefaultValue = (value: string | string[]): boolean => {
-            if (Array.isArray(value)) return value.length > 0;
-            return value.trim().length > 0;
-        };
         const buildFillEmptyPlan = (files: TFile[], activeBeatSystemKey?: string): FillEmptyPlan | null => {
             if (!isBeatAuditWriteReady()) return null;
-
-            const { sourcePath, files: scopedFiles } = getScopedBookFiles(files);
-            if (!sourcePath || scopedFiles.length === 0) return null;
-
-            const customKeys = getCustomKeys('Beat', plugin.settings, activeBeatSystemKey);
-            if (customKeys.length === 0) return null;
-            const defaults = getCustomDefaults('Beat', plugin.settings, activeBeatSystemKey);
-
-            const fieldsToInsert: Record<string, string | string[]> = {};
-            customKeys.forEach((key) => {
-                const value = defaults[key] ?? '';
-                if (hasDefaultValue(value)) {
-                    fieldsToInsert[key] = value;
-                }
+            return planFillEmptyValues({
+                app,
+                files,
+                sourcePath: normalizePath((plugin.settings.sourcePath || '').trim()),
+                customKeys: getCustomKeys('Beat', plugin.settings, activeBeatSystemKey),
+                defaults: getCustomDefaults('Beat', plugin.settings, activeBeatSystemKey)
             });
-            const keys = Object.keys(fieldsToInsert);
-            if (keys.length === 0) return null;
-
-            const candidateFiles: TFile[] = [];
-            const entries: Array<{ file: TFile; emptyKeys: string[] }> = [];
-            const touchedKeySet = new Set<string>();
-            let filledFields = 0;
-
-            for (const file of scopedFiles) {
-                const cache = app.metadataCache.getFileCache(file);
-                if (!cache?.frontmatter) continue;
-                const fm = cache.frontmatter as Record<string, unknown>;
-
-                let fileHasCandidate = false;
-                const fileEmptyKeys: string[] = [];
-                for (const key of keys) {
-                    if (!(key in fm)) continue;
-                    if (!isEmptyValue(fm[key])) continue;
-                    fileHasCandidate = true;
-                    filledFields++;
-                    touchedKeySet.add(key);
-                    fileEmptyKeys.push(key);
-                }
-                if (fileHasCandidate) {
-                    candidateFiles.push(file);
-                    entries.push({ file, emptyKeys: fileEmptyKeys });
-                }
-            }
-
-            if (candidateFiles.length === 0 || filledFields === 0) return null;
-            return {
-                files: candidateFiles,
-                entries,
-                fieldsToInsert,
-                filledFields,
-                touchedKeys: [...touchedKeySet].sort(),
-                sourcePath,
-            };
         };
         const buildDeprecatedMigrationPlan = (files: TFile[]): DeprecatedMigrationPlan | null => {
             if (noteType !== 'Beat' && noteType !== 'Backdrop') return null;
-            const mappings = getActiveFrontmatterMappings(plugin.settings);
-            const legacyKey = noteType === 'Beat' ? 'Description' : 'Synopsis';
-            const canonicalKey = noteType === 'Beat' ? 'Purpose' : 'Context';
-
-            const targetFiles: TFile[] = [];
-            let moveCount = 0;
-            let removeEmptyCount = 0;
-            let preservedCount = 0;
-
-            for (const file of files) {
-                const cache = app.metadataCache.getFileCache(file);
-                if (!cache?.frontmatter) continue;
-                const raw = cache.frontmatter as Record<string, unknown>;
-                const normalized = mappings ? normalizeFrontmatterKeys(raw, mappings) : raw;
-                const hasLegacy = Object.prototype.hasOwnProperty.call(normalized, legacyKey);
-                if (!hasLegacy) continue;
-
-                const legacyRaw = typeof normalized[legacyKey] === 'string' ? String(normalized[legacyKey]) : '';
-                const legacy = legacyRaw.trim();
-                const canonicalRaw = typeof normalized[canonicalKey] === 'string' ? String(normalized[canonicalKey]) : '';
-                const canonical = canonicalRaw.trim();
-
-                targetFiles.push(file);
-
-                if (legacy.length === 0) {
-                    removeEmptyCount += 1;
-                    continue;
-                }
-                if (canonical.length === 0) {
-                    moveCount += 1;
-                } else {
-                    preservedCount += 1;
-                }
-            }
-
-            if (moveCount === 0 && removeEmptyCount === 0) return null;
-            return {
-                legacyKey,
-                canonicalKey,
-                files: targetFiles,
-                moveCount,
-                removeEmptyCount,
-                preservedCount,
-            };
+            return planDeprecatedFieldMigration({ app, files, noteType, mappings: getActiveFrontmatterMappings(plugin.settings) });
         };
 
         // ─── Header row: two-column Setting layout (title+desc left, audit button right) ──
@@ -4199,54 +3991,7 @@ export function renderBeatPropertiesSection(params: {
             return auditScopeSummary.replace(/^\d+\s+\w+\s+in\s+/i, '');
         };
 
-        const buildStructureStatusLines = (): string[] => {
-            if (noteType !== 'Beat' || !structuralStatus) return [];
-            const summary = structuralStatus.summary;
-            if (summary.expectedCount === 0) {
-                return ['Structure: No beats are defined for this system yet.'];
-            }
-            if (summary.matchedCount === 0) {
-                if (summary.wrongModelBeatCount > 0) {
-                    return ['Structure: Matching beat titles exist, but they belong to a different Beat Model.'];
-                }
-                if (summary.missingModelNoteCount > 0) {
-                    return ['Structure: Matching beat titles exist, but some notes are missing Beat Model.'];
-                }
-                return ['Structure: This system is not active in the manuscript yet.'];
-            }
-
-            const lines: string[] = [];
-            const topLevelIssues = getPreviewIssueEntries(structuralStatus);
-            const topLevelLabels = getPreviewIssueSummaryLabel(topLevelIssues);
-            if (topLevelLabels.length > 0) {
-                const labelText = topLevelLabels.join(' • ');
-                if (topLevelLabels.length === 1 && topLevelLabels[0] === 'Incomplete') {
-                    lines.push(`Structure: ${summary.issueCount} beat${summary.issueCount !== 1 ? 's are' : ' is'} incomplete.`);
-                } else if (topLevelLabels.length === 1 && topLevelLabels[0] === 'Missing') {
-                    lines.push(`Structure: ${summary.missingCount} beat${summary.missingCount !== 1 ? 's are' : ' is'} missing from the manuscript.`);
-                } else {
-                    lines.push(`Structure: ${labelText}.`);
-                }
-            } else {
-                lines.push('Structure: Aligned to the current beat template.');
-            }
-
-            if (summary.misalignedCount > 0) {
-                lines.push(`${summary.misalignedCount} beat${summary.misalignedCount !== 1 ? 's are' : ' is'} placed in a different act than the template.`);
-            }
-            if (summary.outOfSequenceCount > 0) {
-                lines.push(`${summary.outOfSequenceCount} beat${summary.outOfSequenceCount !== 1 ? 's are' : ' is'} out of manuscript sequence — filename prefixes do not match the template order.`);
-            } else if (summary.misalignedCount > 0) {
-                lines.push('Order remains intact.');
-            }
-            if (summary.missingModelNoteCount > 0) {
-                lines.push(`${summary.missingModelNoteCount} matching note${summary.missingModelNoteCount !== 1 ? 's are' : ' is'} missing Beat Model.`);
-            }
-            if (summary.duplicateCount > 0) {
-                lines.push(`${summary.duplicateCount} duplicate beat note${summary.duplicateCount !== 1 ? 's were' : ' was'} found.`);
-            }
-            return lines;
-        };
+        const buildStructureStatusLines = (): string[] => noteType === 'Beat' ? describeStructuralStatus(structuralStatus) : [];
 
         // ─── Render results ──────────────────────────────────────────────
         const renderResults = () => {
@@ -4943,31 +4688,7 @@ export function renderBeatPropertiesSection(params: {
                 app, targetFiles, deletableAdvKeys, protectedKeys
             );
 
-            // Count empty vs valued
-            let emptyFieldCount = 0;
-            let valuedFieldCount = 0;
-            const valuedFieldSamples: { key: string; value: string }[] = [];
-            for (const [, detail] of preview) {
-                for (const field of detail.fields) {
-                    const val = detail.values[field];
-                    const isEmpty = val === undefined || val === null
-                        || (typeof val === 'string' && val.trim() === '')
-                        || (Array.isArray(val) && val.length === 0);
-                    if (isEmpty) {
-                        emptyFieldCount++;
-                    } else {
-                        valuedFieldCount++;
-                        if (valuedFieldSamples.length < 8) {
-                            const valStr = Array.isArray(val) ? val.join(', ') : frontmatterValueToText(val);
-                            valuedFieldSamples.push({
-                                key: field,
-                                value: valStr.length > 60 ? valStr.slice(0, 57) + '...' : valStr
-                            });
-                        }
-                    }
-                }
-            }
-
+            const { emptyFieldCount, valuedFieldCount, samples: valuedFieldSamples } = summarizeDeletePreview(preview);
             const totalFieldCount = emptyFieldCount + valuedFieldCount;
             const hasValuedFields = valuedFieldCount > 0;
             const deletePhrase = `DELETE ${valuedFieldCount}`;
@@ -5585,97 +5306,17 @@ export function renderBeatPropertiesSection(params: {
             return;
         }
 
-        const customModelName = storyStructureName;
-        const conflicts: string[] = [];
-        const duplicates: string[] = [];
-        const updates: Array<{ file: TFile; targetPath: string; act: number; needsBeatModelFix: boolean }> = [];
-        const duplicateKeys = new Set<string>();
-
-        const keyCounts = new Map<string, number>();
-        beats.forEach((beatLine) => {
-            const key = normalizeBeatTitle(beatLine.name);
-            if (!key) return;
-            keyCounts.set(key, (keyCounts.get(key) ?? 0) + 1);
-        });
-        keyCounts.forEach((count, key) => {
-            if (count > 1) duplicateKeys.add(key);
-        });
-
-        beats.forEach((beatLine) => {
-            const key = normalizeBeatTitle(beatLine.name);
-            if (!key) return;
-            if (duplicateKeys.has(key)) {
-                duplicates.push(beatLine.name);
-                return;
-            }
-
-            let matches = structuralStatus.matches.activeByBeatKey.get(key);
-            let needsBeatModelFix = false;
-            if (!matches || matches.length === 0) {
-                const missingMatches = structuralStatus.matches.missingModelByBeatKey.get(key);
-                if (!missingMatches || missingMatches.length === 0) return;
-                matches = missingMatches;
-                needsBeatModelFix = true;
-            }
-            if (!matches || matches.length === 0) return;
-            if (matches.length > 1) {
-                duplicates.push(beatLine.name);
-                return;
-            }
-            const match = matches[0];
-            if (!match.path) return;
-            const file = app.vault.getAbstractFileByPath(match.path);
-            if (!(file instanceof TFile)) return;
-
-            updates.push({ file, targetPath: file.path, act: beatLine.act, needsBeatModelFix });
-        });
-
+        const { updates, duplicates } = planBeatNoteMerge(beats, structuralStatus);
         if (updates.length === 0) {
-            const conflictHint = conflicts.length > 0 ? ` Conflicts: ${conflicts.length}.` : '';
             const duplicateHint = duplicates.length > 0 ? ` Duplicates: ${duplicates.length}. Manually delete duplicate beat notes.` : '';
-            new Notice(`No beat notes could be merged.${conflictHint}${duplicateHint}`);
+            new Notice(`No beat notes could be merged.${duplicateHint}`);
             return;
         }
 
-        for (const update of updates) {
-            await app.fileManager.processFrontMatter(update.file, (fm: Record<string, unknown>) => {
-                fm['Act'] = update.act;
-                fm['Beat Model'] = customModelName;
-                if (!fm['Class']) fm['Class'] = 'Beat';
-            });
-        }
-
-        const renameOps = updates
-            .filter(update => update.targetPath !== update.file.path)
-            .map((update, idx) => {
-                const parentPath = update.file.parent?.path ?? '';
-                const tempBasename = `zbeat-merge-${Date.now().toString(36)}-${idx}`;
-                const tempPath = parentPath
-                    ? `${parentPath}/${tempBasename}.${update.file.extension}`
-                    : `${tempBasename}.${update.file.extension}`;
-                return { file: update.file, tempPath, finalPath: update.targetPath };
-            });
-
-        for (const op of renameOps) {
-            await app.fileManager.renameFile(op.file, op.tempPath);
-        }
-        for (const op of renameOps) {
-            const file = app.vault.getAbstractFileByPath(op.tempPath);
-            if (file instanceof TFile) {
-                await app.fileManager.renameFile(file, op.finalPath);
-            }
-        }
-
+        await applyBeatNoteMerge(app, updates, storyStructureName);
         invalidateBeatStructuralStatus();
-        // Wait for Obsidian metadata cache to re-index after renames
-        await new Promise<void>(resolve => {
-            const timeout = window.setTimeout(resolve, 1500);
-            const ref = app.metadataCache.on('resolved', () => {
-                window.clearTimeout(timeout);
-                app.metadataCache.offref(ref);
-                resolve();
-            });
-        });
+        // Let the metadata cache re-index the stamped notes before the status refresh reads them.
+        await waitForMetadataResolved(app, 1500);
         getBeatStructuralStatus(storyStructureName, { refresh: true });
         updateTemplateButton(templateSetting, storyStructureName);
         refreshCustomBeatList?.();
@@ -5684,10 +5325,9 @@ export function renderBeatPropertiesSection(params: {
 
         const updatedCount = updates.length;
         const modelFixedCount = updates.filter(update => update.needsBeatModelFix).length;
-        const conflictHint = conflicts.length > 0 ? ` ${conflicts.length} conflict${conflicts.length > 1 ? 's' : ''} skipped.` : '';
         const duplicateHint = duplicates.length > 0 ? ` ${duplicates.length} duplicate title${duplicates.length > 1 ? 's' : ''} skipped (manually delete duplicate beat notes).` : '';
         const modelHint = modelFixedCount > 0 ? ` Set Beat Model on ${modelFixedCount} note${modelFixedCount > 1 ? 's' : ''}.` : '';
-        new Notice(`Repaired ${updatedCount} beat note${updatedCount > 1 ? 's' : ''} (Act, Beat Model).${modelHint}${conflictHint}${duplicateHint}`);
+        new Notice(`Repaired ${updatedCount} beat note${updatedCount > 1 ? 's' : ''} (Act, Beat Model).${modelHint}${duplicateHint}`);
     }
 
     async function createBeatTemplates(): Promise<void> {
@@ -5696,24 +5336,11 @@ export function renderBeatPropertiesSection(params: {
 
         let storyStructure = getPlotSystem(storyStructureName);
         if (!storyStructure && activeTab) {
-            if (activeTab.beats.length === 0) {
+            storyStructure = buildPlotSystemFromLoadedTab(activeTab);
+            if (!storyStructure) {
                 new Notice('No custom beats defined. Add beats in the list above.');
                 return;
             }
-            storyStructure = {
-                name: activeTab.name,
-                category: 'blank',
-                icon: 'square',
-                beatCount: activeTab.beats.length,
-                beats: activeTab.beats.map((beat) => beat.name),
-                beatDetails: activeTab.beats.map((beat) => ({
-                    name: beat.name,
-                    id: beat.id,
-                    description: beat.purpose ?? '',
-                    range: beat.range ?? '',
-                    act: beat.act,
-                })),
-            };
         }
 
         if (!storyStructure) {
@@ -5756,26 +5383,9 @@ export function renderBeatPropertiesSection(params: {
                 new Notice(`✓ Successfully created ${created} Beat set notes!`);
             }
             invalidateBeatStructuralStatus();
-            // Wait until metadata cache is ready for all newly created beat files.
-            // This prevents partial row-state updates (e.g., 2/3 rows recognized).
-            const waitForCreatedBeatCaches = async (paths: string[], timeoutMs = 5000): Promise<void> => {
-                if (paths.length === 0) return;
-                const start = Date.now();
-                const pending = new Set(paths);
-                while (pending.size > 0 && (Date.now() - start) < timeoutMs) {
-                    for (const path of [...pending]) {
-                        const file = app.vault.getAbstractFileByPath(path);
-                        if (!(file instanceof TFile)) continue;
-                        const cache = app.metadataCache.getFileCache(file);
-                        if (cache?.frontmatter) {
-                            pending.delete(path);
-                        }
-                    }
-                    if (pending.size === 0) break;
-                    await sleep(120);
-                }
-            };
-            await waitForCreatedBeatCaches(createdPaths);
+            // Every new beat file must be in the metadata cache before the row state is read,
+            // or the list shows a partial set (e.g. 2 of 3 rows recognised).
+            await waitForFileCaches(app, createdPaths);
             getBeatStructuralStatus(storyStructureName, { refresh: true });
             updateTemplateButton(templateSetting, storyStructureName);
             refreshCustomBeatList?.();

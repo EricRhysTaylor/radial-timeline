@@ -10,6 +10,7 @@
  */
 import type { App, TFile } from 'obsidian';
 import type { FieldEntryValue } from './yamlTemplateNormalize';
+import { normalizeFrontmatterKeys, type getActiveFrontmatterMappings } from './frontmatter';
 
 // ─── Types ──────────────────────────────────────────────────────────────
 
@@ -363,4 +364,115 @@ export async function runYamlFillEmptyValues(options: BackfillOptions): Promise<
     }
 
     return result;
+}
+
+// ─── Plans: what a fill or migration would touch, before any write ────────
+
+export interface FillEmptyPlan {
+    files: TFile[];
+    entries: Array<{ file: TFile; emptyKeys: string[] }>;
+    fieldsToInsert: Record<string, FieldEntryValue>;
+    filledFields: number;
+    touchedKeys: string[];
+    sourcePath: string;
+}
+
+function isEmptyFrontmatterValue(value: unknown): boolean {
+    if (value === undefined || value === null) return true;
+    if (typeof value === 'string') return value.trim().length === 0;
+    if (Array.isArray(value)) return value.length === 0;
+    return false;
+}
+
+function hasDefaultValue(value: FieldEntryValue): boolean {
+    if (Array.isArray(value)) return value.length > 0;
+    return value.trim().length > 0;
+}
+
+/**
+ * Which notes under the book folder have empty custom keys that the template
+ * gives a default for. Only existing empty keys count: nothing is added or
+ * overwritten. Null when there is nothing to fill.
+ */
+export function planFillEmptyValues(options: {
+    app: App;
+    files: TFile[];
+    sourcePath: string;
+    customKeys: string[];
+    defaults: Record<string, FieldEntryValue>;
+}): FillEmptyPlan | null {
+    const sourcePath = options.sourcePath;
+    if (!sourcePath) return null;
+    const prefix = sourcePath.endsWith('/') ? sourcePath : `${sourcePath}/`;
+    const scopedFiles = options.files.filter(file => file.path === sourcePath || file.path.startsWith(prefix));
+    if (scopedFiles.length === 0 || options.customKeys.length === 0) return null;
+
+    const fieldsToInsert: Record<string, FieldEntryValue> = {};
+    for (const key of options.customKeys) {
+        const value = options.defaults[key] ?? '';
+        if (hasDefaultValue(value)) fieldsToInsert[key] = value;
+    }
+    const keys = Object.keys(fieldsToInsert);
+    if (keys.length === 0) return null;
+
+    const files: TFile[] = [];
+    const entries: Array<{ file: TFile; emptyKeys: string[] }> = [];
+    const touchedKeys = new Set<string>();
+    let filledFields = 0;
+    for (const file of scopedFiles) {
+        const fm = options.app.metadataCache.getFileCache(file)?.frontmatter;
+        if (!fm) continue;
+        const emptyKeys = keys.filter(key => key in fm && isEmptyFrontmatterValue(fm[key]));
+        if (emptyKeys.length === 0) continue;
+        filledFields += emptyKeys.length;
+        emptyKeys.forEach(key => touchedKeys.add(key));
+        files.push(file);
+        entries.push({ file, emptyKeys });
+    }
+    if (files.length === 0) return null;
+    return { files, entries, fieldsToInsert, filledFields, touchedKeys: [...touchedKeys].sort(), sourcePath };
+}
+
+export interface DeprecatedMigrationPlan {
+    legacyKey: 'Description' | 'Synopsis';
+    canonicalKey: 'Purpose' | 'Context';
+    files: TFile[];
+    /** Notes whose legacy value moves into the canonical key. */
+    moveCount: number;
+    /** Notes whose legacy key is empty and simply goes. */
+    removeEmptyCount: number;
+    /** Notes that keep their legacy value because the canonical key already has content. */
+    preservedCount: number;
+}
+
+/**
+ * Beat notes still carrying Description (now Purpose) or Backdrop notes
+ * carrying Synopsis (now Context). Null when nothing would change.
+ */
+export function planDeprecatedFieldMigration(options: {
+    app: App;
+    files: TFile[];
+    noteType: 'Beat' | 'Backdrop';
+    mappings: ReturnType<typeof getActiveFrontmatterMappings> | null;
+}): DeprecatedMigrationPlan | null {
+    const legacyKey = options.noteType === 'Beat' ? 'Description' : 'Synopsis';
+    const canonicalKey = options.noteType === 'Beat' ? 'Purpose' : 'Context';
+    const files: TFile[] = [];
+    let moveCount = 0;
+    let removeEmptyCount = 0;
+    let preservedCount = 0;
+    for (const file of options.files) {
+        const raw = options.app.metadataCache.getFileCache(file)?.frontmatter;
+        if (!raw) continue;
+        const normalized = options.mappings ? normalizeFrontmatterKeys(raw, options.mappings) : raw;
+        if (!Object.prototype.hasOwnProperty.call(normalized, legacyKey)) continue;
+        const legacy = typeof normalized[legacyKey] === 'string' ? String(normalized[legacyKey]).trim() : '';
+        const canonical = typeof normalized[canonicalKey] === 'string' ? String(normalized[canonicalKey]).trim() : '';
+        files.push(file);
+        if (legacy.length === 0) removeEmptyCount += 1;
+        else if (canonical.length === 0) moveCount += 1;
+        else preservedCount += 1;
+    }
+    if (moveCount === 0 && removeEmptyCount === 0) return null;
+    return { legacyKey, canonicalKey, files, moveCount, removeEmptyCount, preservedCount };
 }

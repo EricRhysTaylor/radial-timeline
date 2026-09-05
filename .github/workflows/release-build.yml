@@ -1,0 +1,87 @@
+name: Release Build
+
+# Builds release assets on GitHub-hosted runners, signs a build-provenance
+# attestation for each asset, and uploads them to the GitHub release.
+# Dispatched by release-script.mjs during the "finish release" phase.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release tag to build and upload to (e.g. 6.2.2)'
+        required: true
+        type: string
+      ref:
+        description: 'Git ref to build from (defaults to the version tag)'
+        required: false
+        type: string
+      dry_run:
+        description: 'Build and attest, but skip uploading assets to the release'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  build-attest-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref != '' && inputs.ref || inputs.version }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          HUSKY: '0'
+
+      - name: Build release assets
+        run: RT_RELEASE_BUILD=1 node esbuild.config.mjs production
+
+      - name: Verify assets exist
+        run: ls -la release/main.js release/manifest.json release/styles.css
+
+      # Obsidian installs only the three files above. Anything a feature needs
+      # at runtime must already be inside them — see scripts/check-shipped-assets.mjs
+      # for the failure this prevents (GH #29, #34).
+      - name: Verify every runtime asset ships inside those three files
+        run: node scripts/check-shipped-assets.mjs
+
+      - name: Verify embedded assets are present in the bundle
+        run: |
+          for key in \
+            "pandoc/reference-manuscript.docx" \
+            "fonts/sorts-mill-goudy/SortsMillGoudy-Regular.ttf" \
+            "fonts/source-serif-4/SourceSerif4-Regular.otf" \
+            "images/rt-logo.png"; do
+            if ! grep -qF "$key" release/main.js; then
+              echo "::error::Embedded asset key '$key' is missing from release/main.js"
+              exit 1
+            fi
+          done
+          echo "All spot-checked embedded asset keys are present in release/main.js"
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            release/main.js
+            release/manifest.json
+            release/styles.css
+
+      - name: Upload assets to release
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ inputs.version }}" release/main.js release/manifest.json release/styles.css --clobber

@@ -1,0 +1,84 @@
+name: Model & Pricing Watch
+
+# Disabled on a schedule by request — runs only on manual dispatch.
+# (Re-enable the nightly run by uncommenting the schedule block below.)
+on:
+  # schedule:
+  #   - cron: '0 8 * * *'
+  workflow_dispatch:
+
+# Auto-commit verified price corrections and open/update the report issue.
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: model-pricing-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate pricing.json schema
+        run: node scripts/validate-pricing.mjs
+
+      - name: Run model & pricing watch
+        id: watch
+        # No API keys: the paid LLM price lookup is disabled. This runs only the
+        # free, deterministic cross-check (missing/orphan prices, promos, staleness)
+        # and the model checker (which falls back to its cached snapshot).
+        run: node scripts/model-pricing-watch.mjs --apply
+
+      - name: Commit verified updates
+        if: steps.watch.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Only pricing.json is committed: the model-snapshot files re-stamp their
+          # own timestamp every run and would churn; their drift is surfaced in the
+          # issue and acknowledged by curating registry.json, not auto-committed.
+          git add scripts/models/pricing.json
+          if git diff --cached --quiet; then
+            echo "No staged changes to commit."
+          else
+            git commit -m "chore(pricing): nightly model & pricing watch — verified updates [skip ci]"
+            git push origin HEAD:${GITHUB_REF_NAME}
+          fi
+
+      - name: Open / update report issue
+        if: steps.watch.outputs.actionable == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPORT_FILE: ${{ steps.watch.outputs.report_file }}
+        run: |
+          TITLE="📊 Model & Pricing Watch"
+          EXISTING=$(gh issue list --search "$TITLE in:title" --state open --json number --jq '.[0].number' || echo "")
+          if [ -n "$EXISTING" ]; then
+            # Refresh the body silently; the open issue is itself the persistent
+            # signal. A daily comment would be notification spam.
+            gh issue edit "$EXISTING" --body-file "$REPORT_FILE"
+          else
+            gh issue create --title "$TITLE" --body-file "$REPORT_FILE"
+          fi
+
+      - name: Close report issue when all clear
+        if: steps.watch.outputs.actionable != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TITLE="📊 Model & Pricing Watch"
+          EXISTING=$(gh issue list --search "$TITLE in:title" --state open --json number --jq '.[0].number' || echo "")
+          if [ -n "$EXISTING" ]; then
+            gh issue close "$EXISTING" --comment "All clear as of $(date -u +%Y-%m-%d) — closing. Watch will reopen if new action items appear."
+          fi

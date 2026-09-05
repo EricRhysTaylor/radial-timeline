@@ -1,0 +1,24 @@
+{
+  "maintenance": {
+    "totalWarnings": 1002,
+    "warningsByRule": {
+      "raw-hex": 186,
+      "rt-legacy": 562,
+      "spacing-px": 232,
+      "shadow-rgba": 22
+    },
+    "updatedAt": "2026-08-10T21:43:58.308Z",
+    "mode": "maintenance"
+  },
+  "migration": {
+    "totalWarnings": 2401,
+    "warningsByRule": {
+      "spacing-px": 645,
+      "shadow-rgba": 59,
+      "raw-hex": 189,
+      "rt-legacy": 1508
+    },
+    "updatedAt": "2026-01-24T18:40:55.246Z",
+    "mode": "migration"
+  }
+}

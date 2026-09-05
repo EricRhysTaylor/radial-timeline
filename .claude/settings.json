@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh",
+            "timeout": 300
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if ! command -v npm >/dev/null 2>&1; then echo \"gates skipped: npm not on PATH\"; exit 0; fi; output=$(npm run gates 2>&1); exit_code=$?; if [ $exit_code -ne 0 ]; then echo \"GATES FAILED (exit $exit_code) — fix before declaring work complete:\"; echo \"$output\" | tail -50; exit 2; fi; exit 0",
+            "timeout": 180,
+            "asyncRewake": true,
+            "rewakeMessage": "npm run gates failed in the background. Address the violations below before continuing or asking for backup:",
+            "rewakeSummary": "Gates failed — fixes required",
+            "statusMessage": "Running gates in background…"
+          }
+        ]
+      }
+    ]
+  }
+}

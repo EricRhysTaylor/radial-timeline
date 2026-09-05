@@ -1,0 +1,101 @@
+{
+  "generatedAt": "2026-09-04T17:55:00.455Z",
+  "scoringModel": "rt-impact-v1",
+  "scoringAxes": [
+    "authorTrust",
+    "runtimeReliability",
+    "costTransparency",
+    "passPrediction",
+    "citationTrust"
+  ],
+  "validationErrors": [],
+  "validationWarnings": [
+    "openai-citations-annotations: missing availableSince (required for provider reality)"
+  ],
+  "evidenceFailures": [],
+  "providerSummaries": {
+    "anthropic": {
+      "total": 9,
+      "implemented": 6,
+      "rtRelevantGaps": 0
+    },
+    "openai": {
+      "total": 7,
+      "implemented": 4,
+      "rtRelevantGaps": 0
+    },
+    "google": {
+      "total": 5,
+      "implemented": 3,
+      "rtRelevantGaps": 0
+    }
+  },
+  "topPriorities": [],
+  "deferred": [
+    {
+      "id": "anthropic-batch-api",
+      "name": "Batch API",
+      "provider": "anthropic",
+      "reason": "ignore"
+    },
+    {
+      "id": "anthropic-streaming",
+      "name": "Streaming",
+      "provider": "anthropic",
+      "reason": "defer"
+    },
+    {
+      "id": "openai-batch-api",
+      "name": "Batch API",
+      "provider": "openai",
+      "reason": "ignore"
+    },
+    {
+      "id": "openai-streaming",
+      "name": "Streaming",
+      "provider": "openai",
+      "reason": "defer"
+    },
+    {
+      "id": "openai-responses-api",
+      "name": "Responses API",
+      "provider": "openai",
+      "reason": "defer"
+    },
+    {
+      "id": "gemini-streaming",
+      "name": "Streaming",
+      "provider": "google",
+      "reason": "defer"
+    }
+  ],
+  "allActionableGaps": [],
+  "sourceFindings": [
+    {
+      "file": "anthropicApi.ts",
+      "finding": "anthropic-version header: 2023-06-01",
+      "relatedFeatures": []
+    },
+    {
+      "file": "geminiApi.ts",
+      "finding": "createGeminiCache() has 1 callers in src/",
+      "relatedFeatures": [
+        "gemini-context-caching"
+      ]
+    },
+    {
+      "file": "geminiApi.ts",
+      "finding": "systemInstruction suppressed when cachedContentName is set (Gemini restriction)",
+      "relatedFeatures": [
+        "gemini-context-caching"
+      ]
+    },
+    {
+      "file": "aiClient.ts",
+      "finding": "Cache manager exists, canonical runtime wires it: true",
+      "relatedFeatures": [
+        "gemini-context-caching"
+      ]
+    }
+  ]
+}

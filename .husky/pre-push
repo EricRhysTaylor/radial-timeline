@@ -1,0 +1,19 @@
+# Run the gates BEFORE the push, not after.
+#
+# The Stop hook in .claude/settings.json only nags once the commits are already
+# on origin/main, and it leaves no trace at all when a session ends abnormally.
+# That is how CSS-drift and compliance debt landed on 2026-08-07 and did not
+# surface until an unrelated session three days later.
+#
+# `npm run backup` runs the gates itself before pushing, so it sets the skip
+# below rather than paying for them twice. To override deliberately (an
+# emergency push, or debt you have decided to accept), use `git push --no-verify`.
+#
+# This supersedes the previous `npm run lint:obsidian` here — the gates run it
+# as step 9.
+if [ "$RT_SKIP_PREPUSH_GATES" = "1" ]; then
+  echo "pre-push: gates already ran for this command; skipping."
+  exit 0
+fi
+
+npm run gates

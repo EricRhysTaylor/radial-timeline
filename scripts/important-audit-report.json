@@ -1,0 +1,5469 @@
+{
+  "total": 336,
+  "by_category": {
+    "1_obsidian_resets": {
+      "name": "Category 1: Obsidian Resets",
+      "count": 36,
+      "files": {
+        "book-designer.css": [
+          {
+            "file": "book-designer.css",
+            "line_number": 70,
+            "selector": ".rt-manuscript-surface .setting-item",
+            "property": "border",
+            "value": "none",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 71,
+            "selector": ".rt-manuscript-surface .setting-item",
+            "property": "padding",
+            "value": "0",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 72,
+            "selector": ".rt-manuscript-surface .setting-item",
+            "property": "margin",
+            "value": "0",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 89,
+            "selector": ".rt-manuscript-surface .rt-manuscript-group-setting .setting-item-control",
+            "property": "margin-top",
+            "value": "0",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 90,
+            "selector": ".rt-manuscript-surface .rt-manuscript-group-setting .setting-item-control",
+            "property": "padding-top",
+            "value": "0",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 91,
+            "selector": ".rt-manuscript-surface .rt-manuscript-group-setting .setting-item-control",
+            "property": "border-top",
+            "value": "none",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 125,
+            "selector": ".rt-book-designer-modal .rt-setting-stacked .setting-item-info",
+            "property": "padding-left",
+            "value": "0",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 126,
+            "selector": ".rt-book-designer-modal .rt-setting-stacked .setting-item-info",
+            "property": "margin-left",
+            "value": "0",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 127,
+            "selector": ".rt-book-designer-modal .rt-setting-stacked .setting-item-info",
+            "property": "margin-right",
+            "value": "0",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 128,
+            "selector": ".rt-book-designer-modal .rt-setting-stacked .setting-item-info",
+            "property": "width",
+            "value": "100%",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 129,
+            "selector": ".rt-book-designer-modal .rt-setting-stacked .setting-item-info",
+            "property": "text-align",
+            "value": "left",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 130,
+            "selector": ".rt-book-designer-modal .rt-setting-stacked .setting-item-info",
+            "property": "align-self",
+            "value": "flex-start",
+            "category": "1_obsidian_resets"
+          }
+        ],
+        "modal.css": [
+          {
+            "file": "modal.css",
+            "line_number": 433,
+            "selector": ".rt-planetary-modal .setting-item",
+            "property": "border-top",
+            "value": "none",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "modal.css",
+            "line_number": 434,
+            "selector": ".rt-planetary-modal .setting-item",
+            "property": "border-bottom",
+            "value": "1px solid rgba(255, 255, 255, 0.08)",
+            "category": "1_obsidian_resets"
+          }
+        ],
+        "settings.css": [
+          {
+            "file": "settings.css",
+            "line_number": 421,
+            "selector": ".rt-settings-root .setting-item .setting-item-control select.rt-setting-dropdown",
+            "property": "width",
+            "value": "var(--rt-settings-select-width)",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 483,
+            "selector": ".rt-settings-root .rt-setting-full-width-input .setting-item-control input[type=\"text\"]",
+            "property": "width",
+            "value": "100%",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 484,
+            "selector": ".rt-settings-root .rt-setting-full-width-input .setting-item-control input[type=\"text\"]",
+            "property": "max-width",
+            "value": "100%",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 485,
+            "selector": ".rt-settings-root .rt-setting-full-width-input .setting-item-control input[type=\"text\"]",
+            "property": "min-width",
+            "value": "0",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 486,
+            "selector": ".rt-settings-root .rt-setting-full-width-input .setting-item-control input[type=\"text\"]",
+            "property": "flex",
+            "value": "1 1 auto",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 494,
+            "selector": ".rt-settings-root .rt-setting-full-width-input .setting-item-control textarea",
+            "property": "width",
+            "value": "100%",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 495,
+            "selector": ".rt-settings-root .rt-setting-full-width-input .setting-item-control textarea",
+            "property": "max-width",
+            "value": "100%",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 496,
+            "selector": ".rt-settings-root .rt-setting-full-width-input .setting-item-control textarea",
+            "property": "min-width",
+            "value": "0",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 497,
+            "selector": ".rt-settings-root .rt-setting-full-width-input .setting-item-control textarea",
+            "property": "flex",
+            "value": "1 1 auto",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 565,
+            "selector": ".rt-settings-root .setting-item",
+            "property": "display",
+            "value": "flex",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 566,
+            "selector": ".rt-settings-root .setting-item",
+            "property": "align-items",
+            "value": "center",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 570,
+            "selector": ".rt-settings-root .setting-item-control",
+            "property": "display",
+            "value": "flex",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 571,
+            "selector": ".rt-settings-root .setting-item-control",
+            "property": "align-items",
+            "value": "center",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1000,
+            "selector": ".rt-settings-root .rt-color-grid-controls .setting-item",
+            "property": "padding",
+            "value": "0",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1002,
+            "selector": ".rt-settings-root .rt-color-grid-controls .setting-item",
+            "property": "border",
+            "value": "none",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1004,
+            "selector": ".rt-settings-root .rt-color-grid-controls .setting-item",
+            "property": "border-top",
+            "value": "none",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1006,
+            "selector": ".rt-settings-root .rt-color-grid-controls .setting-item",
+            "property": "border-bottom",
+            "value": "none",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1008,
+            "selector": ".rt-settings-root .rt-color-grid-controls .setting-item",
+            "property": "border-left",
+            "value": "none",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1010,
+            "selector": ".rt-settings-root .rt-color-grid-controls .setting-item",
+            "property": "border-right",
+            "value": "none",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1016,
+            "selector": ".rt-settings-root .rt-color-grid-controls .setting-item+.setting-item",
+            "property": "border-top",
+            "value": "none",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1024,
+            "selector": ".rt-settings-root .rt-color-grid-controls .setting-item-control",
+            "property": "padding",
+            "value": "0",
+            "category": "1_obsidian_resets"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1026,
+            "selector": ".rt-settings-root .rt-color-grid-controls .setting-item-control",
+            "property": "margin",
+            "value": "0",
+            "category": "1_obsidian_resets"
+          }
+        ]
+      }
+    },
+    "2_validation_states": {
+      "name": "Category 2: Validation States",
+      "count": 7,
+      "files": {
+        "modal.css": [
+          {
+            "file": "modal.css",
+            "line_number": 193,
+            "selector": ".rt-search-input.rt-input-error",
+            "property": "border-color",
+            "value": "var(--text-error)",
+            "category": "2_validation_states"
+          }
+        ],
+        "settings.css": [
+          {
+            "file": "settings.css",
+            "line_number": 1160,
+            "selector": ".rt-setting-input-success",
+            "property": "border-color",
+            "value": "#00ff48",
+            "category": "2_validation_states"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1161,
+            "selector": ".rt-setting-input-success",
+            "property": "background-color",
+            "value": "rgba(0, 255, 72, 0.1)",
+            "category": "2_validation_states"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1162,
+            "selector": ".rt-setting-input-success",
+            "property": "box-shadow",
+            "value": "0 0 0 2px rgba(0, 255, 72, 0.2)",
+            "category": "2_validation_states"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1166,
+            "selector": ".rt-setting-input-error",
+            "property": "border-color",
+            "value": "var(--rt-gossamer-error-color)",
+            "category": "2_validation_states"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1167,
+            "selector": ".rt-setting-input-error",
+            "property": "background-color",
+            "value": "rgba(255, 68, 68, 0.1)",
+            "category": "2_validation_states"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1168,
+            "selector": ".rt-setting-input-error",
+            "property": "box-shadow",
+            "value": "0 0 0 2px rgba(255, 68, 68, 0.2)",
+            "category": "2_validation_states"
+          }
+        ]
+      }
+    },
+    "3_hover_states": {
+      "name": "Category 3: Hover States",
+      "count": 6,
+      "files": {
+        "scenes.css": [
+          {
+            "file": "scenes.css",
+            "line_number": 34,
+            "selector": ".radial-timeline-svg #rotation-toggle:hover use",
+            "property": "color",
+            "value": "var(--rt-color-empty)",
+            "category": "3_hover_states"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 35,
+            "selector": ".radial-timeline-svg #rotation-toggle:hover use",
+            "property": "stroke",
+            "value": "var(--rt-color-empty)",
+            "category": "3_hover_states"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 36,
+            "selector": ".radial-timeline-svg #rotation-toggle:hover use",
+            "property": "fill",
+            "value": "none",
+            "category": "3_hover_states"
+          }
+        ],
+        "timeline.css": [
+          {
+            "file": "timeline.css",
+            "line_number": 123,
+            "selector": ".radial-timeline-svg.scene-hover .rt-month-spoke-line.rt-act-boundary",
+            "property": "stroke",
+            "value": "#ffffff",
+            "category": "3_hover_states"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 124,
+            "selector": ".radial-timeline-svg.scene-hover .rt-month-spoke-line.rt-act-boundary",
+            "property": "opacity",
+            "value": "0.35",
+            "category": "3_hover_states"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 196,
+            "selector": ".radial-timeline-svg.scene-hover .rt-subplot-ring-label-text",
+            "property": "opacity",
+            "value": "0",
+            "category": "3_hover_states"
+          }
+        ]
+      }
+    },
+    "4_selection_states": {
+      "name": "Category 4: Selection States",
+      "count": 18,
+      "files": {
+        "base.css": [
+          {
+            "file": "base.css",
+            "line_number": 262,
+            "selector": ".rt-global-fade .rt-scene-path:not(.rt-selected):not(.rt-backdrop-segment)",
+            "property": "fill",
+            "value": "var(--rt-color-empty-selected)",
+            "category": "4_selection_states"
+          },
+          {
+            "file": "base.css",
+            "line_number": 276,
+            "selector": ".radial-timeline-container .rt-scene-path.rt-non-selected:not(.rt-backdrop-segment)",
+            "property": "fill",
+            "value": "var(--rt-color-empty-selected)",
+            "category": "4_selection_states"
+          },
+          {
+            "file": "base.css",
+            "line_number": 280,
+            "selector": ".radial-timeline-container .rt-scene-path.rt-scene-is-open.rt-non-selected:not(.rt-backdrop-segment)",
+            "property": "fill",
+            "value": "var(--rt-color-empty-selected)",
+            "category": "4_selection_states"
+          }
+        ],
+        "scenes.css": [
+          {
+            "file": "scenes.css",
+            "line_number": 230,
+            "selector": ".rt-number-square.rt-scene-is-open.rt-non-selected",
+            "property": "fill",
+            "value": "var(--rt-color-empty-selected)",
+            "category": "4_selection_states"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 236,
+            "selector": ".rt-number-text.rt-scene-is-open.rt-non-selected",
+            "property": "fill",
+            "value": "var(--rt-color-empty)",
+            "category": "4_selection_states"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 387,
+            "selector": ".rt-missing-when-text",
+            "property": "fill",
+            "value": "var(--rt-color-due)",
+            "category": "4_selection_states"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 418,
+            "selector": ".rt-number-square.rt-search-result",
+            "property": "fill",
+            "value": "var(--rt-color-search)",
+            "category": "4_selection_states"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 423,
+            "selector": ".rt-number-square.rt-search-result.rt-scene-is-open.rt-non-selected",
+            "property": "fill",
+            "value": "var(--rt-color-empty-selected)",
+            "category": "4_selection_states"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 427,
+            "selector": ".rt-number-text.rt-search-result.rt-non-selected",
+            "property": "fill",
+            "value": "var(--rt-color-empty)",
+            "category": "4_selection_states"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 431,
+            "selector": ".rt-number-text.rt-scene-is-open.rt-search-result.rt-non-selected",
+            "property": "fill",
+            "value": "var(--rt-color-empty)",
+            "category": "4_selection_states"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 435,
+            "selector": ".rt-number-text.rt-scene-is-open.rt-search-result",
+            "property": "fill",
+            "value": "#000000",
+            "category": "4_selection_states"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 451,
+            "selector": ".rt-number-square.rt-has-edits.rt-search-result",
+            "property": "fill",
+            "value": "var(--rt-color-search)",
+            "category": "4_selection_states"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 459,
+            "selector": ".rt-number-square.rt-has-edits.rt-non-selected",
+            "property": "fill",
+            "value": "var(--rt-color-empty-selected)",
+            "category": "4_selection_states"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 463,
+            "selector": ".rt-number-square.rt-has-edits.rt-scene-is-open.rt-non-selected",
+            "property": "fill",
+            "value": "var(--rt-color-empty-selected)",
+            "category": "4_selection_states"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 467,
+            "selector": ".rt-number-square.rt-missing-when",
+            "property": "fill",
+            "value": "var(--rt-color-due)",
+            "category": "4_selection_states"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 468,
+            "selector": ".rt-number-square.rt-missing-when",
+            "property": "stroke",
+            "value": "var(--rt-color-due)",
+            "category": "4_selection_states"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 473,
+            "selector": ".rt-number-text.rt-missing-when",
+            "property": "fill",
+            "value": "var(--rt-color-empty)",
+            "category": "4_selection_states"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 619,
+            "selector": ".rt-number-text.rt-non-selected.rt-grade-C",
+            "property": "fill",
+            "value": "var(--rt-color-empty)",
+            "category": "4_selection_states"
+          }
+        ]
+      }
+    },
+    "5_mode_overrides": {
+      "name": "Category 5: Mode Overrides",
+      "count": 158,
+      "files": {
+        "chronologue-alt.css": [
+          {
+            "file": "chronologue-alt.css",
+            "line_number": 5,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-backdrop-ring-background",
+            "property": "stroke",
+            "value": "rgba(255, 0, 0, 0.5)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "chronologue-alt.css",
+            "line_number": 6,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-backdrop-ring-background",
+            "property": "stroke-opacity",
+            "value": "0.15",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "chronologue-alt.css",
+            "line_number": 10,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-backdrop-border",
+            "property": "stroke",
+            "value": "rgba(180, 60, 60, 0.5)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "chronologue-alt.css",
+            "line_number": 11,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-backdrop-border",
+            "property": "opacity",
+            "value": "1",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "chronologue-alt.css",
+            "line_number": 15,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-backdrop-label",
+            "property": "fill",
+            "value": "rgba(200, 50, 50, 0.8)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "chronologue-alt.css",
+            "line_number": 16,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-backdrop-label",
+            "property": "opacity",
+            "value": "0.3",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "chronologue-alt.css",
+            "line_number": 20,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-backdrop-segment.rt-backdrop-overlap",
+            "property": "opacity",
+            "value": "0.25",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "chronologue-alt.css",
+            "line_number": 21,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-backdrop-segment.rt-backdrop-overlap",
+            "property": "pointer-events",
+            "value": "none",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "chronologue-alt.css",
+            "line_number": 25,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-backdrop-segment",
+            "property": "fill",
+            "value": "rgba(180, 60, 60, 0.05)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "chronologue-alt.css",
+            "line_number": 32,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-group[data-item-type=\"Backdrop\"] *",
+            "property": "pointer-events",
+            "value": "none",
+            "category": "5_mode_overrides"
+          }
+        ],
+        "chronologue-shift.css": [
+          {
+            "file": "chronologue-shift.css",
+            "line_number": 8,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-backdrop-ring-background",
+            "property": "stroke-opacity",
+            "value": "0.1",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "chronologue-shift.css",
+            "line_number": 12,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-backdrop-border",
+            "property": "opacity",
+            "value": "0.2",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "chronologue-shift.css",
+            "line_number": 16,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-backdrop-label",
+            "property": "fill",
+            "value": "white",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "chronologue-shift.css",
+            "line_number": 21,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-backdrop-segment.rt-backdrop-overlap",
+            "property": "opacity",
+            "value": "0.2",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "chronologue-shift.css",
+            "line_number": 22,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-backdrop-segment.rt-backdrop-overlap",
+            "property": "pointer-events",
+            "value": "none",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "chronologue-shift.css",
+            "line_number": 26,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-backdrop-segment",
+            "property": "fill",
+            "value": "rgba(128, 128, 128, 0.01)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "chronologue-shift.css",
+            "line_number": 42,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-scene-group[data-item-type=\"Backdrop\"] *",
+            "property": "pointer-events",
+            "value": "none",
+            "category": "5_mode_overrides"
+          }
+        ],
+        "grid.css": [
+          {
+            "file": "grid.css",
+            "line_number": 23,
+            "selector": ".radial-timeline-svg #mode-toggle.rt-mode-toggle-hover use",
+            "property": "color",
+            "value": "var(--rt-max-publish-stage-color)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "grid.css",
+            "line_number": 24,
+            "selector": ".radial-timeline-svg #mode-toggle.rt-mode-toggle-hover use",
+            "property": "stroke",
+            "value": "currentColor",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "grid.css",
+            "line_number": 96,
+            "selector": ".rt-gossamer-dot.rt-gossamer-missing-data:hover",
+            "property": "fill",
+            "value": "#ff6666",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "grid.css",
+            "line_number": 141,
+            "selector": ".rt-gossamer-range-value",
+            "property": "pointer-events",
+            "value": "none",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "grid.css",
+            "line_number": 212,
+            "selector": ".rt-gossamer-spoke.rt-gossamer-spoke-hover",
+            "property": "stroke",
+            "value": "white",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "grid.css",
+            "line_number": 218,
+            "selector": ".rt-gossamer-grid-spoke",
+            "property": "stroke",
+            "value": "#808080",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "grid.css",
+            "line_number": 220,
+            "selector": ".rt-gossamer-grid-spoke",
+            "property": "stroke-width",
+            "value": "1px",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "grid.css",
+            "line_number": 221,
+            "selector": ".rt-gossamer-grid-spoke",
+            "property": "stroke-dasharray",
+            "value": "2, 2",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "grid.css",
+            "line_number": 223,
+            "selector": ".rt-gossamer-grid-spoke",
+            "property": "opacity",
+            "value": "0.7",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "grid.css",
+            "line_number": 227,
+            "selector": ".rt-gossamer-grid-spoke.rt-act-boundary",
+            "property": "stroke",
+            "value": "var(--text-normal)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "grid.css",
+            "line_number": 229,
+            "selector": ".rt-gossamer-grid-spoke.rt-act-boundary",
+            "property": "stroke-width",
+            "value": "2px",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "grid.css",
+            "line_number": 231,
+            "selector": ".rt-gossamer-grid-spoke.rt-act-boundary",
+            "property": "stroke-dasharray",
+            "value": "none",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "grid.css",
+            "line_number": 233,
+            "selector": ".rt-gossamer-grid-spoke.rt-act-boundary",
+            "property": "opacity",
+            "value": "1",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "grid.css",
+            "line_number": 238,
+            "selector": ".radial-timeline-svg.scene-hover .rt-gossamer-grid-spoke.rt-act-boundary",
+            "property": "stroke",
+            "value": "#ffffff",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "grid.css",
+            "line_number": 239,
+            "selector": ".radial-timeline-svg.scene-hover .rt-gossamer-grid-spoke.rt-act-boundary",
+            "property": "opacity",
+            "value": "0.35",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "grid.css",
+            "line_number": 243,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-gossamer-grid-spoke.rt-act-boundary",
+            "property": "stroke",
+            "value": "rgba(255, 255, 255, 0.3)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "grid.css",
+            "line_number": 244,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-gossamer-grid-spoke.rt-act-boundary",
+            "property": "opacity",
+            "value": "0.25",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "grid.css",
+            "line_number": 248,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-gossamer-grid-spoke.rt-act-boundary",
+            "property": "stroke",
+            "value": "rgba(200, 50, 50, 0.8)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "grid.css",
+            "line_number": 249,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-gossamer-grid-spoke.rt-act-boundary",
+            "property": "opacity",
+            "value": "0.7",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "grid.css",
+            "line_number": 264,
+            "selector": ".radial-timeline-svg[data-gossamer-mode=\"true\"] .rt-scene-group[data-item-type=\"Beat\"] .rt-scene-path",
+            "property": "pointer-events",
+            "value": "fill",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "grid.css",
+            "line_number": 271,
+            "selector": ".radial-timeline-svg[data-gossamer-mode=\"true\"] .rt-scene-group.rt-gossamer-hover .rt-scene-path",
+            "property": "fill",
+            "value": "white",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "grid.css",
+            "line_number": 272,
+            "selector": ".radial-timeline-svg[data-gossamer-mode=\"true\"] .rt-scene-group.rt-gossamer-hover .rt-scene-path",
+            "property": "stroke",
+            "value": "white",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "grid.css",
+            "line_number": 273,
+            "selector": ".radial-timeline-svg[data-gossamer-mode=\"true\"] .rt-scene-group.rt-gossamer-hover .rt-scene-path",
+            "property": "stroke-width",
+            "value": "3px",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "grid.css",
+            "line_number": 274,
+            "selector": ".radial-timeline-svg[data-gossamer-mode=\"true\"] .rt-scene-group.rt-gossamer-hover .rt-scene-path",
+            "property": "opacity",
+            "value": "1",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "grid.css",
+            "line_number": 279,
+            "selector": ".radial-timeline-svg[data-gossamer-mode=\"true\"] .rt-scene-group:not(.beats):not([data-item-type=\"Beat\"]) .rt-scene-path",
+            "property": "cursor",
+            "value": "default",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "grid.css",
+            "line_number": 280,
+            "selector": ".radial-timeline-svg[data-gossamer-mode=\"true\"] .rt-scene-group:not(.beats):not([data-item-type=\"Beat\"]) .rt-scene-path",
+            "property": "pointer-events",
+            "value": "none",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "grid.css",
+            "line_number": 289,
+            "selector": ".rt-gossamer-beat-outline",
+            "property": "pointer-events",
+            "value": "none",
+            "category": "5_mode_overrides"
+          }
+        ],
+        "modal.css": [
+          {
+            "file": "modal.css",
+            "line_number": 328,
+            "selector": ".rt-pulse-modal.rt-gossamer-score-modal",
+            "property": "padding",
+            "value": "0",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "modal.css",
+            "line_number": 348,
+            "selector": ".rt-gossamer-score-modal .rt-glass-card",
+            "property": "padding",
+            "value": "12px 14px",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "modal.css",
+            "line_number": 958,
+            "selector": ".rt-gossamer-score-modal .rt-pulse-progress-hero",
+            "property": "padding",
+            "value": "12px 14px",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "modal.css",
+            "line_number": 959,
+            "selector": ".rt-gossamer-score-modal .rt-pulse-progress-hero",
+            "property": "background",
+            "value": "rgba(255, 255, 255, 0.02)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "modal.css",
+            "line_number": 960,
+            "selector": ".rt-gossamer-score-modal .rt-pulse-progress-hero",
+            "property": "border",
+            "value": "1px solid rgba(255, 255, 255, 0.06)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "modal.css",
+            "line_number": 961,
+            "selector": ".rt-gossamer-score-modal .rt-pulse-progress-hero",
+            "property": "box-shadow",
+            "value": "none",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "modal.css",
+            "line_number": 962,
+            "selector": ".rt-gossamer-score-modal .rt-pulse-progress-hero",
+            "property": "border-radius",
+            "value": "12px",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "modal.css",
+            "line_number": 963,
+            "selector": ".rt-gossamer-score-modal .rt-pulse-progress-hero",
+            "property": "margin-bottom",
+            "value": "12px",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "modal.css",
+            "line_number": 967,
+            "selector": ".rt-gossamer-score-modal .rt-pulse-progress-hero::after",
+            "property": "display",
+            "value": "none",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "modal.css",
+            "line_number": 971,
+            "selector": ".rt-gossamer-score-modal .rt-pulse-progress-body",
+            "property": "gap",
+            "value": "10px",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "modal.css",
+            "line_number": 972,
+            "selector": ".rt-gossamer-score-modal .rt-pulse-progress-body",
+            "property": "margin-top",
+            "value": "12px",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "modal.css",
+            "line_number": 976,
+            "selector": ".rt-gossamer-score-modal .rt-pulse-progress-card",
+            "property": "padding",
+            "value": "16px 18px",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "modal.css",
+            "line_number": 977,
+            "selector": ".rt-gossamer-score-modal .rt-pulse-progress-card",
+            "property": "gap",
+            "value": "12px",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "modal.css",
+            "line_number": 1701,
+            "selector": ".rt-gossamer-score-line [data-item-type=title]",
+            "property": "fill",
+            "value": "var(--rt-max-publish-stage-color)",
+            "category": "5_mode_overrides"
+          }
+        ],
+        "pulse.css": [
+          {
+            "file": "pulse.css",
+            "line_number": 43,
+            "selector": ".rt-gossamer-beat-outline.rt-hover",
+            "property": "stroke",
+            "value": "white",
+            "category": "5_mode_overrides"
+          }
+        ],
+        "scenes.css": [
+          {
+            "file": "scenes.css",
+            "line_number": 20,
+            "selector": ".radial-timeline-svg[data-gossamer-mode=\"true\"] .rt-scene-group[data-item-type=\"Beat\"]:hover .rt-storybeat-title",
+            "property": "fill",
+            "value": "var(--rt-color-empty)",
+            "category": "5_mode_overrides"
+          }
+        ],
+        "timeline.css": [
+          {
+            "file": "timeline.css",
+            "line_number": 129,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-month-spoke-line.rt-act-boundary",
+            "property": "stroke",
+            "value": "rgba(255, 255, 255, 0.3)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 130,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-month-spoke-line.rt-act-boundary",
+            "property": "opacity",
+            "value": "0.25",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 135,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-month-spoke-line.rt-act-boundary",
+            "property": "stroke",
+            "value": "rgba(200, 50, 50, 0.8)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 136,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-month-spoke-line.rt-act-boundary",
+            "property": "opacity",
+            "value": "0.7",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 192,
+            "selector": ".radial-timeline-svg[data-gossamer-mode=\"true\"] .rt-subplot-ring-label-text",
+            "property": "opacity",
+            "value": "0",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 201,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-subplot-ring-label-text",
+            "property": "opacity",
+            "value": "0",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 206,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-subplot-ring-label-text",
+            "property": "opacity",
+            "value": "0",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 261,
+            "selector": ".rt-mode-option .rt-active",
+            "property": "fill",
+            "value": "var(--interactive-accent)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 262,
+            "selector": ".rt-mode-option .rt-active",
+            "property": "stroke",
+            "value": "var(--text-normal)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 263,
+            "selector": ".rt-mode-option .rt-active",
+            "property": "stroke-width",
+            "value": "2px",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 267,
+            "selector": ".rt-mode-option .rt-active.rt-mode-acronym-text",
+            "property": "fill",
+            "value": "var(--text-on-accent)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 274,
+            "selector": ".rt-mode-option .rt-active.rt-mode-number-label",
+            "property": "fill",
+            "value": "var(--text-on-accent)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 384,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-scene-path",
+            "property": "fill",
+            "value": "var(--interactive-normal)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 389,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square",
+            "property": "fill",
+            "value": "var(--interactive-normal)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 391,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square",
+            "property": "stroke",
+            "value": "none",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 396,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-text",
+            "property": "fill",
+            "value": "var(--text-muted)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 403,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-scene-is-open:not(.rt-shift-active)",
+            "property": "fill",
+            "value": "var(--interactive-normal)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 404,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-scene-is-open:not(.rt-shift-active)",
+            "property": "stroke",
+            "value": "none",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 408,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-text.rt-scene-is-open:not(.rt-shift-active)",
+            "property": "fill",
+            "value": "var(--text-muted)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 409,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-text.rt-scene-is-open:not(.rt-shift-active)",
+            "property": "opacity",
+            "value": "0.5",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 416,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-scene-group[data-item-type=\"Scene\"]:has(.rt-shift-locked)",
+            "property": "opacity",
+            "value": "1",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 417,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-scene-group[data-item-type=\"Scene\"]:has(.rt-shift-locked)",
+            "property": "transition",
+            "value": "none",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 425,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-scene-path.rt-shift-locked",
+            "property": "fill",
+            "value": "var(--interactive-accent)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 426,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-scene-path.rt-shift-locked",
+            "property": "filter",
+            "value": "brightness(1.2)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 502,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-text.rt-shift-active",
+            "property": "fill",
+            "value": "#000000",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 504,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-text.rt-shift-active",
+            "property": "opacity",
+            "value": "1",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 510,
+            "selector": ".radial-timeline-container .radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-text.rt-shift-active",
+            "property": "fill",
+            "value": "#000000",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 511,
+            "selector": ".radial-timeline-container .radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-text.rt-shift-active",
+            "property": "opacity",
+            "value": "1",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 566,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-scene-path",
+            "property": "fill",
+            "value": "rgba(180, 60, 60, 0.15)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 567,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-scene-path",
+            "property": "stroke",
+            "value": "rgba(180, 60, 60, 0.25)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 573,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square",
+            "property": "fill",
+            "value": "var(--interactive-normal)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 574,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square",
+            "property": "stroke",
+            "value": "none",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 579,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-text",
+            "property": "fill",
+            "value": "rgba(200, 50, 50, 0.8)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 585,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-title",
+            "property": "fill",
+            "value": "rgba(200, 50, 50, 0.8)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 593,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-month-spoke-line",
+            "property": "stroke",
+            "value": "rgba(180, 60, 60, 0.5)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 599,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-act-label",
+            "property": "fill",
+            "value": "rgba(180, 60, 60, 0.5)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 606,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-chronological-tick-minor",
+            "property": "stroke",
+            "value": "rgba(180, 60, 60, 0.5)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 611,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-subplot-ring-label-text",
+            "property": "opacity",
+            "value": "0",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 650,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-group[data-item-type=\"Scene\"]:has(.rt-shift-locked)",
+            "property": "opacity",
+            "value": "1",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 651,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-group[data-item-type=\"Scene\"]:has(.rt-shift-locked)",
+            "property": "transition",
+            "value": "none",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 657,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-scene-path.rt-shift-locked",
+            "property": "fill",
+            "value": "var(--text-error)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 658,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-scene-path.rt-shift-locked",
+            "property": "stroke",
+            "value": "var(--text-error)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 664,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"].scene-hover .rt-number-square",
+            "property": "fill",
+            "value": "var(--interactive-normal)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 665,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"].scene-hover .rt-number-square",
+            "property": "stroke",
+            "value": "none",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 666,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"].scene-hover .rt-number-square",
+            "property": "opacity",
+            "value": "0.5",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 670,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"].scene-hover .rt-number-text",
+            "property": "fill",
+            "value": "rgba(200, 50, 50, 0.8)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 671,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"].scene-hover .rt-number-text",
+            "property": "opacity",
+            "value": "0.7",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 678,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-number-square.rt-shift-locked",
+            "property": "fill",
+            "value": "var(--interactive-normal)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 679,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-number-square.rt-shift-locked",
+            "property": "stroke",
+            "value": "none",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 680,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-number-square.rt-shift-locked",
+            "property": "opacity",
+            "value": "0.5",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 686,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-number-text.rt-shift-locked",
+            "property": "fill",
+            "value": "rgba(200, 50, 50, 0.8)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 687,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-number-text.rt-shift-locked",
+            "property": "opacity",
+            "value": "0.7",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 692,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"].scene-hover .rt-scene-info",
+            "property": "opacity",
+            "value": "1",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 693,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"].scene-hover .rt-scene-info",
+            "property": "color",
+            "value": "rgba(200, 50, 50, 0.9)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 694,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"].scene-hover .rt-scene-info",
+            "property": "fill",
+            "value": "rgba(200, 50, 50, 0.9)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 695,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"].scene-hover .rt-scene-info",
+            "property": "stroke",
+            "value": "rgba(200, 50, 50, 0.6)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 700,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-info.rt-visible",
+            "property": "opacity",
+            "value": "1",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 701,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-info.rt-visible",
+            "property": "color",
+            "value": "rgba(200, 50, 50, 0.9)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 702,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-info.rt-visible",
+            "property": "fill",
+            "value": "rgba(200, 50, 50, 0.9)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 703,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-info.rt-visible",
+            "property": "stroke",
+            "value": "rgba(200, 50, 50, 0.6)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 708,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active",
+            "property": "fill",
+            "value": "var(--interactive-accent)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 709,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active",
+            "property": "opacity",
+            "value": "1",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 714,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-text.rt-shift-active",
+            "property": "fill",
+            "value": "var(--background-primary)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 715,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-text.rt-shift-active",
+            "property": "opacity",
+            "value": "1",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 806,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-month-spoke-line.rt-act-boundary",
+            "property": "stroke",
+            "value": "rgba(60, 120, 200, 0.8)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 807,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-month-spoke-line.rt-act-boundary",
+            "property": "opacity",
+            "value": "0.7",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 812,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-scene-path",
+            "property": "fill",
+            "value": "rgba(60, 120, 180, 0.20)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 813,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-scene-path",
+            "property": "stroke",
+            "value": "rgba(60, 120, 180, 0.35)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 819,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-number-square",
+            "property": "fill",
+            "value": "var(--interactive-normal)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 820,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-number-square",
+            "property": "stroke",
+            "value": "none",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 825,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-number-text",
+            "property": "fill",
+            "value": "rgba(60, 140, 200, 0.9)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 831,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-title",
+            "property": "fill",
+            "value": "rgba(60, 140, 200, 0.9)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 839,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-month-spoke-line",
+            "property": "stroke",
+            "value": "rgba(60, 120, 180, 0.5)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 845,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-act-label",
+            "property": "fill",
+            "value": "rgba(60, 120, 180, 0.5)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 850,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-chronological-tick-minor",
+            "property": "stroke",
+            "value": "rgba(60, 120, 180, 0.5)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 857,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-group[data-item-type=\"Scene\"]:has(.rt-shift-locked)",
+            "property": "opacity",
+            "value": "1",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 858,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-group[data-item-type=\"Scene\"]:has(.rt-shift-locked)",
+            "property": "transition",
+            "value": "none",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 864,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-scene-path.rt-shift-locked",
+            "property": "fill",
+            "value": "rgba(80, 160, 255, 1)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 865,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-scene-path.rt-shift-locked",
+            "property": "stroke",
+            "value": "rgba(80, 160, 255, 1)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 911,
+            "selector": ".rt-runtime-button.rt-runtime-mode-active .rt-runtime-icon-bg",
+            "property": "fill",
+            "value": "rgba(60, 140, 220, 0.25)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 912,
+            "selector": ".rt-runtime-button.rt-runtime-mode-active .rt-runtime-icon-bg",
+            "property": "stroke",
+            "value": "rgba(60, 160, 220, 1)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 913,
+            "selector": ".rt-runtime-button.rt-runtime-mode-active .rt-runtime-icon-bg",
+            "property": "stroke-width",
+            "value": "2.5",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 918,
+            "selector": ".rt-runtime-button.rt-runtime-mode-active .rt-runtime-lucide-icon",
+            "property": "stroke",
+            "value": "rgba(80, 180, 255, 1)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 926,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-number-square.rt-shift-locked",
+            "property": "fill",
+            "value": "var(--interactive-normal)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 927,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-number-square.rt-shift-locked",
+            "property": "stroke",
+            "value": "none",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 928,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-number-square.rt-shift-locked",
+            "property": "opacity",
+            "value": "0.6",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 934,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-number-text.rt-shift-locked",
+            "property": "fill",
+            "value": "rgba(60, 140, 200, 0.9)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 935,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-number-text.rt-shift-locked",
+            "property": "opacity",
+            "value": "0.8",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 940,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"].scene-hover .rt-number-square",
+            "property": "fill",
+            "value": "var(--interactive-normal)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 941,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"].scene-hover .rt-number-square",
+            "property": "stroke",
+            "value": "none",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 942,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"].scene-hover .rt-number-square",
+            "property": "opacity",
+            "value": "0.6",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 946,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"].scene-hover .rt-number-text",
+            "property": "fill",
+            "value": "rgba(60, 140, 200, 0.9)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 947,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"].scene-hover .rt-number-text",
+            "property": "opacity",
+            "value": "0.8",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 952,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-info.rt-visible",
+            "property": "opacity",
+            "value": "1",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 953,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-info.rt-visible",
+            "property": "color",
+            "value": "rgba(60, 140, 200, 0.9)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 954,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-info.rt-visible",
+            "property": "fill",
+            "value": "rgba(60, 140, 200, 0.9)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 955,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-info.rt-visible",
+            "property": "stroke",
+            "value": "rgba(60, 140, 200, 0.6)",
+            "category": "5_mode_overrides"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 964,
+            "selector": ".rt-runtime-button.rt-runtime-mode-active:hover .rt-runtime-lucide-icon",
+            "property": "stroke",
+            "value": "rgba(100, 200, 255, 1)",
+            "category": "5_mode_overrides"
+          }
+        ]
+      }
+    },
+    "6_subplot_colors": {
+      "name": "Category 6: Subplot Colors",
+      "count": 32,
+      "files": {
+        "timeline.css": [
+          {
+            "file": "timeline.css",
+            "line_number": 438,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"0\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-0)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 442,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"1\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-1)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 446,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"2\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-2)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 450,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"3\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-3)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 454,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"4\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-4)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 458,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"5\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-5)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 462,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"6\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-6)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 466,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"7\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-7)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 470,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"8\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-8)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 474,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"9\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-9)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 478,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"10\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-10)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 482,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"11\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-11)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 486,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"12\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-12)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 490,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"13\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-13)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 494,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"14\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-14)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 498,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"15\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-15)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 720,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"0\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-0)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 724,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"1\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-1)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 728,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"2\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-2)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 732,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"3\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-3)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 736,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"4\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-4)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 740,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"5\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-5)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 744,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"6\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-6)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 748,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"7\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-7)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 752,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"8\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-8)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 756,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"9\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-9)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 760,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"10\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-10)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 764,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"11\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-11)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 768,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"12\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-12)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 772,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"13\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-13)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 776,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"14\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-14)",
+            "category": "6_subplot_colors"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 780,
+            "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"15\"]",
+            "property": "fill",
+            "value": "var(--rt-subplot-colors-15)",
+            "category": "6_subplot_colors"
+          }
+        ]
+      }
+    },
+    "7_other": {
+      "name": "Category 7: Other/Uncategorized",
+      "count": 79,
+      "files": {
+        "book-designer.css": [
+          {
+            "file": "book-designer.css",
+            "line_number": 23,
+            "selector": ".rt-manuscript-surface .rt-glass-card.rt-sub-card",
+            "property": "margin-top",
+            "value": "0",
+            "category": "7_other"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 83,
+            "selector": ".rt-manuscript-surface .rt-manuscript-group-setting",
+            "property": "margin",
+            "value": "0",
+            "category": "7_other"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 120,
+            "selector": ".rt-book-designer-modal .rt-setting-stacked.rt-manuscript-group-setting",
+            "property": "padding",
+            "value": "0 16px",
+            "category": "7_other"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 193,
+            "selector": ".rt-book-designer-modal .rt-manuscript-duo-grid > .rt-manuscript-group-setting:nth-child(2)",
+            "property": "padding-bottom",
+            "value": "0",
+            "category": "7_other"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 198,
+            "selector": ".rt-book-designer-modal .rt-manuscript-duo-grid > .rt-scenes-generate-setting",
+            "property": "padding-left",
+            "value": "16px",
+            "category": "7_other"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 199,
+            "selector": ".rt-book-designer-modal .rt-manuscript-duo-grid > .rt-scenes-generate-setting",
+            "property": "padding-right",
+            "value": "16px",
+            "category": "7_other"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 204,
+            "selector": ".rt-book-designer-modal .rt-manuscript-duo-grid > .rt-book-length-setting",
+            "property": "padding-left",
+            "value": "16px",
+            "category": "7_other"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 205,
+            "selector": ".rt-book-designer-modal .rt-manuscript-duo-grid > .rt-book-length-setting",
+            "property": "padding-right",
+            "value": "16px",
+            "category": "7_other"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 206,
+            "selector": ".rt-book-designer-modal .rt-manuscript-duo-grid > .rt-book-length-setting",
+            "property": "border-left",
+            "value": "1px solid rgba(255, 255, 255, 0.12)",
+            "category": "7_other"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 249,
+            "selector": ".rt-manuscript-surface .rt-manuscript-trio-grid > div",
+            "property": "border-right",
+            "value": "none",
+            "category": "7_other"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 251,
+            "selector": ".rt-manuscript-surface .rt-manuscript-trio-grid > div",
+            "property": "padding",
+            "value": "0 0 12px 0",
+            "category": "7_other"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 252,
+            "selector": ".rt-manuscript-surface .rt-manuscript-trio-grid > div",
+            "property": "margin-bottom",
+            "value": "12px",
+            "category": "7_other"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 259,
+            "selector": ".rt-manuscript-surface .rt-manuscript-trio-grid > div:last-child",
+            "property": "padding-bottom",
+            "value": "0",
+            "category": "7_other"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 260,
+            "selector": ".rt-manuscript-surface .rt-manuscript-trio-grid > div:last-child",
+            "property": "margin-bottom",
+            "value": "0",
+            "category": "7_other"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 369,
+            "selector": ".rt-book-designer-modal .rt-manuscript-preview-host.rt-preview-dragging svg",
+            "property": "cursor",
+            "value": "grabbing",
+            "category": "7_other"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 397,
+            "selector": ".rt-book-designer-modal .rt-layout-templates-card",
+            "property": "padding",
+            "value": "10px 16px",
+            "category": "7_other"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 402,
+            "selector": ".rt-book-designer-modal .rt-layout-templates-card.rt-manuscript-group-block",
+            "property": "padding-left",
+            "value": "16px",
+            "category": "7_other"
+          },
+          {
+            "file": "book-designer.css",
+            "line_number": 403,
+            "selector": ".rt-book-designer-modal .rt-layout-templates-card.rt-manuscript-group-block",
+            "property": "padding-right",
+            "value": "16px",
+            "category": "7_other"
+          }
+        ],
+        "modal.css": [
+          {
+            "file": "modal.css",
+            "line_number": 173,
+            "selector": ".rt-search-input",
+            "property": "width",
+            "value": "100%",
+            "category": "7_other"
+          },
+          {
+            "file": "modal.css",
+            "line_number": 537,
+            "selector": ".rt-zero-draft-override",
+            "property": "background-color",
+            "value": "var(--rt-color-due)",
+            "category": "7_other"
+          },
+          {
+            "file": "modal.css",
+            "line_number": 538,
+            "selector": ".rt-zero-draft-override",
+            "property": "color",
+            "value": "var(--rt-color-empty)",
+            "category": "7_other"
+          },
+          {
+            "file": "modal.css",
+            "line_number": 539,
+            "selector": ".rt-zero-draft-override",
+            "property": "border-color",
+            "value": "var(--rt-color-due)",
+            "category": "7_other"
+          }
+        ],
+        "scenes.css": [
+          {
+            "file": "scenes.css",
+            "line_number": 69,
+            "selector": ".rt-scene-info",
+            "property": "pointer-events",
+            "value": "none",
+            "category": "7_other"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 77,
+            "selector": ".rt-scene-info text",
+            "property": "pointer-events",
+            "value": "none",
+            "category": "7_other"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 281,
+            "selector": ".rt-info-text.rt-metadata-text tspan[data-item-type=character]",
+            "property": "fill",
+            "value": "var(--rt-dynamic-color, var(--text-normal))",
+            "category": "7_other"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 293,
+            "selector": ".rt-info-text.rt-metadata-text tspan.rt-pov-marker",
+            "property": "fill",
+            "value": "var(--rt-dynamic-color, var(--text-muted))",
+            "category": "7_other"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 295,
+            "selector": ".rt-info-text.rt-metadata-text tspan.rt-pov-marker",
+            "property": "font-size",
+            "value": "calc(12px * var(--rt-synopsis-font-scale, var(--rt-font-scale, 1)))",
+            "category": "7_other"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 320,
+            "selector": ".rt-scene-info.rt-visible",
+            "property": "opacity",
+            "value": "1",
+            "category": "7_other"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 321,
+            "selector": ".rt-scene-info.rt-visible",
+            "property": "pointer-events",
+            "value": "all",
+            "category": "7_other"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 322,
+            "selector": ".rt-scene-info.rt-visible",
+            "property": "visibility",
+            "value": "visible",
+            "category": "7_other"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 323,
+            "selector": ".rt-scene-info.rt-visible",
+            "property": "display",
+            "value": "block",
+            "category": "7_other"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 340,
+            "selector": ".rt-title-date-time",
+            "property": "font-style",
+            "value": "normal",
+            "category": "7_other"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 345,
+            "selector": ".rt-title-text-main tspan[data-item-type=title]",
+            "property": "fill",
+            "value": "var(--rt-dynamic-color, var(--rt-max-publish-stage-color))",
+            "category": "7_other"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 350,
+            "selector": ".rt-title-date-time tspan",
+            "property": "fill",
+            "value": "#888888",
+            "category": "7_other"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 351,
+            "selector": ".rt-title-date-time tspan",
+            "property": "font-size",
+            "value": "16px",
+            "category": "7_other"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 358,
+            "selector": ".rt-title-date-time .rt-date-text",
+            "property": "font-style",
+            "value": "normal",
+            "category": "7_other"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 364,
+            "selector": ".rt-title-date-time .rt-duration-text",
+            "property": "font-style",
+            "value": "italic",
+            "category": "7_other"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 383,
+            "selector": ".rt-overdue-text",
+            "property": "fill",
+            "value": "var(--rt-color-due)",
+            "category": "7_other"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 393,
+            "selector": ".rt-revisions-text",
+            "property": "fill",
+            "value": "var(--rt-gossamer-historical-color)",
+            "category": "7_other"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 398,
+            "selector": ".rt-scene-info tspan.rt-with-dynamic-fill",
+            "property": "fill",
+            "value": "var(--rt-dynamic-fill-color, inherit)",
+            "category": "7_other"
+          },
+          {
+            "file": "scenes.css",
+            "line_number": 521,
+            "selector": ".synopsis-spacer",
+            "property": "visibility",
+            "value": "visible",
+            "category": "7_other"
+          }
+        ],
+        "settings.css": [
+          {
+            "file": "settings.css",
+            "line_number": 73,
+            "selector": ".rt-professional-heading-inline",
+            "property": "border",
+            "value": "none",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 74,
+            "selector": ".rt-professional-heading-inline",
+            "property": "padding",
+            "value": "0",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 75,
+            "selector": ".rt-professional-heading-inline",
+            "property": "margin",
+            "value": "0",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 76,
+            "selector": ".rt-professional-heading-inline",
+            "property": "min-height",
+            "value": "0",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 465,
+            "selector": ".rt-setting-full-width-input",
+            "property": "display",
+            "value": "grid",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 466,
+            "selector": ".rt-setting-full-width-input",
+            "property": "grid-template-columns",
+            "value": "1fr",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 467,
+            "selector": ".rt-setting-full-width-input",
+            "property": "grid-template-rows",
+            "value": "auto auto",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 468,
+            "selector": ".rt-setting-full-width-input",
+            "property": "gap",
+            "value": "12px",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 575,
+            "selector": ".rt-settings-root .clickable-icon.extra-setting-button",
+            "property": "align-self",
+            "value": "center",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 576,
+            "selector": ".rt-settings-root .clickable-icon.extra-setting-button",
+            "property": "margin-top",
+            "value": "0",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 973,
+            "selector": ".rt-color-grid-controls .rt-hex-input",
+            "property": "width",
+            "value": "10ch",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 974,
+            "selector": ".rt-color-grid-controls .rt-hex-input",
+            "property": "flex",
+            "value": "0 0 10ch",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 991,
+            "selector": ".rt-section-heading",
+            "property": "margin-top",
+            "value": "18px",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 992,
+            "selector": ".rt-section-heading",
+            "property": "padding-bottom",
+            "value": "6px",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 993,
+            "selector": ".rt-section-heading",
+            "property": "border-bottom",
+            "value": "1px solid var(--background-modifier-border)",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1210,
+            "selector": ".rt-source-path-suggestion-item:last-child",
+            "property": "border-bottom",
+            "value": "none",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1215,
+            "selector": ".rt-source-path-suggestion-item.selected",
+            "property": "background-color",
+            "value": "var(--background-modifier-hover)",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1274,
+            "selector": ".rt-backup-title",
+            "property": "margin",
+            "value": "0",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1275,
+            "selector": ".rt-backup-title",
+            "property": "font-size",
+            "value": "20px",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1364,
+            "selector": ".rt-setting-two-row",
+            "property": "display",
+            "value": "grid",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1365,
+            "selector": ".rt-setting-two-row",
+            "property": "grid-template-columns",
+            "value": "1fr auto",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1366,
+            "selector": ".rt-setting-two-row",
+            "property": "grid-template-rows",
+            "value": "auto auto",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1394,
+            "selector": ".rt-reset-margin-padding",
+            "property": "margin-top",
+            "value": "0",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1395,
+            "selector": ".rt-reset-margin-padding",
+            "property": "padding-top",
+            "value": "0",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1399,
+            "selector": ".rt-text-muted",
+            "property": "color",
+            "value": "var(--text-muted)",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1406,
+            "selector": ".rt-mapping-hidden",
+            "property": "display",
+            "value": "none",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1468,
+            "selector": ".rt-yaml-row-hover-meta",
+            "property": "grid-template-columns",
+            "value": "auto 1fr auto auto auto auto auto",
+            "category": "7_other"
+          },
+          {
+            "file": "settings.css",
+            "line_number": 1762,
+            "selector": ".rt-hidden",
+            "property": "display",
+            "value": "none",
+            "category": "7_other"
+          }
+        ],
+        "timeline.css": [
+          {
+            "file": "timeline.css",
+            "line_number": 2,
+            "selector": ".rt-scene-title-bold.rt-title-stage-zero",
+            "property": "fill",
+            "value": "var(--rt-publishStageColors-Zero, var(--rt-color-zero))",
+            "category": "7_other"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 6,
+            "selector": ".rt-scene-title-bold.rt-title-stage-author",
+            "property": "fill",
+            "value": "var(--rt-publishStageColors-Author, var(--rt-color-author))",
+            "category": "7_other"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 10,
+            "selector": ".rt-scene-title-bold.rt-title-stage-house",
+            "property": "fill",
+            "value": "var(--rt-publishStageColors-House, var(--rt-color-house))",
+            "category": "7_other"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 14,
+            "selector": ".rt-scene-title-bold.rt-title-stage-press",
+            "property": "fill",
+            "value": "var(--rt-publishStageColors-Press, var(--rt-color-press))",
+            "category": "7_other"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 77,
+            "selector": ".radial-timeline-container .rt-chronological-tick.rt-date-first",
+            "property": "stroke",
+            "value": "var(--rt-publishStageColors-Zero)",
+            "category": "7_other"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 82,
+            "selector": ".radial-timeline-container .rt-chronological-tick.rt-date-last",
+            "property": "stroke",
+            "value": "var(--rt-publishStageColors-Press)",
+            "category": "7_other"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 517,
+            "selector": ".rt-shift-selected",
+            "property": "stroke",
+            "value": "var(--interactive-accent)",
+            "category": "7_other"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 518,
+            "selector": ".rt-shift-selected",
+            "property": "stroke-width",
+            "value": "3",
+            "category": "7_other"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 635,
+            "selector": ".rt-planetary-time-text",
+            "property": "font-size",
+            "value": "16px",
+            "category": "7_other"
+          },
+          {
+            "file": "timeline.css",
+            "line_number": 970,
+            "selector": ".rt-runtime-total",
+            "property": "fill",
+            "value": "rgba(60, 160, 220, 0.9)",
+            "category": "7_other"
+          }
+        ]
+      }
+    }
+  },
+  "declarations": [
+    {
+      "file": "base.css",
+      "line_number": 262,
+      "selector": ".rt-global-fade .rt-scene-path:not(.rt-selected):not(.rt-backdrop-segment)",
+      "property": "fill",
+      "value": "var(--rt-color-empty-selected)",
+      "category": "4_selection_states"
+    },
+    {
+      "file": "base.css",
+      "line_number": 276,
+      "selector": ".radial-timeline-container .rt-scene-path.rt-non-selected:not(.rt-backdrop-segment)",
+      "property": "fill",
+      "value": "var(--rt-color-empty-selected)",
+      "category": "4_selection_states"
+    },
+    {
+      "file": "base.css",
+      "line_number": 280,
+      "selector": ".radial-timeline-container .rt-scene-path.rt-scene-is-open.rt-non-selected:not(.rt-backdrop-segment)",
+      "property": "fill",
+      "value": "var(--rt-color-empty-selected)",
+      "category": "4_selection_states"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 23,
+      "selector": ".rt-manuscript-surface .rt-glass-card.rt-sub-card",
+      "property": "margin-top",
+      "value": "0",
+      "category": "7_other"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 70,
+      "selector": ".rt-manuscript-surface .setting-item",
+      "property": "border",
+      "value": "none",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 71,
+      "selector": ".rt-manuscript-surface .setting-item",
+      "property": "padding",
+      "value": "0",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 72,
+      "selector": ".rt-manuscript-surface .setting-item",
+      "property": "margin",
+      "value": "0",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 83,
+      "selector": ".rt-manuscript-surface .rt-manuscript-group-setting",
+      "property": "margin",
+      "value": "0",
+      "category": "7_other"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 89,
+      "selector": ".rt-manuscript-surface .rt-manuscript-group-setting .setting-item-control",
+      "property": "margin-top",
+      "value": "0",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 90,
+      "selector": ".rt-manuscript-surface .rt-manuscript-group-setting .setting-item-control",
+      "property": "padding-top",
+      "value": "0",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 91,
+      "selector": ".rt-manuscript-surface .rt-manuscript-group-setting .setting-item-control",
+      "property": "border-top",
+      "value": "none",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 120,
+      "selector": ".rt-book-designer-modal .rt-setting-stacked.rt-manuscript-group-setting",
+      "property": "padding",
+      "value": "0 16px",
+      "category": "7_other"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 125,
+      "selector": ".rt-book-designer-modal .rt-setting-stacked .setting-item-info",
+      "property": "padding-left",
+      "value": "0",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 126,
+      "selector": ".rt-book-designer-modal .rt-setting-stacked .setting-item-info",
+      "property": "margin-left",
+      "value": "0",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 127,
+      "selector": ".rt-book-designer-modal .rt-setting-stacked .setting-item-info",
+      "property": "margin-right",
+      "value": "0",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 128,
+      "selector": ".rt-book-designer-modal .rt-setting-stacked .setting-item-info",
+      "property": "width",
+      "value": "100%",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 129,
+      "selector": ".rt-book-designer-modal .rt-setting-stacked .setting-item-info",
+      "property": "text-align",
+      "value": "left",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 130,
+      "selector": ".rt-book-designer-modal .rt-setting-stacked .setting-item-info",
+      "property": "align-self",
+      "value": "flex-start",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 193,
+      "selector": ".rt-book-designer-modal .rt-manuscript-duo-grid > .rt-manuscript-group-setting:nth-child(2)",
+      "property": "padding-bottom",
+      "value": "0",
+      "category": "7_other"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 198,
+      "selector": ".rt-book-designer-modal .rt-manuscript-duo-grid > .rt-scenes-generate-setting",
+      "property": "padding-left",
+      "value": "16px",
+      "category": "7_other"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 199,
+      "selector": ".rt-book-designer-modal .rt-manuscript-duo-grid > .rt-scenes-generate-setting",
+      "property": "padding-right",
+      "value": "16px",
+      "category": "7_other"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 204,
+      "selector": ".rt-book-designer-modal .rt-manuscript-duo-grid > .rt-book-length-setting",
+      "property": "padding-left",
+      "value": "16px",
+      "category": "7_other"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 205,
+      "selector": ".rt-book-designer-modal .rt-manuscript-duo-grid > .rt-book-length-setting",
+      "property": "padding-right",
+      "value": "16px",
+      "category": "7_other"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 206,
+      "selector": ".rt-book-designer-modal .rt-manuscript-duo-grid > .rt-book-length-setting",
+      "property": "border-left",
+      "value": "1px solid rgba(255, 255, 255, 0.12)",
+      "category": "7_other"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 249,
+      "selector": ".rt-manuscript-surface .rt-manuscript-trio-grid > div",
+      "property": "border-right",
+      "value": "none",
+      "category": "7_other"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 251,
+      "selector": ".rt-manuscript-surface .rt-manuscript-trio-grid > div",
+      "property": "padding",
+      "value": "0 0 12px 0",
+      "category": "7_other"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 252,
+      "selector": ".rt-manuscript-surface .rt-manuscript-trio-grid > div",
+      "property": "margin-bottom",
+      "value": "12px",
+      "category": "7_other"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 259,
+      "selector": ".rt-manuscript-surface .rt-manuscript-trio-grid > div:last-child",
+      "property": "padding-bottom",
+      "value": "0",
+      "category": "7_other"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 260,
+      "selector": ".rt-manuscript-surface .rt-manuscript-trio-grid > div:last-child",
+      "property": "margin-bottom",
+      "value": "0",
+      "category": "7_other"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 369,
+      "selector": ".rt-book-designer-modal .rt-manuscript-preview-host.rt-preview-dragging svg",
+      "property": "cursor",
+      "value": "grabbing",
+      "category": "7_other"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 397,
+      "selector": ".rt-book-designer-modal .rt-layout-templates-card",
+      "property": "padding",
+      "value": "10px 16px",
+      "category": "7_other"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 402,
+      "selector": ".rt-book-designer-modal .rt-layout-templates-card.rt-manuscript-group-block",
+      "property": "padding-left",
+      "value": "16px",
+      "category": "7_other"
+    },
+    {
+      "file": "book-designer.css",
+      "line_number": 403,
+      "selector": ".rt-book-designer-modal .rt-layout-templates-card.rt-manuscript-group-block",
+      "property": "padding-right",
+      "value": "16px",
+      "category": "7_other"
+    },
+    {
+      "file": "chronologue-alt.css",
+      "line_number": 5,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-backdrop-ring-background",
+      "property": "stroke",
+      "value": "rgba(255, 0, 0, 0.5)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "chronologue-alt.css",
+      "line_number": 6,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-backdrop-ring-background",
+      "property": "stroke-opacity",
+      "value": "0.15",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "chronologue-alt.css",
+      "line_number": 10,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-backdrop-border",
+      "property": "stroke",
+      "value": "rgba(180, 60, 60, 0.5)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "chronologue-alt.css",
+      "line_number": 11,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-backdrop-border",
+      "property": "opacity",
+      "value": "1",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "chronologue-alt.css",
+      "line_number": 15,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-backdrop-label",
+      "property": "fill",
+      "value": "rgba(200, 50, 50, 0.8)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "chronologue-alt.css",
+      "line_number": 16,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-backdrop-label",
+      "property": "opacity",
+      "value": "0.3",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "chronologue-alt.css",
+      "line_number": 20,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-backdrop-segment.rt-backdrop-overlap",
+      "property": "opacity",
+      "value": "0.25",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "chronologue-alt.css",
+      "line_number": 21,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-backdrop-segment.rt-backdrop-overlap",
+      "property": "pointer-events",
+      "value": "none",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "chronologue-alt.css",
+      "line_number": 25,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-backdrop-segment",
+      "property": "fill",
+      "value": "rgba(180, 60, 60, 0.05)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "chronologue-alt.css",
+      "line_number": 32,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-group[data-item-type=\"Backdrop\"] *",
+      "property": "pointer-events",
+      "value": "none",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "chronologue-shift.css",
+      "line_number": 8,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-backdrop-ring-background",
+      "property": "stroke-opacity",
+      "value": "0.1",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "chronologue-shift.css",
+      "line_number": 12,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-backdrop-border",
+      "property": "opacity",
+      "value": "0.2",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "chronologue-shift.css",
+      "line_number": 16,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-backdrop-label",
+      "property": "fill",
+      "value": "white",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "chronologue-shift.css",
+      "line_number": 21,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-backdrop-segment.rt-backdrop-overlap",
+      "property": "opacity",
+      "value": "0.2",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "chronologue-shift.css",
+      "line_number": 22,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-backdrop-segment.rt-backdrop-overlap",
+      "property": "pointer-events",
+      "value": "none",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "chronologue-shift.css",
+      "line_number": 26,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-backdrop-segment",
+      "property": "fill",
+      "value": "rgba(128, 128, 128, 0.01)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "chronologue-shift.css",
+      "line_number": 42,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-scene-group[data-item-type=\"Backdrop\"] *",
+      "property": "pointer-events",
+      "value": "none",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 23,
+      "selector": ".radial-timeline-svg #mode-toggle.rt-mode-toggle-hover use",
+      "property": "color",
+      "value": "var(--rt-max-publish-stage-color)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 24,
+      "selector": ".radial-timeline-svg #mode-toggle.rt-mode-toggle-hover use",
+      "property": "stroke",
+      "value": "currentColor",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 96,
+      "selector": ".rt-gossamer-dot.rt-gossamer-missing-data:hover",
+      "property": "fill",
+      "value": "#ff6666",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 141,
+      "selector": ".rt-gossamer-range-value",
+      "property": "pointer-events",
+      "value": "none",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 212,
+      "selector": ".rt-gossamer-spoke.rt-gossamer-spoke-hover",
+      "property": "stroke",
+      "value": "white",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 218,
+      "selector": ".rt-gossamer-grid-spoke",
+      "property": "stroke",
+      "value": "#808080",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 220,
+      "selector": ".rt-gossamer-grid-spoke",
+      "property": "stroke-width",
+      "value": "1px",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 221,
+      "selector": ".rt-gossamer-grid-spoke",
+      "property": "stroke-dasharray",
+      "value": "2, 2",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 223,
+      "selector": ".rt-gossamer-grid-spoke",
+      "property": "opacity",
+      "value": "0.7",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 227,
+      "selector": ".rt-gossamer-grid-spoke.rt-act-boundary",
+      "property": "stroke",
+      "value": "var(--text-normal)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 229,
+      "selector": ".rt-gossamer-grid-spoke.rt-act-boundary",
+      "property": "stroke-width",
+      "value": "2px",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 231,
+      "selector": ".rt-gossamer-grid-spoke.rt-act-boundary",
+      "property": "stroke-dasharray",
+      "value": "none",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 233,
+      "selector": ".rt-gossamer-grid-spoke.rt-act-boundary",
+      "property": "opacity",
+      "value": "1",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 238,
+      "selector": ".radial-timeline-svg.scene-hover .rt-gossamer-grid-spoke.rt-act-boundary",
+      "property": "stroke",
+      "value": "#ffffff",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 239,
+      "selector": ".radial-timeline-svg.scene-hover .rt-gossamer-grid-spoke.rt-act-boundary",
+      "property": "opacity",
+      "value": "0.35",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 243,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-gossamer-grid-spoke.rt-act-boundary",
+      "property": "stroke",
+      "value": "rgba(255, 255, 255, 0.3)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 244,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-gossamer-grid-spoke.rt-act-boundary",
+      "property": "opacity",
+      "value": "0.25",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 248,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-gossamer-grid-spoke.rt-act-boundary",
+      "property": "stroke",
+      "value": "rgba(200, 50, 50, 0.8)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 249,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-gossamer-grid-spoke.rt-act-boundary",
+      "property": "opacity",
+      "value": "0.7",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 264,
+      "selector": ".radial-timeline-svg[data-gossamer-mode=\"true\"] .rt-scene-group[data-item-type=\"Beat\"] .rt-scene-path",
+      "property": "pointer-events",
+      "value": "fill",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 271,
+      "selector": ".radial-timeline-svg[data-gossamer-mode=\"true\"] .rt-scene-group.rt-gossamer-hover .rt-scene-path",
+      "property": "fill",
+      "value": "white",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 272,
+      "selector": ".radial-timeline-svg[data-gossamer-mode=\"true\"] .rt-scene-group.rt-gossamer-hover .rt-scene-path",
+      "property": "stroke",
+      "value": "white",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 273,
+      "selector": ".radial-timeline-svg[data-gossamer-mode=\"true\"] .rt-scene-group.rt-gossamer-hover .rt-scene-path",
+      "property": "stroke-width",
+      "value": "3px",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 274,
+      "selector": ".radial-timeline-svg[data-gossamer-mode=\"true\"] .rt-scene-group.rt-gossamer-hover .rt-scene-path",
+      "property": "opacity",
+      "value": "1",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 279,
+      "selector": ".radial-timeline-svg[data-gossamer-mode=\"true\"] .rt-scene-group:not(.beats):not([data-item-type=\"Beat\"]) .rt-scene-path",
+      "property": "cursor",
+      "value": "default",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 280,
+      "selector": ".radial-timeline-svg[data-gossamer-mode=\"true\"] .rt-scene-group:not(.beats):not([data-item-type=\"Beat\"]) .rt-scene-path",
+      "property": "pointer-events",
+      "value": "none",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "grid.css",
+      "line_number": 289,
+      "selector": ".rt-gossamer-beat-outline",
+      "property": "pointer-events",
+      "value": "none",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "modal.css",
+      "line_number": 173,
+      "selector": ".rt-search-input",
+      "property": "width",
+      "value": "100%",
+      "category": "7_other"
+    },
+    {
+      "file": "modal.css",
+      "line_number": 193,
+      "selector": ".rt-search-input.rt-input-error",
+      "property": "border-color",
+      "value": "var(--text-error)",
+      "category": "2_validation_states"
+    },
+    {
+      "file": "modal.css",
+      "line_number": 328,
+      "selector": ".rt-pulse-modal.rt-gossamer-score-modal",
+      "property": "padding",
+      "value": "0",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "modal.css",
+      "line_number": 348,
+      "selector": ".rt-gossamer-score-modal .rt-glass-card",
+      "property": "padding",
+      "value": "12px 14px",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "modal.css",
+      "line_number": 433,
+      "selector": ".rt-planetary-modal .setting-item",
+      "property": "border-top",
+      "value": "none",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "modal.css",
+      "line_number": 434,
+      "selector": ".rt-planetary-modal .setting-item",
+      "property": "border-bottom",
+      "value": "1px solid rgba(255, 255, 255, 0.08)",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "modal.css",
+      "line_number": 537,
+      "selector": ".rt-zero-draft-override",
+      "property": "background-color",
+      "value": "var(--rt-color-due)",
+      "category": "7_other"
+    },
+    {
+      "file": "modal.css",
+      "line_number": 538,
+      "selector": ".rt-zero-draft-override",
+      "property": "color",
+      "value": "var(--rt-color-empty)",
+      "category": "7_other"
+    },
+    {
+      "file": "modal.css",
+      "line_number": 539,
+      "selector": ".rt-zero-draft-override",
+      "property": "border-color",
+      "value": "var(--rt-color-due)",
+      "category": "7_other"
+    },
+    {
+      "file": "modal.css",
+      "line_number": 958,
+      "selector": ".rt-gossamer-score-modal .rt-pulse-progress-hero",
+      "property": "padding",
+      "value": "12px 14px",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "modal.css",
+      "line_number": 959,
+      "selector": ".rt-gossamer-score-modal .rt-pulse-progress-hero",
+      "property": "background",
+      "value": "rgba(255, 255, 255, 0.02)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "modal.css",
+      "line_number": 960,
+      "selector": ".rt-gossamer-score-modal .rt-pulse-progress-hero",
+      "property": "border",
+      "value": "1px solid rgba(255, 255, 255, 0.06)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "modal.css",
+      "line_number": 961,
+      "selector": ".rt-gossamer-score-modal .rt-pulse-progress-hero",
+      "property": "box-shadow",
+      "value": "none",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "modal.css",
+      "line_number": 962,
+      "selector": ".rt-gossamer-score-modal .rt-pulse-progress-hero",
+      "property": "border-radius",
+      "value": "12px",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "modal.css",
+      "line_number": 963,
+      "selector": ".rt-gossamer-score-modal .rt-pulse-progress-hero",
+      "property": "margin-bottom",
+      "value": "12px",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "modal.css",
+      "line_number": 967,
+      "selector": ".rt-gossamer-score-modal .rt-pulse-progress-hero::after",
+      "property": "display",
+      "value": "none",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "modal.css",
+      "line_number": 971,
+      "selector": ".rt-gossamer-score-modal .rt-pulse-progress-body",
+      "property": "gap",
+      "value": "10px",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "modal.css",
+      "line_number": 972,
+      "selector": ".rt-gossamer-score-modal .rt-pulse-progress-body",
+      "property": "margin-top",
+      "value": "12px",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "modal.css",
+      "line_number": 976,
+      "selector": ".rt-gossamer-score-modal .rt-pulse-progress-card",
+      "property": "padding",
+      "value": "16px 18px",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "modal.css",
+      "line_number": 977,
+      "selector": ".rt-gossamer-score-modal .rt-pulse-progress-card",
+      "property": "gap",
+      "value": "12px",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "modal.css",
+      "line_number": 1701,
+      "selector": ".rt-gossamer-score-line [data-item-type=title]",
+      "property": "fill",
+      "value": "var(--rt-max-publish-stage-color)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "pulse.css",
+      "line_number": 43,
+      "selector": ".rt-gossamer-beat-outline.rt-hover",
+      "property": "stroke",
+      "value": "white",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 20,
+      "selector": ".radial-timeline-svg[data-gossamer-mode=\"true\"] .rt-scene-group[data-item-type=\"Beat\"]:hover .rt-storybeat-title",
+      "property": "fill",
+      "value": "var(--rt-color-empty)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 34,
+      "selector": ".radial-timeline-svg #rotation-toggle:hover use",
+      "property": "color",
+      "value": "var(--rt-color-empty)",
+      "category": "3_hover_states"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 35,
+      "selector": ".radial-timeline-svg #rotation-toggle:hover use",
+      "property": "stroke",
+      "value": "var(--rt-color-empty)",
+      "category": "3_hover_states"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 36,
+      "selector": ".radial-timeline-svg #rotation-toggle:hover use",
+      "property": "fill",
+      "value": "none",
+      "category": "3_hover_states"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 69,
+      "selector": ".rt-scene-info",
+      "property": "pointer-events",
+      "value": "none",
+      "category": "7_other"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 77,
+      "selector": ".rt-scene-info text",
+      "property": "pointer-events",
+      "value": "none",
+      "category": "7_other"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 230,
+      "selector": ".rt-number-square.rt-scene-is-open.rt-non-selected",
+      "property": "fill",
+      "value": "var(--rt-color-empty-selected)",
+      "category": "4_selection_states"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 236,
+      "selector": ".rt-number-text.rt-scene-is-open.rt-non-selected",
+      "property": "fill",
+      "value": "var(--rt-color-empty)",
+      "category": "4_selection_states"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 281,
+      "selector": ".rt-info-text.rt-metadata-text tspan[data-item-type=character]",
+      "property": "fill",
+      "value": "var(--rt-dynamic-color, var(--text-normal))",
+      "category": "7_other"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 293,
+      "selector": ".rt-info-text.rt-metadata-text tspan.rt-pov-marker",
+      "property": "fill",
+      "value": "var(--rt-dynamic-color, var(--text-muted))",
+      "category": "7_other"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 295,
+      "selector": ".rt-info-text.rt-metadata-text tspan.rt-pov-marker",
+      "property": "font-size",
+      "value": "calc(12px * var(--rt-synopsis-font-scale, var(--rt-font-scale, 1)))",
+      "category": "7_other"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 320,
+      "selector": ".rt-scene-info.rt-visible",
+      "property": "opacity",
+      "value": "1",
+      "category": "7_other"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 321,
+      "selector": ".rt-scene-info.rt-visible",
+      "property": "pointer-events",
+      "value": "all",
+      "category": "7_other"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 322,
+      "selector": ".rt-scene-info.rt-visible",
+      "property": "visibility",
+      "value": "visible",
+      "category": "7_other"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 323,
+      "selector": ".rt-scene-info.rt-visible",
+      "property": "display",
+      "value": "block",
+      "category": "7_other"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 340,
+      "selector": ".rt-title-date-time",
+      "property": "font-style",
+      "value": "normal",
+      "category": "7_other"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 345,
+      "selector": ".rt-title-text-main tspan[data-item-type=title]",
+      "property": "fill",
+      "value": "var(--rt-dynamic-color, var(--rt-max-publish-stage-color))",
+      "category": "7_other"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 350,
+      "selector": ".rt-title-date-time tspan",
+      "property": "fill",
+      "value": "#888888",
+      "category": "7_other"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 351,
+      "selector": ".rt-title-date-time tspan",
+      "property": "font-size",
+      "value": "16px",
+      "category": "7_other"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 358,
+      "selector": ".rt-title-date-time .rt-date-text",
+      "property": "font-style",
+      "value": "normal",
+      "category": "7_other"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 364,
+      "selector": ".rt-title-date-time .rt-duration-text",
+      "property": "font-style",
+      "value": "italic",
+      "category": "7_other"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 383,
+      "selector": ".rt-overdue-text",
+      "property": "fill",
+      "value": "var(--rt-color-due)",
+      "category": "7_other"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 387,
+      "selector": ".rt-missing-when-text",
+      "property": "fill",
+      "value": "var(--rt-color-due)",
+      "category": "4_selection_states"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 393,
+      "selector": ".rt-revisions-text",
+      "property": "fill",
+      "value": "var(--rt-gossamer-historical-color)",
+      "category": "7_other"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 398,
+      "selector": ".rt-scene-info tspan.rt-with-dynamic-fill",
+      "property": "fill",
+      "value": "var(--rt-dynamic-fill-color, inherit)",
+      "category": "7_other"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 418,
+      "selector": ".rt-number-square.rt-search-result",
+      "property": "fill",
+      "value": "var(--rt-color-search)",
+      "category": "4_selection_states"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 423,
+      "selector": ".rt-number-square.rt-search-result.rt-scene-is-open.rt-non-selected",
+      "property": "fill",
+      "value": "var(--rt-color-empty-selected)",
+      "category": "4_selection_states"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 427,
+      "selector": ".rt-number-text.rt-search-result.rt-non-selected",
+      "property": "fill",
+      "value": "var(--rt-color-empty)",
+      "category": "4_selection_states"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 431,
+      "selector": ".rt-number-text.rt-scene-is-open.rt-search-result.rt-non-selected",
+      "property": "fill",
+      "value": "var(--rt-color-empty)",
+      "category": "4_selection_states"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 435,
+      "selector": ".rt-number-text.rt-scene-is-open.rt-search-result",
+      "property": "fill",
+      "value": "#000000",
+      "category": "4_selection_states"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 451,
+      "selector": ".rt-number-square.rt-has-edits.rt-search-result",
+      "property": "fill",
+      "value": "var(--rt-color-search)",
+      "category": "4_selection_states"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 459,
+      "selector": ".rt-number-square.rt-has-edits.rt-non-selected",
+      "property": "fill",
+      "value": "var(--rt-color-empty-selected)",
+      "category": "4_selection_states"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 463,
+      "selector": ".rt-number-square.rt-has-edits.rt-scene-is-open.rt-non-selected",
+      "property": "fill",
+      "value": "var(--rt-color-empty-selected)",
+      "category": "4_selection_states"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 467,
+      "selector": ".rt-number-square.rt-missing-when",
+      "property": "fill",
+      "value": "var(--rt-color-due)",
+      "category": "4_selection_states"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 468,
+      "selector": ".rt-number-square.rt-missing-when",
+      "property": "stroke",
+      "value": "var(--rt-color-due)",
+      "category": "4_selection_states"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 473,
+      "selector": ".rt-number-text.rt-missing-when",
+      "property": "fill",
+      "value": "var(--rt-color-empty)",
+      "category": "4_selection_states"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 521,
+      "selector": ".synopsis-spacer",
+      "property": "visibility",
+      "value": "visible",
+      "category": "7_other"
+    },
+    {
+      "file": "scenes.css",
+      "line_number": 619,
+      "selector": ".rt-number-text.rt-non-selected.rt-grade-C",
+      "property": "fill",
+      "value": "var(--rt-color-empty)",
+      "category": "4_selection_states"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 73,
+      "selector": ".rt-professional-heading-inline",
+      "property": "border",
+      "value": "none",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 74,
+      "selector": ".rt-professional-heading-inline",
+      "property": "padding",
+      "value": "0",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 75,
+      "selector": ".rt-professional-heading-inline",
+      "property": "margin",
+      "value": "0",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 76,
+      "selector": ".rt-professional-heading-inline",
+      "property": "min-height",
+      "value": "0",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 421,
+      "selector": ".rt-settings-root .setting-item .setting-item-control select.rt-setting-dropdown",
+      "property": "width",
+      "value": "var(--rt-settings-select-width)",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 465,
+      "selector": ".rt-setting-full-width-input",
+      "property": "display",
+      "value": "grid",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 466,
+      "selector": ".rt-setting-full-width-input",
+      "property": "grid-template-columns",
+      "value": "1fr",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 467,
+      "selector": ".rt-setting-full-width-input",
+      "property": "grid-template-rows",
+      "value": "auto auto",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 468,
+      "selector": ".rt-setting-full-width-input",
+      "property": "gap",
+      "value": "12px",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 483,
+      "selector": ".rt-settings-root .rt-setting-full-width-input .setting-item-control input[type=\"text\"]",
+      "property": "width",
+      "value": "100%",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 484,
+      "selector": ".rt-settings-root .rt-setting-full-width-input .setting-item-control input[type=\"text\"]",
+      "property": "max-width",
+      "value": "100%",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 485,
+      "selector": ".rt-settings-root .rt-setting-full-width-input .setting-item-control input[type=\"text\"]",
+      "property": "min-width",
+      "value": "0",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 486,
+      "selector": ".rt-settings-root .rt-setting-full-width-input .setting-item-control input[type=\"text\"]",
+      "property": "flex",
+      "value": "1 1 auto",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 494,
+      "selector": ".rt-settings-root .rt-setting-full-width-input .setting-item-control textarea",
+      "property": "width",
+      "value": "100%",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 495,
+      "selector": ".rt-settings-root .rt-setting-full-width-input .setting-item-control textarea",
+      "property": "max-width",
+      "value": "100%",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 496,
+      "selector": ".rt-settings-root .rt-setting-full-width-input .setting-item-control textarea",
+      "property": "min-width",
+      "value": "0",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 497,
+      "selector": ".rt-settings-root .rt-setting-full-width-input .setting-item-control textarea",
+      "property": "flex",
+      "value": "1 1 auto",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 565,
+      "selector": ".rt-settings-root .setting-item",
+      "property": "display",
+      "value": "flex",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 566,
+      "selector": ".rt-settings-root .setting-item",
+      "property": "align-items",
+      "value": "center",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 570,
+      "selector": ".rt-settings-root .setting-item-control",
+      "property": "display",
+      "value": "flex",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 571,
+      "selector": ".rt-settings-root .setting-item-control",
+      "property": "align-items",
+      "value": "center",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 575,
+      "selector": ".rt-settings-root .clickable-icon.extra-setting-button",
+      "property": "align-self",
+      "value": "center",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 576,
+      "selector": ".rt-settings-root .clickable-icon.extra-setting-button",
+      "property": "margin-top",
+      "value": "0",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 973,
+      "selector": ".rt-color-grid-controls .rt-hex-input",
+      "property": "width",
+      "value": "10ch",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 974,
+      "selector": ".rt-color-grid-controls .rt-hex-input",
+      "property": "flex",
+      "value": "0 0 10ch",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 991,
+      "selector": ".rt-section-heading",
+      "property": "margin-top",
+      "value": "18px",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 992,
+      "selector": ".rt-section-heading",
+      "property": "padding-bottom",
+      "value": "6px",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 993,
+      "selector": ".rt-section-heading",
+      "property": "border-bottom",
+      "value": "1px solid var(--background-modifier-border)",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1000,
+      "selector": ".rt-settings-root .rt-color-grid-controls .setting-item",
+      "property": "padding",
+      "value": "0",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1002,
+      "selector": ".rt-settings-root .rt-color-grid-controls .setting-item",
+      "property": "border",
+      "value": "none",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1004,
+      "selector": ".rt-settings-root .rt-color-grid-controls .setting-item",
+      "property": "border-top",
+      "value": "none",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1006,
+      "selector": ".rt-settings-root .rt-color-grid-controls .setting-item",
+      "property": "border-bottom",
+      "value": "none",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1008,
+      "selector": ".rt-settings-root .rt-color-grid-controls .setting-item",
+      "property": "border-left",
+      "value": "none",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1010,
+      "selector": ".rt-settings-root .rt-color-grid-controls .setting-item",
+      "property": "border-right",
+      "value": "none",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1016,
+      "selector": ".rt-settings-root .rt-color-grid-controls .setting-item+.setting-item",
+      "property": "border-top",
+      "value": "none",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1024,
+      "selector": ".rt-settings-root .rt-color-grid-controls .setting-item-control",
+      "property": "padding",
+      "value": "0",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1026,
+      "selector": ".rt-settings-root .rt-color-grid-controls .setting-item-control",
+      "property": "margin",
+      "value": "0",
+      "category": "1_obsidian_resets"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1160,
+      "selector": ".rt-setting-input-success",
+      "property": "border-color",
+      "value": "#00ff48",
+      "category": "2_validation_states"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1161,
+      "selector": ".rt-setting-input-success",
+      "property": "background-color",
+      "value": "rgba(0, 255, 72, 0.1)",
+      "category": "2_validation_states"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1162,
+      "selector": ".rt-setting-input-success",
+      "property": "box-shadow",
+      "value": "0 0 0 2px rgba(0, 255, 72, 0.2)",
+      "category": "2_validation_states"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1166,
+      "selector": ".rt-setting-input-error",
+      "property": "border-color",
+      "value": "var(--rt-gossamer-error-color)",
+      "category": "2_validation_states"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1167,
+      "selector": ".rt-setting-input-error",
+      "property": "background-color",
+      "value": "rgba(255, 68, 68, 0.1)",
+      "category": "2_validation_states"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1168,
+      "selector": ".rt-setting-input-error",
+      "property": "box-shadow",
+      "value": "0 0 0 2px rgba(255, 68, 68, 0.2)",
+      "category": "2_validation_states"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1210,
+      "selector": ".rt-source-path-suggestion-item:last-child",
+      "property": "border-bottom",
+      "value": "none",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1215,
+      "selector": ".rt-source-path-suggestion-item.selected",
+      "property": "background-color",
+      "value": "var(--background-modifier-hover)",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1274,
+      "selector": ".rt-backup-title",
+      "property": "margin",
+      "value": "0",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1275,
+      "selector": ".rt-backup-title",
+      "property": "font-size",
+      "value": "20px",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1364,
+      "selector": ".rt-setting-two-row",
+      "property": "display",
+      "value": "grid",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1365,
+      "selector": ".rt-setting-two-row",
+      "property": "grid-template-columns",
+      "value": "1fr auto",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1366,
+      "selector": ".rt-setting-two-row",
+      "property": "grid-template-rows",
+      "value": "auto auto",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1394,
+      "selector": ".rt-reset-margin-padding",
+      "property": "margin-top",
+      "value": "0",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1395,
+      "selector": ".rt-reset-margin-padding",
+      "property": "padding-top",
+      "value": "0",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1399,
+      "selector": ".rt-text-muted",
+      "property": "color",
+      "value": "var(--text-muted)",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1406,
+      "selector": ".rt-mapping-hidden",
+      "property": "display",
+      "value": "none",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1468,
+      "selector": ".rt-yaml-row-hover-meta",
+      "property": "grid-template-columns",
+      "value": "auto 1fr auto auto auto auto auto",
+      "category": "7_other"
+    },
+    {
+      "file": "settings.css",
+      "line_number": 1762,
+      "selector": ".rt-hidden",
+      "property": "display",
+      "value": "none",
+      "category": "7_other"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 2,
+      "selector": ".rt-scene-title-bold.rt-title-stage-zero",
+      "property": "fill",
+      "value": "var(--rt-publishStageColors-Zero, var(--rt-color-zero))",
+      "category": "7_other"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 6,
+      "selector": ".rt-scene-title-bold.rt-title-stage-author",
+      "property": "fill",
+      "value": "var(--rt-publishStageColors-Author, var(--rt-color-author))",
+      "category": "7_other"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 10,
+      "selector": ".rt-scene-title-bold.rt-title-stage-house",
+      "property": "fill",
+      "value": "var(--rt-publishStageColors-House, var(--rt-color-house))",
+      "category": "7_other"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 14,
+      "selector": ".rt-scene-title-bold.rt-title-stage-press",
+      "property": "fill",
+      "value": "var(--rt-publishStageColors-Press, var(--rt-color-press))",
+      "category": "7_other"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 77,
+      "selector": ".radial-timeline-container .rt-chronological-tick.rt-date-first",
+      "property": "stroke",
+      "value": "var(--rt-publishStageColors-Zero)",
+      "category": "7_other"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 82,
+      "selector": ".radial-timeline-container .rt-chronological-tick.rt-date-last",
+      "property": "stroke",
+      "value": "var(--rt-publishStageColors-Press)",
+      "category": "7_other"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 123,
+      "selector": ".radial-timeline-svg.scene-hover .rt-month-spoke-line.rt-act-boundary",
+      "property": "stroke",
+      "value": "#ffffff",
+      "category": "3_hover_states"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 124,
+      "selector": ".radial-timeline-svg.scene-hover .rt-month-spoke-line.rt-act-boundary",
+      "property": "opacity",
+      "value": "0.35",
+      "category": "3_hover_states"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 129,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-month-spoke-line.rt-act-boundary",
+      "property": "stroke",
+      "value": "rgba(255, 255, 255, 0.3)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 130,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-month-spoke-line.rt-act-boundary",
+      "property": "opacity",
+      "value": "0.25",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 135,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-month-spoke-line.rt-act-boundary",
+      "property": "stroke",
+      "value": "rgba(200, 50, 50, 0.8)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 136,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-month-spoke-line.rt-act-boundary",
+      "property": "opacity",
+      "value": "0.7",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 192,
+      "selector": ".radial-timeline-svg[data-gossamer-mode=\"true\"] .rt-subplot-ring-label-text",
+      "property": "opacity",
+      "value": "0",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 196,
+      "selector": ".radial-timeline-svg.scene-hover .rt-subplot-ring-label-text",
+      "property": "opacity",
+      "value": "0",
+      "category": "3_hover_states"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 201,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-subplot-ring-label-text",
+      "property": "opacity",
+      "value": "0",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 206,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-subplot-ring-label-text",
+      "property": "opacity",
+      "value": "0",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 261,
+      "selector": ".rt-mode-option .rt-active",
+      "property": "fill",
+      "value": "var(--interactive-accent)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 262,
+      "selector": ".rt-mode-option .rt-active",
+      "property": "stroke",
+      "value": "var(--text-normal)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 263,
+      "selector": ".rt-mode-option .rt-active",
+      "property": "stroke-width",
+      "value": "2px",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 267,
+      "selector": ".rt-mode-option .rt-active.rt-mode-acronym-text",
+      "property": "fill",
+      "value": "var(--text-on-accent)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 274,
+      "selector": ".rt-mode-option .rt-active.rt-mode-number-label",
+      "property": "fill",
+      "value": "var(--text-on-accent)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 384,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-scene-path",
+      "property": "fill",
+      "value": "var(--interactive-normal)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 389,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square",
+      "property": "fill",
+      "value": "var(--interactive-normal)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 391,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square",
+      "property": "stroke",
+      "value": "none",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 396,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-text",
+      "property": "fill",
+      "value": "var(--text-muted)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 403,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-scene-is-open:not(.rt-shift-active)",
+      "property": "fill",
+      "value": "var(--interactive-normal)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 404,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-scene-is-open:not(.rt-shift-active)",
+      "property": "stroke",
+      "value": "none",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 408,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-text.rt-scene-is-open:not(.rt-shift-active)",
+      "property": "fill",
+      "value": "var(--text-muted)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 409,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-text.rt-scene-is-open:not(.rt-shift-active)",
+      "property": "opacity",
+      "value": "0.5",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 416,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-scene-group[data-item-type=\"Scene\"]:has(.rt-shift-locked)",
+      "property": "opacity",
+      "value": "1",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 417,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-scene-group[data-item-type=\"Scene\"]:has(.rt-shift-locked)",
+      "property": "transition",
+      "value": "none",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 425,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-scene-path.rt-shift-locked",
+      "property": "fill",
+      "value": "var(--interactive-accent)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 426,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-scene-path.rt-shift-locked",
+      "property": "filter",
+      "value": "brightness(1.2)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 438,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"0\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-0)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 442,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"1\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-1)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 446,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"2\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-2)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 450,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"3\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-3)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 454,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"4\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-4)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 458,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"5\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-5)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 462,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"6\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-6)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 466,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"7\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-7)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 470,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"8\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-8)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 474,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"9\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-9)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 478,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"10\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-10)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 482,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"11\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-11)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 486,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"12\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-12)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 490,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"13\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-13)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 494,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"14\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-14)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 498,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"15\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-15)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 502,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-text.rt-shift-active",
+      "property": "fill",
+      "value": "#000000",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 504,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-text.rt-shift-active",
+      "property": "opacity",
+      "value": "1",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 510,
+      "selector": ".radial-timeline-container .radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-text.rt-shift-active",
+      "property": "fill",
+      "value": "#000000",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 511,
+      "selector": ".radial-timeline-container .radial-timeline-svg[data-shift-mode=\"active\"] .rt-number-text.rt-shift-active",
+      "property": "opacity",
+      "value": "1",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 517,
+      "selector": ".rt-shift-selected",
+      "property": "stroke",
+      "value": "var(--interactive-accent)",
+      "category": "7_other"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 518,
+      "selector": ".rt-shift-selected",
+      "property": "stroke-width",
+      "value": "3",
+      "category": "7_other"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 566,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-scene-path",
+      "property": "fill",
+      "value": "rgba(180, 60, 60, 0.15)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 567,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-scene-path",
+      "property": "stroke",
+      "value": "rgba(180, 60, 60, 0.25)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 573,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square",
+      "property": "fill",
+      "value": "var(--interactive-normal)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 574,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square",
+      "property": "stroke",
+      "value": "none",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 579,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-text",
+      "property": "fill",
+      "value": "rgba(200, 50, 50, 0.8)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 585,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-title",
+      "property": "fill",
+      "value": "rgba(200, 50, 50, 0.8)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 593,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-month-spoke-line",
+      "property": "stroke",
+      "value": "rgba(180, 60, 60, 0.5)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 599,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-act-label",
+      "property": "fill",
+      "value": "rgba(180, 60, 60, 0.5)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 606,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-chronological-tick-minor",
+      "property": "stroke",
+      "value": "rgba(180, 60, 60, 0.5)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 611,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-subplot-ring-label-text",
+      "property": "opacity",
+      "value": "0",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 635,
+      "selector": ".rt-planetary-time-text",
+      "property": "font-size",
+      "value": "16px",
+      "category": "7_other"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 650,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-group[data-item-type=\"Scene\"]:has(.rt-shift-locked)",
+      "property": "opacity",
+      "value": "1",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 651,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-group[data-item-type=\"Scene\"]:has(.rt-shift-locked)",
+      "property": "transition",
+      "value": "none",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 657,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-scene-path.rt-shift-locked",
+      "property": "fill",
+      "value": "var(--text-error)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 658,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-scene-path.rt-shift-locked",
+      "property": "stroke",
+      "value": "var(--text-error)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 664,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"].scene-hover .rt-number-square",
+      "property": "fill",
+      "value": "var(--interactive-normal)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 665,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"].scene-hover .rt-number-square",
+      "property": "stroke",
+      "value": "none",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 666,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"].scene-hover .rt-number-square",
+      "property": "opacity",
+      "value": "0.5",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 670,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"].scene-hover .rt-number-text",
+      "property": "fill",
+      "value": "rgba(200, 50, 50, 0.8)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 671,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"].scene-hover .rt-number-text",
+      "property": "opacity",
+      "value": "0.7",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 678,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-number-square.rt-shift-locked",
+      "property": "fill",
+      "value": "var(--interactive-normal)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 679,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-number-square.rt-shift-locked",
+      "property": "stroke",
+      "value": "none",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 680,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-number-square.rt-shift-locked",
+      "property": "opacity",
+      "value": "0.5",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 686,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-number-text.rt-shift-locked",
+      "property": "fill",
+      "value": "rgba(200, 50, 50, 0.8)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 687,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-number-text.rt-shift-locked",
+      "property": "opacity",
+      "value": "0.7",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 692,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"].scene-hover .rt-scene-info",
+      "property": "opacity",
+      "value": "1",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 693,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"].scene-hover .rt-scene-info",
+      "property": "color",
+      "value": "rgba(200, 50, 50, 0.9)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 694,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"].scene-hover .rt-scene-info",
+      "property": "fill",
+      "value": "rgba(200, 50, 50, 0.9)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 695,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"].scene-hover .rt-scene-info",
+      "property": "stroke",
+      "value": "rgba(200, 50, 50, 0.6)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 700,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-info.rt-visible",
+      "property": "opacity",
+      "value": "1",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 701,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-info.rt-visible",
+      "property": "color",
+      "value": "rgba(200, 50, 50, 0.9)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 702,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-info.rt-visible",
+      "property": "fill",
+      "value": "rgba(200, 50, 50, 0.9)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 703,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-scene-info.rt-visible",
+      "property": "stroke",
+      "value": "rgba(200, 50, 50, 0.6)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 708,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active",
+      "property": "fill",
+      "value": "var(--interactive-accent)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 709,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active",
+      "property": "opacity",
+      "value": "1",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 714,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-text.rt-shift-active",
+      "property": "fill",
+      "value": "var(--background-primary)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 715,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-text.rt-shift-active",
+      "property": "opacity",
+      "value": "1",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 720,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"0\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-0)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 724,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"1\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-1)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 728,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"2\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-2)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 732,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"3\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-3)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 736,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"4\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-4)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 740,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"5\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-5)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 744,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"6\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-6)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 748,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"7\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-7)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 752,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"8\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-8)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 756,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"9\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-9)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 760,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"10\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-10)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 764,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"11\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-11)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 768,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"12\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-12)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 772,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"13\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-13)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 776,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"14\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-14)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 780,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"alien\"] .rt-number-square.rt-shift-active[data-subplot-idx=\"15\"]",
+      "property": "fill",
+      "value": "var(--rt-subplot-colors-15)",
+      "category": "6_subplot_colors"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 806,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-month-spoke-line.rt-act-boundary",
+      "property": "stroke",
+      "value": "rgba(60, 120, 200, 0.8)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 807,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-month-spoke-line.rt-act-boundary",
+      "property": "opacity",
+      "value": "0.7",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 812,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-scene-path",
+      "property": "fill",
+      "value": "rgba(60, 120, 180, 0.20)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 813,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-scene-path",
+      "property": "stroke",
+      "value": "rgba(60, 120, 180, 0.35)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 819,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-number-square",
+      "property": "fill",
+      "value": "var(--interactive-normal)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 820,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-number-square",
+      "property": "stroke",
+      "value": "none",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 825,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-number-text",
+      "property": "fill",
+      "value": "rgba(60, 140, 200, 0.9)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 831,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-title",
+      "property": "fill",
+      "value": "rgba(60, 140, 200, 0.9)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 839,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-month-spoke-line",
+      "property": "stroke",
+      "value": "rgba(60, 120, 180, 0.5)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 845,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-act-label",
+      "property": "fill",
+      "value": "rgba(60, 120, 180, 0.5)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 850,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-chronological-tick-minor",
+      "property": "stroke",
+      "value": "rgba(60, 120, 180, 0.5)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 857,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-group[data-item-type=\"Scene\"]:has(.rt-shift-locked)",
+      "property": "opacity",
+      "value": "1",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 858,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-group[data-item-type=\"Scene\"]:has(.rt-shift-locked)",
+      "property": "transition",
+      "value": "none",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 864,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-scene-path.rt-shift-locked",
+      "property": "fill",
+      "value": "rgba(80, 160, 255, 1)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 865,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-scene-path.rt-shift-locked",
+      "property": "stroke",
+      "value": "rgba(80, 160, 255, 1)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 911,
+      "selector": ".rt-runtime-button.rt-runtime-mode-active .rt-runtime-icon-bg",
+      "property": "fill",
+      "value": "rgba(60, 140, 220, 0.25)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 912,
+      "selector": ".rt-runtime-button.rt-runtime-mode-active .rt-runtime-icon-bg",
+      "property": "stroke",
+      "value": "rgba(60, 160, 220, 1)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 913,
+      "selector": ".rt-runtime-button.rt-runtime-mode-active .rt-runtime-icon-bg",
+      "property": "stroke-width",
+      "value": "2.5",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 918,
+      "selector": ".rt-runtime-button.rt-runtime-mode-active .rt-runtime-lucide-icon",
+      "property": "stroke",
+      "value": "rgba(80, 180, 255, 1)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 926,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-number-square.rt-shift-locked",
+      "property": "fill",
+      "value": "var(--interactive-normal)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 927,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-number-square.rt-shift-locked",
+      "property": "stroke",
+      "value": "none",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 928,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-number-square.rt-shift-locked",
+      "property": "opacity",
+      "value": "0.6",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 934,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-number-text.rt-shift-locked",
+      "property": "fill",
+      "value": "rgba(60, 140, 200, 0.9)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 935,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-group[data-item-type=\"Scene\"] .rt-number-text.rt-shift-locked",
+      "property": "opacity",
+      "value": "0.8",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 940,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"].scene-hover .rt-number-square",
+      "property": "fill",
+      "value": "var(--interactive-normal)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 941,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"].scene-hover .rt-number-square",
+      "property": "stroke",
+      "value": "none",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 942,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"].scene-hover .rt-number-square",
+      "property": "opacity",
+      "value": "0.6",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 946,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"].scene-hover .rt-number-text",
+      "property": "fill",
+      "value": "rgba(60, 140, 200, 0.9)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 947,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"].scene-hover .rt-number-text",
+      "property": "opacity",
+      "value": "0.8",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 952,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-info.rt-visible",
+      "property": "opacity",
+      "value": "1",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 953,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-info.rt-visible",
+      "property": "color",
+      "value": "rgba(60, 140, 200, 0.9)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 954,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-info.rt-visible",
+      "property": "fill",
+      "value": "rgba(60, 140, 200, 0.9)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 955,
+      "selector": ".radial-timeline-svg[data-shift-mode=\"runtime\"] .rt-scene-info.rt-visible",
+      "property": "stroke",
+      "value": "rgba(60, 140, 200, 0.6)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 964,
+      "selector": ".rt-runtime-button.rt-runtime-mode-active:hover .rt-runtime-lucide-icon",
+      "property": "stroke",
+      "value": "rgba(100, 200, 255, 1)",
+      "category": "5_mode_overrides"
+    },
+    {
+      "file": "timeline.css",
+      "line_number": 970,
+      "selector": ".rt-runtime-total",
+      "property": "fill",
+      "value": "rgba(60, 160, 220, 0.9)",
+      "category": "7_other"
+    }
+  ]
+}

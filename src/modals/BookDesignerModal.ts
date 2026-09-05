@@ -342,7 +342,7 @@ export class BookDesignerModal extends Modal {
             if (folder && !f.path.startsWith(folder + '/')) return false;
             if (!folder && f.path.includes('/')) return false;
             const cache = this.app.metadataCache.getFileCache(f);
-            const cls = cache?.frontmatter?.['Class'] ?? cache?.frontmatter?.['class'] ?? '';
+            const cls: unknown = cache?.frontmatter?.['Class'] ?? cache?.frontmatter?.['class'] ?? '';
             return String(cls).toLowerCase() === 'beat';
         });
         this.beatsExistInFolder = exists;
@@ -1912,7 +1912,7 @@ export class BookDesignerModal extends Modal {
             const existingBeatFiles = vault.getMarkdownFiles().filter(f => {
                 if (!f.path.startsWith(targetFolder + '/') && f.path !== targetFolder) return false;
                 const cache = this.app.metadataCache.getFileCache(f);
-                const cls = cache?.frontmatter?.['Class'] ?? cache?.frontmatter?.['class'] ?? '';
+                const cls: unknown = cache?.frontmatter?.['Class'] ?? cache?.frontmatter?.['class'] ?? '';
                 return String(cls).toLowerCase() === 'beat';
             });
 

@@ -21,8 +21,8 @@ export function getFillForScene(
     const stageKeys = Object.keys(publishStageColors);
     const fallbackStage = stageKeys.includes('Zero') ? 'Zero' : (stageKeys[0] || 'Zero');
     const resolveStageKey = (raw: unknown): string => {
-        const candidate = Array.isArray(raw) ? raw[0] : raw;
-        const value = (candidate ?? fallbackStage).toString().trim();
+        const candidate: unknown = Array.isArray(raw) ? raw[0] : raw;
+        const value = (typeof candidate === 'string' ? candidate : fallbackStage).trim();
         if (!value) return fallbackStage;
         const match = stageKeys.find(stage => stage.toLowerCase() === value.toLowerCase());
         return match ?? fallbackStage;

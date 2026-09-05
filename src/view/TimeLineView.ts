@@ -14,7 +14,6 @@ import type { SubplotAlignment, TimelineItem } from '../types';
 import { renderSvgFromString } from '../utils/svgDom';
 import { openOrRevealFileByPath } from '../utils/fileUtils';
 import { setupRotationController, setupSearchControls as setupSearchControlsExt, addHighlightRectangles as addHighlightRectanglesExt, setupModeToggleController, setupVersionIndicatorController, setupHelpIconController, setupTooltips, setupSubplotKeyController } from './interactions';
-import { isRuntimeModeActive, isShiftModeActive } from './interactions/ChronologueShiftController';
 import { RendererService } from '../services/RendererService';
 import { ModeManager, createModeManager } from '../modes/ModeManager';
 import { getModeDefinition, getToggleableModes } from '../modes/ModeRegistry';
@@ -279,6 +278,8 @@ export class RadialTimelineView extends ItemView {
         return this.interactionController;
     }
 
+
+    readonly chronologueState = { shift: false, alien: false, runtime: false };
 
     constructor(leaf: WorkspaceLeaf, plugin: RadialTimelinePlugin) {
         super(leaf);
@@ -2704,7 +2705,7 @@ export class RadialTimelineView extends ItemView {
                     this._currentMode,
                     this.plugin.settings,
                     this.plugin._gossamerLastRun,
-                    isRuntimeModeActive()
+                    this.chronologueState.runtime
                 );
                 
                 // Detect changes from last render
@@ -2803,7 +2804,7 @@ export class RadialTimelineView extends ItemView {
             .catch(error => {
                 container.createDiv({
                     cls: "rt-error-message",
-                    text: `Error: ${error.message}`
+                    text: `Error: ${error instanceof Error ? error.message : String(error)}`
                 });
                 console.error("Failed to load timeline data", error);
             });
@@ -3002,7 +3003,7 @@ export class RadialTimelineView extends ItemView {
         try {
             // Generate the SVG content and get the max stage color
             const renderer = this.rendererService ?? this.plugin.getRendererService();
-            const { svgString, maxStageColor: calculatedMaxStageColor } = renderer.renderTimeline(scenes);
+            const { svgString, maxStageColor: calculatedMaxStageColor } = renderer.renderTimeline(scenes, this.chronologueState);
 
             // Expose the dominant publish-stage colour to CSS so rules can use var(--rt-max-publish-stage-color)
             if (calculatedMaxStageColor) {
@@ -3010,14 +3011,14 @@ export class RadialTimelineView extends ItemView {
             }
             
             // Render directly into the container
-            const svgElement = renderSvgFromString(svgString, timelineContainer, (cleanup) => this.renderScope.register(cleanup));
+            const svgElement = renderSvgFromString(svgString, timelineContainer);
 
                 if (svgElement) {
                     // Set data-mode attribute for CSS targeting
                     svgElement.setAttribute('data-mode', this.currentMode);
                     
                     // Preserve shift mode state across re-renders (chronologue mode only)
-                    if (this.currentMode === 'chronologue' && isShiftModeActive()) {
+                    if (this.currentMode === 'chronologue' && this.chronologueState.shift) {
                         svgElement.setAttribute('data-shift-mode', 'active');
                     }
                     

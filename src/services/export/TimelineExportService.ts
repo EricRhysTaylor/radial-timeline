@@ -371,7 +371,7 @@ export function applyGenericSubplotNames(doc: TimelineDataExportDocument): void 
             seenRawFrontmatter.add(raw);
             const rawSubplot = raw.Subplot;
             if (Array.isArray(rawSubplot)) {
-                raw.Subplot = rawSubplot.map((entry) =>
+                raw.Subplot = rawSubplot.map((entry: unknown) =>
                     typeof entry === 'string' ? genericNameFor(entry) : entry
                 );
             } else if (typeof rawSubplot === 'string' && rawSubplot.length > 0) {

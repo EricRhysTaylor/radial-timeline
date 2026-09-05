@@ -1,3 +1,4 @@
+import { confirmAudit } from './beats/confirmAudit';
 import { Component, App, Notice, Setting as Settings, Modal, setIcon, setTooltip, ButtonComponent, getIconIds, TFile, normalizePath, Menu } from 'obsidian';
 import { t } from '../../i18n';
 import type RadialTimelinePlugin from '../../main';
@@ -4331,31 +4332,15 @@ export function renderBeatPropertiesSection(params: {
                 .map(n => n.file);
             if (targetFiles.length === 0) return;
 
-            const confirmed = await new Promise<boolean>((resolve) => {
-                const modal = new Modal(app);
-                modal.titleEl.setText('');
-                modal.contentEl.empty();
-                modal.modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal-shell--md');
-                modal.contentEl.addClass('ert-modal-container', 'ert-stack');
-
-                const header = modal.contentEl.createDiv({ cls: 'ert-modal-header' });
-                header.createSpan({ cls: 'ert-modal-badge', text: `${noteType.toUpperCase()} AUDIT` });
-                header.createDiv({ cls: 'ert-modal-title', text: 'Insert missing IDs' });
-                header.createDiv({
-                    cls: 'ert-modal-subtitle',
-                    text: `Insert Reference IDs into ${targetFiles.length} ${noteType.toLowerCase()} note${targetFiles.length !== 1 ? 's' : ''}.`
-                });
-
-                const body = modal.contentEl.createDiv({ cls: ['ert-panel', 'ert-panel--glass'] });
-                body.createDiv({ text: `Scope: ${auditScopeSummary}`, cls: 'ert-modal-subtitle' });
-                body.createDiv({ text: 'Only notes missing a Reference ID will be updated. Existing IDs are preserved.' });
-
-                const footer = modal.contentEl.createDiv({ cls: 'ert-modal-actions' });
-                new ButtonComponent(footer).setButtonText('Insert IDs').setCta().onClick(() => { resolve(true); modal.close(); });
-                new ButtonComponent(footer).setButtonText('Cancel').onClick(() => { resolve(false); modal.close(); });
-
-                modal.onClose = () => resolve(false);
-                modal.open();
+            const confirmed = await confirmAudit(app, {
+                badge: `${noteType.toUpperCase()} AUDIT`,
+                title: 'Insert missing IDs',
+                subtitle: `Insert Reference IDs into ${targetFiles.length} ${noteType.toLowerCase()} note${targetFiles.length !== 1 ? 's' : ''}.`,
+                scope: auditScopeSummary,
+                action: 'Insert IDs',
+                renderBody: body => {
+                    body.createDiv({ text: 'Only notes missing a Reference ID will be updated. Existing IDs are preserved.' });
+                }
             });
 
             if (!confirmed) return;
@@ -4388,31 +4373,15 @@ export function renderBeatPropertiesSection(params: {
                     .filter((id): id is string => !!id)
             ).size;
 
-            const confirmed = await new Promise<boolean>((resolve) => {
-                const modal = new Modal(app);
-                modal.titleEl.setText('');
-                modal.contentEl.empty();
-                modal.modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal-shell--md');
-                modal.contentEl.addClass('ert-modal-container', 'ert-stack');
-
-                const header = modal.contentEl.createDiv({ cls: 'ert-modal-header' });
-                header.createSpan({ cls: 'ert-modal-badge', text: `${noteType.toUpperCase()} AUDIT` });
-                header.createDiv({ cls: 'ert-modal-title', text: 'Fix duplicate IDs' });
-                header.createDiv({
-                    cls: 'ert-modal-subtitle',
-                    text: `Resolve ${duplicateIdCount} duplicate Reference ID group${duplicateIdCount !== 1 ? 's' : ''} across ${targetFiles.length} ${noteType.toLowerCase()} note${targetFiles.length !== 1 ? 's' : ''}.`
-                });
-
-                const body = modal.contentEl.createDiv({ cls: ['ert-panel', 'ert-panel--glass'] });
-                body.createDiv({ text: `Scope: ${auditScopeSummary}`, cls: 'ert-modal-subtitle' });
-                body.createDiv({ text: 'For each duplicate ID, one note keeps the existing ID and the others receive new IDs.' });
-
-                const footer = modal.contentEl.createDiv({ cls: 'ert-modal-actions' });
-                new ButtonComponent(footer).setButtonText('Fix duplicates').setCta().onClick(() => { resolve(true); modal.close(); });
-                new ButtonComponent(footer).setButtonText('Cancel').onClick(() => { resolve(false); modal.close(); });
-
-                modal.onClose = () => resolve(false);
-                modal.open();
+            const confirmed = await confirmAudit(app, {
+                badge: `${noteType.toUpperCase()} AUDIT`,
+                title: 'Fix duplicate IDs',
+                subtitle: `Resolve ${duplicateIdCount} duplicate Reference ID group${duplicateIdCount !== 1 ? 's' : ''} across ${targetFiles.length} ${noteType.toLowerCase()} note${targetFiles.length !== 1 ? 's' : ''}.`,
+                scope: auditScopeSummary,
+                action: 'Fix duplicates',
+                renderBody: body => {
+                    body.createDiv({ text: 'For each duplicate ID, one note keeps the existing ID and the others receive new IDs.' });
+                }
             });
 
             if (!confirmed) return;
@@ -4451,36 +4420,20 @@ export function renderBeatPropertiesSection(params: {
             }
 
             // Confirmation modal
-            const confirmed = await new Promise<boolean>((resolve) => {
-                const modal = new Modal(app);
-                modal.titleEl.setText('');
-                modal.contentEl.empty();
-                modal.modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal-shell--md');
-                modal.contentEl.addClass('ert-modal-container', 'ert-stack');
-
-                const header = modal.contentEl.createDiv({ cls: 'ert-modal-header' });
-                header.createSpan({ cls: 'ert-modal-badge', text: `${noteType.toUpperCase()} AUDIT` });
-                header.createDiv({ cls: 'ert-modal-title', text: 'Insert missing fields' });
-                header.createDiv({
-                    cls: 'ert-modal-subtitle',
-                    text: `Insert fields into ${targetFiles.length} ${noteType.toLowerCase()} note${targetFiles.length !== 1 ? 's' : ''}.`
-                });
-
-                const body = modal.contentEl.createDiv({ cls: ['ert-panel', 'ert-panel--glass'] });
-                body.createDiv({ text: `Scope: ${auditScopeSummary}`, cls: 'ert-modal-subtitle' });
-                body.createDiv({ text: 'The following fields will be added (existing values are never overwritten):' });
-                const fieldListEl = body.createEl('ul');
-                for (const [key, val] of Object.entries(fieldsToInsert)) {
-                    const valStr = Array.isArray(val) ? val.join(', ') : val;
-                    fieldListEl.createEl('li', { text: valStr ? `${key}: ${valStr}` : `${key}: (empty)` });
+            const confirmed = await confirmAudit(app, {
+                badge: `${noteType.toUpperCase()} AUDIT`,
+                title: 'Insert missing fields',
+                subtitle: `Insert fields into ${targetFiles.length} ${noteType.toLowerCase()} note${targetFiles.length !== 1 ? 's' : ''}.`,
+                scope: auditScopeSummary,
+                action: 'Insert',
+                renderBody: body => {
+                    body.createDiv({ text: 'The following fields will be added (existing values are never overwritten):' });
+                    const fieldListEl = body.createEl('ul');
+                    for (const [key, val] of Object.entries(fieldsToInsert)) {
+                        const valStr = Array.isArray(val) ? val.join(', ') : val;
+                        fieldListEl.createEl('li', { text: valStr ? `${key}: ${valStr}` : `${key}: (empty)` });
+                    }
                 }
-
-                const footer = modal.contentEl.createDiv({ cls: 'ert-modal-actions' });
-                new ButtonComponent(footer).setButtonText('Insert').setCta().onClick(() => { resolve(true); modal.close(); });
-                new ButtonComponent(footer).setButtonText('Cancel').onClick(() => { resolve(false); modal.close(); });
-
-                modal.onClose = () => resolve(false);
-                modal.open();
             });
 
             if (!confirmed) return;
@@ -4525,37 +4478,21 @@ export function renderBeatPropertiesSection(params: {
                 return;
             }
 
-            const confirmed = await new Promise<boolean>((resolve) => {
-                const modal = new Modal(app);
-                modal.titleEl.setText('');
-                modal.contentEl.empty();
-                modal.modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal-shell--md');
-                modal.contentEl.addClass('ert-modal-container', 'ert-stack');
-
-                const header = modal.contentEl.createDiv({ cls: 'ert-modal-header' });
-                header.createSpan({ cls: 'ert-modal-badge', text: 'BEAT AUDIT' });
-                header.createDiv({ cls: 'ert-modal-title', text: 'Fill empty values' });
-                header.createDiv({
-                    cls: 'ert-modal-subtitle',
-                    text: `Fill ${fillEmptyPlan!.filledFields} empty value${fillEmptyPlan!.filledFields !== 1 ? 's' : ''} in ${fillEmptyPlan!.files.length} beat note${fillEmptyPlan!.files.length !== 1 ? 's' : ''}.`
-                });
-
-                const body = modal.contentEl.createDiv({ cls: ['ert-panel', 'ert-panel--glass'] });
-                body.createDiv({ text: `Scope: ${fillEmptyPlan!.sourcePath}`, cls: 'ert-modal-subtitle' });
-                body.createDiv({ text: 'Only existing empty keys are filled. No keys are added, removed, or overwritten.' });
-                const fieldListEl = body.createEl('ul');
-                fillEmptyPlan!.touchedKeys.forEach((key) => {
-                    const val = fillEmptyPlan!.fieldsToInsert[key];
-                    const valStr = Array.isArray(val) ? val.join(', ') : val;
-                    fieldListEl.createEl('li', { text: `${key}: ${valStr}` });
-                });
-
-                const footer = modal.contentEl.createDiv({ cls: 'ert-modal-actions' });
-                new ButtonComponent(footer).setButtonText('Fill').setCta().onClick(() => { resolve(true); modal.close(); });
-                new ButtonComponent(footer).setButtonText('Cancel').onClick(() => { resolve(false); modal.close(); });
-
-                modal.onClose = () => resolve(false);
-                modal.open();
+            const confirmed = await confirmAudit(app, {
+                badge: 'BEAT AUDIT',
+                title: 'Fill empty values',
+                subtitle: `Fill ${fillEmptyPlan.filledFields} empty value${fillEmptyPlan.filledFields !== 1 ? 's' : ''} in ${fillEmptyPlan.files.length} beat note${fillEmptyPlan.files.length !== 1 ? 's' : ''}.`,
+                scope: fillEmptyPlan.sourcePath,
+                action: 'Fill',
+                renderBody: body => {
+                    body.createDiv({ text: 'Only existing empty keys are filled. No keys are added, removed, or overwritten.' });
+                    const fieldListEl = body.createEl('ul');
+                    fillEmptyPlan!.touchedKeys.forEach((key) => {
+                        const val = fillEmptyPlan!.fieldsToInsert[key];
+                        const valStr = Array.isArray(val) ? val.join(', ') : val;
+                        fieldListEl.createEl('li', { text: `${key}: ${valStr}` });
+                    });
+                }
             });
 
             if (!confirmed) return;
@@ -4586,51 +4523,29 @@ export function renderBeatPropertiesSection(params: {
             const { legacyKey, canonicalKey, files, moveCount, removeEmptyCount, preservedCount } = deprecatedMigrationPlan;
             const actionableCount = moveCount + removeEmptyCount;
 
-            const confirmed = await new Promise<boolean>((resolve) => {
-                const modal = new Modal(app);
-                modal.titleEl.setText('');
-                modal.contentEl.empty();
-                modal.modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal-shell--md');
-                modal.contentEl.addClass('ert-modal-container', 'ert-stack');
-
-                const header = modal.contentEl.createDiv({ cls: 'ert-modal-header' });
-                header.createSpan({ cls: 'ert-modal-badge', text: 'YAML MANAGER' });
-                header.createDiv({ cls: 'ert-modal-title', text: 'Migrate deprecated fields' });
-                header.createDiv({
-                    cls: 'ert-modal-subtitle',
-                    text: `Migrate ${actionableCount} deprecated field value${actionableCount !== 1 ? 's' : ''} from ${legacyKey} to ${canonicalKey}.`
-                });
-
-                const body = modal.contentEl.createDiv({ cls: ['ert-panel', 'ert-panel--glass'] });
-                body.createDiv({ text: `Scope: ${auditScopeSummary}`, cls: 'ert-modal-subtitle' });
-                if (moveCount > 0) {
-                    body.createDiv({
-                        text: `${moveCount} note${moveCount !== 1 ? 's' : ''}: copy ${legacyKey} content into ${canonicalKey}, then remove ${legacyKey}.`
-                    });
+            const confirmed = await confirmAudit(app, {
+                badge: 'YAML MANAGER',
+                title: 'Migrate deprecated fields',
+                subtitle: `Migrate ${actionableCount} deprecated field value${actionableCount !== 1 ? 's' : ''} from ${legacyKey} to ${canonicalKey}.`,
+                scope: auditScopeSummary,
+                action: 'Migrate',
+                renderBody: body => {
+                    if (moveCount > 0) {
+                        body.createDiv({
+                            text: `${moveCount} note${moveCount !== 1 ? 's' : ''}: copy ${legacyKey} content into ${canonicalKey}, then remove ${legacyKey}.`
+                        });
+                    }
+                    if (removeEmptyCount > 0) {
+                        body.createDiv({
+                            text: `${removeEmptyCount} note${removeEmptyCount !== 1 ? 's' : ''}: remove empty ${legacyKey} key${removeEmptyCount !== 1 ? 's' : ''}.`
+                        });
+                    }
+                    if (preservedCount > 0) {
+                        body.createDiv({
+                            text: `${preservedCount} note${preservedCount !== 1 ? 's' : ''}: ${legacyKey} preserved because ${canonicalKey} already has content.`
+                        });
+                    }
                 }
-                if (removeEmptyCount > 0) {
-                    body.createDiv({
-                        text: `${removeEmptyCount} note${removeEmptyCount !== 1 ? 's' : ''}: remove empty ${legacyKey} key${removeEmptyCount !== 1 ? 's' : ''}.`
-                    });
-                }
-                if (preservedCount > 0) {
-                    body.createDiv({
-                        text: `${preservedCount} note${preservedCount !== 1 ? 's' : ''}: ${legacyKey} preserved because ${canonicalKey} already has content.`
-                    });
-                }
-
-                const footer = modal.contentEl.createDiv({ cls: 'ert-modal-actions' });
-                new ButtonComponent(footer).setButtonText('Migrate').setCta().onClick(() => {
-                    resolve(true);
-                    modal.close();
-                });
-                new ButtonComponent(footer).setButtonText('Cancel').onClick(() => {
-                    resolve(false);
-                    modal.close();
-                });
-
-                modal.onClose = () => resolve(false);
-                modal.open();
             });
 
             if (!confirmed) return;

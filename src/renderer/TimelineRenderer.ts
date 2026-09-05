@@ -1,3 +1,4 @@
+import { isCompleteStatus } from '../progress/progressSnapshot';
 /**
  * Radial Timeline Plugin for Obsidian — Renderer
  * Copyright (c) 2025 Eric Rhys Taylor
@@ -217,11 +218,6 @@ function calculateTargetTickEnhancedData(
         return match ?? 'Zero';
     };
     
-    const isCompleted = (status: unknown): boolean => {
-        const val = Array.isArray(status) ? status[0] : status;
-        const normalized = (val ?? '').toString().trim().toLowerCase();
-        return normalized === 'complete' || normalized === 'completed' || normalized === 'done';
-    };
     
     // Count remaining (incomplete) scenes per stage
     const seenPaths = new Set<string>();
@@ -229,7 +225,7 @@ function calculateTargetTickEnhancedData(
         if (scene.path && seenPaths.has(scene.path)) continue;
         if (scene.path) seenPaths.add(scene.path);
         
-        if (!isCompleted(scene.status)) {
+        if (!isCompleteStatus(scene.status)) {
             const stage = normalizeStage(scene['Publish Stage']);
             stageRemaining[stage]++;
         }
@@ -246,7 +242,7 @@ function calculateTargetTickEnhancedData(
 export function createTimelineSVG(
     plugin: PluginRendererFacade,
     scenes: TimelineItem[],
-    options?: { aprNeedsRefresh?: boolean; milestone?: MilestoneInfo | null; runtimeModeActive?: boolean }
+    options?: { aprNeedsRefresh?: boolean; milestone?: MilestoneInfo | null; runtimeModeActive?: boolean; alienModeActive?: boolean }
 ): { svgString: string; maxStageColor: string } {
     const stopTotalPerf = startPerfSegment(plugin, 'timeline.total');
     const size = SVG_SIZE;
@@ -533,6 +529,7 @@ export function createTimelineSVG(
         extractGradeFromScene(scene, sceneId, sceneGrades, plugin);
 
         appendSynopsisElementForScene({
+            alienModeActive: options?.alienModeActive === true,
             plugin,
             scene,
             sceneId,

@@ -51,35 +51,6 @@ interface SceneGeometryInfo {
     ring: number;
 }
 
-// Export function to check if shift mode is active (for use in other modules)
-// Export function to check if shift mode is active (for use in other modules)
-let globalShiftModeActive = false;
-export function isShiftModeActive(): boolean {
-    return globalShiftModeActive;
-}
-
-// Export function to check if alien mode is active
-let globalAlienModeActive = false;
-export function isAlienModeActive(): boolean {
-    return globalAlienModeActive;
-}
-
-// Export function to check if runtime mode is active
-let globalRuntimeModeActive = false;
-export function isRuntimeModeActive(): boolean {
-    return globalRuntimeModeActive;
-}
-
-/**
- * Reset the global shift/alien/runtime mode state
- * Called when exiting Chronologue mode to ensure clean state
- */
-export function resetShiftModeState(): void {
-    globalShiftModeActive = false;
-    globalAlienModeActive = false;
-    globalRuntimeModeActive = false;
-}
-
 /**
  * Setup Chronologue Shift Mode Controller
  * Handles the shift button and two-scene selection for elapsed time comparison
@@ -93,9 +64,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
     // Resolve the document owning this SVG so popout windows work correctly
     const doc = svg.ownerDocument;
 
-    let shiftModeActive = false;
-    let alienModeActive = false;
-    let runtimeModeActive = false;
+    const mode = view.chronologueState;
     let selectedScenes: TimelineItem[] = []; // Locked scenes (stay selected)
     let elapsedTimeClickCount = 0;
 
@@ -251,9 +220,8 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
     svg.appendChild(rtButton);
 
     const deactivateRuntimeMode = () => {
-        if (!runtimeModeActive || !rtButton) return;
-        runtimeModeActive = false;
-        globalRuntimeModeActive = false;
+        if (!mode.runtime || !rtButton) return;
+        mode.runtime = false;
         updateRtButtonState(rtButton, false);
         
         // Clean up selections, elapsed arc, and scene highlights
@@ -275,9 +243,8 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
 
     // Function to deactivate alien mode
     const deactivateAlienMode = () => {
-        if (!altButton && !alienModeActive) return;
-        alienModeActive = false;
-        globalAlienModeActive = false;
+        if (!altButton && !mode.alien) return;
+        mode.alien = false;
         if (altButton) updateAltButtonState(altButton, false);
         updateDateLabelsForAlienMode(false);
         persistChronologueCalendarView('earth');
@@ -293,7 +260,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
         svg.classList.remove('rt-global-fade');
         
         // Clear data attribute if no other mode is active
-        if (!shiftModeActive && !runtimeModeActive) {
+        if (!mode.shift && !mode.runtime) {
             svg.removeAttribute('data-shift-mode');
         }
     };
@@ -302,22 +269,20 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
         // Exclusive: turning on Shift disables Runtime
         deactivateRuntimeMode();
 
-        if (!shiftModeActive) {
-            shiftModeActive = true;
-            globalShiftModeActive = true;
+        if (!mode.shift) {
+            mode.shift = true;
             updateShiftButtonState(shiftButton, true);
         }
 
         // If Alt/Alien was latched, clicking Shift should replace it
-        if (!enableAlien && alienModeActive) {
+        if (!enableAlien && mode.alien) {
             deactivateAlienMode();
         }
 
         // Handle Alien Logic overlap
         if (enableAlien && altButton) {
-            if (!alienModeActive) {
-                alienModeActive = true;
-                globalAlienModeActive = true;
+            if (!mode.alien) {
+                mode.alien = true;
                 updateAltButtonState(altButton, true);
             }
         } else {
@@ -328,12 +293,12 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
         }
 
         // Visual Updates
-        const modeAttr = alienModeActive ? 'alien' : 'active';
+        const modeAttr = mode.alien ? 'alien' : 'active';
         svg.setAttribute('data-shift-mode', modeAttr);
-        persistChronologueCalendarView(alienModeActive ? 'planetary' : 'earth');
+        persistChronologueCalendarView(mode.alien ? 'planetary' : 'earth');
         
         // Update date labels for alien mode
-        if (alienModeActive) {
+        if (mode.alien) {
             updateDateLabelsForAlienMode(true);
         }
 
@@ -362,14 +327,12 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
 
     // Function to deactivate shift mode
     const deactivateShiftMode = () => {
-        if (shiftModeActive) {
-            shiftModeActive = false;
-            globalShiftModeActive = false;
+        if (mode.shift) {
+            mode.shift = false;
             updateShiftButtonState(shiftButton, false);
 
             // Also kill Alien Mode
-            alienModeActive = false;
-            globalAlienModeActive = false;
+            mode.alien = false;
             if (altButton) updateAltButtonState(altButton, false);
             
             // Restore Earth labels
@@ -616,7 +579,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
     const toggleAlienMode = () => {
         if (!altButton) return; // Guard clause
 
-        if (alienModeActive) {
+        if (mode.alien) {
             // Turn OFF Alien Mode
             deactivateAlienMode();
             return;
@@ -624,12 +587,10 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
 
         // Turn ON Alien Mode (exclusive)
         deactivateRuntimeMode();
-        if (shiftModeActive) deactivateShiftMode();
-        shiftModeActive = false;
-        globalShiftModeActive = false;
+        if (mode.shift) deactivateShiftMode();
+        mode.shift = false;
 
-        alienModeActive = true;
-        globalAlienModeActive = true;
+        mode.alien = true;
         updateAltButtonState(altButton, true);
         svg.setAttribute('data-shift-mode', 'alien');
         updateDateLabelsForAlienMode(true);
@@ -639,27 +600,24 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
     const toggleRuntimeMode = () => {
         if (!rtButton) return;
 
-        if (runtimeModeActive) {
+        if (mode.runtime) {
             // Turn OFF Runtime Mode - use the unified deactivate function
             deactivateRuntimeMode();
         } else {
             // Turn ON Runtime Mode
             // FRONTLOAD: Update button state and visuals immediately (before expensive refresh)
-            runtimeModeActive = true;
-            globalRuntimeModeActive = true;
+            mode.runtime = true;
             updateRtButtonState(rtButton, true);
             svg.setAttribute('data-shift-mode', 'runtime');
             
             // Then deactivate any other modes (quick operations)
-            if (alienModeActive && altButton) {
-                alienModeActive = false;
-                globalAlienModeActive = false;
+            if (mode.alien && altButton) {
+                mode.alien = false;
                 updateAltButtonState(altButton, false);
                 updateDateLabelsForAlienMode(false);
             }
-            if (shiftModeActive) {
-                shiftModeActive = false;
-                globalShiftModeActive = false;
+            if (mode.shift) {
+                mode.shift = false;
                 updateShiftButtonState(shiftButton, false);
                 selectedScenes = [];
                 rebuildSelectedPathsSet();
@@ -683,7 +641,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
     // Register shift button click handler
     view.renderScope.registerDomEvent(shiftButton as unknown as HTMLElement, 'click', (e: MouseEvent) => {
         e.stopPropagation();
-        if (shiftModeActive) {
+        if (mode.shift) {
             deactivateShiftMode();
         } else {
             activateShiftMode(false); // Normal shift
@@ -715,12 +673,12 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
         }
         capsLockState = isActive;
         if (isActive) {
-            if (!shiftModeActive) {
+            if (!mode.shift) {
                 deactivateRuntimeMode();
                 activateShiftMode();
             }
         } else {
-            if (shiftModeActive) deactivateShiftMode();
+            if (mode.shift) deactivateShiftMode();
         }
     };
 
@@ -870,7 +828,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
         // Use capture phase to run before other handlers
         // Works for Shift mode, ALT (Alien) mode, and Runtime mode
         view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (e: PointerEvent) => {
-            if (!shiftModeActive && !alienModeActive && !runtimeModeActive) return;
+            if (!mode.shift && !mode.alien && !mode.runtime) return;
 
             const g = (e.target as Element).closest('.rt-scene-group[data-item-type="Scene"]');
             if (!g) return;
@@ -900,7 +858,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
         // Use capture phase for pointerout too
         // Works for Shift mode, ALT (Alien) mode, and Runtime mode
         view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', (e: PointerEvent) => {
-            if (!shiftModeActive && !alienModeActive && !runtimeModeActive) return;
+            if (!mode.shift && !mode.alien && !mode.runtime) return;
 
             const g = (e.target as Element).closest('.rt-scene-group[data-item-type="Scene"]');
             if (!g) return;
@@ -936,7 +894,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
     // Export click handler for external use (called from ChronologueMode)
     // Works for Shift mode, ALT (Alien) mode, and Runtime mode
     view.handleShiftModeClick = (e: MouseEvent, sceneGroup: Element) => {
-        if (!shiftModeActive && !alienModeActive && !runtimeModeActive) return false;
+        if (!mode.shift && !mode.alien && !mode.runtime) return false;
 
         // Prevent default scene opening behavior when in shift mode
         e.preventDefault();
@@ -991,7 +949,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
 
     // Register elapsed time text click handler (works for Shift, ALT, and Runtime modes)
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'click', (e: MouseEvent) => {
-        if ((!shiftModeActive && !alienModeActive && !runtimeModeActive) || selectedScenes.length !== 2) return;
+        if ((!mode.shift && !mode.alien && !mode.runtime) || selectedScenes.length !== 2) return;
 
         const elapsedTimeLabel = (e.target as Element).closest('.rt-elapsed-time-label');
         if (!elapsedTimeLabel) return;
@@ -1004,9 +962,9 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
     });
 
     // =========================================================================
-    // STATE RESTORATION: Sync local state with global state after SVG refresh
+    // STATE RESTORATION: Reapply this view's state after SVG refresh
     // When a refresh replaces the SVG, a new controller is created. We need to
-    // restore the UI state (buttons, slider, data attributes) based on global state.
+    // restore its buttons and data attributes from the owning view.
     // Modes are MUTUALLY EXCLUSIVE: only one of Runtime, Alien, or Shift can be active.
     // =========================================================================
     const schedulePlanetaryLabelUpdate = () => {
@@ -1019,8 +977,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
                 try {
                     deactivateAlienMode();
                 } catch {
-                    alienModeActive = false;
-                    globalAlienModeActive = false;
+                    mode.alien = false;
                     svg.removeAttribute('data-shift-mode');
                 }
             }
@@ -1038,8 +995,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
                 try {
                     deactivateAlienMode();
                 } catch {
-                    alienModeActive = false;
-                    globalAlienModeActive = false;
+                    mode.alien = false;
                     svg.removeAttribute('data-shift-mode');
                 }
             }
@@ -1047,19 +1003,16 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
         view.renderScope.register(() => window.clearTimeout(timeoutId));
     };
 
-    if (globalRuntimeModeActive && rtButton) {
-        runtimeModeActive = true;
+    if (mode.runtime && rtButton) {
         updateRtButtonState(rtButton, true);
         svg.setAttribute('data-shift-mode', 'runtime');
         updateDateLabelsForRuntimeMode(true);
-    } else if (globalAlienModeActive && altButton) {
-        alienModeActive = true;
+    } else if (mode.alien && altButton) {
         // Alien is now independent of Shift - don't activate Shift
         updateAltButtonState(altButton, true);
         svg.setAttribute('data-shift-mode', 'alien');
         schedulePlanetaryLabelUpdate();
-    } else if (globalShiftModeActive) {
-        shiftModeActive = true;
+    } else if (mode.shift) {
         updateShiftButtonState(shiftButton, true);
         svg.setAttribute('data-shift-mode', 'active');
     } else if (shouldStartInPlanetaryCalendar()) {
@@ -1072,9 +1025,9 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
     // so keyboard, keycap, and chip stay unified.
     const syncHeaderSubNav = () => {
         view.syncChronologueSubNav({
-            shift: shiftModeActive,
-            alt: alienModeActive,
-            runtime: runtimeModeActive,
+            shift: mode.shift,
+            alt: mode.alien,
+            runtime: mode.runtime,
         });
     };
 
@@ -1083,7 +1036,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
         runtimeNoData: !hasRuntimeData,
         // Mirrors the keycap click handler: toggle Shift on/off.
         toggleShift: () => {
-            if (shiftModeActive) {
+            if (mode.shift) {
                 deactivateShiftMode();
             } else {
                 activateShiftMode(false);

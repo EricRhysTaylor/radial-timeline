@@ -173,7 +173,7 @@ function extractMatterMeta(content: string): MatterMeta | null {
     const fmText = (fmInfo as { frontmatter?: string }).frontmatter;
     if (!fmText) return null;
 
-    const yaml = parseYaml(fmText);
+    const yaml: unknown = parseYaml(fmText);
     if (!yaml || typeof yaml !== 'object' || Array.isArray(yaml)) return null;
 
     const parsed = parseMatterMetaFromFrontmatter(yaml as Record<string, unknown>);

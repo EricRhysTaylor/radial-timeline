@@ -54,9 +54,8 @@ export const CHRONOLOGUE_MODE: ModeDefinition = {
             delete view._chronologueShiftCleanup;
         }
 
-        // Reset the global shift mode state
-        const { resetShiftModeState } = await import('../../view/interactions/ChronologueShiftController');
-        resetShiftModeState();
+        // Reset only this view; another timeline may still be comparing scenes.
+        Object.assign(view.chronologueState, { shift: false, alien: false, runtime: false });
 
         // Clean up any remaining shift mode UI from the SVG
         const container = view.containerEl;

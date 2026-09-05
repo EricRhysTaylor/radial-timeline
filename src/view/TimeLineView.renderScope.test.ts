@@ -1,3 +1,4 @@
+import { CHRONOLOGUE_MODE } from '../modes/definitions/ChronologueMode';
 import { describe, expect, it, vi } from 'vitest';
 import { Component } from 'obsidian';
 import { RadialTimelineView } from './TimeLineView';
@@ -24,6 +25,36 @@ function resetRenderScope(view: RadialTimelineView): void {
 }
 
 describe('RadialTimelineView render scope', () => {
+    it('keeps Chronologue modes isolated across views and stable across rerenders', () => {
+        const first = makeView();
+        const second = makeView();
+        first.chronologueState.runtime = true;
+        second.chronologueState.alien = true;
+        resetRenderScope(first);
+        expect(first.chronologueState).toEqual({ shift: false, alien: false, runtime: true });
+        expect(second.chronologueState).toEqual({ shift: false, alien: true, runtime: false });
+        first.unload();
+        second.unload();
+    });
+
+    it('exiting Chronologue resets only the departing view', async () => {
+        const first = makeView();
+        const second = makeView();
+        first.chronologueState.runtime = true;
+        second.chronologueState.shift = true;
+        first._chronologueShiftCleanup = vi.fn();
+        const cleanup = first._chronologueShiftCleanup;
+        // This fixture has no SVG: the state lifecycle is independent of mounted markup.
+        Object.defineProperty(first, 'containerEl', { value: { querySelector: () => null } });
+        await CHRONOLOGUE_MODE.onExit?.(first);
+        expect(cleanup).toHaveBeenCalledOnce();
+        expect(first._chronologueShiftCleanup).toBeUndefined();
+        expect(first.chronologueState).toEqual({ shift: false, alien: false, runtime: false });
+        expect(second.chronologueState.shift).toBe(true);
+        first.unload();
+        second.unload();
+    });
+
     it('is a loaded child Component of the view', () => {
         const view = makeView();
         const scope = view.renderScope;

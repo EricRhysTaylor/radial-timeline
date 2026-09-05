@@ -233,7 +233,7 @@ async function resolveAnchorActNumber(items: TimelineItem[], anchorPath: string,
     const fromSceneData = items.find((item) => item.path === anchorPath && item.itemType === 'Scene');
     if (fromSceneData) return getActNumber(fromSceneData);
     const cache = app.metadataCache.getFileCache(file);
-    const rawAct = cache?.frontmatter?.Act;
+    const rawAct: unknown = cache?.frontmatter?.Act;
     const act = Number(rawAct ?? 1);
     return Number.isFinite(act) && act > 0 ? act : 1;
 }

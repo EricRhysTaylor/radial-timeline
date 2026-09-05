@@ -27,7 +27,7 @@ export type MonthlyCompletedData = {
  * Only counts actual scenes (not Beat/Plot/Backdrop), deduplicated by path.
  */
 function calculateMonthlyCompletedData(scenes: TimelineItem[]): MonthlyCompletedData {
-    const counts = new Array(12).fill(0);
+    const counts = new Array<number>(12).fill(0);
     const sceneNames: string[][] = Array.from({ length: 12 }, () => []);
     const currentYear = new Date().getFullYear();
     const processedPaths = new Set<string>();

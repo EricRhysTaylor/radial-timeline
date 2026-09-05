@@ -183,7 +183,9 @@ export async function getAllSceneData(
             let frontmatter: Record<string, unknown> = {};
             try {
                 const fmText = (fmInfo as { frontmatter?: string }).frontmatter ?? '';
-                const rawFrontmatter = fmText ? (parseYaml(fmText) || {}) : {};
+                const parsed: unknown = fmText ? parseYaml(fmText) : {};
+                if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Expected YAML mapping.');
+                const rawFrontmatter = parsed as Record<string, unknown>;
                 const mappings = getActiveFrontmatterMappings(plugin.settings);
                 frontmatter = normalizeFrontmatterKeys(rawFrontmatter, mappings);
             } catch { // SAFE: unparseable frontmatter YAML — null excludes the file from scene data instead of guessing at fields

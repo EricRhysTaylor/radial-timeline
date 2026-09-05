@@ -29,7 +29,8 @@ export function buildSynopsisElement(
     sceneId: string,
     maxTextWidth: number,
     orderedSubplots: string[],
-    subplotIndexResolver?: (name: string) => number
+    subplotIndexResolver?: (name: string) => number,
+    alienModeActive = false
 ): SVGGElement {
     const fontScale = getReadabilityMultiplier(plugin.settings);
     const synopsisWordLimit = getSynopsisGenerationWordLimit(plugin.settings);
@@ -43,7 +44,7 @@ export function buildSynopsisElement(
             lines.push(backdropContext);
         }
         lines.push('\u00A0');
-        return plugin.synopsisManager.generateElement(scene, lines, sceneId, subplotIndexResolver);
+        return plugin.synopsisManager.generateElement(scene, lines, sceneId, subplotIndexResolver, alienModeActive);
     }
 
     const beatPurpose = typeof scene.Purpose === 'string' ? scene.Purpose.trim() : '';
@@ -143,7 +144,7 @@ export function buildSynopsisElement(
     }
 
     const filtered = contentLines.filter(line => line && line.trim() !== '\u00A0');
-    return plugin.synopsisManager.generateElement(scene, filtered, sceneId, subplotIndexResolver);
+    return plugin.synopsisManager.generateElement(scene, filtered, sceneId, subplotIndexResolver, alienModeActive);
 }
 
 type SynopsisAppendOptions = {
@@ -154,6 +155,7 @@ type SynopsisAppendOptions = {
     masterSubplotOrder: string[];
     scenes: TimelineItem[];
     targets: SVGGElement[];
+    alienModeActive?: boolean;
 };
 
 export function appendSynopsisElementForScene({
@@ -163,7 +165,8 @@ export function appendSynopsisElementForScene({
     maxTextWidth,
     masterSubplotOrder,
     scenes,
-    targets
+    targets,
+    alienModeActive = false
 }: SynopsisAppendOptions): void {
     if (!scene.title) {
         return;
@@ -187,7 +190,8 @@ export function appendSynopsisElementForScene({
                 const idx = masterSubplotOrder.indexOf(name);
                 if (idx < 0) return 0;
                 return idx % 16;
-            }
+            },
+            alienModeActive
         );
         targets.push(synopsisElement);
     } catch (error) {

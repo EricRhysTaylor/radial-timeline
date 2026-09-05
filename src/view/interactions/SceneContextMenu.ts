@@ -171,7 +171,7 @@ async function insertMissingChapterFrontmatter(
         };
         if (!info.exists || typeof info.frontmatter !== 'string') return content;
 
-        const parsed = parseYaml(info.frontmatter);
+        const parsed: unknown = parseYaml(info.frontmatter);
         if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return content;
 
         const frontmatter = parsed as Record<string, unknown>;
@@ -185,7 +185,7 @@ async function insertMissingChapterFrontmatter(
         const newline = content.includes('\r\n') ? '\r\n' : '\n';
         const updatedContent = `---${newline}${updatedYaml.endsWith(newline) ? updatedYaml : `${updatedYaml}${newline}`}---${body.startsWith(newline) || body.length === 0 ? '' : newline}${body}`;
         const verifiedInfo = getFrontMatterInfo(updatedContent) as { frontmatter?: string };
-        const verified = verifiedInfo.frontmatter ? parseYaml(verifiedInfo.frontmatter) : null;
+        const verified: unknown = verifiedInfo.frontmatter ? parseYaml(verifiedInfo.frontmatter) : null;
         if (!verified || typeof verified !== 'object' || Array.isArray(verified)) {
             throw new Error('Chapter frontmatter insert could not be verified.');
         }

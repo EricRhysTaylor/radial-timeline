@@ -69,8 +69,8 @@ export function resolvePublishStageColorFromGroup(app: App, group: SVGGElement):
     };
 
     const normalizeStage = (raw: unknown): 'Zero' | 'Author' | 'House' | 'Press' => {
-        const value = Array.isArray(raw) ? raw[0] : raw;
-        const stage = String(value ?? '').trim().toLowerCase(); // SAFE: absent stage normalizes to Zero below
+        const value: unknown = Array.isArray(raw) ? raw[0] : raw;
+        const stage = (typeof value === 'string' ? value : '').trim().toLowerCase(); // SAFE: absent stage normalizes to Zero below
         if (stage === 'author') return 'Author';
         if (stage === 'house') return 'House';
         if (stage === 'press') return 'Press';

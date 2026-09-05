@@ -29,18 +29,6 @@ describe('AI settings models table', () => {
         expect(source.includes('ert-ai-features-section')).toBe(false);
     });
 
-    it('keeps AI configuration focused on display and summary defaults without an empty advanced fold', () => {
-        const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
-        expect(source.includes("text: 'Advanced & Diagnostics'")).toBe(false);
-        expect(source.includes("text: t('settings.ai.config.timelineDisplayTitle')")).toBe(true);
-        expect(source.includes("text: t('settings.ai.config.summaryRefreshTitle')")).toBe(true);
-        expect(source.includes("title: t('settings.ai.config.pulseContextName')")).toBe(true);
-        expect(source.includes("title: t('settings.ai.config.synopsisMaxWordsName')")).toBe(true);
-        expect(source.includes("title: t('settings.ai.config.targetSummaryName')")).toBe(true);
-        expect(source.includes("title: t('settings.ai.config.weakThresholdName')")).toBe(true);
-        expect(source.includes("title: t('settings.ai.config.alsoUpdateSynopsisName')")).toBe(true);
-    });
-
     it('locks gossamer to bodies-only with no evidence mode dropdown', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
         const previewSource = readFileSync(resolve(process.cwd(), 'src/settings/sections/aiSettingsPreview.ts'), 'utf8');
@@ -203,11 +191,6 @@ describe('AI settings models table', () => {
         const panelEstimateSource = readFileSync(resolve(process.cwd(), 'src/settings/sections/aiPanelEstimate.ts'), 'utf8');
         expect(panelEstimateSource.includes('Estimated provider input')).toBe(true);
         expect(source.includes("largeHandlingSection.toggleClass('ert-settings-hidden', isOllama || cloudKeyBlocked);")).toBe(true);
-    });
-
-    it('clarifies that Pulse context only affects hover reveal', () => {
-        const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
-        expect(source.includes("t('settings.ai.config.pulseContextDesc')")).toBe(true);
     });
 
     it('renders structured Inquiry and Gossamer request composition strings', () => {

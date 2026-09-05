@@ -122,8 +122,8 @@ export class SceneDataService {
                     // Split subplots if provided, otherwise default to "Main Plot"
                     const subplots = metadata.Subplot
                         ? Array.isArray(metadata.Subplot)
-                            ? metadata.Subplot
-                            : [metadata.Subplot]
+                            ? metadata.Subplot.map((value: unknown) => frontmatterValueToText(value))
+                            : [frontmatterValueToText(metadata.Subplot)]
                         : ["Main Plot"];
 
                     // Read actNumber from metadata, default to 1 if missing or empty

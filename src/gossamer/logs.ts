@@ -24,7 +24,7 @@ async function readFrontmatterFromFile(app: App, file: TFile): Promise<Record<st
     const content = await app.vault.read(file);
     const info = getFrontMatterInfo(content);
     if (!info?.exists || !info.frontmatter) return null;
-    const parsed = parseYaml(info.frontmatter);
+    const parsed: unknown = parseYaml(info.frontmatter);
     return parsed && typeof parsed === 'object' ? parsed as Record<string, unknown> : null;
 }
 

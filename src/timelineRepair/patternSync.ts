@@ -184,7 +184,7 @@ export function runPatternSync(
         : [];
 
     // Build proposedWhen + source for every scene.
-    const proposed: Array<{ when: Date; source: 'pattern' | 'authored' }> = new Array(scenes.length);
+    const proposed: Array<{ when: Date; source: 'pattern' | 'authored' }> = new Array<{ when: Date; source: 'pattern' | 'authored' }>(scenes.length);
 
     if (authoredIndices.length === 0) {
         // No authored anchors (or preserve mode off) — legacy walk from configured anchor.

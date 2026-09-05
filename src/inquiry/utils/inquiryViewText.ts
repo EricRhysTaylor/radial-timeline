@@ -478,7 +478,7 @@ export const formatSessionTime = (session: InquirySession): string => {
         minute: '2-digit',
         hour12: true
     });
-    return formatted.replace(/\s+(AM|PM)/i, (_, m) => m.toLowerCase());
+    return formatted.replace(/\s+(AM|PM)/i, (_: string, m: string) => m.toLowerCase());
 };
 
 export const formatSessionScope = (session: InquirySession): string => {

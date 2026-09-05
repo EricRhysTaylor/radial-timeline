@@ -1048,7 +1048,7 @@ export class SceneAnalysisProcessingModal extends Modal {
      */
     public setSynopsisResults(summaryResults: Map<string, string>, synopsisResults?: Map<string, string>): void {
         this.processedResults = summaryResults;
-        this.processedSynopsisResults = synopsisResults ?? new Map();
+        this.processedSynopsisResults = synopsisResults ?? new Map<string, string>();
         this.hasPendingSynopsisResults = summaryResults.size > 0;
     }
 
@@ -1126,7 +1126,7 @@ export class SceneAnalysisProcessingModal extends Modal {
             for (const [path, newSummary] of processedResults.entries()) {
                 const file = this.plugin.app.vault.getAbstractFileByPath(path);
                 if (file && file instanceof TFile) {
-                    await this.plugin.app.fileManager.processFrontMatter(file, (fm) => {
+                    await this.plugin.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
                         // Write Summary (primary artifact)
                         fm['Summary'] = newSummary;
 

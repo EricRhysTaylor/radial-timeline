@@ -447,8 +447,12 @@ export async function runSynopsisBatch(
                 try {
                     const jsonMatch = result.result.match(/\{[\s\S]*\}/);
                     const jsonStr = jsonMatch ? jsonMatch[0] : result.result;
-                    const parsed = JSON.parse(jsonStr);
-                    newSummary = parsed.summary || parsed.synopsis || '';
+                    const parsed: unknown = JSON.parse(jsonStr);
+                    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Expected summary object.');
+                    const fields = parsed as Record<string, unknown>;
+                    const value = fields.summary || fields.synopsis || '';
+                    if (typeof value !== 'string') throw new Error('Expected summary text.');
+                    newSummary = value;
                 } catch (e) {
                     console.error('Failed to parse summary JSON', e);
                     modal.addError(t('sceneAnalysis.synopsis.aiErrors.jsonParseError', { name: sceneName }));
@@ -480,8 +484,11 @@ export async function runSynopsisBatch(
                     if (synopsisResult.result) {
                         const synJsonMatch = synopsisResult.result.match(/\{[\s\S]*\}/);
                         const synJsonStr = synJsonMatch ? synJsonMatch[0] : synopsisResult.result;
-                        const synParsed = JSON.parse(synJsonStr);
-                        const parsedSynopsis = synParsed.synopsis || synParsed.summary || '';
+                        const synParsed: unknown = JSON.parse(synJsonStr);
+                        if (!synParsed || typeof synParsed !== 'object' || Array.isArray(synParsed)) throw new Error('Expected synopsis object.');
+                        const fields = synParsed as Record<string, unknown>;
+                        const parsedSynopsis = fields.synopsis || fields.summary || '';
+                        if (typeof parsedSynopsis !== 'string') throw new Error('Expected synopsis text.');
                         if (parsedSynopsis) {
                             newSynopsis = truncateToWordLimit(parsedSynopsis, synopsisMaxWords);
                         }

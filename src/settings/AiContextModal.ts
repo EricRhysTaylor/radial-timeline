@@ -35,7 +35,7 @@ export class AiContextModal extends Modal {
         this.plugin.settings.aiSettings = aiSettings;
 
         // Clone templates to allow cancel without saving
-        this.templates = JSON.parse(JSON.stringify(aiSettings.roleTemplates || []));
+        this.templates = structuredClone(aiSettings.roleTemplates || []);
         this.currentTemplateId = aiSettings.roleTemplateId || 'commercial_genre';
     }
 
@@ -362,7 +362,7 @@ export class AiContextModal extends Modal {
      */
     private async persistTemplates(successMessage: string, activeTemplateId?: string): Promise<boolean> {
         const aiSettings = validateAiSettings(this.plugin.settings.aiSettings ?? buildDefaultAiSettings()).value;
-        aiSettings.roleTemplates = JSON.parse(JSON.stringify(this.templates)) as AiContextTemplate[];
+        aiSettings.roleTemplates = structuredClone(this.templates);
         if (activeTemplateId !== undefined) {
             aiSettings.roleTemplateId = activeTemplateId;
         }

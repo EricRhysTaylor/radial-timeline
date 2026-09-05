@@ -169,7 +169,9 @@ export async function testYamlUpdateFormatting(
         }
 
         const fmText = fmInfo.frontmatter ?? '';
-        const currentFrontmatter = fmText ? (parseYaml(fmText) || {}) : {};
+        const parsed: unknown = fmText ? parseYaml(fmText) : {};
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Expected YAML mapping.');
+        const currentFrontmatter = parsed as Record<string, unknown>;
         const currentBody = extractBodyAfterFrontmatter(currentContent, fmInfo).trim();
 
         const dummySceneData: SceneData = {

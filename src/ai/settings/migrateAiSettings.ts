@@ -164,7 +164,7 @@ const SEEDED_ONBOARDING_PROFILE = {
  */
 function isExactSeededProfile(profile: AIFeatureProfile | undefined): boolean {
     if (!profile) return false;
-    const canonical = (value: unknown): string => JSON.stringify(value, (_key, val) => {
+    const canonical = (value: unknown): string => JSON.stringify(value, (_key: string, val: unknown) => {
         if (val && typeof val === 'object' && !Array.isArray(val)) {
             return Object.keys(val).sort().reduce<Record<string, unknown>>((acc, key) => {
                 acc[key] = (val as Record<string, unknown>)[key];

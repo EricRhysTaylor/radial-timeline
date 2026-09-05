@@ -30,7 +30,7 @@ export function prepareFrontmatterRewrite(
     const info = getFrontMatterInfo(content) as unknown as FrontmatterRewriteInfo;
     if (!info?.exists || !info.frontmatter) return null;
 
-    const yaml = parseYaml(info.frontmatter);
+    const yaml: unknown = parseYaml(info.frontmatter);
     if (!yaml || typeof yaml !== 'object') return null;
 
     const parsed = yaml as Record<string, unknown>;

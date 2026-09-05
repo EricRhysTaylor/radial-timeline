@@ -600,8 +600,8 @@ export function collectFilesForAuditWithScope(
             case 'Beat':
                 if (fm.Class !== 'Beat' && fm.Class !== 'Plot') return false;
                 if (beatModelFilter) {
-                    const model = fm['Beat Model'];
-                    return toBeatModelMatchKey(String(model ?? '')) === toBeatModelMatchKey(beatModelFilter);
+                    const model: unknown = fm['Beat Model'];
+                    return toBeatModelMatchKey((typeof model === 'string' ? model : '')) === toBeatModelMatchKey(beatModelFilter);
                 }
                 return true;
             case 'Backdrop':

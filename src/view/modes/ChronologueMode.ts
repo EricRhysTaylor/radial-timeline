@@ -5,7 +5,7 @@
  */
 
 import { TFile } from 'obsidian';
-import { setupChronologueShiftController, isShiftModeActive, isAlienModeActive, isRuntimeModeActive } from '../interactions/ChronologueShiftController';
+import { setupChronologueShiftController } from '../interactions/ChronologueShiftController';
 import { ChronologueDragController, wasRecentlyHandledByChronologueDrag } from '../interactions/ChronologueDragController';
 import { openOrRevealFile } from '../../utils/fileUtils';
 import { buildSearchHighlight } from '../../services/searchHighlight';
@@ -274,7 +274,7 @@ function setupSceneHoverInteractions(view: RadialTimelineView, svg: SVGSVGElemen
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (e: PointerEvent) => {
         // Suspend hover synopsis reveal when shift/alt/runtime mode is active
         // CHECK THIS FIRST before any other work!
-        if (isShiftModeActive() || isAlienModeActive() || isRuntimeModeActive()) {
+        if (view.chronologueState.shift || view.chronologueState.alien || view.chronologueState.runtime) {
             return;
         }
 
@@ -387,7 +387,7 @@ function setupSceneClickInteractions(view: RadialTimelineView, svg: SVGSVGElemen
         }
 
         // When shift/alt/runtime mode is active, delegate to shift controller
-        if (isShiftModeActive() || isAlienModeActive() || isRuntimeModeActive()) {
+        if (view.chronologueState.shift || view.chronologueState.alien || view.chronologueState.runtime) {
             const handled = view.handleShiftModeClick?.(e, g);
             if (handled) {
                 return; // Shift/ALT mode handled the click

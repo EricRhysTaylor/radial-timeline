@@ -125,8 +125,8 @@ function progressWeightForScene(scene: TimelineItem): number {
 }
 
 function stageProgressBase(rawStage: unknown): number {
-    const stage = Array.isArray(rawStage) ? rawStage[0] : rawStage;
-    const normalized = String(stage ?? 'Zero').trim().toLowerCase();
+    const stage: unknown = Array.isArray(rawStage) ? rawStage[0] : rawStage;
+    const normalized = (typeof stage === 'string' ? stage : 'Zero').trim().toLowerCase();
     if (normalized === 'author') return 1;
     if (normalized === 'house') return 1.5;
     if (normalized === 'press') return 2;

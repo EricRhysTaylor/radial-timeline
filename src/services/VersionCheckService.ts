@@ -72,8 +72,12 @@ export class VersionCheckService {
                 return false;
             }
             
-            const release = response.json;
-            const tagName = release.tag_name as string;
+            const release: unknown = response.json;
+            if (!release || typeof release !== 'object' || !('tag_name' in release)
+                || typeof release.tag_name !== 'string') {
+                throw new Error('Release response has no version tag.');
+            }
+            const tagName = release.tag_name;
             
             // Remove 'v' prefix if present
             this.latestVersion = tagName.startsWith('v') ? tagName.slice(1) : tagName;

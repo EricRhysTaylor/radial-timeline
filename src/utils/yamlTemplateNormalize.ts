@@ -84,7 +84,7 @@ export function extractKeysInOrder(template: string): string[] {
  */
 export function safeParseYaml(template: string): Record<string, FieldEntryValue> {
     try {
-        const parsed = parseYaml(sanitizeTemplatePlaceholdersForYamlParse(template));
+        const parsed: unknown = parseYaml(sanitizeTemplatePlaceholdersForYamlParse(template));
         if (!parsed || typeof parsed !== 'object') return {};
         const entries: Record<string, FieldEntryValue> = {};
         Object.entries(parsed as Record<string, unknown>).forEach(([key, value]) => {

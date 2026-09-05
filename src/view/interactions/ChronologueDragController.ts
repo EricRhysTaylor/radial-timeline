@@ -37,9 +37,9 @@ import {
     resolvePublishStageColorFromGroup,
     resolveSubplotColorFromGroup
 } from './dragGeometry';
-import { isAlienModeActive, isRuntimeModeActive, isShiftModeActive } from './ChronologueShiftController';
 
 export interface ChronologueDragViewAdapter {
+    chronologueState: { shift: boolean; alien: boolean; runtime: boolean };
     plugin: RadialTimelinePlugin;
     sceneData: TimelineItem[];
     renderScope: {
@@ -131,7 +131,7 @@ export class ChronologueDragController {
      * active. A drag underneath them would be incoherent, so it is suppressed.
      */
     private subModeActive(): boolean {
-        return isShiftModeActive() || isAlienModeActive() || isRuntimeModeActive();
+        return this.view.chronologueState.shift || this.view.chronologueState.alien || this.view.chronologueState.runtime;
     }
 
     // ── gesture ────────────────────────────────────────────────────────────

@@ -544,9 +544,9 @@ function resolveSceneColor(
     // Check if scene is "completed" (has a publish stage set)
     // Use bracket notation since 'Publish Stage' has a space
     const rawStageValue = scene['Publish Stage'];
-    const rawStage = Array.isArray(rawStageValue) ? rawStageValue[0] : rawStageValue;
-    const stage = (rawStage || '').toString().trim().toLowerCase();
-    const isCompleted = stage && stage !== '' && stage !== 'zero';
+    const rawStage: unknown = Array.isArray(rawStageValue) ? rawStageValue[0] : rawStageValue;
+    const stage = (typeof rawStage === 'string' ? rawStage : '').trim().toLowerCase();
+    const isCompleted = stage !== '' && stage !== 'zero';
 
     // SCENES stage: gray out completed scenes to hide publishing progress
     if (grayCompletedScenes && isCompleted) {

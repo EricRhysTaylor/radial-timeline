@@ -1,3 +1,4 @@
+import { appendSynopsisInline } from './utils/synopsisInline';
 /*
  * Radial Timeline (tm) Plugin for Obsidian
  * Copyright (c) 2025 Eric Rhys Taylor
@@ -29,7 +30,6 @@ import {
 import { sortScenes, isBeatNote, shouldDisplayMissingWhenWarning } from './utils/sceneHelpers';
 import { parseWhenField } from './utils/date';
 import { getReadabilityMultiplier, getReadabilityScale } from './utils/readability';
-import { isAlienModeActive } from './view/interactions/ChronologueShiftController';
 import { applySearchTermHighlightsInRoot, clearSearchHighlightsInRoot } from './view/interactions/SearchInteractions';
 import { shouldHighlightMetadataTerm } from './services/searchState';
 import { getIcon } from 'obsidian';
@@ -123,11 +123,11 @@ export default class SynopsisManager {
     if (kindAttr !== 'subplot' && kindAttr !== 'character') return null;
 
     try {
-      const parsed = JSON.parse(itemsAttr);
+      const parsed: unknown = JSON.parse(itemsAttr);
       if (!Array.isArray(parsed)) return null;
       const items = parsed
-        .filter((item): item is { text: string; color: string; povLabel?: string } =>
-          !!item && typeof item.text === 'string' && typeof item.color === 'string'
+        .filter((item: unknown): item is { text: string; color: string; povLabel?: string } =>
+          !!item && typeof item === 'object' && 'text' in item && 'color' in item && typeof item.text === 'string' && typeof item.color === 'string'
         )
         .map(item => ({
           text: item.text,
@@ -792,28 +792,6 @@ export default class SynopsisManager {
     return didWrap;
   }
 
-  private parseHtmlSafely(html: string): DocumentFragment {
-    // Use DOMParser to parse the HTML string
-    const parser = new DOMParser();
-    // Wrap with a root element to ensure proper parsing
-    const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html');
-
-    // Extract the content from the wrapper div
-    const container = doc.querySelector('div');
-    // The parsed document carries no Obsidian window; the fragment only
-    // ferries nodes into the live DOM, which adopts them on insert.
-    const fragment = createFragment();
-
-    if (container) {
-      // Move all child nodes to our fragment
-      while (container.firstChild) {
-        fragment.appendChild(container.firstChild);
-      }
-    }
-
-    return fragment;
-  }
-
   private buildPlanetaryLine(scene: TimelineItem): string | null {
     if (!scene.when) return null;
     const profile = getActivePlanetaryProfile(this.plugin.settings);
@@ -841,59 +819,7 @@ export default class SynopsisManager {
     const ownerDoc = titleTextElement.ownerDocument;
     if (titleContent.includes('<tspan')) {
 
-      // For pre-formatted HTML with tspans, parse safely
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(`<svg><text>${titleContent}</text></svg>`, 'image/svg+xml');
-      const textNode = doc.querySelector('text');
-
-      if (!textNode) {
-        const fallbackTspan = ownerDoc.win.createSvg("tspan");
-        fallbackTspan.setAttribute("fill", titleColor);
-        fallbackTspan.appendChild(ownerDoc.createTextNode(titleContent));
-        titleTextElement.appendChild(fallbackTspan);
-        return null;
-      }
-
-      const cloneInlineTspan = (source: Node): Node => {
-        if (source.nodeType === Node.TEXT_NODE) {
-          return ownerDoc.createTextNode(source.textContent ?? '');
-        }
-
-        if (source.nodeType !== Node.ELEMENT_NODE || (source as Element).tagName.toLowerCase() !== 'tspan') {
-          throw new Error('Unsupported pre-formatted synopsis node.');
-        }
-
-        const tspan = source as Element;
-        const svgTspan = ownerDoc.win.createSvg("tspan");
-
-        Array.from(tspan.attributes).forEach(attr => {
-          svgTspan.setAttribute(attr.name, attr.value);
-        });
-
-        if (tspan.instanceOf(HTMLElement) || tspan.instanceOf(SVGElement)) {
-          const style = (tspan as HTMLElement).getAttribute('style');
-          if (style) {
-            svgTspan.setAttribute('style', style);
-          }
-        }
-
-        Array.from(tspan.childNodes).forEach(child => {
-          svgTspan.appendChild(cloneInlineTspan(child));
-        });
-
-        return svgTspan;
-      };
-
-      Array.from(textNode.childNodes).forEach(node => {
-        if (node.nodeType === Node.ELEMENT_NODE && (node as Element).tagName.toLowerCase() === 'tspan') {
-          titleTextElement.appendChild(cloneInlineTspan(node));
-
-        } else if (node.nodeType === Node.TEXT_NODE) {
-          if (node.textContent) {
-            titleTextElement.appendChild(ownerDoc.createTextNode(node.textContent));
-          }
-        }
-      });
+      this.processContentWithTspans(titleContent, titleTextElement);
 
       return null; // Pre-formatted content doesn't have separate metadata
 
@@ -968,7 +894,7 @@ export default class SynopsisManager {
    * Create a DOM element for a scene synopsis with consistent formatting
    * @returns An SVG group element containing the formatted synopsis
    */
-  generateElement(scene: TimelineItem, contentLines: string[], sceneId: string, subplotIndexResolver?: (name: string) => number): SVGGElement {
+  generateElement(scene: TimelineItem, contentLines: string[], sceneId: string, subplotIndexResolver?: (name: string) => number, alienModeActive = false): SVGGElement {
     const { titleColor: defaultTitleColor } = getPublishStageStyle(scene["Publish Stage"], this.plugin.settings.publishStageColors);
     const fontScale = this.getReadabilityScale();
 
@@ -1068,7 +994,7 @@ export default class SynopsisManager {
 
     let formattedDate: string | undefined;
     if (shouldShowDate && scene.when) {
-      if (isAlienModeActive()) {
+      if (alienModeActive) {
         const profile = getActivePlanetaryProfile(this.plugin.settings);
         const conversion = profile ? convertFromEarth(scene.when, profile) : null;
         if (conversion) {
@@ -2442,94 +2368,7 @@ export default class SynopsisManager {
    * @param parentElement The SVG element to append processed nodes to
    */
   private processContentWithTspans(content: string, parentElement: SVGElement): void {
-    const ownerDoc = parentElement.ownerDocument;
-    // First decode any HTML entities in the content
-    let processedContent = content;
-
-    // Check if the content contains HTML-encoded tspan elements
-    if (content.includes('&lt;tspan') && !content.includes('<tspan')) {
-      // Convert HTML entities to actual tags for proper parsing
-      processedContent = content
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&apos;/g, "'")
-        .replace(/&amp;/g, '&');
-
-
-    }
-
-    // Use DOMParser to parse the content safely
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(`<div>${processedContent}</div>`, 'text/html');
-    const container = doc.querySelector('div');
-
-    if (!container) {
-      throw new Error('Unable to create container for synopsis content.');
-    }
-
-    const nodes = Array.from(container.childNodes);
-    if (nodes.length === 0) {
-      throw new Error('Synopsis content produced no nodes to render.');
-    }
-
-    const appendTextSpan = (textValue: string): void => {
-      if (!textValue.trim()) {
-        return;
-      }
-      const svgTspan = ownerDoc.win.createSvg('tspan');
-      svgTspan.textContent = textValue;
-      parentElement.appendChild(svgTspan);
-    };
-
-    const cloneSvgInlineNode = (source: Node): Node => {
-      if (source.nodeType === Node.TEXT_NODE) {
-        return ownerDoc.createTextNode(source.textContent ?? '');
-      }
-
-      if (source.nodeType !== Node.ELEMENT_NODE) {
-        throw new Error('Unsupported node type found in synopsis content.');
-      }
-
-      const element = source as Element;
-      const tag = element.tagName.toLowerCase();
-      if (tag !== 'tspan' && tag !== 'span') {
-        throw new Error(`Unsupported element <${element.tagName}> in synopsis content.`);
-      }
-
-      const svgTspan = ownerDoc.win.createSvg('tspan');
-      Array.from(element.attributes).forEach(attr => {
-        svgTspan.setAttribute(attr.name, attr.value);
-      });
-      Array.from(element.childNodes).forEach(child => {
-        svgTspan.appendChild(cloneSvgInlineNode(child));
-      });
-      return svgTspan;
-    };
-
-    nodes.forEach(node => {
-      if (node.nodeType === Node.TEXT_NODE) {
-        appendTextSpan(node.textContent ?? '');
-        return;
-      }
-
-      if (node.nodeType === Node.ELEMENT_NODE) {
-        const element = node as Element;
-        const tag = element.tagName.toLowerCase();
-        if (tag !== 'tspan' && tag !== 'span') {
-          throw new Error(`Unsupported element <${element.tagName}> in synopsis content.`);
-        }
-
-        parentElement.appendChild(cloneSvgInlineNode(element));
-        return;
-      }
-
-      throw new Error('Unsupported node type found in synopsis content.');
-    });
-
-    if (!parentElement.hasChildNodes()) {
-      throw new Error('Synopsis conversion produced no SVG tspans.');
-    }
+    appendSynopsisInline(content, parentElement);
   }
 
   /**

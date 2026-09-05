@@ -313,7 +313,6 @@
   color: var(--text-accent-hover);
 }
 
-
 .ert-ui.ert-scope--settings .ert-beat-template-preview {
   padding: var(--ert-gap-sm);
   border: 1px solid var(--background-modifier-border);
@@ -496,56 +495,6 @@
 /* ── Preview card dirty accent ──────────────────────────────────── */
 .ert-ui.ert-scope--settings .ert-set-preview--dirty {
   border-color: color-mix(in srgb, var(--color-yellow) 40%, transparent);
-}
-
-/* ── Shared system description layout (ert-desc-*) ───────────────── */
-.ert-ui.ert-scope--settings .ert-desc-block {
-  display: flex;
-  flex-direction: column;
-}
-.ert-ui.ert-scope--settings .ert-desc-summary {
-  color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1.45;
-  margin-top: 4px;
-  margin-bottom: 8px;
-}
-.ert-ui.ert-scope--settings .ert-desc-body {
-  color: var(--text-muted);
-  font-size: 12.5px;
-  line-height: 1.4;
-  margin-bottom: 6px;
-}
-.ert-ui.ert-scope--settings .ert-desc-fields {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ert-gap-2xs);
-  margin-bottom: 6px;
-}
-.ert-ui.ert-scope--settings .ert-desc-field {
-  font-size: 12px;
-  line-height: 1.35;
-  color: var(--text-muted);
-}
-.ert-ui.ert-scope--settings .ert-desc-field-label {
-  font-weight: 600;
-  color: var(--text-faint);
-}
-.ert-ui.ert-scope--settings .ert-desc-field-value {
-  font-weight: 400;
-}
-.ert-ui.ert-scope--settings .ert-desc-examples {
-  color: var(--text-faint);
-  font-size: 12px;
-  line-height: 1.35;
-  margin-bottom: 6px;
-}
-.ert-ui.ert-scope--settings .ert-desc-meta {
-  color: var(--text-faint);
-  font-size: 12px;
-  font-weight: 500;
-  margin-top: 2px;
 }
 
 /* ── Set origin tag (Design header) ──────────────────────────────── */
@@ -874,53 +823,5 @@
 .ert-ui.ert-scope--settings .setting-item.setting-item-heading .ert-wiki-link {
   margin-left: auto;
   flex: 0 0 auto;
-}
-
-.ert-ui.ert-scope--settings .ert-backup-callout {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ert-gap-sm);
-  padding: var(--ert-panel-pad);
-  border-radius: var(--ert-panel-radius);
-  border: 1px solid var(--ert-panel-border);
-  background: var(--ert-panel-bg);
-}
-
-.ert-ui.ert-scope--settings .ert-backup-callout__heading {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: var(--ert-gap-sm);
-  align-items: center;
-}
-
-.ert-ui.ert-scope--settings .ert-backup-callout__icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid color-mix(in srgb, var(--text-muted) 20%, transparent);
-}
-
-.ert-ui.ert-scope--settings .ert-backup-callout__icon svg {
-  width: 20px;
-  height: 20px;
-}
-
-.ert-ui.ert-scope--settings .ert-backup-callout__title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.ert-ui.ert-scope--settings .ert-backup-callout__description {
-  color: var(--text-muted);
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.ert-ui.ert-scope--settings .ert-backup-callout__description a {
-  color: var(--text-accent);
 }
 

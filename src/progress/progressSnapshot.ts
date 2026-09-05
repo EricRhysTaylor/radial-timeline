@@ -34,8 +34,8 @@ export interface ProgressSnapshot {
 }
 
 export function normalizePublishStage(raw: unknown): Stage {
-    const value = Array.isArray(raw) ? raw[0] : raw;
-    const normalized = (value ?? 'Zero').toString().trim().toLowerCase();
+    const value: unknown = Array.isArray(raw) ? raw[0] : raw;
+    const normalized = (typeof value === 'string' ? value : 'Zero').trim().toLowerCase();
     return STAGE_ORDER.find(stage => stage.toLowerCase() === normalized) ?? 'Zero';
 }
 

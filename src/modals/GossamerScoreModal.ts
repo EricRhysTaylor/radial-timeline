@@ -189,7 +189,7 @@ export class GossamerScoreModal extends Modal {
       if (fm.Class !== 'Beat' && fm.class !== 'Beat') continue;
       for (let i = 1; i <= 30; i++) {
         if (fm[`Gossamer${i}`] === undefined) continue;
-        const raw = fm[`GossamerSignal${i}`];
+        const raw: unknown = fm[`GossamerSignal${i}`];
         const slotSignal = typeof raw === 'string' && raw.trim().length > 0
           ? raw.trim().toLowerCase()
           : 'momentum';
@@ -752,7 +752,7 @@ export class GossamerScoreModal extends Modal {
         let hasAnyScores = false;
         for (let i = 1; i <= 30; i++) {
           const key = `Gossamer${i}`;
-          const value = rawFm?.[key];
+          const value: unknown = rawFm?.[key];
           let numeric: number | undefined;
           if (typeof value === 'number') {
             numeric = value;
@@ -764,7 +764,7 @@ export class GossamerScoreModal extends Modal {
           if (numeric !== undefined) {
             // Only include slots whose signal matches the active signal.
             // Missing signal field = momentum (legacy runs).
-            const rawSignal = rawFm?.[`GossamerSignal${i}`];
+            const rawSignal: unknown = rawFm?.[`GossamerSignal${i}`];
             const slotSignal = typeof rawSignal === 'string' && rawSignal.trim().length > 0
               ? rawSignal.trim().toLowerCase()
               : 'momentum';
@@ -772,7 +772,7 @@ export class GossamerScoreModal extends Modal {
 
             hasAnyScores = true;
             const justificationKey = `Gossamer${i} Justification`;
-            const justificationValue = rawFm?.[justificationKey];
+            const justificationValue: unknown = rawFm?.[justificationKey];
             scores.push({ index: i, value: numeric });
             if (typeof justificationValue === 'string' && justificationValue.trim().length > 0) {
               scores[scores.length - 1].justification = justificationValue;
@@ -1199,7 +1199,7 @@ export class GossamerScoreModal extends Modal {
     // Signal-aware score detection: only count slots whose GossamerSignal${i}
     // matches the active signal (missing signal field = momentum by legacy rule).
     const slotMatchesActiveSignal = (fm: Record<string, unknown>, index: number): boolean => {
-      const raw = fm[`GossamerSignal${index}`];
+      const raw: unknown = fm[`GossamerSignal${index}`];
       if (typeof raw === 'string' && raw.trim().length > 0) {
         return raw.trim().toLowerCase() === activeSignal;
       }

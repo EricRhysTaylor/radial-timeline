@@ -165,7 +165,7 @@ export function deriveHeaderStyle(spec: DesignedStyleSpec): HeaderStyle {
 export function isHeaderPresetModified(spec: DesignedStyleSpec): boolean {
     if (deriveHeaderStyle(spec) === 'custom') return false;
 
-    const clone = JSON.parse(JSON.stringify(spec)) as DesignedStyleSpec;
+    const clone = structuredClone(spec);
     applyHeaderPreset(clone, spec.runningHeader.mode);
     const slots: Array<keyof DesignedStyleSpec['runningHeader']> = [
         'evenLeft', 'evenCenter', 'evenRight',
@@ -267,7 +267,7 @@ const FONT_OPTIONS: Array<{ value: DesignedStyleSpec['body']['font']; label: str
 export function cloneArchetypeSpec(archetype: DesignArchetype): DesignedStyleSpec {
     const bundledId = ARCHETYPE_TO_BUNDLED[archetype];
     const source = BUNDLED_FICTION_SPECS[bundledId];
-    const clone = JSON.parse(JSON.stringify(source)) as DesignedStyleSpec;
+    const clone = structuredClone(source);
     clone.specVersion = DESIGNED_STYLE_SPEC_VERSION;
     return clone;
 }
@@ -467,13 +467,13 @@ export class DesignedStyleWizardModal extends Modal {
         this.layoutId = options.initialLayoutId;
         this.isEditMode = !!options.initialSpec;
         this.spec = options.initialSpec
-            ? (JSON.parse(JSON.stringify(options.initialSpec)) as DesignedStyleSpec)
+            ? (structuredClone(options.initialSpec))
             : cloneArchetypeSpec('submission');
         this.spec.specVersion = DESIGNED_STYLE_SPEC_VERSION;
         // Snapshot the spec at open time so per-category Reset buttons can
         // restore individual slices to their template-original values without
         // wiping the user's other in-flight changes.
-        this.originalSpec = JSON.parse(JSON.stringify(this.spec)) as DesignedStyleSpec;
+        this.originalSpec = structuredClone(this.spec);
         this.styleName = options.initialName ?? '';
         this.description = options.initialDescription ?? '';
         this.archetypePicked = this.isEditMode;
@@ -642,7 +642,7 @@ export class DesignedStyleWizardModal extends Modal {
                 this.spec.specVersion = DESIGNED_STYLE_SPEC_VERSION;
                 // Re-snapshot the original so per-category Reset restores to
                 // this newly-chosen archetype's defaults (not the previous one).
-                this.originalSpec = JSON.parse(JSON.stringify(this.spec)) as DesignedStyleSpec;
+                this.originalSpec = structuredClone(this.spec);
                 if (!this.styleName) {
                     this.styleName = `${ARCHETYPE_INFO[archetype].name} Custom`;
                 }
@@ -925,29 +925,29 @@ export class DesignedStyleWizardModal extends Modal {
         this.mutateSpec((s) => {
             switch (cat) {
                 case 'page':
-                    s.paperSize = JSON.parse(JSON.stringify(orig.paperSize));
-                    s.margins = JSON.parse(JSON.stringify(orig.margins));
+                    s.paperSize = structuredClone(orig.paperSize);
+                    s.margins = structuredClone(orig.margins);
                     return;
                 case 'body':
-                    s.body = JSON.parse(JSON.stringify(orig.body));
+                    s.body = structuredClone(orig.body);
                     return;
                 case 'headers':
-                    s.runningHeader = JSON.parse(JSON.stringify(orig.runningHeader));
+                    s.runningHeader = structuredClone(orig.runningHeader);
                     return;
                 case 'folio':
-                    s.folio = JSON.parse(JSON.stringify(orig.folio));
+                    s.folio = structuredClone(orig.folio);
                     return;
                 case 'parts':
-                    s.parts = JSON.parse(JSON.stringify(orig.parts));
+                    s.parts = structuredClone(orig.parts);
                     return;
                 case 'chapters':
-                    s.chapters = JSON.parse(JSON.stringify(orig.chapters));
+                    s.chapters = structuredClone(orig.chapters);
                     return;
                 case 'scenes':
-                    s.scene = JSON.parse(JSON.stringify(orig.scene));
+                    s.scene = structuredClone(orig.scene);
                     return;
                 case 'epigraph':
-                    s.epigraph = JSON.parse(JSON.stringify(orig.epigraph));
+                    s.epigraph = structuredClone(orig.epigraph);
                     return;
             }
             assertNever(cat, 'resetActiveCategory');
@@ -2373,7 +2373,7 @@ export class DesignedStyleWizardModal extends Modal {
             }
             existing.name = trimmedName;
             existing.description = this.description.trim() || undefined;
-            existing.designedSpec = JSON.parse(JSON.stringify(this.spec)) as DesignedStyleSpec;
+            existing.designedSpec = structuredClone(this.spec);
             const tex = generateDesignedStyleTex(this.spec, { bundledLayoutId: existing.id });
             await this.writeTexFile(existing.path, tex);
             await plugin.saveSettings();
@@ -2409,7 +2409,7 @@ export class DesignedStyleWizardModal extends Modal {
             templateKind: 'custom',
             origin: 'designed',
             bundled: false,
-            designedSpec: JSON.parse(JSON.stringify(this.spec)) as DesignedStyleSpec,
+            designedSpec: structuredClone(this.spec),
         };
 
         const tex = generateDesignedStyleTex(this.spec, { bundledLayoutId: id });

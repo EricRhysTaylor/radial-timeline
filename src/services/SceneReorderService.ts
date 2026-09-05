@@ -320,7 +320,7 @@ async function readReferenceIdFromFile(app: App, file: TFile): Promise<string | 
         const content = await app.vault.read(file);
         const info = getFrontMatterInfo(content);
         if (!info.frontmatter) return undefined;
-        const parsed = parseYaml(info.frontmatter);
+        const parsed: unknown = parseYaml(info.frontmatter);
         if (!parsed || typeof parsed !== 'object') return undefined;
         return readReferenceId(parsed as Record<string, unknown>);
     } catch {

@@ -16,6 +16,9 @@ export async function requestJson(url: string): Promise<JsonHttpResponse> {
     return {
         ok: response.status >= 200 && response.status < 300,
         status: response.status,
-        json: async () => JSON.parse(response.text),
+        json: async () => {
+            const parsed: unknown = JSON.parse(response.text);
+            return parsed;
+        },
     };
 }

@@ -33,7 +33,7 @@ async function getTimelineSubplotOrder(plugin: RadialTimelinePlugin): Promise<st
     }
 
     await sleep(150);
-    let fetched: unknown;
+    let fetched: Awaited<ReturnType<RadialTimelinePlugin['getSceneData']>>;
     try {
         fetched = await plugin.getSceneData();
     } catch {

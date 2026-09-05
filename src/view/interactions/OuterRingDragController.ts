@@ -320,7 +320,7 @@ export class OuterRingDragController {
         const file = this.view.plugin.app.vault.getAbstractFileByPath(filePath);
         if (!(file instanceof TFile)) return normalizedFallback;
         const frontmatter = this.view.plugin.app.metadataCache.getFileCache(file)?.frontmatter;
-        const fromId = frontmatter?.ID ?? frontmatter?.id ?? frontmatter?.['Reference ID'] ?? frontmatter?.referenceId;
+        const fromId: unknown = frontmatter?.ID ?? frontmatter?.id ?? frontmatter?.['Reference ID'] ?? frontmatter?.referenceId;
         if (typeof fromId === 'string' && fromId.trim().length > 0) {
             return fromId.trim();
         }
@@ -1310,12 +1310,12 @@ export class OuterRingDragController {
         const fm = cache?.frontmatter;
         if (!fm) return [];
         
-        const subplotValue = fm['Subplot'] || fm['subplot'];
+        const subplotValue: unknown = fm['Subplot'] || fm['subplot'];
         if (!subplotValue) return [];
         
         if (Array.isArray(subplotValue)) {
             return subplotValue.map(s => String(s).trim()).filter(s => s.length > 0);
         }
-        return [String(subplotValue).trim()].filter(s => s.length > 0);
+        return typeof subplotValue === 'string' ? [subplotValue.trim()].filter(s => s.length > 0) : [];
     }
 }

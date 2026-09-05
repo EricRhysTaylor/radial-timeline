@@ -176,8 +176,9 @@ export type NormalizedStatus = 'Todo' | 'Working' | 'Due' | 'Completed';
 
 export function normalizeStatus(raw: unknown): NormalizedStatus | null {
   if (raw == null) return 'Todo';
-  const first = Array.isArray(raw) ? raw[0] ?? '' : raw;
-  const v = (typeof first === 'object' ? JSON.stringify(first) : String(first)).trim().toLowerCase();
+  const first: unknown = Array.isArray(raw) ? raw[0] ?? '' : raw;
+  if (typeof first !== 'string') return null;
+  const v = first.trim().toLowerCase();
   if (!v) return 'Todo';
   if (v === 'complete' || v === 'done' || v === 'completed') return 'Completed';
   if (v === 'working' || v === 'in progress' || v === 'progress') return 'Working';
@@ -228,7 +229,7 @@ export function stripObsidianComments(text: string): string {
 export function stripWikiLinks(text: string): string {
   if (!text) return text;
   // Replace [[Link|Alias]] with Alias, and [[Link]] with Link
-  return text.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_, link, alias) => alias || link).trim();
+  return text.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_: string, link: string, alias?: string) => alias || link).trim();
 }
 
 /**

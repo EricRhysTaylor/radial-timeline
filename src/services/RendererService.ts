@@ -1,3 +1,4 @@
+import { isCompleteStatus } from '../progress/progressSnapshot';
 /*
  * Renderer Service
  * Abstraction layer for all SVG rendering.
@@ -6,7 +7,6 @@
 import type { TimelineItem } from '../types';
 import type RadialTimelinePlugin from '../main';
 import { addHighlightRectangles as addHighlightRectanglesExt } from '../view/interactions';
-import { isRuntimeModeActive } from '../view/interactions/ChronologueShiftController';
 import { renderGossamerLayer } from '../renderer/gossamerLayer';
 import { renderGossamerMonthSpokes } from '../renderer/components/MonthSpokes';
 import { renderProgressRing, resolveProgressEstimate, resolveProgressRingDate } from '../renderer/components/ProgressRing';
@@ -66,7 +66,7 @@ export class RendererService {
         return plugin as unknown as PluginRendererFacade;
     }
 
-    public renderTimeline(scenes: TimelineItem[]): RenderResult {
+    public renderTimeline(scenes: TimelineItem[], mode: { runtime: boolean; alien: boolean } = { runtime: false, alien: false }): RenderResult {
         const pluginFacade = RendererService.asFacade(this.plugin);
 
         // Check if APR needs refresh (stale check)
@@ -81,7 +81,7 @@ export class RendererService {
         // Detect progress milestones (stage completions, staleness encouragement)
         const milestone = this.detectProgressMilestone(scenes);
         
-        return buildTimelineSVG(pluginFacade, scenes, { aprNeedsRefresh, milestone, runtimeModeActive: isRuntimeModeActive() });
+        return buildTimelineSVG(pluginFacade, scenes, { aprNeedsRefresh, milestone, runtimeModeActive: mode.runtime, alienModeActive: mode.alien });
     }
 
     /**
@@ -387,7 +387,7 @@ export class RendererService {
 
         const anglesByBeat: Map<string, number> = view.plugin._beatAngles || new Map<string, number>();
         const beatSlicesByName: Map<string, { startAngle: number; endAngle: number; innerR: number; outerR: number }>
-            = view.plugin._beatSlices || new Map();
+            = view.plugin._beatSlices || new Map<string, { startAngle: number; endAngle: number; innerR: number; outerR: number }>();
 
         const beatPathByName = new Map<string, string>();
         const publishStageColorByBeat = new Map<string, string>();
@@ -540,17 +540,12 @@ export class RendererService {
             return match ?? 'Zero';
         };
         
-        const isCompleted = (status: unknown): boolean => {
-            const val = Array.isArray(status) ? status[0] : status;
-            const normalized = (val ?? '').toString().trim().toLowerCase();
-            return normalized === 'complete' || normalized === 'completed' || normalized === 'done';
-        };
         
         const seenPaths = new Set<string>();
         for (const scene of realScenes) {
             if (scene.path && seenPaths.has(scene.path)) continue;
             if (scene.path) seenPaths.add(scene.path);
-            if (!isCompleted(scene.status)) {
+            if (!isCompleteStatus(scene.status)) {
                 const stage = normalizeStage(scene['Publish Stage']);
                 stageRemaining[stage]++;
             }

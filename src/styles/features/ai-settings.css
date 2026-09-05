@@ -140,110 +140,8 @@
   line-height: 1.5;
 }
 
-.ert-ui.ert-scope--settings .ert-ai-toggle-warning {
-  margin-top: var(--ert-gap-cozy);
-  color: var(--text-error);
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.ert-ui.ert-scope--settings .ert-ai-toggle-warning-title {
-  font-weight: 600;
-}
-
-.ert-ui.ert-scope--settings .ert-ai-toggle-warning-list {
-  margin: var(--ert-gap-tight) 0 var(--ert-gap-tight) var(--ert-gap-roomy);
-  padding: 0;
-}
-
-.ert-ui.ert-scope--settings .ert-ai-toggle-warning-list li {
-  margin: 0 0 var(--ert-gap-xs) 0;
-}
-
-.ert-ui.ert-scope--settings .ert-ai-toggle-warning-footer {
-  margin-top: var(--ert-gap-tight);
-}
-
 .ert-ui.ert-scope--settings .ert-ai-models-panel {
   margin-top: 8px;
-}
-
-.ert-ui.ert-scope--settings .ert-ai-recommendations {
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
-  padding: var(--ert-pad-xs) var(--ert-pad-cozy);
-  background: color-mix(in srgb, var(--background-secondary) 45%, transparent);
-}
-
-.ert-ui.ert-scope--settings .ert-ai-recommendations-title {
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-faint);
-}
-
-.ert-ui.ert-scope--settings .ert-ai-recommendation-row {
-  display: grid;
-  grid-template-columns: minmax(180px, 1fr) minmax(320px, 2fr);
-  gap: var(--ert-gap-cozy);
-  align-items: center;
-}
-
-.ert-ui.ert-scope--settings .ert-ai-recommendation-name {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-normal);
-}
-
-.ert-ui.ert-scope--settings .ert-ai-recommendation-value {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: var(--ert-gap-sm);
-  flex-wrap: wrap;
-  font-size: 12px;
-}
-
-.ert-ui.ert-scope--settings .ert-ai-recommendation-icon {
-  width: 14px;
-  height: 14px;
-  color: var(--text-muted);
-}
-
-.ert-ui.ert-scope--settings .ert-ai-recommendation-model {
-  font-weight: 600;
-  color: var(--text-normal);
-}
-
-.ert-ui.ert-scope--settings .ert-ai-recommendation-why {
-  color: var(--text-muted);
-}
-
-.ert-ui.ert-scope--settings .ert-ai-recommendation-status {
-  margin-left: 2px;
-}
-
-.ert-ui.ert-scope--settings .ert-ai-recommendation-hint {
-  grid-column: 2 / 3;
-  font-size: 11px;
-  color: var(--text-faint);
-  line-height: 1.35;
-}
-
-.ert-ui.ert-scope--settings .ert-ai-recommendation-action {
-  margin-left: 8px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--interactive-accent);
-  font-size: 11px;
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-.ert-ui.ert-scope--settings .ert-ai-recommendation-action:hover {
-  color: var(--interactive-accent-hover);
 }
 
 .ert-ui.ert-scope--settings .ert-ai-models-refreshed {
@@ -409,7 +307,6 @@
   overflow: auto;
   margin-top: 8px;
 }
-
 
 /* A green run's one actionable finding: readable, not alarming — nothing is
    wrong, there is simply a faster setting available. */

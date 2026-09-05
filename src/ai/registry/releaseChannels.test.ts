@@ -11,9 +11,19 @@ import { getPickerModelsForProvider, selectLatestModelByReleaseChannel } from '.
  */
 
 describe('release channel curation', () => {
-    it('returns the single curated OpenAI picker entry', () => {
+    it('returns the OpenAI picker as newest stable, then the pro-channel premium entry, then the economy model', () => {
         const picker = getPickerModelsForProvider(BUILTIN_MODELS, 'openai').map(model => model.alias);
-        expect(picker).toEqual(['gpt-5.6-sol']);
+        // Sol is the auto-selected default; Astra is 2.5× its price and is
+        // offered second as an explicit choice; Luna is the economy pick.
+        expect(picker).toEqual(['gpt-5.6-sol', 'gpt-6-astra', 'gpt-5.6-luna']);
+    });
+
+    it('keeps GPT-6 Astra off the stable channel so latest-stable stays GPT-5.6 Sol', () => {
+        const stable = selectLatestModelByReleaseChannel(BUILTIN_MODELS, 'openai', 'stable');
+        expect(stable?.alias).toBe('gpt-5.6-sol');
+        const astra = BUILTIN_MODELS.find(model => model.id === 'gpt-6-astra');
+        expect(astra?.rollout?.channel).toBe('pro');
+        expect(selectLatestModelByReleaseChannel(BUILTIN_MODELS, 'openai', 'pro')?.alias).toBe('gpt-6-astra');
     });
 
     it('returns both curated Google picker entries (depth + speed)', () => {
@@ -49,7 +59,7 @@ describe('release channel curation', () => {
         expect(fable?.rollout?.channel).toBe('pro');
     });
 
-    it('selectLatestModelByReleaseChannel returns the only stable OpenAI model', () => {
+    it('selectLatestModelByReleaseChannel returns the newest stable OpenAI model', () => {
         const stable = selectLatestModelByReleaseChannel(BUILTIN_MODELS, 'openai', 'stable');
         // With one stable model, latest-stable resolves to that model.
         // Resolution is by status === 'stable' even without an explicit

@@ -140,11 +140,11 @@
     },
     {
       "provider": "openai",
-      "id": "gpt-5.6-terra",
-      "alias": "gpt-5.6-terra",
-      "label": "GPT-5.6 Terra",
-      "line": "gpt-5",
-      "tier": "BALANCED",
+      "id": "gpt-6-astra",
+      "alias": "gpt-6-astra",
+      "label": "GPT-6 Astra",
+      "line": "gpt-6",
+      "tier": "DEEP",
       "capabilities": [
         "longContext",
         "jsonStrict",
@@ -154,9 +154,45 @@
         "functionCalling"
       ],
       "personality": {
-        "reasoning": 9,
-        "writing": 9,
+        "reasoning": 10,
+        "writing": 10,
         "determinism": 9
+      },
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "releasedAt": "2026-09-05",
+      "status": "stable",
+      "rollout": {
+        "channel": "pro",
+        "status": "stable",
+        "lane": "pro"
+      },
+      "constraints": {
+        "supportsTemperature": false,
+        "supportsTopP": false,
+        "supportsReasoningEffort": true,
+        "preferredOpenAiEndpoint": "responses"
+      }
+    },
+    {
+      "provider": "openai",
+      "id": "gpt-5.6-luna",
+      "alias": "gpt-5.6-luna",
+      "label": "GPT-5.6 Luna",
+      "line": "gpt-5",
+      "tier": "FAST",
+      "capabilities": [
+        "longContext",
+        "jsonStrict",
+        "reasoningStrong",
+        "highOutputCap",
+        "toolCalling",
+        "functionCalling"
+      ],
+      "personality": {
+        "reasoning": 7,
+        "writing": 7,
+        "determinism": 8
       },
       "contextWindow": 1050000,
       "maxOutput": 128000,

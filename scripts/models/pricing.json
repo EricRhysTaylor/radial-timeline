@@ -61,15 +61,28 @@
     },
     {
       "provider": "openai",
-      "modelId": "gpt-5.6-terra",
-      "inputPer1M": 2,
-      "outputPer1M": 12,
-      "cacheReadPer1M": 0.2,
+      "modelId": "gpt-6-astra",
+      "inputPer1M": 10,
+      "outputPer1M": 50,
+      "cacheReadPer1M": 1,
       "longContext": {
         "thresholdInputTokens": 272000,
-        "inputPer1M": 4,
-        "outputPer1M": 18,
-        "cacheReadPer1M": 0.4
+        "inputPer1M": 20,
+        "outputPer1M": 75,
+        "cacheReadPer1M": 2
+      }
+    },
+    {
+      "provider": "openai",
+      "modelId": "gpt-5.6-luna",
+      "inputPer1M": 0.2,
+      "outputPer1M": 1.2,
+      "cacheReadPer1M": 0.02,
+      "longContext": {
+        "thresholdInputTokens": 272000,
+        "inputPer1M": 0.4,
+        "outputPer1M": 1.8,
+        "cacheReadPer1M": 0.04
       }
     },
     {

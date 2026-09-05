@@ -122,16 +122,32 @@ export const BUILTIN_PRICING: ProviderPricingTable = {
                 cacheReadPer1M: 0.8
             }
         },
-        // Economy second on the gpt-5 line.
-        'gpt-5.6-terra': {
-            inputPer1M: 2.0,
-            outputPer1M: 12.0,
-            cacheReadPer1M: 0.2,
+        // GPT-6 Astra, 'pro' channel. OpenAI lists cache writes at $12.50
+        // (1.25× input); RT's OpenAI path has no TTL-specific write rate and
+        // prices the priming pass at the input rate, so the first pass is
+        // quoted ~20% under the provider's write charge. Long context is 2×
+        // input and cache-read, 1.5× output above 272K.
+        'gpt-6-astra': {
+            inputPer1M: 10.0,
+            outputPer1M: 50.0,
+            cacheReadPer1M: 1.0,
             longContext: {
                 thresholdInputTokens: 272_000,
-                inputPer1M: 4.0,
-                outputPer1M: 18.0,
-                cacheReadPer1M: 0.4
+                inputPer1M: 20.0,
+                outputPer1M: 75.0,
+                cacheReadPer1M: 2.0
+            }
+        },
+        // Economy model on the gpt-5 line.
+        'gpt-5.6-luna': {
+            inputPer1M: 0.2,
+            outputPer1M: 1.2,
+            cacheReadPer1M: 0.02,
+            longContext: {
+                thresholdInputTokens: 272_000,
+                inputPer1M: 0.4,
+                outputPer1M: 1.8,
+                cacheReadPer1M: 0.04
             }
         }
     },

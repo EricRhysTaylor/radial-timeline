@@ -144,7 +144,9 @@ describe('BUILTIN_MODELS — catalog policy invariants', () => {
         // addition followed docs/engineering/standards/model-promotion.md and
         // answers a task-fit question the catalog cannot already answer,
         // before updating this expectation.
-        expect(cloud.length).toBeLessThanOrEqual(9);
+        // 10 as of 2026-09-05: GPT-6 Astra joined as the OpenAI pro-channel
+        // premium entry, the OpenAI counterpart of Fable 5.1.
+        expect(cloud.length).toBeLessThanOrEqual(10);
     });
 
     it('does not curate experimental "*-pro" OpenAI lanes here (they would come via remote drift if needed)', () => {

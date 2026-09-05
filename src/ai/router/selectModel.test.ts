@@ -84,13 +84,13 @@ describe('selectModel', () => {
         expect(result.warnings).toContain('OpenAI pro auto-selection is disabled for schema-required workflows; fallback to latest stable.');
     });
 
-    it('keeps OpenAI latestPro available for non-schema workflows', () => {
+    it('resolves OpenAI latestPro to GPT-6 Astra for non-schema workflows', () => {
         const result = selectModel(BUILTIN_MODELS, {
             provider: 'openai',
             policy: { type: 'latestPro' },
             requiredCapabilities: ['longContext', 'reasoningStrong', 'highOutputCap']
         });
-        expect(result.model.alias).toBe('gpt-5.6-sol');
+        expect(result.model.alias).toBe('gpt-6-astra');
     });
 
     it('keeps pinned GPT-5.6 Sol selection when explicitly requested', () => {

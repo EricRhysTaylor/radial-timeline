@@ -101,7 +101,16 @@ export function getPickerModelsForProvider(models: ModelInfo[], provider: AIProv
         }
     });
 
-    return OPENAI_PICKER_CHANNEL_ORDER
+    // Curated order is [newest stable, newest pro, newest rollback]; every
+    // other visible model (the economy entry) follows, newest first — the
+    // same shape as the Anthropic picker, so each provider offers a frontier
+    // choice and an economy choice side by side.
+    const curated = OPENAI_PICKER_CHANNEL_ORDER
         .map(channel => newestPerChannel.get(channel))
         .filter((model): model is ModelInfo => !!model);
+    const curatedIds = new Set(curated.map(model => model.id));
+    const remainder = visible
+        .filter(model => !curatedIds.has(model.id))
+        .sort(compareNewestModels);
+    return [...curated, ...remainder];
 }

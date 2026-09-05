@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-09-05T17:32:09.804Z",
+  "checkedAt": "2026-09-05T18:47:27.016Z",
   "mode": "report",
   "snapshotBefore": {
     "generatedAt": "2026-09-05T15:00:13.164Z"
@@ -41,18 +41,7 @@
   "aliasChanges": [],
   "anthropicNewestChanged": null,
   "tokenLimitChanges": [],
-  "releaseAlerts": [
-    {
-      "id": "openai-gpt-6-astra-2026-09-05",
-      "provider": "openai",
-      "modelId": "gpt-6-astra",
-      "label": "GPT-6 Astra",
-      "announcedAt": "2026-09-05",
-      "sourceUrl": "https://developers.openai.com/api/docs/models/gpt-6-astra",
-      "state": "announced_not_in_snapshot",
-      "message": "openai announced GPT-6 Astra on 2026-09-05, but the local provider snapshot does not include gpt-6-astra yet."
-    }
-  ],
-  "hasActionableChanges": true,
+  "releaseAlerts": [],
+  "hasActionableChanges": false,
   "recommendedFollowUps": []
 }

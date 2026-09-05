@@ -231,7 +231,8 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         }
     },
     {
-        // GPT-5.6 Sol: flagship of the gpt-5.6 family (Luna < Terra < Sol),
+        // GPT-5.6 Sol: flagship of the gpt-5.6 family (Luna < Terra < Sol);
+        // Luna below is the economy entry, Terra is not curated.
         // GA 2026-07-09, replacing GPT-5.5 on the line. Same request contract
         // per developers.openai.com/api/docs/models/gpt-5.6-sol: Responses
         // API, reasoning effort (none…max), provider-managed sampling,
@@ -261,19 +262,55 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         }
     },
     {
-        // Economy second on the gpt-5 line: GPT-5.6 Terra, the mid tier of
-        // the same family (OpenAI positions it as GPT-5.5-class at half the
-        // cost), same request contract as Sol. Auto-selection resolves to Sol
-        // (newest on the line); Terra is reachable by explicit pin. Released
-        // one day after Sol so the two never tie on the newest-on-line sort.
+        // GPT-6 Astra: OpenAI's premium model, public release 2026-09-05
+        // (developers.openai.com/api/docs/models/gpt-6-astra). Same request
+        // contract as the 5.6 family (Responses API, reasoning effort low…max,
+        // provider-managed sampling, structured outputs, prompt caching) at
+        // 2.5× Sol's price, so it sits on the 'pro' channel: visible and
+        // pinnable, auto-selected only under the latestPro policy, never the
+        // silent default. Cyber-sensitive capabilities are gated by OpenAI's
+        // trusted-access program; that does not affect RT's workload.
         provider: 'openai',
-        id: 'gpt-5.6-terra',
-        alias: 'gpt-5.6-terra',
-        label: 'GPT-5.6 Terra',
-        line: 'gpt-5',
-        tier: 'BALANCED',
+        id: 'gpt-6-astra',
+        alias: 'gpt-6-astra',
+        label: 'GPT-6 Astra',
+        line: 'gpt-6',
+        tier: 'DEEP',
         capabilities: [...DEEP_CAPS, 'toolCalling', 'functionCalling'],
-        personality: { reasoning: 9, writing: 9, determinism: 9 },
+        personality: { reasoning: 10, writing: 10, determinism: 9 },
+        contextWindow: 1050000,
+        maxOutput: 128000,
+        releasedAt: '2026-09-05',
+        status: 'stable',
+        rollout: {
+            channel: 'pro',
+            status: 'stable',
+            lane: 'pro'
+        },
+        constraints: {
+            supportsTemperature: false,
+            supportsTopP: false,
+            supportsReasoningEffort: true,
+            preferredOpenAiEndpoint: 'responses'
+        }
+    },
+    {
+        // Economy model on the gpt-5 line: GPT-5.6 Luna, the cost tier of the
+        // same family (developers.openai.com/api/docs/models/gpt-5.6-luna:
+        // $0.20/$1.20, 1.05M context, 128K output, reasoning effort, structured
+        // outputs, prompt caching — the same request contract as Sol). FAST
+        // tier is the signal that it is the economy choice, as Haiku 4.5 and
+        // Gemini 3.5 Flash are for their providers. Auto-selection resolves to
+        // Sol (newest on the line); Luna is an explicit pick. Dated one day
+        // before Sol so the two never tie on the newest-on-line sort.
+        provider: 'openai',
+        id: 'gpt-5.6-luna',
+        alias: 'gpt-5.6-luna',
+        label: 'GPT-5.6 Luna',
+        line: 'gpt-5',
+        tier: 'FAST',
+        capabilities: [...DEEP_CAPS, 'toolCalling', 'functionCalling'],
+        personality: { reasoning: 7, writing: 7, determinism: 8 },
         contextWindow: 1050000,
         maxOutput: 128000,
         releasedAt: '2026-07-08',

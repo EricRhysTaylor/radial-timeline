@@ -653,44 +653,42 @@ export function renderBeatPropertiesSection(params: {
      */
     const renderSystemDescription = (
         container: HTMLElement,
-        overview: ReturnType<typeof getSystemOverviewState>,
-        options?: { prefix?: string }
+        overview: ReturnType<typeof getSystemOverviewState>
     ): void => {
-        const prefix = options?.prefix ?? 'ert-desc';
         const parts = parseDescriptionParts(overview.description);
-        const wrapper = container.createDiv({ cls: `${prefix}-block` });
+        const wrapper = container.createDiv({ cls: 'ert-desc-block' });
 
         // Summary
         if (parts.summary) {
-            wrapper.createDiv({ cls: `${prefix}-summary`, text: parts.summary });
+            wrapper.createDiv({ cls: 'ert-desc-summary', text: parts.summary });
         }
 
         // Body paragraphs (e.g. "Use it when…")
         for (const paragraph of parts.body) {
-            wrapper.createDiv({ cls: `${prefix}-body`, text: paragraph });
+            wrapper.createDiv({ cls: 'ert-desc-body', text: paragraph });
         }
 
         // Label/value fields
         if (parts.fields.length > 0) {
-            const fieldsEl = wrapper.createDiv({ cls: `${prefix}-fields` });
+            const fieldsEl = wrapper.createDiv({ cls: 'ert-desc-fields' });
             for (const field of parts.fields) {
-                const row = fieldsEl.createDiv({ cls: `${prefix}-field` });
+                const row = fieldsEl.createDiv({ cls: 'ert-desc-field' });
                 if (field.label) {
-                    row.createSpan({ cls: `${prefix}-field-label`, text: `${field.label}: ` });
+                    row.createSpan({ cls: 'ert-desc-field-label', text: `${field.label}: ` });
                 }
-                row.createSpan({ cls: `${prefix}-field-value`, text: field.value });
+                row.createSpan({ cls: 'ert-desc-field-value', text: field.value });
             }
         }
 
         // Examples
         if (!overview.hasAuthorDesc && overview.examples) {
-            wrapper.createDiv({ cls: `${prefix}-examples`, text: overview.examples });
+            wrapper.createDiv({ cls: 'ert-desc-examples', text: overview.examples });
         }
 
         // Meta (beat/act count)
         if (overview.totalBeats > 0) {
             wrapper.createDiv({
-                cls: `${prefix}-meta`,
+                cls: 'ert-desc-meta',
                 text: `${overview.totalBeats} beats · ${overview.totalActs} acts`
             });
         }
@@ -1866,7 +1864,7 @@ export function renderBeatPropertiesSection(params: {
             const sourceIcon = sourceLink.createSpan({ cls: 'ert-beat-template-source-link-icon' });
             setIcon(sourceIcon, 'external-link');
         }
-        renderSystemDescription(tierBannerEl, overview, { prefix: 'ert-desc' });
+        renderSystemDescription(tierBannerEl, overview);
     }
 
     const updateBeatSystemCard = (system: string, options?: { resetStage?: boolean }) => {
@@ -2960,7 +2958,7 @@ export function renderBeatPropertiesSection(params: {
             const sourceIcon = sourceLink.createSpan({ cls: 'ert-beat-template-source-link-icon' });
             setIcon(sourceIcon, 'external-link');
         }
-        renderSystemDescription(previewCard, overview, { prefix: 'ert-desc' });
+        renderSystemDescription(previewCard, overview);
 
         const selectedLoadedTab = isBeatLibraryItemLoaded(plugin.settings, selectedEntry);
         const activeWorkspaceTab = getActiveBeatWorkspaceTab();

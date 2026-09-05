@@ -497,6 +497,56 @@
   border-color: color-mix(in srgb, var(--color-yellow) 40%, transparent);
 }
 
+/* ── Shared system description layout (ert-desc-*) ───────────────── */
+.ert-ui.ert-scope--settings .ert-desc-block {
+  display: flex;
+  flex-direction: column;
+}
+.ert-ui.ert-scope--settings .ert-desc-summary {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.45;
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+.ert-ui.ert-scope--settings .ert-desc-body {
+  color: var(--text-muted);
+  font-size: 12.5px;
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+.ert-ui.ert-scope--settings .ert-desc-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ert-gap-2xs);
+  margin-bottom: 6px;
+}
+.ert-ui.ert-scope--settings .ert-desc-field {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+.ert-ui.ert-scope--settings .ert-desc-field-label {
+  font-weight: 600;
+  color: var(--text-faint);
+}
+.ert-ui.ert-scope--settings .ert-desc-field-value {
+  font-weight: 400;
+}
+.ert-ui.ert-scope--settings .ert-desc-examples {
+  color: var(--text-faint);
+  font-size: 12px;
+  line-height: 1.35;
+  margin-bottom: 6px;
+}
+.ert-ui.ert-scope--settings .ert-desc-meta {
+  color: var(--text-faint);
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
 /* ── Set origin tag (Design header) ──────────────────────────────── */
 .ert-ui.ert-scope--settings .ert-set-origin-tag {
   display: inline-flex;

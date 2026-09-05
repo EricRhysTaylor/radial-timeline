@@ -283,3 +283,45 @@ export const resolvePreviewSignals = (state: {
         .map(signal => signal.pill);
     return sorted;
 };
+
+/**
+ * Credential states under which a cloud provider cannot run at all. The
+ * preview card, forecasts, and cost table must not present a model as
+ * runnable while the provider is in one of these; `checking` and an
+ * unknown (not yet probed) state keep the last rendering and the busy pulse.
+ */
+export type CloudKeyBlockedState = 'not_configured' | 'rejected' | 'network_blocked';
+
+export const isCloudKeyBlockedState = (state: string | undefined): state is CloudKeyBlockedState =>
+    state === 'not_configured' || state === 'rejected' || state === 'network_blocked';
+
+export interface KeyBlockedPreviewCopy {
+    title: string;
+    detail: string;
+    forecastReason: string;
+}
+
+export const buildKeyBlockedPreviewCopy = (
+    providerLabel: string,
+    state: CloudKeyBlockedState
+): KeyBlockedPreviewCopy => {
+    if (state === 'rejected') {
+        return {
+            title: 'Key rejected',
+            detail: `${providerLabel} · replace the saved key under API keys to run`,
+            forecastReason: `${providerLabel} rejected the saved key. Replace it under API keys to forecast.`
+        };
+    }
+    if (state === 'network_blocked') {
+        return {
+            title: 'Provider unreachable',
+            detail: `${providerLabel} · key validation could not reach the provider`,
+            forecastReason: `${providerLabel} could not be reached to validate the key. Forecasts resume once it validates.`
+        };
+    }
+    return {
+        title: 'No API key',
+        detail: `${providerLabel} · paste a key under API keys to run`,
+        forecastReason: `No ${providerLabel} key is saved. Paste one under API keys to forecast.`
+    };
+};

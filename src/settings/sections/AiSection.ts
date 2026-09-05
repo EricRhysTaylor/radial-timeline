@@ -63,8 +63,11 @@ import type { LocalLlmModelEntry } from '../../ai/localLlm/transport';
 import { withTimeout } from '../../ai/localLlm/transport';
 import type { LocalLlmBackendId, LocalLlmJsonMode } from '../../ai/types';
 import {
-    CACHE_ARMED_PILL_TEXT,formatCorpusStructureSummary,
+    CACHE_ARMED_PILL_TEXT,
+    buildKeyBlockedPreviewCopy,
+    formatCorpusStructureSummary,
     formatCorpusTokenSummary,
+    isCloudKeyBlockedState,
     formatPreviewCacheObservedLabel,
     formatPreviewCacheRemaining,
     formatPreviewReasonLabel,
@@ -1567,7 +1570,7 @@ export function renderAiSection(params: {
         window.clearInterval(previewCertificateIntervalId);
     });
 
-    const renderLocalPreviewUnavailable = (title: string, detail: string): void => {
+    const renderPreviewUnavailable = (title: string, detail: string): void => {
         lastResolvedPreviewState = null;
         lastPreviewCertificateContext = null;
         lastLocalPreviewCertificate = null;
@@ -2093,8 +2096,31 @@ export function renderAiSection(params: {
             localLlmStatusSectionEl.toggleClass('ert-settings-hidden', !showLocalLlmStatusDetails);
             localLlmStatusSectionEl.toggleClass('ert-settings-visible', showLocalLlmStatusDetails);
         }
-        largeHandlingSection.toggleClass('ert-settings-hidden', isOllama);
-        largeHandlingSection.toggleClass('ert-settings-visible', !isOllama);
+        // A cloud provider without a usable key cannot run anything, so the
+        // card must say exactly that instead of dressing a stored certificate,
+        // last-run cost, and forecasts up as if a run were possible. The
+        // rendering comes back untouched the moment the key validates.
+        const cloudKeyState = isOllama ? undefined : providerKeyStates[provider];
+        const cloudKeyBlocked = !isOllama && isCloudKeyBlockedState(cloudKeyState);
+        largeHandlingSection.toggleClass('ert-settings-hidden', isOllama || cloudKeyBlocked);
+        largeHandlingSection.toggleClass('ert-settings-visible', !(isOllama || cloudKeyBlocked));
+        costEstimateSection.toggleClass('ert-settings-hidden', cloudKeyBlocked);
+        costEstimateSection.toggleClass('ert-settings-visible', !cloudKeyBlocked);
+        if (!isOllama && isCloudKeyBlockedState(cloudKeyState)) {
+            const copy = buildKeyBlockedPreviewCopy(providerLabel[provider], cloudKeyState);
+            renderPreviewUnavailable(copy.title, copy.detail);
+            costComparisonRequestId += 1; // drop any in-flight table refresh
+            setActiveCostComparisonRow(null, null);
+            renderPanelViewModelSections(capacityInquirySections, buildPanelViewModel({
+                feature: 'inquiry',
+                forecast: { kind: 'pending', reason: copy.forecastReason }
+            }));
+            renderPanelViewModelSections(capacityGossamerSections, buildPanelViewModel({
+                feature: 'gossamer',
+                forecast: { kind: 'pending', reason: copy.forecastReason }
+            }));
+            return;
+        }
 
         capacityInquiryToken.setText('Calculating...');
         capacityInquiryExpected.setText('Calculating...');
@@ -2112,12 +2138,12 @@ export function renderAiSection(params: {
 
         if (isOllama) {
             if (localLlmServerDetectionPending || localLlmModelLoadPending) {
-                renderLocalPreviewUnavailable('Checking Local Server...', 'Looking for a reachable local server and available models.');
+                renderPreviewUnavailable('Checking Local Server...', 'Looking for a reachable local server and available models.');
                 setActiveCostComparisonRow(null, null);
                 return;
             }
             if (!localLlmDetectedServers.length) {
-                renderLocalPreviewUnavailable('No Local Server Detected', 'Start a local server or switch Setup to Custom.');
+                renderPreviewUnavailable('No Local Server Detected', 'Start a local server or switch Setup to Custom.');
                 setActiveCostComparisonRow(null, null);
                 return;
             }
@@ -2403,12 +2429,24 @@ export function renderAiSection(params: {
             setting.settingEl.toggleClass('ert-settings-visible', visible);
         };
 
+        let lastSettledKeyState: ProviderKeyUiState | undefined;
         const setProviderState = (next: ProviderKeyUiState): void => {
             providerState = next;
             providerKeyStates[options.provider] = next;
             refreshDropdownKeyIndicators();
             refreshResolvedPreviewBusy();
             refreshActiveCostComparisonRowState(options.provider, next);
+            // `checking` is transient: compare settled states only, so a
+            // rejected → checking → rejected round trip does not flash the
+            // old preview back for a second.
+            if (next !== 'checking') {
+                const blockedBefore = isCloudKeyBlockedState(lastSettledKeyState);
+                lastSettledKeyState = next;
+                if (blockedBefore !== isCloudKeyBlockedState(next)
+                    && ensureCanonicalAiSettings().provider === options.provider) {
+                    void refreshRoutingUi();
+                }
+            }
             const ai = ensureCanonicalAiSettings();
             const secretId = getCredentialSecretId(ai, options.provider).trim();
             const desc = doc.win.createFragment();

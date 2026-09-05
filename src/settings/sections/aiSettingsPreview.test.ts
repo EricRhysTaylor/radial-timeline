@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
     CACHE_ARMED_PILL_TEXT,
+    buildKeyBlockedPreviewCopy,
+    isCloudKeyBlockedState,
     MAX_PREVIEW_SIGNALS,
     PREVIEW_SIGNAL_PRIORITY,
     buildOutlineCapacityLine,
@@ -377,5 +379,32 @@ describe('resolvePreviewSignals', () => {
             reuseLabel: reuse,
             passBehaviorLabel: pass
         })).toEqual([reuse, pass]);
+    });
+});
+
+describe('cloud key gating for the preview card', () => {
+    it('treats only the three cannot-run credential states as blocking', () => {
+        expect(isCloudKeyBlockedState('not_configured')).toBe(true);
+        expect(isCloudKeyBlockedState('rejected')).toBe(true);
+        expect(isCloudKeyBlockedState('network_blocked')).toBe(true);
+        expect(isCloudKeyBlockedState('ready')).toBe(false);
+        expect(isCloudKeyBlockedState('checking')).toBe(false);
+        expect(isCloudKeyBlockedState(undefined)).toBe(false);
+    });
+
+    it('names the provider and points at the API keys fold in every blocked state', () => {
+        const noKey = buildKeyBlockedPreviewCopy('OpenAI', 'not_configured');
+        expect(noKey.title).toBe('No API key');
+        expect(noKey.detail).toContain('OpenAI');
+        expect(noKey.detail).toContain('API keys');
+        expect(noKey.forecastReason).toContain('API keys');
+
+        const rejected = buildKeyBlockedPreviewCopy('Anthropic', 'rejected');
+        expect(rejected.title).toBe('Key rejected');
+        expect(rejected.detail).toContain('Anthropic');
+
+        const blocked = buildKeyBlockedPreviewCopy('Google', 'network_blocked');
+        expect(blocked.title).toBe('Provider unreachable');
+        expect(blocked.forecastReason).toContain('Google');
     });
 });

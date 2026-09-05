@@ -151,7 +151,7 @@ describe('AI settings models table', () => {
         expect(source.includes("const showLocalLlmConfigDetails = isOllama && getLocalLlmConfigurationMode() === 'custom';")).toBe(true);
         expect(source.includes("localLlmConfigSectionEl.toggleClass('ert-settings-hidden', !showLocalLlmConfigDetails);")).toBe(true);
         expect(source.includes("localLlmStatusSectionEl.toggleClass('ert-settings-hidden', !showLocalLlmStatusDetails);")).toBe(true);
-        expect(source.includes("largeHandlingSection.toggleClass('ert-settings-hidden', isOllama);")).toBe(true);
+        expect(source.includes("largeHandlingSection.toggleClass('ert-settings-hidden', isOllama || cloudKeyBlocked);")).toBe(true);
     });
 
     it('uses medium dropdown sizing for all AI Strategy controls', () => {
@@ -202,7 +202,7 @@ describe('AI settings models table', () => {
         // 'Estimated provider input' moved into the pure panel view-model.
         const panelEstimateSource = readFileSync(resolve(process.cwd(), 'src/settings/sections/aiPanelEstimate.ts'), 'utf8');
         expect(panelEstimateSource.includes('Estimated provider input')).toBe(true);
-        expect(source.includes("largeHandlingSection.toggleClass('ert-settings-hidden', isOllama);")).toBe(true);
+        expect(source.includes("largeHandlingSection.toggleClass('ert-settings-hidden', isOllama || cloudKeyBlocked);")).toBe(true);
     });
 
     it('clarifies that Pulse context only affects hover reveal', () => {
@@ -271,6 +271,18 @@ describe('AI settings models table', () => {
         expect(source.includes("t('settings.ai.credential.replaceKeyButton')")).toBe(true);
         expect(source.includes("t('settings.ai.credential.copyKeyNameButton')")).toBe(true);
         expect(source.includes('Saved (not tested)')).toBe(false);
+    });
+
+    it('blanks the preview, forecasts, and cost table while the active cloud provider has no usable key', () => {
+        const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
+        // The gate reads the same credential state that labels the dropdown "(No key)".
+        expect(source.includes('const cloudKeyState = isOllama ? undefined : providerKeyStates[provider];')).toBe(true);
+        expect(source.includes('const copy = buildKeyBlockedPreviewCopy(providerLabel[provider], cloudKeyState);')).toBe(true);
+        expect(source.includes('renderPreviewUnavailable(copy.title, copy.detail);')).toBe(true);
+        expect(source.includes("costEstimateSection.toggleClass('ert-settings-hidden', cloudKeyBlocked);")).toBe(true);
+        // A settled credential change on the active provider re-resolves the card both ways.
+        expect(source.includes('const blockedBefore = isCloudKeyBlockedState(lastSettledKeyState);')).toBe(true);
+        expect(source.includes('&& ensureCanonicalAiSettings().provider === options.provider) {')).toBe(true);
     });
 
     it('keeps the active cost row in sync with provider credential state changes', () => {

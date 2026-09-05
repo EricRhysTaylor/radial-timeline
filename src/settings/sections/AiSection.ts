@@ -2407,7 +2407,7 @@ export function renderAiSection(params: {
             href: options.docsUrl,
             attr: { target: '_blank', rel: 'noopener' }
         });
-        secretIdSetting.descEl.appendText(' Keep the default unless another plugin in this vault already stores the same key under a different name.');
+        secretIdSetting.descEl.appendText(' Obsidian secret keys are shared across the plugins in this vault, so any plugin that stores the key under this name can use it. Keep the default unless another plugin already stores the same key under a different name.');
         const keyStatusSetting = new Settings(options.section)
             .setName(`${options.providerName} API key status`);
         keyStatusSetting.settingEl.addClass('ert-ai-provider-key-status-row');

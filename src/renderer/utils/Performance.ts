@@ -13,7 +13,7 @@ export type PerfStopHandler = () => void;
 const PERF_BUFFER_CAP = 600;
 
 function pushPerfRecord(plugin: PerfHost, record: PerfRecord): void {
-    const host = plugin as unknown as { _perfMeasurements?: PerfRecord[] };
+    const host = plugin as unknown as { _perfMeasurements?: PerfRecord[] }; // SAFE: perf measurements ride on the plugin instance as an undeclared dev-only slot
     if (!host._perfMeasurements) {
         host._perfMeasurements = [];
     }
@@ -72,7 +72,7 @@ export interface PerfSummaryRow {
 
 /** Aggregate the ring buffer by label (median/p95/max), sorted by label. */
 export function summarizePerfMeasurements(plugin: PerfHost): PerfSummaryRow[] {
-    const host = plugin as unknown as { _perfMeasurements?: PerfRecord[] };
+    const host = plugin as unknown as { _perfMeasurements?: PerfRecord[] }; // SAFE: perf measurements ride on the plugin instance as an undeclared dev-only slot
     const records = host._perfMeasurements;
     if (!records || records.length === 0) return [];
     const byLabel = new Map<string, number[]>();
@@ -98,6 +98,6 @@ export function summarizePerfMeasurements(plugin: PerfHost): PerfSummaryRow[] {
 
 /** Clear the measurement buffer (fresh sampling window). */
 export function resetPerfMeasurements(plugin: PerfHost): void {
-    const host = plugin as unknown as { _perfMeasurements?: PerfRecord[] };
+    const host = plugin as unknown as { _perfMeasurements?: PerfRecord[] }; // SAFE: perf measurements ride on the plugin instance as an undeclared dev-only slot
     host._perfMeasurements = [];
 }

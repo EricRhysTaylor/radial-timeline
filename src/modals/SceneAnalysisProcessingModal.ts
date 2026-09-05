@@ -6,6 +6,7 @@
  * AI Scene Analysis Processing Modal
  * This processes scenes for LLM analysis, not story beats (timeline slices)
  */
+import { executeCommandById } from '../utils/obsidianInternals';
 import { App, Modal, ButtonComponent, Notice, setIcon, TFile } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { resolvePulseContentLogsRoot } from '../ai/log';
@@ -95,6 +96,8 @@ export class SceneAnalysisProcessingModal extends Modal {
     private selectedMode: ProcessingMode = 'flagged';
     public isProcessing: boolean = false;
     private abortController: AbortController | null = null;
+    /** Set by openAndRun: the work to start as soon as the modal opens, skipping confirmation. */
+    private skipConfirmation: (() => Promise<void>) | null = null;
 
     // Summary-refresh controls
     private synopsisTargetWords: number = 200;
@@ -174,8 +177,50 @@ export class SceneAnalysisProcessingModal extends Modal {
         // If we're already processing (reopening), show progress view
         if (this.isProcessing) {
             this.showProgressView();
+        } else if (this.skipConfirmation) {
+            this.showProgressView();
+            void this.runWithoutConfirmation();
         } else {
             this.showConfirmationView();
+        }
+    }
+
+    /**
+     * Open straight into the progress view and start the work at once. The
+     * subplot commands use this: the author has already chosen the scope,
+     * so there is nothing left to confirm.
+     */
+    public openAndRun(work: () => Promise<void>): void {
+        this.skipConfirmation = work;
+        this.open();
+    }
+
+    private async runWithoutConfirmation(): Promise<void> {
+        const work = this.skipConfirmation;
+        if (!work) return;
+        this.isProcessing = true;
+        this.abortController = new AbortController();
+        this.plugin.activeBeatsModal = this;
+        this.plugin.showBeatsStatusBar(0, 0);
+        try {
+            await work();
+            if (this.abortController?.signal.aborted) {
+                this.showCompletionSummary(t('sceneAnalysis.pipeline.notices.abortedRateLimit'));
+            } else {
+                this.showCompletionSummary(this.resolveCompletionStatusMessage());
+            }
+        } catch (error) {
+            if (!this.abortController?.signal.aborted) {
+                this.addError(t('sceneAnalysis.pipeline.notices.fatalError', { error: error instanceof Error ? error.message : String(error) }));
+                this.showCompletionSummary(t('sceneAnalysis.processingModal.completion.stoppedDueToError'));
+            } else {
+                this.showCompletionSummary(t('sceneAnalysis.pipeline.notices.abortedRateLimit'));
+            }
+        } finally {
+            this.isProcessing = false;
+            this.abortController = null;
+            this.plugin.activeBeatsModal = null;
+            this.plugin.hideBeatsStatusBar();
         }
     }
 
@@ -1604,9 +1649,9 @@ export class SceneAnalysisProcessingModal extends Modal {
                             } else if (this.resumeCommandId) {
                                 this.plugin.settings._isResuming = true;
                                 await this.plugin.saveSettings();
+                                const resumeCommandId = this.resumeCommandId;
                                 window.setTimeout(() => {
-                                    // @ts-ignore - accessing app commands
-                                    this.app.commands.executeCommandById(this.resumeCommandId);
+                                    executeCommandById(this.app, resumeCommandId);
                                 }, 100);
                             }
                         });

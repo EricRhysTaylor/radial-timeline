@@ -12,40 +12,42 @@ export type InnerStage = 'preview' | 'design' | 'fields' | 'library';
  * Each render zone subscribes when it mounts and unsubscribes when its
  * container is emptied, so there are never stale listeners.
  */
-export const dirtyState = {
-    baselineId: '' as string,
-    baselineHash: '' as string,
-    _listeners: new Set<() => void>(),
+class DirtyState {
+    baselineId = '';
+    baselineHash = '';
+    private readonly listeners = new Set<() => void>();
 
     /** Capture the current snapshot as the "clean" baseline for a loaded set. */
-    setBaseline(id: string, hash: string) {
+    setBaseline(id: string, hash: string): void {
         this.baselineId = id;
         this.baselineHash = hash;
         this.notify();
-    },
+    }
 
     /** Clear baseline (switching to a fresh/unsaved system). */
-    clearBaseline() {
+    clearBaseline(): void {
         this.baselineId = '';
         this.baselineHash = '';
         this.notify();
-    },
+    }
 
     /** True when a loaded set is active and its current state differs from baseline. */
     isDirty(currentId: string, currentHash: string): boolean {
         if (!this.baselineId) return false;
         if (currentId !== this.baselineId) return false;
         return currentHash !== this.baselineHash;
-    },
+    }
 
     /** Register a listener; returns an unsubscribe function. */
     subscribe(fn: () => void): () => void {
-        this._listeners.add(fn);
-        return () => { this._listeners.delete(fn); };
-    },
+        this.listeners.add(fn);
+        return () => { this.listeners.delete(fn); };
+    }
 
     /** Notify all subscribers that dirty state may have changed. */
-    notify() {
-        this._listeners.forEach((fn: () => void) => fn());
+    notify(): void {
+        this.listeners.forEach(fn => fn());
     }
-};
+}
+
+export const dirtyState = new DirtyState();

@@ -465,7 +465,7 @@ export async function syncGossamerPresentationState(
   const scenes = scenesInput ?? await plugin.getSceneData();
   const selectedBeatModel = resolveSelectedBeatModelFromSettings(plugin.settings);
   const allRuns = buildAllGossamerRuns(
-    scenes as unknown as { itemType?: string; [key: string]: unknown }[],
+    scenes as unknown as { itemType?: string; [key: string]: unknown }[], // SAFE: the beat extractor reads only itemType and frontmatter keys from timeline items
     selectedBeatModel,
     {
       latestOnly: plugin.gossamerLatestOnly,

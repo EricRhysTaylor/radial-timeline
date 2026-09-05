@@ -71,7 +71,7 @@ export class SubplotManagementService {
         for (const file of files) {
             let processed = false;
             
-            await this.app.fileManager.processFrontMatter(file, (fm) => {
+            await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
                 // Get current subplots
                 // Check both "Subplot" and "subplot" keys (processFrontMatter gives raw object)
                 // We'll standardise on writing to "Subplot"
@@ -86,9 +86,9 @@ export class SubplotManagementService {
                     subplotKey = existingKey;
                     const val = fm[existingKey];
                     if (Array.isArray(val)) {
-                        currentSubplots = [...val];
+                        currentSubplots = val.map(entry => frontmatterValueToText(entry));
                     } else if (val) {
-                        currentSubplots = [String(val)];
+                        currentSubplots = [frontmatterValueToText(val)];
                     }
                 }
 
@@ -147,7 +147,7 @@ export class SubplotManagementService {
         for (const file of files) {
             let processed = false;
 
-            await this.app.fileManager.processFrontMatter(file, (fm) => {
+            await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
                 let currentSubplots: string[] = [];
                 let subplotKey = "Subplot";
 
@@ -157,9 +157,9 @@ export class SubplotManagementService {
                     subplotKey = existingKey;
                     const val = fm[existingKey];
                     if (Array.isArray(val)) {
-                        currentSubplots = [...val];
+                        currentSubplots = val.map(entry => frontmatterValueToText(entry));
                     } else if (val) {
-                        currentSubplots = [String(val)];
+                        currentSubplots = [frontmatterValueToText(val)];
                     }
                 }
 
@@ -259,7 +259,7 @@ export class SubplotManagementService {
         }
 
         try {
-            const parsed = parseYaml(fmInfo.frontmatter);
+            const parsed: unknown = parseYaml(fmInfo.frontmatter);
             if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
                 return ["Main Plot"];
             }
@@ -269,7 +269,7 @@ export class SubplotManagementService {
 
             if (Array.isArray(rawSubplots)) {
                 const names = rawSubplots
-                    .map(value => String(value).trim())
+                    .map(value => frontmatterValueToText(value).trim())
                     .filter(Boolean);
                 return names.length > 0 ? names : ["Main Plot"];
             }

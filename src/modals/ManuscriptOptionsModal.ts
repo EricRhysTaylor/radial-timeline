@@ -1,6 +1,7 @@
 /*
  * Manuscript Options Modal
  */
+import { openSettingsTab } from '../utils/obsidianInternals';
 import { App, ButtonComponent, DropdownComponent, FileSystemAdapter, Modal, Notice, Platform, setIcon, TAbstractFile, TFile, ToggleComponent, normalizePath } from 'obsidian';
 import * as path from 'path'; // SAFE: Node path needed to build absolute paths for native Finder reveal
 import type RadialTimelinePlugin from '../main';
@@ -494,10 +495,7 @@ export class ManuscriptOptionsModal extends Modal {
             e.preventDefault();
             this.close();
             this.plugin.settingsTab?.revealSettingsSection('core', 'general');
-            // @ts-ignore - Obsidian API
-            this.app.setting.open();
-            // @ts-ignore - Obsidian API
-            this.app.setting.openTabById('radial-timeline');
+            openSettingsTab(this.app);
         });
         this.managePdfLayoutsLinkEl = bookContextRow.createEl('a', {
             cls: 'ert-modal-meta-item ert-hidden',
@@ -1066,10 +1064,7 @@ export class ManuscriptOptionsModal extends Modal {
     private openPublishingSettings(sectionKey: string = 'pdf-style'): void {
         this.close();
         this.plugin.settingsTab?.revealSettingsSection('publishing', sectionKey);
-        // @ts-ignore - Obsidian API
-        this.app.setting.open();
-        // @ts-ignore - Obsidian API
-        this.app.setting.openTabById('radial-timeline');
+        openSettingsTab(this.app);
     }
 
     private refreshValidationSnapshot(): void {
@@ -3149,9 +3144,9 @@ Sarah stood at the window, watching the world wake up.`;
         const startPercent = this.totalScenes === 1 ? 0 : ((this.rangeStart - 1) / (this.totalScenes - 1)) * 100;
         const endPercent = this.totalScenes === 1 ? 100 : ((this.rangeEnd - 1) / (this.totalScenes - 1)) * 100;
 
-        this.startHandleEl.style.left = `${startPercent}%`;
-        this.endHandleEl.style.left = `${endPercent}%`;
-        this.rangeFillEl.style.left = `${startPercent}%`;
+        this.startHandleEl.style.left = `${startPercent}%`; // SAFE: inline style used for live drag handle position
+        this.endHandleEl.style.left = `${endPercent}%`; // SAFE: inline style used for live drag handle position
+        this.rangeFillEl.style.left = `${startPercent}%`; // SAFE: inline style used for live drag track sizing
         this.rangeFillEl.style.width = `${Math.max(endPercent - startPercent, 1)}%`; // SAFE: inline style used for live drag track sizing
 
         this.renderRangeCards();

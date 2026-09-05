@@ -1895,7 +1895,7 @@ export class BookDesignerModal extends Modal {
                     skippedScenes++;
                 }
             } catch (e) {
-                const msg = (e)?.message ?? '';
+                const msg = e instanceof Error ? e.message : '';
                 if (msg.includes('exists') || msg.includes('already exists')) {
                     skippedScenes++;
                 } else {

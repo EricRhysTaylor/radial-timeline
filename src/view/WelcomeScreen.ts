@@ -4,6 +4,7 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 /* global __RT_RELEASE__ -- build-time flag injected by esbuild define; see esbuild.config.mjs */
+import { openSettingsTab } from '../utils/obsidianInternals';
 import { normalizePath, setIcon, TFolder } from 'obsidian';
 import RadialTimelinePlugin from '../main';
 import { BookDesignerModal } from '../modals/BookDesignerModal';
@@ -106,10 +107,7 @@ const openRadialTimelineSettings = (
     if (plugin.settingsTab) {
         plugin.settingsTab.setActiveTab(tab);
     }
-    const setting = (plugin.app as unknown as { setting?: { open: () => void; openTabById: (id: string) => void } }).setting;
-    if (!setting) return;
-    setting.open();
-    setting.openTabById('radial-timeline');
+    openSettingsTab(plugin.app);
 };
 
 const appendWelcomeBackgroundLogo = (parent: HTMLElement): void => {

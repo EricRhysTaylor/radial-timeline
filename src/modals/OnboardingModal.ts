@@ -13,6 +13,8 @@
  * See docs/engineering/plans/one-button-onboarding-local-llm-plan.md.
  */
 
+import { frontmatterValueToText } from '../utils/frontmatter';
+import { openSettingsTab } from '../utils/obsidianInternals';
 import { App, ButtonComponent, DropdownComponent, Modal, Notice, setIcon } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import {
@@ -85,10 +87,7 @@ const FLOW_LABELS: Record<ImportFlow, string> = {
  * (observed landing on AI when the author expected the Book Manager).
  */
 function openPluginSettings(plugin: RadialTimelinePlugin, tab: 'core' | 'ai', scrollSelector?: string): void {
-  const setting = (plugin.app as unknown as { setting?: { open: () => void; openTabById: (id: string) => void } }).setting; // SAFE: undocumented settings surface (established WelcomeScreen pattern)
-  if (!setting) return;
-  setting.open();
-  setting.openTabById('radial-timeline');
+  if (!openSettingsTab(plugin.app)) return;
   window.setTimeout(() => {
     plugin.settingsTab?.setActiveTab(tab);
     if (scrollSelector) {
@@ -1073,7 +1072,7 @@ export class OnboardingModal extends Modal {
     head.createSpan({ cls: 'ert-onb-scene__title', text: proposal.title || proposal.sourceRef });
     const meta = head.createDiv({ cls: 'ert-onb-scene__meta' });
     if (fm) {
-      this.pill(meta, `Act ${String(fm.Act ?? '?')}`, 'ert-onb-pill--act'); // SAFE: pill label — the question mark marks an unknown Act instead of asserting one
+      this.pill(meta, `Act ${frontmatterValueToText(fm.Act) || '?'}`, 'ert-onb-pill--act'); // SAFE: pill label — the question mark marks an unknown Act instead of asserting one
       const chars = Array.isArray(fm.Character) ? fm.Character.length : 0;
       const places = Array.isArray(fm.Place) ? fm.Place.length : 0;
       this.pill(meta, `${chars} chars`, 'ert-onb-pill--count', true);
@@ -1118,17 +1117,17 @@ export class OnboardingModal extends Modal {
     }
 
     const grid = body.createDiv({ cls: 'ert-onb-fm' });
-    this.fmScalar(grid, 'Class', String(fm.Class ?? 'Scene')); // SAFE: onboarding only ever proposes Scene notes, so that is the Class being previewed
-    this.fmScalar(grid, 'Act', String(fm.Act ?? '')); // SAFE: frontmatter preview — an unset Act renders as a blank field rather than a guess
-    this.fmScalar(grid, 'Status', String(fm.Status ?? '')); // SAFE: frontmatter preview — an unset Status renders blank rather than implying one
-    this.fmScalar(grid, 'Publish Stage', String(fm['Publish Stage'] ?? '')); // SAFE: frontmatter preview — an unset Publish Stage renders blank rather than implying one
-    if (fm.When) this.fmScalar(grid, 'When', String(fm.When));
-    if (fm.Duration) this.fmScalar(grid, 'Duration', String(fm.Duration));
+    this.fmScalar(grid, 'Class', frontmatterValueToText(fm.Class) || 'Scene'); // SAFE: onboarding only ever proposes Scene notes, so that is the Class being previewed
+    this.fmScalar(grid, 'Act', frontmatterValueToText(fm.Act)); // SAFE: frontmatter preview — an unset Act renders as a blank field rather than a guess
+    this.fmScalar(grid, 'Status', frontmatterValueToText(fm.Status)); // SAFE: frontmatter preview — an unset Status renders blank rather than implying one
+    this.fmScalar(grid, 'Publish Stage', frontmatterValueToText(fm['Publish Stage'])); // SAFE: frontmatter preview — an unset Publish Stage renders blank rather than implying one
+    if (fm.When) this.fmScalar(grid, 'When', frontmatterValueToText(fm.When));
+    if (fm.Duration) this.fmScalar(grid, 'Duration', frontmatterValueToText(fm.Duration));
     this.fmPills(grid, 'Subplot', asStringList(fm.Subplot), 'ert-onb-pill--subplot');
     this.fmPills(grid, 'Character', asStringList(fm.Character).map(stripWikiLink), 'ert-onb-pill--char');
     this.fmPills(grid, 'Place', asStringList(fm.Place).map(stripWikiLink), 'ert-onb-pill--place');
 
-    const synopsis = String(fm.Synopsis ?? '').trim(); // SAFE: preview of extracted frontmatter — a scene with no Synopsis previews an empty one
+    const synopsis = frontmatterValueToText(fm.Synopsis).trim(); // SAFE: preview of extracted frontmatter — a scene with no Synopsis previews an empty one
     if (synopsis) {
       const syn = body.createDiv({ cls: 'ert-onb-synopsis' });
       syn.createDiv({ cls: 'ert-onb-synopsis__label', text: 'Synopsis' });

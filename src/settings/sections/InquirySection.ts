@@ -1,3 +1,4 @@
+import { openSettingsTab } from '../../utils/obsidianInternals';
 import { App, ButtonComponent, DropdownComponent, Modal, Setting as Settings, TextComponent, TextAreaComponent, normalizePath, Notice, setIcon, setTooltip } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import { DEFAULT_SETTINGS } from '../defaults';
@@ -252,10 +253,7 @@ export function renderInquirySection(params: SectionParams): void {
         if (plugin.settingsTab) {
             plugin.settingsTab.setActiveTab('core');
         }
-        const setting = (app as unknown as { setting?: { open: () => void; openTabById: (id: string) => void } }).setting;
-        if (!setting) return;
-        setting.open();
-        setting.openTabById('radial-timeline');
+        openSettingsTab(app);
     };
 
     const booksForInquiryPreview = sourcesBody.createDiv({

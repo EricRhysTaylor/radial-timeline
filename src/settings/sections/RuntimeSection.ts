@@ -266,7 +266,7 @@ export function renderRuntimeSection({ plugin, containerEl }: SectionParams): vo
                                     return;
                                 }
                                 await updateProfile((profile) => {
-                                    (profile as unknown as Record<string, unknown>)[p.key] = num;
+                                    (profile as unknown as Record<string, unknown>)[p.key] = num; // SAFE: the field table keys are the profile's own numeric keys
                                 });
                                 flash(text.inputEl, 'success');
                             });
@@ -276,7 +276,7 @@ export function renderRuntimeSection({ plugin, containerEl }: SectionParams): vo
                             btn.setTooltip(t('settings.runtime.parenthetical.resetTooltip'));
                             btn.onClick(async () => {
                                 await updateProfile((profile) => {
-                                    (profile as unknown as Record<string, unknown>)[p.key] = p.defaultVal;
+                                    (profile as unknown as Record<string, unknown>)[p.key] = p.defaultVal; // SAFE: the field table keys are the profile's own numeric keys
                                 });
                                 renderDetails();
                             });

@@ -1,3 +1,4 @@
+import { openSettingsTab } from '../utils/obsidianInternals';
 import { App, Modal, ButtonComponent, FileSystemAdapter, Notice, setIcon, setTooltip, normalizePath } from 'obsidian';
 import * as path from 'path'; // SAFE: Node path needed to build absolute paths for native Finder reveal
 import type RadialTimelinePlugin from '../main';
@@ -184,11 +185,8 @@ export class AuthorProgressModal extends Modal {
             .setTooltip('Open APR settings')
             .onClick(() => {
                 this.close();
-                const setting = (this.app as unknown as { setting?: { open: () => void; openTabById: (id: string) => void } }).setting;
-                if (!setting) return;
                 this.plugin.settingsTab?.setActiveTab('social');
-                setting.open();
-                setting.openTabById('radial-timeline');
+                openSettingsTab(this.app);
             });
         settingsBtn.buttonEl.addClass('ert-modal-settings-btn');
         new ButtonComponent(footer)

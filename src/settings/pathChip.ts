@@ -27,7 +27,7 @@ export function revealFolderInExplorer(app: App, vaultPath: string): void {
         new Notice('File explorer is not available.');
         return;
     }
-    const explorerView = explorerLeaf.view as unknown as { revealInFolder?: (target: TAbstractFile) => void };
+    const explorerView = explorerLeaf.view as unknown as { revealInFolder?: (target: TAbstractFile) => void }; // SAFE: the file explorer's revealInFolder is not in Obsidian's public typings
     if (!explorerView.revealInFolder) {
         new Notice('Could not reveal folder.');
         return;

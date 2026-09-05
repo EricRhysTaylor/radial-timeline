@@ -95,7 +95,7 @@ export class AuthorProgressRenderService {
             return;
         }
 
-        const png = await this.applyPngDensity(await rasterizeSvgToPng(embedded, width, height), 144);
+        const png = this.applyPngDensity(await rasterizeSvgToPng(embedded, width, height), 144);
         await this.app.vault.adapter.writeBinary(path, png);
     }
 

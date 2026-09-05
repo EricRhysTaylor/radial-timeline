@@ -4,6 +4,7 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 // --- Imports and constants added for standalone module ---
+import { executeCommandById, openSettingsTab } from '../utils/obsidianInternals';
 import { ItemView, WorkspaceLeaf, MarkdownView, TFile, Notice, setIcon, Menu, Component } from 'obsidian';
 import { TimelineRepairModal } from '../modals/TimelineRepairModal';
 import { TimelineAuditModal } from '../modals/TimelineAuditModal';
@@ -434,11 +435,7 @@ export class RadialTimelineView extends ItemView {
                 if (this.plugin.settingsTab) {
                     this.plugin.settingsTab.setActiveTab('core');
                 }
-                const setting = (this.app as unknown as { setting?: { open: () => void; openTabById: (id: string) => void } }).setting; // SAFE: any type used for Obsidian internal API
-                if (setting) {
-                    setting.open();
-                    setting.openTabById('radial-timeline');
-                }
+                openSettingsTab(this.app);
             });
 
             const commandPaletteBtn = doc.win.createEl('button');
@@ -1515,11 +1512,7 @@ export class RadialTimelineView extends ItemView {
 
     private revealGoalsSessionsSettings(): void {
         const settingsTab = this.plugin.settingsTab;
-        const setting = (this.app as unknown as { setting?: { open: () => void; openTabById: (id: string) => void } }).setting;
-        if (setting) {
-            setting.open();
-            setting.openTabById('radial-timeline');
-        }
+        openSettingsTab(this.app);
         settingsTab?.setActiveTab('core');
         const reveal = () => settingsTab?.revealSettingsSection('core', 'goals-sessions', { force: true });
         window.requestAnimationFrame(reveal);
@@ -2251,13 +2244,10 @@ export class RadialTimelineView extends ItemView {
     }
 
     private openRadialTimelineCommands(): void {
-        const commandManager = (this.app as unknown as { commands?: { executeCommandById?: (id: string) => void } }).commands;
-        if (!commandManager?.executeCommandById) {
+        if (!executeCommandById(this.app, 'command-palette:open')) {
             new Notice('Command palette is not available.');
             return;
         }
-
-        commandManager.executeCommandById('command-palette:open');
         this.seedCommandPaletteQuery('Radial Timeline');
     }
 
@@ -3106,12 +3096,7 @@ export class RadialTimelineView extends ItemView {
                         if (this.plugin.settingsTab) {
                             this.plugin.settingsTab.setActiveTab('social');
                         }
-                        // SAFE: any type used for accessing Obsidian's internal settings API
-                        const setting = (this.app as unknown as { setting?: { open: () => void; openTabById: (id: string) => void } }).setting;
-                        if (setting) {
-                            setting.open();
-                            setting.openTabById('radial-timeline');
-                        }
+                        openSettingsTab(this.app);
                     });
                 }
 
@@ -3124,12 +3109,7 @@ export class RadialTimelineView extends ItemView {
                             this.plugin.settingsTab.forceExpandCoreCompletionPreview();
                             this.plugin.settingsTab.setActiveTab('core');
                         }
-                        // SAFE: any type used for accessing Obsidian's internal settings API
-                        const setting = (this.app as unknown as { setting?: { open: () => void; openTabById: (id: string) => void } }).setting;
-                        if (setting) {
-                            setting.open();
-                            setting.openTabById('radial-timeline');
-                        }
+                        openSettingsTab(this.app);
                     });
                 }
 

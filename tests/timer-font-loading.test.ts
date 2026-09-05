@@ -123,7 +123,7 @@ describe('writing session timer font loading', () => {
         expect(timelineViewSource).not.toContain("presetButton.setAttribute('aria-label'");
         expect(timelineViewSource).toContain("goalInput.step = '1'");
         expect(timelineViewSource).toContain("settingsTab?.revealSettingsSection('core', 'goals-sessions', { force: true })");
-        expect(timelineViewSource).toContain("setting.openTabById('radial-timeline')");
+        expect(timelineViewSource).toContain('openSettingsTab(this.app)');
         expect(timelineViewSource).toContain('<svg xmlns="http://www.w3.org/2000/svg">${ringSvg}</svg>');
         expect(timelineViewSource).toContain('getSessionRingElapsedMs');
         expect(timelineViewSource).toContain('elapsed-second-');

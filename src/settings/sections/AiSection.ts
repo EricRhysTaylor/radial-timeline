@@ -1,3 +1,4 @@
+import { executeCommandById } from '../../utils/obsidianInternals';
 import { Setting as Settings, Notice, DropdownComponent,setIcon, setTooltip } from 'obsidian';
 import type { App, TextComponent } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
@@ -3657,12 +3658,9 @@ export function renderAiSection(params: {
     setTooltip(summaryRefreshOpenButton, 'Open summary refresh modal');
     plugin.registerDomEvent(summaryRefreshOpenButton, 'click', (evt: MouseEvent) => {
         evt.preventDefault();
-        const commandManager = (plugin.app as unknown as { commands?: { executeCommandById?: (id: string) => void } }).commands;
-        if (!commandManager?.executeCommandById) {
+        if (!executeCommandById(plugin.app, 'radial-timeline:refresh-scene-synopses-ai')) {
             new Notice('Summary refresh command is not available.');
-            return;
         }
-        commandManager.executeCommandById('radial-timeline:refresh-scene-synopses-ai');
     });
 
     aiConfigCreateRow(summaryRefreshGroup, {

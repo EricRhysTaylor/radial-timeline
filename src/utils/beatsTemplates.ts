@@ -513,7 +513,7 @@ export async function createBeatNotesFromSet(
       created++;
       createdPaths.push(normalizedPath);
     } catch (error) {
-      errors.push(`Failed to create "${filename}": ${error}`);
+      errors.push(`Failed to create "${filename}": ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

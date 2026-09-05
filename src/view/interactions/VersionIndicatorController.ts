@@ -4,6 +4,7 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 
+import { openSettingsTab } from '../../utils/obsidianInternals';
 import type { App } from 'obsidian';
 import { getVersionCheckService } from '../../services/VersionCheckService';
 import { CORE_ALERTS_SECTION_KEY, type RadialTimelineSettingsTabId } from '../../settings/settingsAnchors';
@@ -28,14 +29,7 @@ function openRadialTimelineCoreAlerts(view: VersionIndicatorView): void {
     const settingsTab = view.plugin.settingsTab;
     settingsTab?.revealSettingsSection('core', CORE_ALERTS_SECTION_KEY);
 
-    const setting = (view.plugin.app as unknown as {
-        setting?: {
-            open: () => void;
-            openTabById: (id: string) => void;
-        };
-    }).setting;
-    setting?.open?.();
-    setting?.openTabById?.('radial-timeline');
+    openSettingsTab(view.plugin.app);
 
     window.setTimeout(() => {
         settingsTab?.revealSettingsSection('core', CORE_ALERTS_SECTION_KEY);

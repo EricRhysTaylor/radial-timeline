@@ -6,6 +6,7 @@
  * Runtime Estimation Processing Modal
  */
 
+import { openSettingsTab } from '../utils/obsidianInternals';
 import { App, ButtonComponent, DropdownComponent, Notice, setIcon } from 'obsidian';
 import { ErtModal } from '../ui/ErtModal';
 import type RadialTimelinePlugin from '../main';
@@ -158,16 +159,6 @@ export class RuntimeProcessingModal extends ErtModal {
         const badge = badgeRow.createSpan({ cls: 'ert-modal-badge' });
         const modeIcon = badge.createSpan({ cls: 'ert-modal-badge-icon' });
         setIcon(modeIcon, modeIconName);
-        const modeIconSvg = modeIcon.querySelector('svg');
-        if (modeIconSvg instanceof SVGElement) {
-            modeIconSvg.style.cssText = `
-                width: 14px;
-                height: 14px;
-                stroke: var(--ert-modal-pro-accent, var(--ert-pro-accent-color));
-                stroke-width: 2;
-                fill: none;
-            `;
-        }
         badge.appendText(t('sceneAnalysis.runtimeModal.badgeRuntime', { mode: modeLabel }));
         header.createDiv({ cls: 'ert-modal-title', text: t('sceneAnalysis.runtimeModal.title') });
         header.createDiv({ cls: 'ert-modal-subtitle', text: t('sceneAnalysis.runtimeModal.subtitle') });
@@ -317,10 +308,7 @@ export class RuntimeProcessingModal extends ErtModal {
                 this.close();
                 // Set active tab before display() so core tab renders
                 this.plugin.settingsTab?.setActiveTab('core');
-                // @ts-ignore - Obsidian API
-                this.app.setting.open();
-                // @ts-ignore - Obsidian API
-                this.app.setting.openTabById('radial-timeline');
+                openSettingsTab(this.app);
                 // Scroll to runtime after DOM is built
                 this.plugin.settingsTab?.revealSettingsSection('core', 'runtime');
             });

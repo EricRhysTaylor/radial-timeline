@@ -5,6 +5,7 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 
+import type { StageTargetDates } from './types/settings';
 import { ButtonComponent, Plugin, Notice, TAbstractFile, WorkspaceLeaf, addIcon } from "obsidian";
 import { EditorView, type ViewUpdate } from '@codemirror/view';
 import { TimelineService } from './services/TimelineService';
@@ -827,7 +828,7 @@ export default class RadialTimelinePlugin extends Plugin {
         // visible Radial Timeline/Inquiry/Sessions/ folder before reading it.
         await migrateInquirySidecarToVisible(this.app);
         const vaultSessions = await readInquirySessionsFromVault(this.app);
-        const legacySessions = (this.settings.inquirySessionCache?.sessions ?? []) as unknown as InquirySession[];
+        const legacySessions = (this.settings.inquirySessionCache?.sessions ?? []) as unknown as InquirySession[]; // SAFE: migration reads the pre-store session shape, which the settings type no longer describes
 
         const byKey = new Map<string, InquirySession>();
         for (const session of legacySessions) byKey.set(session.key, session);
@@ -972,7 +973,7 @@ export default class RadialTimelinePlugin extends Plugin {
         }
 
         let booksMigrated = false;
-        const settingsAny = this.settings as unknown as Record<string, unknown>;
+        const settingsAny = this.settings as unknown as Record<string, unknown>; // SAFE: migration sweeps settings by key name to drop fields the type no longer carries
         const hasBooks = Array.isArray(this.settings.books) && this.settings.books.length > 0;
 
         if (!hasBooks) {
@@ -1263,7 +1264,8 @@ export default class RadialTimelinePlugin extends Plugin {
         // BookProfile.stageTargetDates. The legacy field is copied onto the
         // active book (unless it already has its own) and cleared for good.
         let stageTargetsMigrated = false;
-        const legacyStageTargets = this.settings.stageTargetDates;
+        // The migration is the one reader the deprecated field still has; view it without the marker.
+        const legacyStageTargets = (this.settings as { stageTargetDates?: StageTargetDates }).stageTargetDates;
         if (legacyStageTargets !== undefined) {
             const hasLegacyValues = Object.values(legacyStageTargets ?? {}).some(v => typeof v === 'string' && v); // SAFE: migration probe — an absent legacy object simply has no values to carry forward
             if (hasLegacyValues) {

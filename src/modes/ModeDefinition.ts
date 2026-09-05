@@ -223,5 +223,5 @@ export interface ModeDefinition {
  * Type guard to check if a string is a valid TimelineMode
  */
 export function isTimelineMode(value: string): value is TimelineMode {
-    return Object.values(TimelineMode).some(mode => mode === value);
+    return (Object.values(TimelineMode) as string[]).includes(value);
 }

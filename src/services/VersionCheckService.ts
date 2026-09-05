@@ -4,6 +4,7 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 
+import { openSettingsTab } from '../utils/obsidianInternals';
 import type { App } from 'obsidian';
 import { requestUrl } from 'obsidian';
 
@@ -115,13 +116,7 @@ export class VersionCheckService {
      * Open Obsidian's community plugins update settings
      */
     openUpdateSettings(app: App): void {
-        // SAFE: any type used for accessing Obsidian's internal settings API (not in public types)
-        const setting = (app as unknown as { setting?: { open: () => void; openTabById: (id: string) => void } }).setting;
-        if (setting) {
-            setting.open();
-            // Navigate to community plugins tab
-            setting.openTabById('community-plugins');
-        }
+        openSettingsTab(app, 'community-plugins');
     }
 }
 

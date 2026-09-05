@@ -108,58 +108,8 @@ export async function processEntireSubplotWithModal(
         true // isEntireSubplot = true
     );
 
-    // Override the modal's onOpen to skip confirmation and start processing immediately
-    modal.onOpen = function() {
-        // Show the modal first
-        const { contentEl, titleEl, modalEl } = this;
-        titleEl.setText('');
-        
-        // Set modal width to match manuscript order modal
-        if (modalEl) {
-            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell');
-            modalEl.setCssStyles({ width: '720px', maxWidth: '92vw', maxHeight: '92vh' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
-        }
-        contentEl.addClass('ert-modal-container', 'ert-stack', 'ert-scene-analysis-modal');
-        
-        // Show progress view immediately (skip confirmation)
-        this.showProgressView();
-        
-        // Start processing automatically
-        this.isProcessing = true;
-        this.abortController = new AbortController();
-        
-        // Notify plugin that processing has started
-        plugin.activeBeatsModal = this;
-        plugin.showBeatsStatusBar(0, 0);
-        
-        // Start the actual processing
-        void (async () => {
-            try {
-                await processEntireSubplotWithModalInternal(plugin, vault, subplotName, modal);
-                
-                // Show appropriate summary
-                if (this.abortController && this.abortController.signal.aborted) {
-                    this.showCompletionSummary(t('sceneAnalysis.pipeline.notices.abortedRateLimit'));
-                } else {
-                    this.showCompletionSummary(this.resolveCompletionStatusMessage());
-                }
-            } catch (error) {
-                if (!this.abortController.signal.aborted) {
-                    this.addError(t('sceneAnalysis.pipeline.notices.fatalError', { error: error instanceof Error ? error.message : String(error) }));
-                    this.showCompletionSummary(t('sceneAnalysis.processingModal.completion.stoppedDueToError'));
-                } else {
-                    this.showCompletionSummary(t('sceneAnalysis.pipeline.notices.abortedRateLimit'));
-                }
-            } finally {
-                this.isProcessing = false;
-                this.abortController = null;
-                plugin.activeBeatsModal = null;
-                plugin.hideBeatsStatusBar();
-            }
-        })();
-    };
-    
-    modal.open();
+    // Scope is already chosen, so skip the confirmation step.
+    modal.openAndRun(() => processEntireSubplotWithModalInternal(plugin, vault, subplotName, modal));
 }
 
 // Internal processing function for entire subplot that works with the modal
@@ -210,56 +160,6 @@ export async function processBySubplotNameWithModal(
         false // isEntireSubplot = false (flagged scenes only)
     );
 
-    // Override the modal's onOpen to skip confirmation and start processing immediately
-    modal.onOpen = function() {
-        // Show the modal first
-        const { contentEl, titleEl, modalEl } = this;
-        titleEl.setText('');
-        
-        // Set modal width to match manuscript order modal
-        if (modalEl) {
-            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell');
-            modalEl.setCssStyles({ width: '720px', maxWidth: '92vw', maxHeight: '92vh' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
-        }
-        contentEl.addClass('ert-modal-container', 'ert-stack', 'ert-scene-analysis-modal');
-        
-        // Show progress view immediately (skip confirmation)
-        this.showProgressView();
-        
-        // Start processing automatically
-        this.isProcessing = true;
-        this.abortController = new AbortController();
-        
-        // Notify plugin that processing has started
-        plugin.activeBeatsModal = this;
-        plugin.showBeatsStatusBar(0, 0);
-        
-        // Start the actual processing
-        void (async () => {
-            try {
-                await processSubplotWithModal(plugin, vault, subplotName, modal);
-                
-                // Show appropriate summary
-                if (this.abortController && this.abortController.signal.aborted) {
-                    this.showCompletionSummary(t('sceneAnalysis.pipeline.notices.abortedRateLimit'));
-                } else {
-                    this.showCompletionSummary(this.resolveCompletionStatusMessage());
-                }
-            } catch (error) {
-                if (!this.abortController.signal.aborted) {
-                    this.addError(t('sceneAnalysis.pipeline.notices.fatalError', { error: error instanceof Error ? error.message : String(error) }));
-                    this.showCompletionSummary(t('sceneAnalysis.processingModal.completion.stoppedDueToError'));
-                } else {
-                    this.showCompletionSummary(t('sceneAnalysis.pipeline.notices.abortedRateLimit'));
-                }
-            } finally {
-                this.isProcessing = false;
-                this.abortController = null;
-                plugin.activeBeatsModal = null;
-                plugin.hideBeatsStatusBar();
-            }
-        })();
-    };
-    
-    modal.open();
+    // Scope is already chosen, so skip the confirmation step.
+    modal.openAndRun(() => processSubplotWithModal(plugin, vault, subplotName, modal));
 }

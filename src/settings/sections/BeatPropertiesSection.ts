@@ -5393,7 +5393,7 @@ export function renderBeatPropertiesSection(params: {
             renderBeatSystemTabs();
         } catch (error) {
             console.error('[Beat Templates] Failed:', error);
-            new Notice(`Failed to create story beat sets: ${error}`);
+            new Notice(`Failed to create story beat sets: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 }

@@ -23,7 +23,7 @@ function normalizeSubplotLabel(value: string): string {
 async function getTimelineSubplotOrder(plugin: RadialTimelinePlugin): Promise<string[]> {
     const scenes = Array.isArray(plugin.lastSceneData) ? plugin.lastSceneData : null;
     if (scenes && scenes.length > 0) {
-        const { masterSubplotOrder } = computeCacheableValues(plugin as unknown as PluginRendererFacade, scenes);
+        const { masterSubplotOrder } = computeCacheableValues(plugin as unknown as PluginRendererFacade, scenes); // SAFE: the plugin satisfies the renderer facade at runtime; the structural type is narrower than the class
         return masterSubplotOrder.filter(subplot =>
             subplot &&
             subplot.trim().length > 0 &&
@@ -42,7 +42,7 @@ async function getTimelineSubplotOrder(plugin: RadialTimelinePlugin): Promise<st
     const hydrated = Array.isArray(fetched) ? fetched : null;
     if (!hydrated || hydrated.length === 0) return [];
 
-    const { masterSubplotOrder } = computeCacheableValues(plugin as unknown as PluginRendererFacade, hydrated);
+    const { masterSubplotOrder } = computeCacheableValues(plugin as unknown as PluginRendererFacade, hydrated); // SAFE: the plugin satisfies the renderer facade at runtime; the structural type is narrower than the class
     return masterSubplotOrder.filter(subplot =>
         subplot &&
         subplot.trim().length > 0 &&

@@ -382,8 +382,8 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
     const applyStageBadgeTone = (stage: (typeof STAGE_ORDER)[number]) => {
         const color = plugin.settings.publishStageColors[stage];
         stageBadge.style.setProperty('--ert-chip-bg', `color-mix(in srgb, ${color} 18%, var(--background-secondary) 82%)`);
-        stageBadge.style.setProperty('border', `1px solid ${color}`);
-        stageBadge.style.setProperty('color', color);
+        stageBadge.style.setProperty('border', `1px solid ${color}`); // SAFE: the stage colour comes from settings at runtime
+        stageBadge.style.setProperty('color', color); // SAFE: the stage colour comes from settings at runtime
     };
 
     const formatDateRange = (start?: string, target?: string): string => {
@@ -589,13 +589,13 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
         STAGE_ORDER.forEach(stage => {
             const seg = flowSegments[stage];
             const count = breakdown[stage] ?? 0;
-            seg.style.setProperty('flex-grow', String(count));
+            seg.style.setProperty('flex-grow', String(count)); // SAFE: segment width is the live scene count
             seg.toggleClass('is-empty', count === 0);
             setTooltip(seg, `${stage}: ${count}`);
         });
         const clamped = Math.max(0, Math.min(100, percent));
-        flowTickLine.style.setProperty('left', `${clamped}%`);
-        flowTickLabel.style.setProperty('left', `${clamped}%`);
+        flowTickLine.style.setProperty('left', `${clamped}%`); // SAFE: tick position is the live percent
+        flowTickLabel.style.setProperty('left', `${clamped}%`); // SAFE: tick position is the live percent
         flowTickLabel.setText(`${clamped}%`);
         flowLegend.empty();
         STAGE_ORDER.forEach(stage => {

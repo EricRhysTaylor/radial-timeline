@@ -66,7 +66,7 @@ export class CommandRegistrar {
     }
 
     public openManuscriptExportModal(): void {
-        new ManuscriptOptionsModal(this.app, this.plugin, this.handleManuscriptExport.bind(this)).open();
+        new ManuscriptOptionsModal(this.app, this.plugin, (result) => this.handleManuscriptExport(result)).open();
     }
 
     /** Hide or show the Inquiry ribbon icon based on AI enabled state. */
@@ -1370,7 +1370,7 @@ export class CommandRegistrar {
             };
             new Notice(`Created ${labelMap[type]} scene note: ${filename}`);
         } catch (error) {
-            const msg = (error)?.message || String(error);
+            const msg = error instanceof Error ? error.message : String(error);
             new Notice('Failed to create scene note: ' + msg);
         }
     }
@@ -1406,7 +1406,7 @@ export class CommandRegistrar {
             await leaf.openFile(newFile);
             new Notice(`Created ${defaultLabel.toLowerCase()} note: ${filename}`);
         } catch (error) {
-            const msg = (error)?.message || String(error);
+            const msg = error instanceof Error ? error.message : String(error);
             new Notice(`Failed to create ${classValue.toLowerCase()} note: ${msg}`);
         }
     }
@@ -1459,7 +1459,7 @@ export class CommandRegistrar {
             await leaf.openFile(newFile);
             new Notice(`Created BookMeta note: ${newFile.name}`);
         } catch (error) {
-            const msg = (error)?.message || String(error);
+            const msg = error instanceof Error ? error.message : String(error);
             new Notice(`Failed to create BookMeta note: ${msg}`);
         }
     }
@@ -1529,7 +1529,7 @@ export class CommandRegistrar {
             await leaf.openFile(newFile);
             new Notice(`Created backdrop note: ${filename}`);
         } catch (error) {
-            const msg = (error)?.message || String(error);
+            const msg = error instanceof Error ? error.message : String(error);
             new Notice('Failed to create backdrop note: ' + msg);
         }
     }
@@ -1566,7 +1566,7 @@ export class CommandRegistrar {
             await leaf.openFile(newFile);
             new Notice('Created beat note.');
         } catch (error) {
-            const msg = (error)?.message || String(error);
+            const msg = error instanceof Error ? error.message : String(error);
             new Notice('Failed to create beat note: ' + msg);
         }
     }

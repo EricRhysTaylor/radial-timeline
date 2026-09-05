@@ -1,3 +1,4 @@
+import { openSettingsTab } from '../utils/obsidianInternals';
 import { sleep } from '../utils/sleep';
 import {
     ItemView,
@@ -129,7 +130,7 @@ import type {
 import { InquirySessionStore } from './InquirySessionStore';
 import { readInquirySessionsFromVault, readInquirySidecarVaultIdentity } from './InquiryArtifactStore';
 import type { InquirySession, InquirySessionStatus } from './sessionTypes';
-import { extractSummary, getActiveFrontmatterMappings, normalizeFrontmatterKeys } from '../utils/frontmatter';
+import { extractSummary, getActiveFrontmatterMappings, normalizeFrontmatterKeys, frontmatterValueToText } from '../utils/frontmatter';
 import { getSequencedBooks } from '../utils/books';
 import type { InquirySourcesSettings } from '../types/settings';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
@@ -1288,12 +1289,7 @@ export class InquiryView extends ItemView {
         if (this.plugin.settingsTab) {
             this.plugin.settingsTab.setActiveTab('ai');
         }
-        // SAFE: any type used for accessing Obsidian's internal settings API
-        const setting = (this.app as unknown as { setting?: { open: () => void; openTabById: (id: string) => void } }).setting;
-        if (setting) {
-            setting.open();
-            setting.openTabById('radial-timeline');
-        }
+        openSettingsTab(this.app);
         window.setTimeout(() => {
             if (this.plugin.settingsTab) {
                 this.plugin.settingsTab.setActiveTab('ai');
@@ -1997,16 +1993,16 @@ export class InquiryView extends ItemView {
                 const frontmatter = cache?.frontmatter;
                 if (!frontmatter) continue;
 
-                const rawValue = frontmatter[targetField];
+                const rawValue: unknown = frontmatter[targetField];
                 if (rawValue === undefined || rawValue === null) continue;
 
                 let rawText = '';
                 if (typeof rawValue === 'string') {
                     rawText = rawValue;
                 } else if (Array.isArray(rawValue)) {
-                    rawText = rawValue.map(entry => (typeof entry === 'string' ? entry : String(entry))).join('\n');
+                    rawText = rawValue.map(entry => frontmatterValueToText(entry)).join('\n');
                 } else {
-                    rawText = String(rawValue);
+                    rawText = frontmatterValueToText(rawValue);
                 }
 
                 if (!rawText.trim()) continue;
@@ -5785,7 +5781,7 @@ export class InquiryView extends ItemView {
             minute: '2-digit',
             hour12: true
         });
-        const timeStr = formatted.replace(/\s+(AM|PM)/i, (_, m) => m.toLowerCase());
+        const timeStr = formatted.replace(/\s+(AM|PM)/i, (_, m: string) => m.toLowerCase());
         const zoneTag = this.buildSessionZoneTag(session);
         return zoneTag ? `ID: ${zoneTag} · ${timeStr}` : `ID: ${timeStr}`;
     }
@@ -6169,12 +6165,7 @@ export class InquiryView extends ItemView {
         if (this.plugin.settingsTab) {
             this.plugin.settingsTab.setActiveTab('inquiry');
         }
-        // SAFE: any type used for accessing Obsidian's internal settings API
-        const setting = (this.app as unknown as { setting?: { open: () => void; openTabById: (id: string) => void } }).setting;
-        if (setting) {
-            setting.open();
-            setting.openTabById('radial-timeline');
-        }
+        openSettingsTab(this.app);
         window.setTimeout(() => {
             if (focus === 'overview') {
                 return;

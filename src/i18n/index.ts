@@ -148,7 +148,7 @@ function getTranslations(): TranslationKeys {
  * @returns The translated string, or the key itself if not found
  * 
  * @example
- * t('settings.general.heading') // "General"
+ * t('settings.ai.provider.name') // "AI provider"
  */
 export function t(key: string, vars?: Record<string, string | number>): string {
     const translations = getTranslations();

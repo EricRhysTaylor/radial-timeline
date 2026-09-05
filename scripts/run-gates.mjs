@@ -20,6 +20,23 @@ function argValue(name) {
 const profileArg = argValue('--profile');
 const resultsFileArg = argValue('--results-file');
 
+/** Keep the newest `keep` timestamped run directories; the gate logs were never pruned and reached 260 MB. */
+async function pruneOldRuns(keep) {
+    let entries;
+    try {
+        entries = await fs.readdir(LOG_ROOT, { withFileTypes: true });
+    } catch {
+        return;
+    }
+    const runs = entries
+        .filter(entry => entry.isDirectory() && /^\d{4}-\d{2}-\d{2}T/.test(entry.name))
+        .map(entry => entry.name)
+        .sort();
+    for (const name of runs.slice(0, Math.max(0, runs.length - keep))) {
+        await fs.rm(path.join(LOG_ROOT, name), { recursive: true, force: true });
+    }
+}
+
 const colors = {
     bold: '\x1b[1m',
     dim: '\x1b[2m',
@@ -342,6 +359,7 @@ async function writeResults(results, actionItems, notices, ok) {
 
 async function main() {
     await fs.mkdir(LOG_DIR, { recursive: true });
+    await pruneOldRuns(40);
     const notices = [];
     const actionItems = [];
     const results = [];

@@ -43,8 +43,7 @@ try {
   // Run the actual build steps
   console.log('\n[build] Running build steps...\n');
   run('node show-scripts.mjs');
-  run('node scripts/check-social-ert-lock.mjs');
-  run('node scripts/check-inquiry-ert-lock.mjs');
+  run('node scripts/check-ert-locks.mjs');
   run('node check-gross-deletions.mjs');
   run('node scripts/bundle-css.mjs'); // Generate CSS before checking it
   run('npx tsc --noEmit');

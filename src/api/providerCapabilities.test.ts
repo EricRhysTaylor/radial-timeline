@@ -4,9 +4,9 @@ import { getModelRequestProfile } from '../ai/registry/modelRequestProfiles';
 import { sanitizeDispatchParams } from './providerCapabilities';
 
 describe('sanitizeDispatchParams', () => {
-    it('strips OpenAI GPT-5.5 sampling controls before dispatch', () => {
+    it('strips OpenAI GPT-5.6 Sol sampling controls before dispatch', () => {
         const result = sanitizeDispatchParams('openai', {
-            modelId: 'gpt-5.5',
+            modelId: 'gpt-5.6-sol',
             systemPrompt: 'You are precise.',
             userPrompt: 'Return JSON.',
             maxOutputTokens: 2048,
@@ -16,19 +16,19 @@ describe('sanitizeDispatchParams', () => {
 
         expect(result.params.temperature).toBeUndefined();
         expect(result.params.topP).toBeUndefined();
-        expect(result.notes).toContain('Stripped temperature for openai/gpt-5.5: model does not support temperature');
-        expect(result.notes).toContain('Stripped topP for openai/gpt-5.5: model does not support topP');
+        expect(result.notes).toContain('Stripped temperature for openai/gpt-5.6-sol: model does not support temperature');
+        expect(result.notes).toContain('Stripped topP for openai/gpt-5.6-sol: model does not support topP');
     });
 
-    // Note: with the minimum-viable catalog (2026-05-22), GPT-5.5 is the
+    // Note: with the minimum-viable catalog (2026-05-22), GPT-5.6 Sol is the
     // only OpenAI model and it does NOT support temperature/topP. There
     // is currently no curated OpenAI model that keeps sampling controls
     // unchanged; that test was retired with gpt-5.4. If a future curated
     // OpenAI model supports temperature, re-add an "OpenAI sampling
     // preserved" test row using that model.
 
-    it('centralizes GPT-5.5 request profile metadata for provider adapters', () => {
-        expect(getModelRequestProfile('openai', 'gpt-5.5')).toMatchObject({
+    it('centralizes GPT-5.6 Sol request profile metadata for provider adapters', () => {
+        expect(getModelRequestProfile('openai', 'gpt-5.6-sol')).toMatchObject({
             supportsTemperature: false,
             supportsTopP: false,
             supportsJsonSchema: true,

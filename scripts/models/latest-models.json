@@ -1,5 +1,10 @@
 {
   "generatedAt": "2026-09-05T15:00:13.164Z",
+  "providerFetchedAt": {
+    "openai": null,
+    "anthropic": "2026-09-05T15:00:13.164Z",
+    "google": null
+  },
   "summary": {
     "openai": 120,
     "anthropic": 11,

@@ -13,7 +13,7 @@ import { getPickerModelsForProvider, selectLatestModelByReleaseChannel } from '.
 describe('release channel curation', () => {
     it('returns the single curated OpenAI picker entry', () => {
         const picker = getPickerModelsForProvider(BUILTIN_MODELS, 'openai').map(model => model.alias);
-        expect(picker).toEqual(['gpt-5.5']);
+        expect(picker).toEqual(['gpt-5.6-sol']);
     });
 
     it('returns both curated Google picker entries (depth + speed)', () => {
@@ -54,7 +54,7 @@ describe('release channel curation', () => {
         // With one stable model, latest-stable resolves to that model.
         // Resolution is by status === 'stable' even without an explicit
         // rollout block.
-        expect(stable?.alias).toBe('gpt-5.5');
+        expect(stable?.alias).toBe('gpt-5.6-sol');
     });
 
     it('selectLatestModelByReleaseChannel returns the newest stable Anthropic model', () => {

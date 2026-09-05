@@ -5,9 +5,12 @@ import {
     computeAliasChanges,
     computeAnthropicNewestChange,
     computeDiff,
+    computeStaleProviders,
     computeTokenLimitChanges,
     createLatestAliasTracking,
+    describeStaleProvider,
     parseCanonicalSnapshot,
+    parseProviderFetchedAt,
 } from '../scripts/modelSnapshotUtils.mjs';
 
 describe('modelSnapshotUtils', () => {
@@ -222,5 +225,56 @@ describe('modelSnapshotUtils', () => {
         expect(actionable.changes.anthropic.added).toEqual([]);
         expect(actionable.anthropicNewestChanged).toBeNull();
         expect(report.hasActionableChanges).toBe(false);
+    });
+});
+
+describe('stale provider lists', () => {
+    const NOW = Date.parse('2026-09-05T18:00:00.000Z');
+
+    it('carries per-provider live fetch times through the canonical snapshot and nulls anything unparseable', () => {
+        const snapshot = parseCanonicalSnapshot({
+            generatedAt: '2026-09-05T17:00:00.000Z',
+            providerFetchedAt: { anthropic: '2026-09-05T17:00:00.000Z', openai: 'not a date' },
+            models: []
+        });
+        expect(snapshot?.providerFetchedAt).toEqual({
+            openai: null,
+            anthropic: '2026-09-05T17:00:00.000Z',
+            google: null
+        });
+        expect(parseProviderFetchedAt(undefined)).toEqual({ openai: null, anthropic: null, google: null });
+    });
+
+    it('flags a provider whose list was never fetched live, or not within the window, even when generatedAt is fresh', () => {
+        const snapshot = parseCanonicalSnapshot({
+            generatedAt: '2026-09-05T17:00:00.000Z',
+            providerFetchedAt: {
+                anthropic: '2026-09-05T17:00:00.000Z',
+                google: '2026-08-01T00:00:00.000Z'
+            },
+            models: []
+        });
+        const stale = computeStaleProviders(snapshot, NOW);
+        expect(stale.map(entry => entry.provider)).toEqual(['openai', 'google']);
+        expect(stale[0]).toEqual({ provider: 'openai', fetchedAt: null, ageDays: null });
+        expect(stale[1].ageDays).toBe(35);
+    });
+
+    it('reports nothing when every provider was fetched live inside the window', () => {
+        const snapshot = parseCanonicalSnapshot({
+            generatedAt: '2026-09-05T17:00:00.000Z',
+            providerFetchedAt: {
+                openai: '2026-09-04T00:00:00.000Z',
+                anthropic: '2026-09-05T17:00:00.000Z',
+                google: '2026-09-01T00:00:00.000Z'
+            },
+            models: []
+        });
+        expect(computeStaleProviders(snapshot, NOW)).toEqual([]);
+    });
+
+    it('names the env var that unblocks the refresh', () => {
+        expect(describeStaleProvider({ provider: 'openai', fetchedAt: null, ageDays: null })).toContain('OPENAI_API_KEY');
+        expect(describeStaleProvider({ provider: 'google', fetchedAt: '2026-08-01T00:00:00.000Z', ageDays: 35 })).toContain('35 days ago');
     });
 });

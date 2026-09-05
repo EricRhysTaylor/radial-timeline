@@ -10,8 +10,10 @@ import {
     computeActionableDrift,
     computeAnthropicNewestChange,
     computeDiff,
+    computeStaleProviders,
     computeTokenLimitChanges,
     createLatestAliasTracking,
+    describeStaleProvider,
     hasProviderDiff,
     parseCanonicalSnapshot,
     parseLatestAliasTracking,
@@ -71,14 +73,20 @@ function runUpdateCommand() {
 }
 
 function buildSummaryMessage(report, reportFilePath) {
+    const lines = [];
     if ((report.releaseAlerts?.length || 0) > 0) {
         const primary = report.releaseAlerts[0];
-        return `${YELLOW}[check-model-updates] ALERT: ${primary.message} See ${reportFilePath}.${RESET}`;
+        lines.push(`${YELLOW}[check-model-updates] ALERT: ${primary.message} See ${reportFilePath}.${RESET}`);
+    } else if (report.hasActionableChanges) {
+        lines.push(`${YELLOW}[check-model-updates] ALERT: Actionable provider drift detected. See ${reportFilePath}.${RESET}`);
     }
-    if (report.hasActionableChanges) {
-        return `${YELLOW}[check-model-updates] ALERT: Actionable provider drift detected. See ${reportFilePath}.${RESET}`;
+    // A stale provider list is reported alongside, never instead of, the
+    // drift it can still see: the gate cannot know what it has not fetched.
+    for (const entry of report.staleProviders || []) {
+        lines.push(`${YELLOW}[check-model-updates] STALE: ${describeStaleProvider(entry)}${RESET}`);
     }
-    return '[check-model-updates] No actionable provider drift detected.';
+    if (lines.length === 0) return '[check-model-updates] No actionable provider drift detected.';
+    return lines.join('\n');
 }
 
 function parseCuratedRegistry(payload) {
@@ -188,6 +196,7 @@ export async function runModelUpdateCheck(options = {}) {
         ? computeTokenLimitChanges(previousTracking, nextTracking)
         : [];
     const releaseAlerts = computeReleaseAlerts(watchedReleases, usableSnapshot, curatedModelIds);
+    const staleProviders = computeStaleProviders(usableSnapshot, now());
     const actionable = computeActionableDrift({
         changes,
         aliasChanges,
@@ -206,6 +215,7 @@ export async function runModelUpdateCheck(options = {}) {
         anthropicNewestChanged,
         tokenLimitChanges,
         releaseAlerts,
+        staleProviders,
         actionable,
     });
 
@@ -220,11 +230,12 @@ export async function runModelUpdateCheck(options = {}) {
     }
 
     const summary = buildSummaryMessage(report, driftReportFile);
-    if (!quiet || report.hasActionableChanges || (shouldRefresh && !refreshResult.ok)) {
+    if (!quiet || report.hasActionableChanges || staleProviders.length > 0 || (shouldRefresh && !refreshResult.ok)) {
         log(summary);
     }
 
     return {
+        staleProviders,
         refreshed: shouldRefresh && refreshResult.ok,
         usedFallbackSnapshot: shouldRefresh && !refreshResult.ok,
         hasActionableChanges: report.hasActionableChanges,

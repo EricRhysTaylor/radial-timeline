@@ -1,12 +1,29 @@
 {
-  "checkedAt": "2026-09-02T20:54:23.671Z",
+  "checkedAt": "2026-09-05T17:32:09.804Z",
   "mode": "report",
   "snapshotBefore": {
-    "generatedAt": "2026-09-02T20:53:34.613Z"
+    "generatedAt": "2026-09-05T15:00:13.164Z"
   },
   "snapshotAfter": {
-    "generatedAt": "2026-09-02T20:53:34.613Z"
+    "generatedAt": "2026-09-05T15:00:13.164Z",
+    "providerFetchedAt": {
+      "openai": null,
+      "anthropic": "2026-09-05T15:00:13.164Z",
+      "google": null
+    }
   },
+  "staleProviders": [
+    {
+      "provider": "openai",
+      "fetchedAt": null,
+      "ageDays": null
+    },
+    {
+      "provider": "google",
+      "fetchedAt": null,
+      "ageDays": null
+    }
+  ],
   "changes": {
     "openai": {
       "added": [],
@@ -24,7 +41,18 @@
   "aliasChanges": [],
   "anthropicNewestChanged": null,
   "tokenLimitChanges": [],
-  "releaseAlerts": [],
-  "hasActionableChanges": false,
+  "releaseAlerts": [
+    {
+      "id": "openai-gpt-6-astra-2026-09-05",
+      "provider": "openai",
+      "modelId": "gpt-6-astra",
+      "label": "GPT-6 Astra",
+      "announcedAt": "2026-09-05",
+      "sourceUrl": "https://developers.openai.com/api/docs/models/gpt-6-astra",
+      "state": "announced_not_in_snapshot",
+      "message": "openai announced GPT-6 Astra on 2026-09-05, but the local provider snapshot does not include gpt-6-astra yet."
+    }
+  ],
+  "hasActionableChanges": true,
   "recommendedFollowUps": []
 }

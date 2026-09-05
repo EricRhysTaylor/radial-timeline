@@ -81,11 +81,11 @@ describe('getDispatchEngineKey', () => {
     it('returns null when provider or model is missing', () => {
         expect(getDispatchEngineKey(result({}))).toBeNull();
         expect(getDispatchEngineKey(result({ aiProvider: 'openai' }))).toBeNull();
-        expect(getDispatchEngineKey(result({ aiModelResolved: 'gpt-5.5' }))).toBeNull();
+        expect(getDispatchEngineKey(result({ aiModelResolved: 'gpt-5.6-sol' }))).toBeNull();
     });
 
     it('builds a lowercased, trimmed provider::model key, preferring resolved model', () => {
-        expect(getDispatchEngineKey(result({ aiProvider: '  OpenAI ', aiModelResolved: ' GPT-5.5 ' }))).toBe('openai::gpt-5.5');
+        expect(getDispatchEngineKey(result({ aiProvider: '  OpenAI ', aiModelResolved: ' GPT-5.6-SOL ' }))).toBe('openai::gpt-5.6-sol');
         expect(getDispatchEngineKey(result({ aiProvider: 'anthropic', aiModelRequested: 'claude-x' }))).toBe('anthropic::claude-x');
         expect(getDispatchEngineKey(result({ aiProvider: 'google', aiModelResolved: 'gemini-pro', aiModelRequested: 'ignored' }))).toBe('google::gemini-pro');
     });
@@ -96,13 +96,13 @@ describe('resolveActualUsageCostForResult', () => {
         expect(resolveActualUsageCostForResult(result({}))).toBeUndefined();
         expect(resolveActualUsageCostForResult(result({ aiProvider: 'ollama', aiModelResolved: 'x', tokenUsage: {} as never }))).toBeUndefined();
         expect(resolveActualUsageCostForResult(result({ aiProvider: 'openai', tokenUsage: {} as never }))).toBeUndefined();
-        expect(resolveActualUsageCostForResult(result({ aiProvider: 'openai', aiModelResolved: 'gpt-5.5' }))).toBeUndefined();
+        expect(resolveActualUsageCostForResult(result({ aiProvider: 'openai', aiModelResolved: 'gpt-5.6-sol' }))).toBeUndefined();
     });
 
     it('returns a finite number for a supported provider with real usage', () => {
         const cost = resolveActualUsageCostForResult(result({
             aiProvider: 'openai',
-            aiModelResolved: 'gpt-5.5',
+            aiModelResolved: 'gpt-5.6-sol',
             tokenUsage: { inputTokens: 130000, outputTokens: 4000 } as never
         }));
         expect(typeof cost === 'number' && Number.isFinite(cost)).toBe(true);
@@ -124,7 +124,7 @@ describe('buildEngineRecentRunSnapshot', () => {
     it('passes through citationsRequested and tokenUsage, derives citationCount + cost', () => {
         const snap = buildEngineRecentRunSnapshot(result({
             aiProvider: 'openai',
-            aiModelResolved: 'gpt-5.5',
+            aiModelResolved: 'gpt-5.6-sol',
             citations: [],
             evidenceDocumentMeta: [],
             findings: [],
@@ -256,9 +256,9 @@ describe('mapSessionToPersistedReuseContext', () => {
         ({ result: {}, ...p }) as unknown as InquirySession;
 
     it('returns null for null session or provider mismatch', () => {
-        expect(mapSessionToPersistedReuseContext(null, 'openai', 'GPT-5.5', NOW)).toBeNull();
+        expect(mapSessionToPersistedReuseContext(null, 'openai', 'GPT-5.6 Sol', NOW)).toBeNull();
         expect(mapSessionToPersistedReuseContext(
-            sess({ result: { aiProvider: 'anthropic' }, cacheReuseState: 'warm' }), 'openai', 'GPT-5.5', NOW
+            sess({ result: { aiProvider: 'anthropic' }, cacheReuseState: 'warm' }), 'openai', 'GPT-5.6 Sol', NOW
         )).toBeNull();
     });
 
@@ -280,13 +280,13 @@ describe('mapSessionToPersistedReuseContext', () => {
                 result: { aiProvider: 'openai', }, cacheReuseState: 'warm',
                 cachedStableRatio: 1.5, cachedStableTokens: 99.9, totalInputTokens: 100.7,
                 providerCacheStatus: 'hit'
-            }), 'openai', 'GPT-5.5', NOW
+            }), 'openai', 'GPT-5.6 Sol', NOW
         );
         expect(out?.cachedStableRatio).toBe(1);
         expect(out?.cachedStableTokens).toBe(99);
         expect(out?.totalInputTokens).toBe(100);
         expect(out?.provider).toBe('openai');
-        expect(out?.modelLabel).toBe('GPT-5.5');
+        expect(out?.modelLabel).toBe('GPT-5.6 Sol');
         expect(out?.modelSelectionReason).toBe('persisted_cache_certificate');
         expect(out?.cacheStatus).toBe('hit');
     });
@@ -306,8 +306,8 @@ describe('matchLiveReuseAdvancedContext', () => {
         expect(matchLiveReuseAdvancedContext(c({ provider: 'openai', modelLabel: ' GPT-4 ' }), 'openai', 'gpt-5')).toBeNull();
         const ok = c({ provider: 'openai', modelLabel: '' });
         expect(matchLiveReuseAdvancedContext(ok, 'openai', 'anything')).toBe(ok);
-        const ok2 = c({ provider: 'openai', modelLabel: ' GPT-5.5 ' });
-        expect(matchLiveReuseAdvancedContext(ok2, 'openai', 'gpt-5.5')).toBe(ok2);
+        const ok2 = c({ provider: 'openai', modelLabel: ' GPT-5.6-SOL ' });
+        expect(matchLiveReuseAdvancedContext(ok2, 'openai', 'gpt-5.6-sol')).toBe(ok2);
     });
 });
 

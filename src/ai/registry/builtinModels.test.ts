@@ -20,17 +20,17 @@ function byAlias(alias: string) {
  * quarterly process in docs/engineering/standards/model-promotion.md.
  */
 
-describe('BUILTIN_MODELS — OpenAI GPT-5.5', () => {
+describe('BUILTIN_MODELS — OpenAI GPT-5.6 Sol', () => {
     it('exposes a 1.05M context / 128k output window', () => {
-        const model = byAlias('gpt-5.5');
-        expect(model.id).toBe('gpt-5.5');
+        const model = byAlias('gpt-5.6-sol');
+        expect(model.id).toBe('gpt-5.6-sol');
         expect(model.contextWindow).toBe(1050000);
         expect(model.maxOutput).toBe(128000);
         expect(model.status).toBe('stable');
     });
 
-    it('captures GPT-5.5 request-shape constraints in the model contract', () => {
-        const model = byAlias('gpt-5.5');
+    it('captures GPT-5.6 Sol request-shape constraints in the model contract', () => {
+        const model = byAlias('gpt-5.6-sol');
         expect(model.constraints).toMatchObject({
             supportsTemperature: false,
             supportsTopP: false,
@@ -40,7 +40,7 @@ describe('BUILTIN_MODELS — OpenAI GPT-5.5', () => {
     });
 
     it('declares the structured-output capability', () => {
-        expect(byAlias('gpt-5.5').capabilities).toContain('jsonStrict');
+        expect(byAlias('gpt-5.6-sol').capabilities).toContain('jsonStrict');
     });
 });
 

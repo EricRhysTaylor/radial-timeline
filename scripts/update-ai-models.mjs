@@ -22,6 +22,7 @@ import {
     normalizeGoogleModels,
     normalizeOpenAiModels,
     sortCanonicalModels,
+    parseProviderFetchedAt,
 } from './modelSnapshotUtils.mjs';
 
 const OUTPUT_PATH = path.resolve('scripts/models/latest-models.json');
@@ -364,8 +365,15 @@ async function main() {
         ...mergedByProvider.google,
     ]);
 
+    const generatedAt = new Date().toISOString();
+    const previousFetchedAt = parseProviderFetchedAt(existingData.providerFetchedAt);
+    const providerFetchedAt = Object.fromEntries(PROVIDERS.map(provider => [
+        provider,
+        fetchStatusByProvider[provider].ok ? generatedAt : previousFetchedAt[provider],
+    ]));
     const payload = {
-        generatedAt: new Date().toISOString(),
+        generatedAt,
+        providerFetchedAt,
         summary: buildSummary(models),
         models,
     };

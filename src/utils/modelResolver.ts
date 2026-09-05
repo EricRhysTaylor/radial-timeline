@@ -24,7 +24,12 @@ const LATEST_ALIAS_DISPLAY_NAMES: Record<string, string> = {
     'gemini-flash-latest': 'Gemini 3.5 Flash',
     'gemini-flash-lite-latest': 'Gemini 3.1 Flash Lite Preview',
     
-    // OpenAI
+    // OpenAI — retired ids stay for historic Inquiry logs (display only).
+    'gpt-5.6': 'GPT-5.6 Sol',
+    'gpt-5.6-sol': 'GPT-5.6 Sol',
+    'gpt-5.6-terra': 'GPT-5.6 Terra',
+    'gpt-5.6-luna': 'GPT-5.6 Luna',
+    'gpt-5.5': 'GPT-5.5',
     'gpt-5.4': 'GPT-5.4',
     'gpt-5.4-pro': 'GPT-5.4 Pro',
     'gpt-5.1-chat-latest': 'GPT-5.1',

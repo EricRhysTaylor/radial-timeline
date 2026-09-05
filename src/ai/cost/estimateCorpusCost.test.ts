@@ -109,10 +109,10 @@ describe('estimateCorpusCost', () => {
         expect(aboveThreshold.freshCostUSD).toBeGreaterThan(atThreshold.freshCostUSD);
     });
 
-    it('GPT-5.5 cached runs cost less than fresh runs', () => {
+    it('GPT-5.6 Sol cached runs cost less than fresh runs', () => {
         const result = estimateCorpusCost(
             'openai',
-            'gpt-5.5',
+            'gpt-5.6-sol',
             61_600,
             8_000,
             1
@@ -122,7 +122,7 @@ describe('estimateCorpusCost', () => {
     });
 
     it('OpenAI live usage with cached tokens prices at cached-input rate when available', () => {
-        const result = estimateUsageCost('openai', 'gpt-5.5', {
+        const result = estimateUsageCost('openai', 'gpt-5.6-sol', {
             inputTokens: 61_600,
             outputTokens: 8_000,
             cacheReadInputTokens: 46_200
@@ -139,8 +139,8 @@ describe('estimateCorpusCost', () => {
         expect(result?.totalCostUSD).toBeGreaterThan(0);
     });
 
-    it('GPT-5.5 long-context cached usage stays internally consistent', () => {
-        const result = estimateUsageCost('openai', 'gpt-5.5', {
+    it('GPT-5.6 Sol long-context cached usage stays internally consistent', () => {
+        const result = estimateUsageCost('openai', 'gpt-5.6-sol', {
             inputTokens: 300_000,
             outputTokens: 10_000,
             cacheReadInputTokens: 225_000
@@ -254,11 +254,11 @@ describe('estimateCorpusCost', () => {
     });
 
     it('prices the priming pass at the input rate for providers with no explicit cache-write rate', () => {
-        // GPT-5.5 bills the first pass as ordinary input; automatic caching
+        // GPT-5.6 Sol bills the first pass as ordinary input; automatic caching
         // has no separate write price. The TTL is irrelevant there, so asking
         // for 1h neither throws nor changes the number.
-        const oneHour = estimateCorpusCost('openai', 'gpt-5.5', 61_600, 8_000, 1, { cacheReuseRatio: 0.5, cacheWriteTtl: '1h' });
-        const fiveMinute = estimateCorpusCost('openai', 'gpt-5.5', 61_600, 8_000, 1, { cacheReuseRatio: 0.5, cacheWriteTtl: '5m' });
+        const oneHour = estimateCorpusCost('openai', 'gpt-5.6-sol', 61_600, 8_000, 1, { cacheReuseRatio: 0.5, cacheWriteTtl: '1h' });
+        const fiveMinute = estimateCorpusCost('openai', 'gpt-5.6-sol', 61_600, 8_000, 1, { cacheReuseRatio: 0.5, cacheWriteTtl: '5m' });
         expect(Number.isFinite(oneHour.freshCostUSD)).toBe(true);
         expect(oneHour.freshCostUSD).toBeGreaterThan(0);
         expect(oneHour.freshCostUSD).toBe(fiveMinute.freshCostUSD);
@@ -356,8 +356,8 @@ describe('estimateOmnibusCostRange', () => {
     });
 
     it('prices the priming question at the input rate for providers without an explicit write rate', () => {
-        const pricing = getActivePricingTable().openai['gpt-5.5'];
-        const range = estimateOmnibusCostRange({ provider: 'openai', modelId: 'gpt-5.5', corpusInputTokens: 50_000, expectedOutputTokensPerQuestion: 1_000, questionCount: 4, cacheWriteTtl: '1h' });
+        const pricing = getActivePricingTable().openai['gpt-5.6-sol'];
+        const range = estimateOmnibusCostRange({ provider: 'openai', modelId: 'gpt-5.6-sol', corpusInputTokens: 50_000, expectedOutputTokensPerQuestion: 1_000, questionCount: 4, cacheWriteTtl: '1h' });
         const output = 4 * (1_000 / 1e6) * pricing.outputPer1M;
         expect(range.cachedUSD).toBeCloseTo(0.05 * pricing.inputPer1M + 3 * 0.05 * (pricing.cacheReadPer1M as number) + output, 10);
         expect(range.cachedUSD as number).toBeLessThan(range.uncachedUSD);

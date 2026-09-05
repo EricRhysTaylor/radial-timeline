@@ -231,17 +231,22 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         }
     },
     {
+        // GPT-5.6 Sol: flagship of the gpt-5.6 family (Luna < Terra < Sol),
+        // GA 2026-07-09, replacing GPT-5.5 on the line. Same request contract
+        // per developers.openai.com/api/docs/models/gpt-5.6-sol: Responses
+        // API, reasoning effort (none…max), provider-managed sampling,
+        // structured outputs, prompt caching, 1.05M context / 128K output.
         provider: 'openai',
-        id: 'gpt-5.5',
-        alias: 'gpt-5.5',
-        label: 'GPT-5.5',
+        id: 'gpt-5.6-sol',
+        alias: 'gpt-5.6-sol',
+        label: 'GPT-5.6 Sol',
         line: 'gpt-5',
         tier: 'BALANCED',
         capabilities: [...DEEP_CAPS, 'toolCalling', 'functionCalling'],
         personality: { reasoning: 10, writing: 9, determinism: 9 },
         contextWindow: 1050000,
         maxOutput: 128000,
-        releasedAt: '2026-04-23',
+        releasedAt: '2026-07-09',
         status: 'stable',
         rollout: {
             channel: 'stable',
@@ -256,21 +261,22 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         }
     },
     {
-        // Economy second on the gpt-5 line: a strong, cheaper alternative to
-        // 5.5, same request contract (Responses API, reasoning effort,
-        // provider-managed sampling). Auto-selection resolves to 5.5 (newer on
-        // the line); 5.4 is an explicit opt-in in the picker.
+        // Economy second on the gpt-5 line: GPT-5.6 Terra, the mid tier of
+        // the same family (OpenAI positions it as GPT-5.5-class at half the
+        // cost), same request contract as Sol. Auto-selection resolves to Sol
+        // (newest on the line); Terra is reachable by explicit pin. Released
+        // one day after Sol so the two never tie on the newest-on-line sort.
         provider: 'openai',
-        id: 'gpt-5.4',
-        alias: 'gpt-5.4',
-        label: 'GPT-5.4',
+        id: 'gpt-5.6-terra',
+        alias: 'gpt-5.6-terra',
+        label: 'GPT-5.6 Terra',
         line: 'gpt-5',
         tier: 'BALANCED',
         capabilities: [...DEEP_CAPS, 'toolCalling', 'functionCalling'],
         personality: { reasoning: 9, writing: 9, determinism: 9 },
         contextWindow: 1050000,
         maxOutput: 128000,
-        releasedAt: '2026-03-05',
+        releasedAt: '2026-07-08',
         status: 'stable',
         rollout: {
             channel: 'stable',

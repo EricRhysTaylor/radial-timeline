@@ -43,14 +43,14 @@ describe('OpenAIProvider', () => {
 
         const provider = new OpenAIProvider({ settings: {} } as never);
         await provider.generateText({
-            modelId: 'gpt-5.5',
+            modelId: 'gpt-5.6-sol',
             systemPrompt: 'You are precise.',
             userPrompt: 'Return a short answer.'
         });
 
         expect(callOpenAiResponsesApi).toHaveBeenCalledWith(
             'test-key',
-            'gpt-5.5',
+            'gpt-5.6-sol',
             'You are precise.',
             'Return a short answer.',
             undefined,
@@ -71,7 +71,7 @@ describe('OpenAIProvider', () => {
 
         const provider = new OpenAIProvider({ settings: {} } as never);
         await provider.generateText({
-            modelId: 'gpt-5.5',
+            modelId: 'gpt-5.6-sol',
             systemPrompt: 'You are precise.',
             userPrompt: 'Return a short answer.',
             promptCacheKey: 'rt:inquiry:book-b1'
@@ -79,7 +79,7 @@ describe('OpenAIProvider', () => {
 
         expect(callOpenAiResponsesApi).toHaveBeenCalledWith(
             'test-key',
-            'gpt-5.5',
+            'gpt-5.6-sol',
             'You are precise.',
             'Return a short answer.',
             undefined,
@@ -108,7 +108,7 @@ describe('OpenAIProvider', () => {
 
         const provider = new OpenAIProvider({ settings: {} } as never);
         const result = await provider.generateJson({
-            modelId: 'gpt-5.5',
+            modelId: 'gpt-5.6-sol',
             systemPrompt: 'You are precise.',
             userPrompt: 'Return JSON.',
             jsonSchema: {
@@ -148,7 +148,7 @@ describe('OpenAIProvider', () => {
 
         const provider = new OpenAIProvider({ settings: {} } as never);
         const result = await provider.generateText({
-            modelId: 'gpt-5.5',
+            modelId: 'gpt-5.6-sol',
             systemPrompt: 'You are precise.',
             userPrompt: 'Return a short answer.',
             promptCacheKey: 'rt:inquiry:book-b1'
@@ -173,7 +173,7 @@ describe('OpenAIProvider', () => {
 
         const provider = new OpenAIProvider({ settings: {} } as never);
         const result = await provider.generateText({
-            modelId: 'gpt-5.5',
+            modelId: 'gpt-5.6-sol',
             systemPrompt: 'You are precise.',
             userPrompt: 'Hi.'
         });
@@ -193,7 +193,7 @@ describe('OpenAIProvider', () => {
 
         const provider = new OpenAIProvider({ settings: {} } as never);
         const result = await provider.generateText({
-            modelId: 'gpt-5.5',
+            modelId: 'gpt-5.6-sol',
             systemPrompt: 'You are precise.',
             userPrompt: 'Hi.',
             promptCacheKey: 'rt:inquiry:book-b1'
@@ -213,7 +213,7 @@ describe('OpenAIProvider', () => {
 
         const provider = new OpenAIProvider({ settings: {} } as never);
         const result = await provider.generateText({
-            modelId: 'gpt-5.5',
+            modelId: 'gpt-5.6-sol',
             systemPrompt: 'You are precise.',
             userPrompt: 'Hi.',
             promptCacheKey: 'rt:inquiry:book-b1',

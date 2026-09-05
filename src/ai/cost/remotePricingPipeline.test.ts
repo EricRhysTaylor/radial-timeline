@@ -72,7 +72,7 @@ describe('remote pricing pipeline — happy path', () => {
         const remotePayload = {
             models: [
                 { provider: 'anthropic', modelId: 'claude-opus-4-8', inputPer1M: 2.5, outputPer1M: 12.0 },
-                { provider: 'openai', modelId: 'gpt-5.5', inputPer1M: 2.8, outputPer1M: 9.0 }
+                { provider: 'openai', modelId: 'gpt-5.6-sol', inputPer1M: 2.8, outputPer1M: 9.0 }
             ]
         };
         const result = await loadRemotePricing({
@@ -88,7 +88,7 @@ describe('remote pricing pipeline — happy path', () => {
         mergeRemotePricing(result.table!, result.source, result.fetchedAt);
 
         expect(getProviderPricing('anthropic', 'claude-opus-4-8').inputPer1M).toBe(2.5);
-        expect(getProviderPricing('openai', 'gpt-5.5').inputPer1M).toBe(2.8);
+        expect(getProviderPricing('openai', 'gpt-5.6-sol').inputPer1M).toBe(2.8);
         expect(getActivePricingMeta().source).toBe('remote');
     });
 
@@ -114,15 +114,15 @@ describe('remote pricing pipeline — happy path', () => {
     });
 
     it('remote pricing overrides builtin pricing for same model', async () => {
-        const original = getProviderPricing('openai', 'gpt-5.5');
-        expect(original.inputPer1M).toBe(5.0);
+        const original = getProviderPricing('openai', 'gpt-5.6-sol');
+        expect(original.inputPer1M).toBe(4.0);
 
         mergeRemotePricing({
-            openai: { 'gpt-5.5': { inputPer1M: 1.5, outputPer1M: 7.0 } }
+            openai: { 'gpt-5.6-sol': { inputPer1M: 1.5, outputPer1M: 7.0 } }
         }, 'remote', new Date().toISOString());
 
-        expect(getProviderPricing('openai', 'gpt-5.5').inputPer1M).toBe(1.5);
-        expect(getProviderPricing('openai', 'gpt-5.5').cacheReadPer1M).toBe(0.5);
+        expect(getProviderPricing('openai', 'gpt-5.6-sol').inputPer1M).toBe(1.5);
+        expect(getProviderPricing('openai', 'gpt-5.6-sol').cacheReadPer1M).toBe(0.4);
     });
 
     it('cache is written on successful remote fetch', async () => {
@@ -133,14 +133,14 @@ describe('remote pricing pipeline — happy path', () => {
             readCache: async () => null,
             writeCache: async (content) => { writtenContent = content; },
             fetchImpl: mockFetch({
-                models: [{ provider: 'openai', modelId: 'gpt-5.5', inputPer1M: 3, outputPer1M: 10 }]
+                models: [{ provider: 'openai', modelId: 'gpt-5.6-sol', inputPer1M: 3, outputPer1M: 10 }]
             })
         });
 
         expect(writtenContent).toBeTruthy();
         const parsed = JSON.parse(writtenContent);
         expect(parsed.fetchedAt).toBeDefined();
-        expect(parsed.table.openai?.['gpt-5.5']).toBeDefined();
+        expect(parsed.table.openai?.['gpt-5.6-sol']).toBeDefined();
     });
 });
 
@@ -185,7 +185,7 @@ describe('remote pricing pipeline — fallback behavior', () => {
             enabled: true,
             url: 'https://example.com/pricing.json',
             readCache: async () => staleCacheJson({
-                table: { openai: { 'gpt-5.5': { inputPer1M: 42, outputPer1M: 42 } } }
+                table: { openai: { 'gpt-5.6-sol': { inputPer1M: 42, outputPer1M: 42 } } }
             }),
             writeCache: async () => undefined,
             fetchImpl: throwingFetch()
@@ -266,14 +266,14 @@ describe('remote pricing pipeline — cache TTL', () => {
             enabled: true,
             url: 'https://example.com/pricing.json',
             readCache: async () => freshCacheJson({
-                table: { openai: { 'gpt-5.5': { inputPer1M: 77, outputPer1M: 77 } } }
+                table: { openai: { 'gpt-5.6-sol': { inputPer1M: 77, outputPer1M: 77 } } }
             }),
             writeCache: async () => undefined,
             fetchImpl: async () => { fetchCalled = true; return { ok: false, status: 500, json: async () => ({}) }; }
         });
 
         expect(result.source).toBe('cache');
-        expect(result.table?.openai?.['gpt-5.5']?.inputPer1M).toBe(77);
+        expect(result.table?.openai?.['gpt-5.6-sol']?.inputPer1M).toBe(77);
         expect(fetchCalled).toBe(false);
     });
 
@@ -283,7 +283,7 @@ describe('remote pricing pipeline — cache TTL', () => {
             enabled: true,
             url: 'https://example.com/pricing.json',
             readCache: async () => staleCacheJson({
-                table: { openai: { 'gpt-5.5': { inputPer1M: 77, outputPer1M: 77 } } }
+                table: { openai: { 'gpt-5.6-sol': { inputPer1M: 77, outputPer1M: 77 } } }
             }),
             writeCache: async () => undefined,
             fetchImpl: async () => {
@@ -291,7 +291,7 @@ describe('remote pricing pipeline — cache TTL', () => {
                 return {
                     ok: true, status: 200,
                     json: async () => ({
-                        models: [{ provider: 'openai', modelId: 'gpt-5.5', inputPer1M: 3, outputPer1M: 10 }]
+                        models: [{ provider: 'openai', modelId: 'gpt-5.6-sol', inputPer1M: 3, outputPer1M: 10 }]
                     })
                 };
             }
@@ -310,7 +310,7 @@ describe('remote pricing pipeline — cache TTL', () => {
             ttlMs: 0,
             readCache: async () => JSON.stringify({
                 fetchedAt: oneSecondAgo,
-                table: { openai: { 'gpt-5.5': { inputPer1M: 77, outputPer1M: 77 } } }
+                table: { openai: { 'gpt-5.6-sol': { inputPer1M: 77, outputPer1M: 77 } } }
             }),
             writeCache: async () => undefined,
             fetchImpl: async () => {
@@ -318,7 +318,7 @@ describe('remote pricing pipeline — cache TTL', () => {
                 return {
                     ok: true, status: 200,
                     json: async () => ({
-                        models: [{ provider: 'openai', modelId: 'gpt-5.5', inputPer1M: 3, outputPer1M: 10 }]
+                        models: [{ provider: 'openai', modelId: 'gpt-5.6-sol', inputPer1M: 3, outputPer1M: 10 }]
                     })
                 };
             }
@@ -336,7 +336,7 @@ describe('remote pricing pipeline — cache TTL', () => {
             url: 'https://example.com/pricing.json',
             ttlMs: 0,
             readCache: async () => freshCacheJson({
-                table: { openai: { 'gpt-5.5': { inputPer1M: 77, outputPer1M: 77 } } }
+                table: { openai: { 'gpt-5.6-sol': { inputPer1M: 77, outputPer1M: 77 } } }
             }),
             writeCache: async () => undefined,
             fetchImpl: async () => {
@@ -344,7 +344,7 @@ describe('remote pricing pipeline — cache TTL', () => {
                 return {
                     ok: true, status: 200,
                     json: async () => ({
-                        models: [{ provider: 'openai', modelId: 'gpt-5.5', inputPer1M: 3, outputPer1M: 10 }]
+                        models: [{ provider: 'openai', modelId: 'gpt-5.6-sol', inputPer1M: 3, outputPer1M: 10 }]
                     })
                 };
             }
@@ -471,7 +471,7 @@ describe('cache corruption edge cases', () => {
             readCache: async () => 'not valid json {{{',
             writeCache: async () => undefined,
             fetchImpl: mockFetch({
-                models: [{ provider: 'openai', modelId: 'gpt-5.5', inputPer1M: 3, outputPer1M: 10 }]
+                models: [{ provider: 'openai', modelId: 'gpt-5.6-sol', inputPer1M: 3, outputPer1M: 10 }]
             })
         });
 
@@ -485,7 +485,7 @@ describe('cache corruption edge cases', () => {
             readCache: async () => JSON.stringify({ table: { openai: {} } }),
             writeCache: async () => undefined,
             fetchImpl: mockFetch({
-                models: [{ provider: 'openai', modelId: 'gpt-5.5', inputPer1M: 3, outputPer1M: 10 }]
+                models: [{ provider: 'openai', modelId: 'gpt-5.6-sol', inputPer1M: 3, outputPer1M: 10 }]
             })
         });
 
@@ -501,12 +501,12 @@ describe('cache corruption edge cases', () => {
             readCache: async () => null,
             writeCache: async () => { throw new Error('disk full'); },
             fetchImpl: mockFetch({
-                models: [{ provider: 'openai', modelId: 'gpt-5.5', inputPer1M: 3, outputPer1M: 10 }]
+                models: [{ provider: 'openai', modelId: 'gpt-5.6-sol', inputPer1M: 3, outputPer1M: 10 }]
             })
         });
 
         expect(result.source).toBe('remote');
-        expect(result.table?.openai?.['gpt-5.5']?.inputPer1M).toBe(3);
+        expect(result.table?.openai?.['gpt-5.6-sol']?.inputPer1M).toBe(3);
         expect(warnSpy).toHaveBeenCalledWith(
             expect.stringContaining('cache write failed: disk full')
         );

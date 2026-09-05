@@ -20,12 +20,21 @@
       "notifyUntil": "curated"
     },
     {
-      "id": "openai-gpt-5-5-2026-04-23",
+      "id": "openai-gpt-5-6-sol-2026-07-09",
       "provider": "openai",
-      "modelId": "gpt-5.5",
-      "label": "GPT-5.5",
-      "announcedAt": "2026-04-23",
-      "sourceUrl": "https://openai.com/index/introducing-gpt-5-5/",
+      "modelId": "gpt-5.6-sol",
+      "label": "GPT-5.6 Sol",
+      "announcedAt": "2026-07-09",
+      "sourceUrl": "https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+      "notifyUntil": "curated"
+    },
+    {
+      "id": "openai-gpt-6-astra-2026-09-05",
+      "provider": "openai",
+      "modelId": "gpt-6-astra",
+      "label": "GPT-6 Astra",
+      "announcedAt": "2026-09-05",
+      "sourceUrl": "https://developers.openai.com/api/docs/models/gpt-6-astra",
       "notifyUntil": "curated"
     }
   ]

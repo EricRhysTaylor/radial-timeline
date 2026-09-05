@@ -53,13 +53,13 @@ describe('openai responses normalization', () => {
             }
         };
 
-        const normalized = normalizeOpenAiResponsesResponseData(raw, 'gpt-5.5', 'hello world') as Record<string, unknown>;
+        const normalized = normalizeOpenAiResponsesResponseData(raw, 'gpt-5.6-sol', 'hello world') as Record<string, unknown>;
         const usage = normalized.usage as Record<string, unknown>;
         const choices = normalized.choices as Record<string, unknown>[];
         const firstChoice = choices[0];
         const message = firstChoice.message as Record<string, unknown>;
 
-        expect(normalized.model).toBe('gpt-5.5');
+        expect(normalized.model).toBe('gpt-5.6-sol');
         expect(usage.prompt_tokens).toBe(12);
         expect(usage.completion_tokens).toBe(8);
         expect(usage.total_tokens).toBe(20);
@@ -154,7 +154,7 @@ describe('openai responses normalization', () => {
 
         const response = await callOpenAiResponsesApi(
             'test-key',
-            'gpt-5.5',
+            'gpt-5.6-sol',
             'You are precise.',
             'Return JSON.',
             512,
@@ -179,7 +179,7 @@ describe('openai responses normalization', () => {
 
         expect(response.success).toBe(true);
         expect(response.requestPayload).toEqual({
-            model: 'gpt-5.5',
+            model: 'gpt-5.6-sol',
             input: [
                 {
                     role: 'system',
@@ -235,7 +235,7 @@ describe('openai responses normalization', () => {
 
         const response = await callOpenAiResponsesApi(
             'test-key',
-            'gpt-5.5',
+            'gpt-5.6-sol',
             'You are precise.',
             'Return JSON.',
             512,

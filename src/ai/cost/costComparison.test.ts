@@ -109,6 +109,6 @@ describe('buildCostComparisonRows', () => {
     });
 
     it('keys rows by provider and model', () => {
-        expect(costComparisonRowKey('openai', 'gpt-5.5')).toBe('openai::gpt-5.5');
+        expect(costComparisonRowKey('openai', 'gpt-5.6-sol')).toBe('openai::gpt-5.6-sol');
     });
 });

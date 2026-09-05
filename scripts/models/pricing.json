@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-05T17:00:42.000Z",
+  "generatedAt": "2026-09-05T18:00:00.000Z",
   "models": [
     {
       "provider": "anthropic",
@@ -48,28 +48,28 @@
     },
     {
       "provider": "openai",
-      "modelId": "gpt-5.5",
-      "inputPer1M": 5,
-      "outputPer1M": 30,
-      "cacheReadPer1M": 0.5,
+      "modelId": "gpt-5.6-sol",
+      "inputPer1M": 4,
+      "outputPer1M": 20,
+      "cacheReadPer1M": 0.4,
       "longContext": {
         "thresholdInputTokens": 272000,
-        "inputPer1M": 10,
-        "outputPer1M": 45,
-        "cacheReadPer1M": 1
+        "inputPer1M": 8,
+        "outputPer1M": 30,
+        "cacheReadPer1M": 0.8
       }
     },
     {
       "provider": "openai",
-      "modelId": "gpt-5.4",
-      "inputPer1M": 2.5,
-      "outputPer1M": 15,
-      "cacheReadPer1M": 0.25,
+      "modelId": "gpt-5.6-terra",
+      "inputPer1M": 2,
+      "outputPer1M": 12,
+      "cacheReadPer1M": 0.2,
       "longContext": {
         "thresholdInputTokens": 272000,
-        "inputPer1M": 5,
-        "outputPer1M": 22.5,
-        "cacheReadPer1M": 0.5
+        "inputPer1M": 4,
+        "outputPer1M": 18,
+        "cacheReadPer1M": 0.4
       }
     },
     {

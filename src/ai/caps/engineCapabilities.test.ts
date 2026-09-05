@@ -28,7 +28,7 @@ describe('resolveEngineCapabilities', () => {
     });
 
     it('marks OpenAI corpus reuse available while citation acquisition stays separate from annotation rendering', () => {
-        const model = byAlias('gpt-5.5');
+        const model = byAlias('gpt-5.6-sol');
         const resolved = resolveEngineCapabilities(model);
 
         expect(resolved.directManuscriptCitations.status).toBe('unavailable');
@@ -40,7 +40,7 @@ describe('resolveEngineCapabilities', () => {
     });
 
     it('downgrades OpenAI corpus reuse when a model cannot use the system role path', () => {
-        const base = byAlias('gpt-5.5');
+        const base = byAlias('gpt-5.6-sol');
         const o1LikeModel: ModelInfo = {
             ...base,
             id: 'o1-mini',
@@ -120,7 +120,7 @@ describe('getModelUiSignals', () => {
     });
 
     it('returns reuse label for OpenAI model', () => {
-        const model = byAlias('gpt-5.5');
+        const model = byAlias('gpt-5.6-sol');
         const signals = getModelUiSignals(model);
 
         expect(signals.citationLabel).toBe('Sources · Limited implementation');

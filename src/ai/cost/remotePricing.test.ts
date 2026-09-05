@@ -55,7 +55,7 @@ describe('loadRemotePricing', () => {
             fetchedAt: '2000-01-01T00:00:00.000Z',
             table: {
                 openai: {
-                    'gpt-5.5': { inputPer1M: 3, outputPer1M: 10 }
+                    'gpt-5.6-sol': { inputPer1M: 3, outputPer1M: 10 }
                 }
             }
         });
@@ -137,8 +137,8 @@ describe('loadRemotePricing', () => {
                 status: 200,
                 json: async () => ({
                     models: [
-                        { provider: 'openai', modelId: 'gpt-5.5' },
-                        { provider: 'openai', modelId: 'gpt-5.5', inputPer1M: 3, outputPer1M: 10 }
+                        { provider: 'openai', modelId: 'gpt-5.6-sol' },
+                        { provider: 'openai', modelId: 'gpt-5.6-sol', inputPer1M: 3, outputPer1M: 10 }
                     ]
                 })
             })
@@ -146,7 +146,7 @@ describe('loadRemotePricing', () => {
 
         expect(result.source).toBe('remote');
         // Only the valid entry should be present
-        expect(Object.keys(result.table?.openai ?? {})).toEqual(['gpt-5.5']);
+        expect(Object.keys(result.table?.openai ?? {})).toEqual(['gpt-5.6-sol']);
     });
 
     it('returns builtin when remote returns empty models', async () => {

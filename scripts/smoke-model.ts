@@ -15,7 +15,7 @@
  *
  * Usage:
  *   npm run smoke-model -- --provider anthropic --model claude-opus-4-7
- *   npm run smoke-model -- --provider openai    --model gpt-5.5
+ *   npm run smoke-model -- --provider openai    --model gpt-5.6-sol
  *   npm run smoke-model -- --provider google    --model gemini-3.5-flash
  *
  * API keys are read from env vars:

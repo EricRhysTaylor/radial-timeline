@@ -263,6 +263,11 @@ async function summarizeModelDrift() {
     const report = await readJson('scripts/models/model-drift-report.json');
     if (!report) return [];
     const items = [];
+    const staleProviders = Array.isArray(report.staleProviders) ? report.staleProviders : [];
+    staleProviders.forEach(entry => {
+        const age = entry?.fetchedAt ? `last fetched live ${String(entry.fetchedAt).slice(0, 10)}` : 'never fetched live here';
+        items.push(`AI model drift: ${entry?.provider} model list is stale (${age}); set its API key and run npm run update-models.`);
+    });
     const alerts = Array.isArray(report.releaseAlerts) ? report.releaseAlerts : [];
     alerts.slice(0, 4).forEach(alert => {
         if (alert?.message) items.push(`AI model drift: ${alert.message}`);

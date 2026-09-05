@@ -107,27 +107,31 @@ export const BUILTIN_PRICING: ProviderPricingTable = {
         }
     },
     openai: {
-        'gpt-5.5': {
-            inputPer1M: 5.0,
-            outputPer1M: 30.0,
-            cacheReadPer1M: 0.5,
+        // Verified against developers.openai.com/api/docs/pricing on 2026-09-05.
+        // OpenAI lists Sol's $4/$20 as "promotional pricing available at least
+        // through November 21, 2026" with no post-promo rate published, so it
+        // is recorded as the plain rate; re-verify after that date.
+        'gpt-5.6-sol': {
+            inputPer1M: 4.0,
+            outputPer1M: 20.0,
+            cacheReadPer1M: 0.4,
             longContext: {
                 thresholdInputTokens: 272_000,
-                inputPer1M: 10.0,
-                outputPer1M: 45.0,
-                cacheReadPer1M: 1.0
+                inputPer1M: 8.0,
+                outputPer1M: 30.0,
+                cacheReadPer1M: 0.8
             }
         },
         // Economy second on the gpt-5 line.
-        'gpt-5.4': {
-            inputPer1M: 2.5,
-            outputPer1M: 15.0,
-            cacheReadPer1M: 0.25,
+        'gpt-5.6-terra': {
+            inputPer1M: 2.0,
+            outputPer1M: 12.0,
+            cacheReadPer1M: 0.2,
             longContext: {
                 thresholdInputTokens: 272_000,
-                inputPer1M: 5.0,
-                outputPer1M: 22.5,
-                cacheReadPer1M: 0.5
+                inputPer1M: 4.0,
+                outputPer1M: 18.0,
+                cacheReadPer1M: 0.4
             }
         }
     },

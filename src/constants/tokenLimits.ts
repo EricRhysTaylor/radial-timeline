@@ -19,7 +19,7 @@ export const PROVIDER_MAX_OUTPUT_TOKENS = {
     // Extended thinking models use separate "thinking" budget
     anthropic: 16000,
     
-    // GPT-5.4 / GPT-5.4 Pro: API supports up to 128,000 output tokens, but
+    // GPT-5.6 Sol / Terra: API supports up to 128,000 output tokens, but
     // realistic Inquiry responses land at 2–16k. Cap at 32k for headroom on
     // large multi-book sagas without inflating cost previews ~8× against the
     // hard ceiling. Raise here if we observe truncated responses in the wild.

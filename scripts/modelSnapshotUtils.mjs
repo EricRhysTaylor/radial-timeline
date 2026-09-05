@@ -144,9 +144,63 @@ export function parseCanonicalSnapshot(payload) {
     const models = sortCanonicalModels(coerceExistingToCanonicalModels(payload));
     return {
         generatedAt,
+        providerFetchedAt: parseProviderFetchedAt(payload.providerFetchedAt),
         summary: buildSummary(models),
         models,
     };
+}
+
+/**
+ * When each provider's list was last fetched LIVE. `generatedAt` is stamped on
+ * every run even when a provider fell back to its cached list (no API key on
+ * this machine, network failure), so it cannot answer "is this list current?".
+ * A provider with no recorded live fetch reports `null`.
+ */
+export function parseProviderFetchedAt(payload) {
+    const result = {};
+    for (const provider of PROVIDERS) {
+        const value = payload && typeof payload === 'object' ? payload[provider] : null;
+        result[provider] = typeof value === 'string' && Number.isFinite(Date.parse(value)) ? value : null;
+    }
+    return result;
+}
+
+export const STALE_PROVIDER_LIST_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Providers whose list was never fetched live, or not within `maxAgeMs`.
+ * The drift gate cannot see a release the provider shipped after that
+ * fetch, so the report must say so instead of passing quietly.
+ */
+export function computeStaleProviders(snapshot, nowMs, maxAgeMs = STALE_PROVIDER_LIST_MS) {
+    const fetchedAt = snapshot?.providerFetchedAt || parseProviderFetchedAt(null);
+    const stale = [];
+    for (const provider of PROVIDERS) {
+        const value = fetchedAt[provider];
+        if (!value) {
+            stale.push({ provider, fetchedAt: null, ageDays: null });
+            continue;
+        }
+        const ageMs = nowMs - Date.parse(value);
+        if (ageMs > maxAgeMs) {
+            stale.push({ provider, fetchedAt: value, ageDays: Math.floor(ageMs / (24 * 60 * 60 * 1000)) });
+        }
+    }
+    return stale;
+}
+
+const PROVIDER_KEY_ENV = {
+    openai: 'OPENAI_API_KEY',
+    anthropic: 'ANTHROPIC_API_KEY',
+    google: 'GEMINI_API_KEY',
+};
+
+export function describeStaleProvider(entry) {
+    const keyVar = PROVIDER_KEY_ENV[entry.provider] || `${entry.provider.toUpperCase()}_API_KEY`;
+    const age = entry.fetchedAt
+        ? `last fetched live ${entry.fetchedAt.slice(0, 10)} (${entry.ageDays} days ago)`
+        : 'never fetched live on this machine';
+    return `${entry.provider} model list is stale — ${age}; releases since then are invisible to the drift gate. Set ${keyVar} and run npm run update-models.`;
 }
 
 function buildIdSetByProvider(models) {
@@ -428,7 +482,9 @@ export function buildModelDriftReport(input) {
         },
         snapshotAfter: {
             generatedAt: input.afterSnapshot?.generatedAt ?? null,
+            providerFetchedAt: input.afterSnapshot?.providerFetchedAt ?? parseProviderFetchedAt(null),
         },
+        staleProviders: input.staleProviders || [],
         changes: input.changes,
         aliasChanges: input.aliasChanges,
         anthropicNewestChanged: input.anthropicNewestChanged,

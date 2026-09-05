@@ -160,9 +160,9 @@ describe('model catalog dispatch contract: invariants', () => {
         }
     });
 
-    it('OpenAI GPT-5.5 models route to the Responses API', () => {
+    it('OpenAI GPT-5.6 models route to the Responses API', () => {
         const gpt55 = cloudModels.filter(m =>
-            m.provider === 'openai' && m.id.startsWith('gpt-5.5')
+            m.provider === 'openai' && m.id.startsWith('gpt-5.6')
         );
         expect(gpt55.length).toBeGreaterThan(0);
         for (const model of gpt55) {
@@ -170,7 +170,7 @@ describe('model catalog dispatch contract: invariants', () => {
             expect(profile.preferredOpenAiEndpoint).toBe('responses');
             expect(profile.supportsTemperature).toBe(false);
             expect(profile.supportsTopP).toBe(false);
-            // Reasoning-effort capability is declared for GPT-5.5 — pin so
+            // Reasoning-effort capability is declared for GPT-5.6 Sol — pin so
             // that future plumbing through to dispatch params can be
             // detected by extending this assertion.
             expect(profile.supportsReasoningEffort).toBe(true);

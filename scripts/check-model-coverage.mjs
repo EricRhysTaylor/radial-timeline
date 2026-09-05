@@ -51,6 +51,7 @@ const PRICING_DANGLING_ALLOWLIST = new Set([
 // gate if re-added later via the deliberate promotion process in
 // docs/engineering/standards/model-promotion.md.
 const BUILTIN_NO_PRICING_ALLOWLIST = new Set([
+    'gpt-5.6-chat-latest',
     'gpt-5.5-chat-latest',
     'gpt-5.4-chat-latest',
     'gpt-5.3-chat-latest',

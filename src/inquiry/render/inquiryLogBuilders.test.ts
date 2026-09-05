@@ -4,7 +4,7 @@ import { buildInquiryLogContent, type InquiryLogBuilderDependencies } from './in
 describe('buildInquiryLogContent', () => {
     const deps: InquiryLogBuilderDependencies = {
         getQuestionLabel: () => 'Pres2: Underwritten Beats',
-        getBriefModelLabel: () => 'GPT-5.5',
+        getBriefModelLabel: () => 'GPT-5.6 Sol',
         getFiniteTokenEstimateInput: () => 174000,
         getTokenTier: () => 'red',
         buildInquiryLogCostEstimateInput: () => null,
@@ -29,8 +29,8 @@ describe('buildInquiryLogContent', () => {
                 scope: 'book',
                 scopeLabel: 'B1',
                 aiProvider: 'openai',
-                aiModelResolved: 'gpt-5.5',
-                aiModelRequested: 'gpt-5.5',
+                aiModelResolved: 'gpt-5.6-sol',
+                aiModelRequested: 'gpt-5.6-sol',
                 evidenceDocumentMeta: [
                     {
                         title: '1 Bingley Arrives',
@@ -206,8 +206,8 @@ describe('buildInquiryLogContent', () => {
                 scope: 'book',
                 scopeLabel: 'B1',
                 aiProvider: 'openai',
-                aiModelResolved: 'gpt-5.5',
-                aiModelRequested: 'gpt-5.5',
+                aiModelResolved: 'gpt-5.6-sol',
+                aiModelRequested: 'gpt-5.6-sol',
                 findings: [],
                 verdict: {
                     flow: 68,
@@ -250,8 +250,8 @@ describe('buildInquiryLogContent', () => {
             scope: 'book',
             scopeLabel: 'B1',
             aiProvider: 'openai',
-            aiModelResolved: 'gpt-5.5',
-            aiModelRequested: 'gpt-5.5',
+            aiModelResolved: 'gpt-5.6-sol',
+            aiModelRequested: 'gpt-5.6-sol',
             findings: [],
             verdict: { flow: 60, depth: 70 },
             cacheReuseFingerprint: 'h1479981785'
@@ -271,7 +271,7 @@ describe('buildInquiryLogContent', () => {
                     tokenUsageKnown: true,
                     tokenUsageScope: 'known',
                     requestPayload: {
-                        model: 'gpt-5.5',
+                        model: 'gpt-5.6-sol',
                         input: [
                             { role: 'system', content: [{ type: 'input_text', text: systemText }] },
                             { role: 'user', content: [{ type: 'input_text', text: userText }] }

@@ -21,7 +21,7 @@ describe('InquiryView payload accounting', () => {
     it('renders selection mode from persisted result metadata instead of inferring from finding roles', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/inquiry/InquiryView.ts'), 'utf8');
         expect(source.includes("selectionMode: result.selectionMode === 'focused' ? 'focused' : 'discover'")).toBe(true);
-        expect(source.includes('const selectionMode = this.getResultSelectionMode(result);')).toBe(true);
+        expect(source.includes('const selectionMode = getResultSelectionMode(result);')).toBe(true);
         expect(source.includes("result.findings.some(finding => this.getFindingRole(finding) === 'target')")).toBe(false);
     });
 
@@ -31,7 +31,7 @@ describe('InquiryView payload accounting', () => {
         // R1 findings-panel: computeRoleValidation logic moved to pure module.
         const fpSource = readFileSync(resolve(process.cwd(), 'src/inquiry/utils/inquiryFindingsPanel.ts'), 'utf8');
         expect(fpSource.includes("return findings.some(finding => finding.role === 'target') ? 'ok' : 'missing-target-roles';")).toBe(true);
-        expect(source.includes("const roleValidation = this.getResultRoleValidation(result);")).toBe(true);
+        expect(source.includes("const roleValidation = getResultRoleValidation(result);")).toBe(true);
         // The validation copy lives in the i18n catalog now.
         expect(source.includes("t('inquiry.findings.validationMissingTargetRoles')")).toBe(true);
         expect(enLocale.includes('Warning: Focused run returned no target-specific findings.')).toBe(true);
@@ -320,7 +320,8 @@ describe('InquiryView payload accounting', () => {
     });
 
     it('defines a visibly tinted cached-overlay hatch for the minimap token bar', () => {
-        const viewSource = readFileSync(resolve(process.cwd(), 'src/inquiry/InquiryView.ts'), 'utf8');
+        // The <defs> builders live in render/inquirySvgDefs.ts now.
+        const viewSource = readFileSync(resolve(process.cwd(), 'src/inquiry/render/inquirySvgDefs.ts'), 'utf8');
         const cssSource = readFileSync(resolve(process.cwd(), 'src/styles/inquiry.css'), 'utf8');
         expect(viewSource.includes("hatchBg.classList.add('ert-inquiry-minimap-cached-hatch-bg');")).toBe(true);
         expect(viewSource.includes('hatchLineSecondary')).toBe(true);
@@ -343,10 +344,10 @@ describe('InquiryView payload accounting', () => {
     });
 
     it('renders the warm cache HUD countdown as a green flame icon plus timer text', () => {
-        const viewSource = readFileSync(resolve(process.cwd(), 'src/inquiry/InquiryView.ts'), 'utf8');
+        const defsSource = readFileSync(resolve(process.cwd(), 'src/inquiry/render/inquirySvgDefs.ts'), 'utf8');
         const domSource = readFileSync(resolve(process.cwd(), 'src/inquiry/dom/inquiryDomFactory.ts'), 'utf8');
         const cssSource = readFileSync(resolve(process.cwd(), 'src/styles/inquiry.css'), 'utf8');
-        expect(viewSource.includes("'flame-kindling'")).toBe(true);
+        expect(defsSource.includes("'flame-kindling'")).toBe(true);
         // R1 chunk 3b: countdown text shaping lives in the pure module now.
         const statusSource = readFileSync(resolve(process.cwd(), 'src/inquiry/engine/inquiryCacheStatus.ts'), 'utf8');
         expect(statusSource.includes("return `${formatCacheCountdown(remainingMs)} remaining`;")).toBe(true);
@@ -568,7 +569,9 @@ describe('InquiryView payload accounting', () => {
         const viewSource = readFileSync(resolve(process.cwd(), 'src/inquiry/InquiryView.ts'), 'utf8');
         expect(viewSource.includes('private lastAnthropicDispatchPrefixByEngine = new Map<string, string>();')).toBe(true);
         expect(viewSource.includes('private appendAnthropicDispatchTraceNote(result: InquiryResult, trace: InquiryRunTrace | null | undefined): void {')).toBe(true);
-        expect(viewSource.includes("private getAnthropicAcceptedCacheTtl(trace: InquiryRunTrace | null | undefined): '5m' | '1h' | 'mixed' | 'unknown' {")).toBe(true);
+        // The accepted-TTL reader is the pure helper, imported directly (no forwarder).
+        expect(viewSource.includes('const acceptedCacheTtl = getAnthropicAcceptedCacheTtl(trace);')).toBe(true);
+        expect(viewSource.includes('private getAnthropicAcceptedCacheTtl(')).toBe(false);
         expect(viewSource.includes("if (!trace.notes.includes(note)) {\n            trace.notes.unshift(note);\n        }")).toBe(true);
         expect(viewSource.includes('`requested=${diagnostics.requestedCacheTtl}`')).toBe(true);
         expect(viewSource.includes('`accepted=${acceptedCacheTtl}`')).toBe(true);

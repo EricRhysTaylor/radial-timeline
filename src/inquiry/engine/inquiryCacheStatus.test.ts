@@ -178,8 +178,10 @@ describe('InquiryView keeps thin delegating wrappers (behaviour unchanged)', () 
     const src = readFileSync(resolve(process.cwd(), 'src/inquiry/InquiryView.ts'), 'utf8');
     it('imports the pure helpers under aliases and delegates without recursion', () => {
         expect(src.includes("from './engine/inquiryCacheStatus'")).toBe(true);
-        expect(src.includes('return getAnthropicAcceptedCacheTtlPure(trace);')).toBe(true);
-        expect(src.includes('return getDispatchEngineKeyPure(result);')).toBe(true);
+        // Exact pass-through forwarders were deleted (CH-2026-09-04-#9); the view calls the pure helper directly.
+        expect(src.includes('getAnthropicAcceptedCacheTtl(trace)')).toBe(true);
+        expect(src.includes('getDispatchEngineKey(')).toBe(true);
+        expect(src.includes('getAnthropicAcceptedCacheTtlPure')).toBe(false);
         // The original inline bodies must be gone from InquiryView.
         expect(src.includes('return (ratioScore * 1_000_000) + tokenScore + (inputScore * 0.001);')).toBe(false);
         // chunk 3a: the score wrapper is gone; scoring is consumed only

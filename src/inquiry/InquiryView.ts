@@ -24,7 +24,6 @@ import {
 import {
     computeCitationIntegritySummary,
     createDefaultInquiryState,
-    FindingRole,
     InquiryFinding,
     InquiryLens,
     InquiryRoleValidation,
@@ -106,9 +105,7 @@ import { extractTokenUsage } from '../ai/log';
 import {
     InquiryGlyph,
     FLOW_RADIUS,
-    FLOW_STROKE,
-    ZONE_RING_THICKNESS,
-    ZONE_SEGMENT_RADIUS
+    FLOW_STROKE
 } from './components/InquiryGlyph';
 import { InquiryRunnerService } from './runner/InquiryRunnerService';
 import { getLastAiAdvancedContext } from '../ai/runtime/aiClient';
@@ -156,37 +153,32 @@ import type {
     InquiryCurrentCorpusContext,
     InquiryPayloadStats,
     InquiryReadinessUiState,
-    InquiryEnginePopoverState,
     PassPlanResult
 } from './types';
 import {
     buildReadinessUiState as buildReadinessUiStatePure,
     buildRunScopeLabel as buildRunScopeLabelPure,
-    resolveEnginePopoverState as resolveEnginePopoverStatePure,
+    resolveEnginePopoverState,
     getCurrentPassPlan as getCurrentPassPlanPure,
     buildAdvisoryInputKey,
-    formatTokenEstimate as formatTokenEstimatePure,
-    getTokenTier as getTokenTierPure,
+    formatTokenEstimate,
+    getTokenTier,
     getTokenTierFromSnapshot as getTokenTierFromSnapshotPure
 } from './services/inquiryReadinessBuilder';
 import { buildPendingCorpusEstimateFromManifestEntries } from './services/buildExactCorpusEstimate';
 import {
     InquiryCorpusService,
-    isSynopsisCapableClass as isSynopsisCapableClassPure,
+    isSynopsisCapableClass,
     normalizeEvidenceMode as normalizeEvidenceModePure,
     isModeActive as isModeActivePure,
-    normalizeContributionMode as normalizeContributionModePure,
-    normalizeMaterialMode as normalizeMaterialModePure,
-    normalizeClassContribution as normalizeClassContributionPure,
-    resolveContributionMode as resolveContributionModePure,
-    getDefaultMaterialMode as getDefaultMaterialModePure,
-    hashString as hashStringPure,
+    normalizeContributionMode,
+    hashString,
     getCorpusGroupKey as getCorpusGroupKeyPure,
-    getCorpusGroupBaseClass as getCorpusGroupBaseClassPure,
+    getCorpusGroupBaseClass,
     getCorpusItemKey as getCorpusItemKeyPure,
     parseCorpusItemKey as parseCorpusItemKeyPure,
-    getCorpusCycleModes as getCorpusCycleModesPure,
-    getNextCorpusMode as getNextCorpusModePure,
+    getCorpusCycleModes,
+    getNextCorpusMode,
     getCorpusGroupKeys as getCorpusGroupKeysPure,
     getClassScopeConfig as getClassScopeConfigPure,
     extractClassValues as extractClassValuesPure,
@@ -197,9 +189,7 @@ import { createSvgElement, createSvgGroup, createSvgText, clearSvgChildren } fro
 import {
     InquiryMinimapRenderer,
     MIN_PROCESSING_MS,
-    toRgbString,
     getExecutionColorValue,
-    getBackboneStartColors,
 } from './minimap/InquiryMinimapRenderer';
 import { addTooltipData, balanceTooltipText, setupTooltipsFromDataAttributes } from '../utils/tooltip';
 import { classifySynopsis, type SynopsisQuality } from '../sceneAnalysis/synopsisQuality';
@@ -233,8 +223,8 @@ import { createInquirySceneDossierLayer, renderInquirySceneDossier } from './ren
 import { createInquiryEngineActionButtons } from './engine/inquiryEngineDom';
 import { renderInquiryEngineAdvisoryCard, renderInquiryEngineReadinessStrip, type EngineRecentRunSnapshot, type EngineCacheWindowSnapshot } from './engine/inquiryEngineRenderer';
 import {
-    getAnthropicAcceptedCacheTtl as getAnthropicAcceptedCacheTtlPure,
-    getDispatchEngineKey as getDispatchEngineKeyPure,
+    getAnthropicAcceptedCacheTtl,
+    getDispatchEngineKey,
     resolveActualUsageCostForResult as resolveActualUsageCostForResultPure,
     buildEngineRecentRunSnapshot as buildEngineRecentRunSnapshotPure,
     buildEngineCacheWindowSnapshotFromSession as buildEngineCacheWindowSnapshotFromSessionPure,
@@ -354,18 +344,18 @@ import {
     resolveInquiryScopeIndicator
 } from './utils/inquiryViewText';
 import {
-    getBriefModelLabel as getBriefModelLabelPure,
-    buildSceneDossierHoverKey as buildSceneDossierHoverKeyPure,
+    getBriefModelLabel,
+    buildSceneDossierHoverKey,
     getBriefSceneAnchorId as getBriefSceneAnchorIdPure,
     buildResultsHeroText as buildResultsHeroTextPure,
     buildResultsMetaText as buildResultsMetaTextPure,
     resolveInquiryBriefZoneLabel as resolveInquiryBriefZoneLabelPure,
     buildSceneDossierModel as buildSceneDossierModelPure,
     formatInquiryBriefTitle as formatInquiryBriefTitlePure,
-    isFindingHit as isFindingHitPure,
-    getFindingRole as getFindingRolePure,
-    getResultSummaryForMode as getResultSummaryForModePure,
-    getOrderedFindings as getOrderedFindingsPure,
+    isFindingHit,
+    getFindingRole,
+    getResultSummaryForMode,
+    getOrderedFindings,
     normalizeInquiryBriefText as normalizeInquiryBriefTextPure,
     buildInquiryReferenceLabelMap as buildInquiryReferenceLabelMapPure,
     buildInquirySceneReferenceIndex as buildInquirySceneReferenceIndexPure,
@@ -376,20 +366,20 @@ import {
     buildInquiryBriefModel as buildInquiryBriefModelPure
 } from './utils/inquiryBriefModel';
 import {
-    getResultSelectionMode as getResultSelectionModePure,
-    getResultRoleValidation as getResultRoleValidationPure,
+    getResultSelectionMode,
+    getResultRoleValidation,
     computeRoleValidation as computeRoleValidationPure,
     buildFindingRowData as buildFindingRowDataPure,
     buildUnverifiedFindingRowData as buildUnverifiedFindingRowDataPure
 } from './utils/inquiryFindingsPanel';
 import {
-    getMinimapItemFilePath as getMinimapItemFilePathPure,
+    getMinimapItemFilePath,
     getCorpusCcModeMeta as getCorpusCcModeMetaPure,
     getCorpusCcHeaderLabel as getCorpusCcHeaderLabelPure,
-    getCorpusCcHeaderDisplayLabel as getCorpusCcHeaderDisplayLabelPure,
     getCorpusCcHeaderTooltip as getCorpusCcHeaderTooltipPure
 } from './utils/inquiryCorpusStripMinimap';
 import { polarToCartesian } from './utils/inquiryGeometry';
+import { buildIconSymbols, buildSceneDossierResources, buildZoneGradients } from './render/inquirySvgDefs';
 
 const INQUIRY_PAYLOAD_STATS_REFRESH_DEBOUNCE_MS = 150;
 
@@ -898,9 +888,9 @@ export class InquiryView extends ItemView {
             contentEl: this.contentEl,
             populateDefs: defs => {
                 this.svgDefs = defs;
-                this.buildIconSymbols(defs);
-                this.buildZoneGradients(defs);
-                this.buildSceneDossierResources(defs);
+                this.iconSymbols = new Set(buildIconSymbols(defs, (holder, icon) => this.createIconSymbol(holder, icon)));
+                buildZoneGradients(defs, { styleSource: this.getStyleSource(), minimap: this.minimap });
+                buildSceneDossierResources(defs);
             },
             createIconButton: this.createIconButton.bind(this),
             getBackgroundHref: () => this.getInquiryAssetHref('images/radial_texture.png'),
@@ -1222,7 +1212,7 @@ export class InquiryView extends ItemView {
             readinessActionsEl: this.enginePanelReadinessActionsEl,
             readinessScopeEl: this.enginePanelReadinessScopeEl,
             providerLabel: engine.provider === 'ollama' ? 'Local LLM' : engine.providerLabel,
-            popoverState: this.resolveEnginePopoverState(readinessUi),
+            popoverState: resolveEnginePopoverState(readinessUi),
             blocked: !!engine.blocked,
             readOnlyNoKey: this.isInquiryApiKeyMissing(),
             hasSavedBriefings: this.hasInquirySessions(),
@@ -1362,10 +1352,10 @@ export class InquiryView extends ItemView {
             : 'Full Request: Estimating…';
         return {
             text: currentCorpus.requestTokens > 0
-                ? `Full Request: ~${this.formatTokenEstimate(currentCorpus.requestTokens)}`
+                ? `Full Request: ~${formatTokenEstimate(currentCorpus.requestTokens)}`
                 : fallbackText,
             inputTokens: currentCorpus.requestTokens,
-            tier: this.getTokenTier(currentCorpus.requestTokens)
+            tier: getTokenTier(currentCorpus.requestTokens)
         };
     }
 
@@ -1516,10 +1506,6 @@ export class InquiryView extends ItemView {
 
     private buildRunScopeLabel(stats: InquiryPayloadStats, selectedSceneCount: number): string {
         return buildRunScopeLabelPure(stats, selectedSceneCount, this.state.scope, this.getScopeLabel());
-    }
-
-    private resolveEnginePopoverState(readinessUi: InquiryReadinessUiState): InquiryEnginePopoverState {
-        return resolveEnginePopoverStatePure(readinessUi);
     }
 
     private getCurrentPassPlan(readinessUi: InquiryReadinessUiState): PassPlanResult {
@@ -2317,531 +2303,6 @@ export class InquiryView extends ItemView {
         this.selection.schedulePersist(this.state.activeBookId);
     }
 
-    private buildIconSymbols(defs: SVGDefsElement): void {
-        this.iconSymbols.clear();
-        [
-            'waves',
-            'waves-arrow-down',
-            'file',
-            'file-text',
-            'file-x-corner',
-            'book',
-            'columns-2',
-            'cpu',
-            'aperture',
-            'chevron-left',
-            'chevron-right',
-            'chevron-up',
-            'chevron-down',
-            'help-circle',
-            'activity',
-            'arrow-big-up',
-            'arrow-big-up-dash',
-            'arrow-big-right-dash',
-            'mouse-pointer-click',
-            'check-circle',
-            'flame-kindling',
-            'sigma',
-            'x',
-            'circle',
-            'circle-dot',
-            'disc',
-            'asterisk'
-        ].forEach(icon => {
-            const symbolId = this.createIconSymbol(defs, icon);
-            if (symbolId) {
-                this.iconSymbols.add(symbolId);
-            }
-        });
-    }
-
-    private buildZoneGradients(defs: SVGDefsElement): void {
-        const zones: InquiryZone[] = ['setup', 'pressure', 'payoff'];
-        const zoneAnchors: Record<InquiryZone, { cx: string; cy: string; r: string }> = {
-            setup: { cx: '1', cy: '0', r: '1.42' },
-            pressure: { cx: '0', cy: '0', r: '1.42' },
-            payoff: { cx: '0.5', cy: '0', r: '1' }
-        };
-        const zoneStopOpacity = '0.35';
-        const createStop = (offset: string, color: string, opacity?: string): SVGStopElement => {
-            const stop = createSvgElement('stop');
-            stop.setAttribute('offset', offset);
-            stop.setAttribute('stop-color', color);
-            if (opacity) {
-                stop.setAttribute('stop-opacity', opacity);
-            }
-            return stop;
-        };
-        const createGradient = (
-            id: string,
-            stops: Array<[string, string]>,
-            anchor: { cx: string; cy: string; r: string },
-            stopOpacity?: string
-        ): SVGRadialGradientElement => {
-            const gradient = createSvgElement('radialGradient');
-            gradient.setAttribute('id', id);
-            gradient.setAttribute('cx', anchor.cx);
-            gradient.setAttribute('cy', anchor.cy);
-            gradient.setAttribute('fx', anchor.cx);
-            gradient.setAttribute('fy', anchor.cy);
-            gradient.setAttribute('r', anchor.r);
-            stops.forEach(([offset, color]) => {
-                gradient.appendChild(createStop(offset, color, stopOpacity));
-            });
-            return gradient;
-        };
-
-        const glassGradient = createSvgElement('radialGradient');
-        glassGradient.setAttribute('id', 'ert-inquiry-zone-glass');
-        glassGradient.setAttribute('gradientUnits', 'userSpaceOnUse');
-        glassGradient.setAttribute('cx', '0');
-        glassGradient.setAttribute('cy', '0');
-        glassGradient.setAttribute('fx', '0');
-        glassGradient.setAttribute('fy', '0');
-        glassGradient.setAttribute('r', String(VIEWBOX_MAX));
-        const toPercent = (radius: number): string => {
-            const clamped = Math.min(Math.max(radius / VIEWBOX_MAX, 0), 1);
-            return `${(clamped * 100).toFixed(2)}%`;
-        };
-        const zoneInner = ZONE_SEGMENT_RADIUS - (ZONE_RING_THICKNESS / 2);
-        const zoneOuter = ZONE_SEGMENT_RADIUS + (ZONE_RING_THICKNESS / 2);
-        const bandInset = ZONE_RING_THICKNESS * 0.18;
-        const innerFade = Math.max(0, zoneInner - (ZONE_RING_THICKNESS * 0.22));
-        const outerFade = zoneOuter + (ZONE_RING_THICKNESS * 0.22);
-        [
-            [toPercent(innerFade), '#ffffff', '0.015'],
-            [toPercent(zoneInner), '#ffffff', '0.03'],
-            [toPercent(zoneInner + bandInset), '#ffffff', '0.12'],
-            [toPercent(zoneInner + (ZONE_RING_THICKNESS * 0.5)), '#ffffff', '0.26'],
-            [toPercent(zoneOuter - bandInset), '#ffffff', '0.12'],
-            [toPercent(zoneOuter), '#ffffff', '0.03'],
-            [toPercent(outerFade), '#ffffff', '0.015']
-        ].forEach(([offset, color, opacity]) => {
-            glassGradient.appendChild(createStop(offset, color, opacity));
-        });
-        defs.appendChild(glassGradient);
-
-        zones.forEach(zone => {
-            const zoneVar = `var(--ert-inquiry-zone-${zone})`;
-            const anchor = zoneAnchors[zone];
-            defs.appendChild(createGradient(
-                `ert-inquiry-zone-${zone}-raised`,
-                [
-                    ['0%', `color-mix(in srgb, ${zoneVar} 55%, #ffffff)`],
-                    ['50%', zoneVar],
-                    ['100%', `color-mix(in srgb, ${zoneVar} 55%, #000000)`]
-                ],
-                anchor,
-                zoneStopOpacity
-            ));
-            defs.appendChild(createGradient(
-                `ert-inquiry-zone-${zone}-pressed`,
-                [
-                    ['0%', `color-mix(in srgb, ${zoneVar} 55%, #000000)`],
-                    ['60%', zoneVar],
-                    ['100%', `color-mix(in srgb, ${zoneVar} 55%, #ffffff)`]
-                ],
-                anchor,
-                zoneStopOpacity
-            ));
-        });
-
-        // Neumorphic filters for zone pill states.
-        const pillOutFilter = createSvgElement('filter');
-        pillOutFilter.setAttribute('id', 'ert-inquiry-zone-pill-out');
-        pillOutFilter.setAttribute('x', '-50%');
-        pillOutFilter.setAttribute('y', '-50%');
-        pillOutFilter.setAttribute('width', '200%');
-        pillOutFilter.setAttribute('height', '200%');
-        pillOutFilter.setAttribute('color-interpolation-filters', 'sRGB');
-        const pillOutLight = createSvgElement('feDropShadow');
-        pillOutLight.setAttribute('dx', '-2');
-        pillOutLight.setAttribute('dy', '-2');
-        pillOutLight.setAttribute('stdDeviation', '1.6');
-        pillOutLight.setAttribute('flood-color', '#ffffff');
-        pillOutLight.setAttribute('flood-opacity', '0.28');
-        const pillOutDark = createSvgElement('feDropShadow');
-        pillOutDark.setAttribute('dx', '2');
-        pillOutDark.setAttribute('dy', '2');
-        pillOutDark.setAttribute('stdDeviation', '1.8');
-        pillOutDark.setAttribute('flood-color', '#000000');
-        pillOutDark.setAttribute('flood-opacity', '0.35');
-        pillOutFilter.appendChild(pillOutLight);
-        pillOutFilter.appendChild(pillOutDark);
-        defs.appendChild(pillOutFilter);
-
-        const pillInFilter = createSvgElement('filter');
-        pillInFilter.setAttribute('id', 'ert-inquiry-zone-pill-in');
-        pillInFilter.setAttribute('x', '-50%');
-        pillInFilter.setAttribute('y', '-50%');
-        pillInFilter.setAttribute('width', '200%');
-        pillInFilter.setAttribute('height', '200%');
-        pillInFilter.setAttribute('color-interpolation-filters', 'sRGB');
-        const pillInOffsetDark = createSvgElement('feOffset');
-        pillInOffsetDark.setAttribute('in', 'SourceAlpha');
-        pillInOffsetDark.setAttribute('dx', '1.6');
-        pillInOffsetDark.setAttribute('dy', '1.6');
-        pillInOffsetDark.setAttribute('result', 'pill-in-offset-dark');
-        const pillInBlurDark = createSvgElement('feGaussianBlur');
-        pillInBlurDark.setAttribute('in', 'pill-in-offset-dark');
-        pillInBlurDark.setAttribute('stdDeviation', '1.2');
-        pillInBlurDark.setAttribute('result', 'pill-in-blur-dark');
-        const pillInCompositeDark = createSvgElement('feComposite');
-        pillInCompositeDark.setAttribute('in', 'pill-in-blur-dark');
-        pillInCompositeDark.setAttribute('in2', 'SourceAlpha');
-        pillInCompositeDark.setAttribute('operator', 'arithmetic');
-        pillInCompositeDark.setAttribute('k2', '-1');
-        pillInCompositeDark.setAttribute('k3', '1');
-        pillInCompositeDark.setAttribute('result', 'pill-in-inner-dark');
-        const pillInFloodDark = createSvgElement('feFlood');
-        pillInFloodDark.setAttribute('flood-color', '#000000');
-        pillInFloodDark.setAttribute('flood-opacity', '0.35');
-        pillInFloodDark.setAttribute('result', 'pill-in-flood-dark');
-        const pillInShadowDark = createSvgElement('feComposite');
-        pillInShadowDark.setAttribute('in', 'pill-in-flood-dark');
-        pillInShadowDark.setAttribute('in2', 'pill-in-inner-dark');
-        pillInShadowDark.setAttribute('operator', 'in');
-        pillInShadowDark.setAttribute('result', 'pill-in-shadow-dark');
-
-        const pillInOffsetLight = createSvgElement('feOffset');
-        pillInOffsetLight.setAttribute('in', 'SourceAlpha');
-        pillInOffsetLight.setAttribute('dx', '-1.6');
-        pillInOffsetLight.setAttribute('dy', '-1.6');
-        pillInOffsetLight.setAttribute('result', 'pill-in-offset-light');
-        const pillInBlurLight = createSvgElement('feGaussianBlur');
-        pillInBlurLight.setAttribute('in', 'pill-in-offset-light');
-        pillInBlurLight.setAttribute('stdDeviation', '1.2');
-        pillInBlurLight.setAttribute('result', 'pill-in-blur-light');
-        const pillInCompositeLight = createSvgElement('feComposite');
-        pillInCompositeLight.setAttribute('in', 'pill-in-blur-light');
-        pillInCompositeLight.setAttribute('in2', 'SourceAlpha');
-        pillInCompositeLight.setAttribute('operator', 'arithmetic');
-        pillInCompositeLight.setAttribute('k2', '-1');
-        pillInCompositeLight.setAttribute('k3', '1');
-        pillInCompositeLight.setAttribute('result', 'pill-in-inner-light');
-        const pillInFloodLight = createSvgElement('feFlood');
-        pillInFloodLight.setAttribute('flood-color', '#ffffff');
-        pillInFloodLight.setAttribute('flood-opacity', '0.22');
-        pillInFloodLight.setAttribute('result', 'pill-in-flood-light');
-        const pillInShadowLight = createSvgElement('feComposite');
-        pillInShadowLight.setAttribute('in', 'pill-in-flood-light');
-        pillInShadowLight.setAttribute('in2', 'pill-in-inner-light');
-        pillInShadowLight.setAttribute('operator', 'in');
-        pillInShadowLight.setAttribute('result', 'pill-in-shadow-light');
-
-        const pillInMerge = createSvgElement('feMerge');
-        const pillInMergeGraphic = createSvgElement('feMergeNode');
-        pillInMergeGraphic.setAttribute('in', 'SourceGraphic');
-        const pillInMergeDark = createSvgElement('feMergeNode');
-        pillInMergeDark.setAttribute('in', 'pill-in-shadow-dark');
-        const pillInMergeLight = createSvgElement('feMergeNode');
-        pillInMergeLight.setAttribute('in', 'pill-in-shadow-light');
-        pillInMerge.appendChild(pillInMergeGraphic);
-        pillInMerge.appendChild(pillInMergeDark);
-        pillInMerge.appendChild(pillInMergeLight);
-
-        pillInFilter.appendChild(pillInOffsetDark);
-        pillInFilter.appendChild(pillInBlurDark);
-        pillInFilter.appendChild(pillInCompositeDark);
-        pillInFilter.appendChild(pillInFloodDark);
-        pillInFilter.appendChild(pillInShadowDark);
-        pillInFilter.appendChild(pillInOffsetLight);
-        pillInFilter.appendChild(pillInBlurLight);
-        pillInFilter.appendChild(pillInCompositeLight);
-        pillInFilter.appendChild(pillInFloodLight);
-        pillInFilter.appendChild(pillInShadowLight);
-        pillInFilter.appendChild(pillInMerge);
-        defs.appendChild(pillInFilter);
-
-        // Neumorphic "up" filter for zone dot buttons.
-        const dotUpFilter = createSvgElement('filter');
-        dotUpFilter.setAttribute('id', 'ert-inquiry-zone-dot-up');
-        dotUpFilter.setAttribute('x', '-50%');
-        dotUpFilter.setAttribute('y', '-50%');
-        dotUpFilter.setAttribute('width', '200%');
-        dotUpFilter.setAttribute('height', '200%');
-        dotUpFilter.setAttribute('color-interpolation-filters', 'sRGB');
-
-        const dotUpFlood = createSvgElement('feFlood');
-        dotUpFlood.setAttribute('flood-opacity', '0');
-        dotUpFlood.setAttribute('result', 'BackgroundImageFix');
-        const dotUpAlphaDark = createSvgElement('feColorMatrix');
-        dotUpAlphaDark.setAttribute('in', 'SourceAlpha');
-        dotUpAlphaDark.setAttribute('type', 'matrix');
-        dotUpAlphaDark.setAttribute('values', '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0');
-        dotUpAlphaDark.setAttribute('result', 'hardAlpha');
-        const dotUpOffsetDark = createSvgElement('feOffset');
-        dotUpOffsetDark.setAttribute('dx', '2');
-        dotUpOffsetDark.setAttribute('dy', '2');
-        const dotUpBlurDark = createSvgElement('feGaussianBlur');
-        dotUpBlurDark.setAttribute('stdDeviation', '2');
-        const dotUpCompositeDark = createSvgElement('feComposite');
-        dotUpCompositeDark.setAttribute('in2', 'hardAlpha');
-        dotUpCompositeDark.setAttribute('operator', 'out');
-        const dotUpColorDark = createSvgElement('feColorMatrix');
-        dotUpColorDark.setAttribute('type', 'matrix');
-        dotUpColorDark.setAttribute('values', '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.3 0');
-        const dotUpBlendDark = createSvgElement('feBlend');
-        dotUpBlendDark.setAttribute('mode', 'normal');
-        dotUpBlendDark.setAttribute('in2', 'BackgroundImageFix');
-        dotUpBlendDark.setAttribute('result', 'effect1_dropShadow');
-
-        const dotUpAlphaLight = createSvgElement('feColorMatrix');
-        dotUpAlphaLight.setAttribute('in', 'SourceAlpha');
-        dotUpAlphaLight.setAttribute('type', 'matrix');
-        dotUpAlphaLight.setAttribute('values', '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0');
-        dotUpAlphaLight.setAttribute('result', 'hardAlpha');
-        const dotUpOffsetLight = createSvgElement('feOffset');
-        dotUpOffsetLight.setAttribute('dx', '-2');
-        dotUpOffsetLight.setAttribute('dy', '-2');
-        const dotUpBlurLight = createSvgElement('feGaussianBlur');
-        dotUpBlurLight.setAttribute('stdDeviation', '3');
-        const dotUpCompositeLight = createSvgElement('feComposite');
-        dotUpCompositeLight.setAttribute('in2', 'hardAlpha');
-        dotUpCompositeLight.setAttribute('operator', 'out');
-        const dotUpColorLight = createSvgElement('feColorMatrix');
-        dotUpColorLight.setAttribute('type', 'matrix');
-        dotUpColorLight.setAttribute('values', '0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.11 0');
-        const dotUpBlendLight = createSvgElement('feBlend');
-        dotUpBlendLight.setAttribute('mode', 'normal');
-        dotUpBlendLight.setAttribute('in2', 'effect1_dropShadow');
-        dotUpBlendLight.setAttribute('result', 'effect2_dropShadow');
-        const dotUpBlendShape = createSvgElement('feBlend');
-        dotUpBlendShape.setAttribute('mode', 'normal');
-        dotUpBlendShape.setAttribute('in', 'SourceGraphic');
-        dotUpBlendShape.setAttribute('in2', 'effect2_dropShadow');
-        dotUpBlendShape.setAttribute('result', 'shape');
-
-        const dotUpAlphaInnerDark = createSvgElement('feColorMatrix');
-        dotUpAlphaInnerDark.setAttribute('in', 'SourceAlpha');
-        dotUpAlphaInnerDark.setAttribute('type', 'matrix');
-        dotUpAlphaInnerDark.setAttribute('values', '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0');
-        dotUpAlphaInnerDark.setAttribute('result', 'hardAlpha');
-        const dotUpOffsetInnerDark = createSvgElement('feOffset');
-        dotUpOffsetInnerDark.setAttribute('dx', '-2');
-        dotUpOffsetInnerDark.setAttribute('dy', '-2');
-        const dotUpBlurInnerDark = createSvgElement('feGaussianBlur');
-        dotUpBlurInnerDark.setAttribute('stdDeviation', '1');
-        const dotUpCompositeInnerDark = createSvgElement('feComposite');
-        dotUpCompositeInnerDark.setAttribute('in2', 'hardAlpha');
-        dotUpCompositeInnerDark.setAttribute('operator', 'arithmetic');
-        dotUpCompositeInnerDark.setAttribute('k2', '-1');
-        dotUpCompositeInnerDark.setAttribute('k3', '1');
-        const dotUpColorInnerDark = createSvgElement('feColorMatrix');
-        dotUpColorInnerDark.setAttribute('type', 'matrix');
-        dotUpColorInnerDark.setAttribute('values', '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.17 0');
-        const dotUpBlendInnerDark = createSvgElement('feBlend');
-        dotUpBlendInnerDark.setAttribute('mode', 'normal');
-        dotUpBlendInnerDark.setAttribute('in2', 'shape');
-        dotUpBlendInnerDark.setAttribute('result', 'effect3_innerShadow');
-
-        const dotUpAlphaInnerLight = createSvgElement('feColorMatrix');
-        dotUpAlphaInnerLight.setAttribute('in', 'SourceAlpha');
-        dotUpAlphaInnerLight.setAttribute('type', 'matrix');
-        dotUpAlphaInnerLight.setAttribute('values', '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0');
-        dotUpAlphaInnerLight.setAttribute('result', 'hardAlpha');
-        const dotUpOffsetInnerLight = createSvgElement('feOffset');
-        dotUpOffsetInnerLight.setAttribute('dx', '2');
-        dotUpOffsetInnerLight.setAttribute('dy', '2');
-        const dotUpBlurInnerLight = createSvgElement('feGaussianBlur');
-        dotUpBlurInnerLight.setAttribute('stdDeviation', '1');
-        const dotUpCompositeInnerLight = createSvgElement('feComposite');
-        dotUpCompositeInnerLight.setAttribute('in2', 'hardAlpha');
-        dotUpCompositeInnerLight.setAttribute('operator', 'arithmetic');
-        dotUpCompositeInnerLight.setAttribute('k2', '-1');
-        dotUpCompositeInnerLight.setAttribute('k3', '1');
-        const dotUpColorInnerLight = createSvgElement('feColorMatrix');
-        dotUpColorInnerLight.setAttribute('type', 'matrix');
-        dotUpColorInnerLight.setAttribute('values', '0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.17 0');
-        const dotUpBlendInnerLight = createSvgElement('feBlend');
-        dotUpBlendInnerLight.setAttribute('mode', 'color-dodge');
-        dotUpBlendInnerLight.setAttribute('in2', 'effect3_innerShadow');
-        dotUpBlendInnerLight.setAttribute('result', 'effect4_innerShadow');
-
-        dotUpFilter.appendChild(dotUpFlood);
-        dotUpFilter.appendChild(dotUpAlphaDark);
-        dotUpFilter.appendChild(dotUpOffsetDark);
-        dotUpFilter.appendChild(dotUpBlurDark);
-        dotUpFilter.appendChild(dotUpCompositeDark);
-        dotUpFilter.appendChild(dotUpColorDark);
-        dotUpFilter.appendChild(dotUpBlendDark);
-        dotUpFilter.appendChild(dotUpAlphaLight);
-        dotUpFilter.appendChild(dotUpOffsetLight);
-        dotUpFilter.appendChild(dotUpBlurLight);
-        dotUpFilter.appendChild(dotUpCompositeLight);
-        dotUpFilter.appendChild(dotUpColorLight);
-        dotUpFilter.appendChild(dotUpBlendLight);
-        dotUpFilter.appendChild(dotUpBlendShape);
-        dotUpFilter.appendChild(dotUpAlphaInnerDark);
-        dotUpFilter.appendChild(dotUpOffsetInnerDark);
-        dotUpFilter.appendChild(dotUpBlurInnerDark);
-        dotUpFilter.appendChild(dotUpCompositeInnerDark);
-        dotUpFilter.appendChild(dotUpColorInnerDark);
-        dotUpFilter.appendChild(dotUpBlendInnerDark);
-        dotUpFilter.appendChild(dotUpAlphaInnerLight);
-        dotUpFilter.appendChild(dotUpOffsetInnerLight);
-        dotUpFilter.appendChild(dotUpBlurInnerLight);
-        dotUpFilter.appendChild(dotUpCompositeInnerLight);
-        dotUpFilter.appendChild(dotUpColorInnerLight);
-        dotUpFilter.appendChild(dotUpBlendInnerLight);
-        defs.appendChild(dotUpFilter);
-
-        // Neumorphic "down" filter for zone dot buttons.
-        const dotDownFilter = createSvgElement('filter');
-        dotDownFilter.setAttribute('id', 'ert-inquiry-zone-dot-down');
-        dotDownFilter.setAttribute('x', '-50%');
-        dotDownFilter.setAttribute('y', '-50%');
-        dotDownFilter.setAttribute('width', '200%');
-        dotDownFilter.setAttribute('height', '200%');
-        dotDownFilter.setAttribute('color-interpolation-filters', 'sRGB');
-
-        const dotDownOffsetDark = createSvgElement('feOffset');
-        dotDownOffsetDark.setAttribute('in', 'SourceAlpha');
-        dotDownOffsetDark.setAttribute('dx', '3.2');
-        dotDownOffsetDark.setAttribute('dy', '3.2');
-        dotDownOffsetDark.setAttribute('result', 'dot-down-offset-dark');
-        const dotDownBlurDark = createSvgElement('feGaussianBlur');
-        dotDownBlurDark.setAttribute('in', 'dot-down-offset-dark');
-        dotDownBlurDark.setAttribute('stdDeviation', '2.4');
-        dotDownBlurDark.setAttribute('result', 'dot-down-blur-dark');
-        const dotDownCompositeDark = createSvgElement('feComposite');
-        dotDownCompositeDark.setAttribute('in', 'dot-down-blur-dark');
-        dotDownCompositeDark.setAttribute('in2', 'SourceAlpha');
-        dotDownCompositeDark.setAttribute('operator', 'arithmetic');
-        dotDownCompositeDark.setAttribute('k2', '-1');
-        dotDownCompositeDark.setAttribute('k3', '1');
-        dotDownCompositeDark.setAttribute('result', 'dot-down-inner-dark');
-        const dotDownFloodDark = createSvgElement('feFlood');
-        dotDownFloodDark.setAttribute('flood-color', '#000000');
-        dotDownFloodDark.setAttribute('flood-opacity', '0.35');
-        dotDownFloodDark.setAttribute('result', 'dot-down-flood-dark');
-        const dotDownShadowDark = createSvgElement('feComposite');
-        dotDownShadowDark.setAttribute('in', 'dot-down-flood-dark');
-        dotDownShadowDark.setAttribute('in2', 'dot-down-inner-dark');
-        dotDownShadowDark.setAttribute('operator', 'in');
-        dotDownShadowDark.setAttribute('result', 'dot-down-shadow-dark');
-
-        const dotDownOffsetLight = createSvgElement('feOffset');
-        dotDownOffsetLight.setAttribute('in', 'SourceAlpha');
-        dotDownOffsetLight.setAttribute('dx', '-3.2');
-        dotDownOffsetLight.setAttribute('dy', '-3.2');
-        dotDownOffsetLight.setAttribute('result', 'dot-down-offset-light');
-        const dotDownBlurLight = createSvgElement('feGaussianBlur');
-        dotDownBlurLight.setAttribute('in', 'dot-down-offset-light');
-        dotDownBlurLight.setAttribute('stdDeviation', '2.4');
-        dotDownBlurLight.setAttribute('result', 'dot-down-blur-light');
-        const dotDownCompositeLight = createSvgElement('feComposite');
-        dotDownCompositeLight.setAttribute('in', 'dot-down-blur-light');
-        dotDownCompositeLight.setAttribute('in2', 'SourceAlpha');
-        dotDownCompositeLight.setAttribute('operator', 'arithmetic');
-        dotDownCompositeLight.setAttribute('k2', '-1');
-        dotDownCompositeLight.setAttribute('k3', '1');
-        dotDownCompositeLight.setAttribute('result', 'dot-down-inner-light');
-        const dotDownFloodLight = createSvgElement('feFlood');
-        dotDownFloodLight.setAttribute('flood-color', '#ffffff');
-        dotDownFloodLight.setAttribute('flood-opacity', '0.22');
-        dotDownFloodLight.setAttribute('result', 'dot-down-flood-light');
-        const dotDownShadowLight = createSvgElement('feComposite');
-        dotDownShadowLight.setAttribute('in', 'dot-down-flood-light');
-        dotDownShadowLight.setAttribute('in2', 'dot-down-inner-light');
-        dotDownShadowLight.setAttribute('operator', 'in');
-        dotDownShadowLight.setAttribute('result', 'dot-down-shadow-light');
-
-        const dotDownMerge = createSvgElement('feMerge');
-        const dotDownMergeGraphic = createSvgElement('feMergeNode');
-        dotDownMergeGraphic.setAttribute('in', 'SourceGraphic');
-        const dotDownMergeDark = createSvgElement('feMergeNode');
-        dotDownMergeDark.setAttribute('in', 'dot-down-shadow-dark');
-        const dotDownMergeLight = createSvgElement('feMergeNode');
-        dotDownMergeLight.setAttribute('in', 'dot-down-shadow-light');
-        dotDownMerge.appendChild(dotDownMergeGraphic);
-        dotDownMerge.appendChild(dotDownMergeDark);
-        dotDownMerge.appendChild(dotDownMergeLight);
-
-        dotDownFilter.appendChild(dotDownOffsetDark);
-        dotDownFilter.appendChild(dotDownBlurDark);
-        dotDownFilter.appendChild(dotDownCompositeDark);
-        dotDownFilter.appendChild(dotDownFloodDark);
-        dotDownFilter.appendChild(dotDownShadowDark);
-        dotDownFilter.appendChild(dotDownOffsetLight);
-        dotDownFilter.appendChild(dotDownBlurLight);
-        dotDownFilter.appendChild(dotDownCompositeLight);
-        dotDownFilter.appendChild(dotDownFloodLight);
-        dotDownFilter.appendChild(dotDownShadowLight);
-        dotDownFilter.appendChild(dotDownMerge);
-        defs.appendChild(dotDownFilter);
-
-        const backboneGradient = createSvgElement('linearGradient');
-        backboneGradient.setAttribute('id', 'ert-inquiry-minimap-backbone-grad');
-        backboneGradient.setAttribute('x1', '0%');
-        backboneGradient.setAttribute('y1', '0%');
-        backboneGradient.setAttribute('x2', '100%');
-        backboneGradient.setAttribute('y2', '0%');
-        const startColors = getBackboneStartColors(this.getStyleSource());
-        const gradientStart = startColors.gradient[0] ?? { r: 255, g: 153, b: 0 };
-        const gradientMid = startColors.gradient[1] ?? { r: 255, g: 211, b: 106 };
-        const gradientEnd = startColors.gradient[2] ?? { r: 255, g: 94, b: 0 };
-        const backboneGradientStops = [
-            createStop('0%', toRgbString(gradientStart)),
-            createStop('50%', toRgbString(gradientMid)),
-            createStop('100%', toRgbString(gradientEnd))
-        ];
-        backboneGradientStops.forEach(stop => backboneGradient.appendChild(stop));
-        this.minimap.setGradientStops(backboneGradientStops);
-        defs.appendChild(backboneGradient);
-
-        const backboneShine = createSvgElement('linearGradient');
-        backboneShine.setAttribute('id', 'ert-inquiry-minimap-backbone-shine');
-        backboneShine.setAttribute('x1', '0%');
-        backboneShine.setAttribute('y1', '0%');
-        backboneShine.setAttribute('x2', '100%');
-        backboneShine.setAttribute('y2', '0%');
-        const shineStart = startColors.shine[0] ?? { r: 255, g: 242, b: 207 };
-        const shinePeak = startColors.shine[1] ?? { r: 255, g: 247, b: 234 };
-        const shineWarm = startColors.shine[2] ?? { r: 255, g: 179, b: 77 };
-        const shineEnd = startColors.shine[3] ?? { r: 255, g: 242, b: 207 };
-        const backboneShineStops = [
-            createStop('0%', toRgbString(shineStart), '0'),
-            createStop('40%', toRgbString(shinePeak), '1'),
-            createStop('60%', toRgbString(shineWarm), '0.9'),
-            createStop('100%', toRgbString(shineEnd), '0')
-        ];
-        backboneShineStops.forEach(stop => backboneShine.appendChild(stop));
-        this.minimap.setShineStops(backboneShineStops);
-        defs.appendChild(backboneShine);
-
-        this.minimap.initBackboneClip(defs);
-
-        // Hatched pattern for cached portion overlay on token cap bar
-        const cachedPattern = createSvgElement('pattern');
-        cachedPattern.setAttribute('id', 'ert-inquiry-minimap-cached-hatch');
-        cachedPattern.setAttribute('width', '8');
-        cachedPattern.setAttribute('height', '8');
-        cachedPattern.setAttribute('patternUnits', 'userSpaceOnUse');
-        const hatchBg = createSvgElement('rect');
-        hatchBg.setAttribute('x', '0');
-        hatchBg.setAttribute('y', '0');
-        hatchBg.setAttribute('width', '8');
-        hatchBg.setAttribute('height', '8');
-        hatchBg.classList.add('ert-inquiry-minimap-cached-hatch-bg');
-        cachedPattern.appendChild(hatchBg);
-        const hatchLine = createSvgElement('line');
-        hatchLine.setAttribute('x1', '0');
-        hatchLine.setAttribute('y1', '0');
-        hatchLine.setAttribute('x2', '8');
-        hatchLine.setAttribute('y2', '8');
-        hatchLine.classList.add('ert-inquiry-minimap-cached-hatch-stroke');
-        cachedPattern.appendChild(hatchLine);
-        const hatchLineSecondary = createSvgElement('line');
-        hatchLineSecondary.setAttribute('x1', '0');
-        hatchLineSecondary.setAttribute('y1', '8');
-        hatchLineSecondary.setAttribute('x2', '8');
-        hatchLineSecondary.setAttribute('y2', '0');
-        hatchLineSecondary.classList.add('ert-inquiry-minimap-cached-hatch-stroke');
-        cachedPattern.appendChild(hatchLineSecondary);
-        defs.appendChild(cachedPattern);
-    }
-
     private createIconSymbol(defs: SVGDefsElement, iconName: string): string | null {
         const holder = defs.ownerDocument.win.createSpan();
         setIcon(holder, iconName);
@@ -3125,7 +2586,7 @@ export class InquiryView extends ItemView {
                 }
 
                 const fingerprintRaw = `${INQUIRY_SCHEMA_VERSION}|${prompt.id}|${modelId}|${fingerprintSource}`;
-                const fingerprint = this.hashString(fingerprintRaw);
+                const fingerprint = hashString(fingerprintRaw);
 
                 const effectiveOverride = this.getEffectivePromptOverride(prompt.id);
                 const questionText = this.resolveQuestionPromptForRun(prompt, selectionMode, effectiveOverride);
@@ -3164,7 +2625,7 @@ export class InquiryView extends ItemView {
                     priorIds.add(prompt.id);
 
                     const priorCorpusOnly = priorByBase.result.corpusOnlyFingerprint;
-                    const currentCorpusOnly = this.hashString(`${INQUIRY_SCHEMA_VERSION}|${prompt.id}|${fingerprintSource}`);
+                    const currentCorpusOnly = hashString(`${INQUIRY_SCHEMA_VERSION}|${prompt.id}|${fingerprintSource}`);
                     if (!priorCorpusOnly || priorCorpusOnly === currentCorpusOnly) {
                         continue;
                     }
@@ -3538,23 +2999,6 @@ export class InquiryView extends ItemView {
         const label = createSvgText(debugGroup, 'ert-inquiry-debug-label', t('inquiry.debug.origin'), 0, 0);
         label.setAttribute('text-anchor', 'middle');
         label.setAttribute('dominant-baseline', 'middle');
-    }
-
-    private buildSceneDossierResources(defs: SVGDefsElement): void {
-        if (defs.querySelector('#ert-inquiry-scene-dossier-focus-grad')) return;
-        const gradient = createSvgElement('radialGradient');
-        gradient.setAttribute('id', 'ert-inquiry-scene-dossier-focus-grad');
-        gradient.setAttribute('cx', '50%');
-        gradient.setAttribute('cy', '46%');
-        gradient.setAttribute('fx', '50%');
-        gradient.setAttribute('fy', '42%');
-        gradient.setAttribute('r', '54%');
-        ['0%', '32%', '70%', '100%'].forEach(offset => {
-            const stop = createSvgElement('stop');
-            stop.setAttribute('offset', offset);
-            gradient.appendChild(stop);
-        });
-        defs.appendChild(gradient);
     }
 
     private renderModeIcons(parent: SVGGElement): void {
@@ -4095,12 +3539,8 @@ export class InquiryView extends ItemView {
         return this.state.scope === 'saga' ? this.corpus.books : this.corpus.scenes;
     }
 
-    private getMinimapItemFilePath(item: InquiryCorpusItem): string | undefined {
-        return getMinimapItemFilePathPure(item);
-    }
-
     private getMinimapItemTitle(item: InquiryCorpusItem): string {
-        const filePath = this.getMinimapItemFilePath(item);
+        const filePath = getMinimapItemFilePath(item);
         if (filePath) {
             const file = this.app.vault.getAbstractFileByPath(filePath);
             if (file && this.isTFile(file)) {
@@ -4119,7 +3559,7 @@ export class InquiryView extends ItemView {
     }
 
     private getMinimapItemWordCount(item: InquiryCorpusItem): number | null {
-        const filePath = this.getMinimapItemFilePath(item);
+        const filePath = getMinimapItemFilePath(item);
         if (!filePath) return null;
         const file = this.app.vault.getAbstractFileByPath(filePath);
         if (!file || !this.isTFile(file)) return null;
@@ -4301,7 +3741,7 @@ export class InquiryView extends ItemView {
                         }
                         void this.openActiveBriefForItem(item);
                     } else {
-                        const filePath = this.getMinimapItemFilePath(item);
+                        const filePath = getMinimapItemFilePath(item);
                         if (filePath) {
                             void this.openSceneFromMinimap(filePath);
                         }
@@ -4394,7 +3834,7 @@ export class InquiryView extends ItemView {
             advancedContext,
             this.currentRunProgress,
             this.getRTCorpusEstimate().estimatedTokens,
-            (value) => this.formatTokenEstimate(value),
+            (value) => formatTokenEstimate(value),
             balanceTooltipText
         );
         this.updateMinimapReuseStatus();
@@ -4511,10 +3951,6 @@ export class InquiryView extends ItemView {
         return `Book ${scopeLabel}`;
     }
 
-    private getCorpusGroupBaseClass(className: string): string {
-        return getCorpusGroupBaseClassPure(className);
-    }
-
     private getCorpusGroupKey(className: string, scope?: InquiryScope): string {
         return getCorpusGroupKeyPure(className, scope);
     }
@@ -4545,10 +3981,6 @@ export class InquiryView extends ItemView {
         sceneId?: string
     ): SceneInclusion | undefined {
         return this.corpusService.getItemOverride(className, filePath, scope, sceneId);
-    }
-
-    private getCorpusCycleModes(className: string): SceneInclusion[] {
-        return getCorpusCycleModesPure(className);
     }
 
     private getCorpusGroupBaseMode(
@@ -4583,10 +4015,6 @@ export class InquiryView extends ItemView {
         return this.corpusService.getGlobalMode(groupKeys, configMap, this.state.scope, this.ccEntries);
     }
 
-    private getNextCorpusMode(current: SceneInclusion, modes: SceneInclusion[]): SceneInclusion {
-        return getNextCorpusModePure(current, modes);
-    }
-
     private clearItemOverridesForGroup(groupKey: string): void {
         this.corpusService.clearItemOverridesForGroup(groupKey);
     }
@@ -4619,10 +4047,10 @@ export class InquiryView extends ItemView {
         const sources = this.normalizeInquirySources(this.settingsAccessor.getSources());
         const configMap = new Map((sources.classes || []).map(config => [config.className, config])); // SAFE: settings may omit class configs — empty map means no class modes configured
         const currentMode = this.getCorpusGroupEffectiveMode(groupKey, configMap);
-        const modes = this.getCorpusCycleModes(groupKey);
-        const nextMode = this.getNextCorpusMode(currentMode, modes);
+        const modes = getCorpusCycleModes(groupKey);
+        const nextMode = getNextCorpusMode(currentMode, modes);
         const baseMode = this.getCorpusGroupBaseMode(groupKey, configMap);
-        const normalizedNext = this.normalizeContributionMode(nextMode, this.getCorpusGroupBaseClass(groupKey));
+        const normalizedNext = normalizeContributionMode(nextMode, getCorpusGroupBaseClass(groupKey));
         if (normalizedNext === baseMode) {
             this.corpusService.deleteClassOverride(groupKey);
         } else {
@@ -4635,7 +4063,7 @@ export class InquiryView extends ItemView {
 
     private getSceneBookEffectiveMode(entries: CorpusCcEntry[]): SceneInclusion | 'mixed' {
         if (!entries.length) return 'excluded';
-        const modes = entries.map(entry => this.normalizeContributionMode(entry.mode ?? 'excluded', 'scene')); // SAFE: entries without a mode are treated as excluded
+        const modes = entries.map(entry => normalizeContributionMode(entry.mode ?? 'excluded', 'scene')); // SAFE: entries without a mode are treated as excluded
         const first = modes[0];
         if (modes.every(mode => mode === first)) return first;
         return 'mixed';
@@ -4644,7 +4072,7 @@ export class InquiryView extends ItemView {
     private getSceneBookDisplayMode(entries: CorpusCcEntry[]): SceneInclusion {
         const mode = this.getSceneBookEffectiveMode(entries);
         if (mode === 'mixed') {
-            const hasFull = entries.some(entry => this.normalizeContributionMode(entry.mode ?? 'excluded', 'scene') === 'full'); // SAFE: entries without a mode are treated as excluded
+            const hasFull = entries.some(entry => normalizeContributionMode(entry.mode ?? 'excluded', 'scene') === 'full'); // SAFE: entries without a mode are treated as excluded
             return hasFull ? 'full' : 'summary';
         }
         return mode;
@@ -4658,9 +4086,9 @@ export class InquiryView extends ItemView {
         const configMap = new Map((sources.classes || []).map(config => [config.className, config])); // SAFE: settings may omit class configs — empty map means no class modes configured
         const classMode = this.getCorpusGroupEffectiveMode('scene', configMap);
         const currentMode = this.getSceneBookEffectiveMode(entries);
-        const modes = this.getCorpusCycleModes('scene');
-        const nextMode = currentMode === 'mixed' ? 'excluded' : this.getNextCorpusMode(currentMode, modes);
-        const normalizedNext = this.normalizeContributionMode(nextMode, 'scene');
+        const modes = getCorpusCycleModes('scene');
+        const nextMode = currentMode === 'mixed' ? 'excluded' : getNextCorpusMode(currentMode, modes);
+        const normalizedNext = normalizeContributionMode(nextMode, 'scene');
 
         entries.forEach(entry => {
             if (normalizedNext === classMode) {
@@ -4682,10 +4110,10 @@ export class InquiryView extends ItemView {
         const configMap = new Map((sources.classes || []).map(config => [config.className, config])); // SAFE: settings may omit class configs — empty map means no class modes configured
         const groupKey = this.getCorpusGroupKey(entry.classKey, entry.scope);
         const classMode = this.getCorpusGroupEffectiveMode(groupKey, configMap);
-        const currentMode = this.normalizeContributionMode(entry.mode, this.getCorpusGroupBaseClass(groupKey));
-        const modes = this.getCorpusCycleModes(groupKey);
-        const nextMode = this.getNextCorpusMode(currentMode, modes);
-        const normalizedNext = this.normalizeContributionMode(nextMode, this.getCorpusGroupBaseClass(groupKey));
+        const currentMode = normalizeContributionMode(entry.mode, getCorpusGroupBaseClass(groupKey));
+        const modes = getCorpusCycleModes(groupKey);
+        const nextMode = getNextCorpusMode(currentMode, modes);
+        const normalizedNext = normalizeContributionMode(nextMode, getCorpusGroupBaseClass(groupKey));
         if (normalizedNext === classMode) {
             this.corpusService.deleteItemOverrideByKey(entryKey);
         } else {
@@ -4702,7 +4130,7 @@ export class InquiryView extends ItemView {
         const configMap = new Map((sources.classes || []).map(config => [config.className, config])); // SAFE: settings may omit class configs — empty map means no class modes configured
         const groupKey = this.getCorpusGroupKey(entry.classKey, entry.scope);
         const classMode = this.getCorpusGroupEffectiveMode(groupKey, configMap);
-        const normalizedMode = this.normalizeContributionMode(mode, this.getCorpusGroupBaseClass(groupKey));
+        const normalizedMode = normalizeContributionMode(mode, getCorpusGroupBaseClass(groupKey));
         if (normalizedMode === classMode) {
             this.corpusService.deleteItemOverrideByKey(entryKey);
         } else {
@@ -4966,8 +4394,8 @@ export class InquiryView extends ItemView {
 
         this.corpusService.resetOverrides();
         groupKeys.forEach(groupKey => {
-            const baseClass = this.getCorpusGroupBaseClass(groupKey);
-            const normalizedTarget = this.normalizeContributionMode(next, baseClass);
+            const baseClass = getCorpusGroupBaseClass(groupKey);
+            const normalizedTarget = normalizeContributionMode(next, baseClass);
             const baseMode = this.getCorpusGroupBaseMode(groupKey, configMap);
             if (normalizedTarget !== baseMode) {
                 this.corpusService.setClassOverride(groupKey, normalizedTarget);
@@ -5012,10 +4440,6 @@ export class InquiryView extends ItemView {
         overrideLabel?: string
     ): string {
         return getCorpusCcHeaderTooltipPure(className, mode, count, overrideLabel);
-    }
-
-    private getCorpusCcHeaderDisplayLabel(className: string): string {
-        return getCorpusCcHeaderDisplayLabelPure(className);
     }
 
 
@@ -5149,7 +4573,7 @@ export class InquiryView extends ItemView {
 
         entriesByClass.forEach((items, className) => {
             if (groups.some(group => group.key === className || group.className === className)) return;
-            const baseClass = this.getCorpusGroupBaseClass(className);
+            const baseClass = getCorpusGroupBaseClass(className);
             const entryConfig = configMap.get(baseClass);
             if (entryConfig && !entryConfig.enabled) return;
             const override = this.corpusService.getClassOverride(className);
@@ -5159,7 +4583,7 @@ export class InquiryView extends ItemView {
                 className,
                 items,
                 count: items.length,
-                mode: this.normalizeContributionMode(mode, baseClass)
+                mode: normalizeContributionMode(mode, baseClass)
             });
         });
 
@@ -5258,7 +4682,7 @@ export class InquiryView extends ItemView {
                 className,
                 classKey: entry.class,
                 scope: entry.scope,
-                mode: this.normalizeContributionMode(entry.mode ?? 'excluded', entry.class), // SAFE: entries without a mode are treated as excluded
+                mode: normalizeContributionMode(entry.mode ?? 'excluded', entry.class), // SAFE: entries without a mode are treated as excluded
                 isTarget: entry.isTarget,
                 sortLabel: label
             };
@@ -5316,7 +4740,7 @@ export class InquiryView extends ItemView {
                     filePath,
                     className: 'outline',
                     classKey: 'outline',
-                    mode: this.normalizeContributionMode(outlineConfig.bookScope, 'outline'),
+                    mode: normalizeContributionMode(outlineConfig.bookScope, 'outline'),
                     isTarget: false
                 };
             }));
@@ -5332,7 +4756,7 @@ export class InquiryView extends ItemView {
                 filePath,
                 className: 'outline',
                 classKey: 'outline',
-                mode: this.normalizeContributionMode(outlineConfig.sagaScope, 'outline'),
+                mode: normalizeContributionMode(outlineConfig.sagaScope, 'outline'),
                 isTarget: false
             });
         }
@@ -5570,7 +4994,7 @@ export class InquiryView extends ItemView {
     private shouldRejectUnboundHitResult(result: InquiryResult): boolean {
         if (this.isErrorResult(result)) return false;
         if (result.scope !== 'book') return false;
-        if (!result.findings.some(finding => this.isFindingHit(finding))) return false;
+        if (!result.findings.some(finding => isFindingHit(finding))) return false;
         return !this.hasBindableInquiryHits(result);
     }
 
@@ -6276,8 +5700,8 @@ export class InquiryView extends ItemView {
     }
 
     private hasDistinctLensSummaries(result: InquiryResult): boolean {
-        const flow = this.getResultSummaryForMode(result, 'flow');
-        const depth = this.getResultSummaryForMode(result, 'depth');
+        const flow = getResultSummaryForMode(result, 'flow');
+        const depth = getResultSummaryForMode(result, 'depth');
         return flow !== depth && !!flow && !!depth;
     }
 
@@ -6832,6 +6256,39 @@ export class InquiryView extends ItemView {
         }
     }
 
+    /**
+     * The end of every omnibus run, combined or sequential: show the last
+     * session's result (or the cache-miss error, or idle when nothing ran),
+     * then refresh the briefing controls.
+     */
+    private finishOmnibusRun(lastSession: InquirySession | null, lastResult: InquiryResult | null, cacheMissDetail?: string): void {
+        if (cacheMissDetail) {
+            this.state.isRunning = false;
+            this.setApiStatus('error', cacheMissDetail);
+            this.refreshUI();
+        } else if (lastSession && lastResult) {
+            this.applySession({
+                result: lastResult,
+                key: lastSession.key,
+                activeBookId: lastSession.activeBookId,
+                targetSceneIds: lastSession.targetSceneIds,
+                scope: lastSession.scope,
+                questionZone: lastSession.questionZone
+            }, 'missing');
+            if (this.isErrorResult(lastResult)) {
+                this.setApiStatus('error', formatApiErrorReason(lastResult));
+            } else {
+                this.setApiStatus('success');
+            }
+        } else {
+            this.state.isRunning = false;
+            this.setApiStatus('idle');
+            this.refreshUI();
+        }
+        this.updateBriefingButtonState();
+        this.refreshBriefingPanel();
+    }
+
     private async runOmnibusCombined(
         questions: InquiryQuestion[],
         providerChoice: OmnibusProviderChoice,
@@ -6995,27 +6452,7 @@ export class InquiryView extends ItemView {
                 });
             }
             if (modal) modal.showResult(completedIds.length, total, !isComplete);
-            if (lastSession && lastResult) {
-                this.applySession({
-                    result: lastResult,
-                    key: lastSession.key,
-                    activeBookId: lastSession.activeBookId,
-                    targetSceneIds: lastSession.targetSceneIds,
-                    scope: lastSession.scope,
-                    questionZone: lastSession.questionZone
-                }, 'missing');
-                if (this.isErrorResult(lastResult)) {
-                    this.setApiStatus('error', formatApiErrorReason(lastResult));
-                } else {
-                    this.setApiStatus('success');
-                }
-            } else {
-                this.state.isRunning = false;
-                this.setApiStatus('idle');
-                this.refreshUI();
-            }
-            this.updateBriefingButtonState();
-            this.refreshBriefingPanel();
+            this.finishOmnibusRun(lastSession, lastResult);
         }
     }
 
@@ -7216,31 +6653,7 @@ export class InquiryView extends ItemView {
                 });
             }
             if (modal) modal.showResult(completedIds.length, total, !isComplete, cacheMissDetail);
-            if (cacheMissDetail) {
-                this.state.isRunning = false;
-                this.setApiStatus('error', cacheMissDetail);
-                this.refreshUI();
-            } else if (lastSession && lastResult) {
-                this.applySession({
-                    result: lastResult,
-                    key: lastSession.key,
-                    activeBookId: lastSession.activeBookId,
-                    targetSceneIds: lastSession.targetSceneIds,
-                    scope: lastSession.scope,
-                    questionZone: lastSession.questionZone
-                }, 'missing');
-                if (this.isErrorResult(lastResult)) {
-                    this.setApiStatus('error', formatApiErrorReason(lastResult));
-                } else {
-                    this.setApiStatus('success');
-                }
-            } else {
-                this.state.isRunning = false;
-                this.setApiStatus('idle');
-                this.refreshUI();
-            }
-            this.updateBriefingButtonState();
-            this.refreshBriefingPanel();
+            this.finishOmnibusRun(lastSession, lastResult, cacheMissDetail);
         }
     }
 
@@ -7575,7 +6988,7 @@ export class InquiryView extends ItemView {
                     .join('|');
                 fingerprintSourceByContext.set(contextRequired, fingerprintSource);
             }
-            const fingerprint = this.hashString(
+            const fingerprint = hashString(
                 `${INQUIRY_SCHEMA_VERSION}|${question.id}|${choice.modelId}|${fingerprintSource}`
             );
             // Omnibus resolves prompts without per-question overrides (see
@@ -7954,7 +7367,7 @@ export class InquiryView extends ItemView {
         const referenceLabels = this.buildInquiryReferenceLabelMap(items);
 
         result.findings.forEach(finding => {
-            if (!this.isFindingHit(finding)) return;
+            if (!isFindingHit(finding)) return;
             const targetLabel = resolveFindingChipLabel(finding, result, items)
                 ?? (finding.refId && /^s\d+$/i.test(finding.refId.trim()) ? finding.refId.trim().toUpperCase() : undefined);
             const note = this.formatInquiryActionNote(finding, briefId, briefAlias, targetLabel, referenceLabels);
@@ -8101,7 +7514,7 @@ export class InquiryView extends ItemView {
         const inputTokens = trace?.tokenEstimate?.inputTokens;
         if (typeof inputTokens === 'number' && Number.isFinite(inputTokens)) {
             result.tokenEstimateInput = inputTokens;
-            result.tokenEstimateTier = this.getTokenTier(inputTokens);
+            result.tokenEstimateTier = getTokenTier(inputTokens);
             return;
         }
         result.tokenEstimateInput = undefined;
@@ -8261,7 +7674,7 @@ export class InquiryView extends ItemView {
             if (typeof simSnapshot?.estimate.estimatedInputTokens === 'number'
                 && Number.isFinite(simSnapshot.estimate.estimatedInputTokens)) {
                 result.tokenEstimateInput = simSnapshot.estimate.estimatedInputTokens;
-                result.tokenEstimateTier = this.getTokenTier(simSnapshot.estimate.estimatedInputTokens);
+                result.tokenEstimateTier = getTokenTier(simSnapshot.estimate.estimatedInputTokens);
             } else {
                 result.tokenEstimateInput = undefined;
                 result.tokenEstimateTier = undefined;
@@ -8456,7 +7869,7 @@ export class InquiryView extends ItemView {
                 if (className === 'outline') {
                     const outlineScope = this.getFrontmatterScope(frontmatter) ?? 'book'; // SAFE: outlines without an explicit scope are book-scoped
                     if (config && config.enabled) {
-                        mode = this.normalizeContributionMode(
+                        mode = normalizeContributionMode(
                             outlineScope === 'saga' ? config.sagaScope : config.bookScope,
                             className
                         );
@@ -8469,7 +7882,7 @@ export class InquiryView extends ItemView {
                         const classOverride = this.corpusService.getClassOverride(groupKey);
                         const itemOverride = this.getCorpusItemOverride(className, file.path, outlineScope);
                         mode = itemOverride ?? classOverride ?? mode;
-                        mode = this.normalizeContributionMode(mode, className);
+                        mode = normalizeContributionMode(mode, className);
                     }
                     if (!includeInactive && !this.isModeActive(mode)) return;
                     const inclusionMode = this.normalizeEvidenceMode(mode);
@@ -8484,9 +7897,9 @@ export class InquiryView extends ItemView {
                     return;
                 }
 
-                if (!this.isSynopsisCapableClass(className)) {
+                if (!isSynopsisCapableClass(className)) {
                     if (config && config.enabled) {
-                        mode = this.normalizeContributionMode(config.referenceScope, className);
+                        mode = normalizeContributionMode(config.referenceScope, className);
                     }
                     if (contextOverride) {
                         mode = 'full';
@@ -8496,7 +7909,7 @@ export class InquiryView extends ItemView {
                         const classOverride = this.corpusService.getClassOverride(groupKey);
                         const itemOverride = this.getCorpusItemOverride(className, file.path);
                         mode = itemOverride ?? classOverride ?? mode;
-                        mode = this.normalizeContributionMode(mode, className);
+                        mode = normalizeContributionMode(mode, className);
                     }
                     if (!includeInactive && !this.isModeActive(mode)) return;
                     const inclusionMode = this.normalizeEvidenceMode(mode);
@@ -8511,7 +7924,7 @@ export class InquiryView extends ItemView {
                 }
 
                 if (config && config.enabled) {
-                    mode = this.normalizeContributionMode(
+                    mode = normalizeContributionMode(
                         this.state.scope === 'book' ? config.bookScope : config.sagaScope,
                         className
                     );
@@ -8522,7 +7935,7 @@ export class InquiryView extends ItemView {
                     const classOverride = this.corpusService.getClassOverride(groupKey);
                     const itemOverride = this.getCorpusItemOverride(className, file.path, undefined, sceneId);
                     mode = itemOverride ?? classOverride ?? mode;
-                    mode = this.normalizeContributionMode(mode, className);
+                    mode = normalizeContributionMode(mode, className);
                 }
                 const isTarget = !!sceneId && targetSceneIds.has(sceneId);
                 if (isTarget) {
@@ -8612,9 +8025,9 @@ export class InquiryView extends ItemView {
             .join('|');
         const modelId = modelIdOverride ?? this.getResolvedEngine().modelId;
         const fingerprintRaw = `${INQUIRY_SCHEMA_VERSION}|${questionId}|${modelId}|${fingerprintSource}`;
-        const fingerprint = this.hashString(fingerprintRaw);
-        const corpusOnlyFingerprint = this.hashString(`${INQUIRY_SCHEMA_VERSION}|${questionId}|${fingerprintSource}`);
-        const cacheReuseFingerprint = this.hashString(`${INQUIRY_SCHEMA_VERSION}|${modelId}|${reuseFingerprintSource}`);
+        const fingerprint = hashString(fingerprintRaw);
+        const corpusOnlyFingerprint = hashString(`${INQUIRY_SCHEMA_VERSION}|${questionId}|${fingerprintSource}`);
+        const cacheReuseFingerprint = hashString(`${INQUIRY_SCHEMA_VERSION}|${modelId}|${reuseFingerprintSource}`);
 
         const snapshot = entries.map(entry => ({
             path: entry.path,
@@ -8646,30 +8059,6 @@ export class InquiryView extends ItemView {
         };
     }
 
-    private getDefaultMaterialMode(className: string): SceneInclusion {
-        return getDefaultMaterialModePure(className);
-    }
-
-    private isSynopsisCapableClass(className: string): boolean {
-        return isSynopsisCapableClassPure(className);
-    }
-
-    private normalizeContributionMode(mode: SceneInclusion, className: string): SceneInclusion {
-        return normalizeContributionModePure(mode, className);
-    }
-
-    private normalizeMaterialMode(value: unknown, className: string): SceneInclusion {
-        return normalizeMaterialModePure(value, className);
-    }
-
-    private resolveContributionMode(config: InquiryClassConfig): SceneInclusion {
-        return resolveContributionModePure(config);
-    }
-
-    private normalizeClassContribution(config: InquiryClassConfig): InquiryClassConfig {
-        return normalizeClassContributionPure(config);
-    }
-
     private normalizeEvidenceMode(mode?: SceneInclusion): 'excluded' | 'summary' | 'full' {
         return normalizeEvidenceModePure(mode);
     }
@@ -8690,12 +8079,8 @@ export class InquiryView extends ItemView {
         return getFrontmatterScopePure(frontmatter, getActiveFrontmatterMappings(this.plugin.settings));
     }
 
-    private hashString(value: string): string {
-        return hashStringPure(value);
-    }
-
     private getBriefSceneAnchorId(source: string): string {
-        return getBriefSceneAnchorIdPure(source, (value) => this.hashString(value));
+        return getBriefSceneAnchorIdPure(source, (value) => hashString(value));
     }
 
     private setFocusByIndex(index: number): void {
@@ -8734,7 +8119,7 @@ export class InquiryView extends ItemView {
     }
 
     private async openActiveBriefForItem(item: InquiryCorpusItem): Promise<void> {
-        const anchorSource = this.getMinimapItemFilePath(item) || item.id || item.displayLabel;
+        const anchorSource = getMinimapItemFilePath(item) || item.id || item.displayLabel;
         const anchorId = this.getBriefSceneAnchorId(anchorSource);
         await this.openActiveBrief(anchorId);
     }
@@ -8781,7 +8166,7 @@ export class InquiryView extends ItemView {
             new Notice(t('inquiry.notice.briefNotFound'));
             return;
         }
-        const anchorSource = this.getMinimapItemFilePath(item) || item.id || item.displayLabel;
+        const anchorSource = getMinimapItemFilePath(item) || item.id || item.displayLabel;
         const anchorId = this.getBriefSceneAnchorId(anchorSource);
         const staleDiagnosis = this.diagnoseSessionStaleness(session);
         this.openBriefingPresentation(this.buildInquiryBriefModel(session.result, session.logPath), {
@@ -8801,7 +8186,7 @@ export class InquiryView extends ItemView {
             this.notifyInteraction('Target Scenes are available only in Book scope.');
             return;
         }
-        const filePath = this.getMinimapItemFilePath(item);
+        const filePath = getMinimapItemFilePath(item);
         if (!filePath) return;
         const isTarget = !!item.sceneId && this.getActiveTargetSceneIds().includes(item.sceneId);
         const hasCitation = this.doesMinimapItemHaveFinding(item);
@@ -8902,14 +8287,6 @@ export class InquiryView extends ItemView {
         return targetSceneIds.length > 0 ? 'focused' : 'discover';
     }
 
-    private getResultSelectionMode(result: InquiryResult | null | undefined): InquirySelectionMode {
-        return getResultSelectionModePure(result);
-    }
-
-    private getResultRoleValidation(result: InquiryResult | null | undefined): InquiryRoleValidation {
-        return getResultRoleValidationPure(result);
-    }
-
     private computeRoleValidation(
         selectionMode: InquirySelectionMode,
         findings: InquiryFinding[],
@@ -8920,8 +8297,8 @@ export class InquiryView extends ItemView {
 
     private updateMinimapTargetStates(result?: InquiryResult | null): void {
         const targetSceneIds = this.getActiveTargetSceneIds();
-        const selectionMode = result ? this.getResultSelectionMode(result) : this.getSelectionMode(targetSceneIds);
-        const roleValidation = result ? this.getResultRoleValidation(result) : 'ok';
+        const selectionMode = result ? getResultSelectionMode(result) : this.getSelectionMode(targetSceneIds);
+        const roleValidation = result ? getResultRoleValidation(result) : 'ok';
         this.minimap.updateTargetStates(targetSceneIds, { selectionMode, roleValidation });
     }
 
@@ -9080,7 +8457,7 @@ export class InquiryView extends ItemView {
         if (this.state.activeZone !== zone) {
             return `${label} verdict unavailable for the current inquiry.`;
         }
-        return `${label}: ${this.getResultSummaryForMode(this.state.activeResult, this.state.mode)}`;
+        return `${label}: ${getResultSummaryForMode(this.state.activeResult, this.state.mode)}`;
     }
 
     private buildMinimapHoverText(label: string): string {
@@ -9103,13 +8480,9 @@ export class InquiryView extends ItemView {
         }
         this.setHoverText('');
         this.sceneDossier.queue(
-            this.buildSceneDossierHoverKey(item, label, finding),
+            buildSceneDossierHoverKey(item, label, finding),
             this.buildSceneDossierModel(item, label, hoverLabel, finding, result)
         );
-    }
-
-    private buildSceneDossierHoverKey(item: InquiryCorpusItem, label: string, finding: InquiryFinding): string {
-        return buildSceneDossierHoverKeyPure(item, label, finding);
     }
 
     private resolveFindingForMinimapHover(
@@ -9125,7 +8498,7 @@ export class InquiryView extends ItemView {
             || findingMap.get(item.displayLabel);
         if (directMatch) return directMatch;
 
-        const ordered = this.getOrderedFindings(result, result.mode || this.state.mode);
+        const ordered = getOrderedFindings(result, result.mode || this.state.mode);
         const candidateKeys = new Set<string>([
             label.toLowerCase(),
             hoverLabel.toLowerCase(),
@@ -9135,7 +8508,7 @@ export class InquiryView extends ItemView {
             ...(item.filePaths ?? []).map(path => path.toLowerCase()) // SAFE: items without filePaths add no candidate keys
         ]);
         for (const finding of ordered) {
-            if (!this.isFindingHit(finding)) continue;
+            if (!isFindingHit(finding)) continue;
             const refId = finding.refId?.trim().toLowerCase();
             if (refId && candidateKeys.has(refId)) {
                 return finding;
@@ -9411,19 +8784,15 @@ export class InquiryView extends ItemView {
     ): Map<string, InquiryFinding> {
         const map = new Map<string, InquiryFinding>();
         if (!result) return map;
-        const ordered = this.getOrderedFindings(result, result.mode || this.state.mode);
+        const ordered = getOrderedFindings(result, result.mode || this.state.mode);
         ordered.forEach(finding => {
-            if (!this.isFindingHit(finding)) return;
+            if (!isFindingHit(finding)) return;
             const label = resolveFindingChipLabel(finding, result, items);
             if (!label) return;
             if (map.has(label)) return;
             map.set(label, finding);
         });
         return map;
-    }
-
-    private isFindingHit(finding: InquiryFinding): boolean {
-        return isFindingHitPure(finding);
     }
 
     private formatMetricDisplay(value: number): string {
@@ -9833,22 +9202,14 @@ export class InquiryView extends ItemView {
         };
     }
 
-    private getAnthropicAcceptedCacheTtl(trace: InquiryRunTrace | null | undefined): '5m' | '1h' | 'mixed' | 'unknown' {
-        return getAnthropicAcceptedCacheTtlPure(trace);
-    }
-
-    private getDispatchEngineKey(result: InquiryResult): string | null {
-        return getDispatchEngineKeyPure(result);
-    }
-
     private appendAnthropicDispatchTraceNote(result: InquiryResult, trace: InquiryRunTrace | null | undefined): void {
         if (result.aiProvider?.trim().toLowerCase() !== 'anthropic' || !trace) return;
         const diagnostics = this.getAnthropicDispatchDiagnostics(trace);
-        const engineKey = this.getDispatchEngineKey(result);
+        const engineKey = getDispatchEngineKey(result);
         if (!diagnostics || !engineKey) return;
         const previousFingerprint = this.lastAnthropicDispatchPrefixByEngine.get(engineKey);
         const sameAsPrevious = previousFingerprint === diagnostics.cachePrefixFingerprint;
-        const acceptedCacheTtl = this.getAnthropicAcceptedCacheTtl(trace);
+        const acceptedCacheTtl = getAnthropicAcceptedCacheTtl(trace);
         const note = [
             'Anthropic dispatch:',
             `requested=${diagnostics.requestedCacheTtl}`,
@@ -9890,7 +9251,7 @@ export class InquiryView extends ItemView {
 
         if (provider === 'anthropic') {
             if (!hasAnthropicCacheUsage && trace?.cacheReuseState !== 'warm') return null;
-            const acceptedCacheTtl = this.getAnthropicAcceptedCacheTtl(trace);
+            const acceptedCacheTtl = getAnthropicAcceptedCacheTtl(trace);
             if (acceptedCacheTtl === '1h') {
                 return Date.now() + (60 * 60 * 1000);
             }
@@ -10220,7 +9581,7 @@ export class InquiryView extends ItemView {
         return buildResultsHeroTextPure(
             result,
             mode,
-            (r, m) => this.getResultSummaryForMode(r, m)
+            (r, m) => getResultSummaryForMode(r, m)
         );
     }
 
@@ -10230,7 +9591,7 @@ export class InquiryView extends ItemView {
             mode,
             zone,
             (value) => this.formatMetricDisplay(value),
-            (r) => this.getResultSelectionMode(r)
+            (r) => getResultSelectionMode(r)
         );
     }
 
@@ -10241,18 +9602,6 @@ export class InquiryView extends ItemView {
     }
 
 
-
-    private getResultSummaryForMode(result: InquiryResult, mode: InquiryLens): string {
-        return getResultSummaryForModePure(result, mode);
-    }
-
-    private getOrderedFindings(result: InquiryResult, mode: InquiryLens): InquiryFinding[] {
-        return getOrderedFindingsPure(result, mode);
-    }
-
-    private getFindingRole(finding: InquiryFinding): FindingRole {
-        return getFindingRolePure(finding);
-    }
 
     private updateFindingsPanel(): void {
         if (!this.findingsTitleEl || !this.summaryEl || !this.verdictEl || !this.findingsListEl) return;
@@ -10276,8 +9625,8 @@ export class InquiryView extends ItemView {
             return;
         }
 
-        const selectionMode = this.getResultSelectionMode(result);
-        const roleValidation = this.getResultRoleValidation(result);
+        const selectionMode = getResultSelectionMode(result);
+        const roleValidation = getResultRoleValidation(result);
         const persistedTargetSceneIds = this.getPersistedResultTargetSceneIds(result);
         const focusedCount = persistedTargetSceneIds.length;
         const targetCountLabel = focusedCount === 1 ? t('inquiry.findings.oneTargetScene') : t('inquiry.findings.multipleTargetScenes', { count: focusedCount });
@@ -10288,9 +9637,9 @@ export class InquiryView extends ItemView {
         this.summaryEl.classList.toggle('is-role-validation-warning', roleValidation === 'missing-target-roles');
         this.verdictEl.classList.toggle('is-role-validation-warning', roleValidation === 'missing-target-roles');
 
-        const orderedFindings = this.getOrderedFindings(result, result.mode || this.state.mode);
-        const targetFindings = orderedFindings.filter(finding => this.getFindingRole(finding) === 'target');
-        const contextFindings = orderedFindings.filter(finding => this.getFindingRole(finding) === 'context');
+        const orderedFindings = getOrderedFindings(result, result.mode || this.state.mode);
+        const targetFindings = orderedFindings.filter(finding => getFindingRole(finding) === 'target');
+        const contextFindings = orderedFindings.filter(finding => getFindingRole(finding) === 'context');
 
         this.summaryEl.textContent = this.buildResultsHeroText(result, this.state.mode);
         const selectionText = selectionMode === 'focused'
@@ -11220,11 +10569,11 @@ export class InquiryView extends ItemView {
                 ? 'Full request · unavailable'
                 : 'Full request · Estimating…';
         }
-        const requestLabel = this.formatTokenEstimate(context.requestTokens);
+        const requestLabel = formatTokenEstimate(context.requestTokens);
         if (context.corpus.estimatedTokens <= 0) {
             return `Full request · ~${requestLabel}`;
         }
-        return `Full request · ~${requestLabel} (Corpus ~${this.formatTokenEstimate(context.corpus.estimatedTokens)})`;
+        return `Full request · ~${requestLabel} (Corpus ~${formatTokenEstimate(context.corpus.estimatedTokens)})`;
     }
 
     private getLatestPreviewQuestionActualCost(zone?: InquiryZone, questionId?: string): number | null {
@@ -11354,7 +10703,7 @@ export class InquiryView extends ItemView {
             .trim()
             .toLowerCase()
             .replace(/\s+/g, ' ');
-        return this.hashString(normalized || 'question'); // SAFE: empty question hashes a stable placeholder token
+        return hashString(normalized || 'question'); // SAFE: empty question hashes a stable placeholder token
     }
 
     private getPreviewHistoryValue(zone?: InquiryZone, questionId?: string): string {
@@ -11420,10 +10769,6 @@ export class InquiryView extends ItemView {
     }
 
 
-    private getTokenTier(inputTokens: number): TokenTier {
-        return getTokenTierPure(inputTokens);
-    }
-
     private getTokenTierFromSnapshot(): TokenTier {
         return getTokenTierFromSnapshotPure(this.plugin.getInquiryEstimateService().getSnapshot());
     }
@@ -11432,12 +10777,8 @@ export class InquiryView extends ItemView {
         return estimateTokensFromCharsHeuristic(chars, DEFAULT_CHARS_PER_TOKEN);
     }
 
-    private formatTokenEstimate(value: number): string {
-        return formatTokenEstimatePure(value);
-    }
-
     private formatApproxCorpusTokens(value: number): string {
-        return `~${this.formatTokenEstimate(value)}`;
+        return `~${formatTokenEstimate(value)}`;
     }
 
     private toggleDetails(): void {
@@ -11753,10 +11094,6 @@ export class InquiryView extends ItemView {
         });
     }
 
-    private getBriefModelLabel(result: InquiryResult): string | null {
-        return getBriefModelLabelPure(result);
-    }
-
     private buildInquirySceneNotes(
         result: InquiryResult,
         items: InquiryCorpusItem[] = this.getResultItems(result),
@@ -11775,7 +11112,7 @@ export class InquiryView extends ItemView {
             result,
             items,
             referenceLabels,
-            (item) => this.getMinimapItemFilePath(item),
+            (item) => getMinimapItemFilePath(item),
             (source) => this.getBriefSceneAnchorId(source),
             (item, label) => this.formatInquiryReferenceDisplay(item, label)
         );
@@ -11792,7 +11129,7 @@ export class InquiryView extends ItemView {
         return buildInquirySceneReferenceIndexPure(
             items,
             (item) => this.formatInquiryReferenceDisplay(item, item.displayLabel),
-            (item) => this.getBriefSceneAnchorId(this.getMinimapItemFilePath(item) || item.id || item.displayLabel)
+            (item) => this.getBriefSceneAnchorId(getMinimapItemFilePath(item) || item.id || item.displayLabel)
         );
     }
 
@@ -11870,9 +11207,9 @@ export class InquiryView extends ItemView {
                     || this.getQuestionTextById(currentResult.questionId)
                     || currentResult.questionId
                     || 'Inquiry Question', // SAFE: UX default label when the question cannot be resolved
-                getBriefModelLabel: this.getBriefModelLabel.bind(this),
+                getBriefModelLabel: getBriefModelLabel,
                 getFiniteTokenEstimateInput: this.getFiniteTokenEstimateInput.bind(this),
-                getTokenTier: this.getTokenTier.bind(this),
+                getTokenTier: getTokenTier,
                 buildInquiryLogCostEstimateInput: this.buildInquiryLogCostEstimateInput.bind(this),
                 formatTokenUsageVisibility,
                 isErrorResult: this.isErrorResult.bind(this),
@@ -11910,9 +11247,9 @@ export class InquiryView extends ItemView {
                     || this.getQuestionTextById(currentResult.questionId)
                     || currentResult.questionId
                     || 'Inquiry Question', // SAFE: UX default label when the question cannot be resolved
-                getBriefModelLabel: this.getBriefModelLabel.bind(this),
+                getBriefModelLabel: getBriefModelLabel,
                 getFiniteTokenEstimateInput: this.getFiniteTokenEstimateInput.bind(this),
-                getTokenTier: this.getTokenTier.bind(this),
+                getTokenTier: getTokenTier,
                 buildInquiryLogCostEstimateInput: this.buildInquiryLogCostEstimateInput.bind(this),
                 formatTokenUsageVisibility,
                 isErrorResult: this.isErrorResult.bind(this),

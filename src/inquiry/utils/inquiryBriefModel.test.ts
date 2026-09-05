@@ -896,19 +896,22 @@ describe('InquiryView wrappers delegate (B1+B2+B3+B4a+B4b+B4c+B4d+B4e source-loc
     const src = readFileSync(resolve(process.cwd(), 'src/inquiry/InquiryView.ts'), 'utf8');
     it('B1: imports pure helpers under aliases and delegates without recursion', () => {
         expect(src.includes("from './utils/inquiryBriefModel'")).toBe(true);
-        expect(src.includes('return getBriefModelLabelPure(result);')).toBe(true);
-        expect(src.includes('return buildSceneDossierHoverKeyPure(item, label, finding);')).toBe(true);
+        // Exact pass-through forwarders were deleted (CH-2026-09-04-#9); the view calls the pure helper directly.
+        // getBriefModelLabel is handed to the log builders as a function value, so it appears bare, not called.
+        expect((src.match(/\bgetBriefModelLabel\b/g) ?? []).length).toBeGreaterThan(1);
+        expect(src.includes('buildSceneDossierHoverKey(')).toBe(true);
+        expect(src.includes('getBriefModelLabelPure')).toBe(false);
         // Original inline bodies must be gone from InquiryView.
         expect(src.includes("getModelDisplayName(raw.replace(/^models\\//, ''))")).toBe(false);
         expect(src.includes('item.sceneId ?? \'\',\n            label,\n            finding.refId')).toBe(false);
     });
     it('B2: anchor/hero/meta wrappers inject hashString/summary/metric/selection', () => {
-        expect(src.includes('return getBriefSceneAnchorIdPure(source, (value) => this.hashString(value));')).toBe(true);
+        expect(src.includes('return getBriefSceneAnchorIdPure(source, (value) => hashString(value));')).toBe(true);
         expect(src.includes('return buildResultsHeroTextPure(')).toBe(true);
-        expect(src.includes('(r, m) => this.getResultSummaryForMode(r, m)')).toBe(true);
+        expect(src.includes('(r, m) => getResultSummaryForMode(r, m)')).toBe(true);
         expect(src.includes('return buildResultsMetaTextPure(')).toBe(true);
         expect(src.includes('(value) => this.formatMetricDisplay(value)')).toBe(true);
-        expect(src.includes('(r) => this.getResultSelectionMode(r)')).toBe(true);
+        expect(src.includes('(r) => getResultSelectionMode(r)')).toBe(true);
         // Original inline bodies must be gone from InquiryView.
         expect(src.includes("`inquiry-${this.hashString(source || 'scene')}`")).toBe(false);
         expect(src.includes("`${zoneLabel} · ${selectionText} · ${ordered.join(' · ')}`.toUpperCase()")).toBe(false);
@@ -931,10 +934,12 @@ describe('InquiryView wrappers delegate (B1+B2+B3+B4a+B4b+B4c+B4d+B4e source-loc
         expect(src.includes("sceneTitle: stripNumericTitlePrefix(this.getMinimapItemTitle(item))")).toBe(false);
     });
     it('B4a: 5 pure leaves delegate; bodies are gone from InquiryView', () => {
-        expect(src.includes('return isFindingHitPure(finding);')).toBe(true);
-        expect(src.includes('return getFindingRolePure(finding);')).toBe(true);
-        expect(src.includes('return getResultSummaryForModePure(result, mode);')).toBe(true);
-        expect(src.includes('return getOrderedFindingsPure(result, mode);')).toBe(true);
+        // Exact pass-through forwarders were deleted (CH-2026-09-04-#9); the view calls the pure helper directly.
+        expect(src.includes('isFindingHit(')).toBe(true);
+        expect(src.includes('getFindingRole(')).toBe(true);
+        expect(src.includes('getResultSummaryForMode(')).toBe(true);
+        expect(src.includes('getOrderedFindings(')).toBe(true);
+        expect(src.includes('isFindingHitPure')).toBe(false);
         expect(src.includes('return normalizeInquiryBriefTextPure(value, referenceLabels);')).toBe(true);
         // Original inline bodies must be gone.
         expect(src.includes("return finding.kind !== 'none' && finding.kind !== 'strength';")).toBe(false);
@@ -948,7 +953,7 @@ describe('InquiryView wrappers delegate (B1+B2+B3+B4a+B4b+B4c+B4d+B4e source-loc
         expect(src.includes('return buildInquirySceneReferenceIndexPure(')).toBe(true);
         // The fallback chain `getMinimapItemFilePath(item) || item.id || item.displayLabel`
         // must remain in the InquiryView wrapper (corpus access stays here).
-        expect(src.includes('this.getBriefSceneAnchorId(this.getMinimapItemFilePath(item) || item.id || item.displayLabel)')).toBe(true);
+        expect(src.includes('this.getBriefSceneAnchorId(getMinimapItemFilePath(item) || item.id || item.displayLabel)')).toBe(true);
         // Original inline map-building body must be gone from InquiryView.
         expect(src.includes('const labels = new Map<string, string>();')).toBe(false);
         expect(src.includes('item.filePaths?.forEach(path => add(path, display));')).toBe(false);
@@ -969,7 +974,7 @@ describe('InquiryView wrappers delegate (B1+B2+B3+B4a+B4b+B4c+B4d+B4e source-loc
     });
     it('B4d: scene-notes wrapper delegates with the 3 injected resolvers; default-arg resolution stays in the wrapper', () => {
         expect(src.includes('return buildInquirySceneNotesPure(')).toBe(true);
-        expect(src.includes('(item) => this.getMinimapItemFilePath(item)')).toBe(true);
+        expect(src.includes('(item) => getMinimapItemFilePath(item)')).toBe(true);
         expect(src.includes('(source) => this.getBriefSceneAnchorId(source)')).toBe(true);
         expect(src.includes('(item, label) => this.formatInquiryReferenceDisplay(item, label)')).toBe(true);
         // Defaults still resolve through the view (corpus access).

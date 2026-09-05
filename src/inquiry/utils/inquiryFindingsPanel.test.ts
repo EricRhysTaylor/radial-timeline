@@ -102,8 +102,10 @@ describe('InquiryView wrappers delegate (findings-panel source-lock)', () => {
     const src = readFileSync(resolve(process.cwd(), 'src/inquiry/InquiryView.ts'), 'utf8');
     it('imports the pure helpers and delegates without recursion', () => {
         expect(src.includes("from './utils/inquiryFindingsPanel'")).toBe(true);
-        expect(src.includes('return getResultSelectionModePure(result);')).toBe(true);
-        expect(src.includes('return getResultRoleValidationPure(result);')).toBe(true);
+        // Exact pass-through forwarders were deleted (CH-2026-09-04-#9); the view calls the pure helper directly.
+        expect(src.includes('getResultSelectionMode(result)')).toBe(true);
+        expect(src.includes('getResultRoleValidation(result)')).toBe(true);
+        expect(src.includes('getResultSelectionModePure')).toBe(false);
         expect(src.includes('return computeRoleValidationPure(selectionMode, findings, persisted);')).toBe(true);
     });
 

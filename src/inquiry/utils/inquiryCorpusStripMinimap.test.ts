@@ -112,10 +112,13 @@ describe('InquiryView wrappers delegate (corpus-strip/minimap source-lock)', () 
     const src = readFileSync(resolve(process.cwd(), 'src/inquiry/InquiryView.ts'), 'utf8');
     it('imports the pure helpers and delegates without recursion', () => {
         expect(src.includes("from './utils/inquiryCorpusStripMinimap'")).toBe(true);
-        expect(src.includes('return getMinimapItemFilePathPure(item);')).toBe(true);
+        // Exact pass-through forwarders were deleted (CH-2026-09-04-#9); the view calls the pure helper directly.
+        expect(src.includes('getMinimapItemFilePath(')).toBe(true);
+        expect(src.includes('getMinimapItemFilePathPure')).toBe(false);
         expect(src.includes('return getCorpusCcModeMetaPure(mode);')).toBe(true);
         expect(src.includes('return getCorpusCcHeaderLabelPure(className, count, overrideLabel);')).toBe(true);
         expect(src.includes('return getCorpusCcHeaderTooltipPure(className, mode, count, overrideLabel);')).toBe(true);
-        expect(src.includes('return getCorpusCcHeaderDisplayLabelPure(className);')).toBe(true);
+        // getCorpusCcHeaderDisplayLabel has no caller left in the view; it stays exported from the pure module.
+        expect(src.includes('getCorpusCcHeaderDisplayLabelPure')).toBe(false);
     });
 });

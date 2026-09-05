@@ -600,11 +600,6 @@ export function restoreBaseMode(plugin: RadialTimelinePlugin): string {
   return 'narrative';
 }
 
-export function resetGossamerModeState() {
-  // Reset the Gossamer mode state variables when mode is changed outside of Gossamer
-  _previousBaseMode = null;
-}
-
 export function resetRotation(plugin: RadialTimelinePlugin) {
   getAllViews(plugin).forEach((view) => view.setRotationState(false));
 }

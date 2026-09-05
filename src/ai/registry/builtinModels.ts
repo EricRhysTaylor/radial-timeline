@@ -169,9 +169,8 @@ export const BUILTIN_MODELS: ModelInfo[] = [
     {
         // Mid-tier Anthropic model. 1M context and the same request contract
         // as Opus 5 (adaptive thinking is the only on-mode; temperature and
-        // top_p are rejected), at $3/$15 per MTok against Opus's $5/$25 —
-        // currently $2/$10 under intro pricing that lapses 2026-08-31, encoded
-        // as a promo in providerPricing.ts so the rate reverts on its own.
+        // top_p are rejected), at $2/$10 per MTok against Opus's $5/$25 — the
+        // launch intro price, made permanent by Anthropic in 2026-09.
         // BALANCED: strong enough for Inquiry, and the default recommendation
         // for whole-manuscript onboarding.
         provider: 'anthropic',

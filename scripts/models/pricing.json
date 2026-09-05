@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-05T16:52:56.000Z",
+  "generatedAt": "2026-09-05T17:00:42.000Z",
   "models": [
     {
       "provider": "anthropic",
@@ -27,6 +27,24 @@
       "cacheWrite5mPer1M": 6.25,
       "cacheWrite1hPer1M": 10,
       "cacheReadPer1M": 0.5
+    },
+    {
+      "provider": "anthropic",
+      "modelId": "claude-sonnet-5",
+      "inputPer1M": 2,
+      "outputPer1M": 10,
+      "cacheWrite5mPer1M": 2.5,
+      "cacheWrite1hPer1M": 4,
+      "cacheReadPer1M": 0.2
+    },
+    {
+      "provider": "anthropic",
+      "modelId": "claude-haiku-4-5",
+      "inputPer1M": 1,
+      "outputPer1M": 5,
+      "cacheWrite5mPer1M": 1.25,
+      "cacheWrite1hPer1M": 2,
+      "cacheReadPer1M": 0.1
     },
     {
       "provider": "openai",

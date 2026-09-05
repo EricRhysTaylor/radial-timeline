@@ -72,25 +72,18 @@ export const BUILTIN_PRICING: ProviderPricingTable = {
             cacheWrite1hPer1M: 10.0,
             cacheReadPer1M: 0.5
         },
-        // Mid tier. Intro pricing $2/$10 per MTok runs to 2026-08-31, then
-        // reverts to the $3/$15 standard carried in `promo` — resolveExpired-
-        // PromoRates swaps input/output automatically, so this needs no future
-        // edit. Cache rates are quoted at the STANDARD $3 input (write 1.25×/2×,
-        // read 0.1×) because the cache fields are NOT promo-swapped: a small
-        // over-estimate during the promo, exact after it lapses. Over-estimating
-        // is the safe direction for anything that warns an author about spend.
+        // Mid tier. $2/$10 per MTok launched as intro pricing through
+        // 2026-08-31; Anthropic then made it the standard price (the scheduled
+        // rise to $3/$15 was cancelled), so the promo entry is gone and the cache
+        // rates are the real multipliers on $2: write 1.25×/2×, read 0.1×.
+        // Verified against platform.claude.com/docs/en/about-claude/pricing on
+        // 2026-09-05.
         'claude-sonnet-5': {
             inputPer1M: 2.0,
             outputPer1M: 10.0,
-            cacheWrite5mPer1M: 3.75,
-            cacheWrite1hPer1M: 6.0,
-            cacheReadPer1M: 0.3,
-            promo: {
-                label: 'Intro pricing',
-                expiresAt: '2026-09-01T00:00:00Z',
-                standardInputPer1M: 3.0,
-                standardOutputPer1M: 15.0
-            }
+            cacheWrite5mPer1M: 2.5,
+            cacheWrite1hPer1M: 4.0,
+            cacheReadPer1M: 0.2
         },
         // Economy tier. Standard Anthropic cache multipliers on a $1 input:
         // write 5m 1.25×, 1h 2×, read 0.1×.
@@ -139,10 +132,12 @@ export const BUILTIN_PRICING: ProviderPricingTable = {
         }
     },
     google: {
+        // Verified against ai.google.dev/gemini-api/docs/pricing on 2026-09-05.
         'gemini-3.1-pro-preview': {
             inputPer1M: 2.0,
             outputPer1M: 12.0,
             cacheReadPer1M: 0.2,
+            cacheStoragePer1MPerHour: 4.5,
             longContext: {
                 thresholdInputTokens: 200_000,
                 inputPer1M: 4.0,

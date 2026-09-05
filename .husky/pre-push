@@ -11,6 +11,16 @@
 #
 # This supersedes the previous `npm run lint:obsidian` here — the gates run it
 # as step 9.
+# Never push a HEAD whose tree is much smaller than the remote's: that is the
+# signature of a commit made from an evicted .git/index (2026-09-04).
+head_count=$(git ls-tree -r --name-only HEAD | wc -l | tr -d ' ')
+remote_count=$(git ls-tree -r --name-only origin/main 2>/dev/null | wc -l | tr -d ' ')
+if [ "${remote_count:-0}" -gt 100 ] && [ "$head_count" -lt $((remote_count * 8 / 10)) ]; then
+  echo "pre-push: HEAD has $head_count files, origin/main has $remote_count. Refusing to push a shrunken tree." >&2
+  echo "Rebuild the index from the last complete commit (git read-tree <commit> && git add -u), recommit, then push." >&2
+  [ "$RT_ALLOW_TREE_SHRINK" = "1" ] || exit 1
+fi
+
 if [ "$RT_SKIP_PREPUSH_GATES" = "1" ]; then
   echo "pre-push: gates already ran for this command; skipping."
   exit 0

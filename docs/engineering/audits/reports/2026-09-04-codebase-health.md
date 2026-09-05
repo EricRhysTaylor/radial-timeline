@@ -407,9 +407,9 @@ These were deliberate, verified by tests and gates, but they change what the plu
 5. **254 CSS rules deleted.** The scanner cannot see a class assembled by concatenation that does not match its prefix heuristic. Modals, Inquiry, and the Pulse surfaces are the places to glance at.
 6. **Subplot colours throw** instead of painting pink when the theme variables are missing from a document.
 
-### One incident
+### One incident, and its cause
 
-Between two pushes late in the day `.git/index` disappeared (HEAD and the working tree were intact; `git status` showed the whole tree staged as deleted and untracked). It was rebuilt with `git reset --mixed HEAD`, which does not touch working files, and the change set matched the work in progress exactly. Cause not found; nothing in the session's commands touches `.git`, and the timing did not coincide with a gate run.
+`.git/index` vanished twice during the day. `~/Documents` on this Mac is iCloud Drive, and iCloud evicts files it decides are cold; the index (138 KB, rewritten constantly) was evicted, HEAD and the working tree were never touched. The first loss was noticed and the index rebuilt with `git reset --mixed HEAD`. The second happened between that rebuild and the next commit, so four commits (`a9dca86f`, `5a2ed914`, `8e24400e`, `3f689450`) were built from a near-empty index and carry trees of 8, 47, 66, and 67 files; the Obsidian community review of `main` at that point reported no manifest, README, or LICENSE. `0ebee7f3` restores the full tree from the last complete commit without rewriting history (1,350 files; a 45-file diff that matches the four commits' intent, verified both ways). Two guards now refuse a commit whose index holds fewer than 80% of HEAD's files and a push whose HEAD tree is under 80% of `origin/main`'s. The durable fix is the owner's: move the repository out of iCloud Drive, or at minimum pin the folder as "Keep Downloaded". Those four commits remain in history with broken trees; rewriting them is a force-push and was left as the owner's decision.
 
 ### Still open, by home
 

@@ -1,2 +1,15 @@
+# Guard against a lost or evicted .git/index (iCloud Drive did this on
+# 2026-09-04): a commit built from a near-empty index silently deletes the
+# rest of the tree. Refuse when the index holds far fewer files than HEAD.
+index_count=$(git ls-files | wc -l | tr -d ' ')
+head_count=$(git ls-tree -r --name-only HEAD 2>/dev/null | wc -l | tr -d ' ')
+if [ "$head_count" -gt 100 ] && [ "$index_count" -lt $((head_count * 8 / 10)) ]; then
+  echo "pre-commit: the index holds $index_count files but HEAD has $head_count." >&2
+  echo "The index was probably evicted or rebuilt from a partial tree. Run" >&2
+  echo "  git read-tree HEAD && git add -u && git add <your new files>" >&2
+  echo "then commit again. To override deliberately: RT_ALLOW_TREE_SHRINK=1 git commit ..." >&2
+  [ "$RT_ALLOW_TREE_SHRINK" = "1" ] || exit 1
+fi
+
 files=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '^src/.*\.(ts|js)$' || true)
 [ -z "$files" ] || node code-quality-check.mjs $files

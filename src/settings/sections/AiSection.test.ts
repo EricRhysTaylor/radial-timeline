@@ -262,15 +262,25 @@ describe('AI settings models table', () => {
         expect(source.includes('forecastVaultFeatures({')).toBe(true);
     });
 
-    it('renders provider key status states without saved-not-tested phrasing', () => {
+    it('states whether a key is in Obsidian secret storage in every credential state, with no fragment handed to setDesc', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
-        expect(source.includes("t('settings.ai.credential.statusReady')")).toBe(true);
-        expect(source.includes("t('settings.ai.credential.statusNotConfigured')")).toBe(true);
-        expect(source.includes("t('settings.ai.credential.statusRejected')")).toBe(true);
-        expect(source.includes("t('settings.ai.credential.statusNetworkBlocked')")).toBe(true);
+        const en = readFileSync(resolve(process.cwd(), 'src/i18n/locales/en.ts'), 'utf8');
+        for (const key of ['statusReady', 'statusNotConfigured', 'statusRejected', 'statusNetworkBlocked', 'statusChecking', 'statusNoSecretStorage', 'statusNoSecretName']) {
+            expect(source.includes(`t('settings.ai.credential.${key}', vars)`)).toBe(true);
+        }
+        // Every headline names the storage so "does it have the key?" is never ambiguous.
+        const valuesStart = en.indexOf("statusReady: '");
+        const credentialBlock = en.slice(valuesStart, en.indexOf('helperNotConfigured:', valuesStart));
+        expect((credentialBlock.match(/Obsidian secret storage/g) || []).length).toBe(7);
         expect(source.includes("t('settings.ai.credential.replaceKeyButton')")).toBe(true);
         expect(source.includes("t('settings.ai.credential.copyKeyNameButton')")).toBe(true);
         expect(source.includes('Saved (not tested)')).toBe(false);
+        // Setting.setDesc(fragment) rendered "[object DocumentFragment]" in the
+        // live plugin; the rows write into descEl directly instead.
+        expect(source.includes('keyStatusSetting.setDesc(')).toBe(false);
+        expect(source.includes('const descEl = keyStatusSetting.descEl;')).toBe(true);
+        expect(source.includes('secretIdSetting.descEl.createSpan({')).toBe(true);
+        expect(source.includes('createFragment()')).toBe(false);
     });
 
     it('blanks the preview, forecasts, and cost table while the active cloud provider has no usable key', () => {

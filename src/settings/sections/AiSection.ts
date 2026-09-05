@@ -2393,24 +2393,23 @@ export function renderAiSection(params: {
         docsUrl: string;
     }): void => {
         const doc = options.section.ownerDocument;
-        const providerDesc = doc.win.createFragment();
-        const span = doc.win.createSpan();
-        span.textContent = `Choose a name to store your ${options.providerName} API key in this vault's secret storage. `;
-        const link = doc.win.createEl('a');
-        link.href = options.docsUrl;
-        link.textContent = 'Get key';
-        link.target = '_blank';
-        link.rel = 'noopener';
-        providerDesc.appendChild(span);
-        providerDesc.appendChild(link);
-        providerDesc.appendChild(doc.createTextNode(' Use a short name like "openai-main" so you can reuse it later. Note: saved Obsidian Secret Keys (distinct from Provider API keys) can only be used across the plugins you have installed in the same vault.'));
-
+        // Descriptions are composed straight into Setting.descEl. A
+        // DocumentFragment handed to setDesc() rendered as the literal text
+        // "[object DocumentFragment]" in the live plugin, so no fragment is
+        // built here at all.
         const secretIdSetting = new Settings(options.section)
-            .setName(`Vault secret name (${options.providerName})`)
-            .setDesc(providerDesc);
+            .setName(`Obsidian secret name (${options.providerName})`);
+        secretIdSetting.descEl.createSpan({
+            text: `The name this vault's Obsidian secret storage files your ${options.providerName} API key under. `
+        });
+        secretIdSetting.descEl.createEl('a', {
+            text: 'Get key',
+            href: options.docsUrl,
+            attr: { target: '_blank', rel: 'noopener' }
+        });
+        secretIdSetting.descEl.appendText(' Keep the default unless another plugin in this vault already stores the same key under a different name.');
         const keyStatusSetting = new Settings(options.section)
-            .setName(`${options.providerName} API key status`)
-            .setDesc('');
+            .setName(`${options.providerName} API key status`);
         keyStatusSetting.settingEl.addClass('ert-ai-provider-key-status-row');
 
         let providerState: ProviderKeyUiState = 'checking';
@@ -2449,42 +2448,48 @@ export function renderAiSection(params: {
             }
             const ai = ensureCanonicalAiSettings();
             const secretId = getCredentialSecretId(ai, options.provider).trim();
-            const desc = doc.win.createFragment();
+            const vars = { provider: options.providerName, secret: secretId };
+            if (next !== 'network_blocked') providerStateDetail = '';
 
-            const stateBlock = doc.win.createDiv();
-            stateBlock.className = `ert-ai-provider-key-state is-${next}`;
+            const descEl = keyStatusSetting.descEl;
+            descEl.empty();
+            const stateBlock = descEl.createDiv({ cls: `ert-ai-provider-key-state is-${next}` });
             const icon = stateBlock.createSpan({ cls: 'ert-ai-provider-key-state__icon' });
             setIcon(icon, next === 'ready' ? 'shield-check' : 'shield-alert');
             const body = stateBlock.createSpan({ cls: 'ert-ai-provider-key-state__body' });
-            const text = body.createSpan({ cls: 'ert-ai-provider-key-state__text' });
-            if (next === 'ready') {
-                providerStateDetail = '';
-                text.setText(t('settings.ai.credential.statusReady'));
-            } else if (next === 'rejected') {
-                providerStateDetail = '';
-                text.setText(t('settings.ai.credential.statusRejected'));
-            } else if (next === 'network_blocked') {
-                text.setText(t('settings.ai.credential.statusNetworkBlocked'));
-            } else if (next === 'checking') {
-                providerStateDetail = '';
-                text.setText(t('settings.ai.credential.statusChecking'));
-            } else {
-                providerStateDetail = '';
-                text.setText(t('settings.ai.credential.statusNotConfigured'));
-            }
-            desc.appendChild(stateBlock);
+            // The headline answers the two questions an author actually has:
+            // is a key stored in Obsidian secret storage, and does the
+            // provider accept it. Every state names the storage and the name.
+            const headline = !secretStorageAvailable
+                ? t('settings.ai.credential.statusNoSecretStorage', vars)
+                : !secretId
+                    ? t('settings.ai.credential.statusNoSecretName', vars)
+                    : next === 'ready'
+                        ? t('settings.ai.credential.statusReady', vars)
+                        : next === 'rejected'
+                            ? t('settings.ai.credential.statusRejected', vars)
+                            : next === 'network_blocked'
+                                ? t('settings.ai.credential.statusNetworkBlocked', vars)
+                                : next === 'checking'
+                                    ? t('settings.ai.credential.statusChecking', vars)
+                                    : t('settings.ai.credential.statusNotConfigured', vars);
+            body.createSpan({ cls: 'ert-ai-provider-key-state__text', text: headline });
 
-            const helper = body.createSpan({ cls: 'ert-ai-provider-key-state__helper' });
-            if (next === 'not_configured') {
-                helper.textContent = t('settings.ai.credential.helperNotConfigured');
-            } else if (next === 'rejected') {
-                helper.textContent = t('settings.ai.credential.helperRejected');
-            } else if (next === 'network_blocked') {
-                helper.textContent = providerStateDetail || t('settings.ai.credential.helperNetworkBlocked');
-            } else if (next === 'checking') {
-                helper.textContent = t('settings.ai.credential.helperChecking');
+            let helperText = '';
+            if (secretStorageAvailable && secretId) {
+                if (next === 'not_configured') {
+                    helperText = t('settings.ai.credential.helperNotConfigured', vars);
+                } else if (next === 'rejected') {
+                    helperText = t('settings.ai.credential.helperRejected', vars);
+                } else if (next === 'network_blocked') {
+                    helperText = providerStateDetail || t('settings.ai.credential.helperNetworkBlocked', vars);
+                } else if (next === 'checking') {
+                    helperText = t('settings.ai.credential.helperChecking', vars);
+                }
             }
-            if (!helper.textContent) helper.remove();
+            if (helperText) {
+                body.createSpan({ cls: 'ert-ai-provider-key-state__helper', text: helperText });
+            }
 
             if ((next === 'ready' || next === 'network_blocked') && secretStorageAvailable) {
                 const actions = body.createSpan({ cls: 'ert-ai-provider-key-actions' });
@@ -2516,8 +2521,6 @@ export function renderAiSection(params: {
                     actions.appendChild(copyBtn);
                 }
             }
-
-            keyStatusSetting.setDesc(desc);
 
             const showSecretIdRow = !secretStorageAvailable
                 || next !== 'ready'

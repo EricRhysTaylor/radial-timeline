@@ -154,7 +154,7 @@ export interface TranslationKeys {
             contextTemplate: { name: string; tooltip: string; };
             preview: { kicker: string; resolving: string; providerPlaceholder: string; };
             secureKey: { unavailableName: string; unavailableDesc: string; migrateName: string; migrateDesc: string; migrateButton: string; noLegacyKeysNotice: string; };
-            credential: { statusReady: string; statusRejected: string; statusNetworkBlocked: string; statusChecking: string; statusNotConfigured: string; helperNotConfigured: string; helperRejected: string; helperNetworkBlocked: string; helperChecking: string; replaceKeyButton: string; copyKeyNameButton: string; keyNameCopiedNotice: string; keyNameCopyFailNotice: string; placeholderAnthropic: string; placeholderGoogle: string; placeholderOpenai: string; };
+            credential: { statusReady: string; statusRejected: string; statusNetworkBlocked: string; statusChecking: string; statusNotConfigured: string; statusNoSecretStorage: string; statusNoSecretName: string; helperNotConfigured: string; helperRejected: string; helperNetworkBlocked: string; helperChecking: string; replaceKeyButton: string; copyKeyNameButton: string; keyNameCopiedNotice: string; keyNameCopyFailNotice: string; placeholderAnthropic: string; placeholderGoogle: string; placeholderOpenai: string; };
             localLlm: { configTitle: string; configDesc: string; statusTitle: string; statusDesc: string; serverName: string; serverDesc: string; modelsLoading: string; noModelsAuto: string; noModelsCustom: string; legendNotUsable: string; legendLimited: string; legendStrong: string; legendInquiryEligible: string; modelActive: string; actionsName: string; actionsDesc: string; loadServersButton: string; loadModelsButton: string; validateButton: string; loadModelsTooltip: string; validationDeadline: string; };
             localLlmConfig: { serverName: string; serverDesc: string; optionOllama: string; optionLmStudio: string; optionOpenaiCompat: string; baseUrlName: string; baseUrlDesc: string; manualModelName: string; manualModelDesc: string; jsonModeName: string; jsonModeDesc: string; optionJsonModeResponseFormat: string; optionJsonModePromptOnly: string; capabilitiesTitle: string; capabilitiesDesc: string; capabilityReasoningStrongName: string; capabilityReasoningStrongDesc: string; capabilityLongContextName: string; capabilityLongContextDesc: string; capabilityHighOutputCapName: string; capabilityHighOutputCapDesc: string; };
             config: { inquiryTitle: string; citationsName: string; citationsDesc: string; timelineDisplayTitle: string; pulseContextName: string; pulseContextDesc: string; synopsisMaxWordsName: string; synopsisMaxWordsDesc: string; synopsisMaxWordsInvalid: string; summaryRefreshTitle: string; targetSummaryName: string; targetSummaryDesc: string; targetSummaryInvalid: string; weakThresholdName: string; weakThresholdDesc: string; weakThresholdInvalid: string; alsoUpdateSynopsisName: string; alsoUpdateSynopsisDesc: string; };
@@ -1973,15 +1973,17 @@ export const en: TranslationKeys = {
                 noLegacyKeysNotice: 'No legacy provider keys were available to migrate.',
             },
             credential: {
-                statusReady: 'Status: Ready \u2713',
-                statusRejected: 'Status: Key rejected',
-                statusNetworkBlocked: 'Status: Provider validation failed',
-                statusChecking: 'Status: Checking key...',
-                statusNotConfigured: 'Status: Not configured',
-                helperNotConfigured: 'Paste a key to enable this provider.',
-                helperRejected: 'Paste a new key to replace the saved one.',
-                helperNetworkBlocked: 'Provider could not be reached. You can still replace the key below.',
-                helperChecking: 'Validating saved key with the provider...',
+                statusReady: 'Ready \u2713 \u2014 a key is stored in Obsidian secret storage as \u201c{secret}\u201d and {provider} accepted it.',
+                statusRejected: 'Key rejected \u2014 a key is stored in Obsidian secret storage as \u201c{secret}\u201d, but {provider} refused it.',
+                statusNetworkBlocked: 'Stored, not validated \u2014 a key is stored in Obsidian secret storage as \u201c{secret}\u201d, but {provider} could not be reached to check it.',
+                statusChecking: 'Checking \u2014 a key is stored in Obsidian secret storage as \u201c{secret}\u201d; validating it with {provider}\u2026',
+                statusNotConfigured: 'No key \u2014 nothing is stored in Obsidian secret storage as \u201c{secret}\u201d.',
+                statusNoSecretStorage: 'Obsidian secret storage is not available in this version of Obsidian, so no {provider} key can be stored.',
+                statusNoSecretName: 'No key \u2014 set an Obsidian secret storage name above before storing a {provider} key.',
+                helperNotConfigured: 'Paste a {provider} key below. It is stored only in Obsidian secret storage on this device, never in a settings file.',
+                helperRejected: 'Paste a new {provider} key below to replace the stored one.',
+                helperNetworkBlocked: 'You can still replace the stored key below.',
+                helperChecking: 'This usually takes a second or two.',
                 replaceKeyButton: 'Replace key...',
                 copyKeyNameButton: 'Copy key name',
                 keyNameCopiedNotice: 'Saved key name copied.',

@@ -21,7 +21,6 @@ function makeSnapshot(overrides: Partial<TimelineSnapshot> = {}): TimelineSnapsh
     currentDate: '2026-03-23',
     sortByWhen: false,
     aiEnabled: false,
-    targetDate: undefined,
     stageTargetDatesHash: 'Zero:|Author:|House:|Press:',
     chronologueDurationCap: undefined,
     discontinuityThreshold: undefined,
@@ -65,20 +64,6 @@ describe('detectChanges', () => {
     const prev = makeSnapshot();
     const current = makeSnapshot({
       stageTargetDatesHash: 'Zero:2026-07-01|Author:|House:|Press:',
-      timestamp: 2
-    });
-
-    const result = detectChanges(prev, current);
-
-    expect(result.changeTypes.has(ChangeType.TARGET_DATES)).toBe(true);
-    expect(result.canUseSelectiveUpdate).toBe(true);
-    expect(result.updateStrategy).toBe('selective');
-  });
-
-  it('uses a selective update when the legacy target date changes', () => {
-    const prev = makeSnapshot();
-    const current = makeSnapshot({
-      targetDate: '2026-07-01',
       timestamp: 2
     });
 

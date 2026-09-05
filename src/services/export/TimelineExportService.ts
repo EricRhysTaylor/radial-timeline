@@ -103,7 +103,6 @@ export interface TimelineExportRenderConfig {
     subplotColors: string[];
     workingPatternId?: string;
     customWorkingPatterns?: RadialTimelineSettings['customWorkingPatterns'];
-    targetCompletionDate?: string;
     enableAiSceneAnalysis: boolean;
     chronologueDurationCapSelection?: string;
     showBackdropRing?: boolean;
@@ -256,7 +255,6 @@ export function snapshotRenderConfig(settings: RadialTimelineSettings): Timeline
         subplotColors: settings.subplotColors,
         workingPatternId: settings.workingPatternId,
         customWorkingPatterns: settings.customWorkingPatterns,
-        targetCompletionDate: settings.targetCompletionDate,
         enableAiSceneAnalysis: settings.enableAiSceneAnalysis,
         chronologueDurationCapSelection: settings.chronologueDurationCapSelection,
         showBackdropRing: settings.showBackdropRing,

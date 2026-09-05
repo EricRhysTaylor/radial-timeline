@@ -20,9 +20,7 @@ export const DEFAULT_SETTINGS: RadialTimelineSettings = {
     sourcePath: '',
     showSourcePathAsTitle: true, // @deprecated Legacy — book title from BookProfile after migration
     validFolderPaths: [], // Default empty array for folder path history
-    aiOutputFolder: systemFolderPath('Logs'), // @deprecated Logging paths are now internalized.
     manuscriptOutputFolder: systemFolderPath('Export'),
-    outlineOutputFolder: systemFolderPath('Export'),
     inquirySources: {
         scanRoots: [],
         bookInclusion: {},
@@ -89,7 +87,6 @@ export const DEFAULT_SETTINGS: RadialTimelineSettings = {
     customWorkingPatterns: [],
     currentMode: 'narrative', // Default to Narrative mode
     logApiInteractions: true, // Default for new setting
-    targetCompletionDate: undefined, // Legacy - kept for backwards compatibility
     // stageTargetDates intentionally absent: target dates are per-book
     // (BookProfile.stageTargetDates); the legacy vault-global field is migrated
     // on load and must not be re-seeded by defaults.
@@ -111,7 +108,6 @@ export const DEFAULT_SETTINGS: RadialTimelineSettings = {
     showChapterMarkers: false,
     showRecentMovesOverlay: true,
     enableManuscriptRippleRename: false,
-    synopsisHoverMaxLines: 5, // @deprecated Legacy fallback; hover lines now derive from synopsis word limit
     enableHoverDebugLogging: false,
     sortByWhenDate: false, // Default: manuscript order (backward compatible)
     subplotAlignment: 'fill', // Default: subplot rings spread to fill their segment
@@ -183,7 +179,6 @@ Chapter:`
         ])
     ),
     // Legacy fixed-Custom workspace marker kept only for migration.
-    activeCustomBeatSystemId: DEFAULT_CUSTOM_BEAT_SYSTEM_ID,
     savedBeatSystems: [buildDefaultCustomBeatSystem()],
     bookDesignerTemplates: [],
     exportProfiles: [],

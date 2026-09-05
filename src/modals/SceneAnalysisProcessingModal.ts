@@ -12,7 +12,7 @@ import type RadialTimelinePlugin from '../main';
 import { resolvePulseContentLogsRoot } from '../ai/log';
 import { getModelDisplayName } from '../utils/modelResolver';
 import type { LlmTimingStats } from '../types/settings';
-import { getSynopsisGenerationWordLimit, getSynopsisHoverLineLimit } from '../utils/synopsisLimits';
+import { getSynopsisGenerationWordLimit } from '../utils/synopsisLimits';
 import type { AIRunAdvancedContext } from '../ai/types';
 import { redactSensitiveValue } from '../ai/credentials/redactSensitive';
 import { getCanonicalAiSettings, resolveConfiguredSelection } from '../ai/runtime/runtimeSelection';
@@ -657,7 +657,6 @@ export class SceneAnalysisProcessingModal extends Modal {
                 }
                 synopsisWordLimit = Math.round(val);
                 this.plugin.settings.synopsisGenerationMaxWords = synopsisWordLimit;
-                this.plugin.settings.synopsisHoverMaxLines = getSynopsisHoverLineLimit(this.plugin.settings);
                 void this.plugin.saveSettings();
                 renderSynopsisHelp();
             };

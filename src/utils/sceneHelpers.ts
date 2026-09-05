@@ -190,7 +190,6 @@ export interface PluginRendererFacade {
             fillRule?: 'evenodd' | 'nonzero';
             shapes: Array<{ tag: 'path' | 'circle'; attrs: Record<string, string> }>;
         }>;
-        targetCompletionDate?: string;
         enableAiSceneAnalysis: boolean;
         chronologueDurationCapSelection?: string;
         showBackdropRing?: boolean;

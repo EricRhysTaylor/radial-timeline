@@ -144,57 +144,7 @@ export function renderTargetDateTick(params: {
         }
     }
     
-    // Legacy support: also render old single targetCompletionDate if set and no new dates
-    // This ensures backwards compatibility during migration
-    if (!stageTargetDates?.Zero && !stageTargetDates?.Author && !stageTargetDates?.House && !stageTargetDates?.Press) {
-        if (plugin.settings.targetCompletionDate) {
-            try {
-                const targetDate = new Date(plugin.settings.targetCompletionDate + 'T00:00:00');
-                if (!isNaN(targetDate.getTime()) && targetDate > today) {
-                    const targetDateAngle = dateToAngle(targetDate);
-                    const dateFormatter = new Intl.DateTimeFormat(getFormattingLocale(), { month: 'short', day: 'numeric', year: 'numeric' });
-                    const daysUntil = Math.ceil((targetDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
-                    const tooltipText = `Target: ${dateFormatter.format(targetDate)}\n~${daysUntil} days`;
-                    const escapedTooltip = escapeXml(tooltipText);
-                    
-                    const lineX1 = formatNumber(targetTickOuterRadius * Math.cos(targetDateAngle));
-                    const lineY1 = formatNumber(targetTickOuterRadius * Math.sin(targetDateAngle));
-                    const lineX2 = formatNumber((targetTickInnerRadius + 3) * Math.cos(targetDateAngle));
-                    const lineY2 = formatNumber((targetTickInnerRadius + 3) * Math.sin(targetDateAngle));
-                    
-                    const markerX = formatNumber(targetTickInnerRadius * Math.cos(targetDateAngle) - targetMarkerSize / 2);
-                    const markerY = formatNumber(targetTickInnerRadius * Math.sin(targetDateAngle) - targetMarkerSize / 2);
-                    const hotspotCx = formatNumber(targetTickInnerRadius * Math.cos(targetDateAngle));
-                    const hotspotCy = formatNumber(targetTickInnerRadius * Math.sin(targetDateAngle));
-                    
-                    svg += `
-                        <g class="rt-target-tick-group rt-target-legacy">
-                            <line
-                                x1="${lineX1}" y1="${lineY1}"
-                                x2="${lineX2}" y2="${lineY2}"
-                                class="target-date-tick"
-                            />
-                            <rect 
-                                x="${markerX}" y="${markerY}" 
-                                width="${targetMarkerSize}" height="${targetMarkerSize}" 
-                                class="target-date-marker"
-                            />
-                            <circle 
-                                cx="${hotspotCx}" cy="${hotspotCy}" 
-                                r="${TARGET_HOTSPOT_RADIUS}" 
-                                class="rt-target-hotspot rt-tooltip-target"
-                                data-tooltip="${escapedTooltip}"
-                                data-tooltip-placement="top"
-                                fill="transparent"
-                            />
-                        </g>`;
-                }
-            } catch {
-                // Error parsing target date - skip
-            }
-        }
-    }
-    
+
     return svg;
 }
 

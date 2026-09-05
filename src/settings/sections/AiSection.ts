@@ -45,7 +45,7 @@ import { INQUIRY_CANONICAL_ESTIMATE_QUESTION } from '../../inquiry/constants';
 import {getActiveFrontmatterMappings } from '../../utils/frontmatter';
 import { InquirySessionStore } from '../../inquiry/InquirySessionStore';
 import { t } from '../../i18n';
-import { getSynopsisGenerationWordLimit, getSynopsisHoverLineLimit } from '../../utils/synopsisLimits';
+import { getSynopsisGenerationWordLimit } from '../../utils/synopsisLimits';
 import { getResolvedModelId } from '../../utils/modelResolver';
 import {
     buildLocalLlmModelIdentity,
@@ -3637,7 +3637,6 @@ export function renderAiSection(params: {
                 invalidNotice: t('settings.ai.config.synopsisMaxWordsInvalid'),
                 onSave: async (value) => {
                     plugin.settings.synopsisGenerationMaxWords = value;
-                    plugin.settings.synopsisHoverMaxLines = getSynopsisHoverLineLimit(plugin.settings);
                     await plugin.saveSettings();
                 }
             });

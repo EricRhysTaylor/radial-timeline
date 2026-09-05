@@ -21,9 +21,7 @@ describe('systemFolderPath', () => {
 describe('canonical folder callers', () => {
     it('resolve every plugin-owned destination under the one root', () => {
         const destinations = [
-            DEFAULT_SETTINGS.aiOutputFolder,
             DEFAULT_SETTINGS.manuscriptOutputFolder,
-            DEFAULT_SETTINGS.outlineOutputFolder,
             DEFAULT_SETTINGS.pandocFolder,
             DEFAULT_INQUIRY_ARTIFACT_FOLDER,
             INQUIRY_SIDECAR_DIR,

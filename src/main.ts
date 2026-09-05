@@ -40,7 +40,6 @@ import { BeatsProcessingService } from './services/BeatsProcessingService';
 import { ThemeService } from './services/ThemeService';
 import type { SceneAnalysisProcessingModal } from './modals/SceneAnalysisProcessingModal';
 import { TimelineMetricsService } from './services/TimelineMetricsService';
-import { migrateSceneAnalysisFields } from './migrations/sceneAnalysis';
 import { migrateSceneFrontmatterIds } from './migrations/sceneIds';
 import { normalizeTimelineMode } from './migrations/timelineMode';
 import { SettingsService } from './services/SettingsService';
@@ -54,7 +53,6 @@ import { hasSecret } from './ai/credentials/secretStorage';
 import type { AIProviderId } from './ai/types';
 import { migrateAuthorProgressSettings } from './authorProgress/authorProgressConfig';
 import { scheduleCommunityProjectSync, cancelPendingCommunityProjectSync } from './communityShare/communityShareClient';
-import { migrateBeatSettings, stripLegacyBeatSettings } from './migrations/beatSettings';
 import { DEFAULT_BOOK_TITLE, createBookId, deriveBookTitleFromSourcePath, getActiveBook, getSagaBooks, getTimelineScope, isSagaScopeAvailable, normalizeBookProfile, shouldSeedBookProfileFromLegacySettings } from './utils/books';
 import { adaptPandocLayoutsToPublishingModel } from './utils/publishingModel';
 import { convertExportProfileToLegacyManuscriptExportTemplate, migratePublishingModelState } from './utils/publishingMigration';
@@ -141,6 +139,16 @@ type PersistedSettingsRead =
     | { kind: 'absent' }
     | { kind: 'loaded'; data: Record<string, unknown> }
     | { kind: 'unreadable'; error: unknown };
+
+/** Settings keys with no reader left. loadSettings deletes them from the persisted file. */
+const FINISHED_DEPRECATION_KEYS = [
+    'targetCompletionDate',
+    'synopsisHoverMaxLines',
+    'aiOutputFolder',
+    'outlineOutputFolder',
+    'beatSystem',
+    'activeCustomBeatSystemId'
+] as const;
 
 export default class RadialTimelinePlugin extends Plugin {
     settings: RadialTimelineSettings;
@@ -578,9 +586,6 @@ export default class RadialTimelinePlugin extends Plugin {
         this.releaseNotesService = new ReleaseNotesService(this.settings, () => this.saveSettings());
         this.releaseNotesService.initializeFromEmbedded();
         void this.releaseNotesService.ensureReleaseNotesFresh(); // Removed argument
-
-        // Migration: Convert old field names to new field names
-        await migrateSceneAnalysisFields(this);
 
         // Scene ID migration deferred until vault is fully indexed
         this.app.workspace.onLayoutReady(() => {
@@ -1118,10 +1123,8 @@ export default class RadialTimelinePlugin extends Plugin {
         }
 
         const legacyManuscriptFolder = systemFolderPath('Manuscript');
-        const legacyOutlineFolder = systemFolderPath('Outline');
         const exportFolderDefault = DEFAULT_SETTINGS.manuscriptOutputFolder || systemFolderPath('Export');
         const manuscriptFolder = (this.settings.manuscriptOutputFolder || '').trim();
-        const outlineFolder = ((this.settings as LegacyPersistedSettings).outlineOutputFolder || '').trim();
         let exportFolderMigrated = false;
 
         if (!manuscriptFolder || manuscriptFolder === legacyManuscriptFolder) {
@@ -1129,16 +1132,9 @@ export default class RadialTimelinePlugin extends Plugin {
             exportFolderMigrated = true;
         }
 
-        if (!outlineFolder || outlineFolder === legacyOutlineFolder || outlineFolder !== this.settings.manuscriptOutputFolder) {
-            (this.settings as LegacyPersistedSettings).outlineOutputFolder = this.settings.manuscriptOutputFolder || exportFolderDefault;
-            exportFolderMigrated = true;
-        }
-
         if (!this.settingsService) {
             this.settingsService = new SettingsService(this);
         }
-
-        const beatSettingsMigration = migrateBeatSettings(this.settings);
 
         // ─── Migrate legacy backdropYamlTemplate → backdropYamlTemplates ────
         let backdropTemplateMigrated = false;
@@ -1274,11 +1270,34 @@ export default class RadialTimelinePlugin extends Plugin {
                     activeBook.stageTargetDates = { ...legacyStageTargets };
                 }
             }
-            this.settings.stageTargetDates = undefined;
+            (this.settings as { stageTargetDates?: StageTargetDates }).stageTargetDates = undefined;
+            stageTargetsMigrated = true;
+        }
+        // The single "target completion" date predates per-stage targets. It
+        // meant the finished book, so it lands on Press when the active book
+        // has no stage targets of its own (the only case the old tick rendered).
+        const legacyCompletion = (this.settings as { targetCompletionDate?: string }).targetCompletionDate;
+        if (legacyCompletion !== undefined) {
+            if (legacyCompletion) {
+                const activeBook = getActiveBook(this.settings);
+                if (activeBook && !activeBook.stageTargetDates) {
+                    activeBook.stageTargetDates = { Press: legacyCompletion };
+                }
+            }
             stageTargetsMigrated = true;
         }
 
-        if (freshInstallSeeded || proEntitlementSeeded || gossamerRunFilterMigrated || aiSettingsMigrated || exportFolderMigrated || beatSettingsMigration.changed || backdropTemplateMigrated || pandocLayoutsMigrated || bundledPandocLayoutsRegistered || publishingModelMigrated || pandocLayoutReferenceMigrated || manuscriptExportCleanupMigrated || booksMigrated || timelineScopeMigrated || planetarySelectionMigrated || modeMigrated || stageTargetsMigrated) {
+        // Fields whose deprecation is finished: no reader remains, so the key
+        // leaves the settings file rather than riding along forever.
+        let legacyKeysStripped = false;
+        for (const key of FINISHED_DEPRECATION_KEYS) {
+            if (key in settingsAny) {
+                delete settingsAny[key];
+                legacyKeysStripped = true;
+            }
+        }
+
+        if (freshInstallSeeded || proEntitlementSeeded || gossamerRunFilterMigrated || aiSettingsMigrated || exportFolderMigrated || legacyKeysStripped || backdropTemplateMigrated || pandocLayoutsMigrated || bundledPandocLayoutsRegistered || publishingModelMigrated || pandocLayoutReferenceMigrated || manuscriptExportCleanupMigrated || booksMigrated || timelineScopeMigrated || planetarySelectionMigrated || modeMigrated || stageTargetsMigrated) {
             await this.saveSettings();
         }
     }
@@ -1361,7 +1380,6 @@ export default class RadialTimelinePlugin extends Plugin {
         this.syncLegacySourcePathFromActiveBook();
         this.syncPublishingModelState();
         stripLegacyAiSettings(this.settings);
-        stripLegacyBeatSettings(this.settings);
         if (__RT_DEV__) {
             try {
                 const serialized = JSON.stringify(this.settings);

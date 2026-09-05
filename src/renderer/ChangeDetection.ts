@@ -64,7 +64,6 @@ export interface TimelineSnapshot {
     sortByWhen: boolean;
     subplotAlignment: string;
     aiEnabled: boolean;
-    targetDate: string | undefined;
     stageTargetDatesHash: string;
     chronologueDurationCap: string | undefined;
     chronologueCalendarDefault: string;
@@ -256,7 +255,6 @@ export function createSnapshot(
         sortByWhen: settings.sortByWhenDate ?? false,
         subplotAlignment: settings.subplotAlignment ?? 'fill',
         aiEnabled: settings.enableAiSceneAnalysis ?? false,
-        targetDate: settings.targetCompletionDate,
         stageTargetDatesHash,
         chronologueDurationCap: settings.chronologueDurationCapSelection,
         chronologueCalendarDefault: settings.chronologueCalendarDefault ?? 'earth',
@@ -334,7 +332,7 @@ export function detectChanges(
     }
     
     // Target-date ticks can be swapped in place without rebuilding the full SVG.
-    if (prev.targetDate !== current.targetDate ||
+    if (
         prev.stageTargetDatesHash !== current.stageTargetDatesHash) {
         changeTypes.add(ChangeType.TARGET_DATES);
     }

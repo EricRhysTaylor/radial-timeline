@@ -89,9 +89,6 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
             onSave: async (normalized) => {
                 const nextFolder = normalized || exportFolderDefault;
                 plugin.settings.manuscriptOutputFolder = nextFolder;
-                // The deprecated outlineOutputFolder field is re-synced from
-                // manuscriptOutputFolder on load (see main.ts migration) and is
-                // never read at runtime, so no write is needed here.
                 await plugin.saveSettings();
                 refreshExportChip(resolveExportOutputFolder(plugin));
             }

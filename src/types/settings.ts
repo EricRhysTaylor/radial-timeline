@@ -1019,12 +1019,8 @@ export interface RadialTimelineSettings {
     showSourcePathAsTitle?: boolean;
     validFolderPaths: string[];
     validProjectPaths?: string[];  // Autocomplete history for Social Project Path field
-    /** @deprecated Logging paths are internalized and no longer user-configurable. */
-    aiOutputFolder?: string;
     /** Export destination for manuscript, outline, and cue-card exports. Defaults to `Radial Timeline/Export`. */
     manuscriptOutputFolder?: string;
-    /** @deprecated Outline exports use the shared Export folder. Kept in sync with `manuscriptOutputFolder` so stale values can't diverge. */
-    outlineOutputFolder?: string;
     /**
      * Internal one-time flag: the author has been told that timeline exports
      * moved out of the old top-level `Radial Timeline Exports` folder into the
@@ -1073,7 +1069,6 @@ export interface RadialTimelineSettings {
     }>;
     currentMode?: string;
     logApiInteractions: boolean;
-    targetCompletionDate?: string;  // Legacy - kept for backwards compatibility
     /**
      * @deprecated Legacy vault-global target dates. Migrated into per-book
      * `BookProfile.stageTargetDates` on load (see loadSettings) and cleared;
@@ -1110,7 +1105,6 @@ export interface RadialTimelineSettings {
     showChapterMarkers?: boolean;
     showRecentMovesOverlay?: boolean;
     enableManuscriptRippleRename?: boolean;
-    synopsisHoverMaxLines?: number; // @deprecated Legacy hover line limit, now derived from Synopsis max words
     enableHoverDebugLogging?: boolean;
     showFullTripletAnalysis?: boolean;
     sortByWhenDate?: boolean;
@@ -1128,8 +1122,6 @@ export interface RadialTimelineSettings {
     chronologueLastCalendarView?: ChronologueCalendarView;
     discontinuityThreshold?: string;
     shouldRestoreTimelineOnLoad?: boolean;
-    /** @deprecated Legacy global beat-system selector. Migrated into per-book beatWorkspace and not used at runtime. */
-    beatSystem?: string;
     /** Internal one-time migration flag for per-book beat system selection bootstrap. */
     beatSelectionMigrationComplete?: boolean;
     dominantSubplots?: Record<string, string>;
@@ -1192,8 +1184,6 @@ export interface RadialTimelineSettings {
     enableBeatYamlEditor?: boolean;
     // Per-system beat YAML + hover configs (keyed by system name or custom:<id>)
     beatSystemConfigs?: Record<string, BeatSystemConfig>;
-    /** @deprecated Legacy fixed-Custom workspace marker kept only for migration. */
-    activeCustomBeatSystemId?: string;
     beatYamlTemplates?: {
         base: string;
     };
@@ -1299,7 +1289,6 @@ export interface RadialTimelineSettings {
  */
 export interface LegacyPersistedSettings {
     showSourcePathAsTitle?: boolean;
-    outlineOutputFolder?: string;
     backdropYamlTemplate?: string;
     pandocTemplates?: {
         screenplay?: string;

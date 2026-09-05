@@ -1,12 +1,21 @@
 ---
 title: v7 Removals
-status: pending
+status: in-progress
 target-version: 7.0.0
+last-worked: 2026-09-04 (plugin 7.2.0)
 ---
 
 # Things to remove at version 7
 
 Migration shims and deprecated fallbacks kept for users upgrading from v6.x. When cutting v7, search the codebase for `TODO(v7)` to find every touch point.
+
+## Progress (2026-09-04, plugin 7.2.0)
+
+**Done.** Sections 1 and 2 are removed in full (`'bar'` → `'ring'`, `'thumb'` → `'small'`, `isLegacyThumbSize`; zero `TODO(v7)` markers remain). From section 3: `src/migrations/sceneAnalysis.ts` (v4-era `1beats/2beats/3beats` rename that swept every markdown file on every load) and `src/migrations/beatSettings.ts` (436 lines, v5-era) are deleted with their call sites; the deprecated `beatSystem` and `activeCustomBeatSystemId` settings fields went with them. Four half-finished deprecations are finished end to end: `targetCompletionDate` (absorbed into the active book's Press target on load when the book had no stage targets, which is the only case the old tick rendered; the legacy tick, the change-detection key, and the export config field are gone), `synopsisHoverMaxLines` (no reader; the two writers are gone), `aiOutputFolder`, and `outlineOutputFolder` (the load-time mirror of the manuscript folder is gone). `loadSettings` now carries a `FINISHED_DEPRECATION_KEYS` sweep that deletes those six keys from the persisted file. `migrateInquirySidecarToVisible` has a characterisation test covering every branch. Version dating for the audit came from the manifest at each migration's first commit.
+
+**Kept on purpose.** `migrateLegacyKeysToSecretStorage` and `stripLegacyAiSettings`: they remove plaintext API keys from `data.json`, which is a privacy scrub, not a convenience; they stay until the plugin drops support for the versions that wrote plaintext keys. The Inquiry runner's tolerance of the nested `verdict` wire shape is a model-behaviour guard (Opus 4.8 corrupts the nested object), not a v5 shim.
+
+**Verified 5.x-era, still present.** Each of these first shipped under manifest 5.0.2 and is removable under this plan's rule; they were left for a deliberate cut with release notes rather than removed in a cleanup pass: `migrateAiSettings` (2026-02-19), the `pandocTemplates` → `pandocLayouts` and `lastUsedPandocLayoutByPreset` moves (2026-02-09), the `backdropYamlTemplate` split (2026-02-10), `legacyLayoutIdMap` (2026-02-26), `manuscriptExportCleanup` normalisation (2026-02-26), the export-folder default rewrite (2026-01-26), and `shouldSeedBookProfileFromLegacySettings` with `syncLegacySourcePathFromActiveBook` (2026-03-19). The `stageTargetDates` move (2026-07-09, manifest 6.2.6) is v6-era and must stay through v7.
 
 ## 1. Teaser reveal value rename: `'bar'` → `'ring'`
 

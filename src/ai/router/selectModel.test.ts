@@ -37,8 +37,8 @@ describe('selectModel', () => {
         // resolution (which reads channel === 'stable') must keep resolving
         // to Opus 5 for every capability-based feature
         // (Pulse/Gossamer/Inquiry). This is the cost guard: Fable costs 2× Opus.
-        const fable = BUILTIN_MODELS.find(m => m.id === 'claude-fable-5');
-        expect(fable, 'Claude Fable 5 must be in the registry').toBeTruthy();
+        const fable = BUILTIN_MODELS.find(m => m.id === 'claude-fable-5-1');
+        expect(fable, 'Claude Fable 5.1 must be in the registry').toBeTruthy();
         expect(fable?.rollout?.channel).not.toBe('stable');
 
         const deepCaps = ['longContext', 'jsonStrict', 'reasoningStrong', 'highOutputCap'] as const;
@@ -48,16 +48,16 @@ describe('selectModel', () => {
             requiredCapabilities: [...deepCaps]
         });
         expect(result.model.alias).toBe('claude-opus-5');
-        expect(result.model.id).not.toBe('claude-fable-5');
+        expect(result.model.id).not.toBe('claude-fable-5-1');
     });
 
     it('selects Claude Fable 5 only when explicitly pinned', () => {
         const result = selectModel(BUILTIN_MODELS, {
             provider: 'anthropic',
-            policy: { type: 'pinned', pinnedAlias: 'claude-fable-5' },
+            policy: { type: 'pinned', pinnedAlias: 'claude-fable-5-1' },
             requiredCapabilities: ['longContext', 'jsonStrict', 'reasoningStrong', 'highOutputCap']
         });
-        expect(result.model.id).toBe('claude-fable-5');
+        expect(result.model.id).toBe('claude-fable-5-1');
         expect(result.warnings.length).toBe(0);
     });
 

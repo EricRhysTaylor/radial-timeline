@@ -102,14 +102,15 @@ export const BUILTIN_PRICING: ProviderPricingTable = {
             cacheReadPer1M: 0.1
         },
         // Premium always-on-thinking model. 2× Opus on input/output; cache
-        // read is 2× as well ($1.00 vs $0.50). Cache-write tiers: 5m $12.50,
-        // 1h $20.00 per MTok.
-        'claude-fable-5': {
+        // writes 5m $12.50, 1h $20.00 per MTok as on Fable 5. Cache reads are
+        // the one price that moved: $0.25/MTok (0.025× input), a quarter of
+        // Fable 5's $1.00 and half of Opus 5's $0.50.
+        'claude-fable-5-1': {
             inputPer1M: 10.0,
             outputPer1M: 50.0,
             cacheWrite5mPer1M: 12.5,
             cacheWrite1hPer1M: 20.0,
-            cacheReadPer1M: 1.0
+            cacheReadPer1M: 0.25
         }
     },
     openai: {

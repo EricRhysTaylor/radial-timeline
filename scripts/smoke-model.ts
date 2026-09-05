@@ -77,16 +77,14 @@ interface ProbeResult {
  */
 async function smokeAnthropic(model: string, key: string): Promise<ProbeResult> {
     const profile = getModelRequestProfile('anthropic', model);
-    // Mirror anthropicApi.ts: when a JSON schema is requested (Gossamer /
-    // Inquiry), we force tool_use and disable thinking. The smoke MUST
-    // include the tool_use path because Opus 4.7+ wraps its tool input
-    // in a $PARAMETER_NAME envelope when the tool description is sparse —
-    // discovered live on 2026-05-23. Pin the request shape to what
-    // production actually sends so future onboarding catches similar
-    // tool_use regressions.
-    const sentParams: string[] = ['model', 'max_tokens', 'system', 'messages', 'tools', 'tool_choice'];
+    const schema = {
+        type: 'object',
+        properties: { ok: { type: 'boolean' } },
+        required: ['ok'],
+        additionalProperties: false,
+    };
+    const sentParams: string[] = ['model', 'max_tokens', 'system', 'messages'];
     const omittedParams: string[] = [];
-
     const body: Record<string, unknown> = {
         model,
         max_tokens: 1024,
@@ -94,55 +92,49 @@ async function smokeAnthropic(model: string, key: string): Promise<ProbeResult> 
         messages: [
             { role: 'user', content: 'Record the structured response with ok set to true.' },
         ],
-        // Mirror anthropicApi.ts forceStructuredTool path verbatim — the
-        // verbose description prevents $PARAMETER_NAME envelope wrapping.
-        tools: [{
-            name: 'record_structured_response',
-            description: 'Submit the final structured response by populating the tool input directly. The "input" object you provide IS the response — it must have the schema\'s top-level keys (e.g. "ok") at its root. Do NOT wrap the response in any envelope, placeholder, or container key such as "$PARAMETER_NAME", "result", "response", or "data". The input you submit will be parsed verbatim against the schema.',
-            input_schema: {
-                type: 'object',
-                properties: { ok: { type: 'boolean' } },
-                required: ['ok'],
-                additionalProperties: false,
-            },
-        }],
-        tool_choice: { type: 'tool', name: 'record_structured_response' },
     };
 
-    // Force-tool path disables thinking in production (see anthropicApi.ts
-    // §thinkingEnabled gate), so the smoke also disables thinking here.
-    const thinkingEnabled = false;
-    if (profile.supportsTemperature && !thinkingEnabled) {
-        body.temperature = 0.2;
-        sentParams.push('temperature');
+    // Mirror anthropicApi.ts structured-output routing exactly. Two paths:
+    //   - Always-on-thinking models (profile.thinkingAlwaysOn, Fable 5.x):
+    //     forced tool_choice is a hard 400 on Fable 5.1, and the `thinking`
+    //     field in any shape is rejected. Production sends
+    //     output_config.format (json_schema) + output_config.effort and
+    //     omits thinking, temperature, and top_p; the JSON arrives in a
+    //     text block.
+    //   - Every other model: forced tool + tool_choice with thinking
+    //     disabled. The smoke MUST keep this path because Opus 4.7+ wraps
+    //     its tool input in a $PARAMETER_NAME envelope when the tool
+    //     description is sparse (discovered live on 2026-05-23).
+    const alwaysOnThinking = profile.thinkingAlwaysOn === true;
+    if (alwaysOnThinking) {
+        body.output_config = { effort: 'medium', format: { type: 'json_schema', schema } };
+        sentParams.push('output_config.effort', 'output_config.format');
+        omittedParams.push('tools', 'tool_choice (forced tool use is rejected on always-on-thinking models)', 'thinking (always on)', 'temperature', 'top_p');
     } else {
-        omittedParams.push('temperature' + (thinkingEnabled ? ' (thinking enabled)' : ''));
-    }
-    // Anthropic extended-thinking models require top_p >= 0.95 OR unset.
-    // Mirror anthropicApi.ts: when thinking is enabled, omit top_p entirely.
-    if (profile.supportsTopP && !thinkingEnabled) {
-        body.top_p = 0.9;
-        sentParams.push('top_p');
-    } else {
-        omittedParams.push('top_p' + (thinkingEnabled ? ' (thinking enabled)' : ''));
-    }
-    // Anthropic thinking API shape changed in Opus 4.7+: the legacy
-    // {type:'enabled', budget_tokens:N} shape is rejected. New shape is
-    // {type:'adaptive'} + output_config.effort. Smoke detects which the
-    // model accepts by trying adaptive first (matching latest Anthropic
-    // models); older models still want the legacy shape.
-    if (thinkingEnabled) {
-        const useAdaptive = /opus-4-[7-9]|opus-[5-9]/i.test(model);
-        if (useAdaptive) {
-            body.thinking = { type: 'adaptive' };
-            body.output_config = { effort: 'medium' };
-            sentParams.push('thinking.adaptive', 'output_config.effort');
+        sentParams.push('tools', 'tool_choice');
+        // Mirror anthropicApi.ts forceStructuredTool path verbatim — the
+        // verbose description prevents $PARAMETER_NAME envelope wrapping.
+        body.tools = [{
+            name: 'record_structured_response',
+            description: 'Submit the final structured response by populating the tool input directly. The "input" object you provide IS the response — it must have the schema\'s top-level keys (e.g. "ok") at its root. Do NOT wrap the response in any envelope, placeholder, or container key such as "$PARAMETER_NAME", "result", "response", or "data". The input you submit will be parsed verbatim against the schema.',
+            input_schema: schema,
+        }];
+        body.tool_choice = { type: 'tool', name: 'record_structured_response' };
+        // Force-tool path disables thinking in production (see anthropicApi.ts
+        // §thinkingEnabled gate), so temperature/top_p follow the profile.
+        if (profile.supportsTemperature) {
+            body.temperature = 0.2;
+            sentParams.push('temperature');
         } else {
-            body.thinking = { type: 'enabled', budget_tokens: 4096 };
-            sentParams.push('thinking.budget_tokens');
+            omittedParams.push('temperature');
         }
-    } else {
-        omittedParams.push('thinking.budget_tokens');
+        if (profile.supportsTopP) {
+            body.top_p = 0.9;
+            sentParams.push('top_p');
+        } else {
+            omittedParams.push('top_p');
+        }
+        omittedParams.push('thinking (forced-tool path)');
     }
 
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -156,34 +148,41 @@ async function smokeAnthropic(model: string, key: string): Promise<ProbeResult> 
     });
     const text = await res.text();
 
-    // Anthropic-specific response-shape check: if the response succeeded
-    // but the model wrapped its tool input in a $PARAMETER_NAME envelope
-    // (or similar placeholder), surface that as a soft-failure so the
-    // tool description can be tightened. Discovered live on 2026-05-23
-    // with Opus 4.7 + Gossamer schema.
+    // Response-shape checks. Always-on-thinking path: the JSON must arrive in a
+    // text block and parse to {ok: true}. Forced-tool path: the tool input must
+    // populate the schema directly, not sit inside a $PARAMETER_NAME-style
+    // envelope (discovered live on 2026-05-23 with Opus 4.7 + Gossamer schema).
     if (res.status >= 200 && res.status < 300) {
         try {
-            const parsed = JSON.parse(text) as { content?: Array<{ type?: string; input?: Record<string, unknown>; name?: string }> };
-            const toolBlock = parsed.content?.find(b => b.type === 'tool_use');
-            const input = toolBlock?.input ?? {};
-            const keys = Object.keys(input);
-            const envelopeKeys = ['$PARAMETER_NAME', '$INPUT', 'parameters', 'response', 'result', 'data'];
-            const wrapped = keys.length === 1 && envelopeKeys.includes(keys[0]);
-            if (wrapped) {
-                // Synthesize a 422-ish soft failure so the caller treats
-                // this as a real bug, not a pass.
-                return {
-                    status: 422,
-                    body: JSON.stringify({
-                        error: {
-                            message: `Tool input wrapped in envelope key "${keys[0]}" instead of populating schema directly. The model is wrapping the response — tighten the tool description.`,
-                            wrappedKeys: keys,
-                            actualInput: input,
-                        },
-                    }),
-                    sentParams,
-                    omittedParams,
-                };
+            const parsed = JSON.parse(text) as {
+                stop_reason?: string;
+                content?: Array<{ type?: string; text?: string; input?: Record<string, unknown>; name?: string }>;
+            };
+            const softFail = (message: string, detail: Record<string, unknown>): ProbeResult => ({
+                status: 422,
+                body: JSON.stringify({ error: { message, ...detail } }),
+                sentParams,
+                omittedParams,
+            });
+            if (parsed.stop_reason === 'refusal') {
+                return softFail('The model refused the smoke request (stop_reason refusal). Read stop_details before changing the profile.', {});
+            }
+            if (alwaysOnThinking) {
+                const textBlock = parsed.content?.find(b => b.type === 'text');
+                const raw = (textBlock?.text ?? '').trim();
+                let ok: unknown = undefined;
+                try { ok = (JSON.parse(raw) as { ok?: unknown }).ok; } catch { /* handled below */ }
+                if (ok !== true) {
+                    return softFail('Structured output did not arrive as {"ok": true} in a text block.', { text: raw.slice(0, 200) });
+                }
+            } else {
+                const toolBlock = parsed.content?.find(b => b.type === 'tool_use');
+                const input = toolBlock?.input ?? {};
+                const keys = Object.keys(input);
+                const envelopeKeys = ['$PARAMETER_NAME', '$INPUT', 'parameters', 'response', 'result', 'data'];
+                if (keys.length === 1 && envelopeKeys.includes(keys[0])) {
+                    return softFail(`Tool input wrapped in envelope key "${keys[0]}" instead of populating schema directly. The model is wrapping the response — tighten the tool description.`, { wrappedKeys: keys, actualInput: input });
+                }
             }
         } catch {
             // Response wasn't JSON we could parse — let the normal pass/fail flow handle it.

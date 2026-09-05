@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-18T15:42:36.000Z",
+  "generatedAt": "2026-09-05T16:52:56.000Z",
   "models": [
     {
       "provider": "anthropic",
@@ -9,6 +9,15 @@
       "cacheWrite5mPer1M": 6.25,
       "cacheWrite1hPer1M": 10,
       "cacheReadPer1M": 0.5
+    },
+    {
+      "provider": "anthropic",
+      "modelId": "claude-fable-5-1",
+      "inputPer1M": 10,
+      "outputPer1M": 50,
+      "cacheWrite5mPer1M": 12.5,
+      "cacheWrite1hPer1M": 20,
+      "cacheReadPer1M": 0.25
     },
     {
       "provider": "anthropic",

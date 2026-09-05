@@ -13,7 +13,7 @@ One top model per provider line, plus a Google fast/deep split where the speed/d
 ```
 Anthropic: Claude Opus 5                (depth, current — auto-selected)
            Claude Opus 4.8              (depth, one-back continuity)
-           Claude Fable 5               (depth, premium 'pro' channel — explicit choice only)
+           Claude Fable 5.1             (depth, premium 'pro' channel — explicit choice only)
 OpenAI:    GPT-5.5                       (depth)
            GPT-5.4                       (economy second on the gpt-5 line)
 Google:    Gemini 3.1 Pro Preview        (depth)

@@ -66,7 +66,7 @@ describe('AnthropicProvider output truncation', () => {
 
         const provider = new AnthropicProvider({ settings: {} } as never);
         const result = await provider.generateJson({
-            modelId: 'claude-fable-5',
+            modelId: 'claude-fable-5-1',
             systemPrompt: 'analyze',
             userPrompt: 'corpus',
             jsonSchema: { type: 'object' }
@@ -93,7 +93,7 @@ describe('AnthropicProvider output truncation', () => {
 
         const provider = new AnthropicProvider({ settings: {} } as never);
         const result = await provider.generateText({
-            modelId: 'claude-fable-5',
+            modelId: 'claude-fable-5-1',
             systemPrompt: 'write',
             userPrompt: 'prompt'
         } as never);

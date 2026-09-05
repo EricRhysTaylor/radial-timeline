@@ -135,17 +135,24 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         // on 2026-07-19 (basic effort request, output_config.format structured
         // output, 1h cache-prefix reuse, and the temperature/thinking.disabled
         // 400s). See anthropicApi.ts for the per-path probe notes.
+        // Claude Fable 5.1 (2026-08-28) replaced Claude Fable 5 on this lane on
+        // 2026-09-05: same tier, price, context, output cap, tokenizer, and
+        // always-on thinking. Deltas that matter to RT: forced tool_choice
+        // ('any' / 'tool') is now a hard 400 (the thinkingAlwaysOn path already
+        // routes structured output through output_config.format, so nothing
+        // changes here); cache reads fall to $0.25/MTok; thinking blocks are
+        // bound to the producing model and conversation (RT never replays them).
         provider: 'anthropic',
-        id: 'claude-fable-5',
-        alias: 'claude-fable-5',
-        label: 'Claude Fable 5',
+        id: 'claude-fable-5-1',
+        alias: 'claude-fable-5-1',
+        label: 'Claude Fable 5.1',
         line: 'claude-fable',
         tier: 'DEEP',
         capabilities: [...DEEP_CAPS],
         personality: { reasoning: 10, writing: 10, determinism: 9 },
         contextWindow: 1_000_000,
         maxOutput: 128_000,
-        releasedAt: '2026-07-15',
+        releasedAt: '2026-08-28',
         status: 'stable',
         rollout: {
             channel: 'pro',

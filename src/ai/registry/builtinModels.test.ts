@@ -81,10 +81,10 @@ describe('BUILTIN_MODELS — Anthropic Claude Opus 4.8 (continuity)', () => {
     });
 });
 
-describe('BUILTIN_MODELS — Anthropic Claude Fable 5', () => {
+describe('BUILTIN_MODELS — Anthropic Claude Fable 5.1', () => {
     it('exposes a 1M context / 128k output window on its own line', () => {
-        const model = byAlias('claude-fable-5');
-        expect(model.id).toBe('claude-fable-5');
+        const model = byAlias('claude-fable-5-1');
+        expect(model.id).toBe('claude-fable-5-1');
         expect(model.line).toBe('claude-fable');
         expect(model.contextWindow).toBe(1000000);
         expect(model.maxOutput).toBe(128000);
@@ -93,7 +93,7 @@ describe('BUILTIN_MODELS — Anthropic Claude Fable 5', () => {
     });
 
     it('declares always-on thinking and sits off the stable channel (explicit-choice only)', () => {
-        const model = byAlias('claude-fable-5');
+        const model = byAlias('claude-fable-5-1');
         expect(model.constraints).toMatchObject({
             supportsTemperature: false,
             supportsTopP: false,

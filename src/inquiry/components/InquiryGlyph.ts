@@ -617,13 +617,6 @@ export class InquiryGlyph {
         return group;
     }
 
-    private polarToCartesianRad(radius: number, radians: number): { x: string; y: string } {
-        return {
-            x: (radius * Math.cos(radians)).toFixed(2),
-            y: (radius * Math.sin(radians)).toFixed(2)
-        };
-    }
-
     private buildBadgeGroup(badgeRadius: number): SVGGElement {
         const doc = this.root.ownerDocument;
         const group = doc.createElementNS(SVG_NS, 'g');

@@ -169,30 +169,3 @@ export function bindInquiryBriefingSessionItemEvents(args: {
     }
     args.registerDomEvent(args.item, 'click', () => args.onItemClick());
 }
-
-export function bindInquiryZonePodEvents(args: {
-    registerSvgEvent: InquirySvgEventRegistrar;
-    zoneEl: SVGGElement;
-    onClick: (event: MouseEvent) => void;
-    onContextMenu?: (event: MouseEvent) => void;
-    onPointerEnter: () => void;
-    onPointerLeave: () => void;
-}): void {
-    args.registerSvgEvent(args.zoneEl, 'click', (event: Event) => args.onClick(event as MouseEvent));
-    if (args.onContextMenu) {
-        args.registerSvgEvent(args.zoneEl, 'contextmenu', (event: Event) => {
-            event.preventDefault();
-            args.onContextMenu?.(event as MouseEvent);
-        });
-    }
-    args.registerSvgEvent(args.zoneEl, 'pointerenter', () => args.onPointerEnter());
-    args.registerSvgEvent(args.zoneEl, 'pointerleave', () => args.onPointerLeave());
-}
-
-export function bindInquiryDetailsToggleEvent(args: {
-    registerSvgEvent: InquirySvgEventRegistrar;
-    detailsToggle?: SVGGElement;
-    onClick: () => void;
-}): void {
-    args.registerSvgEvent(args.detailsToggle, 'click', () => args.onClick());
-}

@@ -70,10 +70,6 @@ export class AuthorProgressModal extends Modal {
         return campaign?.aprSize ?? this.getGlobalAprSize();
     }
 
-    private getActiveAprSize(): 'small' | 'medium' | 'large' {
-        return this.getEffectiveAprSize(this.getSelectedCampaign());
-    }
-
     private getCampaignExportFormat(campaign?: AuthorProgressCampaign): AprExportFormat {
         if (!campaign) return 'png';
         if (typeof campaign.exportFormat === 'string' && campaign.exportFormat.trim()) {
@@ -675,27 +671,12 @@ export class AuthorProgressModal extends Modal {
         });
     }
 
-    private resolveTeaserStatus(campaign?: AuthorProgressCampaign): { enabled: boolean; info?: { label: string; icon: string } } {
-        if (!campaign) return { enabled: false };
-        const teaserSettings = campaign.teaserReveal ?? { enabled: true, preset: 'standard' as const };
-        if (!teaserSettings.enabled) return { enabled: false };
-        const thresholds = getTeaserThresholds(teaserSettings.preset ?? 'standard', teaserSettings.customThresholds);
-        const level = getTeaserRevealLevel(this.progressPercent, thresholds, teaserSettings.disabledStages);
-        return { enabled: true, info: TEASER_LEVEL_INFO[level] };
-    }
-
     private getTeaserScheduleLabel(campaign?: AuthorProgressCampaign): string {
         if (!campaign) return '—';
         const teaserSettings = campaign.teaserReveal ?? { enabled: true, preset: 'standard' as const };
         if (!teaserSettings.enabled) return 'OFF';
         const thresholds = getTeaserThresholds(teaserSettings.preset ?? 'standard', teaserSettings.customThresholds);
         return `${Math.round(thresholds.scenes)}/${Math.round(thresholds.colors)}/${Math.round(thresholds.full)}%`;
-    }
-
-    private getFileName(path: string): string {
-        if (!path) return '—';
-        const normalized = path.split('\\').pop() ?? path;
-        return normalized.split('/').pop() ?? normalized;
     }
 
     private getAprStatusTargets(): Array<{
@@ -764,19 +745,6 @@ export class AuthorProgressModal extends Modal {
         return targets;
     }
 
-    private getEffectiveTargetPath(): string {
-        const authorProgress = this.plugin.settings.authorProgress;
-        const settings = authorProgress?.defaults;
-        const campaign = this.getSelectedCampaign();
-        if (campaign?.exportPath) return campaign.exportPath;
-        return settings?.exportPath || buildDefaultEmbedPath({
-            bookTitle: this.plugin.getActiveBookTitle(),
-            updateFrequency: settings?.updateFrequency,
-            aprExportQuality: settings?.aprExportQuality,
-            exportFormat: this.getDefaultExportFormat()
-        });
-    }
-
     private getQualityLabel(quality: AprExportQuality): string {
         if (quality === 'print') return '4800px Prt';
         return quality === 'ultra' ? '2400px Ult' : '1200px Std';
@@ -833,12 +801,6 @@ export class AuthorProgressModal extends Modal {
         } catch {
             new Notice('Could not reveal file in system file manager.');
         }
-    }
-
-    private formatFrequencyLabel(frequency?: 'manual' | 'daily' | 'weekly' | 'monthly'): string {
-        if (!frequency || frequency === 'manual') return 'Manual';
-        const label = frequency.charAt(0).toUpperCase() + frequency.slice(1);
-        return `Auto · ${label}`;
     }
 
     private getDaysSince(date?: string): number | null {
@@ -983,25 +945,6 @@ export class AuthorProgressModal extends Modal {
             target.exportPath = normalizePath(this.swapPathExtension(currentPath, nextFormat));
         }
 
-        await this.plugin.saveSettings();
-    }
-
-    private createStatusRow(container: HTMLElement, label: string): { rowEl: HTMLElement; valueEl: HTMLElement } {
-        const row = container.createDiv({
-            cls: `${ERT_CLASSES.ROW} ${ERT_CLASSES.ROW_COMPACT} ${ERT_CLASSES.ROW_MIDDLE_ALIGN}`
-        });
-        row.createSpan({ text: label, cls: ERT_CLASSES.LABEL });
-        const valueEl = row.createDiv({ cls: ERT_CLASSES.INLINE });
-        return { rowEl: row, valueEl };
-    }
-
-    private async saveSize() {
-        if (this.isCampaignTarget()) return;
-        if (!this.plugin.settings.authorProgress) {
-            this.plugin.settings.authorProgress = buildDefaultAuthorProgressSettings();
-        }
-        const settings = this.plugin.settings.authorProgress?.defaults;
-        settings.aprSize = this.aprSize;
         await this.plugin.saveSettings();
     }
 

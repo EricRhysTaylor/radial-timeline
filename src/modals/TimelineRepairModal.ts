@@ -595,31 +595,6 @@ export class TimelineRepairModal extends Modal {
         this.close();
     }
 
-    private createLevelToggle(
-        container: HTMLElement,
-        title: string,
-        description: string,
-        initialValue: boolean,
-        disabled: boolean,
-        onChange?: (value: boolean) => void
-    ): HTMLElement {
-        const row = container.createDiv({ cls: 'ert-timeline-repair-option-row' });
-
-        const textContainer = row.createDiv({ cls: 'ert-timeline-repair-level-text' });
-        textContainer.createDiv({ cls: 'ert-timeline-repair-level-title', text: title });
-        const descEl = textContainer.createDiv({ cls: 'ert-timeline-repair-level-desc' });
-        renderWithYamlTokens(descEl, description);
-
-        const toggle = new ToggleComponent(row);
-        toggle.setValue(initialValue);
-        toggle.setDisabled(disabled);
-        if (onChange) {
-            toggle.onChange(onChange);
-        }
-
-        return row;
-    }
-
     // ========================================================================
     // Analysis Phase
     // ========================================================================

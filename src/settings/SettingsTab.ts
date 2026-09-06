@@ -1,4 +1,4 @@
-import { App, Component, Notice, PluginSettingTab, setIcon, TextComponent, normalizePath } from 'obsidian';
+import { App, Component, Notice, PluginSettingTab, setIcon, TextComponent } from 'obsidian';
 import { renderGeneralSection } from './sections/GeneralSection';
 import { renderCompletionEstimatePreview, renderProgressSection } from './sections/ProgressSection';
 import { renderChronologueSection } from './sections/ChronologueSection';
@@ -354,42 +354,6 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
                 window.setTimeout(() => inputEl.removeClass('ert-setting-input-error'), 1400);
             }
         })(); }, 800);
-    }
-
-    private showPathSuggestions(currentValue: string, container: HTMLElement, textInput: TextComponent): void {
-        const validPaths = this.plugin.settings.validFolderPaths;
-        const filteredPaths = validPaths.filter(path =>
-            path.toLowerCase().includes(currentValue.toLowerCase()) || currentValue === ''
-        );
-        container.empty();
-        if (filteredPaths.length === 0) {
-            container.classList.add('hidden');
-            return;
-        }
-        container.classList.remove('hidden');
-        filteredPaths.forEach(path => {
-            const suggestionEl = container.createDiv({ cls: 'ert-source-path-suggestion-item' });
-            suggestionEl.textContent = path;
-            this.plugin.registerDomEvent(suggestionEl, 'click', async () => {
-                textInput.setValue(path);
-                const ok = await this.plugin.validateAndRememberPath(path);
-                if (ok) {
-                    const normalizedPath = normalizePath(path);
-                    this.plugin.settings.sourcePath = normalizedPath;
-                    await this.plugin.saveSettings();
-                    container.classList.add('hidden');
-                    textInput.inputEl.removeClass('ert-setting-input-error');
-                    textInput.inputEl.addClass('ert-setting-input-success');
-                    window.setTimeout(() => {
-                        textInput.inputEl.removeClass('ert-setting-input-success');
-                    }, 1000);
-                } else {
-                    textInput.inputEl.addClass('ert-setting-input-error');
-                    window.setTimeout(() => textInput.inputEl.removeClass('ert-setting-input-error'), 2000);
-                }
-                try { textInput.inputEl.focus(); } catch { /* focus is best-effort */ }
-            });
-        });
     }
 
     /**
@@ -757,25 +721,6 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         target.scrollIntoView({ behavior: 'smooth', block: 'start' });
         this.markSettingsSectionRevealed(target);
         return true;
-    }
-
-    private renderProHero(containerEl: HTMLElement): void {
-        this.renderSettingsHero(containerEl, {
-            badgeLabel: 'PRO',
-            badgeIcon: 'signature',
-            badgeVariant: ERT_CLASSES.BADGE_PILL_NEUTRAL,
-            wikiHref: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Pro',
-            title: 'The deeper end of Radial Timeline.',
-            subtitle: 'Radial Timeline’s heavier workflows — the tools you reach for once a draft is real.',
-            kicker: 'Pro workflows:',
-            features: [
-                { icon: 'file-output', text: 'Advanced exports — PDF, Outline, and structured data formats' },
-                { icon: 'layout-grid', text: 'Publishing workflows, runtime planning, and campaign tools' },
-                { icon: 'waves', text: 'Extended Inquiry prompts' },
-                { icon: 'timer', text: 'Runtime estimation and session planning' },
-                { icon: 'radio', text: 'Social campaign management and teaser controls' },
-            ]
-        });
     }
 
     private renderPublishingHero(containerEl: HTMLElement): void {

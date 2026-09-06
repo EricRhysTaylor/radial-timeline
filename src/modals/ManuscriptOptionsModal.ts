@@ -300,10 +300,8 @@ export class ManuscriptOptionsModal extends Modal {
     private manuscriptPresetGridEl?: HTMLElement;
     private outlinePresetDescEl?: HTMLElement;
     private manuscriptPreviewToggle?: HTMLElement;
-    private manuscriptPreviewPanel?: HTMLElement;
     private manuscriptPreviewIcon?: HTMLElement;
     private outlinePreviewToggle?: HTMLElement;
-    private outlinePreviewPanel?: HTMLElement;
     private outlinePreviewIcon?: HTMLElement;
     private manuscriptPreviewExpanded: boolean = false;
     private outlinePreviewExpanded: boolean = false;
@@ -2499,70 +2497,6 @@ export class ManuscriptOptionsModal extends Modal {
             'index-cards-json': t('manuscriptModal.outlineIndexCardsDesc')
         };
         this.outlinePresetDescEl.textContent = descriptions[this.outlinePreset] || '';
-    }
-
-    /**
-     * Update manuscript preset preview content
-     */
-    private updateManuscriptPreview(): void {
-        if (!this.manuscriptPreviewPanel) return;
-        this.manuscriptPreviewPanel.empty();
-
-        const previewContent = this.manuscriptPreviewPanel.createDiv({ cls: 'ert-manuscript-preview-content' });
-        
-        const sample = `## Scene 1: Opening
-
-The morning sun cast long shadows across the empty street.
-Sarah stood at the window, watching the world wake up.`;
-        previewContent.createEl('pre', { 
-            text: sample,
-            cls: 'ert-manuscript-preview-sample'
-        });
-    }
-
-    /**
-     * Update outline preset preview content
-     */
-    private updateOutlinePreview(): void {
-        if (!this.outlinePreviewPanel) return;
-        this.outlinePreviewPanel.empty();
-
-        const previewContent = this.outlinePreviewPanel.createDiv({ cls: 'ert-manuscript-preview-content' });
-        
-        const samples: Record<OutlinePreset, string> = {
-            'beat-sheet': `1. Opening Image
-2. Theme Stated
-3. Setup
-4. Catalyst
-5. Debate`,
-            'episode-rundown': `1. Cold Open · Jan 1 [2:30]
-2. Theme Song [0:15]
-3. Act One · Jan 1 [8:45]
-4. Act Two · Jan 2 [12:20]
-5. Closing [1:00]`,
-            'shooting-schedule': `Scene | Location      | Time  | Subplot
-------|---------------|-------|----------
-1     | Apartment     | 2:30  | Main Plot
-2     | Street        | 5:15  | Main Plot
-3     | Office        | 8:45  | Subplot A`,
-            'index-cards-csv': `Scene,Title,When,Runtime,Words,Subplot
-1,Opening,2024-01-01,2:30,450,Main Plot
-2,Confrontation,2024-01-02,5:15,820,Main Plot`,
-            'index-cards-json': `{
-  "scenes": [
-    {"scene": 1, "title": "Opening", 
-     "when": "2024-01-01", "runtime": "2:30"},
-    {"scene": 2, "title": "Confrontation",
-     "when": "2024-01-02", "runtime": "5:15"}
-  ]
-}`
-        };
-
-        const sample = samples[this.outlinePreset] || '';
-        previewContent.createEl('pre', { 
-            text: sample,
-            cls: 'ert-manuscript-preview-sample'
-        });
     }
 
     private updateOrderPillsState(): void {

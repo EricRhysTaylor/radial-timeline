@@ -216,11 +216,6 @@ export class InquiryCorpusResolver {
         return !!value;
     }
 
-    /** Alias for hasSynopsis — prefer in new code to prevent semantic drift. */
-    private hasSummary(frontmatter: Record<string, unknown>): boolean {
-        return this.hasSynopsis(frontmatter);
-    }
-
     private clampLabelNumber(value: number): number {
         if (!Number.isFinite(value)) return 1;
         return Math.min(Math.max(Math.floor(value), 1), 999);

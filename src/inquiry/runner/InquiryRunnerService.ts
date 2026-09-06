@@ -1843,12 +1843,6 @@ export class InquiryRunnerService implements InquiryRunner {
         return Math.max(1200, Math.min(120000, targetChunkTokens));
     }
 
-    private readBooleanDebugFlag(envKey: string, globalKey: string): boolean {
-        const fromEnv = typeof process !== 'undefined' && process.env?.[envKey] === '1';
-        const fromGlobal = (window as unknown as Record<string, unknown>)[globalKey] === true;
-        return fromEnv || fromGlobal;
-    }
-
     private isChunkDebugEnabled(): boolean {
         const fromEnv = typeof process !== 'undefined' && process.env?.RT_INQUIRY_CHUNK_DEBUG === '1';
         const fromGlobal = (window as { __RT_INQUIRY_CHUNK_DEBUG__?: unknown }).__RT_INQUIRY_CHUNK_DEBUG__ === true;

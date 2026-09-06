@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 // Producer-less CSS class scan (heuristic). Extracts every `.class` selector
 // under src/styles/ and looks for the bare class name in non-test src/**/*.ts.
-// A class whose prefix (up to the last `-`, `--`, or `__`) appears as a
-// template producer (`prefix${`) is reported separately as "dynamic". Names
+// Class-shaped templates with interpolation on either side are reported as
+// possible dynamic producers, not deletion candidates. Names
 // matching common Obsidian core classes are excluded. Verify samples with
-// `grep -rn` before deleting; ±5% is expected.
+// `rg` and runtime rendering before deleting; this remains a heuristic.
 //
 // Usage: node scripts/audit/unused-css.mjs [--json out.json]
 import fs from 'node:fs';
 import path from 'node:path';
+import { dynamicClassPatterns } from './source-analysis.mjs';
 
 const root = process.cwd();
 const jsonIdx = process.argv.indexOf('--json');
@@ -29,6 +30,7 @@ const walk = (d, ext, out = []) => {
 const cssFiles = walk(path.join(root, 'src/styles'), '.css');
 const tsBlob = walk(path.join(root, 'src'), '.ts').filter((f) => !f.endsWith('.test.ts')).map((f) => fs.readFileSync(f, 'utf8')).join('\n');
 
+const dynamicPatterns = dynamicClassPatterns(tsBlob);
 const classDef = new Map();
 for (const f of cssFiles) {
     const css = fs.readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
@@ -52,11 +54,7 @@ const unused = [], dyn = [];
 for (const [c, files] of classDef) {
     const re = new RegExp(`(^|[^\\w-])${c.replace(/-/g, '\\-')}([^\\w-]|$)`);
     if (re.test(tsBlob)) continue;
-    let partial = false;
-    for (const sep of ['--', '__', '-']) {
-        const i = c.lastIndexOf(sep);
-        if (i > 0 && tsBlob.includes(`${c.slice(0, i + sep.length)}\${`)) { partial = true; break; }
-    }
+    const partial = dynamicPatterns.some(pattern => pattern.test(c));
     (partial ? dyn : unused).push({ c, files: [...files], core: obsidianCore.test(c) });
 }
 const real = unused.filter((u) => !u.core);

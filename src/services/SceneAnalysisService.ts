@@ -190,7 +190,6 @@ class SubplotPickerModal extends Modal {
     private selectedSubplot: string;
     private statsEl: HTMLElement | null = null;
     private dropdown: DropdownComponent | null = null;
-    private infoTextEl: HTMLParagraphElement | null = null;
     private heroStats?: {
         flagged: HTMLElement;
         processable: HTMLElement;
@@ -321,10 +320,5 @@ class SubplotPickerModal extends Modal {
             this.heroStats.processable.setText(String(stats.processable));
             this.heroStats.total.setText(String(stats.total));
         }
-    }
-
-    private updateInfoText(modelName: string): void {
-        if (!this.infoTextEl) return;
-        this.infoTextEl.setText(t('sceneAnalysis.service.subplotPicker.infoLine', { model: modelName, name: this.selectedSubplot }));
     }
 }

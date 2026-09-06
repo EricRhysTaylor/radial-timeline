@@ -300,12 +300,6 @@ export default class RadialTimelinePlugin extends Plugin {
     // Helper: expose the scene data service to consumers (modals, services)
     public getSceneDataService(): SceneDataService { return this.sceneDataService; }
 
-    // Helper: get the first open timeline view (if any)
-    private getFirstTimelineView(): RadialTimelineView | null {
-        const list = this.getTimelineViews();
-        return list.length > 0 ? list[0] : null;
-    }
-
     private normalizeGossamerRunFilterSettings(input: unknown): GossamerRunFilterSettings {
         const current = (input && typeof input === 'object') ? input as Partial<GossamerRunFilterSettings> : {};
         return {

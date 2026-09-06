@@ -89,23 +89,6 @@ export class ModeInteractionController {
     }
     
     /**
-     * Register a handler for tracking and cleanup
-     */
-    private registerHandler(
-        element: Element,
-        event: string,
-        handler: EventListener,
-        removeFunction: () => void
-    ): void {
-        this.handlers.push({
-            element,
-            event,
-            handler,
-            removeFunction
-        });
-    }
-    
-    /**
      * Setup handlers for All Scenes mode
      */
     private async setupAllScenesHandlers(svg: SVGSVGElement): Promise<void> {

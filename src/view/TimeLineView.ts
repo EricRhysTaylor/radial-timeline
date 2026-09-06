@@ -13,7 +13,7 @@ import { t } from '../i18n';
 import type { SubplotAlignment, TimelineItem } from '../types';
 import { renderSvgFromString } from '../utils/svgDom';
 import { openOrRevealFileByPath } from '../utils/fileUtils';
-import { setupRotationController, setupSearchControls as setupSearchControlsExt, addHighlightRectangles as addHighlightRectanglesExt, setupModeToggleController, setupVersionIndicatorController, setupHelpIconController, setupTooltips, setupSubplotKeyController } from './interactions';
+import { setupRotationController, setupSearchControls as setupSearchControlsExt, setupModeToggleController, setupVersionIndicatorController, setupHelpIconController, setupTooltips, setupSubplotKeyController } from './interactions';
 import { RendererService } from '../services/RendererService';
 import { ModeManager, createModeManager } from '../modes/ModeManager';
 import { getModeDefinition, getToggleableModes } from '../modes/ModeRegistry';
@@ -2810,12 +2810,6 @@ export class RadialTimelineView extends ItemView {
             });
     }
     
-
-    
-    private setupMouseCoordinateTracking(container: HTMLElement) {
-        // Mouse coordinate tracking disabled - no debug mode toggle exists
-    }
-    
     /**
      * Called whenever the view is shown/revealed (e.g., when switching tabs back to this view)
      * Unlike onOpen which is called only once when the view is created
@@ -2961,11 +2955,6 @@ export class RadialTimelineView extends ItemView {
             this.tabTimerIconActive = false;
         }
         // Note: ModeToggleController keyboard listeners are cleaned up automatically via view.register()
-    }
-    
-    // Add missing addHighlightRectangles method
-    private addHighlightRectangles(): void {
-        addHighlightRectanglesExt(this);
     }
     
     renderTimeline(container: HTMLElement, scenes: TimelineItem[]): void {
@@ -3685,42 +3674,6 @@ export class RadialTimelineView extends ItemView {
             return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(parsed));
         } catch {
             return 'Recently';
-        }
-    }
-    
-    // New helper removed; interactions moved to modes/AllScenesMode
-    
-    // Helper method to highlight files in the navigator and tab bar
-    private highlightFileInExplorer(filePath: string, isHighlighting: boolean): void {
-        if (!filePath) return;
-        
-        try {
-            // Get the file object
-            const file = this.plugin.app.vault.getAbstractFileByPath(filePath);
-            
-            if (file instanceof TFile) {
-                // For highlighting, we'll use Obsidian's file explorer API to reveal the file
-                if (isHighlighting) {
-                    // Use the file explorer view directly
-                    const fileExplorer = this.plugin.app.workspace.getLeavesOfType('file-explorer')[0];
-                    if (fileExplorer && fileExplorer.view) {
-                        // Cast to any to access the internal reveal method
-                        interface ExplorerView { revealInFolder(file: TFile): void }
-                        const explorerView = fileExplorer.view as unknown as ExplorerView;
-                        if (explorerView.revealInFolder) {
-                            // SAFE: Using Obsidian's API
-                            explorerView.revealInFolder(file);
-                        }
-                    }
-                    
-                    // No additional focus behavior required
-                } else {
-                    // When unhighlighting, we don't need to do anything special.
-                    // The hover effect disappears naturally when mouse leaves.
-                }
-            }
-        } catch {
-            // Silently handle file highlighting errors
         }
     }
 

@@ -109,4 +109,18 @@ describe('Local LLM validation action', () => {
         await vi.advanceTimersByTimeAsync(200); expect(p.options.detect).not.toHaveBeenCalled();
         await p.control.run(); expect(p.options.onSettled).not.toHaveBeenCalled(); p.scope.unload();
     });
+    it('discards an invalidated result and queues exactly one replacement without overlapping generations', async () => {
+        vi.useFakeTimers(); const p = render(); const old = deferred<LocalLlmDiagnosticsReport>();
+        p.options.diagnose.mockReturnValueOnce(old.promise);
+        const first = p.control.run(); await vi.advanceTimersByTimeAsync(0);
+        expect(p.options.diagnose).toHaveBeenCalledOnce();
+        p.control.invalidate(); p.control.queue(); p.control.queue();
+        await vi.advanceTimersByTimeAsync(200); expect(p.options.diagnose).toHaveBeenCalledOnce();
+        old.resolve({ ...report, modelId: 'old-model' }); await first;
+        expect(p.control.state.report).toBeNull();
+        await vi.advanceTimersByTimeAsync(150);
+        expect(p.options.diagnose).toHaveBeenCalledTimes(2); expect(p.control.state.report).toBe(report);
+        expect(ui.assimilated).not.toHaveBeenCalled(); p.scope.unload();
+    });
+
 });

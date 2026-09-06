@@ -1,3 +1,4 @@
+import { buildBeatActColumns, stripActPrefix, type ActGridColumn } from './beats/actGrid';
 import { App, ButtonComponent, Component, getIconIds, Menu, Modal, normalizePath, Notice, setIcon, Setting as Settings, setTooltip, TFile } from 'obsidian';
 import { t } from '../../i18n';
 import type RadialTimelinePlugin from '../../main';
@@ -111,11 +112,6 @@ export function renderBeatPropertiesSection(params: {
         const previewLabels = getActPreviewLabels();
         actsPreviewHeading.setText(`Preview (${previewLabels.length} acts)`);
         actsPreviewBody.setText(previewLabels.join(' · '));
-    };
-
-    const stripActPrefix = (name: string): string => {
-        const m = name.match(/^Act\s*\d+\s*:\s*(.+)$/i);
-        return m ? m[1].trim() : name.trim();
     };
 
     const getLoadedBeatWorkspaceTabs = () => getMaterializedBeatTabs(app, plugin.settings);
@@ -1323,9 +1319,6 @@ export function renderBeatPropertiesSection(params: {
     }
     // --------------------------------------------------------
 
-    type ActGridBeat = { name: string; key: string };
-    type ActGridColumn = { label: string; beats: ActGridBeat[]; rank: number; isNumericAct: boolean };
-
     const getBeatSystemCopy = (system: string) => {
         return BEAT_SYSTEM_COPY[system] ?? {
             title: system,
@@ -1416,53 +1409,9 @@ export function renderBeatPropertiesSection(params: {
         return { columns, totalBeats: total };
     };
 
-    const buildCustomActColumns = (): { columns: ActGridColumn[]; totalBeats: number } => {
-        const beats = getActiveCustomBeats().map(parseBeatRow).filter(b => hasBeatReadableText(b.name));
-        const maxActs = getActCount();
-        const ordered = orderBeatsByAct(
-            beats.map(b => ({ ...b, act: clampBeatAct(b.act, maxActs) })),
-            maxActs
-        );
-        const grouped = new Map<string, ActGridColumn>();
-        ordered.forEach((beatLine) => {
-            const actNum = clampBeatAct(beatLine.act, maxActs);
-            const key = `act:${actNum}`;
-            if (!grouped.has(key)) {
-                grouped.set(key, { label: `Act ${actNum}`, beats: [], rank: actNum, isNumericAct: true });
-            }
-            grouped.get(key)!.beats.push({
-                name: stripActPrefix(beatLine.name),
-                key: normalizeBeatTitle(beatLine.name)
-            });
-        });
-        const columns = Array.from(grouped.values()).sort((a, b) => a.rank - b.rank);
-        return { columns, totalBeats: ordered.length };
-    };
-
-    const buildLoadedTabActColumns = (loadedTab: LoadedBeatTab | null | undefined): { columns: ActGridColumn[]; totalBeats: number } => {
-        if (!loadedTab) return buildCustomActColumns();
-        const beats = loadedTab.beats.map(parseBeatRow).filter((beat) => hasBeatReadableText(beat.name));
-        const maxActs = getActCount();
-        const ordered = orderBeatsByAct(
-            beats.map((beat) => ({ ...beat, act: clampBeatAct(beat.act, maxActs) })),
-            maxActs
-        );
-        const grouped = new Map<string, ActGridColumn>();
-        ordered.forEach((beatLine) => {
-            const actNum = clampBeatAct(beatLine.act, maxActs);
-            const key = `act:${actNum}`;
-            if (!grouped.has(key)) {
-                grouped.set(key, { label: `Act ${actNum}`, beats: [], rank: actNum, isNumericAct: true });
-            }
-            grouped.get(key)!.beats.push({
-                name: stripActPrefix(beatLine.name),
-                key: normalizeBeatTitle(beatLine.name)
-            });
-        });
-        const columns = Array.from(grouped.values()).sort((a, b) => a.rank - b.rank);
-        return { columns, totalBeats: ordered.length };
-    };
-
+    const buildCustomActColumns = () => buildBeatActColumns(getActiveCustomBeats(), getActCount());
+    const buildLoadedTabActColumns = (loadedTab: LoadedBeatTab | null | undefined) =>
+        buildBeatActColumns(loadedTab?.beats ?? getActiveCustomBeats(), getActCount());
 
     const getBeatPreviewState = (
         status: BeatStructuralBeatStatus | null

@@ -1,3 +1,4 @@
+import { buildPresetClassConfig } from './inquiry/sourcePresets';
 import { openSettingsTab } from '../../utils/obsidianInternals';
 import { App, ButtonComponent, DropdownComponent, Modal, Setting as Settings, TextComponent, TextAreaComponent, normalizePath, Notice, setIcon, setTooltip } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
@@ -87,20 +88,6 @@ const defaultModeForClass = (className: string): SceneInclusion => {
 
 const getContributionModesForClass = (className: string): SceneInclusion[] =>
     isSynopsisCapableClass(className) ? ['excluded', 'summary', 'full'] : ['excluded', 'full'];
-
-const defaultParticipationForClass = (className: string): { book: boolean; saga: boolean; reference: boolean } => {
-    const normalized = className.toLowerCase();
-    if (!isSynopsisCapableClass(normalized)) {
-        return { book: false, saga: false, reference: true };
-    }
-    if (normalized === 'outline') {
-        return { book: true, saga: true, reference: false };
-    }
-    if (normalized === 'scene') {
-        return { book: true, saga: true, reference: false };
-    }
-    return { book: true, saga: false, reference: false };
-};
 
 const defaultClassConfig = (className: string): InquiryClassConfig => {
     const normalized = className.toLowerCase();
@@ -658,52 +645,6 @@ export function renderInquirySection(params: SectionParams): void {
         });
 
         classTableWrap.replaceChildren(...Array.from(container.children));
-    };
-
-    const resolvePresetContribution = (preset: InquirySourcesPreset, className: string): SceneInclusion => {
-        const normalized = className.toLowerCase();
-        const isReference = !isSynopsisCapableClass(normalized);
-        if (preset === 'default') {
-            let mode: SceneInclusion = 'excluded';
-            if (normalized === 'scene') mode = 'summary';
-            if (normalized === 'outline') mode = 'full';
-            if (isReference) mode = 'excluded';
-            return normalizeContributionMode(mode, normalized);
-        }
-        if (preset === 'light') {
-            let mode: SceneInclusion = 'excluded';
-            if (normalized === 'scene') mode = 'summary';
-            if (normalized === 'outline') mode = 'summary';
-            if (isReference) mode = 'excluded';
-            return normalizeContributionMode(mode, normalized);
-        }
-        if (preset === 'deep') {
-            let mode: SceneInclusion = 'excluded';
-            if (normalized === 'scene') mode = 'full';
-            if (normalized === 'outline') mode = 'full';
-            if (isReference) mode = 'full';
-            return normalizeContributionMode(mode, normalized);
-        }
-        return 'excluded';
-    };
-
-    const buildPresetClassConfig = (config: InquiryClassConfig, preset: InquirySourcesPreset): InquiryClassConfig => {
-        const contribution = resolvePresetContribution(preset, config.className);
-        const normalized = config.className.toLowerCase();
-        const participation = contribution === 'excluded'
-            ? { book: false, saga: false, reference: false }
-            : defaultParticipationForClass(config.className);
-        const bookContribution: SceneInclusion =
-            preset === 'default' && normalized === 'scene' ? 'full' : contribution;
-        const sagaContribution: SceneInclusion =
-            preset === 'default' && normalized === 'scene' ? 'summary' : contribution;
-        return normalizeClassContribution({
-            ...config,
-            enabled: contribution !== 'excluded',
-            bookScope: participation.book ? bookContribution : 'excluded',
-            sagaScope: participation.saga ? sagaContribution : 'excluded',
-            referenceScope: participation.reference ? contribution : 'excluded'
-        });
     };
 
     const applyPreset = (preset: InquirySourcesPreset) => {

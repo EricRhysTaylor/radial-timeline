@@ -1,3 +1,4 @@
+import { createLocalLlmDiscovery } from './LocalLlmDiscovery';
 import { buildLocalStatus, formatLocalLlmUiError, formatLocalTimestamp } from './aiLocalStatus';
 import { createLocalLlmModelPills, abbreviateLocalModelId, buildLocalFeatureSummary } from './AiLocalLlmModelPills';
 import { renderAiLocalLlmValidation } from './AiLocalLlmValidation';
@@ -7,7 +8,7 @@ import { Component, Setting as Settings, Notice, DropdownComponent,setIcon, setT
 import type { App, TextComponent } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import { buildCostComparisonRows, costComparisonRowKey, listCostComparisonModels, type CostComparisonRow } from '../../ai/cost/costComparison';
-import { chooseAutoLocalModel, chooseAutoLocalServer, listLocalServerCandidates, probeLocalServers, type DetectedLocalServer } from '../../ai/localLlm/detection';
+import { chooseAutoLocalModel, chooseAutoLocalServer, type DetectedLocalServer } from '../../ai/localLlm/detection';
 import { forecastVaultFeatures, type PromptRequestBreakdown, type VaultForecasts } from '../../ai/forecast/vaultForecast';
 import { AiContextModal } from '../AiContextModal';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
@@ -58,7 +59,6 @@ import {
 import { inferLocalLlmCapability } from '../../ai/localLlm/capabilityInference';
 import type { LocalLlmCapabilityAssessment } from '../../ai/localLlm/capabilityInference';
 import type { LocalLlmModelEntry } from '../../ai/localLlm/transport';
-import { withTimeout } from '../../ai/localLlm/transport';
 import type { LocalLlmBackendId, LocalLlmJsonMode } from '../../ai/types';
 import {
     CACHE_ARMED_PILL_TEXT,
@@ -896,6 +896,8 @@ export function renderAiSection(params: {
                 markLocalLlmConfigurationDirty();
                 localValidation.queue();
             } else {
+                localDiscovery.invalidate();
+                localValidation.invalidate();
                 // The author just chose this provider — say whether its key
                 // works now, rather than replaying the verdict from whenever
                 // Settings happened to open.
@@ -2073,7 +2075,7 @@ export function renderAiSection(params: {
         void refreshCostComparisonTable();
 
         if (isOllama) {
-            if (localLlmServerDetectionPending || localLlmModelLoadPending) {
+            if (localDiscovery.discovering || localDiscovery.loading) {
                 renderPreviewUnavailable('Checking Local Server...', 'Looking for a reachable local server and available models.');
                 setActiveCostComparisonRow(null, null);
                 return;
@@ -2378,13 +2380,14 @@ export function renderAiSection(params: {
     let localLlmLoadedModels: LocalLlmModelEntry[] = [];
     let localLlmDetectedServers: DetectedLocalServer[] = [];
     let localLlmServerDetectionError: string | null = null;
-    let localLlmServerDetectionPending = false;
-    let localLlmServerDetectionPromise: Promise<void> | null = null;
     let localLlmModelLoadError: string | null = null;
     let localLlmLastLoadedAt: string | null = null;
-    let localLlmModelLoadPending = false;
-    let localLlmModelLoadPromise: Promise<void> | null = null;
     let aiSectionDisposed = false;
+    const localDiscovery = createLocalLlmDiscovery({
+        settings: () => getLocalLlmSettings(ensureCanonicalAiSettings()),
+        provider: () => ensureCanonicalAiSettings().provider,
+        listModels: settings => getLocalLlmClient(plugin).listModels(settings)
+    });
     const localLlmScope = new Component();
     localLlmScope.load();
 
@@ -2483,7 +2486,7 @@ export function renderAiSection(params: {
                     setLocalServerSelection(server.backend, server.baseUrl);
                     localLlmLoadedModels = [...server.models].sort((left, right) => left.id.localeCompare(right.id));
                     localLlmLastLoadedAt = server.detectedAt;
-                    localValidation.reset();
+                    localValidation.invalidate();
                     await persistCanonical();
                     renderLocalLlmModelList();
                     renderLocalLlmStatus();
@@ -2510,7 +2513,7 @@ export function renderAiSection(params: {
         if (aiSectionDisposed) return;
         setOllamaModelId(value);
         if (localLlmModelText) localLlmModelText.setValue(value);
-        localValidation.reset();
+        localValidation.invalidate();
         await persistCanonical();
         if (aiSectionDisposed) return;
         params.scheduleKeyValidation('ollama');
@@ -2532,34 +2535,22 @@ export function renderAiSection(params: {
     }
 
     function markLocalLlmConfigurationDirty(): void {
+        localDiscovery.invalidate();
         clearLocalLlmDetectedServerState();
         clearLocalLlmModelLoadState();
-        localValidation.reset();
+        localValidation.invalidate();
         renderLocalLlmModelList();
         renderLocalLlmStatus();
     }
 
     async function detectLocalLlmServers(options: { quiet?: boolean } = {}): Promise<void> {
-        if (localLlmServerDetectionPromise) return localLlmServerDetectionPromise;
-        localLlmServerDetectionPending = true;
+        const request = localDiscovery.detect();
         localLlmServerDetectionError = null;
         renderLocalLlmModelList();
         renderLocalLlmStatus();
-        // Bounded like the validation chain. This one matters more: the auto-validation
-        // timer calls it directly, so a detection that never settles leaves
-        // localLlmServerDetectionPending true forever -- the busy UI reads that flag,
-        // not the validation one -- and the guard above then hands the same stuck
-        // promise to every later caller, wedging the panel until Settings is reopened.
-        localLlmServerDetectionPromise = withTimeout((async () => {
-            const detectedServers = await probeLocalServers(
-                listLocalServerCandidates(getLocalLlmSettings(ensureCanonicalAiSettings())),
-                candidate => getLocalLlmClient(plugin).listModels({
-                    backend: candidate.backend,
-                    baseUrl: candidate.baseUrl,
-                    timeoutMs: getLocalLlmUiTimeoutMs()
-                })
-            );
-            if (aiSectionDisposed) return;
+        try {
+            const detectedServers = await request;
+            if (detectedServers === null) return;
             localLlmDetectedServers = detectedServers;
             localLlmServerDetectionError = localLlmDetectedServers.length
                 ? null
@@ -2603,12 +2594,10 @@ export function renderAiSection(params: {
                         : 'No healthy local servers detected automatically.'
                 );
             }
-        })(), LOCAL_LLM_GUARD_DEADLINE_MS, t('settings.ai.localLlm.validationDeadline')).catch((error: unknown) => {
+        } catch (error: unknown) {
             localLlmServerDetectionError = error instanceof Error ? error.message : String(error);
             localLlmDetectedServers = [];
-        }).finally(() => {
-            localLlmServerDetectionPending = false;
-            localLlmServerDetectionPromise = null;
+        } finally {
             renderLocalLlmModelList();
             renderLocalLlmStatus();
             // Only the local provider's card is waiting on this. If the author
@@ -2616,8 +2605,7 @@ export function renderAiSection(params: {
             // resolved — recomputing it here would throw it back to
             // "Calculating…" long after they moved on.
             if (!aiSectionDisposed && ensureCanonicalAiSettings().provider === 'ollama') void refreshRoutingUi();
-        });
-        return localLlmServerDetectionPromise;
+        }
     }
 
     const localLlmBackendSetting = new Settings(localLlmConfigSection)
@@ -2803,9 +2791,9 @@ export function renderAiSection(params: {
         localLlmModelSetting.settingEl.toggleClass('ert-settings-hidden', !showManualModelFallback);
         localLlmModelSetting.settingEl.toggleClass('ert-settings-visible', showManualModelFallback);
 
-        if (localLlmModelLoadPending || localLlmModelLoadError || !localLlmLoadedModels.length) modelPills.clear();
+        if (localDiscovery.loading || localLlmModelLoadError || !localLlmLoadedModels.length) modelPills.clear();
         localLlmModelsSummary.toggleClass('ert-settings-hidden', false);
-        if (localLlmModelLoadPending) {
+        if (localDiscovery.loading) {
             localLlmModelsSummary.setText(t('settings.ai.localLlm.modelsLoading'));
             return;
         }
@@ -2834,8 +2822,8 @@ export function renderAiSection(params: {
 
     const getLocalStatus = () => buildLocalStatus({
         enabled: getLocalLlmSettings(ensureCanonicalAiSettings()).enabled,
-        discovering: localLlmServerDetectionPending,
-        loadingModels: localLlmModelLoadPending,
+        discovering: localDiscovery.discovering,
+        loadingModels: localDiscovery.loading,
         validating: localValidation.state.pending,
         hasServers: localLlmDetectedServers.length > 0,
         detectionError: localLlmServerDetectionError,
@@ -2858,7 +2846,7 @@ export function renderAiSection(params: {
             return 'Waiting for a local server.';
         }
         if (label === 'Model availability') {
-            if (localLlmModelLoadPending) return 'Loading available models...';
+            if (localDiscovery.loading) return 'Loading available models...';
             if (localLlmModelLoadError) return formatLocalLlmUiError(localLlmModelLoadError);
             if (!localLlmLoadedModels.length) return 'No models are loaded on this local server.';
             if (!getOllamaModelId().trim()) return 'Choose a local model.';
@@ -2933,7 +2921,7 @@ export function renderAiSection(params: {
             ['Structured validation', localValidation.state.report?.structuredJson ?? null]
         ];
         const hasHealthyServer = localLlmDetectedServers.length > 0;
-        const modelReady = !localLlmModelLoadPending && !localLlmModelLoadError
+        const modelReady = !localDiscovery.loading && !localLlmModelLoadError
             && localLlmLoadedModels.length > 0 && !!selectedModelId && selectedExists;
         const allChecksPassed = modelReady
             && checks.every(([, check]) => check?.ok)
@@ -3006,57 +2994,46 @@ export function renderAiSection(params: {
     };
 
     async function loadLocalLlmModels(options: { quiet?: boolean } = {}): Promise<void> {
-        if (localLlmModelLoadPromise) return localLlmModelLoadPromise;
-        localLlmModelLoadPending = true;
         localLlmModelLoadError = null;
         renderLocalLlmModelList();
         renderLocalLlmStatus();
-        localLlmModelLoadPromise = withTimeout((async () => {
-            try {
-                const detectedServer = getDetectedLocalServerByKey(getConfiguredLocalServerKey());
-                if (detectedServer) {
-                    localLlmLoadedModels = [...detectedServer.models];
-                    localLlmModelLoadError = null;
-                    localLlmLastLoadedAt = detectedServer.detectedAt;
-                    if (!options.quiet) {
-                        new Notice(`Loaded ${localLlmLoadedModels.length} local model${localLlmLoadedModels.length === 1 ? '' : 's'} from ${detectedServer.label}.`);
-                    }
-                    return;
-                }
-                const models = await getLocalLlmClient(plugin).listModels(getLocalLlmUiOverrides());
-                if (aiSectionDisposed) return;
-                localLlmLoadedModels = [...models].sort((left, right) => left.id.localeCompare(right.id));
+        try {
+            const detectedServer = getDetectedLocalServerByKey(getConfiguredLocalServerKey());
+            if (detectedServer) {
+                localLlmLoadedModels = [...detectedServer.models];
                 localLlmModelLoadError = null;
-                localLlmLastLoadedAt = new Date().toISOString();
+                localLlmLastLoadedAt = detectedServer.detectedAt;
                 if (!options.quiet) {
-                    new Notice(localLlmLoadedModels.length
-                        ? `Loaded ${localLlmLoadedModels.length} local model${localLlmLoadedModels.length === 1 ? '' : 's'}.`
-                        : 'No models reported by the Local LLM backend.');
+                    new Notice(`Loaded ${localLlmLoadedModels.length} local model${localLlmLoadedModels.length === 1 ? '' : 's'} from ${detectedServer.label}.`);
                 }
-            } catch (error) {
-                localLlmLoadedModels = [];
-                localLlmModelLoadError = error instanceof Error ? error.message : String(error);
-                if (!options.quiet) {
-                    new Notice(`Unable to load local models: ${localLlmModelLoadError}`);
-                }
+                return;
             }
-        })(), LOCAL_LLM_GUARD_DEADLINE_MS, t('settings.ai.localLlm.validationDeadline')).catch((error: unknown) => {
+            const request = localDiscovery.load();
+            renderLocalLlmModelList();
+            renderLocalLlmStatus();
+            const models = await request;
+            if (models === null) return;
+            localLlmLoadedModels = [...models].sort((left, right) => left.id.localeCompare(right.id));
+            localLlmModelLoadError = null;
+            localLlmLastLoadedAt = new Date().toISOString();
+            if (!options.quiet) {
+                new Notice(localLlmLoadedModels.length
+                    ? `Loaded ${localLlmLoadedModels.length} local model${localLlmLoadedModels.length === 1 ? '' : 's'}.`
+                    : 'No models reported by the Local LLM backend.');
+            }
+        } catch (error) {
             localLlmLoadedModels = [];
             localLlmModelLoadError = error instanceof Error ? error.message : String(error);
-        }).finally(() => {
-            localLlmModelLoadPending = false;
-            localLlmModelLoadPromise = null;
+            if (!options.quiet) {
+                new Notice(`Unable to load local models: ${localLlmModelLoadError}`);
+            }
+        }
+        finally {
             renderLocalLlmModelList();
             renderLocalLlmStatus();
             if (!aiSectionDisposed && ensureCanonicalAiSettings().provider === 'ollama') void refreshRoutingUi();
-        });
-        return localLlmModelLoadPromise;
+        }
     }
-
-    // Safety ceiling for the separately guarded detection and model-list calls.
-    // Their transports have shorter deadlines; this guarantees the UI guard also
-    // settles if a lower layer regresses or never resolves.
-    const LOCAL_LLM_GUARD_DEADLINE_MS = 60_000;
 
     const localValidation = renderAiLocalLlmValidation({
         container: localLlmActionsRow,
@@ -3140,6 +3117,7 @@ export function renderAiSection(params: {
             configurationScope.unload();
             credentialScope.unload();
             localLlmScope.unload();
+            localDiscovery.dispose();
         }
     };
 }

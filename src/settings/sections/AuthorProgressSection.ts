@@ -1,3 +1,4 @@
+import { formatDateRange, parseDateRange } from './authorProgress/dateRange';
 import { CustomBgPresetModal } from '../../modals/CustomBgPresetModal';
 import { App, Setting, setIcon, setTooltip, normalizePath, DropdownComponent, TextComponent, Modal, ButtonComponent } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
@@ -384,35 +385,6 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
         stageBadge.style.setProperty('--ert-chip-bg', `color-mix(in srgb, ${color} 18%, var(--background-secondary) 82%)`);
         stageBadge.style.setProperty('border', `1px solid ${color}`); // SAFE: the stage colour comes from settings at runtime
         stageBadge.style.setProperty('color', color); // SAFE: the stage colour comes from settings at runtime
-    };
-
-    const formatDateRange = (start?: string, target?: string): string => {
-        if (!start || !target) return '';
-        return `${start} to ${target}`;
-    };
-
-    const parseIsoDate = (value: string): number | null => {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
-        const parsed = new Date(`${value}T00:00:00`);
-        const time = parsed.getTime();
-        return Number.isFinite(time) ? time : null;
-    };
-
-    const parseDateRange = (value: string): { start?: string; target?: string; error?: string } => {
-        const matches = value.match(/\d{4}-\d{2}-\d{2}/g);
-        if (!matches || matches.length < 2) {
-            return { error: 'Enter both start and target dates (YYYY-MM-DD).' };
-        }
-        const [start, target] = matches;
-        const startTime = parseIsoDate(start);
-        const targetTime = parseIsoDate(target);
-        if (!startTime || !targetTime) {
-            return { error: 'Use YYYY-MM-DD for both dates.' };
-        }
-        if (startTime > targetTime) {
-            return { error: 'Start date must be before target date.' };
-        }
-        return { start, target };
     };
 
     const dateInputSuccessClass = 'ert-setting-input-success';

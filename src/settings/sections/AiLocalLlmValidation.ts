@@ -28,6 +28,9 @@ export function renderAiLocalLlmValidation(options: ValidationOptions) {
     let disposed = false;
     let inFlight: Promise<void> | null = null;
     let timer: number | null = null;
+    let revision = 0;
+    let activeRevision = 0;
+    let rerunRequested = false;
     const clearTimer = (): void => {
         if (timer !== null) window.clearTimeout(timer);
         timer = null;
@@ -47,6 +50,8 @@ export function renderAiLocalLlmValidation(options: ValidationOptions) {
         state.pending = true;
         state.error = null;
         options.onStateChange();
+        const runRevision = revision;
+        activeRevision = revision;
         let active = true;
         inFlight = (async () => {
             try {
@@ -54,18 +59,18 @@ export function renderAiLocalLlmValidation(options: ValidationOptions) {
                 // Closing the pane stops later steps; an active generation may finish.
                 const report = await withTimeout((async () => {
                     await options.detect();
-                    if (disposed || !active) return;
+                    if (disposed || !active || revision !== runRevision) return;
                     await options.load();
-                    if (disposed || !active) return;
+                    if (disposed || !active || revision !== runRevision) return;
                     return options.diagnose();
                 })(), options.getDeadlineMs(), t('settings.ai.localLlm.validationDeadline'));
-                if (disposed || !report) return;
+                if (disposed || revision !== runRevision || !report) return;
                 state.report = report;
                 state.error = null;
                 state.lastValidatedAt = new Date().toISOString();
                 if (!quiet) new Notice('Local LLM validation complete.');
             } catch (error) {
-                if (disposed) return;
+                if (disposed || revision !== runRevision) return;
                 state.report = null;
                 state.error = error instanceof Error ? error.message : String(error);
                 state.lastValidatedAt = new Date().toISOString();
@@ -77,6 +82,7 @@ export function renderAiLocalLlmValidation(options: ValidationOptions) {
                 if (!disposed) {
                     options.onStateChange();
                     if (options.isLocalActive()) options.onSettled();
+                    if (rerunRequested) { rerunRequested = false; queue(); }
                 }
             }
         })();
@@ -85,6 +91,7 @@ export function renderAiLocalLlmValidation(options: ValidationOptions) {
 
     function queue(): void {
         if (disposed || !options.isLocalActive()) return;
+        if (inFlight) { if (revision !== activeRevision) rerunRequested = true; return; }
         clearTimer();
         timer = window.setTimeout(() => {
             timer = null;
@@ -107,5 +114,5 @@ export function renderAiLocalLlmValidation(options: ValidationOptions) {
             });
         });
 
-    return { state: state as Readonly<ValidationState>, reset, queue, run };
+    return { state: state as Readonly<ValidationState>, reset, invalidate: () => { revision++; reset(); }, queue, run };
 }

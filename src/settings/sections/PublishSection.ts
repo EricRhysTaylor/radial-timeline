@@ -1,3 +1,5 @@
+import { compactLayoutOptions, readLayoutOptions } from './publish/layoutOptions';
+import { renderImportedLayoutSummary } from './publish/ImportedLayoutSummary';
 /* global __RT_RELEASE__ -- build-time flags injected by esbuild define; see esbuild.config.mjs */
 /*
  * Radial Timeline Plugin for Obsidian
@@ -811,60 +813,17 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         if (index < 0) return null;
         return plugin.settings.books[index];
     };
-    const normalizeLayoutOptionList = (values: unknown): string[] => {
-        if (!Array.isArray(values)) return [];
-        return values.map(value => (typeof value === 'string' ? value : ''));
-    };
-    const getLayoutOptionsForActiveBook = (layoutId: string): BookLayoutOptions => {
-        const activeBook = getActiveBookReference();
-        if (!activeBook) return {};
-        const scoped = activeBook.layoutOptions?.[layoutId];
-        if (!scoped) return {};
-        const sceneHeadingMode = scoped.sceneHeadingMode === 'scene-number'
-            || scoped.sceneHeadingMode === 'scene-number-title'
-            || scoped.sceneHeadingMode === 'title-only'
-            ? scoped.sceneHeadingMode
-            : undefined;
-        return {
-            partEpigraphs: normalizeLayoutOptionList(scoped.partEpigraphs),
-            partEpigraphAttributions: normalizeLayoutOptionList(scoped.partEpigraphAttributions),
-            ...(sceneHeadingMode ? { sceneHeadingMode } : {})
-        };
-    };
+    const getLayoutOptionsForActiveBook = (layoutId: string): BookLayoutOptions =>
+        readLayoutOptions(getActiveBookReference()?.layoutOptions?.[layoutId]);
     const saveLayoutOptionsForActiveBook = async (layoutId: string, next: BookLayoutOptions): Promise<void> => {
         const activeBook = getActiveBookReference();
         if (!activeBook) return;
-        if (!activeBook.layoutOptions) activeBook.layoutOptions = {};
-        const trimTrailingEmpty = (values: string[]): string[] => {
-            const normalized = values.map(value => value.trim());
-            let lastNonEmptyIndex = -1;
-            for (let i = 0; i < normalized.length; i++) {
-                if (normalized[i].length > 0) lastNonEmptyIndex = i;
-            }
-            if (lastNonEmptyIndex < 0) return [];
-            return normalized.slice(0, lastNonEmptyIndex + 1);
-        };
-        const hasEpigraphText = (next.partEpigraphs || []).some(value => value.trim().length > 0);
-        const hasAttributionText = (next.partEpigraphAttributions || []).some(value => value.trim().length > 0);
-        const sceneHeadingMode = next.sceneHeadingMode === 'scene-number'
-            || next.sceneHeadingMode === 'scene-number-title'
-            || next.sceneHeadingMode === 'title-only'
-            ? next.sceneHeadingMode
-            : undefined;
-        const hasSceneHeadingModeOverride = !!sceneHeadingMode && sceneHeadingMode !== 'scene-number-title';
-        if (!hasEpigraphText && !hasAttributionText && !hasSceneHeadingModeOverride) {
+        const options = compactLayoutOptions(next);
+        if (options) {
+            activeBook.layoutOptions = { ...activeBook.layoutOptions, [layoutId]: options };
+        } else if (activeBook.layoutOptions) {
             delete activeBook.layoutOptions[layoutId];
-            if (Object.keys(activeBook.layoutOptions).length === 0) {
-                delete activeBook.layoutOptions;
-            }
-        } else {
-            const trimmedEpigraphs = trimTrailingEmpty(next.partEpigraphs || []);
-            const trimmedAttributions = trimTrailingEmpty(next.partEpigraphAttributions || []);
-            activeBook.layoutOptions[layoutId] = {
-                ...(trimmedEpigraphs.length > 0 ? { partEpigraphs: trimmedEpigraphs } : {}),
-                ...(trimmedAttributions.length > 0 ? { partEpigraphAttributions: trimmedAttributions } : {}),
-                ...(hasSceneHeadingModeOverride ? { sceneHeadingMode } : {})
-            };
+            if (!Object.keys(activeBook.layoutOptions).length) delete activeBook.layoutOptions;
         }
         await plugin.saveSettings();
     };
@@ -901,102 +860,6 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         const bundledLayouts = getVisibleBundledLayouts();
         const installed = bundledLayouts.filter(layout => isBundledPandocLayoutInstalled(plugin, layout)).length;
         return { total: bundledLayouts.length, installed };
-    };
-
-    const getImportedLayoutTraits = (layout: PandocLayoutTemplate): string[] => {
-        const traits = layout.importDetection?.traits
-            ?.map(trait => trait.trim())
-            .filter(trait => trait.length > 0)
-            .slice(0, 4);
-        if (traits && traits.length > 0) return traits;
-
-        if (layout.importDetection?.styleHint === 'chaptered') return ['Chapter-based structure', 'Book-style typography'];
-        if (layout.importDetection?.styleHint === 'literary') return ['Refined chapter styling', 'Book-style typography'];
-        if (layout.importDetection?.styleHint === 'book') return ['Book-style page structure', 'Running headers detected'];
-        if (layout.importDetection?.styleHint === 'manuscript') return ['Minimal manuscript formatting', 'Wide page spacing'];
-        return ['Custom formatting'];
-    };
-
-    const getImportedLayoutTraitLabel = (trait: string): string => {
-        const normalized = trait.toLowerCase();
-        if (normalized.includes('header')) return 'Headers';
-        if (normalized.includes('chapter') || normalized.includes('structure') || normalized.includes('part')) return 'Structure';
-        if (normalized.includes('typography') || normalized.includes('font')) return 'Font';
-        if (normalized.includes('metadata') || normalized.includes('front-page')) return 'Metadata';
-        if (normalized.includes('spacing')) return 'Spacing';
-        if (normalized.includes('dialogue') || normalized.includes('scene')) return 'Scenes';
-        return 'Format';
-    };
-
-    const getImportedLayoutPreviewKind = (layout: PandocLayoutTemplate): 'manuscript' | 'book' | 'literary' | 'chaptered' | 'generic' => {
-        return layout.importDetection?.mockPreviewKind || 'generic';
-    };
-
-    const renderImportedLayoutMockPreview = (
-        container: HTMLElement,
-        kind: 'manuscript' | 'book' | 'literary' | 'chaptered' | 'generic',
-    ): void => {
-        const page = container.createDiv({ cls: `ert-import-template-mock-page ert-import-template-mock-page--${kind}` });
-        if (kind === 'book' || kind === 'chaptered') {
-            page.createDiv({ cls: 'ert-import-template-mock-header-line' });
-        }
-
-        page.createDiv({
-            cls: 'ert-import-template-mock-kicker',
-            text: kind === 'chaptered'
-                ? 'Chapter opener'
-                : kind === 'literary'
-                    ? 'Literary layout'
-                    : kind === 'manuscript'
-                        ? 'Submission format'
-                        : kind === 'book'
-                            ? 'Book layout'
-                            : 'Custom layout',
-        });
-
-        page.createDiv({
-            cls: `ert-import-template-mock-title ert-import-template-mock-title--${kind}`,
-            text: kind === 'chaptered'
-                ? 'Chapter One'
-                : kind === 'literary'
-                    ? 'Winter Light'
-                    : kind === 'manuscript'
-                        ? 'Manuscript Page'
-                        : kind === 'book'
-                            ? 'Book Page'
-                            : 'Template Preview',
-        });
-
-        if (kind === 'literary') {
-            page.createDiv({ cls: 'ert-import-template-mock-subtitle', text: 'A quiet opening line' });
-        }
-
-        const lines = page.createDiv({ cls: 'ert-import-template-mock-lines' });
-        ['', ' is-mid', '', ' is-short', '', ''].forEach((suffix) => {
-            lines.createDiv({ cls: `ert-import-template-mock-line${suffix}`.trim() });
-        });
-    };
-
-    const renderImportedLayoutSummary = (container: HTMLElement, layout: PandocLayoutTemplate): void => {
-        const shell = container.createDiv({ cls: 'ert-layout-imported' });
-        const copy = shell.createDiv({ cls: 'ert-layout-imported-copy' });
-
-        getImportedLayoutTraits(layout).forEach((trait) => {
-            const traitRow = copy.createDiv({ cls: 'ert-layout-imported-row' });
-            traitRow.createDiv({ cls: 'ert-layout-imported-label', text: getImportedLayoutTraitLabel(trait) });
-            traitRow.createDiv({
-                cls: 'ert-layout-imported-value',
-                text: trait,
-            });
-        });
-
-        copy.createDiv({
-            cls: 'ert-layout-imported-description',
-            text: buildLayoutDescription(layout),
-        });
-
-        const preview = shell.createDiv({ cls: 'ert-layout-imported-preview' });
-        renderImportedLayoutMockPreview(preview, getImportedLayoutPreviewKind(layout));
     };
 
     /** Render category groups with layout rows. */
@@ -1154,7 +1017,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                 });
             } else if (isImported && s.descEl) {
                 s.descEl.addClass('ert-layout-row-desc--rich');
-                renderImportedLayoutSummary(s.descEl, layout);
+                renderImportedLayoutSummary(s.descEl, layout, buildLayoutDescription(layout));
             } else {
                 s.setDesc(buildLayoutDescription(layout));
             }

@@ -1,3 +1,4 @@
+import { createLocalLlmModelPills, abbreviateLocalModelId, buildLocalFeatureSummary } from './AiLocalLlmModelPills';
 import { renderAiLocalLlmValidation } from './AiLocalLlmValidation';
 import { renderAiCredentialPanel, type ProviderKeyUiState } from './AiCredentialPanel';
 import { renderAiConfiguration } from './AiConfiguration';
@@ -54,7 +55,7 @@ import {
     normalizeLocalLlmServerBaseUrl
 } from '../../ai/localLlm/settings';
 import { inferLocalLlmCapability } from '../../ai/localLlm/capabilityInference';
-import type { LocalLlmCapabilityAssessment, LocalLlmFeatureSupport } from '../../ai/localLlm/capabilityInference';
+import type { LocalLlmCapabilityAssessment } from '../../ai/localLlm/capabilityInference';
 import type { LocalLlmModelEntry } from '../../ai/localLlm/transport';
 import { withTimeout } from '../../ai/localLlm/transport';
 import type { LocalLlmBackendId, LocalLlmJsonMode } from '../../ai/types';
@@ -402,15 +403,6 @@ export function renderAiSection(params: {
     const getLocalLlmUiOverrides = (): Partial<LocalLlmSettings> => ({
         timeoutMs: getLocalLlmUiTimeoutMs()
     });
-    // LM Studio / MLX serve the model id as a full filesystem path
-    // (…/Qwen3-30B-A3B-Instruct-2507-MLX-4bit). Show just the leaf name in the UI;
-    // the full id is still the stored value used for API calls.
-    const abbreviateLocalModelId = (id: string): string => {
-        const trimmed = (id || '').trim(); // SAFE: an empty model id is the "nothing selected" state the caller checks for
-        if (!trimmed) return trimmed;
-        return trimmed.split(/[\\/]/).pop() || trimmed;
-    };
-
     const getLocalStrategyModelOptions = (): Array<{ value: string; label: string }> => {
         const selectedModelId = getOllamaModelId().trim();
         const values = new Set<string>();
@@ -440,49 +432,6 @@ export function renderAiSection(params: {
         }
 
         return options;
-    };
-    const formatLocalCapabilitySymbol = (support: LocalLlmFeatureSupport): string => {
-        if (support === 'yes') return '✓';
-        if (support === 'partial') return '~';
-        return '✗';
-    };
-    const formatLocalCapabilitySupportLabel = (
-        feature: 'summary' | 'pulses' | 'gossamer' | 'inquiry',
-        support: LocalLlmFeatureSupport
-    ): string => {
-        if (feature === 'inquiry') {
-            if (support === 'yes') return 'Eligible';
-            if (support === 'partial') return 'Possibly eligible';
-            return 'Not eligible';
-        }
-        if (support === 'yes') return 'Supported';
-        if (support === 'partial') return 'Limited';
-        return 'Not supported';
-    };
-    const buildLocalCapabilityTooltip = (assessment: LocalLlmCapabilityAssessment): string => [
-        `${assessment.tierName} — ${assessment.tierSummary}`,
-        `Summary — ${formatLocalCapabilitySymbol(assessment.featureSupport.summary)} ${formatLocalCapabilitySupportLabel('summary', assessment.featureSupport.summary)}`,
-        `Pulses — ${formatLocalCapabilitySymbol(assessment.featureSupport.pulses)} ${formatLocalCapabilitySupportLabel('pulses', assessment.featureSupport.pulses)}`,
-        `Gossamer — ${formatLocalCapabilitySymbol(assessment.featureSupport.gossamer)} ${formatLocalCapabilitySupportLabel('gossamer', assessment.featureSupport.gossamer)}`,
-        `Inquiry — ${formatLocalCapabilitySymbol(assessment.featureSupport.inquiry)} ${formatLocalCapabilitySupportLabel('inquiry', assessment.featureSupport.inquiry)}`,
-        assessment.explanation
-    ].join('\n');
-    const buildLocalFeatureSummary = (assessment: LocalLlmCapabilityAssessment): string => {
-        const parts: string[] = [];
-        if (assessment.featureSupport.summary === 'yes') parts.push('Summary');
-        else if (assessment.featureSupport.summary === 'partial') parts.push('Summary (limited)');
-
-        if (assessment.featureSupport.pulses === 'yes') parts.push('Pulses');
-        else if (assessment.featureSupport.pulses === 'partial') parts.push('Pulses (limited)');
-
-        if (assessment.featureSupport.gossamer === 'yes') parts.push('Gossamer');
-        else if (assessment.featureSupport.gossamer === 'partial') parts.push('Gossamer (limited)');
-
-        if (assessment.featureSupport.inquiry === 'yes') parts.push('Inquiry eligible');
-        else if (assessment.featureSupport.inquiry === 'partial') parts.push('Inquiry (possibly eligible)');
-
-        const summary = parts.join(' · ');
-        return summary ? summary : 'Summary not supported';
     };
     const setLocalLlmConfigurationMode = (mode: LocalLlmConfigurationMode): void => {
         const aiSettings = ensureCanonicalAiSettings();
@@ -967,15 +916,7 @@ export function renderAiSection(params: {
             if (isSyncingRoutingUi) return;
             const aiSettings = ensureCanonicalAiSettings();
             if (aiSettings.provider === 'ollama') {
-                setOllamaModelId(value);
-                if (localLlmModelText) localLlmModelText.setValue(value);
-                localValidation.reset();
-                await persistCanonical();
-                params.scheduleKeyValidation('ollama');
-                renderLocalLlmModelList();
-                renderLocalLlmStatus();
-                localValidation.queue();
-                void refreshRoutingUi();
+                await selectLocalLlmModel(value);
                 return;
             }
             if (value === 'auto') {
@@ -2520,7 +2461,7 @@ export function renderAiSection(params: {
         attr: { type: 'button', 'aria-label': 'Toggle local LLM status details' }
     });
     let localLlmStatusManuallyExpanded = false;
-    plugin.registerDomEvent(localLlmStatusHeader, 'click', () => {
+    localLlmScope.registerDomEvent(localLlmStatusHeader, 'click', () => {
         if (!localLlmStatusSection.hasClass('is-collapsible')) return;
         localLlmStatusManuallyExpanded = !localLlmStatusManuallyExpanded;
         renderLocalLlmStatus();
@@ -2559,9 +2500,24 @@ export function renderAiSection(params: {
     const localLlmModelsSummary = localLlmStatusSection.createDiv({ cls: 'ert-field-note ert-ai-local-llm-model-summary' });
     const localLlmModelsList = localLlmStatusSection.createDiv({ cls: `${ERT_CLASSES.INLINE} ert-ai-local-llm-model-list` });
     const localLlmModelsLegend = localLlmStatusSection.createDiv({ cls: 'ert-field-note ert-ai-local-llm-model-legend' });
+    const modelPills = createLocalLlmModelPills(localLlmModelsList, localLlmModelsLegend, localLlmScope, selectLocalLlmModel);
     const localLlmActionsRow = localLlmStatusSection.createDiv({
         cls: `${ERT_CLASSES.STACK_TIGHT} ert-card-subtle ert-ai-local-llm-actions-row ert-settings-hidden`
     });
+
+    async function selectLocalLlmModel(value: string): Promise<void> {
+        if (aiSectionDisposed) return;
+        setOllamaModelId(value);
+        if (localLlmModelText) localLlmModelText.setValue(value);
+        localValidation.reset();
+        await persistCanonical();
+        if (aiSectionDisposed) return;
+        params.scheduleKeyValidation('ollama');
+        renderLocalLlmModelList();
+        renderLocalLlmStatus();
+        localValidation.queue();
+        void refreshRoutingUi();
+    }
 
     function clearLocalLlmModelLoadState(): void {
         localLlmLoadedModels = [];
@@ -2699,13 +2655,13 @@ export function renderAiSection(params: {
                 text.inputEl.removeClass('ert-setting-input-success');
                 text.inputEl.removeClass('ert-setting-input-error');
             });
-            plugin.registerDomEvent(text.inputEl, 'keydown', (evt: KeyboardEvent) => {
+            localLlmScope.registerDomEvent(text.inputEl, 'keydown', (evt: KeyboardEvent) => {
                 if (evt.key === 'Enter') {
                     evt.preventDefault();
                     text.inputEl.blur();
                 }
             });
-            plugin.registerDomEvent(text.inputEl, 'blur', () => {
+            localLlmScope.registerDomEvent(text.inputEl, 'blur', () => {
                 void (async () => {
                     const aiSettings = ensureCanonicalAiSettings();
                     aiSettings.localLlm = {
@@ -2735,13 +2691,13 @@ export function renderAiSection(params: {
                 text.inputEl.removeClass('ert-setting-input-success');
                 text.inputEl.removeClass('ert-setting-input-error');
             });
-            plugin.registerDomEvent(text.inputEl, 'keydown', (evt: KeyboardEvent) => {
+            localLlmScope.registerDomEvent(text.inputEl, 'keydown', (evt: KeyboardEvent) => {
                 if (evt.key === 'Enter') {
                     evt.preventDefault();
                     text.inputEl.blur();
                 }
             });
-            plugin.registerDomEvent(text.inputEl, 'blur', () => {
+            localLlmScope.registerDomEvent(text.inputEl, 'blur', () => {
                 void (async () => {
                     setOllamaModelId(text.getValue());
                     markLocalLlmConfigurationDirty();
@@ -2853,8 +2809,7 @@ export function renderAiSection(params: {
         localLlmModelSetting.settingEl.toggleClass('ert-settings-hidden', !showManualModelFallback);
         localLlmModelSetting.settingEl.toggleClass('ert-settings-visible', showManualModelFallback);
 
-        localLlmModelsList.empty();
-        localLlmModelsLegend.empty();
+        if (localLlmModelLoadPending || localLlmModelLoadError || !localLlmLoadedModels.length) modelPills.clear();
         localLlmModelsSummary.toggleClass('ert-settings-hidden', false);
         if (localLlmModelLoadPending) {
             localLlmModelsSummary.setText(t('settings.ai.localLlm.modelsLoading'));
@@ -2878,53 +2833,9 @@ export function renderAiSection(params: {
         // The healthy state is already covered by the status grid and the pills; only surface the mismatch warning.
         localLlmModelsSummary.setText(selectedExists ? '' : 'Selected model is missing from the loaded list.');
         localLlmModelsSummary.toggleClass('ert-settings-hidden', selectedExists);
-        const appendLegendItem = (tier: 0 | 1 | 3 | 4, label: string): void => {
-            const item = localLlmModelsLegend.createSpan({ cls: 'ert-ai-local-llm-legend-item' });
-            item.createSpan({ cls: `ert-ai-local-llm-legend-swatch ert-ai-local-llm-legend-swatch--tier${tier}` });
-            item.createSpan({ text: label });
-        };
-        appendLegendItem(0, t('settings.ai.localLlm.legendNotUsable'));
-        appendLegendItem(1, t('settings.ai.localLlm.legendLimited'));
-        appendLegendItem(3, t('settings.ai.localLlm.legendStrong'));
-        appendLegendItem(4, t('settings.ai.localLlm.legendInquiryEligible'));
-
-        localLlmLoadedModels.forEach(model => {
-            const pill = localLlmModelsList.createSpan({
-                cls: `${ERT_CLASSES.BADGE_PILL} ${ERT_CLASSES.BADGE_PILL_SM} ert-ai-resolved-preview-pill ert-ai-local-model-pill`
-            });
-            const capability = getLocalCapabilityAssessment(model.id, model);
-            pill.addClass(`ert-ai-local-model-pill--tier${capability.tier}`);
-            const isActiveModel = model.id === selectedModelId;
-            if (isActiveModel) {
-                pill.addClass(ERT_CLASSES.IS_ACTIVE);
-            }
-            pill.createSpan({ cls: 'ert-ai-local-model-pill-label', text: abbreviateLocalModelId(model.id) });
-            if (isActiveModel) {
-                pill.createSpan({ cls: 'ert-ai-local-model-pill-active', text: t('settings.ai.localLlm.modelActive') });
-            }
-            pill.setAttribute('role', 'button');
-            pill.setAttribute('tabindex', '0');
-            pill.setAttribute('aria-label', `Use local model ${model.id}. ${capability.tierName} ${capability.tierSummary}.`);
-            setTooltip(pill, buildLocalCapabilityTooltip(capability), { placement: 'top' });
-            const applyModel = async (): Promise<void> => {
-                setOllamaModelId(model.id);
-                if (localLlmModelText) localLlmModelText.setValue(model.id);
-                localValidation.reset();
-                await persistCanonical();
-                params.scheduleKeyValidation('ollama');
-                renderLocalLlmModelList();
-                renderLocalLlmStatus();
-                localValidation.queue();
-                void refreshRoutingUi();
-            };
-            plugin.registerDomEvent(pill, 'click', () => { void applyModel(); });
-            plugin.registerDomEvent(pill, 'keydown', (event: KeyboardEvent) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    void applyModel();
-                }
-            });
-        });
+        modelPills.render(localLlmLoadedModels.map(model => ({
+            id: model.id, capability: getLocalCapabilityAssessment(model.id, model)
+        })), selectedModelId);
     };
 
     const formatLocalLlmUiError = (message: string | null | undefined): string => {

@@ -76,7 +76,6 @@ describe('settings section navigation anchors', () => {
         // A key verdict captured once at Settings-open goes stale; the dropdown
         // must not replay it as current when the author switches providers.
         expect(aiSource.includes('const providerKeyRefreshers: Record<string, () => Promise<void>> = {};')).toBe(true);
-        expect(aiSource.includes('providerKeyRefreshers[options.provider] = async () => {')).toBe(true);
         expect(aiSource.includes('void providerKeyRefreshers[nextProvider]?.();')).toBe(true);
         expect(aiSource.includes('Object.values(providerKeyRefreshers).forEach(refresh => { void refresh(); });')).toBe(true);
     });

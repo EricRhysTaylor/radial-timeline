@@ -1,8 +1,8 @@
+import { renderAiCredentialPanel, type ProviderKeyUiState } from './AiCredentialPanel';
 import { renderAiConfiguration } from './AiConfiguration';
 import { Component, Setting as Settings, Notice, DropdownComponent,setIcon, setTooltip } from 'obsidian';
 import type { App, TextComponent } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
-import { validateProviderKeyQuick } from '../../ai/credentials/keyValidation';
 import { buildCostComparisonRows, costComparisonRowKey, listCostComparisonModels, type CostComparisonRow } from '../../ai/cost/costComparison';
 import { chooseAutoLocalModel, chooseAutoLocalServer, listLocalServerCandidates, probeLocalServers, type DetectedLocalServer } from '../../ai/localLlm/detection';
 import { forecastVaultFeatures, type PromptRequestBreakdown, type VaultForecasts } from '../../ai/forecast/vaultForecast';
@@ -21,13 +21,10 @@ import { getModelUiSignals } from '../../ai/caps/engineCapabilities';
 import { getAIClient } from '../../ai/runtime/aiClient';
 import { getLocalLlmClient } from '../../ai/localLlm/client';
 import {
-    getCredential,
-    getCredentialSecretId,
     migrateLegacyKeysToSecretStorage,
-    needsLegacyKeyMigration,
-    setCredentialSecretId
+    needsLegacyKeyMigration
 } from '../../ai/credentials/credentials';
-import { hasSecret, isSecretStorageAvailable, setSecret } from '../../ai/credentials/secretStorage';
+import { isSecretStorageAvailable } from '../../ai/credentials/secretStorage';
 import type { AccessTier, AIProviderId, Capability, LocalLlmConfigurationMode, LocalLlmSettings, ModelInfo } from '../../ai/types';
 import {
     getLocalLlmDiagnosticTimeoutMs,
@@ -829,8 +826,6 @@ export function renderAiSection(params: {
      * different provider — so the dropdown states what is true now.
      */
     const providerKeyRefreshers: Record<string, () => Promise<void>> = {};
-    /** A verdict this recent is still current; re-asking would only burn a request. */
-    const PROVIDER_KEY_STATE_FRESHNESS_MS = 10_000;
     /**
      * Credential state as WORDS, not just colour.
      *
@@ -2376,14 +2371,8 @@ export function renderAiSection(params: {
         params.addAiRelatedElement(migrateKeysSetting.settingEl);
     }
 
-    type ProviderKeyUiState = 'ready' | 'not_configured' | 'rejected' | 'network_blocked' | 'checking';
-    const configureSensitiveInput = (inputEl: HTMLInputElement): void => {
-        inputEl.type = 'password';
-        inputEl.autocomplete = 'new-password';
-        inputEl.spellcheck = false;
-    };
-    const SAVED_KEY_ENTRY_COPY = 'Saved privately on this device. Paste a key, then click outside this field or press Enter/Return to save or replace it. Keys are never written to your settings file.';
-
+    const credentialScope = new Component();
+    credentialScope.load();
     const renderCredentialSettings = (options: {
         section: HTMLElement;
         provider: 'openai' | 'anthropic' | 'google';
@@ -2391,280 +2380,31 @@ export function renderAiSection(params: {
         keyPlaceholder: string;
         docsUrl: string;
     }): void => {
-        const doc = options.section.ownerDocument;
-        // Descriptions are composed straight into Setting.descEl. A
-        // DocumentFragment handed to setDesc() rendered as the literal text
-        // "[object DocumentFragment]" in the live plugin, so no fragment is
-        // built here at all.
-        const secretIdSetting = new Settings(options.section)
-            .setName(`Obsidian secret name (${options.providerName})`);
-        secretIdSetting.descEl.createSpan({
-            text: `The name this vault's Obsidian secret storage files your ${options.providerName} API key under. `
-        });
-        secretIdSetting.descEl.createEl('a', {
-            text: 'Get key',
-            href: options.docsUrl,
-            attr: { target: '_blank', rel: 'noopener' }
-        });
-        secretIdSetting.descEl.appendText(' Obsidian secret keys are shared across the plugins in this vault.');
-        const keyStatusSetting = new Settings(options.section)
-            .setName(`${options.providerName} API key status`);
-        keyStatusSetting.settingEl.addClass('ert-ai-provider-key-status-row');
-
-        let providerState: ProviderKeyUiState = 'checking';
-        let providerStateDetail = '';
-        let replaceRequested = false;
-        let revealSecretName = false;
-        let secureKeySetting: Settings | null = null;
-        let secureKeyInput: HTMLInputElement | null = null;
-        const setSettingRowVisible = (setting: Settings, visible: boolean): void => {
-            if (visible) {
-                setting.settingEl.removeAttribute('hidden');
-            } else {
-                setting.settingEl.setAttribute('hidden', '');
-            }
-            setting.settingEl.toggleClass('ert-settings-hidden', !visible);
-            setting.settingEl.toggleClass('ert-settings-visible', visible);
-        };
-
         let lastSettledKeyState: ProviderKeyUiState | undefined;
-        const setProviderState = (next: ProviderKeyUiState): void => {
-            providerState = next;
-            providerKeyStates[options.provider] = next;
-            refreshDropdownKeyIndicators();
-            refreshResolvedPreviewBusy();
-            refreshActiveCostComparisonRowState(options.provider, next);
-            // `checking` is transient: compare settled states only, so a
-            // rejected → checking → rejected round trip does not flash the
-            // old preview back for a second.
-            if (next !== 'checking') {
-                const blockedBefore = isCloudKeyBlockedState(lastSettledKeyState);
-                lastSettledKeyState = next;
-                if (blockedBefore !== isCloudKeyBlockedState(next)
-                    && ensureCanonicalAiSettings().provider === options.provider) {
-                    void refreshRoutingUi();
-                }
-            }
-            const ai = ensureCanonicalAiSettings();
-            const secretId = getCredentialSecretId(ai, options.provider).trim();
-            const vars = { provider: options.providerName, secret: secretId };
-            if (next !== 'network_blocked') providerStateDetail = '';
-
-            const descEl = keyStatusSetting.descEl;
-            descEl.empty();
-            const stateBlock = descEl.createDiv({ cls: `ert-ai-provider-key-state is-${next}` });
-            const icon = stateBlock.createSpan({ cls: 'ert-ai-provider-key-state__icon' });
-            setIcon(icon, next === 'ready' ? 'shield-check' : 'shield-alert');
-            const body = stateBlock.createSpan({ cls: 'ert-ai-provider-key-state__body' });
-            // The headline answers the two questions an author actually has:
-            // is a key stored in Obsidian secret storage, and does the
-            // provider accept it. Every state names the storage and the name.
-            const headline = !secretStorageAvailable
-                ? t('settings.ai.credential.statusNoSecretStorage', vars)
-                : !secretId
-                    ? t('settings.ai.credential.statusNoSecretName', vars)
-                    : next === 'ready'
-                        ? t('settings.ai.credential.statusReady', vars)
-                        : next === 'rejected'
-                            ? t('settings.ai.credential.statusRejected', vars)
-                            : next === 'network_blocked'
-                                ? t('settings.ai.credential.statusNetworkBlocked', vars)
-                                : next === 'checking'
-                                    ? t('settings.ai.credential.statusChecking', vars)
-                                    : t('settings.ai.credential.statusNotConfigured', vars);
-            body.createSpan({ cls: 'ert-ai-provider-key-state__text', text: headline });
-
-            let helperText = '';
-            if (secretStorageAvailable && secretId) {
-                if (next === 'not_configured') {
-                    helperText = t('settings.ai.credential.helperNotConfigured', vars);
-                } else if (next === 'rejected') {
-                    helperText = t('settings.ai.credential.helperRejected', vars);
-                } else if (next === 'network_blocked') {
-                    helperText = providerStateDetail || t('settings.ai.credential.helperNetworkBlocked', vars);
-                } else if (next === 'checking') {
-                    helperText = t('settings.ai.credential.helperChecking', vars);
-                }
-            }
-            if (helperText) {
-                body.createSpan({ cls: 'ert-ai-provider-key-state__helper', text: helperText });
-            }
-
-            if ((next === 'ready' || next === 'network_blocked') && secretStorageAvailable) {
-                const actions = body.createSpan({ cls: 'ert-ai-provider-key-actions' });
-
-                const replaceBtn = doc.win.createEl('button');
-                replaceBtn.className = 'ert-ai-provider-key-action';
-                replaceBtn.type = 'button';
-                replaceBtn.textContent = t('settings.ai.credential.replaceKeyButton');
-                replaceBtn.addEventListener('click', () => {
-                    replaceRequested = true;
-                    setProviderState(providerState);
-                    secureKeyInput?.focus();
-                });
-                actions.appendChild(replaceBtn);
-
-                if (secretId) {
-                    const copyBtn = doc.win.createEl('button');
-                    copyBtn.className = 'ert-ai-provider-key-action';
-                    copyBtn.type = 'button';
-                    copyBtn.textContent = t('settings.ai.credential.copyKeyNameButton');
-                    copyBtn.addEventListener('click', () => {
-                        revealSecretName = true;
-                        setProviderState(providerState);
-                        secretIdSetting.settingEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                        void navigator.clipboard.writeText(secretId)
-                            .then(() => new Notice(t('settings.ai.credential.keyNameCopiedNotice')))
-                            .catch(() => new Notice(t('settings.ai.credential.keyNameCopyFailNotice')));
-                    });
-                    actions.appendChild(copyBtn);
-                }
-            }
-
-            const showSecretIdRow = !secretStorageAvailable
-                || next !== 'ready'
-                || revealSecretName;
-            setSettingRowVisible(secretIdSetting, showSecretIdRow);
-
-            if (secureKeySetting) {
-                const shouldShowInput = replaceRequested || next === 'not_configured' || next === 'rejected';
-                setSettingRowVisible(secureKeySetting, shouldShowInput);
-                if (!shouldShowInput && secureKeyInput) secureKeyInput.value = '';
-            }
-            params.refreshProviderDimming();
-        };
-
-        let keyStateCheckedAt = 0;
-        let keyStateInFlight: Promise<void> | null = null;
-        const refreshProviderKeyState = async (): Promise<void> => {
-            if (keyStateInFlight) return keyStateInFlight;
-            keyStateInFlight = runProviderKeyStateCheck().finally(() => {
-                keyStateInFlight = null;
-                keyStateCheckedAt = Date.now();
-            });
-            return keyStateInFlight;
-        };
-        providerKeyRefreshers[options.provider] = async () => {
-            if (!keyStateInFlight && Date.now() - keyStateCheckedAt < PROVIDER_KEY_STATE_FRESHNESS_MS) return;
-            await refreshProviderKeyState();
-        };
-
-        async function runProviderKeyStateCheck(): Promise<void> {
-            const ai = ensureCanonicalAiSettings();
-            if (secretStorageAvailable) {
-                const savedKeyName = getCredentialSecretId(ai, options.provider).trim();
-                if (!savedKeyName || !(await hasSecret(app, savedKeyName))) {
-                    replaceRequested = false;
-                    revealSecretName = false;
-                    setProviderState('not_configured');
-                    return;
-                }
-
-                const key = await getCredential(plugin, options.provider);
-                if (!key || key.length < 8) {
-                    replaceRequested = false;
-                    revealSecretName = false;
-                    setProviderState('not_configured');
-                    return;
-                }
-
-                setProviderState('checking');
-                const validation = await validateProviderKeyQuick(options.provider, key);
-                providerStateDetail = validation.detail;
-                if (validation.state === 'ready') {
-                    replaceRequested = false;
-                    revealSecretName = false;
-                }
-                setProviderState(validation.state);
-                return;
-            }
-            replaceRequested = false;
-            revealSecretName = false;
-            setProviderState('not_configured');
-        }
-        secretIdSetting.addText(text => {
-            const aiSettings = ensureCanonicalAiSettings();
-            text.inputEl.addClass('ert-input--full');
-            text
-                .setPlaceholder(`${options.provider}-main`)
-                .setValue(getCredentialSecretId(aiSettings, options.provider));
-            plugin.registerDomEvent(text.inputEl, 'blur', () => {
-                void (async () => {
-                    const ai = ensureCanonicalAiSettings();
-                    const nextId = text.getValue().trim();
-                    setCredentialSecretId(ai, options.provider, nextId);
-                    await persistCanonical();
-                    await refreshProviderKeyState();
-                })();
-            });
-        });
-        secretIdSetting.settingEl.addClass('ert-setting-full-width-input');
-        if (secretStorageAvailable) {
-            setSettingRowVisible(secretIdSetting, false);
-        }
-
-        if (secretStorageAvailable) {
-            secureKeySetting = new Settings(options.section)
-                .setName(`${options.providerName} API key`)
-                .setDesc(SAVED_KEY_ENTRY_COPY);
-            secureKeySetting.addText(text => {
-                text.inputEl.addClass('ert-input--full');
-                configureSensitiveInput(text.inputEl);
-                text.setPlaceholder(options.keyPlaceholder);
-                secureKeyInput = text.inputEl;
-                params.setKeyInputRef(options.provider, text.inputEl);
-
-                plugin.registerDomEvent(text.inputEl, 'keydown', (event: KeyboardEvent) => {
-                    if (event.key === 'Enter') {
-                        event.preventDefault();
-                        text.inputEl.blur();
+        const panel = renderAiCredentialPanel({
+            ...options, app, plugin, secretStorageAvailable,
+            parentScope: credentialScope, ensureCanonicalAiSettings, persistCanonical,
+            onInput: input => params.setKeyInputRef(options.provider, input),
+            onStateChange: next => {
+                providerKeyStates[options.provider] = next;
+                refreshDropdownKeyIndicators();
+                refreshResolvedPreviewBusy();
+                refreshActiveCostComparisonRowState(options.provider, next);
+                // `checking` is transient: compare settled states only, so a
+                // rejected → checking → rejected round trip does not flash the
+                // old preview back for a second.
+                if (next !== 'checking') {
+                    const blockedBefore = isCloudKeyBlockedState(lastSettledKeyState);
+                    lastSettledKeyState = next;
+                    if (blockedBefore !== isCloudKeyBlockedState(next)
+                        && ensureCanonicalAiSettings().provider === options.provider) {
+                        void refreshRoutingUi();
                     }
-                });
-
-                plugin.registerDomEvent(text.inputEl, 'blur', () => {
-                    void (async () => {
-                        const value = text.getValue().trim();
-                        if (!value) return;
-                        const ai = ensureCanonicalAiSettings();
-                        const secretId = getCredentialSecretId(ai, options.provider);
-                        if (!secretId) {
-                            new Notice(`Set a ${options.providerName} saved key name first.`);
-                            return;
-                        }
-                        const stored = await setSecret(app, secretId, value);
-                        if (!stored) {
-                            new Notice(`Unable to save ${options.providerName} key privately.`);
-                            return;
-                        }
-                        text.setValue('');
-                        setProviderState('checking');
-                        const validation = await validateProviderKeyQuick(options.provider, value);
-                        providerStateDetail = validation.detail;
-                        if (validation.state === 'ready') {
-                            replaceRequested = false;
-                            revealSecretName = false;
-                        }
-                        setProviderState(validation.state);
-                        // A real key now exists in secret storage — recompute
-                        // credential presence so the engine flips out of Demo Mode
-                        // (this also notifies Inquiry views to re-resolve).
-                        await plugin.refreshCredentialPresence();
-                    })();
-                });
-            });
-            secureKeySetting.settingEl.addClass('ert-setting-full-width-input');
-            setSettingRowVisible(secureKeySetting, false);
-            setProviderState(providerState);
-        }
-
-        void refreshProviderKeyState();
-
-        if (!secretStorageAvailable) {
-            options.section.createDiv({
-                cls: 'ert-field-note',
-                text: `${options.providerName} requires Obsidian secret storage. Older plaintext key fields are no longer supported.`
-            });
-        }
+                }
+                params.refreshProviderDimming();
+            }
+        });
+        providerKeyRefreshers[options.provider] = panel.refresh;
     };
 
     renderCredentialSettings({
@@ -3614,6 +3354,7 @@ export function renderAiSection(params: {
         dispose: () => {
             aiSectionDisposed = true;
             configurationScope.unload();
+            credentialScope.unload();
             clearLocalLlmAutoValidation();
         }
     };

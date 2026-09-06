@@ -245,27 +245,6 @@ describe('AI settings models table', () => {
         expect(source.includes('forecastVaultFeatures({')).toBe(true);
     });
 
-    it('states whether a key is in Obsidian secret storage in every credential state, with no fragment handed to setDesc', () => {
-        const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
-        const en = readFileSync(resolve(process.cwd(), 'src/i18n/locales/en.ts'), 'utf8');
-        for (const key of ['statusReady', 'statusNotConfigured', 'statusRejected', 'statusNetworkBlocked', 'statusChecking', 'statusNoSecretStorage', 'statusNoSecretName']) {
-            expect(source.includes(`t('settings.ai.credential.${key}', vars)`)).toBe(true);
-        }
-        // Every headline names the storage so "does it have the key?" is never ambiguous.
-        const valuesStart = en.indexOf("statusReady: '");
-        const credentialBlock = en.slice(valuesStart, en.indexOf('helperNotConfigured:', valuesStart));
-        expect((credentialBlock.match(/Obsidian secret storage/g) || []).length).toBe(7);
-        expect(source.includes("t('settings.ai.credential.replaceKeyButton')")).toBe(true);
-        expect(source.includes("t('settings.ai.credential.copyKeyNameButton')")).toBe(true);
-        expect(source.includes('Saved (not tested)')).toBe(false);
-        // Setting.setDesc(fragment) rendered "[object DocumentFragment]" in the
-        // live plugin; the rows write into descEl directly instead.
-        expect(source.includes('keyStatusSetting.setDesc(')).toBe(false);
-        expect(source.includes('const descEl = keyStatusSetting.descEl;')).toBe(true);
-        expect(source.includes('secretIdSetting.descEl.createSpan({')).toBe(true);
-        expect(source.includes('createFragment()')).toBe(false);
-    });
-
     it('blanks the preview, forecasts, and cost table while the active cloud provider has no usable key', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
         // The gate reads the same credential state that labels the dropdown "(No key)".
@@ -283,12 +262,6 @@ describe('AI settings models table', () => {
         expect(source.includes('const refreshActiveCostComparisonRowState = (provider: AIProviderId, credentialState: string | null): void => {')).toBe(true);
         expect(source.includes('if (!activeCostComparisonRowKey?.startsWith(`${provider}::`)) return;')).toBe(true);
         expect(source.includes('refreshActiveCostComparisonRowState(options.provider, next);')).toBe(true);
-    });
-
-    it('notifies open Inquiry views when a saved provider key changes', () => {
-        const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
-        expect(source.includes('const stored = await setSecret(app, secretId, value);')).toBe(true);
-        expect(source.includes('plugin.getInquiryService().notifyAiSettingsChanged();')).toBe(true);
     });
 
     it('uses configured cache-window settings for context-run labels instead of hardcoded provider defaults', () => {

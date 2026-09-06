@@ -10170,8 +10170,8 @@
   flex-wrap: wrap;
   width: 100%;
   justify-content: flex-start;
-  gap: var(--ert-gap-xs);
-  padding: var(--ert-gap-xs) var(--ert-pad-cozy);
+  gap: var(--ert-gap-sm);
+  padding: var(--ert-pad-cozy) var(--ert-pad-sm);
   border-radius: 8px;
   font-size: 12px;
   line-height: 1.35;

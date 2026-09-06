@@ -23,8 +23,7 @@
   <a href="https://github.com/EricRhysTaylor/radial-timeline/issues?q=is%3Aissue+is%3Aopen+label%3Abug"><img src="https://img.shields.io/github/issues/EricRhysTaylor/radial-timeline/bug?colorA=363a4f&colorB=e93147&style=for-the-badge&label=bugs" alt="Open bugs on GitHub"></a>
 </p>
 
-> [!NOTE]
-> **Why Obsidian flags "Direct Filesystem Access" and "Shell Execution" on install:** both come from a single feature — the **Pandoc manuscript publishing pipeline**. Shell execution runs Pandoc (and its LaTeX engine) only when you export; filesystem access writes your export files and locates the Pandoc binary and fonts that live outside the vault. Neither is used for anything else. See [Privacy & Security](docs/privacy-and-security.md).
+*Shell execution and Direct filesystem access are used for Pandoc manuscript publishing. See [Privacy & Security](docs/privacy-and-security.md).*
 
 ## What It Does
 

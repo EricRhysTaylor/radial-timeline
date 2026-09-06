@@ -88,6 +88,6 @@ describe('settings section navigation anchors', () => {
         expect(aiSource.includes("if (!localLlmDetectedServers.length) return localLlmServerDetectionError ? 'network_blocked' : '';")).toBe(true);
         // A local check that finishes after the author moved to a cloud provider
         // must not reset the preview they are already reading.
-        expect(aiSource.includes("if (ensureCanonicalAiSettings().provider === 'ollama') void refreshRoutingUi();")).toBe(true);
+        expect(aiSource.includes("if (!aiSectionDisposed && ensureCanonicalAiSettings().provider === 'ollama') void refreshRoutingUi();")).toBe(true);
     });
 });

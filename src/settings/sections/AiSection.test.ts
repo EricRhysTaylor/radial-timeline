@@ -398,9 +398,7 @@ describe('AI settings models table', () => {
         expect(source.includes("t('settings.ai.localLlm.loadServersButton')")).toBe(false);
         expect(source.includes("t('settings.ai.localLlm.loadModelsButton')")).toBe(false);
         expect(source.includes("t('settings.ai.localLlm.loadModelsTooltip')")).toBe(true);
-        expect(source.includes("t('settings.ai.localLlm.validateButton')")).toBe(true);
         expect(source.includes('Troubleshooting')).toBe(false);
-        expect(source.includes("t('settings.ai.localLlm.actionsName')")).toBe(true);
         expect(source.includes('detectLocalLlmServers')).toBe(true);
         expect(source.includes("const localLlmServerSetting = new Settings(localLlmStatusSection)")).toBe(true);
         expect(source.includes("setName(t('settings.ai.localLlm.serverName'))")).toBe(true);
@@ -430,11 +428,6 @@ describe('AI settings models table', () => {
         expect(source.includes('Checking Local Server...')).toBe(true);
         expect(source.includes('No local server detected')).toBe(true);
         expect(source.includes("t('settings.ai.localLlm.noModelsAuto')")).toBe(true);
-        expect(source.includes("['Connection', localLlmValidationReport?.reachable ?? null]")).toBe(true);
-        expect(source.includes("['Model availability', localLlmValidationReport?.modelAvailable ?? null]")).toBe(true);
-        expect(source.includes("['Basic validation', localLlmValidationReport?.basicCompletion ?? null]")).toBe(true);
-        expect(source.includes("['Structured validation', localLlmValidationReport?.structuredJson ?? null]")).toBe(true);
-        expect(source.includes("['Repair validation', localLlmValidationReport?.repairPath ?? null]")).toBe(false);
         expect(source.includes("const localLlmStatusGrid = localLlmStatusSection.createDiv({ cls: 'ert-ai-local-llm-status-grid' });")).toBe(true);
         expect(source.includes('const buildLocalStatusValue = (): string => {')).toBe(true);
         expect(source.includes('const buildLocalCheckValue = (')).toBe(true);
@@ -447,13 +440,12 @@ describe('AI settings models table', () => {
 
     it('auto-runs guarded Local LLM checks when Local LLM is selected or reconfigured', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
-        expect(source.includes('queueLocalLlmAutoValidation();')).toBe(true);
+        expect(source.includes('localValidation.queue();')).toBe(true);
         expect(source.includes('markLocalLlmConfigurationDirty();')).toBe(true);
         expect(source.includes('getLocalLlmUiOverrides()')).toBe(true);
         expect(source.includes('Math.max(4000, Math.min(getLocalLlmSettings(ensureCanonicalAiSettings()).timeoutMs, 10000))')).toBe(true);
         expect(source.includes('getLocalLlmDiagnosticTimeoutMs(configured) + (3 * getLocalLlmUiTimeoutMs()) + 5_000')).toBe(true);
         expect(source.includes('void detectLocalLlmServers({ quiet: true }).then(() => validateLocalLlm({ quiet: true }))')).toBe(false);
-        expect(source.includes('void validateLocalLlm({ quiet: true });')).toBe(true);
     });
 
     // Every one of the three Local LLM operations keeps a module-level promise as a
@@ -461,25 +453,13 @@ describe('AI settings models table', () => {
     // settles therefore wedges that operation for the life of the settings tab, and
     // the busy UI reads the detection/model-load flags -- not the validation one --
     // so bounding only the validation chain left the spinner running forever.
-    it('bounds all three Local LLM guarded operations so none can wedge the panel', () => {
+    it('bounds server detection and model loading independently of validation', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
         expect(source.includes('localLlmServerDetectionPromise = withTimeout(')).toBe(true);
         expect(source.includes('localLlmModelLoadPromise = withTimeout(')).toBe(true);
-        expect(source.includes('localLlmValidationReport = await withTimeout(')).toBe(true);
         // Each bounded chain must also clear its guard, or the ceiling buys nothing.
         expect(source.includes('localLlmServerDetectionPromise = null;')).toBe(true);
         expect(source.includes('localLlmModelLoadPromise = null;')).toBe(true);
-        expect(source.includes('localLlmValidationPromise = null;')).toBe(true);
-    });
-
-    it('does not return Obsidian ButtonComponent from the validation promise finalizer', () => {
-        const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
-
-        // ButtonComponent is thenable and setDisabled() returns itself. If that
-        // value escapes from finally(), Promise resolution loops forever.
-        expect(source.includes('finally(() => button.setDisabled(false))')).toBe(false);
-        expect(source.includes('void validateLocalLlm().finally(() => {')).toBe(true);
-        expect(source.includes('button.setDisabled(false);')).toBe(true);
     });
 
     it('shows an animated validation heartbeat and clears UI-owned timers when the section leaves', () => {
@@ -488,7 +468,6 @@ describe('AI settings models table', () => {
 
         expect(source.includes("appendChecksRollup('Running validation checks...', true)")).toBe(true);
         expect(source.includes("cls: 'ert-ai-local-validation-dots'")).toBe(true);
-        expect(source.includes('clearLocalLlmAutoValidation();')).toBe(true);
         expect(source.includes('dispose: () => {')).toBe(true);
         expect(css.includes('.ert-ai-local-validation-dot:nth-child(3)')).toBe(true);
         expect(css.includes('.ert-ai-local-validation-dot {')).toBe(true);

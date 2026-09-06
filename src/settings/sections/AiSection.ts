@@ -1,3 +1,4 @@
+import { renderAiLocalLlmValidation } from './AiLocalLlmValidation';
 import { renderAiCredentialPanel, type ProviderKeyUiState } from './AiCredentialPanel';
 import { renderAiConfiguration } from './AiConfiguration';
 import { Component, Setting as Settings, Notice, DropdownComponent,setIcon, setTooltip } from 'obsidian';
@@ -27,8 +28,7 @@ import {
 import { isSecretStorageAvailable } from '../../ai/credentials/secretStorage';
 import type { AccessTier, AIProviderId, Capability, LocalLlmConfigurationMode, LocalLlmSettings, ModelInfo } from '../../ai/types';
 import {
-    getLocalLlmDiagnosticTimeoutMs,
-    type LocalLlmDiagnosticsReport
+    getLocalLlmDiagnosticTimeoutMs
 } from '../../ai/localLlm/diagnostics';
 import {
     buildCanonicalExecutionEstimate
@@ -944,7 +944,7 @@ export function renderAiSection(params: {
             refreshDropdownKeyIndicators();
             if (nextProvider === 'ollama') {
                 markLocalLlmConfigurationDirty();
-                queueLocalLlmAutoValidation();
+                localValidation.queue();
             } else {
                 // The author just chose this provider — say whether its key
                 // works now, rather than replaying the verdict from whenever
@@ -969,12 +969,12 @@ export function renderAiSection(params: {
             if (aiSettings.provider === 'ollama') {
                 setOllamaModelId(value);
                 if (localLlmModelText) localLlmModelText.setValue(value);
-                clearLocalLlmValidationState();
+                localValidation.reset();
                 await persistCanonical();
                 params.scheduleKeyValidation('ollama');
                 renderLocalLlmModelList();
                 renderLocalLlmStatus();
-                queueLocalLlmAutoValidation();
+                localValidation.queue();
                 void refreshRoutingUi();
                 return;
             }
@@ -1594,7 +1594,7 @@ export function renderAiSection(params: {
         resolvedPreviewProvider.setText(`${LOCAL_LLM_BACKEND_LABELS[localLlm.backend]} · ${getOllamaBaseUrl()}`);
 
         const statusValue = buildLocalStatusValue();
-        const statusStamp = localLlmValidationPending ? null : formatLocalTimestamp(localLlmLastValidatedAt);
+        const statusStamp = localValidation.state.pending ? null : formatLocalTimestamp(localValidation.state.lastValidatedAt);
         const validated = statusValue === 'Connected & validated';
 
         const pills: PreviewPill[] = [{
@@ -2442,20 +2442,9 @@ export function renderAiSection(params: {
     let localLlmLastLoadedAt: string | null = null;
     let localLlmModelLoadPending = false;
     let localLlmModelLoadPromise: Promise<void> | null = null;
-    let localLlmValidationReport: LocalLlmDiagnosticsReport | null = null;
-    let localLlmValidationError: string | null = null;
-    let localLlmLastValidatedAt: string | null = null;
-    let localLlmValidationPending = false;
-    let localLlmValidationPromise: Promise<void> | null = null;
-    let localLlmAutoValidationTimer: number | null = null;
     let aiSectionDisposed = false;
-
-    const clearLocalLlmAutoValidation = (): void => {
-        if (localLlmAutoValidationTimer !== null) {
-            window.clearTimeout(localLlmAutoValidationTimer);
-            localLlmAutoValidationTimer = null;
-        }
-    };
+    const localLlmScope = new Component();
+    localLlmScope.load();
 
     const getDetectedLocalServerByKey = (serverKey: string): DetectedLocalServer | null =>
         localLlmDetectedServers.find(server => server.serverKey === serverKey) ?? null;
@@ -2478,14 +2467,14 @@ export function renderAiSection(params: {
     const shouldRevealLocalLlmActionRow = (): boolean => {
         if (getLocalLlmConfigurationMode() === 'custom') return true;
         if (!localLlmDetectedServers.length) return true;
-        if (localLlmModelLoadError || localLlmValidationError) return true;
+        if (localLlmModelLoadError || localValidation.state.error) return true;
         if (!localLlmLoadedModels.length) return true;
         if (hasLocalLlmSelectedModelMismatch()) return true;
-        if (!localLlmValidationReport) return false;
-        return !localLlmValidationReport.reachable.ok
-            || !localLlmValidationReport.modelAvailable.ok
-            || !localLlmValidationReport.basicCompletion.ok
-            || !localLlmValidationReport.structuredJson.ok;
+        if (!localValidation.state.report) return false;
+        return !localValidation.state.report.reachable.ok
+            || !localValidation.state.report.modelAvailable.ok
+            || !localValidation.state.report.basicCompletion.ok
+            || !localValidation.state.report.structuredJson.ok;
     };
     const getLocalCapabilityAssessment = (
         modelId: string,
@@ -2494,8 +2483,8 @@ export function renderAiSection(params: {
         const canonical = BUILTIN_MODELS.find(model =>
             model.provider === 'ollama' && (model.id === modelId || model.alias === modelId)
         );
-        const diagnostics = localLlmValidationReport?.modelId === modelId
-            ? localLlmValidationReport
+        const diagnostics = localValidation.state.report?.modelId === modelId
+            ? localValidation.state.report
             : null;
         return inferLocalLlmCapability({
             modelId,
@@ -2552,11 +2541,11 @@ export function renderAiSection(params: {
                     setLocalServerSelection(server.backend, server.baseUrl);
                     localLlmLoadedModels = [...server.models].sort((left, right) => left.id.localeCompare(right.id));
                     localLlmLastLoadedAt = server.detectedAt;
-                    clearLocalLlmValidationState();
+                    localValidation.reset();
                     await persistCanonical();
                     renderLocalLlmModelList();
                     renderLocalLlmStatus();
-                    queueLocalLlmAutoValidation();
+                    localValidation.queue();
                     void refreshRoutingUi();
                 })();
             });
@@ -2585,16 +2574,10 @@ export function renderAiSection(params: {
         localLlmServerDetectionError = null;
     }
 
-    function clearLocalLlmValidationState(): void {
-        localLlmValidationReport = null;
-        localLlmValidationError = null;
-        localLlmLastValidatedAt = null;
-    }
-
     function markLocalLlmConfigurationDirty(): void {
         clearLocalLlmDetectedServerState();
         clearLocalLlmModelLoadState();
-        clearLocalLlmValidationState();
+        localValidation.reset();
         renderLocalLlmModelList();
         renderLocalLlmStatus();
     }
@@ -2611,7 +2594,7 @@ export function renderAiSection(params: {
         // not the validation one -- and the guard above then hands the same stuck
         // promise to every later caller, wedging the panel until Settings is reopened.
         localLlmServerDetectionPromise = withTimeout((async () => {
-            localLlmDetectedServers = await probeLocalServers(
+            const detectedServers = await probeLocalServers(
                 listLocalServerCandidates(getLocalLlmSettings(ensureCanonicalAiSettings())),
                 candidate => getLocalLlmClient(plugin).listModels({
                     backend: candidate.backend,
@@ -2619,13 +2602,15 @@ export function renderAiSection(params: {
                     timeoutMs: getLocalLlmUiTimeoutMs()
                 })
             );
+            if (aiSectionDisposed) return;
+            localLlmDetectedServers = detectedServers;
             localLlmServerDetectionError = localLlmDetectedServers.length
                 ? null
                 : 'No healthy local servers were detected automatically.';
 
             if (!localLlmDetectedServers.length) {
                 clearLocalLlmModelLoadState();
-                clearLocalLlmValidationState();
+                localValidation.reset();
             }
 
             if (getLocalLlmConfigurationMode() === 'auto') {
@@ -2673,24 +2658,9 @@ export function renderAiSection(params: {
             // has since switched to a cloud provider, their preview is already
             // resolved — recomputing it here would throw it back to
             // "Calculating…" long after they moved on.
-            if (ensureCanonicalAiSettings().provider === 'ollama') void refreshRoutingUi();
+            if (!aiSectionDisposed && ensureCanonicalAiSettings().provider === 'ollama') void refreshRoutingUi();
         });
         return localLlmServerDetectionPromise;
-    }
-
-    function queueLocalLlmAutoValidation(): void {
-        if (aiSectionDisposed) return;
-        const aiSettings = ensureCanonicalAiSettings();
-        if (aiSettings.provider !== 'ollama' || !getLocalLlmSettings(aiSettings).enabled) return;
-        if (localLlmAutoValidationTimer !== null) {
-            window.clearTimeout(localLlmAutoValidationTimer);
-        }
-        localLlmAutoValidationTimer = window.setTimeout(() => {
-            localLlmAutoValidationTimer = null;
-            if (aiSectionDisposed || ensureCanonicalAiSettings().provider !== 'ollama') return;
-            // validateLocalLlm owns the complete detect -> load -> diagnose chain.
-            void validateLocalLlm({ quiet: true });
-        }, 150);
     }
 
     const localLlmBackendSetting = new Settings(localLlmConfigSection)
@@ -2711,7 +2681,7 @@ export function renderAiSection(params: {
                     markLocalLlmConfigurationDirty();
                     await persistCanonical();
                     params.scheduleKeyValidation('ollama');
-                    queueLocalLlmAutoValidation();
+                    localValidation.queue();
                     void refreshRoutingUi();
                 });
         });
@@ -2745,7 +2715,7 @@ export function renderAiSection(params: {
                     markLocalLlmConfigurationDirty();
                     await persistCanonical();
                     params.scheduleKeyValidation('ollama');
-                    queueLocalLlmAutoValidation();
+                    localValidation.queue();
                 })();
             });
             params.setOllamaConnectionInputs({ baseInput: text.inputEl });
@@ -2777,7 +2747,7 @@ export function renderAiSection(params: {
                     markLocalLlmConfigurationDirty();
                     await persistCanonical();
                     params.scheduleKeyValidation('ollama');
-                    queueLocalLlmAutoValidation();
+                    localValidation.queue();
                     void refreshRoutingUi();
                 })();
             });
@@ -2803,7 +2773,7 @@ export function renderAiSection(params: {
                     markLocalLlmConfigurationDirty();
                     await persistCanonical();
                     params.scheduleKeyValidation('ollama');
-                    queueLocalLlmAutoValidation();
+                    localValidation.queue();
                 });
         });
     localLlmJsonModeSetting.settingEl.addClass(ERT_CLASSES.ROW);
@@ -2864,6 +2834,7 @@ export function renderAiSection(params: {
     };
 
     const renderLocalLlmModelList = (): void => {
+        if (aiSectionDisposed) return;
         const selectedModelId = getOllamaModelId().trim();
         const selectedModelKey = buildLocalLlmModelIdentity(getLocalLlmBackendId(), getOllamaBaseUrl(), selectedModelId);
         const selectedExists = localLlmLoadedModels.some(model =>
@@ -2938,12 +2909,12 @@ export function renderAiSection(params: {
             const applyModel = async (): Promise<void> => {
                 setOllamaModelId(model.id);
                 if (localLlmModelText) localLlmModelText.setValue(model.id);
-                clearLocalLlmValidationState();
+                localValidation.reset();
                 await persistCanonical();
                 params.scheduleKeyValidation('ollama');
                 renderLocalLlmModelList();
                 renderLocalLlmStatus();
-                queueLocalLlmAutoValidation();
+                localValidation.queue();
                 void refreshRoutingUi();
             };
             plugin.registerDomEvent(pill, 'click', () => { void applyModel(); });
@@ -2969,17 +2940,17 @@ export function renderAiSection(params: {
         const currentLocalLlm = getLocalLlmSettings(ensureCanonicalAiSettings());
         if (!currentLocalLlm.enabled) return 'Local LLM disabled';
         if (localLlmServerDetectionPending || localLlmModelLoadPending) return 'Checking local server';
-        if (localLlmValidationPending) return 'Validating';
+        if (localValidation.state.pending) return 'Validating';
         if (!localLlmDetectedServers.length) return 'No local server detected';
-        if (localLlmValidationError) return 'Needs review';
-        if (localLlmValidationReport?.reachable.ok
-            && localLlmValidationReport.modelAvailable.ok
-            && localLlmValidationReport.basicCompletion.ok
-            && localLlmValidationReport.structuredJson.ok) {
+        if (localValidation.state.error) return 'Needs review';
+        if (localValidation.state.report?.reachable.ok
+            && localValidation.state.report.modelAvailable.ok
+            && localValidation.state.report.basicCompletion.ok
+            && localValidation.state.report.structuredJson.ok) {
             return 'Connected & validated';
         }
-        if (localLlmValidationReport?.reachable.ok) return 'Connected';
-        if (localLlmValidationReport && !localLlmValidationReport.reachable.ok) return 'Local server offline';
+        if (localValidation.state.report?.reachable.ok) return 'Connected';
+        if (localValidation.state.report && !localValidation.state.report.reachable.ok) return 'Local server offline';
         return 'Connected';
     };
 
@@ -2997,13 +2968,13 @@ export function renderAiSection(params: {
         const currentLocalLlm = getLocalLlmSettings(ensureCanonicalAiSettings());
         if (!currentLocalLlm.enabled) return 'not_configured';
         if (localLlmServerDetectionPending || localLlmModelLoadPending) return 'checking';
-        if (localLlmValidationPending) return 'checking';
+        if (localValidation.state.pending) return 'checking';
         // Nothing has been asked of the server yet (the panel only probes when
         // local is the active provider). Say nothing rather than claim it is
         // unreachable — an unchecked server is not a failed one.
         if (!localLlmDetectedServers.length) return localLlmServerDetectionError ? 'network_blocked' : '';
-        if (localLlmValidationError) return 'rejected';
-        if (localLlmValidationReport && !localLlmValidationReport.reachable.ok) return 'network_blocked';
+        if (localValidation.state.error) return 'rejected';
+        if (localValidation.state.report && !localValidation.state.report.reachable.ok) return 'network_blocked';
         return 'ready';
     };
 
@@ -3013,7 +2984,7 @@ export function renderAiSection(params: {
         selectedExists: boolean
     ): string => {
         const hasHealthyServer = localLlmDetectedServers.length > 0;
-        if (localLlmValidationPending) {
+        if (localValidation.state.pending) {
             if (label === 'Connection') return 'Checking local server...';
             return 'Validation in progress.';
         }
@@ -3044,6 +3015,7 @@ export function renderAiSection(params: {
     };
 
     const renderLocalLlmStatus = (): void => {
+        if (aiSectionDisposed) return;
         providerKeyStates.ollama = buildLocalProviderKeyState();
         refreshDropdownKeyIndicators();
         refreshResolvedPreviewBusy();
@@ -3073,7 +3045,7 @@ export function renderAiSection(params: {
         localLlmServerSetting.settingEl.toggleClass('ert-settings-visible', multipleDetectedServers);
 
         const statusValue = buildLocalStatusValue();
-        const statusStamp = localLlmValidationPending ? null : formatLocalTimestamp(localLlmLastValidatedAt);
+        const statusStamp = localValidation.state.pending ? null : formatLocalTimestamp(localValidation.state.lastValidatedAt);
 
         const appendStatusItem = (container: HTMLElement, label: string, value: string): void => {
             const item = container.createDiv({ cls: 'ert-ai-local-llm-status-item' });
@@ -3090,17 +3062,17 @@ export function renderAiSection(params: {
             : 'No local model selected');
 
         const checks: Array<[string, { ok: boolean; message: string } | null]> = [
-            ['Connection', localLlmValidationReport?.reachable ?? null],
-            ['Model availability', localLlmValidationReport?.modelAvailable ?? null],
-            ['Basic validation', localLlmValidationReport?.basicCompletion ?? null],
-            ['Structured validation', localLlmValidationReport?.structuredJson ?? null]
+            ['Connection', localValidation.state.report?.reachable ?? null],
+            ['Model availability', localValidation.state.report?.modelAvailable ?? null],
+            ['Basic validation', localValidation.state.report?.basicCompletion ?? null],
+            ['Structured validation', localValidation.state.report?.structuredJson ?? null]
         ];
         const hasHealthyServer = localLlmDetectedServers.length > 0;
         const modelReady = !localLlmModelLoadPending && !localLlmModelLoadError
             && localLlmLoadedModels.length > 0 && !!selectedModelId && selectedExists;
         const allChecksPassed = modelReady
             && checks.every(([, check]) => check?.ok)
-            && !localLlmValidationError
+            && !localValidation.state.error
             && !localLlmServerDetectionError;
         const appendChecksRollup = (text: string, busy = false): void => {
             const rollup = localLlmChecksDetail.createDiv({ cls: 'ert-field-note ert-ai-local-llm-checks-rollup' });
@@ -3115,14 +3087,14 @@ export function renderAiSection(params: {
             }
         };
 
-        if (localLlmValidationPending) {
+        if (localValidation.state.pending) {
             appendChecksRollup('Running validation checks...', true);
         } else if (allChecksPassed) {
             appendChecksRollup('All checks passed — connection · model availability · basic · structured.');
             // The one finding that matters BECAUSE nothing is broken. Collapsing
             // it with the rest of the detail would hide the only actionable
             // result of a green run.
-            const timing = localLlmValidationReport?.jsonModeTiming;
+            const timing = localValidation.state.report?.jsonModeTiming;
             if (timing) {
                 const note = localLlmChecksDetail.createDiv({
                     cls: 'ert-field-note ert-ai-local-llm-checks-rollup is-actionable'
@@ -3142,8 +3114,8 @@ export function renderAiSection(params: {
                 const value = buildLocalCheckValue(label as 'Connection' | 'Model availability' | 'Basic validation' | 'Structured validation', check, selectedExists);
                 appendStatusItem(localLlmChecksDetail, label, value);
             });
-            if (localLlmValidationError) {
-                appendStatusItem(localLlmChecksDetail, 'Validation', formatLocalLlmUiError(localLlmValidationError));
+            if (localValidation.state.error) {
+                appendStatusItem(localLlmChecksDetail, 'Validation', formatLocalLlmUiError(localValidation.state.error));
             }
             if (localLlmServerDetectionError) {
                 appendStatusItem(localLlmChecksDetail, 'Server detection', 'No healthy local servers were detected automatically.');
@@ -3156,7 +3128,7 @@ export function renderAiSection(params: {
         // Collapse to the header line when fully healthy — the preview card
         // above already tells the whole story. Any pending or problem state
         // force-expands so issues are never hidden behind a fold.
-        const statusHealthy = allChecksPassed && !localLlmValidationPending;
+        const statusHealthy = allChecksPassed && !localValidation.state.pending;
         if (!statusHealthy) localLlmStatusManuallyExpanded = false;
         const statusCollapsed = statusHealthy && !localLlmStatusManuallyExpanded;
         localLlmStatusSection.toggleClass('is-collapsible', statusHealthy);
@@ -3187,6 +3159,7 @@ export function renderAiSection(params: {
                     return;
                 }
                 const models = await getLocalLlmClient(plugin).listModels(getLocalLlmUiOverrides());
+                if (aiSectionDisposed) return;
                 localLlmLoadedModels = [...models].sort((left, right) => left.id.localeCompare(right.id));
                 localLlmModelLoadError = null;
                 localLlmLastLoadedAt = new Date().toISOString();
@@ -3210,7 +3183,7 @@ export function renderAiSection(params: {
             localLlmModelLoadPromise = null;
             renderLocalLlmModelList();
             renderLocalLlmStatus();
-            void refreshRoutingUi();
+            if (!aiSectionDisposed && ensureCanonicalAiSettings().provider === 'ollama') void refreshRoutingUi();
         });
         return localLlmModelLoadPromise;
     }
@@ -3220,53 +3193,18 @@ export function renderAiSection(params: {
     // settles if a lower layer regresses or never resolves.
     const LOCAL_LLM_GUARD_DEADLINE_MS = 60_000;
 
-    async function validateLocalLlm(options: { quiet?: boolean } = {}): Promise<void> {
-        if (aiSectionDisposed) return;
-        if (localLlmValidationPromise) return localLlmValidationPromise;
-        localLlmValidationPending = true;
-        localLlmValidationError = null;
-        renderLocalLlmStatus();
-        localLlmValidationPromise = (async () => {
-            try {
-                // Keep an aggregate ceiling above the individually bounded steps so
-                // the UI always reaches a terminal state even if a lower layer stops
-                // settling its promise.
-                localLlmValidationReport = await withTimeout(
-                    (async () => {
-                        await detectLocalLlmServers({ quiet: true });
-                        await loadLocalLlmModels({ quiet: true });
-                        return getLocalLlmClient(plugin).runDiagnostics(getLocalLlmUiOverrides());
-                    })(),
-                    getLocalLlmValidationDeadlineMs(),
-                    t('settings.ai.localLlm.validationDeadline')
-                );
-                localLlmValidationError = null;
-                localLlmLastValidatedAt = new Date().toISOString();
-                if (!options.quiet) {
-                    new Notice('Local LLM validation complete.');
-                }
-            } catch (error) {
-                localLlmValidationReport = null;
-                localLlmValidationError = error instanceof Error ? error.message : String(error);
-                localLlmLastValidatedAt = new Date().toISOString();
-                if (!options.quiet) {
-                    new Notice(`Local LLM validation failed: ${localLlmValidationError}`);
-                }
-            } finally {
-                localLlmValidationPending = false;
-                localLlmValidationPromise = null;
-                if (!aiSectionDisposed) {
-                    renderLocalLlmStatus();
-                    // The preview card mirrors validation state — refresh it so
-                    // "Connected & validated" lands there too, not only in the
-                    // panel. Only while local is still the active provider: a late
-                    // finish must not reset a cloud preview the author moved to.
-                    if (ensureCanonicalAiSettings().provider === 'ollama') void refreshRoutingUi();
-                }
-            }
-        })();
-        return localLlmValidationPromise;
-    }
+    const localValidation = renderAiLocalLlmValidation({
+        container: localLlmActionsRow,
+        scope: localLlmScope,
+        isLocalActive: () => ensureCanonicalAiSettings().provider === 'ollama'
+            && getLocalLlmSettings(ensureCanonicalAiSettings()).enabled,
+        getDeadlineMs: getLocalLlmValidationDeadlineMs,
+        detect: () => detectLocalLlmServers({ quiet: true }),
+        load: () => loadLocalLlmModels({ quiet: true }),
+        diagnose: () => getLocalLlmClient(plugin).runDiagnostics(getLocalLlmUiOverrides()),
+        onStateChange: () => renderLocalLlmStatus(),
+        onSettled: () => { void refreshRoutingUi(); }
+    });
 
     localLlmModelSetting.addExtraButton(button => {
         button
@@ -3283,25 +3221,6 @@ export function renderAiSection(params: {
                 }
             });
     });
-
-    // One action: "Re-check" runs the whole chain (detect servers -> load models ->
-    // validate). The former separate "Load Servers" / "Load Models" buttons only
-    // re-triggered steps this already performs, so they are collapsed into this.
-    const localLlmActionsSetting = new Settings(localLlmActionsRow)
-        .setName(t('settings.ai.localLlm.actionsName'))
-        .setDesc(t('settings.ai.localLlm.actionsDesc'));
-    localLlmActionsSetting.addButton(button => button
-        .setButtonText(t('settings.ai.localLlm.validateButton'))
-        .setCta()
-        .onClick(() => {
-            button.setDisabled(true);
-            void validateLocalLlm().finally(() => {
-                // Obsidian ButtonComponent is thenable and setDisabled() returns
-                // the component. Returning it from finally() creates an endless
-                // self-resolution microtask loop that freezes the renderer.
-                button.setDisabled(false);
-            });
-        }));
 
     renderLocalLlmModelList();
     renderLocalLlmStatus();
@@ -3338,7 +3257,7 @@ export function renderAiSection(params: {
         // it is the active provider) and every cloud key. Whichever the author
         // is about to switch to, the dropdown they read is current.
         if (ensureCanonicalAiSettings().provider === 'ollama') {
-            queueLocalLlmAutoValidation();
+            localValidation.queue();
         }
         Object.values(providerKeyRefreshers).forEach(refresh => { void refresh(); });
     };
@@ -3355,7 +3274,7 @@ export function renderAiSection(params: {
             aiSectionDisposed = true;
             configurationScope.unload();
             credentialScope.unload();
-            clearLocalLlmAutoValidation();
+            localLlmScope.unload();
         }
     };
 }

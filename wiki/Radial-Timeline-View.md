@@ -37,10 +37,10 @@ A radial manuscript workspace with four modes:
 ## Modes At A Glance
 
 ### Progress Mode (`1`)
-Gives every subplot its own radial ring — no combined outer ring — with the main plot emphasized and other subplots muted. Scenes inherit the author workflow palette (Todo solid pink, Working pink plaid, Overdue red, Complete = progress-stage color) along with progress-stage indicators. Removes story beats for a cleaner view. Structured around your configured **act count** (default 3) with acts spanning equal segments of the 360° circle. Emphasizes **Author time** (writing status) and **Progress stages** (revision stages).
+Gives every subplot its own radial ring, with the main plot emphasized and other subplots muted. Scenes inherit the author workflow palette (Todo solid pink, Working pink plaid, Overdue red, Complete = progress-stage color) along with progress-stage indicators. Structured around your configured **act count** (default 3) with acts spanning equal segments of the 360° circle. Emphasizes **Author time** (writing status) and **Progress stages** (revision stages).
 
 ### Narrative Mode (`2`)
-Shows all scenes from all subplots on the outer ring with story beats and subplot color-coding. Structured around your configured **act count** (default 3) with scenes organized by act divisions (360° divided evenly across acts). Your primary manuscript-order workspace showing **Narrative time** (reading order). Status/progress overlays are hidden so subplot colors remain dominant.
+Shows all scenes from all subplots on the outer ring with story beats and subplot color-coding. Structured around your configured **act count** (default 3) with scenes organized by act divisions (360° divided evenly across acts). Your primary manuscript-order workspace showing **Narrative time** (reading order). Subplot colors show the distribution of story threads.
 
 **Interactive reordering**: drag scenes on the outer ring. See [Reorder Scenes](How-to#reorder-scenes).
 
@@ -49,7 +49,7 @@ Shows all scenes from all subplots on the outer ring with story beats and subplo
 See [Narrative Mode](Narrative-Mode) for Saga scope, chapter/part placards, and dominant subplot behavior.
 
 ### Chronologue Mode (`3`)
-Displays scenes in chronological story order based on `When`. **Removes act divisions** entirely — scenes are positioned across the full 360° circle based solely on when they occur in your story's timeline. Color styling mirrors Narrative mode (subplot colors only) to keep time comparisons clean.
+Displays scenes in chronological story order based on `When`. Scenes are positioned across the full 360° circle in story-time order. Color styling mirrors Narrative mode (subplot colors only) to keep time comparisons clean.
 
 Three sub-modes for deeper temporal analysis:
 

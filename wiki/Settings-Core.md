@@ -3,7 +3,7 @@
   <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Settings → Core</div>
 </div>
 
-The Core tab is the main structural control center for Radial Timeline. It covers book profiles, progress tracking, runtime estimation, story beats, scene properties, chronology, POV, planetary time, and ring colors.
+Configure book profiles, progress tracking, runtime estimation, story beats, scene properties, chronology, POV, planetary time, and ring colors.
 
 ## Books
 
@@ -14,7 +14,7 @@ The Core tab is the main structural control center for Radial Timeline. It cover
 *   **Scene count**: Each book card shows how many `Class: Scene` notes are currently found in that folder.
 *   **Reorder books**: Drag books to control saga order.
 *   **Create draft**: Make a sibling draft copy of a book folder and add it as a new book profile.
-*   **Remove profile**: Deletes the profile only. It does not delete files.
+*   **Remove profile**: Removes the book profile and preserves its files.
 
 ## Progress And Status
 
@@ -97,7 +97,7 @@ Configure the structural pacing guide for your story.
 *   **Custom story beat system editor**: Name your beat system, add beats, assign each beat to an act, and drag to reorder.
 *   **Create beat notes**: Generate beat notes in the active book folder.
 *   **Beat filename numbering**: Generated beat notes use decimal minor prefixes (for example, `7.01 Midpoint.md`) so scene integer slots remain canonical.
-*   **Repair beat notes**: Updates frontmatter (`Act`, `Beat Model`, `Class`) only. Does not rename files.
+*   **Repair beat notes**: Updates `Act`, `Beat Model`, and `Class`, preserving filenames.
 *   **Beat properties editor**: Customize additional beat properties and choose which fields appear in beat hover metadata. Stored per beat system.
 *   **Saved sets**: Save and switch between multiple custom beat systems.
 
@@ -129,8 +129,8 @@ Manage the scene note properties that Radial Timeline maintains and shows in hov
 Important behavior:
 
 *   RT-maintained scene normalization only manages the **core** and current **advanced** scene-property fields.
-*   External or foreign YAML properties from other plugins or your own custom workflows are **not deleted** by scene-property maintenance.
-*   During reorder, foreign keys stay anchored to the RT-managed item directly above them instead of being dumped into a generic end block.
+*   Scene-property maintenance preserves your custom fields and fields from other plugins.
+*   Reordering keeps custom fields beside the managed property directly above them.
 *   **Remap frontmatter field keys** now lives in [Settings → Advanced → Configuration](Settings-Advanced#configuration).
 
 > [!NOTE]

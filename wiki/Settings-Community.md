@@ -4,9 +4,9 @@ Community Share is opt-in. Nothing publishes from your vault until you connect t
 
 ## What Community Share Is For
 
-Use Community Share when you want to show other writers what you are working on without exposing the private contents of your manuscript.
+Share project details, progress graphics, and selected writing activity with other writers.
 
-Launch scope:
+Sharing tools:
 
 *   Public author profile and project shell.
 *   Optional Author Progress Report (APR) graphics.
@@ -14,11 +14,7 @@ Launch scope:
 *   A live preview of exactly what will be shared.
 *   Pause, take offline, delete shared data, and disconnect controls.
 
-Future community features may include follows, timeline views, review circles, and editor/alpha-reader workflows. Those are not part of the launch publish path.
-
 ## What Never Leaves The Plugin
-
-Community Share is intentionally narrower than a collaboration or manuscript-review system.
 
 The plugin does **not** publish:
 
@@ -60,7 +56,7 @@ Sensitive fields, such as real scene titles or exact session timestamps, are nev
 
 ## Preview
 
-The preview under your sharing selection always reflects the current level ("Preview ready" with a timestamp). It shows the public report categories that will be sent to the website. There is no separate generate step — change the level and the preview follows.
+The preview under your sharing selection always reflects the current level ("Preview ready" with a timestamp). It shows the public report categories that will be sent to the website. Changing the level refreshes the preview.
 
 ## Sharing And Safety Controls
 
@@ -80,4 +76,4 @@ The [Author Progress Report](Author-Progress-Report) remains a local visual/soci
 
 Selecting Level 2 or Level 3 never uploads an APR by itself. The campaign destination is separately opt-in and defaults off. Uploaded APRs arrive privately; public activation and deactivation happen only on My Share.
 
-APR schedules are client-side. Radial Timeline checks on plugin startup and hourly while the vault is open. If Obsidian is closed when an update becomes due, it catches up the next time the plugin starts; there is no Community server job generating reports in the background.
+APR schedules are client-side. Radial Timeline checks on plugin startup and hourly while the vault is open. Updates missed while Obsidian is closed run on the next plugin startup.

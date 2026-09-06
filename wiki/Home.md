@@ -1,6 +1,4 @@
-**Welcome to the Radial Timeline Wiki!**
-
-Radial Timeline™ transforms your manuscript into a live visual map where you can see your entire story structure at a glance.
+Radial Timeline maps your manuscript in Obsidian. Explore scenes, subplots, story time, and revision progress in four timeline modes, and use Inquiry for AI-assisted analysis across a book or saga.
 
 <a href="https://youtu.be/YO6hWevwSWc?si=SilQ6xgnQYReGgd0" target="_blank" rel="noopener">
   <p align="center">
@@ -34,7 +32,7 @@ Radial Timeline™ transforms your manuscript into a live visual map where you c
 </a>
 
 ### What It Does
-Radial Timeline™ arranges your scenes by act, subplot, narrative or chronological order in a striking radial layout—revealing the structure, rhythm, and scope of your story. Each ring represents a subplot; hover interactions surface important details like scene synopsis and AI story pulses. Scenes highlight across subplots to show interrelationships. Multiple modes dissect your novel like an X-ray.
+Arrange scenes by act, subplot, and manuscript or chronological order. Hover for a synopsis and saved Pulse feedback; highlight a scene across its subplots to follow connected story threads.
 
 ### The 4 Critical Timelines
 Radial Timeline™ captures and visualizes all 4 critical timelines:
@@ -43,7 +41,7 @@ Radial Timeline™ captures and visualizes all 4 critical timelines:
 *   **Author time**: your scene writing progress with target due dates tracking Todo, Working, Complete and Overdue.
 *   **Progress stages**: manuscript revision stages from Zero draft through Press-ready.
 
-[Narrative](Narrative-Mode) and [Chronologue](Chronologue-Mode) keep subplot colors front-and-center so you can compare structure without workflow noise. When you need to see Todo/Working/Overdue status or progress stage colors, switch to [Progress Mode](Progress-Mode) — the combined outer ring is replaced by a single-subplot view and scenes inherit the author-status and progress-stage palette.
+[Narrative](Narrative-Mode) and [Chronologue](Chronologue-Mode) use subplot colors to show story structure. [Progress Mode](Progress-Mode) gives each subplot its own ring and colors scenes by writing status and revision stage.
 
 ---
 

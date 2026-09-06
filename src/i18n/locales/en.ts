@@ -1924,7 +1924,7 @@ export const en: TranslationKeys = {
                 // a promise on their behalf: Radial Timeline is a link in that
                 // chain, not the end of it.
                 disclosureCloud: 'Your manuscript text goes to {{provider}}, under {{provider}}\u2019s terms. Radial Timeline passes it along \u2014 what they do with it is their agreement with you, not ours.',
-                disclosureLocal: 'No manuscript text leaves this computer. The model runs on your own machine.',
+                disclosureLocal: 'Selected material goes to the Local LLM server at your configured Base URL. Use a server on this computer to keep manuscript text on-device.',
                 optionAnthropic: 'Anthropic',
                 optionOpenai: 'OpenAI',
                 optionGoogle: 'Google',

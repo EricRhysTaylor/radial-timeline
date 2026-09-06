@@ -14,7 +14,7 @@ Book Designer is the guided setup panel behind the **`Book designer`** command. 
 
 You can open Book Designer in two ways:
 1.  **Command Palette**: Open the Command Palette (`Cmd + P` on Mac, `Ctrl + P` on Windows/Linux) and search for **`Radial timeline: Book designer`**.
-2.  **Welcome Screen**: If your timeline is empty, click the **Book Designer** button on the welcome screen.
+2.  **Welcome Screen**: Under **Set Book Project**, choose **→ or open Book Designer**.
 
 <div style="text-align: center; margin: 20px 0;">
   <img src="images/panel-book-designer.png" alt="Book Designer panel with preview donut chart" style="width: 550px; max-width: 100%; border-radius: 8px;" />
@@ -89,7 +89,7 @@ You can also create custom beat notes manually:
 
 ## Advanced Metadata
 
-Some writing methodologies rely on tracking complex properties rather than just linear beats. You can accommodate this using **Advanced properties**:
+Use **Advanced properties** to track fields specific to your writing method:
 
 1.  Go to **Settings → Core → Scene properties**.
 2.  Enable **Scene properties editor**.

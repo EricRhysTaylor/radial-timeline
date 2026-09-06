@@ -1,11 +1,11 @@
-This page covers scene properties (core and advanced), beat notes, and backdrop notes. Radial Timeline reads these from **Obsidian properties** at the top of each note. If you prefer to keep things light, you can start with only the minimal properties and fill in the rest later.
+Radial Timeline reads scene, beat, and backdrop metadata from **Obsidian properties** at the top of each note. Start with the core properties and add fields as your project develops.
 
 ## Core Scene Scaffold
 
 ```yaml
 ID: scn_00000000          # Auto-generated stable scene reference
 Class: Scene              # Type: Scene
-Act: 1                    # Which act (1-3)
+Act: 1                    # Act number within your configured act count
 When:                     # Story chronology date (YYYY-MM-DD 12:34pm)
 Duration:                 # How long the scene lasts (e.g., "45 seconds", "45s", "45sec", "2 hours", "3days")
 Part:                     # Optional part marker — `true` for numeral only, or a title
@@ -100,8 +100,8 @@ The Scene properties editor lets you tailor the advanced scene properties while 
 *   Required base keys stay locked and auto-included in order.
 *   Optional keys can be drag-reordered, renamed, deleted, or added.
 *   RT-managed maintenance only governs the core and current advanced scene-property fields.
-*   External or foreign YAML properties are preserved and are not deleted by scene-property maintenance.
-*   Reorder keeps foreign keys attached to the RT-managed item directly above them instead of pushing them into a generic end block.
+*   Scene-property maintenance preserves custom fields and fields from other plugins.
+*   Reordering keeps custom fields beside the managed property directly above them.
 *   Use the restore icon to revert to the shipped defaults.
 
 ## Beat Notes (YAML)
@@ -120,7 +120,7 @@ Gossamer2: 21                 # Second trace (most recent in this example)
 Gossamer2 Justification:
 ```
 
-> **Beat semantics**: Beats are structural, not temporal. They do not use the `When` field — ordering comes from Act assignment and filename prefix (`sceneInteger.minor`, for example `7.01`).
+> **Beat order** follows `Act` and the filename prefix (`sceneInteger.minor`, for example `7.01`).
 
 Beat notes have their own **Beat properties editor** in **Settings → Core → Story beats system**. Use it to add custom keys and choose which fields appear in beat hovers. Beat properties are stored per beat system.
 
@@ -151,7 +151,7 @@ Example: If you use `Timeline: 2024-01-01` instead of `When: 2024-01-01`, create
 
 ## Backwards Compatibility
 
-The plugin automatically recognizes legacy field names, so you don't need to update existing scene notes when field names change:
+The plugin also recognizes these legacy field names:
 
 | Current Name | Legacy Names (still work) |
 |--------------|---------------------------|
@@ -159,6 +159,6 @@ The plugin automatically recognizes legacy field names, so you don't need to upd
 | `Purpose:` | `Description:` |
 | `Context:` | `Synopsis:` (Backdrop only) |
 
-Beat notes do not use `When:` — they are ordered structurally by Act and filename prefix. Recommended format: fixed-width decimal minors (`1.01`, `1.02`, ...).
+Use fixed-width decimal minors for beat filenames (`1.01`, `1.02`, ...).
 
 Existing notes with old field names will continue to work. Only new notes created from the built-in property profiles will use the current field names.

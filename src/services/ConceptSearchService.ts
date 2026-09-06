@@ -14,10 +14,9 @@
  * expected case, not the exceptional one, so nothing reaches the timeline on
  * the model's say-so alone.
  *
- * Runs only against the operator's own local server. There is no cloud path
- * here — not as an option, not as a fallback. Manuscript prose leaves the
- * machine only when the author explicitly chooses a cloud feature, and this is
- * never that choice.
+ * Requests use the configured Local LLM endpoint, not a cloud-provider route.
+ * A same-machine endpoint keeps manuscript text on-device; a network endpoint
+ * receives the selected material at that host.
  */
 
 import type RadialTimelinePlugin from '../main';

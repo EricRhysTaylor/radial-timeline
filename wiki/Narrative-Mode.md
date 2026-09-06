@@ -1,6 +1,6 @@
 **Keyboard Shortcut**: `2`
 
-Narrative Mode is your primary manuscript-order workspace. It displays all scenes from all subplots on the outer ring, organized by **act divisions** (default 3 acts, configurable in **Settings → Core → Acts**). Each act spans an equal segment of the 360° circle. This view emphasizes **Narrative time** (the order readers will experience the story). Status and progress stage overlays are hidden so the focus stays on story structure and subplot balance.
+Narrative Mode is your primary manuscript-order workspace. It displays all scenes from all subplots on the outer ring, organized by **act divisions** (default 3 acts, configurable in **Settings → Core → Acts**). Each act spans an equal segment of the 360° circle. This view emphasizes **Narrative time** (the order readers will experience the story). Subplot colors show story structure and balance.
 
 <div style="text-align: center; margin: 20px 0;">
   <img src="images/mode-narrative.jpeg" alt="Narrative Mode Timeline" style="width: 300px; max-width: 100%; border-radius: 8px;" />
@@ -57,7 +57,7 @@ The title-bar book selector controls which manuscript the timeline shows.
 *   Choose a book to inspect one Book Manager profile.
 *   Choose **Saga** to combine all configured books into one multi-book Narrative timeline.
 *   Saga scope is available when more than one Book Manager profile is configured.
-*   Saga scope stays in Narrative Mode, because multi-book scene order is a narrative-structure view rather than a chronology or progress view.
+*   Saga scope displays the combined manuscript order in Narrative Mode.
 
 <div style="text-align: center; margin: 20px 0;">
   <img src="images/feature-saga.png" alt="Narrative Mode saga view across multiple books" style="width: 560px; max-width: 100%; border-radius: 8px;" />
@@ -72,11 +72,11 @@ Narrative Mode can show publishing-aware placards on the outside of the scene ri
 *   **P** — a `Part:` field starts a part at that scene.
 *   **P/C** — a scene that opens both.
 
-Both are author-placed markers on scene notes, so a placard means *you* marked that scene, not that the plugin inferred something. Set them from the scene right-click menu (**Set part…**, **Set chapter…**) or by editing the field directly.
+Placards show the markers you place on scene notes. Set them from the scene right-click menu (**Set part…**, **Set chapter…**) or by editing the field directly.
 
 Placards appear whether or not the selected PDF layout prints them — the marker is your structure, and the layout only decides what reaches the page. Hovering a **P** tells you what the current layout will do with it, including when that layout prints no Parts at all.
 
-Turn placards on with **Settings → Core → Show part and chapter markers**.
+Turn placards on with **Settings → Advanced → Configuration → Show part and chapter markers**.
 
 <div style="text-align: center; margin: 20px 0;">
   <img src="images/feature-parts-chapters.png" alt="Narrative Mode chapter and part markers around the perimeter" style="width: 560px; max-width: 100%; border-radius: 8px;" />

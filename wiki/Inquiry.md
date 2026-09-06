@@ -1,4 +1,4 @@
-Inquiry is the main operating guide for the Inquiry View. While the [Radial Timeline View](Radial-Timeline-View) focuses on scene-level work, Inquiry takes a higher-altitude perspective — scanning your manuscript corpus and worldbuilding to surface structural signals, loose ends, continuity issues, and pressure gaps across a book or saga.
+Inquiry analyzes manuscript and worldbuilding material across a book or saga. Ask structured questions, review evidence and scene citations, and save findings as briefings.
 
 <div style="text-align: center; margin: 20px 0;">
   <img src="images/view-inquiry.png" alt="The Inquiry visual interface with Flow and Depth rings" style="width: 500px; max-width: 100%; border-radius: 8px;" />
@@ -8,7 +8,7 @@ Inquiry is the main operating guide for the Inquiry View. While the [Radial Time
 <a name="overview"></a>
 ## Overview
 
-Inquiry sends your manuscript corpus to an AI provider and asks structured questions organized into three narrative zones. The AI returns findings with headlines, recommended actions, evidence quotes, and scene citations that are visualized in the Inquiry glyph.
+Inquiry sends your selected manuscript material to your configured cloud provider or Local LLM endpoint and asks structured questions organized into three narrative zones. The AI returns findings with headlines, recommended actions, evidence quotes, and scene citations that are visualized in the Inquiry glyph.
 
 **Commands**:
 *   `Open inquiry` — Opens the Inquiry view
@@ -41,7 +41,7 @@ The Inquiry glyph visualizes both scores as concentric rings, giving you a snaps
 ### Scope
 
 *   **Book** — Analyzes scenes within the active book folder (single manuscript).
-*   **Saga (Σ)** — Expands analysis across multiple books using configured scan folders, ideal for series continuity checks.
+*   **Saga (Σ)** — Analyzes the book profiles included in Inquiry sources for series continuity checks.
 
 ---
 
@@ -114,12 +114,13 @@ Inquiry works with all supported AI providers, including Anthropic, OpenAI, Gemi
 
 ### Omnibus Pass *(beta)*
 
-The Omnibus Pass runs all enabled questions across all three zones in sequence via the `Inquiry omnibus` command. It is currently available in development builds only.
+The Omnibus Pass runs enabled questions across all three zones via the `Inquiry omnibus` command. It is currently available in development builds only.
 
-**Corpus overrides**: Any Corpus Manager overrides set in the Inquiry view are applied to the Omnibus run. If no overrides are active, the run falls back to the Inquiry Settings corpus configuration.
+**Corpus overrides**: Any Corpus Manager overrides set in the Inquiry view are applied to the Omnibus run. Otherwise, the run uses the Inquiry Settings corpus configuration.
 
 ---
 
+<a name="corpus-material-modes"></a>
 ## Corpus & Material Modes
 
 Inquiry builds a "corpus" from your manuscript files before sending them to the AI. You can control what each YAML class contributes:
@@ -217,7 +218,7 @@ You can also add your own custom questions on top of the built-ins:
 *   Toggle individual questions on/off.
 *   Reset to built-in defaults using the restore button.
 
-Configure prompts in [Inquiry prompts](Settings-Inquiry#prompts).
+Choose **Standard** or **Focused** in a question’s menu to select its prompt form. Configure questions in [Inquiry prompts](Settings-Inquiry#prompts).
 
 ---
 
@@ -250,8 +251,8 @@ Configure sources in [Inquiry sources](Settings-Inquiry#sources).
 If the Inquiry view looks disabled or won't run, work down this list:
 
 *   **No book selected yet.** Inquiry scopes to the active book, so opening it in a fresh vault — before the plugin knows where your manuscript lives — leaves it with nothing to scan. Step 1 is always: point the plugin at your book in **Settings → Core → Books** (Book Manager). In the [sample vault](Sample-Vault), skip the settings trip entirely: open the **Welcome screen** and click **Open the sample vault** — it detects the packaged book and drops you straight into the timeline.
-*   **AI is off.** New installs ship with AI disabled. Turn it on under **Settings → AI → Enable AI LLM features** — Inquiry cannot run without it.
-*   **No API key.** Without a provider key, Inquiry is deliberately **read-only, not broken**: saved briefings and session history stay browsable (this is how the [Pride & Prejudice sample vault](Sample-Vault) works out of the box), but run controls stay disabled. Add a provider key under **Settings → AI** to run new inquiries.
+*   **AI toggle.** Enable **Settings → AI → Enable AI LLM features** to open Inquiry.
+*   **Provider setup.** Add a cloud provider key or configure and validate a **Local LLM** under **Settings → AI** to run new inquiries. Saved briefings and session history remain browsable while you set up a provider, including in the [sample vault](Sample-Vault).
 *   **The selected model isn't Inquiry-eligible.** Not every provider/model can run Inquiry — it needs structured output and a large context. Open the [AI Engine popover](#ai-engine-popover) and check the readiness strip; if it shows blocked, it names the reason. Local models can qualify (the validation card in Settings → AI shows an "Inquiry eligible" badge), but smaller local models may not.
 *   **Empty corpus.** If the scanned corpus finds no scenes, check [Scan Folders & Class Scope](#scan-folders-and-class-scope) and the Corpus Manager — the scan folder must contain your scene notes, and the class scope must include them.
 *   **Costs look wrong mid-run.** The Omnibus panel shows live cost and includes a cache-health kill-switch; if cached-input pricing misbehaves, disable caching there and re-run.

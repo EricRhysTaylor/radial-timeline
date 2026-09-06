@@ -7,10 +7,8 @@
 /**
  * Timeline search state — one object, one owner (SearchService).
  *
- * Replaces the three parallel plugin fields (`searchTerm`, `searchActive`,
- * `searchResults`) that every consumer had to read in agreement. Scope options,
- * async status, and per-scene evidence are coming; three fields would have
- * become six, and the drift surface with them.
+ * Holds the query, persisted scope options, run status, and per-scene evidence
+ * together so all consumers read the same committed search result.
  *
  * Nothing outside SearchService mutates this. Readers treat it as immutable.
  */

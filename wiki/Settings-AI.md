@@ -16,7 +16,7 @@ The AI tab controls provider setup, model selection, prompt framing, cost awaren
 This is the main routing section for cloud and local AI.
 
 *   **Provider**: Choose **Anthropic**, **OpenAI**, **Google**, or **Local LLM**.
-*   **Model**: Leave it on the latest stable lane or pin a specific model.
+*   **Model**: Choose **Auto** for the latest stable model, or select a specific model to pin it.
 *   **Access**: Set the tier that your provider account has granted you. These tiers are applied for and approved by the provider, then reflected here for context limits and capability headroom.
 *   **Cost Estimate**: Shows estimated Inquiry pricing for your current manuscript scope.
 *   **What gets sent to the AI**: Breakdown cards for Inquiry and Gossamer so you can see the rough corpus, prompt, output, and processing footprint.
@@ -28,20 +28,20 @@ This is the main routing section for cloud and local AI.
 
 ## API Keys
 
-Provider API keys are configured here.
+Store each cloud provider’s key in **Obsidian secret storage** on this device. The secret name identifies the saved key; enter the API key itself in the provider’s key field.
 
-*   Keys are validated against the selected provider.
-*   Saved keys show a live status such as **Ready**, **Not configured**, **Key rejected**, or **Provider validation failed**.
-*   When supported by the current Obsidian build, Radial Timeline uses secure key storage instead of plain-text settings fields.
+*   Radial Timeline validates saved keys with the provider and shows their status.
+*   **Replace key…** updates the saved key; **Copy key name** copies its secret-storage name.
+*   Secure key saving requires an Obsidian build with secret storage. Keys are never saved in plain-text plugin settings.
 
 ## Configuration
 
-These settings control AI feature defaults rather than provider identity.
+Set defaults for analysis and scene hover display.
 
 ### Inquiry
 
 *   **Enable citations (temporarily unavailable)**: Strict provider-level inline citations are still paused.
-*   Inquiry currently uses a looser partial-citation path instead, centered on per-finding evidence quotes and Sources blocks in the result view.
+*   Findings include evidence quotes and scene references in the result’s **Sources** block.
 
 ### Timeline Display
 
@@ -61,13 +61,17 @@ These settings control AI feature defaults rather than provider identity.
 
 ## Local LLM
 
-Choose **Provider → Local LLM** to run AI analysis entirely against a runtime on your own machine — Ollama, LM Studio, or another OpenAI-compatible server. This is a fully supported provider, not a fallback option: it has its own backend registry, capability inference, structured-JSON handling, transport layer, and diagnostics runner behind it, the same as the hosted providers. Choose it when you want zero-cost, fully private analysis and are willing to pick a model with enough capability for the features you use.
+Choose **Provider → Local LLM** to use Ollama, LM Studio, or another OpenAI-compatible server. Select a model and run **Validate Local LLM** to check its readiness for the features you use.
+
+A server on the same machine keeps manuscript text on-device and uses your own hardware. If you configure a network server, manuscript text is sent to that endpoint.
 
 ### Local LLM Configuration
 
 *   **Local server**: Select the runtime behind the Local LLM path — **Ollama**, **LM Studio**, or a generic **OpenAI-Compatible** server.
 *   **Base URL**: Endpoint for the selected server. Defaults differ per runtime — see the setup blocks below.
-*   **Manual model ID (fallback)**: Only use this when automatic model discovery cannot find the model you want.
+*   **Manual model ID (fallback)**: Enter a model ID when automatic discovery misses it.
+*   **Structured JSON mode**: Choose server-enforced **Response format** or **Prompt only**. Radial Timeline validates replies in both modes.
+*   **Model capabilities**: Declare **Extended reasoning**, **Long context**, and **High output ceiling** to match your model; these settings determine feature eligibility.
 
 ### Local LLM Status And Validation
 
@@ -103,24 +107,17 @@ This section is the health check for local AI.
 | No structured-output support | The server returned text, but Radial Timeline could not get clean structured JSON out of it — required for Pulse, Gossamer, and Inquiry to parse results. | Try a different, more capable model. Some small or heavily quantized models cannot reliably follow structured-output instructions. |
 | Context too small | The model's context window or output limit is too small for the prompt Radial Timeline needs to send (this shows up as a low capability tier, or as a timeout on basic/structured completion checks). | Choose a model with a larger context window, or reserve Local LLM for lighter tasks (Summary, single-scene work) and use a hosted provider for larger corpus features. |
 
-### Why Pulse Is Strict For Local LLM
+### Pulse Model Requirements
 
-Pulse is more demanding than a simple one-shot text task.
-
-It sends the **previous**, **current**, and **next** scenes together, then expects clean structured output that Radial Timeline can parse into scene hover properties. That means whichever model you run — local or hosted — has to do both of these reliably:
-
-*   handle a larger three-scene prompt without falling apart
-*   return stable structured output instead of chatty or malformed output
-
-This is a model-capability question, not a Local LLM-versus-hosted question: a small or lightly-quantized local model can struggle with Pulse the same way a weak hosted model would. Pick a local model sized for the feature you want — see the capability tier and feature-support readout after **Validate Local LLM**.
+Pulse sends three scenes together and requires structured JSON results. Choose a model that can handle the full prompt and return complete results, then check its capability and feature-support readout with **Validate Local LLM**.
 
 ### Onboarding And Local Model Hardware
 
-[Onboard manuscript](Commands#onboard-manuscript) (development/testing builds only, currently in beta) runs entirely against a local model — nothing is sent to a hosted provider during onboarding, regardless of your other AI settings.
+[Onboard manuscript](Commands#onboard-manuscript) is a beta workflow in development/testing builds. It supports structure-only import and optional Local LLM assistance; onboarding AI requests use the configured local endpoint.
 
-Onboarding asks more of a local model than everyday features do: it reads and reasons over an entire manuscript across several stages, so it needs both a capable model and a machine that can run one. Onboarding has been tested successfully with **Qwen3-Next-80B-A3B-Instruct (4-bit)** — the recommended model — on a **Mac Studio M4 Max with 64GB of unified memory**. The previously verified **Qwen3-30B-A3B-2507 (4-bit)** also performs, though results are not as strong. Models of this size need a substantial amount of RAM to load and run at all, so a robust machine with ample memory is strongly recommended — an underpowered machine will struggle or fail to run them. This isn't a claim that smaller machines or other models can't work, only what has been verified so far.
+The verified hardware setup is a **Mac Studio M4 Max with 64GB unified memory** running **Qwen3-Next-80B-A3B-Instruct (4-bit)**. Earlier testing also used **Qwen3-30B-A3B-2507 (4-bit)**, with weaker results. Treat these as tested setups and validate your chosen model before importing a manuscript.
 
-### Recommended Use
+### Choosing a Provider
 
-*   Use **Local LLM** for zero-cost, fully private analysis — pick a model with enough capability headroom for the features you use, and validate it after selecting it.
-*   Use **Anthropic**, **OpenAI**, or **Google** when you want managed model selection and the broadest tested coverage across Pulse, Gossamer, and Inquiry without having to size a local model yourself.
+*   **Local LLM** uses your own server and hardware. Validate the model for each workflow.
+*   **Anthropic**, **OpenAI**, and **Google** use your provider account and API billing. Review the cost estimate before a run.

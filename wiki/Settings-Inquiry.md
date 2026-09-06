@@ -30,14 +30,14 @@ Inquiry uses the book profiles you configure in **Settings -> Core -> Books**.
 
 Each book profile contributes one book folder to Inquiry. In **Book** scope, Inquiry uses the active book profile. In **Saga** scope, it can scan across the included book profiles together.
 
-**Supporting material folders** are separate. They add support material and other configured vault paths, but they are not the main way books are defined.
+**Supporting material folders** are separate. They add reference material alongside your book profiles.
 
 <a name="corpus"></a>
 ## Corpus (CC)
 
 *   **Thresholds**: Tune the word-count tiers (`Empty`, `Sketchy`, `Medium`, `Substantive`) used in Corpus cards. Counts are content-only (frontmatter excluded). A reset control restores the defaults.
 
-Low-substance notes (those still in the `Empty` or `Sketchy` tiers) are marked automatically in the Corpus view — this is built-in behavior, not a setting.
+Corpus automatically marks notes in the `Empty` and `Sketchy` tiers.
 
 > [!NOTE]
 > See [Corpus & Material Modes](Inquiry#corpus-material-modes) for how Inquiry uses these settings in actual runs.

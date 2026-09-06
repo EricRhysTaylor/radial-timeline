@@ -756,8 +756,8 @@ function getLayoutPictogramRowsByVariant(variant: FictionLayoutVariant): LayoutP
 //
 // Stamps preview-card warning state onto PART/CHAPTER spreads when the
 // underlying data isn't populated for the active book/scene selection.
-//   PART     → fewer than two Acts configured for this book; or
-//              part-epigraph feature is configured but no act has a quote
+//   PART     → no selected scene carries a Part marker; or
+//              populated part epigraphs differ from the marked part count
 //   CHAPTER  → no scene in the current selection has a Chapter field; or
 //              titled-chapters feature is configured but no chapter has a title
 //   SCENE    → title-only heading mode is configured but scenes lack titles
@@ -773,7 +773,7 @@ export type SpreadValidationContext = {
     /** # of scenes carrying a `Part:` marker — the parts that will print. */
     partMarkerCount: number;
     chapterFieldCount: number;
-    /** # of acts with a non-empty epigraph quote (used by Part-epigraph check). */
+    /** # of non-empty part epigraph quotes, paired with Part markers by position. */
     partEpigraphPopulatedCount?: number;
     /** # of chapter markers whose chapter title is non-empty. */
     chapterTitlePopulatedCount?: number;
@@ -791,7 +791,7 @@ const SCENE_TITLE_WARNING_TOOLTIP =
 /**
  * Part-epigraph tooltip — switches phrasing between zero-population and
  * partial-population states. Zero is back-compat with the prior fixed string;
- * partial reports the fraction so the user knows which acts still need a quote.
+ * partial reports how many marked parts have a quote.
  */
 function partEpigraphTooltip(populated: number, total: number): string {
     if (populated <= 0) {

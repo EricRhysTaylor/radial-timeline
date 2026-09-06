@@ -1,9 +1,8 @@
-*   **Scene-by-scene evaluation**: AI analyzes individual scenes in triplets (previous/current/next) to provide story pulse assessment and grade evaluation.
-*   **Multiple ordering options**: Run analysis in manuscript order (Narrative mode) or by subplot order to get different perspectives on narrative scene flow.
-*   **Editorial signal at a glance**: This is the Radial Timeline bread-and-butter evaluation system shown in scene hover meta, giving valuable editorial feedback on what is working and what is not in the manuscript.
-*   **Compact hover option**: A settings toggle can hide previous and next scene analysis so hover meta shows only the current scene for a slimmer read.
+Pulse analyzes each scene with its previous and next scenes, then saves grades and editorial feedback in scene properties for hover review.
 
-The Pulse Triplet Analysis is the key first line of defense in stress testing the manuscript from a developmental editor's viewpoint.
+*   **Manuscript or subplot order**: Evaluate the reading sequence or follow one subplot.
+*   **Scene feedback**: Review strengths, continuity, and opportunities to improve scene flow.
+*   **Compact hover**: Turn off **Pulse context** in Settings → AI to show the current scene’s feedback alone.
 
 **Modes**: Progress mode (key `1`), Narrative mode (key `2`), Chronologue mode (key `3`)
 **Command**: `Scene pulse analysis (manuscript order)`, `Scene pulse analysis (subplot order)`

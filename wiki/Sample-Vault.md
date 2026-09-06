@@ -1,5 +1,3 @@
-# Pride & Prejudice Sample Vault
-
 A free, fully analyzed working vault built around Jane Austen's *Pride & Prejudice* — the complete novel broken into 61 scene notes with full frontmatter, Save the Cat beat notes, character notes, and a real AI analysis pass already baked in. It's the fastest way to see what Radial Timeline produces when pointed at a full-length novel, with no API key and no setup beyond installing the plugin.
 
 ## How to get it
@@ -28,6 +26,6 @@ The sample vault is delivered by email:
 
 *   Switch modes with `1` (Progress), `2` (Narrative), `3` (Chronologue), `4` (Gossamer) and hover any scene for its synopsis and Pulse analysis.
 *   Try Chronologue's **Shift** sub-mode to see elapsed time between scenes across the novel's calendar.
-*   Open the [Inquiry view](Inquiry) to read saved briefings from prior Inquiry sessions. **No API key is needed** — without one, Inquiry is simply read-only: everything already analyzed is browsable, and run controls stay disabled until you add a provider of your own.
+*   Open the [Inquiry view](Inquiry) to read saved briefings from prior Inquiry sessions. Saved results are browsable with AI enabled. Configure a cloud provider or validated Local LLM to run new analysis.
 
 You're welcome to fork it, edit it, write in it, or strip it for parts — the source text and all included analysis are free to read, copy, and reuse.

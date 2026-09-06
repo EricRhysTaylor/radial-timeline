@@ -3,7 +3,7 @@
   <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Settings → Social</div>
 </div>
 
-The Author Progress Report is a shareable, spoiler-safe graphic that shows your book's progress without revealing story details. Perfect for Kickstarter updates, Patreon posts, newsletters, and social media.
+The Author Progress Report (APR) creates a spoiler-safe progress graphic for newsletters, social posts, Patreon, and Kickstarter updates.
 
 <div style="text-align: center; margin: 20px 0;">
   <img src="images/panel-apr.png" alt="Author Progress Report panel with preview and export options" style="width: 500px; max-width: 100%; border-radius: 8px;" />
@@ -26,11 +26,11 @@ Stage Tracking focuses on one stage at a time. Choose the tracked stage, then se
 
 ### Full Manuscript
 
-Full Manuscript measures the book across the full revision path from **Zero** to **Press**. Use this when you want APR to reflect overall manuscript maturity rather than just the stage you are currently pushing.
+Full Manuscript measures the book across the full revision path from **Zero** to **Press**. Use it to show overall manuscript progress.
 
 ### Date Goal
 
-Date Goal measures progress against time rather than scene counts. Set a start date and target date, and APR will show how far you have moved through that range.
+Date Goal measures progress through a date range. Set a start date and target date, and APR will show how far you have moved through that range.
 
 > **Note**: APR tracking is separate from the timeline's Estimated Completion feature, which projects pace inside the working manuscript view.
 
@@ -133,4 +133,4 @@ The local **Update** action still creates the campaign's PNG or SVG export. **Se
 
 Community uploads always land privately first. Level 2 permits the visual APR but does not share writing-day, streak, minutes, inactivity, or session statistics. Level 3 is the separate opt-in for broader writing activity.
 
-Campaign schedules run in the plugin, not on a server. Due campaigns are checked on plugin startup and hourly while the vault is open. If an update is missed while Obsidian is closed, it runs on the next startup.
+Campaign schedules run while the plugin is open. Due campaigns are checked on plugin startup and hourly while the vault is open. If an update is missed while Obsidian is closed, it runs on the next startup.

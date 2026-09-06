@@ -7,7 +7,7 @@ Scenes in Radial Timeline can be reordered in two ways: **by renaming the scene 
 #### Prefix Numbering Convention
 
 - **Scenes** use canonical integer prefixes: `1`, `2`, `3`, ...
-- **Beats** use decimal minor prefixes so they do not consume scene integers: `1.01`, `1.02`, ...
+- **Beats** use decimal minor prefixes between scene integers: `1.01`, `1.02`, ...
 - **Front matter** typically uses `0.xx`; **Back matter** uses `200.xx`.
 - Use two-digit minor parts (`.01`, `.02`) for stable Obsidian filename sorting.
 
@@ -37,13 +37,13 @@ Only the number controls ordering—the text after it is the title.
 
 Scene order is **act-specific**.
 
-If you change the scene number but do **not** update the Act, the scene will move to the new position **within its current act**.
+Changing the scene number moves the scene **within its current act**. Update `Act` to move it between acts.
 
 Example YAML:
 
     Act: 1
 
-If you rename a scene to the highest number in the manuscript but leave `Act: 1`, it will become the **last scene of Act 1**, not the last scene overall.
+With `Act: 1`, the highest-numbered scene appears at the **end of Act 1**.
 
 To move a scene to a different act, update the YAML:
 
@@ -56,8 +56,6 @@ Always update both:
 ---
 
 #### Method 2: Drag & Drop (Narrative Mode Only)
-
-In recent versions of Radial Timeline:
 
 - Switch to **Narrative Mode**
 - Drag a **scene** or **beat note** on the **outer ring** (cursor becomes double arrow)
@@ -90,7 +88,7 @@ Need to rename or delete a subplot across dozens of scenes? Use the **[Manage su
 * Rename a subplot and automatically update the frontmatter of every scene using it.
 * Delete a subplot and strip the tag from all scenes in one action.
 
-This is especially helpful after reorganizing your B/C plots — you no longer have to hunt through every note manually.
+Use it to keep subplot names consistent after reorganizing your story.
 
 ### Search
 
@@ -99,28 +97,15 @@ This is especially helpful after reorganizing your B/C plots — you no longer h
   <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Search — matching scenes highlighted in yellow across all subplot rings</div>
 </div>
 
-You can filter scenes by searching for text content across multiple fields.
+Open **Radial timeline: Search timeline**, choose **Search options**, and press **Enter** to search.
 
-*   **Trigger**: Use the command palette (`Cmd + P` on Mac, `Ctrl + P` on Windows/Linux) → **Radial timeline: Search timeline**.
-*   **Matches**: Searches case-insensitive text in:
+*   **Timeline fields** searches scene titles, synopses, characters, subplots, durations, dates, planetary-time text, and custom properties enabled in hover metadata.
+*   **Scene body** searches the prose. Open a matching scene to see the matching passages highlighted in the editor.
+*   **Local LLM assist** finds concept matches in the selected scopes using your configured local model. Each accepted match includes a quote verified against the searched text. The panel reports progress, dropped claims, and unreadable scenes; **Cancel** stops a running search.
 
-| Field | Examples |
-| :--- | :--- |
-| Title | Scene filename |
-| Synopsis | Scene summary text |
-| Characters | All characters listed in the scene |
-| Subplot | Subplot name |
-| Duration | "2 hours", "45 minutes", "3 days" |
-| Date/Time | "Dec 28", "2025", "9am", "April", "Midnight" |
-| AI Pulse Analysis | Current scene analysis text |
-| Planetary Time | Planet name and formatted local time (if enabled) |
+Timeline fields is selected by default. Your scope choices are saved. Matching scene numbers light up across subplot rings; hover highlights apply to matches in timeline fields. Use **Clear timeline search** to clear the results.
 
-*   **Visuals**:
-    *   **Scene Numbers**: Highlighted in yellow on all subplot rings.
-    *   **Text**: Matching text within the synopsis hover metadata is highlighted in yellow.
-*   **Clear**: Click the clear button in the panel.
-
-> **Note**: Status, Publish Stage, Due date, Pending Edits, Place, POV, and Gossamer scores are not included in search.
+Local LLM assist sends the selected material to your configured Local LLM endpoint. Use a server on the same machine to keep manuscript text on-device.
 
 ### Rotate the timeline
 In Narrative and Progress modes you can use the **rotation toggle** (arrow icon near the outer ring) to rotate the timeline for easier reading. The rotation offset is **act-aware** (based on your configured **Act count**) and keeps scene number squares oriented correctly.

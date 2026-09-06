@@ -3,9 +3,9 @@
   <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Settings → PRO</div>
 </div>
 
-**Advanced workflows for authors who want more.**
+Everything the plugin does is free to use right now — Pro included.
 
-Pro is a collection of Pro workflows — the deeper end of Radial Timeline. Evaluate your story with deeper Inquiry questions, track structure and momentum across scenes, and generate polished manuscripts with Pandoc PDF exports and custom LaTeX templates. Share progress through APR campaigns, and explore Website Exclusives.
+Pro labels advanced workflows for Inquiry questions, runtime estimates, publishing layouts, multi-book timelines, and APR campaigns.
 
 Pro workflows appear throughout Radial Timeline in magenta.
 
@@ -28,9 +28,9 @@ Template vaults such as *Pride & Prejudice* and *Sherlock Holmes*, Omnibus Inqui
 
 ---
 
-## Inquiry runs on your own key
+## AI setup
 
-Inquiry uses the provider key you add in **Settings → AI**. Your key, your models — Radial Timeline does not stand between you and your provider, and you can change or remove the key at any time.
+Inquiry uses your configured cloud provider and API billing, or a validated Local LLM. Set up either option in [Settings → AI](Settings-AI).
 
 ---
 

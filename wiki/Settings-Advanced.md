@@ -12,7 +12,7 @@ Advanced is currently grouped into three areas:
 ### Timeline Display
 
 *   **Auto-expand clipped scene titles**: Automatically expands truncated scene titles on hover.
-*   **Show chapter markers**: Displays chapter boundaries on the Narrative all-scenes ring and reports how many active chapter markers exist in the current book.
+*   **Show part and chapter markers**: Displays part and chapter boundaries on the Narrative all-scenes ring and reports how many active chapter markers exist in the current book.
 *   **Recent drag move overlay in narrative mode**: Shows the last committed scene and beat drag moves.
 *   **Readability size**: Switches curated timeline text sizing between `Normal` and `Large`.
 

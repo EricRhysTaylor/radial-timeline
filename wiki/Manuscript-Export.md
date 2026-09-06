@@ -7,7 +7,7 @@
 
 ## What It Can Export
 
-The export workflow can produce:
+Choose from:
 
 *   compiled Markdown manuscripts
 *   PDF manuscripts (typeset via Pandoc + LaTeX)
@@ -21,7 +21,7 @@ The panel supports ordering, selection range, output presets, and publishing-ori
 
 ## Word (DOCX) Submission Export
 
-The **Word** format produces a `.docx` in standard manuscript format — the layout agents and editors expect for queries and submissions: Times New Roman 12 pt, double-spaced, 0.5" first-line indents, centered chapter headings that start on a new page. Styling comes from a bundled Word reference document installed into your Pandoc folder (`reference-manuscript.docx`); Pandoc is required, but no LaTeX engine and no PDF layout/font setup.
+The **Word** format produces a `.docx` in standard manuscript format — the layout agents and editors expect for queries and submissions: Times New Roman 12 pt, double-spaced, 0.5" first-line indents, centered chapter headings that start on a new page. Styling comes from a bundled Word reference document installed into your Pandoc folder (`reference-manuscript.docx`); configure Pandoc under **Settings → Publish** to use it.
 
 Front & back matter Book Pages can be included, and the export cleanup toggles (comments, links, callouts) apply the same way they do for PDF.
 

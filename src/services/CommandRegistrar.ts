@@ -188,7 +188,7 @@ export class CommandRegistrar {
             }
         });
 
-        // Beta (dev builds only): one-button manuscript onboarding via local LLM.
+        // Beta (development/testing builds): structure-only or Local LLM-assisted import.
         if (areBetaCommandsVisible()) {
             this.plugin.addCommand({
                 id: 'onboard-manuscript',

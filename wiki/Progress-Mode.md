@@ -1,6 +1,6 @@
 **Keyboard Shortcut**: `1`
 
-Progress Mode gives every subplot its own radial ring, removing the combined outer ring. This mode focuses on **Author time** (your writing status) and **Progress stages** (revision stages), making it ideal for tracking workflow at a glance.
+Progress Mode gives each subplot a ring and colors scenes by writing status and revision stage.
 
 <div style="text-align: center; margin: 20px 0;">
   <img src="images/mode-progress.png" alt="Progress Mode" style="width: 300px; max-width: 100%; border-radius: 8px;" />
@@ -10,16 +10,15 @@ Progress Mode gives every subplot its own radial ring, removing the combined out
 
 *   **Thread Separation**: Every subplot renders in its own ring, with the main plot emphasized and other threads muted, so each arc is easy to follow.
 *   **Act Structure**: Like Narrative Mode, scenes are distributed across your configured act count (default 3). Each act spans an equal segment of the 360° circle.
-*   **Cleaner View**: Removes story beats to reduce visual noise while you focus on workflow.
 
 <a name="status-and-progress-stage"></a>
 ## Status & Progress Stage
 
-Unlike Narrative Mode, this mode replaces subplot colors with your workflow status:
+Scene colors show your workflow status:
 
 1.  **Author Status**:
     *   **Todo**: Solid light pink.
-    *   **Working**: Pink, with an optional Hero Patterns plaid motif overlaid on top. The motif is customizable with the **Pro Signature Tier** — paste any pattern from [heropatterns.com](https://heropatterns.com) in Settings.
+    *   **Working**: Pink, with an optional Hero Patterns plaid motif overlaid on top. Choose a **Working pattern** in Settings → Core, or add a custom pattern from [Hero Patterns](https://heropatterns.com).
     *   **Overdue**: Red.
     *   **Complete**: Inherits the color of the scene Progress Stage.
 
@@ -37,9 +36,9 @@ Together they turn the radial view into a project-management dashboard, highligh
 <a name="zero-draft-mode"></a>
 ## Zero Draft Mode
 
-**Zero Draft Mode** is a guardrail against never-ending revision while you finish a first draft. When it is enabled, clicking a scene that has reached **Progress Stage = Zero** and **Status = Complete** opens a **Pending Edits** panel instead of the scene file, so you can jot down what to revise later without dropping back into the prose. Enable it in [Settings](Settings-Core), and capture revision ideas in the scene's `Pending Edits` field.
+**Zero Draft Mode** opens **Pending Edits** when you click a scene with **Publish Stage = Zero** and **Status = Complete**. Capture revision ideas there while you finish the first draft. Enable it in [Settings → Core](Settings-Core).
 
 <div style="text-align: center; margin: 20px 0;">
   <img src="images/panel-zero-draft.png" alt="Zero Draft Mode panel" style="width: 480px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Zero Draft Mode — capture revision notes without reopening the scene</div>
+  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Zero Draft Mode — capture ideas for the next revision</div>
 </div>

@@ -1,4 +1,4 @@
-Gossamer Mode visualizes beat-level scoring across your active story beat system. Each saved scoring pass draws a **trace** — a line connecting your beat scores around the timeline. It supports four signals — **Momentum**, **Tension**, **Activity**, and **Interiority** — so you can compare not just how your story moves, but what kind of pressure or interior charge each beat carries.
+Gossamer Mode visualizes beat-level scoring across your active story beat system. Each saved scoring pass draws a **trace** — a line connecting your beat scores around the timeline. It supports four signals — **Momentum**, **Tension**, **Activity**, and **Interiority** — to compare story movement, pressure, visible action, and inner experience.
 
 *   **Four signals**: Score **Momentum**, **Tension**, **Activity**, or **Interiority** against the same beat system.
 *   **Trace history**: Compare saved traces across up to 30 slots per beat to track how the shape changes over time.
@@ -48,12 +48,12 @@ The **alignment chip** at the left of the mode row switches subplot rings betwee
 <a name="manual-entry"></a>
 ## Manual Entry
 
-Use **Gossamer score manager** to enter scores for the active signal. This is a manual workflow by design — you can score purely by your own judgment, or use an external AI tool to help draft scores and justifications, then paste those results into the panel.
+Use **Gossamer score manager** to enter your scores and justifications for the active signal, or paste scores prepared with an external AI tool.
 
 <a name="ai-analysis"></a>
 ## AI Analysis
 
-Use **Gossamer analysis** to run the built-in AI evaluation for the active signal. The AI run intentionally **does not receive ideal range guidance** in its payload/instructions, so the result is a fresh read rather than a range-constrained score.
+Use **Gossamer analysis** to run the built-in AI evaluation for the active signal. AI scores the supplied manuscript material independently of your visual Momentum ranges.
 
 <a name="story-beats-configuration"></a>
 ## Story Beats Configuration
@@ -83,7 +83,7 @@ Row colors show the sync status between your beat list and the actual note files
 
 ### 3. Create & Merge
 *   **Create**: Generates beat notes in the active book folder, one per beat. Notes come pre-populated with properties (`Class: Beat`, `Purpose`, `Beat Model`, `Range`, etc.) so they are immediately recognized by Gossamer Mode. The button is disabled when all beats already have files, and shows how many new notes will be created.
-*   **Merge**: Appears when beats are misaligned. Updates existing beat note frontmatter to match current act assignments (and fills missing Beat Model/Beat Id where applicable). It does not rename files or enforce numeric prefix conventions.
+*   **Merge**: Appears when beats are misaligned. Updates existing beat note frontmatter to match current act assignments (and fills missing Beat Model/Beat Id where applicable). Existing filenames are preserved.
 
 > [!NOTE]
 > Custom beat notes use the same properties structure as preset systems. Use the Beat properties editor to extend this with your own fields.

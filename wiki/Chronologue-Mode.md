@@ -22,7 +22,7 @@ Chronologue is one of four modes within the Radial Timeline View. It is essentia
 > **Drafting calmly**: Red "Missing When" number squares only appear once a scene's `Status` is `Working` or `Complete`, so Todo scenes can stay quiet while you're still sketching. When a date is missing, the hover synopsis displays the dates of the immediately preceding and following scenes (in narrative order) to help you pinpoint the correct timing.
 
 ### Why this matters
-Some authors choose to organize scenes in manuscript/narrative order, but Chronologue mode lets you construct and verify the underlying chronological scaffolding without the constraints of the 3 acts or title ordering. You can spot:
+Chronologue orders scenes by story time to help you find:
 *   Pacing issues (too much/too little story time between events)
 *   Flashback positioning opportunities
 *   Timeline consistency problems
@@ -110,7 +110,7 @@ Backdrop notes visualize major contextual events — historical wars, planetary 
 *   **Overlaps**: Two backdrops may overlap partially, shown with a visual plaid pattern.
 
 ### Micro-backdrop Rings
-For lighter-weight context that doesn't need its own note file, **micro-backdrop rings** are configured directly in Settings. Each micro-backdrop is a thin colored ring segment with a title and date range.
+Configure **micro-backdrop rings** directly in Settings for brief context markers. Each micro-backdrop is a thin colored ring segment with a title and date range.
 
 *   **Use cases**: Eras, seasons, political regimes, historical milestones, or any contextual time span you want visible at a glance.
 *   **Configure**: Settings → Core → Backdrop → **Micro backdrops**. Add a title, select a color, and set start/end dates.

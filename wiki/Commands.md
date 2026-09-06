@@ -40,13 +40,13 @@ These are the main command-palette entries.
 Some commands are hidden until their required feature is enabled. Others remain visible but stop with a setup message if prerequisites are missing:
 
 *   **Scene pulse analysis** and **Summary refresh** appear only when **AI LLM features** are enabled in [Settings → AI](Settings-AI).
-*   **Open inquiry** stays listed either way, but the same AI-enabled gate applies: with AI off, it shows a notice and refuses to run instead of opening. The Inquiry ribbon icon is also hidden while AI is off.
+*   **Open inquiry** stays listed either way, but the same AI-enabled gate applies: enable AI in Settings → AI to open the view and show its ribbon icon.
 *   **Gossamer analysis** is visible, but the run requires an active beat system, story beats, scene content, and usable AI settings.
 *   **Runtime estimator** is a **Pro** workflow. Runtime configuration lives in [Settings → Core](Settings-Core#runtime-estimation).
 *   **Planetary time calculator** is visible, but it needs at least one configured planetary profile before it can produce a conversion.
 *   **Timeline order** and **Timeline audit** show a release-pending notice in public release builds and are usable in development/testing builds.
 *   **Inquiry omnibus** appears only in development/testing builds.
-*   **Onboard manuscript** appears only in development/testing builds, and only runs against a local LLM (no hosted-provider path).
+*   **Onboard existing manuscript (BETA)** appears in development/testing builds. Choose structure-only import or Local LLM assistance.
 
 ---
 
@@ -77,7 +77,7 @@ Related: [Scene Properties (Core + Advanced)](YAML-Frontmatter).
 Opens the guided onboarding flow for importing an existing manuscript.
 
 > [!NOTE]
-> Currently undergoing beta testing. Available only in development/testing builds for now. This command runs entirely against a local LLM — see [Settings → AI → Local LLM](Settings-AI#local-llm) for setup and the hardware guidance in [Onboarding And Local Model Hardware](Settings-AI#onboarding-and-local-model-hardware).
+> Currently undergoing beta testing. Available only in development/testing builds for now. Choose structure-only import or Local LLM assistance — see [Settings → AI → Local LLM](Settings-AI#local-llm) for setup and the hardware guidance in [Onboarding And Local Model Hardware](Settings-AI#onboarding-and-local-model-hardware).
 
 Walks a book folder through a four-stage sequence — preparing and reading the source text, proposing scene splits for confirmation, generating scene profiles (characters, places, summaries) for review, and writing the accepted result to the vault. Each stage is reviewable before it commits anything.
 
@@ -99,7 +99,7 @@ Opens the timeline order normalizer (Timeline Repair wizard).
 
 The wizard helps you normalize `When` values in manuscript order, then review the proposed timeline before writing changes back to frontmatter. It supports scaffold-based chronology setup, anchor date and time selection, time-bucket adjustments (morning/afternoon/evening/night), ripple mode for cascading changes, needs-review filtering, and undo/redo before applying.
 
-This command is for repairing and normalizing chronology, not for auditing contradictions — for that, see [Timeline audit](#timeline-audit).
+Use [Timeline audit](#timeline-audit) to review chronology and continuity findings.
 
 Related: [Chronologue Mode](Chronologue-Mode).
 
@@ -119,7 +119,7 @@ Opens the timeline audit panel.
 
 Surfaces contradictions, missing `When` values, summary/body disagreement, continuity problems, and unresolved findings. The panel shows overview stats, finding filters, and finding cards with evidence and suggested actions.
 
-The audit includes a deterministic pass and can optionally run a continuity pass. AI-enhanced findings (when available) appear in the same review surface — the command stays centered on audit and review rather than bulk rewriting. From the panel you can filter findings by issue type, inspect evidence, mark items for review, apply accepted fixes where supported, and rerun the audit after changes.
+The audit includes a deterministic pass and can optionally run a continuity pass. AI findings appear alongside deterministic findings for review. From the panel you can filter findings by issue type, inspect evidence, mark items for review, apply accepted fixes where supported, and rerun the audit after changes.
 
 Related: [Timeline order](#timeline-order), [Chronologue Mode](Chronologue-Mode).
 
@@ -181,7 +181,7 @@ Opens the timeline search bar.
   <img src="images/panel-search-timeline.png" alt="Search timeline panel" style="width: 500px; max-width: 100%; border-radius: 8px;" />
 </div>
 
-Case-insensitive text search across title, `Synopsis`, `Character`, `Subplot`, `Duration`, scene date/time, current AI Pulse analysis, and planetary-time conversion text when planetary time is active.
+Choose **Timeline fields**, **Scene body**, or both in **Search options**. Press **Enter** for text search, or enable **Local LLM assist** for concept matching with verified evidence quotes. See [Search](How-to#search) for scope, highlighting, and local AI setup.
 
 Related: [How to → Search](How-to#search).
 
@@ -196,7 +196,7 @@ Runs the built-in AI scoring workflow for the active Gossamer signal.
   <img src="images/panel-gossamer-analysis.png" alt="Gossamer analysis command panel" style="width: 560px; max-width: 100%; border-radius: 8px;" />
 </div>
 
-Works against the active beat system and the active signal — Momentum, Tension, Activity, or Interiority. The AI run intentionally does **not** receive ideal-range guidance in its scoring payload, so the result is a fresh read rather than a range-constrained one.
+Works against the active beat system and the active signal — Momentum, Tension, Activity, or Interiority. AI scores the supplied manuscript material independently of your visual Momentum ranges.
 
 Related: [Gossamer Mode → AI Analysis](Gossamer-Mode#ai-analysis).
 
@@ -244,7 +244,7 @@ Opens the manual score-entry panel for the active signal.
   <img src="images/panel-gossamer-score-manager.png" alt="Gossamer score manager panel" style="width: 560px; max-width: 100%; border-radius: 8px;" />
 </div>
 
-Supports manual score entry, score justifications, run history cleanup and normalization, and working with saved beat runs. If no beat notes are available for the active beat system, the command will not open and instead warns that story beats are missing.
+Supports manual score entry, score justifications, run history cleanup and normalization, and working with saved beat runs. Create beat notes for the active beat system before opening the panel.
 
 Related: [Gossamer Mode → Manual Entry](Gossamer-Mode#manual-entry).
 
@@ -259,7 +259,7 @@ Opens the planetary conversion panel.
   <img src="images/panel-planet-calculator.png" alt="Planetary time calculator panel" style="width: 440px; max-width: 100%; border-radius: 8px;" />
 </div>
 
-Uses the active planetary profile from [Settings → Core](Settings-Core) and lets you select a date and time, convert that Earth timestamp to local planetary time, and copy a YAML-friendly result block. The refreshed panel is designed for quick Alien Calendar checks while writing. If no planetary profile exists or no active profile is selected, the calculator cannot produce a result.
+Uses the active planetary profile from [Settings → Core](Settings-Core) and lets you select a date and time, convert that Earth timestamp to local planetary time, and copy a YAML-friendly result block. The refreshed panel is designed for quick Alien Calendar checks while writing. Select an active planetary profile in Settings → Core before converting dates.
 
 Related: [Planetary Calendar](Chronologue-Mode#alt-sub-mode).
 

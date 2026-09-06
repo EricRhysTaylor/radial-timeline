@@ -9,14 +9,14 @@ You get two workspaces: the **[Radial Timeline View](Radial-Timeline-View)** for
   </div>
 </div>
 
-The Welcome screen offers four starting points:
+The Welcome screen offers these starting points; onboarding appears in development/testing builds:
 
 1.  **Set Book Project** — choose the manuscript folder that drives the timeline, exports, Inquiry scope, and Book Manager. The right first step for a fresh vault.
 2.  **Onboard existing manuscript** — bring an existing draft in from a [Scrivener export, a Word document, or one big file](Onboard-Existing-Manuscript), with or without AI assistance.
 3.  **Explore a sample vault** — get the free, fully analyzed [Pride & Prejudice sample vault](Sample-Vault) (sign up with your email and the download link arrives in your inbox). No API key needed to explore it.
 4.  **Visit the website** — [radialtimeline.com](https://radialtimeline.com) for support docs and the [Community](Settings-Community), where you can share your writing journey at your own comfort level.
 
-> **Coming from Scrivener, Word, or another tool?** Use **[Onboard existing manuscript](Onboard-Existing-Manuscript)** — it splits your draft into scene notes, fills the YAML across acts, and previews everything before anything is written. Scene order is controlled by the leading number in each scene's filename plus its `Act` field — not by File Explorer sort order. See [Scene Properties (Core + Advanced)](YAML-Frontmatter) for the full schema.
+> **Coming from Scrivener, Word, or another tool?** In development/testing builds, use **[Onboard existing manuscript](Onboard-Existing-Manuscript)** — it splits your draft into scene notes, fills the YAML across acts, and previews everything before anything is written. Scene order follows the leading number in each scene's filename and its `Act` field. See [Scene Properties (Core + Advanced)](YAML-Frontmatter) for the full schema.
 
 ---
 
@@ -33,7 +33,7 @@ Choose a vault layout and stick with it: a single-book vault, a single vault wit
 
 **3. Choose a beat system (optional).** Pick from the built-in systems (**Save the Cat**, **Hero's Journey**, **Classic Dramatic Structure**, plus podcast, video, documentary, romance, and thriller arcs) or build a **Custom** system in [Settings → Core → Story beats system](Settings-Core#story-beats-system). Use **Create** to generate beat notes; **Merge** to realign existing files after changes.
 
-**4. Enable AI (optional).** New installs ship with AI off. Turn it on under **Settings → AI → Enable AI LLM features** — this is required for [Inquiry](Inquiry), [AI Pulse Triplet Analysis](AI-Pulse-Analysis), Gossamer AI analysis, and Summary refresh. Everything else in Radial Timeline works without it.
+**4. Enable AI (optional).** New installs ship with AI off. Turn it on under **Settings → AI → Enable AI LLM features** — this is required for [Inquiry](Inquiry), [AI Pulse Triplet Analysis](AI-Pulse-Analysis), Gossamer AI analysis, and Summary refresh. Configure a cloud provider key or a [Local LLM](Settings-AI#local-llm), then check model readiness before running analysis.
 
 ---
 
@@ -48,10 +48,10 @@ The four modes in the Radial Timeline View — switch with `1`/`2`/`3`/`4` or th
 
 **Day to day:** write scenes, keep `Synopsis` current, update `Status` from Todo → Working → Complete. Use **Search timeline** to find scenes across metadata. See [How to](How-to) for task recipes (reordering, subplots, rotation, search).
 
-**When you're ready to share:** run **Radial timeline: Manuscript export** to compile to Markdown, outline, or PDF. PDF requires [Pandoc](https://pandoc.org/installing.html) and a LaTeX distribution; configure under **Settings → Publish**. See [Publishing](Publishing) for templates and Signature setup.
+**When you're ready to share:** run **Radial timeline: Manuscript export** to compile to Markdown, an outline, Word (DOCX), or PDF. Word requires Pandoc; PDF requires [Pandoc](https://pandoc.org/installing.html) and a LaTeX distribution; configure under **Settings → Publish**. See [Publishing](Publishing) for templates and Signature setup.
 
 **Optional next steps:** [AI Pulse Triplet Analysis](AI-Pulse-Analysis) for scene-level editorial feedback, [Inquiry](Inquiry) for corpus-level analysis, [Author Progress Report](Author-Progress-Report) for shareable spoiler-safe progress graphics.
 
 ---
 
-> **Protect your work.** Back up your vault regularly. Sync helps but won't guard against all forms of data loss. See Obsidian's [backup guide](https://help.obsidian.md/backup), [Obsidian Sync](https://obsidian.md/sync), or the [Obsidian Git plugin](https://obsidian.md/plugins?id=obsidian-git).
+> **Protect your work.** Keep regular vault backups alongside sync. See Obsidian's [backup guide](https://help.obsidian.md/backup), [Obsidian Sync](https://obsidian.md/sync), or the [Obsidian Git plugin](https://obsidian.md/plugins?id=obsidian-git).

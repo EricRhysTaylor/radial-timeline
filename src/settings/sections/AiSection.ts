@@ -1,3 +1,4 @@
+import { buildLocalStatus, formatLocalLlmUiError, formatLocalTimestamp } from './aiLocalStatus';
 import { createLocalLlmModelPills, abbreviateLocalModelId, buildLocalFeatureSummary } from './AiLocalLlmModelPills';
 import { renderAiLocalLlmValidation } from './AiLocalLlmValidation';
 import { renderAiCredentialPanel, type ProviderKeyUiState } from './AiCredentialPanel';
@@ -1534,7 +1535,7 @@ export function renderAiSection(params: {
         resolvedPreviewModel.setText(abbreviateLocalModelId(selectedModelId) || 'Local model'); // SAFE: preview caption only — a model id that abbreviates to nothing still needs a readable label
         resolvedPreviewProvider.setText(`${LOCAL_LLM_BACKEND_LABELS[localLlm.backend]} · ${getOllamaBaseUrl()}`);
 
-        const statusValue = buildLocalStatusValue();
+        const statusValue = getLocalStatus().label;
         const statusStamp = localValidation.state.pending ? null : formatLocalTimestamp(localValidation.state.lastValidatedAt);
         const validated = statusValue === 'Connected & validated';
 
@@ -2782,13 +2783,6 @@ export function renderAiSection(params: {
         capabilitySetting.settingEl.addClass(ERT_CLASSES.ROW);
     }
 
-    const formatLocalTimestamp = (iso: string | null): string | null => {
-        if (!iso) return null;
-        const parsed = new Date(iso);
-        if (Number.isNaN(parsed.getTime())) return null;
-        return parsed.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    };
-
     const renderLocalLlmModelList = (): void => {
         if (aiSectionDisposed) return;
         const selectedModelId = getOllamaModelId().trim();
@@ -2838,56 +2832,16 @@ export function renderAiSection(params: {
         })), selectedModelId);
     };
 
-    const formatLocalLlmUiError = (message: string | null | undefined): string => {
-        const normalized = (message ?? '').trim();
-        if (!normalized) return 'Unknown local server error.';
-        if (/ERR_CONNECTION_REFUSED/i.test(normalized)) return 'Connection refused. The local server is not running.';
-        if (/timed?\s*out/i.test(normalized)) return 'Timed out while contacting the local server.';
-        if (/No models reported by this local server/i.test(normalized)) return 'A local server responded, but no models are loaded.';
-        return normalized;
-    };
-
-    const buildLocalStatusValue = (): string => {
-        const currentLocalLlm = getLocalLlmSettings(ensureCanonicalAiSettings());
-        if (!currentLocalLlm.enabled) return 'Local LLM disabled';
-        if (localLlmServerDetectionPending || localLlmModelLoadPending) return 'Checking local server';
-        if (localValidation.state.pending) return 'Validating';
-        if (!localLlmDetectedServers.length) return 'No local server detected';
-        if (localValidation.state.error) return 'Needs review';
-        if (localValidation.state.report?.reachable.ok
-            && localValidation.state.report.modelAvailable.ok
-            && localValidation.state.report.basicCompletion.ok
-            && localValidation.state.report.structuredJson.ok) {
-            return 'Connected & validated';
-        }
-        if (localValidation.state.report?.reachable.ok) return 'Connected';
-        if (localValidation.state.report && !localValidation.state.report.reachable.ok) return 'Local server offline';
-        return 'Connected';
-    };
-
-    /**
-     * The same branches as {@link buildLocalStatusValue}, as a dropdown state.
-     *
-     * Without this the Local LLM option was the one entry that never said
-     * anything: while its (slow) server check ran, the three cloud providers
-     * each read "(Checking…)" and local read as plain text, so the open list
-     * looked like nothing was available except the provider that was silent.
-     * Kept adjacent to, and branch-for-branch with, the status copy so the two
-     * cannot drift into disagreeing about the same server.
-     */
-    const buildLocalProviderKeyState = (): string => {
-        const currentLocalLlm = getLocalLlmSettings(ensureCanonicalAiSettings());
-        if (!currentLocalLlm.enabled) return 'not_configured';
-        if (localLlmServerDetectionPending || localLlmModelLoadPending) return 'checking';
-        if (localValidation.state.pending) return 'checking';
-        // Nothing has been asked of the server yet (the panel only probes when
-        // local is the active provider). Say nothing rather than claim it is
-        // unreachable — an unchecked server is not a failed one.
-        if (!localLlmDetectedServers.length) return localLlmServerDetectionError ? 'network_blocked' : '';
-        if (localValidation.state.error) return 'rejected';
-        if (localValidation.state.report && !localValidation.state.report.reachable.ok) return 'network_blocked';
-        return 'ready';
-    };
+    const getLocalStatus = () => buildLocalStatus({
+        enabled: getLocalLlmSettings(ensureCanonicalAiSettings()).enabled,
+        discovering: localLlmServerDetectionPending,
+        loadingModels: localLlmModelLoadPending,
+        validating: localValidation.state.pending,
+        hasServers: localLlmDetectedServers.length > 0,
+        detectionError: localLlmServerDetectionError,
+        validationError: localValidation.state.error,
+        report: localValidation.state.report
+    });
 
     const buildLocalCheckValue = (
         label: 'Connection' | 'Model availability' | 'Basic validation' | 'Structured validation',
@@ -2927,7 +2881,7 @@ export function renderAiSection(params: {
 
     const renderLocalLlmStatus = (): void => {
         if (aiSectionDisposed) return;
-        providerKeyStates.ollama = buildLocalProviderKeyState();
+        providerKeyStates.ollama = getLocalStatus().providerState;
         refreshDropdownKeyIndicators();
         refreshResolvedPreviewBusy();
         const localLlm = getLocalLlmSettings(ensureCanonicalAiSettings());
@@ -2955,7 +2909,7 @@ export function renderAiSection(params: {
         localLlmServerSetting.settingEl.toggleClass('ert-settings-hidden', !multipleDetectedServers);
         localLlmServerSetting.settingEl.toggleClass('ert-settings-visible', multipleDetectedServers);
 
-        const statusValue = buildLocalStatusValue();
+        const statusValue = getLocalStatus().label;
         const statusStamp = localValidation.state.pending ? null : formatLocalTimestamp(localValidation.state.lastValidatedAt);
 
         const appendStatusItem = (container: HTMLElement, label: string, value: string): void => {

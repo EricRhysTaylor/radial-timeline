@@ -420,9 +420,7 @@ describe('AI settings models table', () => {
         expect(source.includes('No local server detected')).toBe(true);
         expect(source.includes("t('settings.ai.localLlm.noModelsAuto')")).toBe(true);
         expect(source.includes("const localLlmStatusGrid = localLlmStatusSection.createDiv({ cls: 'ert-ai-local-llm-status-grid' });")).toBe(true);
-        expect(source.includes('const buildLocalStatusValue = (): string => {')).toBe(true);
         expect(source.includes('const buildLocalCheckValue = (')).toBe(true);
-        expect(source.includes('const formatLocalLlmUiError = (message: string | null | undefined): string => {')).toBe(true);
         expect(source.includes("const appendStatusItem = (container: HTMLElement, label: string, value: string): void => {")).toBe(true);
         expect(source.includes("appendStatusItem(localLlmStatusSummaryCol, 'Status', statusStamp ? `${statusValue} · ${statusStamp}` : statusValue);")).toBe(true);
         expect(source.includes("'Connected & validated'")).toBe(true);

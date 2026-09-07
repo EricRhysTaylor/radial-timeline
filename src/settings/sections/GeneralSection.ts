@@ -1,4 +1,4 @@
-import type { App, TextComponent } from 'obsidian';
+import type { App, TextComponent, TFile } from 'obsidian';
 import { Setting as ObsidianSetting, normalizePath, Notice, Modal, ButtonComponent, setIcon, setTooltip, TFolder } from 'obsidian';
 import { NamePromptModal } from '../../ui/NamePromptModal';
 import type RadialTimelinePlugin from '../../main';
@@ -16,6 +16,8 @@ import {
 import { ERT_CLASSES } from '../../ui/classes';
 import { addHeadingIcon, applyErtHeaderLayout } from '../wikiLink';
 import { consumeBookManagerAutoloadHighlight } from '../bookManagerAutoloadHighlight';
+import { extractCountableBodyText } from '../../utils/manuscript';
+import { countWords } from '../../utils/text';
 
 class CreateDraftModal extends Modal {
     private defaultName: string;
@@ -327,18 +329,21 @@ export function renderGeneralSection(params: {
             // ── Scene count (only Class: Scene files) ────────────────
             let sceneStatText = 'No folder';
             let sceneStatWarn = true;
+            const sceneFiles: TFile[] = [];
             if (hasBrokenFolderLink) {
                 sceneStatText = 'Folder missing';
             } else if (hasResolvedFolder) {
                 const children = abstractFolder.children;
-                let sceneCount = 0;
                 for (const child of children) {
                     if (!child.path.endsWith('.md')) continue;
                     const tfile = app.vault.getAbstractFileByPath(child.path);
                     if (!tfile) continue;
                     const fm = app.metadataCache.getFileCache(tfile as import('obsidian').TFile)?.frontmatter;
-                    if (fm && (fm.Class === 'Scene' || fm.class === 'Scene')) sceneCount++;
+                    if (fm && (fm.Class === 'Scene' || fm.class === 'Scene')) {
+                        sceneFiles.push(tfile as TFile);
+                    }
                 }
+                const sceneCount = sceneFiles.length;
                 sceneStatText = sceneCount === 1 ? '1 scene' : `${sceneCount} scenes`;
                 sceneStatWarn = false;
             }
@@ -415,6 +420,26 @@ export function renderGeneralSection(params: {
             row.descEl.addClass('ert-book-card__meta');
             if (book.id === autoloadHighlightedBookId) {
                 row.descEl.setText(`BOOK ${sequenceNumber} — demo autoloaded · ${sceneStatText}`);
+            }
+            if (hasResolvedFolder) {
+                const description = row.descEl.textContent;
+                row.descEl.setText(`${description} — counting words…`);
+                void (async () => {
+                    try {
+                        let totalWords = 0;
+                        for (const file of sceneFiles) {
+                            totalWords += countWords(extractCountableBodyText(await app.vault.cachedRead(file)));
+                        }
+                        const wordCountText = totalWords < 1000
+                            ? String(totalWords)
+                            : `${Math.round(totalWords / 1000)}k`;
+                        row.descEl.setText(`${description} — ${wordCountText} ${totalWords === 1 ? 'word' : 'words'}`);
+                        setTooltip(row.descEl, `${totalWords.toLocaleString()} words in scene bodies (excluding frontmatter and comments)`);
+                    } catch (error) {
+                        row.descEl.setText(`${description} — word count unavailable`);
+                        console.error('[Radial Timeline] Could not count book words', error);
+                    }
+                })();
             }
             if (hasBrokenFolderLink) {
                 row.descEl.addClass('ert-book-card__stat--invalid');

@@ -3,6 +3,18 @@ import { buildInquirySourcesViewModel } from './inquirySources';
 import type { EvidenceDocumentMeta, InquiryCitation } from '../state';
 
 describe('buildInquirySourcesViewModel', () => {
+    it('does not attach a shared scene ID to an arbitrary book copy', () => {
+        const docs: EvidenceDocumentMeta[] = [
+            { title: 'Original', path: 'Book/Scene.md', sceneId: 'scn_a1b2c3d4', evidenceClass: 'scene' },
+            { title: 'Snapshot', path: 'Book snapshot/Scene.md', sceneId: 'scn_a1b2c3d4', evidenceClass: 'scene' }
+        ];
+        const vm = buildInquirySourcesViewModel(undefined, docs, [{
+            refId: 'scn_a1b2c3d4', kind: 'continuity', headline: 'Ambiguous source',
+            bullets: [], related: [], evidenceQuote: 'Shared passage', evidenceType: 'scene'
+        }]);
+        expect(vm.totalCount).toBe(0);
+    });
+
     it('keeps direct manuscript citation rendering intact for evidence documents', () => {
         const citations: InquiryCitation[] = [
             { citedText: 'Longer cited excerpt from manuscript.', documentIndex: 0 },

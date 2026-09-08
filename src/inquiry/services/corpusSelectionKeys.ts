@@ -5,12 +5,14 @@ export type CorpusSelectionKeyInput = {
     filePath: string;
     scope?: InquiryScope;
     sceneId?: string;
+    bookId?: string;
 };
 
 export type ParsedCorpusSelectionKey = {
     className: string;
     scope?: InquiryScope;
     sceneId?: string;
+    bookId?: string;
     path?: string;
 };
 
@@ -22,8 +24,8 @@ export function buildCorpusSelectionKey(input: CorpusSelectionKeyInput): string 
     const scopeKey = input.scope ?? 'global';
     const sceneId = normalizeText(input.sceneId);
 
-    if (className === 'scene' && sceneId) {
-        return `${className}::${scopeKey}::${TOKEN_SCENE_ID}::${sceneId}`;
+    if (className === 'scene' && sceneId && input.bookId) {
+        return `${className}::${scopeKey}::bookScene::${encodeURIComponent(input.bookId)}::${sceneId}`;
     }
 
     return `${className}::${scopeKey}::${TOKEN_PATH}::${normalizeText(input.filePath) ?? ''}`;
@@ -33,6 +35,11 @@ export function parseCorpusSelectionKey(rawKey: string): ParsedCorpusSelectionKe
     const className = (parts.shift() ?? '').trim();
     const scope = parseScope(parts.shift());
     const token = parts.shift();
+
+    if (token === 'bookScene') {
+        const bookId = decodeURIComponent(parts.shift() ?? ''); // SAFE: absent segment represents an invalid empty book key
+        return { className, scope, bookId, sceneId: normalizeText(parts.join('::')) };
+    }
 
     if (token === TOKEN_SCENE_ID) {
         const sceneId = normalizeText(parts.join('::'));

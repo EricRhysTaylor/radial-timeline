@@ -1,6 +1,6 @@
 import { normalizePath } from 'obsidian';
 import type { BookProfile } from '../../types/settings';
-import { getSequencedBooks } from '../../utils/books';
+import { getSequencedBooks, isBookIncludedInSaga } from '../../utils/books';
 
 const BOOK_FOLDER_REGEX = /^Book\s+(\d+)/i;
 
@@ -72,32 +72,35 @@ export const normalizeInquiryBookInclusion = (raw?: Record<string, unknown>): Re
     return normalized;
 };
 
-export function resolveBookManagerInquiryBooks(bookProfiles?: BookProfile[]): InquiryBookResolution {
+export function resolveBookManagerInquiryBooks(bookProfiles?: BookProfile[], scope: 'book' | 'saga' = 'saga'): InquiryBookResolution {
     const candidates: InquiryResolvedBook[] = [];
+    let includedNumber = 0;
     getSequencedBooks(bookProfiles).forEach(({ book, sequenceNumber }) => {
             const rootPath = normalizeMaybeRootPath(book.sourceFolder || '');
             if (!rootPath) return;
+            const included = scope === 'book' || isBookIncludedInSaga(book);
+            if (included) includedNumber++;
             candidates.push({
                 id: rootPath,
                 rootPath,
-                bookNumber: sequenceNumber,
+                bookNumber: scope === 'saga' && included ? includedNumber : sequenceNumber,
                 detectedBy: 'profile' as const,
-                isVariant: false,
+                isVariant: !!book.copy,
                 isNested: false,
-                defaultIncluded: true,
-                included: true,
-                status: 'included' as const,
-                statusLabel: 'Included'
+                defaultIncluded: !book.copy,
+                included,
+                status: included ? 'included' : 'excluded_manual',
+                statusLabel: included ? 'Included' : 'Excluded from saga'
             });
         });
 
     return {
         candidates,
-        includedBooks: candidates,
-        excludedBooks: [],
-        includedRoots: candidates.map(book => book.rootPath),
-        excludedRoots: [],
-        hasVariantExclusions: false,
+        includedBooks: candidates.filter(book => book.included),
+        excludedBooks: candidates.filter(book => !book.included),
+        includedRoots: candidates.filter(book => book.included).map(book => book.rootPath),
+        excludedRoots: candidates.filter(book => !book.included).map(book => book.rootPath),
+        hasVariantExclusions: candidates.some(book => book.isVariant && !book.included),
         hasNestedExclusions: false
     };
 }

@@ -1,5 +1,6 @@
 import { App, ButtonComponent, Modal, Notice, TFile, setIcon, setTooltip, Setting as Settings } from 'obsidian';
 import { ERT_CLASSES } from '../../../ui/classes';
+import { confirmWithErtModal } from '../../../modals/ErtConfirmModal';
 import type RadialTimelinePlugin from '../../../main';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../../wikiLink';
 import {
@@ -651,12 +652,34 @@ export function renderSceneNormalizerSection(params: {
         });
 
     fixDuplicateBtn = new ButtonComponent(cleanupGroup)
-        .setButtonText('Fix duplicate IDs')
+        .setButtonText('Fix duplicate IDs within this book')
         .setDestructive()
         .onClick(async () => {
             if (!sceneAudit) return;
             const targetFiles = [...new Set(sceneAudit.notes.filter((note) => !!note.duplicateSceneId).map((note) => note.file))];
             if (targetFiles.length === 0) return;
+            const sourceBookId = plugin.settings.activeBookId;
+            const sourcePath = plugin.settings.sourcePath;
+            const groups = new Map<string, string[]>();
+            for (const note of sceneAudit.notes) {
+                if (!note.duplicateSceneId) continue;
+                const paths = groups.get(note.duplicateSceneId) ?? []; // SAFE: first member starts a new preview group
+                paths.push(note.file.path);
+                groups.set(note.duplicateSceneId, paths);
+            }
+            const preview = [...groups].map(([id, paths]) => {
+                paths.sort((a, b) => a.localeCompare(b));
+                return `${id}: keep ${paths[0]}; assign new IDs to ${paths.slice(1).join(', ')}.`;
+            }).join('\n');
+            if (!await confirmWithErtModal(app, {
+                title: 'Fix duplicate IDs within this book',
+                message: `Shared IDs across related book copies are expected and are not changed. ${preview}`,
+                confirmText: 'Fix IDs',
+            })) return;
+            if (sourceBookId !== plugin.settings.activeBookId || sourcePath !== plugin.settings.sourcePath) {
+                new Notice('The active book changed. Check scenes again before fixing IDs.');
+                return;
+            }
             const result = await fixDuplicateSceneIds({
                 app,
                 settings: plugin.settings,

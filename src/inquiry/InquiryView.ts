@@ -124,7 +124,7 @@ import { InquirySessionStore } from './InquirySessionStore';
 import { readInquirySessionsFromVault, readInquirySidecarVaultIdentity } from './InquiryArtifactStore';
 import type { InquirySession, InquirySessionStatus } from './sessionTypes';
 import { extractSummary, getActiveFrontmatterMappings, normalizeFrontmatterKeys, frontmatterValueToText } from '../utils/frontmatter';
-import { getSequencedBooks } from '../utils/books';
+import { getSequencedBooks, getBookIdForPath } from '../utils/books';
 import type { InquirySourcesSettings } from '../types/settings';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
 import { hasProFeatureAccess } from '../settings/featureGate';
@@ -169,7 +169,6 @@ import {
     hashString,
     getCorpusGroupKey as getCorpusGroupKeyPure,
     getCorpusGroupBaseClass,
-    getCorpusItemKey as getCorpusItemKeyPure,
     getCorpusCycleModes,
     getNextCorpusMode,
     getCorpusGroupKeys as getCorpusGroupKeysPure,
@@ -563,7 +562,7 @@ export class InquiryView extends ItemView {
         due?: string;
         title?: string;
     }>();
-    private corpusService = new InquiryCorpusService();
+    private corpusService = new InquiryCorpusService(path => getBookIdForPath(this.plugin.settings.books, path));
     private corpusWarningActive = false;
     private apiSimulationTimer?: number;
     private navPrevButton?: SVGGElement;
@@ -3738,7 +3737,7 @@ export class InquiryView extends ItemView {
     }
 
     private getCorpusItemKey(className: string, filePath: string, scope?: InquiryScope, sceneId?: string): string {
-        return getCorpusItemKeyPure(className, filePath, scope, sceneId);
+        return this.corpusService.getItemKey(className, filePath, scope, sceneId);
     }
 
     private getCorpusItemOverride(
@@ -4478,7 +4477,7 @@ export class InquiryView extends ItemView {
         if (!classScope.allowAll && !classScope.allowed.has('outline')) return [];
 
         const { resolvedVaultRoots } = resolveInquirySourceRoots(this.app.vault, sources, this.plugin.settings.books);
-        const bookResolution = resolveBookManagerInquiryBooks(this.plugin.settings.books);
+        const bookResolution = resolveBookManagerInquiryBooks(this.plugin.settings.books, this.state.scope);
 
         const inRoots = (path: string) => {
             return resolvedVaultRoots.some(root => !root || path === root || path.startsWith(`${root}/`));
@@ -7529,7 +7528,7 @@ export class InquiryView extends ItemView {
             : this.isContextRequiredForQuestion(questionId, options?.questionZone);
         const rootResolution = resolveInquirySourceRoots(this.app.vault, sources, this.plugin.settings.books);
         const { resolvedRoots, resolvedVaultRoots } = rootResolution;
-        const bookResolution = resolveBookManagerInquiryBooks(this.plugin.settings.books);
+        const bookResolution = resolveBookManagerInquiryBooks(this.plugin.settings.books, this.state.scope);
 
         if (!classScope.allowAll && classScope.allowed.size === 0) {
             return { entries, resolvedRoots };

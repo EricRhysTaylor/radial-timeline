@@ -2,12 +2,13 @@ import type { App, TextComponent, TFile } from 'obsidian';
 import { Setting as ObsidianSetting, normalizePath, Notice, Modal, ButtonComponent, setIcon, setTooltip, TFolder } from 'obsidian';
 import { NamePromptModal } from '../../ui/NamePromptModal';
 import type RadialTimelinePlugin from '../../main';
+import { CreateBookCopyModal } from '../../modals/CreateBookCopyModal';
 import type { BookProfile } from '../../types/settings';
 import { ModalFolderSuggest } from '../FolderSuggest';
-import { DEFAULT_BOOK_TITLE, createBookId, getBookSequenceNumber, normalizeBookProfile } from '../../utils/books';
+import { DEFAULT_BOOK_TITLE, createBookId, getBookSequenceNumber, normalizeBookProfile, isBookIncludedInSaga } from '../../utils/books';
 import {
     copyFolderRecursive,
-    getDraftDisplayTitle,
+    createBookCopyProfile,
     isFolderPathMissingOrRoot,
     isValidBookSourceFolder,
     resolveDraftTarget,
@@ -18,108 +19,6 @@ import { addHeadingIcon, applyErtHeaderLayout } from '../wikiLink';
 import { consumeBookManagerAutoloadHighlight } from '../bookManagerAutoloadHighlight';
 import { extractCountableBodyText } from '../../utils/manuscript';
 import { countWords } from '../../utils/text';
-
-class CreateDraftModal extends Modal {
-    private defaultName: string;
-    private resolvePreviewPath: (draftName: string) => string;
-    private switchToNewDraft = false;
-    private onSubmit: (result: { draftName: string; switchToNewDraft: boolean }) => Promise<boolean>;
-
-    constructor(
-        app: App,
-        defaultName: string,
-        resolvePreviewPath: (draftName: string) => string,
-        onSubmit: (result: { draftName: string; switchToNewDraft: boolean }) => Promise<boolean>
-    ) {
-        super(app);
-        this.defaultName = defaultName;
-        this.resolvePreviewPath = resolvePreviewPath;
-        this.onSubmit = onSubmit;
-    }
-
-    onOpen() {
-        const { contentEl, modalEl } = this;
-        contentEl.empty();
-
-        if (modalEl) {
-            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell');
-            modalEl.setCssStyles({ width: '420px', maxWidth: '92vw' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
-        }
-        contentEl.addClass('ert-modal-container', 'ert-stack');
-
-        const header = contentEl.createDiv({ cls: 'ert-modal-header' });
-        header.createSpan({ cls: 'ert-modal-badge', text: 'Draft' });
-        header.createDiv({ cls: 'ert-modal-title', text: 'Create draft' });
-        header.createDiv({ cls: 'ert-modal-subtitle', text: 'Optional draft name.' });
-
-        const form = contentEl.createDiv({ cls: 'ert-stack' });
-        let draftName = this.defaultName;
-        const preview = form.createDiv({ cls: 'setting-item-description' });
-
-        const updatePreview = () => {
-            try {
-                const resolved = this.resolvePreviewPath(draftName.trim());
-                preview.setText(`Destination: ${resolved}`);
-            } catch {
-                preview.setText('Destination: unavailable');
-            }
-        };
-
-        const nameSetting = new ObsidianSetting(form)
-            .setName('Draft name')
-            .setDesc('Leave as-is or enter a custom suffix.')
-            .addText(text => {
-                text.setValue(this.defaultName);
-                text.inputEl.addClass('ert-input--full');
-                text.inputEl.focus();
-                text.inputEl.addEventListener('keydown', (evt: KeyboardEvent) => {
-                    if (evt.key === 'Enter') {
-                        evt.preventDefault();
-                        void save();
-                    }
-                });
-                text.onChange(value => {
-                    draftName = value;
-                    updatePreview();
-                });
-            });
-        nameSetting.settingEl.addClass('ert-setting-full-width-input');
-        updatePreview();
-
-        new ObsidianSetting(form)
-            .setName('Switch to new draft')
-            .setDesc('Make the copied draft active after creation.')
-            .addToggle(toggle => {
-                toggle.setValue(false);
-                toggle.onChange(value => {
-                    this.switchToNewDraft = value;
-                });
-            });
-
-        const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
-        const save = async () => {
-            const shouldClose = await this.onSubmit({
-                draftName: draftName.trim(),
-                switchToNewDraft: this.switchToNewDraft
-            });
-            if (shouldClose) this.close();
-        };
-
-        new ButtonComponent(actions)
-            .setButtonText('Create draft')
-            .setCta()
-            .onClick(() => {
-                void save();
-            });
-        new ButtonComponent(actions)
-            .setButtonText('Cancel')
-            .onClick(() => this.close());
-    }
-
-    onClose() {
-        this.contentEl.empty();
-    }
-}
 
 class BookMetadataModal extends Modal {
     constructor(
@@ -415,6 +314,21 @@ export function renderGeneralSection(params: {
                 if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openRename(); }
             });
 
+            if (book.copy) {
+                nameEl.createSpan({ cls: ERT_CLASSES.BADGE_PILL, text: book.copy.kind === 'submission-snapshot' ? 'Submission snapshot' : 'Working draft' });
+            }
+            row.controlEl.createSpan({ cls: 'setting-item-description', text: 'Include in saga' });
+            row.addToggle(toggle => {
+                toggle.setValue(isBookIncludedInSaga(book));
+                toggle.toggleEl.setAttr('aria-label', `Include ${label} in saga`);
+                setTooltip(toggle.toggleEl, 'Include in saga');
+                toggle.onChange(async value => {
+                    book.includeInSaga = value;
+                    await plugin.persistBookSettings();
+                    renderBooksManager();
+                });
+            });
+
             // Desc: scene count stat
             row.setDesc(`BOOK ${sequenceNumber} — ${sceneStatText}`);
             row.descEl.addClass('ert-book-card__meta');
@@ -514,15 +428,15 @@ export function renderGeneralSection(params: {
                 draftButtonRef = button;
                 button.buttonEl.empty();
                 button.buttonEl.addClass('ert-iconBtn');
-                button.buttonEl.setAttr('aria-label', 'Create draft');
+                button.buttonEl.setAttr('aria-label', 'Create book copy…');
                 setIcon(button.buttonEl, 'book-dashed');
-                button.setTooltip('Create a sibling draft copy of this book folder. Keeps all files unchanged. Adds new Book profile with a unique name.');
+                button.setTooltip('Create a submission snapshot or working draft in a sibling folder.');
                 button.onClick(() => {
                     if (creatingDraft) return;
 
                     const sourceFolder = (book.sourceFolder || '').trim();
                     if (isFolderPathMissingOrRoot(sourceFolder)) {
-                        new Notice('Draft requires a book folder (vault root is not supported).');
+                        new Notice('Book copy requires a book folder (vault root is not supported).');
                         return;
                     }
 
@@ -534,40 +448,57 @@ export function renderGeneralSection(params: {
                     }
 
                     const suggestedDraftName = suggestNextDraftLabel(app.vault, normalizedSource);
-                    new CreateDraftModal(
+                    new CreateBookCopyModal(
                         app,
                         suggestedDraftName,
                         (candidateDraftName) => resolveDraftTarget(app.vault, normalizedSource, candidateDraftName).destinationPath,
-                        async ({ draftName, switchToNewDraft }) => {
+                        async ({ name: draftName, kind, switchToCopy }) => {
                         if (creatingDraft) return false;
                         setDraftButtonState(true);
-
+                        let previousActiveBookId = plugin.settings.activeBookId;
+                        let previousScope = plugin.settings.timelineScope;
+                        let previousSourcePath = plugin.settings.sourcePath;
+                        let registeredBookId: string | undefined;
+                        let destinationPath: string | undefined;
                         try {
-                            const { destinationPath, draftLabel } = resolveDraftTarget(app.vault, normalizedSource, draftName);
-                            await copyFolderRecursive(app.vault, normalizedSource, destinationPath);
-
-                            const cloneBase = {
-                                ...book,
-                                lastUsedPandocLayoutByPreset: undefined
+                            const assertSourceUnchanged = () => {
+                                if (!plugin.settings.books?.includes(book) || normalizePath(book.sourceFolder.trim()) !== normalizedSource) {
+                                    throw new Error('The source book changed. Reopen Create book copy and try again.');
+                                }
                             };
-                            const newBook = normalizeBookProfile({
-                                ...cloneBase,
-                                id: createBookId(),
-                                title: getDraftDisplayTitle(label, draftLabel),
-                                sourceFolder: destinationPath
-                            });
+                            assertSourceUnchanged();
+                            const target = resolveDraftTarget(app.vault, normalizedSource, draftName);
+                            destinationPath = target.destinationPath;
+                            const draftLabel = target.draftLabel;
+                            await copyFolderRecursive(app.vault, normalizedSource, destinationPath);
+                            assertSourceUnchanged();
 
+                            const newBook = createBookCopyProfile(book, destinationPath, draftLabel, kind);
+
+                            previousActiveBookId = plugin.settings.activeBookId;
+                            previousScope = plugin.settings.timelineScope;
+                            previousSourcePath = plugin.settings.sourcePath;
                             plugin.settings.books = [...(plugin.settings.books || []), newBook];
-                            if (switchToNewDraft) {
+                            registeredBookId = newBook.id;
+                            if (switchToCopy) {
+                                plugin.settings.timelineScope = 'book';
                                 plugin.settings.activeBookId = newBook.id;
                             }
                             await plugin.persistBookSettings();
                             renderBooksManager();
-                            new Notice(`Draft created: ${destinationPath}`);
+                            new Notice(`Book copy created: ${destinationPath}`);
                             return true;
                         } catch (error) {
+                            if (registeredBookId) {
+                                plugin.settings.books = plugin.settings.books?.filter(candidate => candidate.id !== registeredBookId);
+                                if (plugin.settings.activeBookId === registeredBookId) {
+                                    plugin.settings.activeBookId = previousActiveBookId;
+                                    plugin.settings.timelineScope = previousScope;
+                                    plugin.settings.sourcePath = previousSourcePath;
+                                }
+                            }
                             const msg = error instanceof Error ? error.message : String(error);
-                            new Notice(`Draft creation failed: ${msg}`);
+                            new Notice(`Book copy failed: ${msg}${destinationPath ? ` Inspect ${destinationPath} before retrying; copied files are retained.` : ''}`);
                             return false;
                         } finally {
                             setDraftButtonState(false);

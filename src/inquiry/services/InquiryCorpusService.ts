@@ -114,12 +114,13 @@ export function getCorpusGroupBaseClass(className: string): string {
     return className === 'outline-saga' ? 'outline' : className;
 }
 
-export function getCorpusItemKey(className: string, filePath: string, scope?: InquiryScope, sceneId?: string): string {
+export function getCorpusItemKey(className: string, filePath: string, scope?: InquiryScope, sceneId?: string, bookId?: string): string {
     return buildCorpusSelectionKey({
         className,
         filePath,
         scope,
-        sceneId
+        sceneId,
+        bookId
     });
 }
 
@@ -239,6 +240,12 @@ export interface CorpusOverrideSummary {
 // ── InquiryCorpusService class ────────────────────────────────────────
 
 export class InquiryCorpusService {
+    constructor(private readonly bookIdForPath: (path: string) => string | undefined = () => undefined) {}
+
+    getItemKey(className: string, filePath: string, scope?: InquiryScope, sceneId?: string): string {
+        return getCorpusItemKey(className, filePath, scope, sceneId, this.bookIdForPath(filePath));
+    }
+
     private corpusClassOverrides = new Map<string, SceneInclusion>();
     private corpusItemOverrides = new Map<string, SceneInclusion>();
 
@@ -296,7 +303,7 @@ export class InquiryCorpusService {
         scope?: InquiryScope,
         sceneId?: string
     ): SceneInclusion | undefined {
-        const key = getCorpusItemKey(className, filePath, scope, sceneId);
+        const key = this.getItemKey(className, filePath, scope, sceneId);
         return this.corpusItemOverrides.get(key);
     }
 
@@ -307,7 +314,7 @@ export class InquiryCorpusService {
         scope?: InquiryScope,
         sceneId?: string
     ): void {
-        const key = getCorpusItemKey(className, filePath, scope, sceneId);
+        const key = this.getItemKey(className, filePath, scope, sceneId);
         this.corpusItemOverrides.set(key, mode);
     }
 
@@ -317,7 +324,7 @@ export class InquiryCorpusService {
         scope?: InquiryScope,
         sceneId?: string
     ): void {
-        const key = getCorpusItemKey(className, filePath, scope, sceneId);
+        const key = this.getItemKey(className, filePath, scope, sceneId);
         this.corpusItemOverrides.delete(key);
     }
 

@@ -530,6 +530,15 @@ export interface BookProfile {
     id: string;
     title: string;
     sourceFolder: string;
+    /** Versioned copy provenance. Scene IDs remain lineage IDs across copies. */
+    copy?: {
+        schemaVersion: 1;
+        kind: 'submission-snapshot' | 'working-draft';
+        sourceBookId: string;
+        createdAt: string;
+    };
+    /** Originals default to included; copies default to excluded. */
+    includeInSaga?: boolean;
     fileStem?: string;
     genre?: string;
     projectStage?: string;

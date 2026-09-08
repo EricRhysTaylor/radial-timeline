@@ -155,7 +155,10 @@ export function buildInquirySourcesViewModel(
             if (!refId) continue;
             const quote = (finding.evidenceQuote ?? '').trim();
             if (!quote) continue;
-            const meta = evidenceDocumentMeta.find(doc => doc.sceneId?.trim() === refId);
+            const candidates = evidenceDocumentMeta.filter(doc => doc.sceneId?.trim() === refId);
+            // A lineage ID shared by two copies does not identify a source.
+            if (new Set(candidates.map(doc => doc.path)).size !== 1) continue;
+            const meta = candidates[0];
             if (!meta) continue;
             const key = `${meta.sceneId ?? ''}|${meta.path ?? ''}|${meta.title}`;
             const existing = byScene.get(key);

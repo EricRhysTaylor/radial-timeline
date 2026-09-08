@@ -10,21 +10,24 @@ describe('corpusSelectionKeys', () => {
             className: 'scene',
             scope: 'book',
             filePath: 'Book 1/12 Opening.md',
-            sceneId: 'scn_a1b2c3d4'
+            sceneId: 'scn_a1b2c3d4',
+            bookId: 'book-one'
         });
 
         const renamed = buildCorpusSelectionKey({
             className: 'scene',
             scope: 'book',
             filePath: 'Book 1/12 Opening Renamed.md',
-            sceneId: 'scn_a1b2c3d4'
+            sceneId: 'scn_a1b2c3d4',
+            bookId: 'book-one'
         });
 
         expect(first).toBe(renamed);
         expect(parseCorpusSelectionKey(first)).toMatchObject({
             className: 'scene',
             scope: 'book',
-            sceneId: 'scn_a1b2c3d4'
+            sceneId: 'scn_a1b2c3d4',
+            bookId: 'book-one'
         });
     });
 

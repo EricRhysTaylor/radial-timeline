@@ -2246,7 +2246,7 @@ export const en: TranslationKeys = {
                 insertFieldsTooltip: 'Add missing custom fields to existing notes',
                 insertIdsText: 'Insert missing IDs',
                 insertIdsTooltip: 'Insert missing Reference IDs in this scope',
-                fixDuplicateIdsText: 'Fix duplicate IDs',
+                fixDuplicateIdsText: 'Fix duplicate IDs within this book',
                 fixDuplicateIdsTooltip: 'Reassign duplicate Reference IDs in this scope',
                 fillEmptyText: 'Fill empty values',
                 fillEmptyTooltip: 'Fill empty existing custom beat fields in the active book folder',

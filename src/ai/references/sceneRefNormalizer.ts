@@ -13,6 +13,7 @@ type SceneRefEntry = {
 };
 
 export type SceneRefIndex = {
+    ambiguousSceneIds: Set<string>;
     bySceneId: Map<string, SceneRefEntry>;
     byPath: Map<string, SceneRefEntry>;
     byLabel: Map<string, SceneRefEntry>;
@@ -33,6 +34,7 @@ export function isStableSceneId(value: string | null | undefined): boolean {
 }
 
 export function buildSceneRefIndex(entries: SceneRefEntry[]): SceneRefIndex {
+    const ambiguousSceneIds = new Set<string>();
     const bySceneId = new Map<string, SceneRefEntry>();
     const byPath = new Map<string, SceneRefEntry>();
     const byLabel = new Map<string, SceneRefEntry>();
@@ -53,7 +55,11 @@ export function buildSceneRefIndex(entries: SceneRefEntry[]): SceneRefIndex {
             aliases: (entry.aliases || []).map(alias => normalizeText(alias)).filter((alias): alias is string => !!alias)
         };
 
-        bySceneId.set(sceneId.toLowerCase(), canonical);
+        const key = sceneId.toLowerCase();
+        const previous = bySceneId.get(key);
+        if (previous && previous.path !== path) ambiguousSceneIds.add(key);
+        if (ambiguousSceneIds.has(key)) bySceneId.delete(key);
+        else bySceneId.set(key, canonical);
         byPath.set(path.toLowerCase(), canonical);
         if (canonical.label) {
             byLabel.set(canonical.label.toLowerCase(), canonical);
@@ -63,6 +69,7 @@ export function buildSceneRefIndex(entries: SceneRefEntry[]): SceneRefIndex {
     });
 
     return {
+        ambiguousSceneIds,
         bySceneId,
         byPath,
         byLabel,
@@ -78,6 +85,14 @@ export function normalizeSceneRef(
     const rawRefId = normalizeText(input.ref_id);
     const rawRefPath = normalizeText(input.ref_path);
     const rawRefLabel = normalizeText(input.ref_label);
+
+    const ambiguous = (id: string): SceneRefNormalizationResult => ({
+        ref: { ref_id: '', ref_label: rawRefLabel, ref_path: rawRefPath },
+        normalizedFromLegacy: false,
+        unresolved: true,
+        warning: `Scene id "${id}" belongs to multiple book copies in this corpus. Analyze one copy at a time; leaving finding unbound.`
+    });
+    if (rawRefId && index.ambiguousSceneIds.has(rawRefId.toLowerCase())) return ambiguous(rawRefId);
 
     if (rawRefId && isStableSceneId(rawRefId) && index.bySceneId.has(rawRefId.toLowerCase())) {
         return {
@@ -96,6 +111,7 @@ export function normalizeSceneRef(
     for (const candidate of candidates) {
         const resolved = resolveCandidate(candidate, index);
         if (resolved) {
+            if (index.ambiguousSceneIds.has(resolved.sceneId.toLowerCase())) return ambiguous(resolved.sceneId);
             return {
                 ref: {
                     ref_id: resolved.sceneId,

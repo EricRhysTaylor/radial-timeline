@@ -184,7 +184,7 @@ const selectInquiryFiles = (
     const sources = inquirySources ?? { scanRoots: [], bookInclusion: {}, classes: [], classCounts: {}, resolvedScanRoots: [] };
     const rootResolution = resolveInquirySourceRoots(vault, sources, bookProfiles);
     const { supportResolvedRoots, resolvedVaultRoots: vaultRoots } = rootResolution;
-    const bookResolution = resolveBookManagerInquiryBooks(bookProfiles);
+    const bookResolution = resolveBookManagerInquiryBooks(bookProfiles, scopeFilter?.scope);
     if (!vaultRoots.length) {
         return { files: [], selectionLabel: 'No books or supporting roots configured' };
     }

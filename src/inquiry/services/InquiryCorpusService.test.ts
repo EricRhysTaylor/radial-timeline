@@ -209,7 +209,7 @@ describe('getCorpusGroupBaseClass', () => {
 describe('parseCorpusItemKey', () => {
     it('round-trips scene key with sceneId (path not preserved)', () => {
         // Scene keys with sceneId use sceneId-based format; path is not stored.
-        const key = getCorpusItemKey('scene', '/path/to/file.md', 'book', 'scn_123');
+        const key = getCorpusItemKey('scene', '/path/to/file.md', 'book', 'scn_123', 'book-one');
         const parsed = parseCorpusItemKey(key);
         expect(parsed.className).toBe('scene');
         expect(parsed.sceneId).toBe('scn_123');
@@ -540,5 +540,15 @@ describe('InquiryCorpusService', () => {
             ]);
             expect(service.getGlobalMode(['scene', 'character'], configMap, 'book')).toBe('mixed');
         });
+    });
+});
+
+
+describe('copy-qualified selection state', () => {
+    it('does not share overrides between copies and keeps them across scene renames', () => {
+        const service = new InquiryCorpusService(path => path.startsWith('Copy/') ? 'copy-book' : 'original-book');
+        service.setItemOverride('scene', 'Original/Scene.md', 'excluded', undefined, 'scn_a1b2c3d4');
+        expect(service.getItemOverride('scene', 'Copy/Scene.md', undefined, 'scn_a1b2c3d4')).toBeUndefined();
+        expect(service.getItemOverride('scene', 'Original/Renamed.md', undefined, 'scn_a1b2c3d4')).toBe('excluded');
     });
 });

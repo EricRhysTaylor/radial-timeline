@@ -97,6 +97,10 @@ export function normalizeBookProfile(profile: BookProfile): BookProfile {
     id: profile.id || createBookId(),
     title,
     sourceFolder,
+    ...(profile.copy?.schemaVersion === 1
+      && (profile.copy.kind === 'submission-snapshot' || profile.copy.kind === 'working-draft')
+      ? { copy: { ...profile.copy } } : {}),
+    ...(typeof profile.includeInSaga === 'boolean' ? { includeInSaga: profile.includeInSaga } : {}),
     fileStem: fileStem && fileStem.length > 0 ? fileStem : undefined,
     ...(genre && genre.length > 0 ? { genre } : {}),
     ...(projectStage && projectStage.length > 0 ? { projectStage } : {}),
@@ -205,7 +209,21 @@ export function getSagaBooks(
 ): BookProfile[] {
   return (settings.books || [])
     .map(book => normalizeBookProfile(book))
-    .filter(book => book.sourceFolder.trim().length > 0);
+    .filter(book => book.sourceFolder.trim().length > 0 && isBookIncludedInSaga(book));
+}
+
+export function isBookIncludedInSaga(book: BookProfile): boolean {
+  return book.includeInSaga !== undefined ? book.includeInSaga : !book.copy;
+}
+
+/** Resolve a concrete book instance, never a lineage ID shared across copies. */
+export function getBookIdForPath(books: BookProfile[] | undefined, path: string): string | undefined {
+  const matches = (books ?? []).filter(book => { // SAFE: a vault without book profiles has no book identity
+    const root = book.sourceFolder.replace(/\/$/, '');
+    return root.length > 0 && (path === root || path.startsWith(`${root}/`));
+  }).sort((left, right) => right.sourceFolder.length - left.sourceFolder.length);
+  if (matches.length > 1 && matches[0].sourceFolder === matches[1].sourceFolder) return undefined;
+  return matches[0]?.id;
 }
 
 export function getActiveBookExportContext(settings: RadialTimelineSettings): { sourceFolder: string; title: string; fileStem: string } {

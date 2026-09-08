@@ -1,5 +1,29 @@
 import { normalizePath, type TAbstractFile, TFolder, type Vault } from 'obsidian';
 import { escapeRegExp } from './regex';
+import type { BookProfile } from '../types/settings';
+import { createBookId, normalizeBookProfile } from './books';
+
+export type BookCopyKind = NonNullable<BookProfile['copy']>['kind'];
+
+export function createBookCopyProfile(source: BookProfile, destinationPath: string, label: string, kind: BookCopyKind): BookProfile {
+  const sourceRoot = normalizePath(source.sourceFolder);
+  const rebasePage = (id: string): string => {
+    const prefix = `note:${sourceRoot}/`;
+    return id.startsWith(prefix) ? `note:${destinationPath}/${id.slice(prefix.length)}` : id;
+  };
+  return normalizeBookProfile({
+    ...source,
+    id: createBookId(),
+    title: getDraftDisplayTitle(source.title, label),
+    sourceFolder: destinationPath,
+    copy: { schemaVersion: 1, kind, sourceBookId: source.id, createdAt: new Date().toISOString() },
+    includeInSaga: false,
+    fileStem: undefined,
+    lastUsedPandocLayoutByPreset: undefined,
+    recentStructuralMoves: undefined,
+    bookPageOrder: source.bookPageOrder?.map(rebasePage),
+  });
+}
 
 export interface DraftTarget {
   destinationPath: string;
@@ -150,8 +174,6 @@ export async function copyFolderRecursive(vault: Vault, fromPath: string, toPath
   if (!(sourceFolder instanceof TFolder)) throw new Error(`Source folder not found: ${sourcePath}`);
   if (vault.getAbstractFileByPath(destinationPath)) throw new Error(`Destination already exists: ${destinationPath}`);
 
-  await ensureFolder(vault, destinationPath);
-
   const folders = getAllFolders(vault)
     .filter(folder => isPathWithin(folder.path, sourcePath))
     .sort((a, b) => a.path.split('/').length - b.path.split('/').length);
@@ -159,6 +181,14 @@ export async function copyFolderRecursive(vault: Vault, fromPath: string, toPath
   const files = vault.getFiles()
     .filter(file => isPathWithin(file.path, sourcePath))
     .sort((a, b) => a.path.localeCompare(b.path));
+
+  // Capture bytes before creating the destination. Recheck both sides before
+  // callers register a profile; a changing source must never report success.
+  const snapshots = new Map<string, ArrayBuffer>();
+  for (const file of files) snapshots.set(file.path, await vault.readBinary(file));
+  await ensureFolder(vault, getParentPath(destinationPath));
+  // Claim the destination atomically: another copy operation must not reuse it.
+  await vault.createFolder(destinationPath);
 
   const targetFolders = new Set<string>();
   for (const folder of folders) {
@@ -183,13 +213,29 @@ export async function copyFolderRecursive(vault: Vault, fromPath: string, toPath
   for (const file of files) {
     const rel = getRelativePath(file.path, sourcePath);
     const targetPath = normalizePath(`${destinationPath}/${rel}`);
-    if (file.extension.toLowerCase() === 'md') {
-      const data = await vault.read(file);
-      await vault.create(targetPath, data);
-      continue;
-    }
-    const data = await vault.readBinary(file);
+    const data = snapshots.get(file.path);
+    if (!data) throw new Error(`Copy snapshot missing: ${file.path}`);
     await vault.createBinary(targetPath, data);
+  }
+
+  const currentFiles = vault.getFiles();
+  const currentPaths = currentFiles.filter(file => isPathWithin(file.path, sourcePath)).map(file => file.path).sort();
+  const originalPaths = [...snapshots.keys()].sort();
+  if (JSON.stringify(currentPaths) !== JSON.stringify(originalPaths)) {
+    throw new Error(`Source files changed while copying. Copy not registered; inspect ${destinationPath} before retrying.`);
+  }
+  const sameBytes = (left: ArrayBuffer, right: ArrayBuffer): boolean => {
+    const a = new Uint8Array(left), b = new Uint8Array(right);
+    return a.length === b.length && a.every((value, index) => value === b[index]);
+  };
+  const filesByPath = new Map(currentFiles.map(file => [file.path, file]));
+  for (const file of files) {
+    const expected = snapshots.get(file.path);
+    const targetPath = normalizePath(`${destinationPath}/${getRelativePath(file.path, sourcePath)}`);
+    const target = filesByPath.get(targetPath);
+    if (!expected || !target || !sameBytes(expected, await vault.readBinary(file)) || !sameBytes(expected, await vault.readBinary(target))) {
+      throw new Error(`Copy verification failed for ${file.path}. Copy not registered; inspect ${destinationPath} before retrying.`);
+    }
   }
 }
 

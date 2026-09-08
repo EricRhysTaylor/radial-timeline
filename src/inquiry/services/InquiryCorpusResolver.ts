@@ -71,7 +71,7 @@ export class InquiryCorpusResolver {
 
         const rootResolution = resolveInquirySourceRoots(this.vault, sources, params.bookProfiles);
         const { resolvedRoots, resolvedVaultRoots } = rootResolution;
-        const bookResolution = resolveBookManagerInquiryBooks(params.bookProfiles);
+        const bookResolution = resolveBookManagerInquiryBooks(params.bookProfiles, params.scope);
 
         const books = this.buildBookItems(bookResolution.includedBooks.map(book => ({
             rootPath: book.rootPath,

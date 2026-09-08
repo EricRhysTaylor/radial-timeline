@@ -80,3 +80,23 @@ describe('sceneRefNormalizer', () => {
         expect(normalized.warning).toContain('unbound');
     });
 });
+
+
+describe('shared scene IDs across copies', () => {
+    const duplicate = buildSceneRefIndex([
+        { sceneId: 'scn_a1b2c3d4', path: 'Original/A.md' },
+        { sceneId: 'scn_a1b2c3d4', path: 'Copy/A.md' },
+        { sceneId: 'scn_a1b2c3d4', path: 'Third/A.md' },
+    ]);
+    it('never selects the first or last entry by lineage ID', () => {
+        expect(duplicate.bySceneId.has('scn_a1b2c3d4')).toBe(false);
+        expect(normalizeSceneRef({ ref_id: 'scn_a1b2c3d4' }, duplicate)).toMatchObject({ unresolved: true, ref: { ref_id: '' } });
+    });
+    it('does not turn a path reference into an ambiguous downstream ID', () => {
+        expect(normalizeSceneRef({ ref_path: 'Original/A.md' }, duplicate)).toMatchObject({ unresolved: true, ref: { ref_id: '' } });
+    });
+    it('permits the ID when only one book copy is in the corpus', () => {
+        const single = buildSceneRefIndex([{ sceneId: 'scn_a1b2c3d4', path: 'Original/A.md' }]);
+        expect(normalizeSceneRef({ ref_id: 'scn_a1b2c3d4' }, single).unresolved).toBe(false);
+    });
+});

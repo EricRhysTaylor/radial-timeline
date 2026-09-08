@@ -784,7 +784,7 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
 
         const confirmed = await confirmAudit(app, {
             badge: `${noteType.toUpperCase()} AUDIT`,
-            title: 'Fix duplicate IDs',
+            title: 'Fix duplicate IDs within this book',
             subtitle: `Resolve ${duplicateIdCount} duplicate Reference ID group${duplicateIdCount !== 1 ? 's' : ''} across ${targetFiles.length} ${noteType.toLowerCase()} note${targetFiles.length !== 1 ? 's' : ''}.`,
             scope: auditScopeSummary,
             action: 'Fix duplicates',

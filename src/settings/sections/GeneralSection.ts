@@ -1,5 +1,5 @@
-import type { App, TextComponent, TFile } from 'obsidian';
-import { Setting as ObsidianSetting, normalizePath, Notice, Modal, ButtonComponent, setIcon, setTooltip, TFolder } from 'obsidian';
+import type { App, TextComponent } from 'obsidian';
+import { Setting as ObsidianSetting, normalizePath, Notice, Modal, ButtonComponent, setIcon, setTooltip, TFile, TFolder } from 'obsidian';
 import { NamePromptModal } from '../../ui/NamePromptModal';
 import type RadialTimelinePlugin from '../../main';
 import { CreateBookCopyModal } from '../../modals/CreateBookCopyModal';
@@ -236,10 +236,10 @@ export function renderGeneralSection(params: {
                 for (const child of children) {
                     if (!child.path.endsWith('.md')) continue;
                     const tfile = app.vault.getAbstractFileByPath(child.path);
-                    if (!tfile) continue;
-                    const fm = app.metadataCache.getFileCache(tfile as import('obsidian').TFile)?.frontmatter;
+                    if (!(tfile instanceof TFile)) continue;
+                    const fm = app.metadataCache.getFileCache(tfile)?.frontmatter;
                     if (fm && (fm.Class === 'Scene' || fm.class === 'Scene')) {
-                        sceneFiles.push(tfile as TFile);
+                        sceneFiles.push(tfile);
                     }
                 }
                 const sceneCount = sceneFiles.length;

@@ -18,6 +18,7 @@ export function createTimeTick(doc: Document, cue: ResolvedCue, open: () => void
     setTooltip(button, `“${cue.quote}” · ${cueDescription(cue)} · Click to review`);
     const stroke = doc.win.createSpan();
     stroke.className = 'ert-time-tick';
+    if (cueState(cue) === 'uncertain') stroke.setText('?');
     button.appendChild(stroke);
     button.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); open(); });
     return button;
@@ -40,7 +41,7 @@ export function sceneTimeEditorExtension(service: SceneTimeService) {
         }
         update(update: ViewUpdate): void {
             if (update.geometryChanged) this.layoutVersion++;
-            if (update.docChanged || update.transactions.some(transaction => transaction.effects.some(effect => effect.is(refreshRuler)))) this.read();
+            if (update.docChanged || update.startState.field(editorInfoField, false)?.file !== editorFile(this.view) || update.transactions.some(transaction => transaction.effects.some(effect => effect.is(refreshRuler)))) this.read();
             if (update.docChanged) service.scheduleRefresh();
             if (update.geometryChanged || update.viewportChanged || update.transactions.some(transaction => transaction.effects.some(effect => effect.is(refreshRuler)))) this.measure();
         }
@@ -112,6 +113,6 @@ export function sceneTimeEditorExtension(service: SceneTimeService) {
             const boundary = number === snapshot.firstLine ? 'Scene start · elapsed 0' : number === snapshot.lastLine ? 'Last prose · end of scene' : '';
             return new Marker(snapshot.cues.filter(cue => cue.line === number), boundary, view.plugin(state)!.layoutVersion, line.from);
         },
-        lineMarkerChange: update => update.docChanged || update.geometryChanged || update.transactions.some(transaction => transaction.effects.some(effect => effect.is(refreshRuler)))
+        lineMarkerChange: update => update.docChanged || update.geometryChanged || update.startState.field(editorInfoField, false)?.file !== editorFile(update.view) || update.transactions.some(transaction => transaction.effects.some(effect => effect.is(refreshRuler)))
     })];
 }

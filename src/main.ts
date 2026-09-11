@@ -372,15 +372,16 @@ export default class RadialTimelinePlugin extends Plugin {
      * per-keystroke and scroll bursts stay cheap; the service throttles
      * persistence separately.
      */
-    private signalWritingActivity(): void {
+    private signalWritingActivity(immediate = false): void {
         const service = this.writingSessionService;
         if (!service?.getActiveSession()) return;
         const now = Date.now();
-        if (now - this.lastWritingActivitySignalMs < 1000) return;
-        this.lastWritingActivitySignalMs = now;
         if (typeof document !== 'undefined' && document.hasFocus && !document.hasFocus()) return;
         const file = this.app.workspace.getActiveFile();
         if (!file || !this.isSceneFile(file.path)) return;
+        // Navigation must survive scroll bursts and a preceding non-scene leaf event.
+        if (!immediate && now - this.lastWritingActivitySignalMs < 1000) return;
+        this.lastWritingActivitySignalMs = now;
         void service.onActivity(file.path);
     }
 
@@ -657,8 +658,9 @@ export default class RadialTimelinePlugin extends Plugin {
         this.registerEditorExtension(EditorView.updateListener.of((update) => this.handleWritingSessionEditorUpdate(update)));
         // Auto-track activity signals beyond typing: switching scenes and
         // scrolling/reading a scene both keep a session alive (revision time).
-        this.registerEvent(this.app.workspace.on('active-leaf-change', () => this.signalWritingActivity()));
-        this.registerEvent(this.app.workspace.on('file-open', () => this.signalWritingActivity()));
+        this.registerEvent(this.app.workspace.on('active-leaf-change', () => this.signalWritingActivity(true)));
+        this.registerEvent(this.app.workspace.on('file-open', () => this.signalWritingActivity(true)));
+        this.registerDomEvent(window, 'focus', () => this.signalWritingActivity(true));
         this.registerDomEvent(document, 'scroll', () => this.signalWritingActivity(), { capture: true });
         this.publishingValidationService = new PublishingValidationService(this);
         this.timelineAuditAiService = new TimelineAuditAiService(this);

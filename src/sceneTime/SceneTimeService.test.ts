@@ -19,6 +19,15 @@ function fixture(initial?: string) {
 }
 
 describe('scene time decision persistence', () => {
+    it('drops a cached scene snapshot when its class changes, regardless of timing fields', () => {
+        const f = fixture();
+        expect(f.service.snapshot(f.file, f.source())).not.toBeNull();
+        for (const Class of ['Beat', 'Character', '', undefined]) {
+            f.plugin.app.metadataCache.getFileCache = () => ({ frontmatter: { Class, When: '2085-04-21T17:00:00', Duration: '2 hours' } });
+            expect(f.service.metadata(f.file)).toBeNull();
+            expect(f.service.snapshot(f.file, f.source())).toBeNull();
+        }
+    });
     it('validates versioned data and rejects invalid contributions', () => {
         expect(parseTimeStore('{"schemaVersion":1,"scenes":{}}')).toEqual({ schemaVersion: 1, scenes: {} });
         for (const raw of ['{}', '{"schemaVersion":2,"scenes":{}}', '{"schemaVersion":1,"scenes":[]}',

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import type RadialTimelinePlugin from '../main';
 import type { TimelineItem } from '../types';
 import type { WritingSessionRecord } from '../types/settings';
 import {
@@ -714,6 +715,29 @@ describe('WritingSessionService auto-track', () => {
         await service.onActivity();
 
         expect(plugin.settings.writingSessions.active).toBeUndefined();
+    });
+
+    it('resumes a recovered stale session on scene activity without counting the away gap', async () => {
+        vi.useFakeTimers();
+        try {
+            vi.setSystemTime(new Date('2026-05-20T17:00:00.000Z'));
+            const plugin = autoTrackPlugin() as unknown as RadialTimelinePlugin;
+            plugin.settings.writingSessions!.active = {
+                id: 'recovered', mode: 'drafting', stage: 'Zero', stagePreference: 'Zero',
+                startedAt: '2026-05-20T16:00:00.000Z', lastResumedAt: '2026-05-20T16:00:00.000Z',
+                lastSeenAt: '2026-05-20T16:01:00.000Z', lastActivityAt: '2026-05-20T16:01:00.000Z',
+                elapsedMsBeforePause: 0, idleAuto: false,
+            };
+            const service = new WritingSessionService(plugin);
+            await service.hydrate();
+            expect(service.getActiveSession()?.idleAuto).toBe(true);
+            expect(service.getActiveElapsedMs()).toBe(60000);
+            await service.onActivity('Book/Scene.md');
+            expect(service.getActiveSession()?.pausedAt).toBeUndefined();
+            expect(service.getActiveSession()?.currentScenePath).toBe('Book/Scene.md');
+            vi.advanceTimersByTime(1000);
+            expect(service.getActiveElapsedMs()).toBe(61000);
+        } finally { vi.useRealTimers(); }
     });
 
     it('advances the activity clock of a running session on activity', async () => {

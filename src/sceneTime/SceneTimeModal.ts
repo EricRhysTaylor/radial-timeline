@@ -9,7 +9,7 @@ export class SceneTimeModal extends ErtModal {
         private readonly source: () => string, private readonly selectedKey?: string) { super(service.plugin.app); }
 
     onOpen(): void {
-        this.applyShell({ width: 'min(760px, 92vw)' });
+        this.applyShell({ width: 'min(860px, 96vw)', containerClasses: ['ert-manuscript-surface', 'ert-scene-time-modal'] });
         this.render();
     }
 
@@ -17,12 +17,14 @@ export class SceneTimeModal extends ErtModal {
         const { contentEl } = this;
         contentEl.empty();
         contentEl.addClass('ert-stack');
-        this.setTitle(`Scene time · ${this.file.basename}`);
+        this.titleEl.empty();
+        this.mountHeader({ title: 'Scene time', subtitle: this.file.basename, badge: { text: 'TIME REVIEW' } });
         const snapshot = this.service.snapshot(this.file, this.source());
         if (!snapshot) { contentEl.createEl('p', { text: 'This note is no longer a scene.' }); return; }
         const metadata = this.service.metadata(this.file)!;
         const planned = typeof metadata.Duration === 'string' ? parseDuration(metadata.Duration) : null;
-        const summary = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
+        const body = contentEl.createDiv({ cls: 'ert-card-stack' });
+        const summary = body.createDiv({ cls: 'ert-glass-card ert-sub-card ert-stack' });
         summary.createEl('strong', { text: `${elapsedLabel(snapshot.elapsed)} confirmed elapsed · ${snapshot.pending} cues need review` });
         if (planned !== null) {
             const remaining = planned / 60000 - snapshot.elapsed;
@@ -31,13 +33,19 @@ export class SceneTimeModal extends ErtModal {
                 : `Duration ${elapsedLabel(planned / 60000)} · ${elapsedLabel(remaining)} not quantified by confirmed cues.` });
         }
         if (snapshot.conflict) summary.createDiv({ cls: 'ert-time-over', text: 'A checkpoint goes backward. Resolve it before treating this as a reconciled total.' });
-        summary.createDiv({ text: 'Accent: detected · Green: confirmed · Amber: uncertain or clock anchor · Purple: backward · Gray: excluded' });
-        contentEl.createEl('p', { text: 'Confirm only elapsed time in this scene’s present action. Dialogue, plans, memories and parallel action can mention time without advancing it. Checkpoints replace the cumulative total; advances add to it. Unquantified time is not necessarily missing.' });
+        const legend = summary.createDiv({ cls: 'ert-time-legend' });
+        for (const [state, label] of [['detected', 'Detected'], ['confirmed', 'Confirmed'], ['uncertain', '? Uncertain / clock'], ['backward', '↶ Backward'], ['excluded', 'Excluded']]) {
+            legend.createSpan({ cls: `ert-time-legend-item ert-time-${state}`, text: label });
+        }
+        const help = body.createEl('details', { cls: 'ert-time-help' });
+        help.createEl('summary', { text: 'How elapsed time is counted' });
+        help.createEl('p', { text: 'Confirm only elapsed time in this scene’s present action. Dialogue, plans, memories and parallel action can mention time without advancing it. Checkpoints replace the cumulative total; advances add to it. Unquantified time is not necessarily missing.' });
         if (this.service.error) contentEl.createEl('p', { cls: 'ert-time-over', text: this.service.error });
         if (!snapshot.cues.length) contentEl.createEl('p', { text: 'No supported time phrases detected. Prose can still consume time without quantifying it.' });
         for (const cue of snapshot.cues) {
-            const card = contentEl.createDiv({ cls: `ert-panel ert-stack ert-time-cue ert-time-${cueState(cue)}` });
-            card.createEl('strong', { text: `Line ${cue.line + 1} · “${cue.quote}”` });
+            const card = body.createDiv({ cls: `ert-glass-card ert-sub-card ert-stack ert-time-cue ert-time-${cueState(cue)}` });
+            card.createDiv({ cls: 'ert-sub-card-head', text: `“${cue.quote}”` });
+            card.createDiv({ cls: 'ert-time-cue-meta', text: `Line ${cue.line + 1}` });
             card.createDiv({ text: cueDescription(cue) });
             const context = card.createEl('details');
             context.createEl('summary', { text: 'Show paragraph' });
@@ -47,13 +55,16 @@ export class SceneTimeModal extends ErtModal {
                 continue;
             }
             let action: TimeDecision['action'] = cue.decision?.action || (cue.kind === 'backward' ? 'exclude' : cue.kind === 'checkpoint' || cue.kind === 'clock' ? 'checkpoint' : 'add');
-            let duration = cue.decision ? `${cue.decision.minutes} minutes` : cue.suggestedMinutes !== null ? `${cue.suggestedMinutes} minutes` : '';
-            const controls = new Setting(card).setName('Contribution').setDesc('Use a duration such as “2 hours” or “30 min”. For a clock anchor, enter total elapsed since scene start.');
+            const minutes = cue.decision?.minutes ?? cue.suggestedMinutes;
+            let duration = minutes === null ? '' : minutes < 1 ? `${Number((minutes * 60).toFixed(6))} seconds`
+                : minutes % 60 === 0 ? `${minutes / 60} hours` : `${Number(minutes.toFixed(6))} minutes`;
+            const controls = new Setting(card).setName('Contribution');
             controls.addDropdown(dropdown => dropdown.addOption('add', 'Advance by').addOption('checkpoint', 'Elapsed since start').addOption('exclude', 'Exclude')
                 .setValue(action).onChange(value => { action = value as TimeDecision['action']; }));
             controls.addText(input => input.setPlaceholder('e.g. 2 hours').setValue(duration).onChange(value => { duration = value; }));
-            const actions = new Setting(card);
-            actions.addButton(button => button.setButtonText('Save decision').setDisabled(!!this.service.error).onClick(async () => {
+            const actions = controls;
+            controls.settingEl.addClass('ert-time-contribution');
+            actions.addButton(button => button.setButtonText('Confirm').setCta().setDisabled(!!this.service.error).onClick(async () => {
                 const ms = action === 'exclude' ? 0 : parseDuration(duration);
                 if (ms === null || !Number.isFinite(ms) || ms < 0) { new Notice('Enter a duration such as “2 hours” or “30 min”.'); return; }
                 button.setDisabled(true);

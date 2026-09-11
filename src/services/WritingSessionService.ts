@@ -707,6 +707,7 @@ export class WritingSessionService {
         const cutoffMs = activeSessionCutoffMs(active);
         active.elapsedMsBeforePause = activeElapsedMs(active);
         active.pausedAt = new Date(cutoffMs).toISOString();
+        active.idleAuto = true; // Recovery is an automatic pause; scene activity may resume it.
         await this.plugin.saveSettings();
     }
 

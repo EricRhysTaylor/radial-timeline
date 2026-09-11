@@ -58,7 +58,7 @@ button.ert-time-marker:hover { background: var(--background-modifier-hover); }
 button.ert-time-marker:focus-visible { outline: 2px solid var(--interactive-accent); }
 .ert-time-tick { width: 10px; height: 4px; border: 1px solid currentColor; }
 .ert-time-confirmed .ert-time-tick { background: currentColor; }
-.ert-time-uncertain .ert-time-tick { border-style: dashed; height: 8px; }
+.ert-time-uncertain .ert-time-tick { border: 0; height: auto; font-size: 14px; font-weight: 700; line-height: 1; text-align: center; }
 .ert-time-backward .ert-time-tick { transform: rotate(-45deg); width: 7px; height: 7px; border-right: 0; border-bottom: 0; }
 .ert-time-excluded .ert-time-tick { height: 0; border-bottom: 0; }
 .ert-time-conflict .ert-time-tick { transform: rotate(45deg); width: 7px; height: 7px; }
@@ -80,3 +80,14 @@ button.ert-time-marker:focus-visible { outline: 2px solid var(--interactive-acce
 }
 .ert-ui .ert-time-cue { border-left: 3px solid var(--ert-time-color); }
 .ert-ui .ert-time-selected { outline: 2px solid var(--interactive-accent); outline-offset: 2px; }
+
+.ert-ui .ert-scene-time-modal { display: flex; flex-direction: column; max-height: 85vh; min-height: 0; }
+.ert-ui .ert-scene-time-modal > .ert-card-stack { overflow-y: auto; min-height: 0; padding: var(--ert-pad-xs); }
+.ert-ui .ert-scene-time-modal .ert-time-cue { border-left: 3px solid var(--ert-time-color); }
+.ert-ui .ert-scene-time-modal .ert-time-cue-meta { font-size: var(--font-ui-smaller); color: var(--text-muted); }
+.ert-ui .ert-time-legend { display: flex; gap: var(--ert-gap-md); flex-wrap: wrap; font-size: var(--font-ui-small); }
+.ert-ui .ert-time-legend-item { color: var(--ert-time-color); }
+.ert-ui .ert-time-help { color: var(--text-muted); font-size: var(--font-ui-small); }
+.ert-ui .ert-time-contribution { flex-wrap: wrap; gap: var(--ert-gap-sm); }
+.ert-ui .ert-time-contribution .setting-item-control { flex-wrap: wrap; }
+.ert-ui .ert-time-contribution input { width: 120px; }

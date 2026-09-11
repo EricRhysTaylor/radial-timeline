@@ -18,7 +18,10 @@ export function createTimeTick(doc: Document, cue: ResolvedCue, open: () => void
     setTooltip(button, `“${cue.quote}” · ${cueDescription(cue)} · Click to review`);
     const stroke = doc.win.createSpan();
     stroke.className = 'ert-time-tick';
-    if (cueState(cue) === 'uncertain') stroke.setText('?');
+    if (cue.kind === 'clock') {
+        button.addClass('ert-time-clock-marker');
+        stroke.setText(cue.quote.trim().toLowerCase().replace(/(\d)\s*([ap])\.?m\.?$/i, '$1$2m'));
+    } else if (cueState(cue) === 'uncertain') stroke.setText('?');
     if (cueState(cue) === 'backward') setIcon(stroke, 'undo-2');
     button.appendChild(stroke);
     button.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); open(); });

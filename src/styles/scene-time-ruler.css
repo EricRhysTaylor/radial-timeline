@@ -98,3 +98,17 @@ button.ert-time-marker:focus-visible { outline: 2px solid var(--interactive-acce
 .ert-ui .ert-time-cue-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--ert-gap-sm); }
 
 .ert-ui .ert-time-context-match { color: var(--ert-time-color); font-weight: var(--font-semibold); }
+
+button.ert-time-clock-marker { width: max-content; min-width: 24px; padding-inline: 2px; }
+.ert-time-clock-marker .ert-time-tick {
+    width: auto;
+    height: auto;
+    border: 0;
+    background: transparent;
+    transform: none;
+    font-size: var(--font-ui-smaller);
+    font-weight: var(--font-semibold);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    white-space: nowrap;
+}

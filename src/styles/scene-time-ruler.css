@@ -119,3 +119,6 @@ button.ert-time-clock-marker { width: max-content; min-width: 24px; padding-inli
     left: 2px;
     justify-content: flex-start;
 }
+
+.ert-ui .ert-time-cue.ert-time-excluded { color: var(--text-muted); opacity: 0.65; }
+.ert-ui .ert-time-cue.ert-time-excluded.ert-time-selected { outline-color: var(--background-modifier-border); }

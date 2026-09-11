@@ -13,7 +13,7 @@ export class SceneTimeModal extends ErtModal {
         this.render();
     }
 
-    private render(): void {
+    private render(focusKey = this.selectedKey): void {
         const { contentEl } = this;
         contentEl.empty();
         contentEl.addClass('ert-stack');
@@ -59,12 +59,22 @@ export class SceneTimeModal extends ErtModal {
             const heading = card.createDiv({ cls: 'ert-time-cue-heading' });
             heading.createEl('strong', { text: `“${cue.quote.trim()}”` });
             heading.createSpan({ cls: 'ert-time-cue-meta', text: `Line ${cue.line + 1} • ${cueDescription(cue).replace(/ · /g, ' • ')}` });
+            if (cue.key === focusKey) card.addClass('ert-time-selected');
             const context = card.createEl('details');
+            context.open = cue.key === focusKey;
             context.createEl('summary', { text: 'Show paragraph' });
             const paragraph = context.createEl('p');
             paragraph.createSpan({ text: cue.context.slice(0, cue.contextOffset) });
             paragraph.createSpan({ cls: 'ert-time-context-match', text: cue.context.slice(cue.contextOffset, cue.contextOffset + cue.quote.length) });
             paragraph.createSpan({ text: cue.context.slice(cue.contextOffset + cue.quote.length) });
+            if (cue.decision?.action === 'exclude') {
+                new Setting(card).addButton(button => button.setButtonText('Restore cue').setDisabled(!!this.service.error).onClick(async () => {
+                    button.setDisabled(true);
+                    try { await this.service.decide(this.file, cue.key, null); this.render(cue.key); }
+                    catch (error) { new Notice(String(error)); button.setDisabled(false); }
+                }));
+                continue;
+            }
             if (cue.duplicate) {
                 card.createEl('p', { text: 'This identical paragraph occurs more than once. Make its wording distinct before attaching a saved decision.' });
                 continue;
@@ -88,17 +98,22 @@ export class SceneTimeModal extends ErtModal {
                     this.render();
                 } catch (error) { new Notice(String(error)); button.setDisabled(false); }
             }));
+            actions.addButton(button => button.setButtonText('Exclude').setDisabled(!!this.service.error).onClick(async () => {
+                button.setDisabled(true);
+                try { await this.service.decide(this.file, cue.key, { action: 'exclude', minutes: 0 }); this.render(cue.key); }
+                catch (error) { new Notice(String(error)); button.setDisabled(false); }
+            }));
             if (cue.decision) actions.addButton(button => button.setButtonText('Clear confirmation').onClick(async () => {
                 try { await this.service.decide(this.file, cue.key, null); this.render(); }
                 catch (error) { new Notice(String(error)); }
             }));
-            if (cue.decision && cue.decision.action !== 'exclude' && typeof metadata.When === 'string') {
+            if (cue.decision && typeof metadata.When === 'string') {
                 const start = parseWhenField(metadata.When);
                 if (start && /\d:\d|\d\s*[ap]m\b/i.test(metadata.When)) {
                     card.createDiv({ text: `Clock after confirmed contributions: ${new Date(start.getTime() + cue.elapsed * 60000).toLocaleString()}` });
                 }
             }
-            if (cue.key === this.selectedKey) card.addClass('ert-time-selected');
+
         }
         contentEl.querySelector('.ert-time-selected')?.scrollIntoView({ block: 'nearest' });
     }

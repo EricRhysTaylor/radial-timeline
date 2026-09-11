@@ -1111,6 +1111,8 @@ export interface RadialTimelineSettings {
     enableAiSceneAnalysis: boolean;
     enableZeroDraftMode?: boolean;
     enableSceneTitleAutoExpand?: boolean;
+    /** Show the scene-note cue ruler; header timing remains visible. */
+    showSceneTimeCueBar?: boolean;
     showChapterMarkers?: boolean;
     showRecentMovesOverlay?: boolean;
     enableManuscriptRippleRename?: boolean;

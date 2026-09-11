@@ -96,3 +96,5 @@ button.ert-time-marker:focus-visible { outline: 2px solid var(--interactive-acce
 .ert-ui .ert-time-backward-icon { display: inline-flex; width: 20px; height: 20px; flex-shrink: 0; }
 .ert-ui .ert-time-backward-icon svg { width: 20px; height: 20px; stroke-width: 2.5; }
 .ert-ui .ert-time-cue-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--ert-gap-sm); }
+
+.ert-ui .ert-time-context-match { color: var(--ert-time-color); font-weight: var(--font-semibold); }

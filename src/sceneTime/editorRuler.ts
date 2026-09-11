@@ -38,7 +38,7 @@ export function sceneTimeEditorExtension(service: SceneTimeService) {
         }
         read(): void {
             const file = editorFile(this.view);
-            this.snapshot = file ? service.snapshot(file, this.view.state.doc.toString()) : null;
+            this.snapshot = file && service.plugin.settings.showSceneTimeCueBar !== false ? service.snapshot(file, this.view.state.doc.toString()) : null;
         }
         update(update: ViewUpdate): void {
             if (update.geometryChanged) this.layoutVersion++;

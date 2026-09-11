@@ -50,7 +50,7 @@ export async function renderReadingTime(service: SceneTimeService, el: HTMLEleme
             const render = (): void => {
                 if (!this.rail) return;
                 this.rail.empty();
-                this.rail.hidden = !service.metadata(sceneFile) || !el.closest('.markdown-preview-view');
+                this.rail.hidden = service.plugin.settings.showSceneTimeCueBar === false || !service.metadata(sceneFile) || !el.closest('.markdown-preview-view');
                 el.toggleClass('ert-time-reading-block', !this.rail.hidden);
                 if (this.rail.hidden) return;
                 const current = service.snapshot(sceneFile, source);

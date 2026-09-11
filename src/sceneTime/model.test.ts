@@ -2,6 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { cueState, maskNonProse, resolveSceneTime, scanSceneTime, type TimeDecision } from './model';
 
 describe('scene time detection', () => {
+    it('anchors paragraph highlighting to the exact occurrence of a repeated phrase', () => {
+        const source = 'Two hours later, she waits. Two hours later, she leaves.';
+        const { cues } = scanSceneTime(source);
+        expect(cues).toHaveLength(2);
+        expect(cues[0].contextOffset).toBe(0);
+        expect(cues[1].contextOffset).toBe(source.lastIndexOf('Two hours later'));
+        for (const cue of cues) expect(cue.context.slice(cue.contextOffset, cue.contextOffset + cue.quote.length)).toBe(cue.quote);
+    });
     it('retains every occurrence in prose order, including identical phrases', () => {
         const source = 'Two hours later, they arrive.\n\nShe sleeps for six hours.\n\nTwo hours later, she leaves.';
         const cues = scanSceneTime(source).cues;

@@ -18,7 +18,7 @@ export class SceneTimeModal extends ErtModal {
         contentEl.empty();
         contentEl.addClass('ert-stack');
         this.titleEl.empty();
-        this.mountHeader({ title: 'Scene time', subtitle: this.file.basename, badge: { text: 'OPTIONAL TIME CHECK' } });
+        this.mountHeader({ title: 'Scene time', subtitle: 'The vertical cue bar marks time phrases beside your prose. Use this optional check to compare elapsed story time with the scene’s duration, confirm useful cues together, or adjust individual contributions as you revise.', badge: { text: `OPTIONAL TIME CHECK • ${this.file.basename}` } });
         const snapshot = this.service.snapshot(this.file, this.source());
         if (!snapshot) { contentEl.createEl('p', { text: 'This note is no longer a scene.' }); return; }
         const metadata = this.service.metadata(this.file)!;
@@ -61,7 +61,10 @@ export class SceneTimeModal extends ErtModal {
             heading.createSpan({ cls: 'ert-time-cue-meta', text: `Line ${cue.line + 1} • ${cueDescription(cue).replace(/ · /g, ' • ')}` });
             const context = card.createEl('details');
             context.createEl('summary', { text: 'Show paragraph' });
-            context.createEl('p', { text: cue.context });
+            const paragraph = context.createEl('p');
+            paragraph.createSpan({ text: cue.context.slice(0, cue.contextOffset) });
+            paragraph.createSpan({ cls: 'ert-time-context-match', text: cue.context.slice(cue.contextOffset, cue.contextOffset + cue.quote.length) });
+            paragraph.createSpan({ text: cue.context.slice(cue.contextOffset + cue.quote.length) });
             if (cue.duplicate) {
                 card.createEl('p', { text: 'This identical paragraph occurs more than once. Make its wording distinct before attaching a saved decision.' });
                 continue;

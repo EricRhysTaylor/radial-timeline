@@ -149,6 +149,18 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
     });
 
     // Timeline Display
+    createDenseRow(displayContainer, {
+        title: 'Show scene time cue bar',
+        description: 'Show time-phrase markers beside Scene notes in editing and Reading views. Turn off to hide the vertical bar; scene timing in the note title bar stays visible.',
+        control: (setting) => {
+            setting.addToggle(toggle => toggle
+                .setValue(plugin.settings.showSceneTimeCueBar !== false)
+                .onChange(async (value) => {
+                    plugin.settings.showSceneTimeCueBar = value;
+                    await plugin.saveSettings();
+                }));
+        }
+    });
     const buildChapterMarkerDescription = (status?: string): string => {
         const base = t('settings.configuration.chapterMarkers.desc');
         return status ? `${base} ${status}` : base;

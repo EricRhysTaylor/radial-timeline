@@ -9,6 +9,7 @@ export interface TimeCue {
     line: number;
     quote: string;
     context: string;
+    contextOffset: number;
     kind: CueKind;
     suggestedMinutes: number | null;
     duplicate: boolean;
@@ -98,7 +99,7 @@ export function scanSceneTime(source: string): SceneTimeScan {
             }
             const context = source.slice(paragraphStart, paragraphEnd);
             cues.push({ key: JSON.stringify([context, from - paragraphStart, match[0]]), from, to,
-                line: text.slice(0, from).split('\n').length - 1, quote: match[0], context,
+                line: text.slice(0, from).split('\n').length - 1, quote: match[0], context, contextOffset: from - paragraphStart,
                 kind: pattern.kind, suggestedMinutes: pattern.span ? minutesFromSpan(match[1]) : null, duplicate: false });
         }
     }

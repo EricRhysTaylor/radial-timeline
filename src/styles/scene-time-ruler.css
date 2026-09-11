@@ -113,8 +113,8 @@ button.ert-time-clock-marker { width: max-content; min-width: 24px; padding-inli
     white-space: nowrap;
 }
 
-.ert-time-marker-row .ert-time-clock-marker,
-.ert-time-reading-rail .ert-time-clock-marker {
+.ert-time-marker-row .ert-time-clock-marker.ert-time-confirmed,
+.ert-time-reading-rail .ert-time-clock-marker.ert-time-confirmed {
     left: calc(2px + var(--ert-time-lane, 0) * 64px);
     justify-content: flex-start;
 }

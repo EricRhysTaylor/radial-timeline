@@ -15,7 +15,7 @@ export function createTimeTick(doc: Document, cue: ResolvedCue, open: () => void
     button.className = `ert-time-marker ert-time-${cueState(cue)}`;
     button.type = 'button';
     button.dataset.cueFrom = String(cue.from);
-    button.style.setProperty('--ert-time-lane', String(lane)); // SAFE: stable source-line lane prevents marker overlap.
+    button.style.setProperty('--ert-time-lane', String(lane)); // SAFE: stable source-line stack position prevents marker overlap.
     setTooltip(button, `“${cue.quote}” · ${cueDescription(cue)}${cue.clockLabel ? ` · ${cue.clockEstimated ? 'Estimated story clock' : 'Story clock'} ${cue.clockLabel}` : ''} · Click to review`);
     const stroke = doc.win.createSpan();
     stroke.className = 'ert-time-tick';

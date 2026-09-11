@@ -74,7 +74,7 @@ export async function renderReadingTime(service: SceneTimeService, el: HTMLEleme
                     }, current.cues.filter(item => item.line === cue.line).indexOf(cue));
                     // SAFE: measured prose-relative marker position; not a theme/style override.
                     this.rail.appendChild(tick);
-                    tick.style.top = `${rect.top - el.getBoundingClientRect().top}px`; // SAFE: exact rendered phrase anchor; overlap uses stable horizontal lanes.
+                    tick.style.top = `${rect.top - el.getBoundingClientRect().top}px`; // SAFE: exact rendered phrase anchor; same-line cues use stable vertical stack offsets.
                 }
             };
             const win = el.ownerDocument.defaultView;

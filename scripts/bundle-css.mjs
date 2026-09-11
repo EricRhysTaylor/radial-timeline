@@ -47,6 +47,7 @@ const files = [
     'apr-thumb.css',
     'timeline.css',
     'scenes.css',
+    'scene-time-header.css',
     'grid.css',
     'indicators.css',
     // Chronologue partials (order matters: base first, then mode overrides)

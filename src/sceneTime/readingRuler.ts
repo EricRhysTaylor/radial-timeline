@@ -55,7 +55,6 @@ export async function renderReadingTime(service: SceneTimeService, el: HTMLEleme
                 if (this.rail.hidden) return;
                 const current = service.snapshot(sceneFile, source);
                 if (!current) return;
-                let bottom = -Infinity;
                 const occurrences = new Map<string, number>();
                 for (const cue of current.cues.filter(cue => cue.line >= section!.lineStart && cue.line <= section!.lineEnd)) {
                     const occurrence = occurrences.get(cue.quote) || 0;
@@ -72,12 +71,10 @@ export async function renderReadingTime(service: SceneTimeService, el: HTMLEleme
                             return value;
                         };
                         new SceneTimeModal(service, sceneFile, currentSource, cue.key).open();
-                    });
+                    }, current.cues.filter(item => item.line === cue.line).indexOf(cue));
                     // SAFE: measured prose-relative marker position; not a theme/style override.
                     this.rail.appendChild(tick);
-                    const top = Math.max(rect.top - el.getBoundingClientRect().top, bottom);
-                    tick.style.top = `${top}px`; // SAFE: avoid collisions among adjacent cue hit targets.
-                    bottom = top + tick.getBoundingClientRect().height + 2;
+                    tick.style.top = `${rect.top - el.getBoundingClientRect().top}px`; // SAFE: exact rendered phrase anchor; overlap uses stable horizontal lanes.
                 }
             };
             const win = el.ownerDocument.defaultView;

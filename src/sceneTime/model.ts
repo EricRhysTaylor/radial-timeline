@@ -200,3 +200,13 @@ function formatCueClock(minutes: number): string {
     const hour = Math.floor(value / 60), minute = value % 60;
     return `${hour % 12 || 12}${minute ? `:${String(minute).padStart(2, '0')}` : ''}${hour < 12 ? 'am' : 'pm'}`;
 }
+
+/** Marker text describes this cue; inferred clock-of-day remains in its tooltip. */
+export function cueMarkerLabel(cue: ResolvedCue): string | null {
+    if (cue.kind === 'clock') return cue.quote.trim().toLowerCase().replace(/(\d)\s*([ap])\.?m\.?$/i, '$1$2m');
+    const minutes = cue.decision?.action !== 'exclude' && cue.decision ? cue.decision.minutes : cue.suggestedMinutes;
+    if (minutes === null) return null;
+    const prefix = cue.decision?.action === 'checkpoint' || (!cue.decision && cue.kind === 'checkpoint') ? '='
+        : cue.kind === 'backward' && !cue.decision ? '−' : '+';
+    return `${prefix}${elapsedLabel(minutes)}`;
+}

@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { cueState, maskNonProse, resolveSceneTime, scanSceneTime, type TimeDecision } from './model';
+import { cueMarkerLabel, cueState, maskNonProse, resolveSceneTime, scanSceneTime, type TimeDecision } from './model';
 
 describe('scene time detection', () => {
+    it('keeps quantified marker labels independent of start time and inferred clock', () => {
+        const scan = scanSceneTime('Three hours later, she leaves.');
+        const decisions = { [scan.cues[0].key]: { action: 'add' as const, minutes: 180 } };
+        for (const when of [undefined, '2085-04-21', '2085-04-21T17:00:00']) {
+            expect(cueMarkerLabel(resolveSceneTime(scan, decisions, when).cues[0])).toBe('+3h');
+        }
+        const unknown = resolveSceneTime(scanSceneTime('A few minutes later, she leaves.'), {});
+        expect(cueMarkerLabel(unknown.cues[0])).toBeNull();
+        const clock = resolveSceneTime(scanSceneTime('It is 3 am.'), {});
+        expect(cueMarkerLabel(clock.cues[0])).toBe('3am');
+    });
     it('shows the story clock after confirmed advances and midnight rollover', () => {
         const scan = scanSceneTime('Three hours later, she leaves.\nShe sleeps for six hours.');
         const result = resolveSceneTime(scan, Object.fromEntries(scan.cues.map(cue => [cue.key, { action: 'add', minutes: cue.suggestedMinutes! }])), '2085-04-21T17:00:00');

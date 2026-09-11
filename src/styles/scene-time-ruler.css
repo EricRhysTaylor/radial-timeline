@@ -38,7 +38,7 @@
     border-left-color: var(--text-success);
 }
 .ert-time-marker-row { position: relative; display: flex; flex-wrap: wrap; }
-.ert-time-marker-row .ert-time-marker { position: absolute; left: -13px; }
+.ert-time-marker-row .ert-time-marker { position: absolute; left: calc(-13px + var(--ert-time-lane, 0) * 64px); }
 .ert-time-boundary { color: var(--text-muted); margin-left: -7px; }
 
 button.ert-time-marker {
@@ -75,7 +75,7 @@ button.ert-time-marker:focus-visible { outline: 2px solid var(--interactive-acce
 }
 .ert-time-reading-rail .ert-time-marker {
     position: absolute;
-    left: -13px;
+    left: calc(-13px + var(--ert-time-lane, 0) * 64px);
     pointer-events: auto;
 }
 .ert-ui .ert-time-cue { border-left: 3px solid var(--ert-time-color); }
@@ -112,5 +112,3 @@ button.ert-time-clock-marker { width: max-content; min-width: 24px; padding-inli
     line-height: 1;
     white-space: nowrap;
 }
-
-.ert-time-clock-estimated { --ert-time-color: var(--text-warning); }

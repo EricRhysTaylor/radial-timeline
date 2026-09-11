@@ -1,4 +1,4 @@
-import { parseDuration } from '../utils/date';
+import { parseDuration, parseWhenField } from '../utils/date';
 
 export type CueKind = 'advance' | 'checkpoint' | 'clock' | 'uncertain' | 'backward';
 export type TimeDecision = { action: 'add' | 'checkpoint' | 'exclude'; minutes: number };
@@ -24,6 +24,8 @@ export interface ResolvedCue extends TimeCue {
     decision?: TimeDecision;
     elapsed: number;
     conflict: boolean;
+    clockLabel?: string;
+    clockEstimated?: boolean;
 }
 export interface SceneTimeSnapshot extends SceneTimeScan {
     cues: ResolvedCue[];
@@ -110,7 +112,7 @@ export function scanSceneTime(source: string): SceneTimeScan {
         lastLine: indices.length ? indices[indices.length - 1] : -1, proseLines };
 }
 
-export function resolveSceneTime(scan: SceneTimeScan, decisions: Record<string, TimeDecision>): SceneTimeSnapshot {
+export function resolveSceneTime(scan: SceneTimeScan, decisions: Record<string, TimeDecision>, when?: unknown): SceneTimeSnapshot {
     let elapsed = 0;
     let confirmed = 0;
     let pending = 0;
@@ -127,7 +129,33 @@ export function resolveSceneTime(scan: SceneTimeScan, decisions: Record<string, 
         }
         return { ...cue, decision, elapsed, conflict: cueConflict };
     });
-    return { ...scan, cues, elapsed, confirmed, pending, conflict };
+    const start = typeof when === 'string' && /\d:\d|\d\s*[ap]m\b/i.test(when) ? parseWhenField(when) : null;
+    let clock = start ? start.getHours() * 60 + start.getMinutes() : null;
+    const startMinutes = clock;
+    let estimated = false;
+    const timedCues = cues.map(cue => {
+        let label: string | undefined;
+        if (cue.decision?.action !== 'exclude' && cue.kind !== 'backward') {
+            if (cue.decision?.action === 'checkpoint') {
+                clock = startMinutes === null ? null : startMinutes + cue.decision.minutes;
+                estimated = false;
+            } else if (cue.decision?.action === 'add') {
+                if (clock !== null) clock += cue.decision.minutes;
+            } else if (cue.kind === 'clock') {
+                clock = parseCueClock(cue.quote);
+                estimated = true;
+            } else if (cue.kind === 'advance' && cue.suggestedMinutes !== null) {
+                if (clock !== null) clock += cue.suggestedMinutes;
+                estimated = true;
+            } else if (cue.kind === 'checkpoint' && cue.suggestedMinutes !== null) {
+                clock = startMinutes === null ? null : startMinutes + cue.suggestedMinutes;
+                estimated = true;
+            } else estimated = true;
+            if (clock !== null) label = formatCueClock(clock);
+        }
+        return { ...cue, clockLabel: label, clockEstimated: estimated || cue.conflict };
+    });
+    return { ...scan, cues: timedCues, elapsed, confirmed, pending, conflict };
 }
 
 export function elapsedLabel(minutes: number): string {
@@ -153,4 +181,22 @@ export function cueDescription(cue: ResolvedCue): string {
     if (cue.decision?.action === 'exclude') return 'Excluded from elapsed time';
     if (cue.decision) return `${cue.decision.action === 'checkpoint' ? 'Checkpoint' : 'Advance'} ${elapsedLabel(cue.decision.minutes)} · Confirmed elapsed ${elapsedLabel(cue.elapsed)}`;
     return `${cue.kind === 'backward' ? 'Backward reference' : cue.kind === 'clock' ? 'Clock anchor' : cue.kind === 'checkpoint' ? 'Checkpoint candidate' : cue.kind === 'uncertain' ? 'Uncertain cue' : 'Advance candidate'}${cue.suggestedMinutes !== null ? ` · ${elapsedLabel(cue.suggestedMinutes)}` : ''} · Not confirmed`;
+}
+
+/** Clock anchors are explicit; dawn/dusk and bare twelve-hour clocks stay unquantified. */
+function parseCueClock(quote: string): number | null {
+    const text = quote.toLowerCase().replace(/\./g, '').trim();
+    if (text === 'noon') return 720;
+    if (text === 'midnight') return 0;
+    const match = /^(\d{1,2})(?::(\d{2}))?\s*([ap]m)?$/.exec(text);
+    if (!match) return null;
+    const hour = Number(match[1]), minute = Number(match[2] || 0);
+    if (minute > 59 || hour > 23 || (match[3] && (hour < 1 || hour > 12))) return null;
+    if (!match[3] && hour <= 12) return null;
+    return (match[3] ? hour % 12 + (match[3] === 'pm' ? 12 : 0) : hour) * 60 + minute;
+}
+function formatCueClock(minutes: number): string {
+    const value = ((Math.round(minutes) % 1440) + 1440) % 1440;
+    const hour = Math.floor(value / 60), minute = value % 60;
+    return `${hour % 12 || 12}${minute ? `:${String(minute).padStart(2, '0')}` : ''}${hour < 12 ? 'am' : 'pm'}`;
 }

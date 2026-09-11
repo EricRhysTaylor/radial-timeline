@@ -55,6 +55,7 @@ export async function renderReadingTime(service: SceneTimeService, el: HTMLEleme
                 if (this.rail.hidden) return;
                 const current = service.snapshot(sceneFile, source);
                 if (!current) return;
+                let bottom = -Infinity;
                 const occurrences = new Map<string, number>();
                 for (const cue of current.cues.filter(cue => cue.line >= section!.lineStart && cue.line <= section!.lineEnd)) {
                     const occurrence = occurrences.get(cue.quote) || 0;
@@ -73,8 +74,10 @@ export async function renderReadingTime(service: SceneTimeService, el: HTMLEleme
                         new SceneTimeModal(service, sceneFile, currentSource, cue.key).open();
                     });
                     // SAFE: measured prose-relative marker position; not a theme/style override.
-                    tick.style.top = `${rect.top - el.getBoundingClientRect().top}px`;
                     this.rail.appendChild(tick);
+                    const top = Math.max(rect.top - el.getBoundingClientRect().top, bottom);
+                    tick.style.top = `${top}px`; // SAFE: avoid collisions among adjacent cue hit targets.
+                    bottom = top + tick.getBoundingClientRect().height + 2;
                 }
             };
             const win = el.ownerDocument.defaultView;

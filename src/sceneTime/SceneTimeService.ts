@@ -31,7 +31,7 @@ export function parseTimeStore(raw: string): TimeStore {
 export class SceneTimeService extends Component {
     private data: TimeStore = { schemaVersion: 1, scenes: {} };
     private revision = 0;
-    private cache = new Map<string, { source: string; revision: number; snapshot: SceneTimeSnapshot }>();
+    private cache = new Map<string, { source: string; when: unknown; revision: number; snapshot: SceneTimeSnapshot }>();
     private listeners = new Set<() => void>();
     private pendingWrite: Promise<void> = Promise.resolve();
     private timer: number | undefined;
@@ -72,13 +72,14 @@ export class SceneTimeService extends Component {
     }
 
     snapshot(file: TFile, source: string): SceneTimeSnapshot | null {
-        if (!this.metadata(file)) return null;
+        const metadata = this.metadata(file);
+        if (!metadata) return null;
         const cached = this.cache.get(file.path);
-        if (cached && cached.source === source && cached.revision === this.revision) return cached.snapshot;
+        if (cached && cached.source === source && cached.when === metadata.When && cached.revision === this.revision) return cached.snapshot;
         const scan = scanSceneTime(source);
-        const snapshot = resolveSceneTime(scan, this.data.scenes[file.path] || {});
+        const snapshot = resolveSceneTime(scan, this.data.scenes[file.path] || {}, metadata.When);
         if (this.cache.size >= 32 && !this.cache.has(file.path)) this.cache.delete(Array.from(this.cache.keys())[0]);
-        this.cache.set(file.path, { source, revision: this.revision, snapshot });
+        this.cache.set(file.path, { source, when: metadata.When, revision: this.revision, snapshot });
         return snapshot;
     }
 

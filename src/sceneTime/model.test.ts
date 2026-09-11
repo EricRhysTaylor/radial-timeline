@@ -2,6 +2,24 @@ import { describe, expect, it } from 'vitest';
 import { cueState, maskNonProse, resolveSceneTime, scanSceneTime, type TimeDecision } from './model';
 
 describe('scene time detection', () => {
+    it('shows the story clock after confirmed advances and midnight rollover', () => {
+        const scan = scanSceneTime('Three hours later, she leaves.\nShe sleeps for six hours.');
+        const result = resolveSceneTime(scan, Object.fromEntries(scan.cues.map(cue => [cue.key, { action: 'add', minutes: cue.suggestedMinutes! }])), '2085-04-21T17:00:00');
+        expect(result.cues.map(cue => cue.clockLabel)).toEqual(['8pm', '2am']);
+        expect(result.cues.every(cue => !cue.clockEstimated)).toBe(true);
+    });
+    it('estimates forward from explicit clock anchors without changing confirmed accounting', () => {
+        const scan = scanSceneTime('It is 3 am.\nTwo hours later, she leaves.');
+        const result = resolveSceneTime(scan, {}, '2085-04-21T17:00:00');
+        expect(result.cues.map(cue => cue.clockLabel)).toEqual(['3am', '5am']);
+        expect(result.cues[1].clockEstimated).toBe(true);
+        expect(result.elapsed).toBe(0);
+    });
+    it('does not invent a clock for a date-only start or dawn', () => {
+        expect(resolveSceneTime(scanSceneTime('Two hours later, she leaves.'), {}, '2085-04-21').cues[0].clockLabel).toBeUndefined();
+        const result = resolveSceneTime(scanSceneTime('Dawn. Two hours later, she leaves.'), {}, '2085-04-21T17:00:00');
+        expect(result.cues.every(cue => cue.clockLabel === undefined)).toBe(true);
+    });
     it('anchors paragraph highlighting to the exact occurrence of a repeated phrase', () => {
         const source = 'Two hours later, she waits. Two hours later, she leaves.';
         const { cues } = scanSceneTime(source);

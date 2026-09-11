@@ -15,12 +15,13 @@ export function createTimeTick(doc: Document, cue: ResolvedCue, open: () => void
     button.className = `ert-time-marker ert-time-${cueState(cue)}`;
     button.type = 'button';
     button.dataset.cueFrom = String(cue.from);
-    setTooltip(button, `“${cue.quote}” · ${cueDescription(cue)} · Click to review`);
+    setTooltip(button, `“${cue.quote}” · ${cueDescription(cue)}${cue.clockLabel ? ` · ${cue.clockEstimated ? 'Estimated story clock' : 'Story clock'} ${cue.clockLabel}` : ''} · Click to review`);
     const stroke = doc.win.createSpan();
     stroke.className = 'ert-time-tick';
-    if (cue.kind === 'clock') {
+    if (cue.clockLabel || cue.kind === 'clock') {
         button.addClass('ert-time-clock-marker');
-        stroke.setText(cue.quote.trim().toLowerCase().replace(/(\d)\s*([ap])\.?m\.?$/i, '$1$2m'));
+        stroke.setText(cue.clockLabel ? `${cue.clockEstimated && cue.kind !== 'clock' ? '≈' : ''}${cue.clockLabel}` : cue.quote.trim().toLowerCase().replace(/(\d)\s*([ap])\.?m\.?$/i, '$1$2m'));
+        if (cue.clockEstimated && cue.decision?.action !== 'exclude' && !cue.conflict) button.addClass('ert-time-clock-estimated');
     } else if (cueState(cue) === 'uncertain') stroke.setText('?');
     if (cueState(cue) === 'backward') setIcon(stroke, 'undo-2');
     button.appendChild(stroke);
@@ -60,10 +61,14 @@ export function sceneTimeEditorExtension(service: SceneTimeService) {
                     const rect = Number.isFinite(position) && position <= this.view.state.doc.length ? this.view.coordsAtPos(position) : null;
                     const delta = rect && first ? rect.top - first.getBoundingClientRect().top : 0;
                     const padding = (parseFloat(el.style.paddingTop) || 0) + delta;
+                    let bottom = -Infinity;
                     const ticks = Array.from(el.querySelectorAll<HTMLElement>('.ert-time-marker')).map(tick => {
                         const from = Number(tick.dataset.cueFrom);
                         const anchor = from <= this.view.state.doc.length ? this.view.coordsAtPos(from) : null;
-                        return { tick, top: anchor && tick.parentElement ? anchor.top - tick.parentElement.getBoundingClientRect().top - delta : null };
+                        if (!anchor || !tick.parentElement) return { tick, top: null };
+                        const absoluteTop = Math.max(anchor.top, bottom);
+                        bottom = absoluteTop + tick.getBoundingClientRect().height + 2;
+                        return { tick, top: absoluteTop - tick.parentElement.getBoundingClientRect().top - delta };
                     });
                     return { el, padding, ticks };
                 },

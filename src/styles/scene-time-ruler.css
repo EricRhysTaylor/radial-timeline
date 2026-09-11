@@ -112,3 +112,5 @@ button.ert-time-clock-marker { width: max-content; min-width: 24px; padding-inli
     line-height: 1;
     white-space: nowrap;
 }
+
+.ert-time-clock-estimated { --ert-time-color: var(--text-warning); }

@@ -1,0 +1,82 @@
+/* Semantic colors are always paired with descriptions and distinct marker shapes. */
+.ert-time-detected { --ert-time-color: var(--interactive-accent); }
+.ert-time-confirmed { --ert-time-color: var(--text-success); }
+.ert-time-uncertain { --ert-time-color: var(--text-warning); }
+.ert-time-backward { --ert-time-color: var(--color-purple); }
+.ert-time-excluded { --ert-time-color: var(--text-faint); }
+.ert-time-conflict { --ert-time-color: var(--text-error); }
+.ert-time-over { color: var(--text-error); }
+
+.view-header .ert-scene-time[role='button'] { cursor: pointer; }
+.view-header .ert-scene-time[role='button']:focus-visible {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: 2px;
+}
+.view-header .ert-scene-time.ert-time-over { color: var(--text-error); }
+
+.ert-ui .cm-gutter.ert-time-gutter { background: transparent; }
+.ert-ui.ert-time-gutters {
+    border: 0;
+    background: transparent;
+    margin: 0;
+    left: auto;
+    width: 36px;
+}
+.ert-ui.ert-time-gutters:not(:has(.ert-time-rail)) { display: none; }
+.is-readable-line-width .ert-ui.ert-time-gutters {
+    position: relative;
+    right: max(0px, calc((100% - var(--file-line-width)) / 2 - 72px));
+}
+.ert-time-gutter .cm-gutterElement.ert-time-rail {
+    width: 28px;
+    margin-left: var(--size-4-2);
+    border-left: 3px dotted var(--background-modifier-border);
+    box-sizing: border-box;
+}
+.ert-time-gutter .cm-gutterElement.ert-time-rail-confirmed {
+    border-left-style: solid;
+    border-left-color: var(--text-success);
+}
+.ert-time-marker-row { position: relative; display: flex; flex-wrap: wrap; }
+.ert-time-marker-row .ert-time-marker { position: absolute; left: -13px; }
+.ert-time-boundary { color: var(--text-muted); margin-left: -7px; }
+
+button.ert-time-marker {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+    color: var(--ert-time-color);
+    cursor: pointer;
+}
+button.ert-time-marker:hover { background: var(--background-modifier-hover); }
+button.ert-time-marker:focus-visible { outline: 2px solid var(--interactive-accent); }
+.ert-time-tick { width: 10px; height: 4px; border: 1px solid currentColor; }
+.ert-time-confirmed .ert-time-tick { background: currentColor; }
+.ert-time-uncertain .ert-time-tick { border-style: dashed; height: 8px; }
+.ert-time-backward .ert-time-tick { transform: rotate(-45deg); width: 7px; height: 7px; border-right: 0; border-bottom: 0; }
+.ert-time-excluded .ert-time-tick { height: 0; border-bottom: 0; }
+.ert-time-conflict .ert-time-tick { transform: rotate(45deg); width: 7px; height: 7px; }
+
+.ert-time-reading-block { position: relative; }
+.ert-time-reading-rail {
+    position: absolute;
+    right: -20px;
+    top: 0;
+    bottom: 0;
+    width: 16px;
+    border-left: 3px dotted var(--background-modifier-border);
+    pointer-events: none;
+}
+.ert-time-reading-rail .ert-time-marker {
+    position: absolute;
+    left: -13px;
+    pointer-events: auto;
+}
+.ert-ui .ert-time-cue { border-left: 3px solid var(--ert-time-color); }
+.ert-ui .ert-time-selected { outline: 2px solid var(--interactive-accent); outline-offset: 2px; }

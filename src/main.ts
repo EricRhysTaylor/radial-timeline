@@ -11,6 +11,9 @@ import { EditorView, type ViewUpdate } from '@codemirror/view';
 import { TimelineService } from './services/TimelineService';
 import { SceneDataService } from './services/SceneDataService';
 import { SceneTimeHeader } from './services/SceneTimeHeader';
+import { SceneTimeService } from './sceneTime/SceneTimeService';
+import { sceneTimeEditorExtension } from './sceneTime/editorRuler';
+import { renderReadingTime } from './sceneTime/readingRuler';
 import { createSearchState, readTimelineSearchSettings, type TimelineSearchState } from './services/searchState';
 import { hexToRgb, rgbToHsl, hslToRgb, rgbToHex } from './utils/colour';
 import SynopsisManager from './SynopsisManager';
@@ -626,7 +629,11 @@ export default class RadialTimelinePlugin extends Plugin {
         this.outputProfileStore = new OutputProfileStore(this);
         void this.outputProfileStore.ensureLoaded();
         this.sceneDataService = new SceneDataService(this.app, this.settings);
-        this.sceneTimeHeader = this.addChild(new SceneTimeHeader(this));
+        const sceneTimeService = this.addChild(new SceneTimeService(this));
+        await sceneTimeService.initialize();
+        this.sceneTimeHeader = this.addChild(new SceneTimeHeader(this, sceneTimeService));
+        this.registerEditorExtension(sceneTimeEditorExtension(sceneTimeService));
+        this.registerMarkdownPostProcessor((el, ctx) => renderReadingTime(sceneTimeService, el, ctx));
         const { SearchService } = await import('./services/SearchService');
         const { FileTrackingService } = await import('./services/FileTrackingService');
         this.searchService = new SearchService(this.app, this);
@@ -1306,7 +1313,7 @@ export default class RadialTimelinePlugin extends Plugin {
     }
 
     async saveSettings(): Promise<void> {
-        this.sceneTimeHeader?.refresh();
+        this.sceneTimeHeader?.settingsChanged();
         // Single chokepoint for the blocked state. Every save path in the
         // plugin — including the fire-and-forget `void plugin.saveSettings()`
         // sites — funnels through here, so latching it off here is what makes

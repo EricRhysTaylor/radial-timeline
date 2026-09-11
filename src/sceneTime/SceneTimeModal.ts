@@ -1,4 +1,4 @@
-import { Notice, Setting, TFile } from 'obsidian';
+import { Notice, Setting, TFile, setIcon } from 'obsidian';
 import { ErtModal } from '../ui/ErtModal';
 import { parseDuration, parseWhenField } from '../utils/date';
 import { cueDescription, cueState, elapsedLabel, type TimeDecision } from './model';
@@ -18,15 +18,16 @@ export class SceneTimeModal extends ErtModal {
         contentEl.empty();
         contentEl.addClass('ert-stack');
         this.titleEl.empty();
-        this.mountHeader({ title: 'Scene time', subtitle: this.file.basename, badge: { text: 'TIME REVIEW' } });
+        this.mountHeader({ title: 'Scene time', subtitle: this.file.basename, badge: { text: 'OPTIONAL TIME CHECK' } });
         const snapshot = this.service.snapshot(this.file, this.source());
         if (!snapshot) { contentEl.createEl('p', { text: 'This note is no longer a scene.' }); return; }
         const metadata = this.service.metadata(this.file)!;
         const planned = typeof metadata.Duration === 'string' ? parseDuration(metadata.Duration) : null;
         const body = contentEl.createDiv({ cls: 'ert-card-stack' });
         const summary = body.createDiv({ cls: 'ert-glass-card ert-sub-card ert-stack' });
-        summary.createEl('strong', { text: `${elapsedLabel(snapshot.elapsed)} confirmed elapsed · ${snapshot.pending} cues need review` });
-        if (planned !== null) {
+        summary.createEl('strong', { text: `${elapsedLabel(snapshot.elapsed)} confirmed elapsed · ${snapshot.cues.length} detected cues` });
+        summary.createDiv({ cls: 'ert-time-help', text: 'Optional: use these cues to check elapsed story time. You can ignore this panel. Confirmations affect only this scene’s cue bar and elapsed total, not Timeline Audit, Timeline Scaffold, or your writing-session timer.' });
+        if (planned !== null && snapshot.confirmed) {
             const remaining = planned / 60000 - snapshot.elapsed;
             summary.createDiv({ cls: remaining < 0 ? 'ert-time-over' : '', text: remaining < 0
                 ? `${elapsedLabel(-remaining)} beyond the scene’s declared duration of ${elapsedLabel(planned / 60000)}.`
@@ -34,9 +35,20 @@ export class SceneTimeModal extends ErtModal {
         }
         if (snapshot.conflict) summary.createDiv({ cls: 'ert-time-over', text: 'A checkpoint goes backward. Resolve it before treating this as a reconciled total.' });
         const legend = summary.createDiv({ cls: 'ert-time-legend' });
-        for (const [state, label] of [['detected', 'Detected'], ['confirmed', 'Confirmed'], ['uncertain', '? Uncertain / clock'], ['backward', '↶ Backward'], ['excluded', 'Excluded']]) {
-            legend.createSpan({ cls: `ert-time-legend-item ert-time-${state}`, text: label });
+        for (const [state, label] of [['detected', 'Detected'], ['confirmed', 'Confirmed'], ['uncertain', '? Uncertain / clock'], ['backward', 'Backward'], ['excluded', 'Excluded']]) {
+            const item = legend.createSpan({ cls: `ert-time-legend-item ert-time-${state}` });
+            if (state === 'backward') setIcon(item.createSpan({ cls: 'ert-time-backward-icon' }), 'undo-2');
+            item.createSpan({ text: label });
         }
+        const eligible = snapshot.cues.filter(cue => !cue.decision && !cue.duplicate && cue.suggestedMinutes !== null
+            && (cue.kind === 'advance' || cue.kind === 'checkpoint'));
+        new Setting(summary).setName('Use the detected durations')
+            .setDesc(`${eligible.length} quantified forward cues. Vague phrases, clock anchors and backward references stay optional. You can change any decision below.`)
+            .addButton(button => button.setButtonText('Confirm all').setDisabled(!eligible.length || !!this.service.error).onClick(async () => {
+                button.setDisabled(true);
+                try { await this.service.confirmAll(this.file, eligible.map(cue => cue.key)); this.render(); }
+                catch (error) { new Notice(String(error)); button.setDisabled(false); }
+            }));
         const help = body.createEl('details', { cls: 'ert-time-help' });
         help.createEl('summary', { text: 'How elapsed time is counted' });
         help.createEl('p', { text: 'Confirm only elapsed time in this scene’s present action. Dialogue, plans, memories and parallel action can mention time without advancing it. Checkpoints replace the cumulative total; advances add to it. Unquantified time is not necessarily missing.' });
@@ -44,9 +56,9 @@ export class SceneTimeModal extends ErtModal {
         if (!snapshot.cues.length) contentEl.createEl('p', { text: 'No supported time phrases detected. Prose can still consume time without quantifying it.' });
         for (const cue of snapshot.cues) {
             const card = body.createDiv({ cls: `ert-glass-card ert-sub-card ert-stack ert-time-cue ert-time-${cueState(cue)}` });
-            card.createDiv({ cls: 'ert-sub-card-head', text: `“${cue.quote}”` });
-            card.createDiv({ cls: 'ert-time-cue-meta', text: `Line ${cue.line + 1}` });
-            card.createDiv({ text: cueDescription(cue) });
+            const heading = card.createDiv({ cls: 'ert-time-cue-heading' });
+            heading.createEl('strong', { text: `“${cue.quote.trim()}”` });
+            heading.createSpan({ cls: 'ert-time-cue-meta', text: `Line ${cue.line + 1} • ${cueDescription(cue).replace(/ · /g, ' • ')}` });
             const context = card.createEl('details');
             context.createEl('summary', { text: 'Show paragraph' });
             context.createEl('p', { text: cue.context });
@@ -73,7 +85,7 @@ export class SceneTimeModal extends ErtModal {
                     this.render();
                 } catch (error) { new Notice(String(error)); button.setDisabled(false); }
             }));
-            if (cue.decision) actions.addButton(button => button.setButtonText('Return to review').onClick(async () => {
+            if (cue.decision) actions.addButton(button => button.setButtonText('Clear confirmation').onClick(async () => {
                 try { await this.service.decide(this.file, cue.key, null); this.render(); }
                 catch (error) { new Notice(String(error)); }
             }));

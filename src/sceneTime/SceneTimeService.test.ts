@@ -28,6 +28,23 @@ describe('scene time decision persistence', () => {
             expect(f.service.snapshot(f.file, f.source())).toBeNull();
         }
     });
+    it('confirms quantified forward cues in one write and preserves checkpoint accounting', async () => {
+        const f = fixture(); await f.service.initialize();
+        f.setSource('Two hours later, she arrives.\nShe sleeps for six hours.\nEight hours had passed since departure.\nA few minutes later, she leaves.');
+        const cues = f.service.snapshot(f.file, f.source())!.cues;
+        await f.service.confirmAll(f.file, cues.filter(cue => cue.kind === 'advance' || cue.kind === 'checkpoint').map(cue => cue.key));
+        expect(f.adapter.write).toHaveBeenCalledTimes(1);
+        const result = f.service.snapshot(f.file, f.source())!;
+        expect(result.elapsed).toBe(480);
+        expect(result.pending).toBe(1);
+    });
+    it('rejects a stale bulk confirmation without saving a partial batch', async () => {
+        const f = fixture(); await f.service.initialize();
+        const keys = f.service.snapshot(f.file, f.source())!.cues.map(cue => cue.key);
+        f.setSource('Three hours later, she arrives.\nShe sleeps for six hours.');
+        await expect(f.service.confirmAll(f.file, keys)).rejects.toThrow('changed');
+        expect(f.adapter.write).not.toHaveBeenCalled();
+    });
     it('validates versioned data and rejects invalid contributions', () => {
         expect(parseTimeStore('{"schemaVersion":1,"scenes":{}}')).toEqual({ schemaVersion: 1, scenes: {} });
         for (const raw of ['{}', '{"schemaVersion":2,"scenes":{}}', '{"schemaVersion":1,"scenes":[]}',

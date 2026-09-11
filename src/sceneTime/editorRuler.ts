@@ -1,6 +1,6 @@
 import { StateEffect } from '@codemirror/state';
 import { EditorView, GutterMarker, ViewPlugin, gutter, type ViewUpdate } from '@codemirror/view';
-import { editorInfoField, setTooltip } from 'obsidian';
+import { editorInfoField, setTooltip, setIcon } from 'obsidian';
 import { cueDescription, cueState, type ResolvedCue, type SceneTimeSnapshot } from './model';
 import type { SceneTimeService } from './SceneTimeService';
 import { SceneTimeModal } from './SceneTimeModal';
@@ -19,6 +19,7 @@ export function createTimeTick(doc: Document, cue: ResolvedCue, open: () => void
     const stroke = doc.win.createSpan();
     stroke.className = 'ert-time-tick';
     if (cueState(cue) === 'uncertain') stroke.setText('?');
+    if (cueState(cue) === 'backward') setIcon(stroke, 'undo-2');
     button.appendChild(stroke);
     button.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); open(); });
     return button;

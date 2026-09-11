@@ -151,5 +151,5 @@ export function cueDescription(cue: ResolvedCue): string {
     if (state === 'conflict') return 'Checkpoint is earlier than the confirmed elapsed time. Review the sequence.';
     if (cue.decision?.action === 'exclude') return 'Excluded from elapsed time';
     if (cue.decision) return `${cue.decision.action === 'checkpoint' ? 'Checkpoint' : 'Advance'} ${elapsedLabel(cue.decision.minutes)} · Confirmed elapsed ${elapsedLabel(cue.elapsed)}`;
-    return `${cue.kind === 'backward' ? 'Backward reference' : cue.kind === 'clock' ? 'Clock anchor' : cue.kind === 'checkpoint' ? 'Checkpoint candidate' : cue.kind === 'uncertain' ? 'Uncertain cue' : 'Advance candidate'}${cue.suggestedMinutes !== null ? ` · ${elapsedLabel(cue.suggestedMinutes)}` : ''} · Needs review`;
+    return `${cue.kind === 'backward' ? 'Backward reference' : cue.kind === 'clock' ? 'Clock anchor' : cue.kind === 'checkpoint' ? 'Checkpoint candidate' : cue.kind === 'uncertain' ? 'Uncertain cue' : 'Advance candidate'}${cue.suggestedMinutes !== null ? ` · ${elapsedLabel(cue.suggestedMinutes)}` : ''} · Not confirmed`;
 }

@@ -112,6 +112,29 @@ export class SceneTimeService extends Component {
         });
     }
 
+    async confirmAll(file: TFile, keys: string[]): Promise<void> {
+        let source = await this.plugin.app.vault.cachedRead(file);
+        this.plugin.app.workspace.iterateAllLeaves(leaf => {
+            if (leaf.view instanceof MarkdownView && leaf.view.file === file) source = leaf.view.getViewData();
+        });
+        const snapshot = this.snapshot(file, source);
+        if (!snapshot) throw new Error('This note is no longer a scene.');
+        const cues = keys.map(key => snapshot.cues.find(cue => cue.key === key));
+        if (cues.some(cue => !cue || cue.duplicate || cue.decision || cue.suggestedMinutes === null
+            || (cue.kind !== 'advance' && cue.kind !== 'checkpoint'))) {
+            throw new Error('The cues changed. Reopen scene time before confirming all.');
+        }
+        await this.write(data => {
+            const decisions = data.scenes[file.path] || {};
+            if (keys.some(key => decisions[key])) throw new Error('A cue was already confirmed. Reopen scene time before confirming all.');
+            for (const cue of cues) {
+                if (!cue || cue.suggestedMinutes === null) continue;
+                decisions[cue.key] = { action: cue.kind === 'checkpoint' ? 'checkpoint' : 'add', minutes: cue.suggestedMinutes };
+            }
+            data.scenes[file.path] = decisions;
+        });
+    }
+
     private write(update: (data: TimeStore) => void): Promise<void> {
         const operation = this.pendingWrite.then(async () => {
             if (this.error) throw new Error(this.error);

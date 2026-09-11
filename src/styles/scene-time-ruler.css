@@ -14,7 +14,7 @@
 }
 .view-header .ert-scene-time.ert-time-over { color: var(--text-error); }
 
-.ert-ui .cm-gutter.ert-time-gutter { background: transparent; }
+.ert-ui .cm-gutter.ert-time-gutter { background: transparent; overflow: visible; }
 .ert-ui.ert-time-gutters {
     border: 0;
     background: transparent;
@@ -115,6 +115,6 @@ button.ert-time-clock-marker { width: max-content; min-width: 24px; padding-inli
 
 .ert-time-marker-row .ert-time-clock-marker,
 .ert-time-reading-rail .ert-time-clock-marker {
-    left: calc(8px + var(--ert-time-lane, 0) * 64px);
+    left: calc(2px + var(--ert-time-lane, 0) * 64px);
     justify-content: flex-start;
 }

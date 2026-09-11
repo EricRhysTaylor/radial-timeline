@@ -112,3 +112,9 @@ button.ert-time-clock-marker { width: max-content; min-width: 24px; padding-inli
     line-height: 1;
     white-space: nowrap;
 }
+
+.ert-time-marker-row .ert-time-clock-marker,
+.ert-time-reading-rail .ert-time-clock-marker {
+    left: calc(8px + var(--ert-time-lane, 0) * 64px);
+    justify-content: flex-start;
+}

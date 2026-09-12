@@ -53,8 +53,9 @@ export function sceneTimeEditorExtension(service: SceneTimeService) {
             this.view.requestMeasure({
                 key: this,
                 read: () => {
-                    const el = this.view.dom.querySelector<HTMLElement>('.cm-gutters-after:has(> .ert-time-gutter:only-child)');
-                    if (!el) return null;
+                    const gutter = this.view.dom.querySelector<HTMLElement>('.ert-time-gutter');
+                    const el = gutter?.parentElement;
+                    if (!el?.classList.contains('cm-gutters-after') || el.children.length !== 1) return null;
                     const first = el.querySelector<HTMLElement>('.ert-time-marker-row');
                     const position = first ? Number(first.dataset.lineFrom) : NaN;
                     const rect = Number.isFinite(position) && position <= this.view.state.doc.length ? this.view.coordsAtPos(position) : null;
@@ -66,12 +67,13 @@ export function sceneTimeEditorExtension(service: SceneTimeService) {
                         if (!anchor || !tick.parentElement) return { tick, top: null };
                         return { tick, top: anchor.top - tick.parentElement.getBoundingClientRect().top - delta };
                     });
-                    return { el, padding, ticks };
+                    return { el, padding, ticks, empty: !gutter?.querySelector('.ert-time-rail') };
                 },
                 write: measurement => {
                     if (!measurement) return;
                     this.gutterEl = measurement.el;
                     measurement.el.addClass('ert-ui', 'ert-time-gutters');
+                    measurement.el.toggleClass('ert-time-gutters-empty', measurement.empty);
                     measurement.el.style.paddingTop = `${Math.max(0, measurement.padding)}px`; // SAFE: align rail with prose after Obsidian's metadata widget.
                     for (const { tick, top } of measurement.ticks) {
                         if (top !== null) tick.style.top = `${top}px`; // SAFE: measured wrapped-line marker position.
@@ -79,7 +81,7 @@ export function sceneTimeEditorExtension(service: SceneTimeService) {
                 }
             });
         }
-        destroy(): void { this.unsubscribe(); this.gutterEl?.removeClass('ert-ui', 'ert-time-gutters'); }
+        destroy(): void { this.unsubscribe(); this.gutterEl?.removeClass('ert-ui', 'ert-time-gutters', 'ert-time-gutters-empty'); }
     });
 
     class Marker extends GutterMarker {

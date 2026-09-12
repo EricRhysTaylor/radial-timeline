@@ -22,7 +22,7 @@
     left: auto;
     width: 36px;
 }
-.ert-ui.ert-time-gutters:not(:has(.ert-time-rail)) { display: none; }
+.ert-ui.ert-time-gutters.ert-time-gutters-empty { display: none; }
 .is-readable-line-width .ert-ui.ert-time-gutters {
     position: relative;
     right: max(0px, calc((100% - var(--file-line-width)) / 2 - 72px));

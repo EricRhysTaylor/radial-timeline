@@ -45,6 +45,18 @@ describe('scene time decision persistence', () => {
         await expect(f.service.confirmAll(f.file, keys)).rejects.toThrow('changed');
         expect(f.adapter.write).not.toHaveBeenCalled();
     });
+    it('retains an exclusion on reload but does not attach it to an edited paragraph', async () => {
+        const f = fixture(); await f.service.initialize();
+        f.setSource('Her ears hurt, the price of three days underwater.');
+        const key = f.service.snapshot(f.file, f.source())!.cues[0].key;
+        await f.service.decide(f.file, key, { action: 'exclude', minutes: 0 });
+        const reloaded = new SceneTimeService(f.plugin); await reloaded.initialize();
+        expect(reloaded.snapshot(f.file, f.source())!.cues[0].decision?.action).toBe('exclude');
+        f.setSource('Her ears still hurt, the price of three days underwater and a climb.');
+        expect(reloaded.snapshot(f.file, f.source())!.cues[0].decision).toBeUndefined();
+        const stored = parseTimeStore(f.files.get('Radial Timeline/Scene Time/decisions.json')!);
+        expect(stored.scenes[f.file.path][key].action).toBe('exclude');
+    });
     it('validates versioned data and rejects invalid contributions', () => {
         expect(parseTimeStore('{"schemaVersion":1,"scenes":{}}')).toEqual({ schemaVersion: 1, scenes: {} });
         for (const raw of ['{}', '{"schemaVersion":2,"scenes":{}}', '{"schemaVersion":1,"scenes":[]}',

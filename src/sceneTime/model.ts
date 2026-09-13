@@ -1,6 +1,6 @@
 import { parseDuration, parseWhenField } from '../utils/date';
 
-export type CueKind = 'advance' | 'checkpoint' | 'clock' | 'uncertain' | 'backward';
+export type CueKind = 'advance' | 'checkpoint' | 'clock' | 'uncertain' | 'backward' | 'manual';
 export type TimeDecision = { action: 'add' | 'checkpoint' | 'exclude'; minutes: number };
 export interface TimeCue {
     key: string;
@@ -169,6 +169,7 @@ export function elapsedLabel(minutes: number): string {
 export function cueState(cue: ResolvedCue): string {
     if (cue.conflict) return 'conflict';
     if (cue.decision?.action === 'exclude') return 'excluded';
+    if (cue.kind === 'manual') return 'manual';
     if (cue.decision) return 'confirmed';
     if (cue.kind === 'backward') return 'backward';
     if (cue.kind === 'uncertain' || cue.kind === 'clock') return 'uncertain';
@@ -179,6 +180,7 @@ export function cueDescription(cue: ResolvedCue): string {
     const state = cueState(cue);
     if (state === 'conflict') return 'Checkpoint is earlier than the confirmed elapsed time. Review the sequence.';
     if (cue.decision?.action === 'exclude') return 'Excluded from elapsed time';
+    if (cue.kind === 'manual') return `Manually assigned ${elapsedLabel(cue.decision?.minutes ?? 0)} · Elapsed ${elapsedLabel(cue.elapsed)}`;
     if (cue.decision) return `${cue.decision.action === 'checkpoint' ? 'Checkpoint' : 'Advance'} ${elapsedLabel(cue.decision.minutes)} · Confirmed elapsed ${elapsedLabel(cue.elapsed)}`;
     return `${cue.kind === 'backward' ? 'Backward reference' : cue.kind === 'clock' ? 'Clock anchor' : cue.kind === 'checkpoint' ? 'Checkpoint candidate' : cue.kind === 'uncertain' ? 'Uncertain cue' : 'Advance candidate'}${cue.suggestedMinutes !== null ? ` · ${elapsedLabel(cue.suggestedMinutes)}` : ''} · Not confirmed`;
 }
@@ -203,6 +205,7 @@ function formatCueClock(minutes: number): string {
 
 /** Marker text describes this cue; inferred clock-of-day remains in its tooltip. */
 export function cueMarkerLabel(cue: ResolvedCue): string | null {
+    if (cue.kind === 'manual') return `[${elapsedLabel(cue.decision?.minutes ?? 0)}]`;
     if (cue.kind === 'clock') return cue.quote.trim().toLowerCase().replace(/(\d)\s*([ap])\.?m\.?$/i, '$1$2m');
     const minutes = cue.decision?.action !== 'exclude' && cue.decision ? cue.decision.minutes : cue.suggestedMinutes;
     if (minutes === null) return null;

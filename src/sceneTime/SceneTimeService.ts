@@ -1,4 +1,5 @@
 import { Component, MarkdownView, Notice, TFile, normalizePath } from 'obsidian';
+import { attachManualTimes, manualTimeKey, manualTimeQuote } from './manualTime';
 import type RadialTimelinePlugin from '../main';
 import { getActiveFrontmatterMappings, normalizeFrontmatterKeys } from '../utils/frontmatter';
 import { resolveSceneTime, scanSceneTime, type SceneTimeSnapshot, type TimeDecision } from './model';
@@ -17,6 +18,7 @@ export function parseTimeStore(raw: string): TimeStore {
     for (const decisions of Object.values(scenes)) {
         if (!decisions || typeof decisions !== 'object' || Array.isArray(decisions)) throw new Error('Invalid scene time decisions');
         const entries = decisions as Record<string, unknown>; // SAFE: non-array object validated above.
+        for (const key of Object.keys(entries)) manualTimeQuote(key);
         for (const decision of Object.values(entries)) {
             if (!decision || typeof decision !== 'object' || !('action' in decision) || typeof decision.action !== 'string'
                 || !['add', 'checkpoint', 'exclude'].includes(decision.action) || !('minutes' in decision)
@@ -77,10 +79,41 @@ export class SceneTimeService extends Component {
         const cached = this.cache.get(file.path);
         if (cached && cached.source === source && cached.when === metadata.When && cached.revision === this.revision) return cached.snapshot;
         const scan = scanSceneTime(source);
+        attachManualTimes(source, scan, this.data.scenes[file.path] || {});
         const snapshot = resolveSceneTime(scan, this.data.scenes[file.path] || {}, metadata.When);
         if (this.cache.size >= 32 && !this.cache.has(file.path)) this.cache.delete(Array.from(this.cache.keys())[0]);
         this.cache.set(file.path, { source, when: metadata.When, revision: this.revision, snapshot });
         return snapshot;
+    }
+
+    detachedManualTimes(file: TFile, source: string): Array<{ key: string; quote: string; minutes: number }> {
+        const decisions = this.data.scenes[file.path] || {};
+        return attachManualTimes(source, scanSceneTime(source), decisions)
+            .map(key => ({ key, quote: manualTimeQuote(key)!, minutes: decisions[key].minutes }));
+    }
+
+    async assignSelection(file: TFile, source: string, quote: string, minutes: number): Promise<void> {
+        if (!this.metadata(file)) throw new Error('Select prose in a Scene note.');
+        if (!quote.trim() || /[\r\n]/.test(quote) || !Number.isFinite(minutes) || minutes <= 0)
+            throw new Error('Select one line of prose and enter a positive duration.');
+        let current = await this.plugin.app.vault.cachedRead(file);
+        this.plugin.app.workspace.iterateAllLeaves(leaf => {
+            if (leaf.view instanceof MarkdownView && leaf.view.file === file) current = leaf.view.getViewData();
+        });
+        if (current !== source) throw new Error('The note changed. Select the text again.');
+        const key = manualTimeKey(quote);
+        await this.write(data => {
+            const decisions = data.scenes[file.path] || {};
+            const next = { ...decisions, [key]: { action: 'add' as const, minutes } };
+            if (attachManualTimes(source, scanSceneTime(source), next).includes(key))
+                throw new Error('Choose unique prose without overlapping time cues or assignments.');
+            data.scenes[file.path] = next;
+        });
+    }
+
+    async removeManualTime(file: TFile, key: string): Promise<void> {
+        if (manualTimeQuote(key) === null) throw new Error('Not a manual assignment.');
+        await this.write(data => { if (data.scenes[file.path]) delete data.scenes[file.path][key]; });
     }
 
     subscribe(listener: () => void): () => void {

@@ -1,5 +1,6 @@
 /* Semantic colors are always paired with descriptions and distinct marker shapes. */
 .ert-time-detected { --ert-time-color: var(--interactive-accent); }
+.ert-time-manual { --ert-time-color: var(--color-blue); }
 .ert-time-confirmed { --ert-time-color: var(--text-success); }
 .ert-time-uncertain { --ert-time-color: var(--text-warning); }
 .ert-time-backward { --ert-time-color: var(--color-purple); }
@@ -122,3 +123,6 @@ button.ert-time-clock-marker { width: max-content; min-width: 24px; padding-inli
 
 .ert-ui .ert-time-cue.ert-time-excluded { color: var(--text-muted); opacity: 0.65; }
 .ert-ui .ert-time-cue.ert-time-excluded.ert-time-selected { outline-color: var(--background-modifier-border); }
+
+.ert-time-marker-row button.ert-time-manual.ert-time-clock-marker,
+.ert-time-reading-rail button.ert-time-manual.ert-time-clock-marker { left: 2px; justify-content: flex-start; }

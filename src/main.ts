@@ -1,3 +1,4 @@
+import { registerManualTime } from './sceneTime/ManualTimeModal';
 /* global __RT_DEV__ -- build-time flags injected by esbuild define; see esbuild.config.mjs */
 /*
  * Radial Timeline Plugin for Obsidian
@@ -632,6 +633,7 @@ export default class RadialTimelinePlugin extends Plugin {
         this.sceneDataService = new SceneDataService(this.app, this.settings);
         const sceneTimeService = this.addChild(new SceneTimeService(this));
         await sceneTimeService.initialize();
+        registerManualTime(sceneTimeService);
         this.sceneTimeHeader = this.addChild(new SceneTimeHeader(this, sceneTimeService));
         this.registerEditorExtension(sceneTimeEditorExtension(sceneTimeService));
         this.registerMarkdownPostProcessor((el, ctx) => renderReadingTime(sceneTimeService, el, ctx));

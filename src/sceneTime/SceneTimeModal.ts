@@ -18,7 +18,7 @@ export class SceneTimeModal extends ErtModal {
         contentEl.empty();
         contentEl.addClass('ert-stack');
         this.titleEl.empty();
-        this.mountHeader({ title: 'Scene time', subtitle: 'The vertical cue bar marks time phrases beside your prose. Give an uncertain phrase such as “a few minutes” a fixed duration, then confirm it to include that time in the title-bar elapsed total. Your choices are saved for this scene, helping you compare the time accounted for in the prose with its declared duration. This check is optional.', badge: { text: `OPTIONAL TIME CHECK • ${this.file.basename}` } });
+        this.mountHeader({ title: 'Scene time', subtitle: 'The vertical cue bar marks time phrases beside your prose. Give an uncertain phrase such as “a few minutes” a fixed duration, then confirm it to include that time in the title-bar elapsed total. Your choices are saved for this scene, helping you compare the time accounted for in the prose with its declared duration. To time action without a time phrase, select a sentence and choose Assign scene time. Blue bracketed markers show these manual assignments. This check is optional.', badge: { text: `OPTIONAL TIME CHECK • ${this.file.basename}` } });
         const snapshot = this.service.snapshot(this.file, this.source());
         if (!snapshot) { contentEl.createEl('p', { text: 'This note is no longer a scene.' }); return; }
         const metadata = this.service.metadata(this.file)!;
@@ -35,7 +35,7 @@ export class SceneTimeModal extends ErtModal {
         }
         if (snapshot.conflict) summary.createDiv({ cls: 'ert-time-over', text: 'A checkpoint goes backward. Resolve it before treating this as a reconciled total.' });
         const legend = summary.createDiv({ cls: 'ert-time-legend' });
-        for (const [state, label] of [['detected', 'Detected'], ['confirmed', 'Confirmed'], ['uncertain', '? Uncertain / clock'], ['backward', 'Backward'], ['excluded', 'Excluded']]) {
+        for (const [state, label] of [['detected', 'Detected'], ['confirmed', 'Confirmed'], ['manual', '[10h] Manual'], ['uncertain', '? Uncertain / clock'], ['backward', 'Backward'], ['excluded', 'Excluded']]) {
             const item = legend.createSpan({ cls: `ert-time-legend-item ert-time-${state}` });
             if (state === 'backward') setIcon(item.createSpan({ cls: 'ert-time-backward-icon' }), 'undo-2');
             item.createSpan({ text: label });
@@ -54,6 +54,14 @@ export class SceneTimeModal extends ErtModal {
         help.createEl('p', { text: 'Confirm only elapsed time in this scene’s present action. Dialogue, plans, memories and parallel action can mention time without advancing it. Checkpoints replace the cumulative total; advances add to it. Unquantified time is not necessarily missing.' });
         if (this.service.error) contentEl.createEl('p', { cls: 'ert-time-over', text: this.service.error });
         if (!snapshot.cues.length) contentEl.createEl('p', { text: 'No supported time phrases detected. Prose can still consume time without quantifying it.' });
+        for (const entry of this.service.detachedManualTimes(this.file, this.source())) {
+            new Setting(body).setName(`Unmatched assignment: “${entry.quote}” [${elapsedLabel(entry.minutes)}]`)
+                .setDesc('Saved but not counted: the text changed, is duplicated, or overlaps a detected cue. Remove this assignment and select the current text to assign it again.')
+                .addButton(button => button.setButtonText('Remove').onClick(async () => {
+                    try { await this.service.removeManualTime(this.file, entry.key); this.render(); }
+                    catch (error) { new Notice(String(error)); }
+                }));
+        }
         for (const cue of snapshot.cues) {
             const card = body.createDiv({ cls: `ert-glass-card ert-sub-card ert-stack ert-time-cue ert-time-${cueState(cue)}` });
             const heading = card.createDiv({ cls: 'ert-time-cue-heading' });
@@ -67,6 +75,22 @@ export class SceneTimeModal extends ErtModal {
             paragraph.createSpan({ text: cue.context.slice(0, cue.contextOffset) });
             paragraph.createSpan({ cls: 'ert-time-context-match', text: cue.context.slice(cue.contextOffset, cue.contextOffset + cue.quote.length) });
             paragraph.createSpan({ text: cue.context.slice(cue.contextOffset + cue.quote.length) });
+            if (cue.kind === 'manual') {
+                let duration = `${cue.decision?.minutes ?? 0} minutes`;
+                new Setting(card).setName('Manually assigned duration')
+                    .addText(input => input.setValue(duration).onChange(value => { duration = value; }))
+                    .addButton(button => button.setButtonText('Save').onClick(async () => {
+                        const ms = parseDuration(duration);
+                        if (ms === null || !Number.isFinite(ms) || ms <= 0) { new Notice('Enter a positive duration.'); return; }
+                        try { await this.service.decide(this.file, cue.key, { action: 'add', minutes: ms / 60000 }); this.render(cue.key); }
+                        catch (error) { new Notice(String(error)); }
+                    }))
+                    .addButton(button => button.setButtonText('Remove assignment').onClick(async () => {
+                        try { await this.service.removeManualTime(this.file, cue.key); this.render(); }
+                        catch (error) { new Notice(String(error)); }
+                    }));
+                continue;
+            }
             if (cue.decision?.action === 'exclude') {
                 new Setting(card).addButton(button => button.setButtonText('Restore cue').setDisabled(!!this.service.error).onClick(async () => {
                     button.setDisabled(true);

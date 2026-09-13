@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { TFile } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
+import { cueMarkerLabel, cueState } from './model';
 import { SceneTimeService, parseTimeStore } from './SceneTimeService';
 
 function fixture(initial?: string) {
@@ -98,6 +99,41 @@ describe('scene time decision persistence', () => {
         const cue = f.service.snapshot(f.file, f.source())!.cues[0];
         f.setSource('Three hours later, she arrives.');
         await expect(f.service.decide(f.file, cue.key, { action: 'add', minutes: 120 })).rejects.toThrow('changed');
+        expect(f.adapter.write).not.toHaveBeenCalled();
+    });
+});
+
+describe('manual selected prose time', () => {
+    it('counts a selection, survives reload and surrounding edits, and can be removed', async () => {
+        const f = fixture(); await f.service.initialize();
+        f.setSource('She crosses the country. She arrives exhausted.');
+        await f.service.assignSelection(f.file, f.source(), 'She crosses the country.', 600);
+        const reloaded = new SceneTimeService(f.plugin); await reloaded.initialize();
+        f.setSource('At last, She crosses the country. She arrives happy.');
+        const result = reloaded.snapshot(f.file, f.source())!;
+        expect(result.elapsed).toBe(600);
+        expect(result.cues[0].kind).toBe('manual');
+        expect(cueMarkerLabel(result.cues[0])).toBe('[10h]');
+        expect(cueState(result.cues[0])).toBe('manual');
+        await reloaded.removeManualTime(f.file, result.cues[0].key);
+        expect(reloaded.snapshot(f.file, f.source())!.elapsed).toBe(0);
+    });
+    it('retains but stops counting deleted or ambiguous selections', async () => {
+        const f = fixture(); await f.service.initialize(); f.setSource('She travels.');
+        await f.service.assignSelection(f.file, f.source(), 'She travels.', 600);
+        for (const source of ['She rests.', 'She travels. She travels.']) {
+            f.setSource(source);
+            expect(f.service.snapshot(f.file, source)!.elapsed).toBe(0);
+            expect(f.service.detachedManualTimes(f.file, source)).toHaveLength(1);
+        }
+    });
+    it('rejects detected cue overlap, metadata, stale source and multi-line selections', async () => {
+        const f = fixture(); await f.service.initialize();
+        await expect(f.service.assignSelection(f.file, f.source(), 'Two hours later', 600)).rejects.toThrow('overlapping');
+        await expect(f.service.assignSelection(f.file, 'old source', 'She travels.', 600)).rejects.toThrow('changed');
+        f.setSource('---\nClass: Scene\n---\nShe travels.');
+        await expect(f.service.assignSelection(f.file, f.source(), 'Class: Scene', 600)).rejects.toThrow('unique');
+        await expect(f.service.assignSelection(f.file, f.source(), 'She\ntravels.', 600)).rejects.toThrow('one line');
         expect(f.adapter.write).not.toHaveBeenCalled();
     });
 });

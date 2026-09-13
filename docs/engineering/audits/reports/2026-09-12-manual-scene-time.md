@@ -46,3 +46,13 @@ Naming follows the existing scene-time model with `manual` as a distinct cue sta
 Follow-up: live visual verification after plugin reload; stable identity for automatic cues
 remains separate work. The existing accounting, optional workflow and metadata ownership
 boundaries are preserved by the shared resolver and sidecar service.
+
+## Follow-up: direct dotted-rail entry
+
+Removed the editor context-menu item. Clicking a prose line's dotted gutter opens its
+assignment modal; lines with existing cues open their review entry instead. Reading mode
+maps the click to a rendered source-line range. The keyboard command remains available.
+The ruler toggle and Scene-only checks are applied at entry. This changes only interaction,
+not persistence or elapsed accounting. Full 15-gate verification passed again. Live visual
+verification remains pending because repeated UI actions were interrupted by concurrent
+Obsidian user changes; plugin reload is still required to load the new handlers.

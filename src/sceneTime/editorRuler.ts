@@ -3,6 +3,7 @@ import { EditorView, GutterMarker, ViewPlugin, gutter, type ViewUpdate } from '@
 import { editorInfoField, setTooltip, setIcon } from 'obsidian';
 import { cueDescription, cueState, cueMarkerLabel, type ResolvedCue, type SceneTimeSnapshot } from './model';
 import type { SceneTimeService } from './SceneTimeService';
+import { openSceneLineTime } from './ManualTimeModal';
 import { SceneTimeModal } from './SceneTimeModal';
 
 const refreshRuler = StateEffect.define<null>();
@@ -112,6 +113,17 @@ export function sceneTimeEditorExtension(service: SceneTimeService) {
 
     return [state, gutter({
         class: 'ert-time-gutter', side: 'after',
+        domEventHandlers: {
+            click: (view, line, event) => {
+                const target = event.target as HTMLElement | null; // SAFE: this gutter renders only HTML rows, spans and buttons, including in popout windows.
+                if (!target || target.closest('.ert-time-marker')) return false;
+                const file = editorFile(view);
+                if (!file || !target.closest('.ert-time-rail')) return false;
+                event.preventDefault();
+                openSceneLineTime(service, file, view.state.doc.toString(), view.state.doc.lineAt(line.from).number - 1);
+                return true;
+            }
+        },
         lineMarker: (view, line) => {
             const snapshot = view.plugin(state)?.snapshot;
             if (!snapshot) return null;

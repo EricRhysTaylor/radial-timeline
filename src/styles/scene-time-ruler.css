@@ -33,6 +33,7 @@
     margin-left: var(--size-4-2);
     border-left: 3px dotted var(--background-modifier-border);
     box-sizing: border-box;
+    cursor: pointer;
 }
 .ert-time-gutter .cm-gutterElement.ert-time-rail-confirmed {
     border-left-style: solid;
@@ -73,7 +74,8 @@ button.ert-time-marker:focus-visible { outline: 2px solid var(--interactive-acce
     bottom: 0;
     width: 16px;
     border-left: 3px dotted var(--background-modifier-border);
-    pointer-events: none;
+    pointer-events: auto;
+    cursor: pointer;
 }
 .ert-time-reading-rail .ert-time-marker {
     position: absolute;

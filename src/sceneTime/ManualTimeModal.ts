@@ -1,4 +1,5 @@
 import { Notice, Setting, type Editor, type MarkdownView, type TFile } from 'obsidian';
+import { SceneTimeModal } from './SceneTimeModal';
 import { ErtModal } from '../ui/ErtModal';
 import { parseDuration } from '../utils/date';
 import type { SceneTimeService } from './SceneTimeService';
@@ -34,8 +35,13 @@ export function registerManualTime(service: SceneTimeService): void {
             if (!checking) open(editor, context);
             return true;
         } });
-    service.plugin.registerEvent(service.plugin.app.workspace.on('editor-menu', (menu, editor, context) => {
-        if (!('getViewData' in context) || !eligible(editor, context)) return;
-        menu.addItem(item => item.setTitle('Assign scene time…').setIcon('clock').onClick(() => open(editor, context)));
-    }));
+}
+
+/** Dots address a source line; existing cues keep their review/edit workflow. */
+export function openSceneLineTime(service: SceneTimeService, file: TFile, source: string, line: number): void {
+    const snapshot = service.snapshot(file, source);
+    if (!snapshot?.proseLines.has(line) || service.plugin.settings.showSceneTimeCueBar === false) return;
+    const cue = snapshot.cues.find(item => item.line === line);
+    if (cue) new SceneTimeModal(service, file, () => source, cue.key).open();
+    else new ManualTimeModal(service, file, source, source.split('\n')[line].trim()).open();
 }

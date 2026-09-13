@@ -18,7 +18,7 @@ export class SceneTimeModal extends ErtModal {
         contentEl.empty();
         contentEl.addClass('ert-stack');
         this.titleEl.empty();
-        this.mountHeader({ title: 'Scene time', subtitle: 'The vertical cue bar marks time phrases beside your prose. Give an uncertain phrase such as “a few minutes” a fixed duration, then confirm it to include that time in the title-bar elapsed total. Your choices are saved for this scene, helping you compare the time accounted for in the prose with its declared duration. To time action without a time phrase, select a sentence and choose Assign scene time. Blue bracketed markers show these manual assignments. This check is optional.', badge: { text: `OPTIONAL TIME CHECK • ${this.file.basename}` } });
+        this.mountHeader({ title: 'Scene time', subtitle: 'The vertical cue bar marks time phrases beside your prose. Give an uncertain phrase such as “a few minutes” a fixed duration, then confirm it to include that time in the title-bar elapsed total. Your choices are saved for this scene, helping you compare the time accounted for in the prose with its declared duration. To time action without a time phrase, click the gray dots beside that line and enter its duration. Blue bracketed markers show these manual assignments. This check is optional.', badge: { text: `OPTIONAL TIME CHECK • ${this.file.basename}` } });
         const snapshot = this.service.snapshot(this.file, this.source());
         if (!snapshot) { contentEl.createEl('p', { text: 'This note is no longer a scene.' }); return; }
         const metadata = this.service.metadata(this.file)!;

@@ -1,6 +1,7 @@
 import { MarkdownRenderChild, MarkdownView, TFile, type MarkdownPostProcessorContext } from 'obsidian';
 import type { SceneTimeService } from './SceneTimeService';
 import { createTimeTick } from './editorRuler';
+import { openSceneLineTime } from './ManualTimeModal';
 import { SceneTimeModal } from './SceneTimeModal';
 
 /** Find a rendered quote across emphasis/link text nodes without modifying prose. */
@@ -47,6 +48,30 @@ export async function renderReadingTime(service: SceneTimeService, el: HTMLEleme
         onload(): void {
             el.addClass('ert-time-reading-block');
             this.rail = el.createDiv({ cls: 'ert-time-reading-rail' });
+            this.rail.addEventListener('click', event => {
+                if (event.target !== this.rail) return;
+                const current = service.snapshot(sceneFile, source);
+                if (!current) return;
+                const lines = source.split('\n');
+                let closest: { line: number; distance: number } | null = null;
+                const occurrences = new Map<string, number>();
+                for (let line = section!.lineStart; line <= section!.lineEnd; line++) {
+                    if (!current.proseLines.has(line)) continue;
+                    const quote = lines[line].trim();
+                    const occurrence = occurrences.get(quote) || 0;
+                    occurrences.set(quote, occurrence + 1);
+                    const range = quoteRange(el, quote, occurrence);
+                    if (!range) continue;
+                    const rect = range.getBoundingClientRect();
+                    const distance = Math.max(rect.top - event.clientY, event.clientY - rect.bottom, 0);
+                    if (!closest || distance < closest.distance) closest = { line, distance };
+                }
+                if (closest) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    openSceneLineTime(service, sceneFile, source, closest.line);
+                }
+            });
             const render = (): void => {
                 if (!this.rail) return;
                 this.rail.empty();

@@ -2,6 +2,39 @@ import { describe, expect, it } from 'vitest';
 import { cueMarkerLabel, cueState, maskNonProse, resolveSceneTime, scanSceneTime, type TimeDecision } from './model';
 
 describe('scene time detection', () => {
+    it.each([
+        'One day, the timeouts rolled over instead of expiring.',
+        'One day he left the city.',
+        'Perhaps one day she would return.',
+        'Five years ago, he nearly died. One day, the timeouts rolled over.'
+    ])('does not quantify an unspecified occasion: %s', source => {
+        const scan = scanSceneTime(source);
+        expect(scan.cues).toHaveLength(1);
+        expect(scan.cues[0]).toMatchObject({ kind: 'uncertain', suggestedMinutes: null });
+        const snapshot = resolveSceneTime(scan, {}, '2085-04-21T17:00:00');
+        expect(cueMarkerLabel(snapshot.cues[0])).toBeNull();
+        expect(snapshot.elapsed).toBe(0);
+        expect(snapshot.cues[0].clockLabel).toBe('5pm');
+    });
+    it.each([
+        ['One day later, he returned.', 'advance'],
+        ['One day earlier, he left.', 'backward'],
+        ['One day had passed since departure.', 'checkpoint'],
+        ['She waited for one day.', 'advance'],
+        ['They leave in one day.', 'uncertain'],
+        ['The journey took one day.', 'uncertain']
+    ])('keeps explicitly quantified days: %s', (source, kind) => {
+        const cues = scanSceneTime(source).cues;
+        expect(cues).toHaveLength(1);
+        expect(cues[0]).toMatchObject({ kind, suggestedMinutes: 1440 });
+    });
+    it('preserves an author decision for an unquantified occasion', () => {
+        const scan = scanSceneTime('One day, he returned.');
+        const result = resolveSceneTime(scan, { [scan.cues[0].key]: { action: 'exclude', minutes: 0 } });
+        expect(result.cues[0].decision?.action).toBe('exclude');
+        expect(result.elapsed).toBe(0);
+        expect(cueMarkerLabel(result.cues[0])).toBeNull();
+    });
     it('keeps quantified marker labels independent of start time and inferred clock', () => {
         const scan = scanSceneTime('Three hours later, she leaves.');
         const decisions = { [scan.cues[0].key]: { action: 'add' as const, minutes: 180 } };

@@ -73,6 +73,10 @@ export function scanSceneTime(source: string): SceneTimeScan {
         { regex: new RegExp(`\\b(${SPAN})\\s+(?:later|afterward|afterwards|on)\\b`, 'gi'), kind: 'advance', span: true },
         { regex: new RegExp(`\\b(?:slept|sleeps?|sleeping|waited|waits?|waiting|walked|walks?|walking|travelled|traveled|rested|resting|climbed|climbs?|climbing)\\s+(?:for\\s+)?(${SPAN})\\b`, 'gi'), kind: 'advance', span: true },
         { regex: new RegExp(`\\b(?:for|in|after|another|within)\\s+(${SPAN})\\b`, 'gi'), kind: 'uncertain', span: true },
+        // Bare “one day” usually introduces an unspecified occasion, not a 24-hour advance.
+        // Explicit elapsed/context patterns above take precedence; measured predicates remain quantities.
+        { regex: new RegExp(`\\b(?:takes?|took|lasts?|lasted|spends?|spent)\\s+(${SPAN})\\b`, 'gi'), kind: 'uncertain', span: true },
+        { regex: /\bone\s+day\b/gi, kind: 'uncertain' },
         { regex: /\b(?:a few|several|some|a couple of)\s+(?:seconds?|minutes?|hours?|days?)\s*(?:later)?\b|\b(?:moments?|seconds?)\s+later\b|\b(?:the\s+)?(?:next|following)\s+(?:morning|evening|night|day|week)\b|\blater\s+that\s+(?:day|night|evening)\b/gi, kind: 'uncertain' },
         { regex: /\b(?:\d{1,2}:\d{2}(?:\s*[ap]\.?m\.?)?|\d{1,2}\s*[ap]\.?m\.?|(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+(?:o['’]clock|in the (?:morning|afternoon|evening)))\b|\b(?:midnight|noon|dawn|dusk|sunrise|sunset)\b/gi, kind: 'clock' },
         { regex: new RegExp(`\\b(${SPAN})\\b`, 'gi'), kind: 'uncertain', span: true }

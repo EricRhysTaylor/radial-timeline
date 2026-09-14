@@ -707,9 +707,21 @@ export default class ManuscriptTimelinePlugin extends Plugin {
 
         // Create master subplot order before the act loop
         const masterSubplotOrder = (() => {
-            const subplotCounts = Object.entries(scenesByActAndSubplot[0]).map(([subplot, scenes]) => ({
+            // Create a combined set of all subplots from all acts
+            const allSubplotsMap = new Map<string, number>();
+            
+            // Iterate through all acts to gather all subplots
+            for (let actIndex = 0; actIndex < NUM_ACTS; actIndex++) {
+                Object.entries(scenesByActAndSubplot[actIndex] || {}).forEach(([subplot, scenes]) => {
+                    // Add scenes count to existing count or initialize
+                    allSubplotsMap.set(subplot, (allSubplotsMap.get(subplot) || 0) + scenes.length);
+                });
+            }
+            
+            // Convert map to array of subplot objects
+            const subplotCounts = Array.from(allSubplotsMap.entries()).map(([subplot, count]) => ({
                 subplot,
-                count: scenes.length,
+                count
             }));
 
             // Sort subplots, but ensure "Main Plot" or empty subplot is first
@@ -1964,6 +1976,51 @@ class ManuscriptTimelineSettingTab extends PluginSettingTab {
             requirementsList.createEl('li', { text: req });
         });
         
+        // Required Plugins section
+        containerEl.createEl('h3', { text: 'Required Plugins' });
+        containerEl.createEl('p', { 
+            text: 'This plugin requires the following community plugin for proper operation:'
+        });
+        
+        // HTML Reader plugin description
+        const pluginDescription = containerEl.createEl('div', {
+            attr: {
+                style: 'background: var(--background-secondary-alt); padding: 15px; border-radius: 8px; margin: 10px 0;'
+            }
+        });
+        pluginDescription.createEl('h4', { 
+            text: 'HTML Reader by Nuthrash',
+            attr: { style: 'margin-top: 0; margin-bottom: 10px;' }
+        });
+        pluginDescription.createEl('p', { 
+            text: 'HTML file reader plugin for Obsidian. Opens documents with ".html" and ".htm" file extensions.'
+        });
+        
+        // Highlight the important setting
+        const importantNote = containerEl.createEl('div', {
+            attr: {
+                style: 'background: var(--background-modifier-error-hover); color: var(--text-error); padding: 10px; border-radius: 4px; margin: 10px 0; font-weight: bold;'
+            }
+        });
+        importantNote.createEl('p', { 
+            text: 'IMPORTANT: HTML Reader must be set to "Unrestricted" mode!',
+            attr: { style: 'margin: 0;' }
+        });
+        
+        // Setup instructions
+        containerEl.createEl('p', { 
+            text: 'How to configure HTML Reader:'
+        });
+        const setupSteps = containerEl.createEl('ol');
+        [
+            'Install the HTML Reader plugin from Obsidian Community Plugins',
+            'Go to Settings → Community plugins → HTML Reader',
+            'Under "Operating mode", select "Unrestricted"',
+            'This setting is required for proper CSS styling and interactive features'
+        ].forEach(step => {
+            setupSteps.createEl('li', { text: step });
+        });
+        
         // How to Use section
         containerEl.createEl('h3', { text: 'How to Use' });
         const usageList = containerEl.createEl('ol');
@@ -1973,7 +2030,7 @@ class ManuscriptTimelineSettingTab extends PluginSettingTab {
             'Ensure your scene files have the required frontmatter metadata (see below)',
             'Run the "Create Manuscript Timeline" command using the Command Palette (Cmd/Ctrl+P) to generate the visualization',
             'The timeline will be created in the "Outline" folder as an HTML file',
-            'Open the HTML file in Obsidian using the HTML Reader plugin to view and interact with your timeline',
+            'Open the HTML file in Obsidian using the HTML Reader plugin to view and interact with your timeline (make sure HTML Reader is set to Unrestricted mode in its settings)',
             'To update the timeline after making changes to your scene files, run the "Create Manuscript Timeline" command again'
         ].forEach(step => {
             usageList.createEl('li', { text: step });
@@ -2002,7 +2059,7 @@ class ManuscriptTimelineSettingTab extends PluginSettingTab {
         });
         
         // Example metadata
-        containerEl.createEl('h4', { text: 'Example Metadata' });
+        containerEl.createEl('h4', { text: 'Example Metadata (Use Paste Match Style under Edit Menu)' });
         const exampleCode = containerEl.createEl('pre', {
             attr: {
                 style: 'line-height: 1.7; white-space: pre-wrap; overflow-x: auto; padding: 10px; background: var(--background-secondary); border-radius: 4px; user-select: text; cursor: text; font-family: monospace;'

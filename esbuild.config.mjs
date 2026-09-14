@@ -14,7 +14,10 @@ const prod = process.argv[2] === "production";
 
 // Define source and destination paths
 const sourceDir = ".";
-const destDir = "/Users/erictaylor/Documents/Author/Book Trisan Series/Trisan Obsidian Vault .nosync/.obsidian/plugins/manuscript-timeline";
+const destDirs = [
+	"/Users/erictaylor/Documents/Author/Book Trisan Series/Trisan Obsidian Vault .nosync/.obsidian/plugins/manuscript-timeline",
+	"/Users/erictaylor/Documents/Code Projects/Test Obsidian Vault/.obsidian/plugins/manuscript-timeline"
+];
 
 // Files to copy (in addition to the built JS)
 const filesToCopy = [
@@ -24,28 +27,42 @@ const filesToCopy = [
 
 // Function to copy files
 async function copyFiles() {
-	for (const file of filesToCopy) {
-		const sourcePath = path.join(sourceDir, file);
-		const destPath = path.join(destDir, file);
-		
-		// Check if source file exists
-		if (fs.existsSync(sourcePath)) {
-			try {
-				// Create destination directory if it doesn't exist
-				if (!fs.existsSync(path.dirname(destPath))) {
-					fs.mkdirSync(path.dirname(destPath), { recursive: true });
+	for (const destDir of destDirs) {
+		// Copy the files to each destination
+		for (const file of filesToCopy) {
+			const sourcePath = path.join(sourceDir, file);
+			const destPath = path.join(destDir, file);
+			
+			// Check if source file exists
+			if (fs.existsSync(sourcePath)) {
+				try {
+					// Create destination directory if it doesn't exist
+					if (!fs.existsSync(path.dirname(destPath))) {
+						fs.mkdirSync(path.dirname(destPath), { recursive: true });
+					}
+					
+					// Copy the file
+					fs.copyFileSync(sourcePath, destPath);
+				} catch (err) {
+					console.error(`Error copying ${file} to ${destDir}:`, err);
 				}
-				
-				// Copy the file
-				fs.copyFileSync(sourcePath, destPath);
-			} catch (err) {
-				console.error(`Error copying ${file}:`, err);
+			} else {
+				console.warn(`Warning: ${sourcePath} does not exist, skipping.`);
 			}
-		} else {
-			console.warn(`Warning: ${sourcePath} does not exist, skipping.`);
+		}
+		
+		// Also copy main.js if it exists (after build)
+		const mainJsPath = path.join(destDirs[0], "main.js");
+		if (fs.existsSync(mainJsPath) && destDir !== destDirs[0]) {
+			try {
+				fs.copyFileSync(mainJsPath, path.join(destDir, "main.js"));
+			} catch (err) {
+				console.error(`Error copying main.js to ${destDir}:`, err);
+			}
 		}
 	}
-	console.log(`Files copied to: ${destDir}`);
+	
+	console.log(`Files copied to: ${destDirs.join(", ")}`);
 }
 
 const context = await esbuild.context({
@@ -73,7 +90,7 @@ const context = await esbuild.context({
 	logLevel: 'info',
 	sourcemap: prod ? false : 'inline',
 	treeShaking: true,
-	outdir: destDir,
+	outdir: destDirs[0],
 });
 
 if (prod) {
@@ -92,12 +109,29 @@ if (prod) {
 		const sourcePath = path.join(sourceDir, file);
 		fs.watch(sourcePath, async () => {
 			try {
-				const destPath = path.join(destDir, file);
-				fs.copyFileSync(sourcePath, destPath);
-				console.log(`Files updated in: ${destDir}`);
+				// Update file in all destination directories
+				for (const destDir of destDirs) {
+					const destPath = path.join(destDir, file);
+					fs.copyFileSync(sourcePath, destPath);
+				}
+				console.log(`Files updated in all destination directories`);
 			} catch (err) {
 				console.error(`Error updating ${file}:`, err);
 			}
 		});
+	});
+
+	// Watch for main.js changes (the output file) and copy to other destinations
+	const mainJsPath = path.join(destDirs[0], "main.js");
+	fs.watch(mainJsPath, async () => {
+		try {
+			// Copy to all other destination directories
+			for (let i = 1; i < destDirs.length; i++) {
+				fs.copyFileSync(mainJsPath, path.join(destDirs[i], "main.js"));
+			}
+			console.log(`main.js updated in all destination directories`);
+		} catch (err) {
+			console.error(`Error updating main.js:`, err);
+		}
 	});
 }

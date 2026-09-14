@@ -49,7 +49,7 @@ Scene files must have the following frontmatter:
 - Edits - Optional editing notes (scenes with Edits will display with purple number boxes)
 - Publish Stage - Publishing stage (Zero, Author, House, Press)
 
-### Example Metadata
+### Example Metadata (use "Paste and Match Style" when copying to avoid formatting issues)
 
 ```yaml
 ---
@@ -125,6 +125,9 @@ This plugin creates HTML files that can be viewed in Obsidian. For the best expe
 
 - **Core Plugins**: Make sure the "Outgoing Links" core plugin is enabled
 - **Community Plugins**: The [HTML Reader](https://github.com/nuthrash/obsidian-html-plugin) plugin is recommended for viewing the generated timeline HTML files
+  - **IMPORTANT**: HTML Reader must be set to **Unrestricted** mode in its settings for proper functionality of interactive elements and styling
+  - Navigate to Settings → Community plugins → HTML Reader → Operating mode → Select "Unrestricted"
+  - Without this setting, the timeline's CSS styles and internal link functionality will not work properly
 
 No other plugins are required for basic functionality. The plugin uses Obsidian's native API to read frontmatter metadata from your Markdown files - Dataview is NOT required. The plugin then generates an interactive HTML timeline visualization based on this metadata.
 

@@ -44,7 +44,7 @@
 .ert-time-boundary { color: var(--text-muted); margin-left: -7px; }
 
 button.ert-time-marker {
-    transform: translateY(calc(var(--ert-time-lane, 0) * 24px));
+    transform: translate(12px, calc(var(--ert-time-lane, 0) * 24px));
     display: inline-flex;
     justify-content: center;
     align-items: center;

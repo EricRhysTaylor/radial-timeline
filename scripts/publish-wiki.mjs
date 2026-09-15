@@ -3,7 +3,7 @@ import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
-const WIKI_REPO = 'git@github.com:EricRhysTaylor/Radial-Timeline.wiki.git';
+const WIKI_REPO = 'git@github.com:EricRhysTaylor/radial-timeline.wiki.git';
 const TEMP_DIR = '.wiki_temp_publish';
 const SOURCE_DIR = 'wiki';
 

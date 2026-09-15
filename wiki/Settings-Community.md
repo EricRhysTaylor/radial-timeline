@@ -65,6 +65,20 @@ The preview under your sharing selection always reflects the current level ("Pre
 *   **Delete shared data** removes the shared report payload from the website. Minimal audit metadata may remain.
 *   **Disconnect plugin** takes this vault's report offline, stops sharing, and removes its saved connection key. Your account and other Community content stay in place. Reconnecting this vault later requires generating and entering a **new one-time linking key** — the old one cannot be reused.
 
+## New Mac, Reinstall, Or Synced Vault
+
+The connection key is stored in Obsidian's private, per-device secure storage. It **never travels with the vault**: Obsidian Sync, iCloud, git, a vault copy, or a fresh OS install all bring your settings across but not the key. The plugin then still shows itself as connected while the key behind that connection is gone, and pressing **Begin sharing** shows:
+
+> The private connection secret is missing. Reconnect Community Share.
+
+This is expected, not a fault. Fix it in this order:
+
+1. In the Community tab, scroll to **Sharing and safety** and click **Disconnect**. It works even though the key is missing, and it does not touch anything on the website.
+2. On the website, open **My Share** (sign in with the email on your author profile, not a different address) and generate a new one-time linking key.
+3. Paste the key into **Connection code**, click **Connect**, then **Begin sharing**.
+
+Rotating the connection secret from My Share does not repair this case. Rotation replaces the key on the website side for a plugin that still has one; a vault with no key needs a new linking key. Every device you write from needs its own connection, made the same way.
+
 ## Sharing An APR
 
 The [Author Progress Report](Author-Progress-Report) remains a local visual/social export tool, with a controlled route to Community available from Level 2 upward (Level 2 and Level 3):

@@ -2070,14 +2070,10 @@
   text-wrap: balance;
 }
 
-/* Obsidian's native tooltip (rendered by setTooltip()) wraps with a default
-   greedy algorithm that frequently leaves a short orphan on the last line.
-   text-wrap: balance distributes words evenly across all lines for the
-   tooltip's natural max-width. Scoped to body > .tooltip so we only target
-   Obsidian's own tooltip element, not arbitrary descendant nodes. */
-body > .tooltip {
-  text-wrap: balance;
-}
+/* Keep balancing scoped to the custom renderer above, which also measures and
+   tightens its box in updateTooltipWidth(). Native Obsidian tooltips size their
+   box before balanced wrapping, leaving excess horizontal space; do not apply
+   text-wrap to body > .tooltip (including tooltips owned by other plugins). */
 
 .rt-tooltip.rt-visible {
   opacity: 1;

@@ -958,7 +958,12 @@ export interface CommunityShareConnectionSettings {
     connectionId?: string;
     activationTokenId?: string;
     profileId?: string;
-    projectId?: string;
+    /**
+     * Bound website project. `null` for a connection activated without a book
+     * (decision 2026-09-23): the server binds it on the first successful
+     * project sync, which stores `connection_project_id` here.
+     */
+    projectId?: string | null;
     publicSlug?: string;
     connectedAt?: string;
     lastSyncedAt?: string;

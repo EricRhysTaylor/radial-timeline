@@ -1160,3 +1160,182 @@ describe('standing-share exits: begin, pause, resume, session post', () => {
         await expect(postSessionToCommunityFeed(plugin as never, post)).rejects.toMatchObject({ code: 'invalid_response' });
     });
 });
+
+// Activation without a book (decision 2026-09-23 "Community middle ground —
+// membership without a vault", third finding): the server may confirm a
+// connection with project_id null; the first project sync binds it and
+// returns connection_project_id. Context and sync must run unbound; calls
+// that attach data to a project refuse until the binding exists.
+describe('Community Share activation without a book', () => {
+    function connectUnbound(harness: ReturnType<typeof createPluginHarness>) {
+        const { plugin, secrets } = harness;
+        const settings = plugin.settings.communityShare;
+        settings.enabled = true;
+        settings.connection = {
+            status: 'connected',
+            connectionId: 'conn-1',
+            profileId: 'profile-1',
+            projectId: null,
+            secretId: 'rt.community-share.connection-secret'
+        };
+        secrets.set('rt-community-share-connection-secret', 'rtcs_current-secret');
+        return settings;
+    }
+
+    it('accepts a confirm response with a null project and stores the connection with no bound project', async () => {
+        const { plugin, secrets } = createPluginHarness();
+        vi.clearAllMocks();
+        vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
+            status: 201,
+            text: JSON.stringify({
+                connection_id: 'conn-1',
+                connection_secret: 'rtcs_returned-secret',
+                secret_expires_at: null,
+                profile_id: 'profile-1',
+                project_id: null,
+                profile_display: 'Eric',
+                project_title: null
+            })
+        } as never);
+
+        const result = await confirmCommunityShareActivation(plugin as never, 'activation-token-from-website');
+
+        expect(result.project_id).toBeNull();
+        expect(result.project_title).toBeNull();
+        expect(secrets.get('rt-community-share-connection-secret')).toBe('rtcs_returned-secret');
+        const connection = plugin.settings.communityShare.connection;
+        expect(connection.status).toBe('connected');
+        expect(connection.connectionId).toBe('conn-1');
+        expect(connection.profileId).toBe('profile-1');
+        expect(connection.projectId).toBeNull();
+        expect(plugin.settings.communityShare.enabled).toBe(true);
+        expect(plugin.saveSettings).toHaveBeenCalled();
+    });
+
+    it('still rejects a confirm response whose project_id is missing rather than null', async () => {
+        const { plugin, secrets } = createPluginHarness();
+        vi.clearAllMocks();
+        vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
+            status: 201,
+            text: JSON.stringify({
+                connection_id: 'conn-1',
+                connection_secret: 'rtcs_returned-secret',
+                secret_expires_at: null,
+                profile_id: 'profile-1'
+            })
+        } as never);
+
+        await expect(confirmCommunityShareActivation(plugin as never, 'activation-token-from-website'))
+            .rejects.toMatchObject({ code: 'invalid_response' });
+        expect(secrets.has('rt-community-share-connection-secret')).toBe(false);
+        expect(plugin.settings.communityShare.connection.status).toBe('disconnected');
+    });
+
+    it('loads the website share context for a connection with no bound project', async () => {
+        const harness = createPluginHarness();
+        connectUnbound(harness);
+        const { plugin } = harness;
+        vi.clearAllMocks();
+        const request = vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
+            status: 200,
+            text: JSON.stringify({ ok: true, connected_project_id: null, profile: null, projects: [] })
+        } as never);
+
+        const context = await fetchCommunityShareContext(plugin as never);
+
+        const call = request.mock.calls[0]?.[0] as { url: string; body: string };
+        expect(call.url).toContain('/community-share-context');
+        expect(JSON.parse(call.body)).toEqual({ connection_id: 'conn-1', current_secret: 'rtcs_current-secret' });
+        expect(context.connected_project_id).toBeNull();
+    });
+
+    it('stores the project the server binds on the first sync, and never re-points it afterwards', async () => {
+        const harness = createPluginHarness();
+        connectUnbound(harness);
+        const { plugin } = harness;
+        vi.clearAllMocks();
+        const request = vi.spyOn(obsidian, 'requestUrl');
+        const syncBody = (connectionProjectId: string) => ({
+            status: 200,
+            text: JSON.stringify({
+                ok: true,
+                created: 1,
+                updated: 0,
+                projects: [{ id: 'p-1', book_key: 'book-1', title: 'Public Project Alias', visibility: 'private' }],
+                connection_project_id: connectionProjectId
+            })
+        });
+
+        request.mockResolvedValueOnce(syncBody('p-1') as never);
+        await syncCommunityProjects(plugin as never);
+        expect(plugin.settings.communityShare.connection.projectId).toBe('p-1');
+        expect(plugin.settings.communityShare.connection.connectionId).toBe('conn-1');
+        expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
+
+        // A bound connection keeps its project even if a later response differs.
+        request.mockResolvedValueOnce(syncBody('p-other') as never);
+        await syncCommunityProjects(plugin as never);
+        expect(plugin.settings.communityShare.connection.projectId).toBe('p-1');
+        expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
+    });
+
+    it('leaves the connection unbound when an older server omits connection_project_id', async () => {
+        const harness = createPluginHarness();
+        connectUnbound(harness);
+        const { plugin } = harness;
+        vi.clearAllMocks();
+        vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
+            status: 200,
+            text: JSON.stringify({
+                ok: true,
+                created: 1,
+                updated: 0,
+                projects: [{ id: 'p-1', book_key: 'book-1', title: 'Public Project Alias', visibility: 'private' }]
+            })
+        } as never);
+
+        await syncCommunityProjects(plugin as never);
+
+        expect(plugin.settings.communityShare.connection.projectId).toBeNull();
+        expect(plugin.saveSettings).not.toHaveBeenCalled();
+    });
+
+    it('refuses an APR upload before a book is synced and bound, without calling the server', async () => {
+        const harness = createPluginHarness();
+        const settings = connectUnbound(harness);
+        settings.tier = 2;
+        settings.audience = 'public';
+        const { plugin } = harness;
+        vi.clearAllMocks();
+        const request = vi.spyOn(obsidian, 'requestUrl');
+
+        await expect(uploadAprToCommunity(plugin as never, {
+            svg: '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+            width: 480,
+            height: 480,
+            teaserLevel: 'ring',
+            updateFrequency: 'manual',
+            bookKey: 'book-1'
+        })).rejects.toMatchObject({
+            code: 'project_required',
+            message: 'Sync a book from Book Manager before sharing progress.'
+        });
+        expect(request).not.toHaveBeenCalled();
+    });
+
+    it('refuses a session feed post before the connection is bound to a book', async () => {
+        const harness = createPluginHarness();
+        await armReadyToPublish(harness, 3);
+        const { plugin } = harness;
+        plugin.settings.communityShare.connection.projectId = null;
+        vi.clearAllMocks();
+        const request = vi.spyOn(obsidian, 'requestUrl');
+
+        await expect(postSessionToCommunityFeed(plugin as never, {
+            audience: 'community' as const,
+            body: 'Drafted 500 words.',
+            stats: { minutes: 30, words: 500, mode: 'drafting' as const }
+        })).rejects.toMatchObject({ code: 'project_required' });
+        expect(request).not.toHaveBeenCalled();
+    });
+});

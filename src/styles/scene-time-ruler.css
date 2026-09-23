@@ -34,22 +34,23 @@
     border-left: 3px dotted var(--background-modifier-border);
     box-sizing: border-box;
     cursor: pointer;
+    position: relative;
 }
 .ert-time-gutter .cm-gutterElement.ert-time-rail-confirmed {
     border-left-style: solid;
     border-left-color: var(--text-success);
 }
 .ert-time-marker-row { position: relative; display: flex; flex-wrap: wrap; }
-.ert-time-marker-row .ert-time-marker { position: absolute; left: -13px; }
+.ert-time-marker-row .ert-time-marker { position: absolute; left: 12px; }
 .ert-time-boundary { color: var(--text-muted); margin-left: -7px; }
 
 button.ert-time-marker {
-    transform: translate(12px, calc(var(--ert-time-lane, 0) * 24px));
+    transform: translateY(calc(var(--ert-time-lane, 0) * 28px));
     display: inline-flex;
     justify-content: center;
     align-items: center;
     width: 24px;
-    height: 24px;
+    height: 28px;
     padding: 0;
     border: 0;
     box-shadow: none;
@@ -61,7 +62,7 @@ button.ert-time-marker:hover { background: var(--background-modifier-hover); }
 button.ert-time-marker:focus-visible { outline: 2px solid var(--interactive-accent); }
 .ert-time-tick { width: 10px; height: 4px; border: 1px solid currentColor; }
 .ert-time-confirmed .ert-time-tick { background: currentColor; }
-.ert-time-uncertain .ert-time-tick { border: 0; height: auto; font-size: 14px; font-weight: 700; line-height: 1; text-align: center; }
+.ert-time-uncertain .ert-time-tick { border: 0; height: auto; font-family: 'Radial Timeline JetBrains Mono', var(--font-monospace); font-size: 20px; font-weight: 100; line-height: 1; text-align: center; }
 .ert-time-backward .ert-time-tick { width: 18px; height: 18px; border: 0; }
 .ert-time-excluded .ert-time-tick { height: 0; border-bottom: 0; }
 .ert-time-conflict .ert-time-tick { transform: rotate(45deg); width: 7px; height: 7px; }
@@ -79,7 +80,7 @@ button.ert-time-marker:focus-visible { outline: 2px solid var(--interactive-acce
 }
 .ert-time-reading-rail .ert-time-marker {
     position: absolute;
-    left: -13px;
+    left: 12px;
     pointer-events: auto;
 }
 .ert-ui .ert-time-cue { border-left: 3px solid var(--ert-time-color); }
@@ -110,21 +111,49 @@ button.ert-time-clock-marker { width: max-content; min-width: 24px; padding-inli
     border: 0;
     background: transparent;
     transform: none;
-    font-size: var(--font-ui-smaller);
-    font-weight: var(--font-semibold);
-    font-variant-numeric: tabular-nums;
+    font-family: 'Radial Timeline JetBrains Mono', var(--font-monospace);
+    font-size: 20px;
+    font-weight: 100;
+    font-synthesis: none;
+    font-variant-numeric: tabular-nums slashed-zero;
+    font-feature-settings: 'zero' 1, 'tnum' 1;
+    letter-spacing: -0.025em;
     line-height: 1;
     white-space: nowrap;
-}
-
-.ert-time-marker-row .ert-time-clock-marker.ert-time-confirmed,
-.ert-time-reading-rail .ert-time-clock-marker.ert-time-confirmed {
-    left: 2px;
-    justify-content: flex-start;
 }
 
 .ert-ui .ert-time-cue.ert-time-excluded { color: var(--text-muted); opacity: 0.65; }
 .ert-ui .ert-time-cue.ert-time-excluded.ert-time-selected { outline-color: var(--background-modifier-border); }
 
-.ert-time-marker-row button.ert-time-manual.ert-time-clock-marker,
-.ert-time-reading-rail button.ert-time-manual.ert-time-clock-marker { left: 2px; justify-content: flex-start; }
+/* Braces reveal the click target without painting over prose or moving the rail. */
+.ert-time-rail::before,
+.ert-time-rail::after,
+.ert-time-reading-rail::before,
+.ert-time-reading-rail::after {
+    position: absolute;
+    top: var(--ert-time-hover-y, 14px);
+    transform: translateY(-50%);
+    font-family: 'Radial Timeline JetBrains Mono', var(--font-monospace);
+    font-size: 30px;
+    font-weight: 100;
+    line-height: 1;
+    color: var(--text-normal);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms ease;
+    z-index: 2;
+}
+.ert-time-rail::before,
+.ert-time-reading-rail::before { content: '{'; left: -18px; }
+.ert-time-rail::after,
+.ert-time-reading-rail::after { content: '}'; left: -5px; }
+.ert-time-rail:hover::before,
+.ert-time-rail:hover::after,
+.ert-time-reading-rail:hover::before,
+.ert-time-reading-rail:hover::after { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+    .ert-time-rail::before,
+    .ert-time-rail::after,
+    .ert-time-reading-rail::before,
+    .ert-time-reading-rail::after { transition: none; }
+}

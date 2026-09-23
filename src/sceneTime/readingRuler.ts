@@ -1,6 +1,6 @@
 import { MarkdownRenderChild, MarkdownView, TFile, type MarkdownPostProcessorContext } from 'obsidian';
 import type { SceneTimeService } from './SceneTimeService';
-import { createTimeTick } from './editorRuler';
+import { createTimeTick, positionRailHover } from './editorRuler';
 import { openSceneLineTime } from './ManualTimeModal';
 import { SceneTimeModal } from './SceneTimeModal';
 
@@ -48,6 +48,9 @@ export async function renderReadingTime(service: SceneTimeService, el: HTMLEleme
         onload(): void {
             el.addClass('ert-time-reading-block');
             this.rail = el.createDiv({ cls: 'ert-time-reading-rail' });
+            this.registerDomEvent(this.rail, 'mousemove', event => {
+                if (this.rail) positionRailHover(this.rail, (event as MouseEvent).clientY);
+            });
             this.rail.addEventListener('click', event => {
                 if (event.target !== this.rail) return;
                 const current = service.snapshot(sceneFile, source);

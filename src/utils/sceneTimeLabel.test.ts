@@ -13,6 +13,11 @@ describe('scene time header label', () => {
     it('makes midnight rollover explicit', () => {
         expect(sceneTimeLabel('2085-04-13T23:50:00', '25 min').text).toContain('(2085-04-14)');
     });
+    it('places the start weekday before the duration separator', () => {
+        const when = '2085-04-21T17:00:00';
+        const weekday = new Date(2085, 3, 21).toLocaleDateString([], { weekday: 'short' });
+        expect(sceneTimeLabel(when, '31 hours').text).toContain(`${weekday} · 31 hours`);
+    });
     it.each(['2085', 'April 2085', '2085-04-13'])('preserves date precision for %s', when => {
         expect(sceneTimeLabel(when, '25 min').text).toBe(`${when} · 25 min`);
     });

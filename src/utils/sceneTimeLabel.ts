@@ -15,7 +15,7 @@ export function sceneTimeLabel(when: unknown, duration: unknown): { text: string
     let description = `When: ${rawWhen || 'Not set'} · Duration: ${rawDuration || 'Not set'}`;
     if (start && hasClock) {
         const isDay = start.getHours() >= 6 && start.getHours() < 18;
-        parts.push(`${isDay ? '☀' : '☾'} ${clock(start)}`);
+        parts.push(`${isDay ? '☀' : '☾'} ${clock(start)} ${start.toLocaleDateString([], { weekday: 'short' })}`);
         description += ' · Sun/moon indicates clock hours (day: 06:00–18:00), not local sunrise or sunset.';
     } else {
         parts.push(rawWhen || 'When not set');

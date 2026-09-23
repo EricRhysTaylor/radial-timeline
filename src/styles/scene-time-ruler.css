@@ -31,7 +31,7 @@
 .ert-time-gutter .cm-gutterElement.ert-time-rail {
     width: 28px;
     margin-left: var(--size-4-2);
-    border-left: 3px dotted var(--background-modifier-border);
+    border-left: 10px solid var(--background-modifier-border);
     box-sizing: border-box;
     cursor: pointer;
     position: relative;
@@ -41,8 +41,8 @@
     border-left-color: var(--text-success);
 }
 .ert-time-marker-row { position: relative; display: flex; flex-wrap: wrap; }
-.ert-time-marker-row .ert-time-marker { position: absolute; left: 12px; }
-.ert-time-boundary { color: var(--text-muted); margin-left: -7px; }
+.ert-time-marker-row .ert-time-marker { position: absolute; left: 18px; }
+.ert-time-boundary { color: var(--text-muted); margin-left: -11px; }
 
 button.ert-time-marker {
     transform: translateY(calc(var(--ert-time-lane, 0) * 28px));
@@ -74,13 +74,13 @@ button.ert-time-marker:focus-visible { outline: 2px solid var(--interactive-acce
     top: 0;
     bottom: 0;
     width: 16px;
-    border-left: 3px dotted var(--background-modifier-border);
+    border-left: 10px solid var(--background-modifier-border);
     pointer-events: auto;
     cursor: pointer;
 }
 .ert-time-reading-rail .ert-time-marker {
     position: absolute;
-    left: 12px;
+    left: 18px;
     pointer-events: auto;
 }
 .ert-ui .ert-time-cue { border-left: 3px solid var(--ert-time-color); }
@@ -126,27 +126,26 @@ button.ert-time-clock-marker { width: max-content; min-width: 24px; padding-inli
 .ert-ui .ert-time-cue.ert-time-excluded.ert-time-selected { outline-color: var(--background-modifier-border); }
 
 /* Braces reveal the click target without painting over prose or moving the rail. */
-.ert-time-rail::before,
-.ert-time-rail::after,
-.ert-time-reading-rail::before,
-.ert-time-reading-rail::after {
+:is(.ert-time-rail, .ert-time-reading-rail)::before,
+:is(.ert-time-rail, .ert-time-reading-rail)::after {
     position: absolute;
-    top: var(--ert-time-hover-y, 14px);
-    transform: translateY(-50%);
-    font-family: 'Radial Timeline JetBrains Mono', var(--font-monospace);
-    font-size: 30px;
-    font-weight: 100;
-    line-height: 1;
-    color: var(--text-normal);
+    content: '';
+    top: 0;
+    bottom: 0;
+    width: 10px;
+    background: var(--text-normal);
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 100' preserveAspectRatio='none'%3E%3Cpath d='M9 1 Q4 1 4 8 L4 42 Q4 50 1 50 Q4 50 4 58 L4 92 Q4 99 9 99' fill='none' stroke='black' stroke-width='1.5' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
+    mask-size: 100% 100%;
+    mask-repeat: no-repeat;
     opacity: 0;
     pointer-events: none;
     transition: opacity 120ms ease;
     z-index: 2;
 }
 .ert-time-rail::before,
-.ert-time-reading-rail::before { content: '{'; left: -18px; }
+.ert-time-reading-rail::before { left: -23px; }
 .ert-time-rail::after,
-.ert-time-reading-rail::after { content: '}'; left: -5px; }
+.ert-time-reading-rail::after { left: 3px; transform: scaleX(-1); }
 .ert-time-rail:hover::before,
 .ert-time-rail:hover::after,
 .ert-time-reading-rail:hover::before,

@@ -36,3 +36,16 @@ new settings. No blocking finding in the changed surface. This verifies the styl
 isolation, not a live Obsidian click-through; full in-app/popout visual checks remain a
 follow-up after plugin reload. Keyboard operation of the bare dotted rail is an existing
 limitation; existing cue buttons and the command palette provide keyboard entry paths.
+
+## Follow-up: solid strip and full-segment braces
+
+Per the user's visual correction, replaced dotted borders with solid 10px strips in both
+renderers. Hover braces now stretch with the segment's height using an SVG mask; the
+pointer-following position helper and mousemove handlers were removed. Label clearance
+and boundary alignment were adjusted for the wider strip. Tooltips and modal instructions
+now refer to the strip. No time interpretation or persistence changes.
+
+Rendered fixture verification confirmed a 10px strip, 160px segment with a 160px brace,
+non-intercepting decorative pointer events, and reduced-motion transition duration 0s.
+Dark preview includes the gaps between paragraph segments. Live Obsidian verification is
+still pending; this is an isolated rendering check using the production stylesheet.

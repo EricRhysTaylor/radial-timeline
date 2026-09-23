@@ -11,13 +11,6 @@ function editorFile(view: EditorView) {
     return view.state.field(editorInfoField, false)?.file;
 }
 
-/** Shared by editor and reading rails; positioning is transient and never changes cue accounting. */
-export function positionRailHover(rail: HTMLElement, clientY: number): void {
-    const rect = rail.getBoundingClientRect();
-    rail.style.setProperty('--ert-time-hover-y', `${Math.max(0, Math.min(rect.height, clientY - rect.top))}px`); // SAFE: pointer-relative decorative hover position.
-    rail.title = 'Click the dots to assign or review scene time';
-}
-
 export function createTimeTick(doc: Document, cue: ResolvedCue, open: () => void, lane = 0): HTMLButtonElement {
     const button = doc.win.createEl('button');
     button.className = `ert-time-marker ert-time-${cueState(cue)}`;
@@ -121,10 +114,10 @@ export function sceneTimeEditorExtension(service: SceneTimeService) {
     return [state, gutter({
         class: 'ert-time-gutter', side: 'after',
         domEventHandlers: {
-            mousemove: (_view, _line, event) => {
+            mouseover: (_view, _line, event) => {
                 const target = event.target as HTMLElement | null; // SAFE: gutter events originate in our HTML marker elements.
                 const rail = target?.closest<HTMLElement>('.ert-time-rail');
-                if (rail) positionRailHover(rail, (event as MouseEvent).clientY);
+                if (rail) rail.title = 'Click the strip to assign or review scene time';
                 return false;
             },
             click: (view, line, event) => {

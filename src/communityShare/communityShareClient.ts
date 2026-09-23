@@ -15,9 +15,10 @@ interface ActivationConfirmSuccess {
     connection_secret: string;
     secret_expires_at: string | null;
     profile_id: string;
-    project_id: string;
+    /** `null` for an activation issued without a book; the first project sync binds one. */
+    project_id: string | null;
     profile_display?: string;
-    project_title?: string;
+    project_title?: string | null;
 }
 
 interface CommunityErrorBody {
@@ -137,7 +138,7 @@ function isActivationConfirmSuccess(value: unknown): value is ActivationConfirmS
     return typeof body?.connection_id === 'string'
         && typeof body.connection_secret === 'string'
         && typeof body.profile_id === 'string'
-        && typeof body.project_id === 'string';
+        && (typeof body.project_id === 'string' || body.project_id === null);
 }
 
 function isPublishSuccess(value: unknown): value is PublishSuccess {
@@ -415,6 +416,8 @@ interface ProjectSyncSuccess {
     created: number;
     updated: number;
     projects: Array<{ id: string; book_key: string; title: string; visibility: string }>;
+    /** The connection's bound project after this sync; absent on servers that predate project-less activation. */
+    connection_project_id?: string | null;
 }
 
 export interface CommunityShareContextProfile {
@@ -496,14 +499,20 @@ function assertStillSendable(plugin: RadialTimelinePlugin, expected: CommunitySh
     return live;
 }
 
+/**
+ * An active connection with a stored secret. A bound project is NOT required
+ * here: a connection activated without a book carries `projectId: null` until
+ * the first project sync binds one, and context + sync must run in that state.
+ * Callers that need a bound project check it themselves via
+ * `requireBoundProject`.
+ */
 async function requireActiveConnection(plugin: RadialTimelinePlugin): Promise<{
     connectionId: string;
-    projectId: string;
     currentSecret: string;
     connection: CommunityShareConnectionSettings;
 }> {
     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
-    if (!current.enabled || current.connection.status !== 'connected' || !current.connection.connectionId || !current.connection.secretId || !current.connection.projectId) { // SAFE: connection precondition — any missing piece throws connection_required below, no silent default
+    if (!current.enabled || current.connection.status !== 'connected' || !current.connection.connectionId || !current.connection.secretId) { // SAFE: connection precondition — any missing piece throws connection_required below, no silent default
         throw new CommunityShareError('connection_required', 'Connect Community Share before syncing with the website.');
     }
     const currentSecret = await getSecret(plugin.app, current.connection.secretId);
@@ -512,10 +521,22 @@ async function requireActiveConnection(plugin: RadialTimelinePlugin): Promise<{
     }
     return {
         connectionId: current.connection.connectionId,
-        projectId: current.connection.projectId,
         currentSecret,
         connection: current.connection
     };
+}
+
+/**
+ * Calls that attach data to a project (APR upload, session posts) need the
+ * connection bound to one. The server answers `409 project_required` for an
+ * unbound connection; this is the same refusal raised before the request
+ * leaves, so the author gets the fix rather than a failed upload.
+ */
+function requireBoundProject(connection: CommunityShareConnectionSettings): string {
+    if (!connection.projectId) {
+        throw new CommunityShareError('project_required', 'Sync a book from Book Manager before sharing progress.');
+    }
+    return connection.projectId;
 }
 
 /**
@@ -543,6 +564,7 @@ export async function uploadAprToCommunity(
         );
     }
     const { connectionId, currentSecret, connection } = await requireActiveConnection(plugin);
+    requireBoundProject(connection);
     const bookKey = args.bookKey.trim();
     if (!bookKey) {
         throw new CommunityShareError('project_mapping_required', 'Choose a campaign book before sending its APR to Community.');
@@ -643,6 +665,25 @@ export async function syncCommunityProjects(plugin: RadialTimelinePlugin): Promi
         { code: 'project_sync_failed', message: 'Could not sync books to the community site.' },
         'The project sync returned an unexpected response.'
     );
+
+    // A connection activated without a book is bound server-side to the first
+    // synced shell; the response carries that binding as connection_project_id.
+    // Store it once. Servers that predate the field omit it, and a connection
+    // that already has a project is never re-pointed from here.
+    if (!connection.projectId && typeof parsed.connection_project_id === 'string') {
+        const boundProjectId = parsed.connection_project_id;
+        const live = normalizeCommunityShareSettings(plugin.settings.communityShare);
+        if (live.connection.connectionId === connection.connectionId && !live.connection.projectId) {
+            commitCommunityShare(plugin, current => ({
+                ...current,
+                connection: {
+                    ...current.connection,
+                    projectId: boundProjectId
+                }
+            }));
+            await plugin.saveSettings();
+        }
+    }
     return parsed;
 }
 
@@ -1063,6 +1104,7 @@ export async function postSessionToCommunityFeed(
     if (!canPostSessionsToFeed(plugin)) {
         throw new CommunityShareError('sharing_level_required', 'Posting to the community feed requires Level 3 (writing activity).');
     }
+    requireBoundProject(current.connection);
     const secret = await getConnectedSecret(plugin, current);
     assertStillSendable(plugin, current.connection);
     if (!canPostSessionsToFeed(plugin)) {

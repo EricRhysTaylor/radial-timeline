@@ -295,7 +295,9 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
                         button.setButtonText('Connecting...');
                         try {
                             const result = await confirmCommunityShareActivation(plugin, tokenValue);
-                            new Notice(`Community Share connected to ${result.project_title || 'your website project'}.`);
+                            new Notice(result.project_id === null
+                                ? 'Community Share connected to your profile. Your first synced book will link automatically.'
+                                : `Community Share connected to ${result.project_title || 'your website project'}.`); // SAFE: UX label for a bound project whose title the server left blank
                             containerEl.empty();
                             renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
                         } catch (error) {

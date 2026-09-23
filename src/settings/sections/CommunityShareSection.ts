@@ -12,6 +12,7 @@ import {
     beginCommunitySharing,
     commitCommunityShare,
     confirmCommunityShareActivation,
+    syncCommunityProjectsIfConnected,
     disconnectCommunityShare,
     fetchCommunityShareContext,
     pauseCommunitySharing,
@@ -298,6 +299,10 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
                             new Notice(result.project_id === null
                                 ? 'Community Share connected to your profile. Your first synced book will link automatically.'
                                 : `Community Share connected to ${result.project_title || 'your website project'}.`); // SAFE: UX label for a bound project whose title the server left blank
+                            // Sync the vault's books right away so a connection
+                            // activated without a book binds now, not on the next
+                            // plugin load. Fire-and-forget: failures only log.
+                            void syncCommunityProjectsIfConnected(plugin);
                             containerEl.empty();
                             renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
                         } catch (error) {

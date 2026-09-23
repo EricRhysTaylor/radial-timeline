@@ -35,13 +35,24 @@ export interface SceneTimeSnapshot extends SceneTimeScan {
     conflict: boolean;
 }
 
-const NUMBER = '(?:\\d+(?:\\.\\d+)?|an?|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|half an?)';
+const ONES = 'one|two|three|four|five|six|seven|eight|nine';
+const TENS = 'twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety';
+const NUMBER = `(?:\\d+(?:\\.\\d+)?|(?:${TENS})(?:[ \\t\\-\u2010\u2011]+(?:${ONES}))?|zero|${ONES}|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|an?|half an?)`;
 const SPAN = `${NUMBER}\\s+(?:seconds?|minutes?|hours?|days?|weeks?)`;
-const numberWords: Record<string, number> = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12 };
+const numberWords: Record<string, number> = { a: 1, an: 1, zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12,
+    thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19,
+    twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 };
+const NUMBER_TAIL = new RegExp(`(?:${TENS}|hundred|thousand|million)(?:\\s+and)?[ \\t]+$`, 'i');
 
 function minutesFromSpan(text: string): number | null {
-    const normalized = text.toLowerCase().replace(/half an?\b/, '0.5').replace(/\b[a-z]+\b/, word => word in numberWords ? String(numberWords[word]) : word);
-    const ms = parseDuration(normalized);
+    const match = /^(.*?)\s+(seconds?|minutes?|hours?|days?|weeks?)$/i.exec(text);
+    if (!match) return null;
+    const amount = match[1].toLowerCase();
+    const parts = amount.split(/[\s\-\u2010\u2011]+/);
+    const number = /^half an?$/.test(amount) ? 0.5
+        : parts.every(part => part in numberWords) ? parts.reduce((sum, part) => sum + numberWords[part], 0) : Number(amount);
+    if (!Number.isFinite(number)) return null;
+    const ms = parseDuration(`${number} ${match[2]}`);
     return ms !== null && Number.isFinite(ms) ? ms / 60000 : null;
 }
 
@@ -86,6 +97,9 @@ export function scanSceneTime(source: string): SceneTimeScan {
         while ((match = pattern.regex.exec(text)) !== null) {
             const from = match.index;
             const to = from + match[0].length;
+            // A word boundary also occurs inside a hyphenated number. Never accept its suffix.
+            const before = text.slice(0, from);
+            if (/[a-z0-9][-\u2010\u2011]$/i.test(before) || NUMBER_TAIL.test(before)) continue;
             if (cues.some(cue => cue.from < to && cue.to > from)) continue;
             const lineStart = source.lastIndexOf('\n', from - 1) + 1;
             const newline = source.indexOf('\n', to);

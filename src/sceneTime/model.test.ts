@@ -3,6 +3,45 @@ import { cueMarkerLabel, cueState, maskNonProse, resolveSceneTime, scanSceneTime
 
 describe('scene time detection', () => {
     it.each([
+        ['thirty-one days', 31 * 1440],
+        ['Thirty-One days', 31 * 1440],
+        ['thirty‐one days', 31 * 1440],
+        ['thirty‑one days', 31 * 1440],
+        ['thirty one days', 31 * 1440],
+        ['twenty-four hours', 24 * 60],
+        ['forty-five minutes', 45],
+        ['ninety-nine seconds', 99 / 60],
+        ['thirteen days', 13 * 1440],
+        ['seventy hours', 70 * 60],
+        ['twenty-one day', 21 * 1440]
+    ])('reads the whole written quantity: %s', (phrase, minutes) => {
+        const source = `Period covered, ${phrase}.`;
+        const scan = scanSceneTime(source);
+        expect(scan.cues).toHaveLength(1);
+        expect(scan.cues[0]).toMatchObject({ quote: phrase, suggestedMinutes: minutes, kind: 'uncertain' });
+        expect(source.slice(scan.cues[0].from, scan.cues[0].to)).toBe(phrase);
+        expect(resolveSceneTime(scan, {}).elapsed).toBe(0);
+    });
+    it('keeps compound advances and checkpoints distinct from bare occasions', () => {
+        const scan = scanSceneTime('Twenty-one days later.\nThirty-one days had passed since departure.\nOne day, she returned.');
+        expect(scan.cues.map(cue => [cue.kind, cue.suggestedMinutes])).toEqual([
+            ['advance', 21 * 1440], ['checkpoint', 31 * 1440], ['uncertain', null]
+        ]);
+        expect(cueMarkerLabel(resolveSceneTime(scan, {}).cues[0])).toBe('+504h');
+    });
+    it.each(['one-hundred-and-one days', 'one hundred and one days', 'one hundred thirty-one days'])('does not salvage a misleading suffix from unsupported quantities: %s', phrase => {
+        expect(scanSceneTime(phrase).cues).toHaveLength(0);
+    });
+    it('does not reuse an old partial-match decision for the corrected duration', () => {
+        const source = 'Period covered, thirty-one days.';
+        const oldKey = JSON.stringify([source, source.indexOf('one days'), 'one days']);
+        const result = resolveSceneTime(scanSceneTime(source), { [oldKey]: { action: 'add', minutes: 1440 } });
+        expect(result.cues[0].quote).toBe('thirty-one days');
+        expect(cueMarkerLabel(result.cues[0])).toBe('+744h');
+        expect(result.cues[0].decision).toBeUndefined();
+        expect(result.elapsed).toBe(0);
+    });
+    it.each([
         'One day, the timeouts rolled over instead of expiring.',
         'One day he left the city.',
         'Perhaps one day she would return.',

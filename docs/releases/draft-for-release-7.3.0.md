@@ -17,10 +17,11 @@ On the website: anyone with a public profile who has accepted the Community Guid
 - Scene time cues parse complete compound numbers, show the start weekday in headers, and use solid strips with full-height hover braces.
 - Manual elapsed-time assignment from the dotted prose rail; cue positions stabilised; explicit duration labels.
 
-<img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/7.3.0/wiki/images/cue-bar.png" alt="The scene time cue bar beside a paragraph of prose in the editor" width="600">
+<img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/2e4e4e00/wiki/images/scene-time-cue-bar.png" alt="A scene with the time cue bar: the header shows the start weekday and elapsed time; a confirmed cue shows a solid strip, a hover brace and its +30m duration" width="600">
 
-<img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/7.3.0/wiki/images/panel-cue-bar.png" alt="The Scene time panel: confirmed elapsed time, detected cues, and a duration assigned to an uncertain cue" width="600">
+<img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/2e4e4e00/wiki/images/scene-time-panel.png" alt="The Scene time panel: confirmed elapsed time, the Manual marker legend, a confirmed cue with its paragraph, and the clock after each confirmed contribution" width="600">
 
 ### Fixes
 
 - Global tooltip balancing no longer leaves oversized native bubbles.
+

@@ -4,7 +4,7 @@ Community membership no longer starts with a vault.
 
 ### Community
 
-- **Connect without a book.** The plugin can now link to a Community profile that has no book yet. Your Book Manager books sync on connect, and the first one becomes the connection's book on the website. Nothing about a vault is shared by connecting; every vault starts at Private.
+- **Connect without a book.** The plugin can now link to a Community profile that has no book yet. Connecting sends your Book Manager book details — titles, status, target dates — to your private My Share page, and the first book becomes the connection's book on the website. Nothing becomes public until you choose to publish it; every vault starts at Private.
 - Progress sharing and session posts wait until a book is bound, and say so plainly instead of failing.
 - Books sync immediately after connecting, not on the next plugin load.
 

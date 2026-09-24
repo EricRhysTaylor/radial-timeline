@@ -15,6 +15,7 @@ Advanced is currently grouped into three areas:
 *   **Show part and chapter markers**: Displays part and chapter boundaries on the Narrative all-scenes ring and reports how many active chapter markers exist in the current book.
 *   **Recent drag move overlay in narrative mode**: Shows the last committed scene and beat drag moves.
 *   **Readability size**: Switches curated timeline text sizing between `Normal` and `Large`.
+*   **Show scene time cue bar**: Shows time-phrase markers beside Scene notes in editing and Reading view. Turn it off to hide the bar; the time summary in the note's title bar stays visible. See [Scene Time](Scene-Time).
 
 ### Schema & Manuscript
 

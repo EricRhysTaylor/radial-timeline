@@ -14,8 +14,12 @@ On the website: anyone with a public profile who has accepted the Community Guid
 
 ### Scene time
 
-- Scene time cues parse complete compound numbers, show the start weekday in headers, and use solid strips with full-height hover braces.
-- Manual elapsed-time assignment from the dotted prose rail; cue positions stabilised; explicit duration labels.
+- **Day of the week in the title bar.** A scene's title bar now shows the weekday next to its `When` start time, such as "5:00 PM Sat".
+- **A solid cue bar.** The bar beside your prose is now solid. Hover a time phrase to bracket its paragraph and see the time it adds, such as +30m. Markers stay lined up with their paragraphs as you write.
+- **Time a paragraph with no time phrase.** Click the gray strip beside any paragraph and enter how long the action takes. It counts toward the scene's elapsed time.
+- **Written-out numbers read in full.** "Thirty-one days" now counts as 31 days.
+
+See [Scene Time](https://github.com/EricRhysTaylor/radial-timeline/wiki/Scene-Time) in the wiki.
 
 <img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/2e4e4e00/wiki/images/scene-time-cue-bar.png" alt="A scene with the time cue bar: the header shows the start weekday and elapsed time; a confirmed cue shows a solid strip, a hover brace and its +30m duration" width="600">
 
@@ -24,4 +28,3 @@ On the website: anyone with a public profile who has accepted the Community Guid
 ### Fixes
 
 - Global tooltip balancing no longer leaves oversized native bubbles.
-

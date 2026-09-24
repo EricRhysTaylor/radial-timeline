@@ -1212,6 +1212,58 @@ describe('Community Share activation without a book', () => {
         expect(plugin.saveSettings).toHaveBeenCalled();
     });
 
+    it('declares project-less activation support on every confirm request', async () => {
+        const { plugin } = createPluginHarness();
+        vi.clearAllMocks();
+        const mockedRequestUrl = vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
+            status: 201,
+            text: JSON.stringify({
+                connection_id: 'conn-1',
+                connection_secret: 'rtcs_returned-secret',
+                secret_expires_at: null,
+                profile_id: 'profile-1',
+                project_id: null,
+                profile_display: 'Eric',
+                project_title: null
+            })
+        } as never);
+
+        await confirmCommunityShareActivation(plugin as never, 'activation-token-from-website');
+
+        const request = mockedRequestUrl.mock.calls[0]?.[0] as { body: string; url: string };
+        const body = JSON.parse(request.body) as Record<string, unknown>;
+        expect(request.url).toContain('/community-activation-confirm');
+        expect(body.supports_projectless_activation).toBe(true);
+        expect(Object.keys(body).sort()).toEqual([
+            'activation_token',
+            'plugin_installation_id_hash',
+            'supports_projectless_activation'
+        ]);
+    });
+
+    it('surfaces the server message unchanged when the server demands a plugin update', async () => {
+        const { plugin, secrets } = createPluginHarness();
+        vi.clearAllMocks();
+        vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
+            status: 409,
+            text: JSON.stringify({
+                error: {
+                    code: 'plugin_update_required',
+                    message: 'Update the Radial Timeline plugin to connect without a book.'
+                }
+            })
+        } as never);
+
+        await expect(confirmCommunityShareActivation(plugin as never, 'activation-token-from-website'))
+            .rejects.toMatchObject({
+                code: 'plugin_update_required',
+                message: 'Update the Radial Timeline plugin to connect without a book.'
+            });
+        expect(secrets.has('rt-community-share-connection-secret')).toBe(false);
+        expect(plugin.settings.communityShare.connection.status).toBe('disconnected');
+        expect(plugin.saveSettings).not.toHaveBeenCalled();
+    });
+
     it('still rejects a confirm response whose project_id is missing rather than null', async () => {
         const { plugin, secrets } = createPluginHarness();
         vi.clearAllMocks();

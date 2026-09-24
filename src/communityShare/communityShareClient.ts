@@ -254,7 +254,11 @@ export async function confirmCommunityShareActivation(
         'community-activation-confirm',
         {
             activation_token: token,
-            plugin_installation_id_hash: pluginInstallationIdHash
+            plugin_installation_id_hash: pluginInstallationIdHash,
+            // Declares that this client accepts a null-project confirm. The
+            // server refuses a project-less token to clients that omit this
+            // (409 plugin_update_required) instead of consuming the token.
+            supports_projectless_activation: true
         },
         isActivationConfirmSuccess,
         { code: 'activation_failed', message: 'Community connection failed. Generate a new code and try again.' },

@@ -95,7 +95,8 @@ function bundleContains(bundle, value) {
 const indexSource = fs.readFileSync(i18nIndexPath, 'utf8');
 const supportedLocales = extractSupportedLocales(indexSource);
 const localeFiles = fs.readdirSync(localesDir)
-  .filter(file => file.endsWith('.ts'))
+  // Locale modules only: a colocated vitest file (en.test.ts) is not a locale.
+  .filter(file => file.endsWith('.ts') && !file.endsWith('.test.ts'))
   .map(file => file.replace(/\.ts$/, ''))
   .sort();
 

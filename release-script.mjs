@@ -365,8 +365,8 @@ async function performBuildAndUpload(version, isDraft = false) {
     try {
         execSync('npm run sync-release-notes', { stdio: 'inherit' });
     } catch (e) {
-        console.error('❌ Failed to sync release notes. Aborting build.');
-        return;
+        console.error('❌ Failed to sync release notes. Aborting build; the release is NOT published.');
+        process.exit(1);
     }
 
     // 2. Commit the synced notes (otherwise git status is dirty)
@@ -396,23 +396,53 @@ async function performBuildAndUpload(version, isDraft = false) {
     // so the scorecard can verify the assets came from this repo's source.
     runReleaseWorkflowAndWait(version);
 
-    // 5. Publish (if it was a draft)
+    // 5. Publish (if it was a draft). Answering "Finish release" is the
+    // decision; there is no second publish prompt. A draft left behind here
+    // is the costly failure: main's manifest already names this version, so
+    // every Obsidian install/update 404s until the release is public (7.3.0
+    // sat that way on 2026-09-23). Any failure below exits non-zero, loudly.
     if (isDraft) {
-        const confirm = await question(`\n❓ Draft release ${version} is ready. Publish it now? (y/N): `);
-        if (confirm.toLowerCase() === 'y') {
-            const notesFile = '.release-notes-temp.md'; // Use temp file logic if we were editing description, but here we just toggle status
-            // We assume description is already correct on GitHub
-            runCommand(`gh release edit ${version} --draft=false --latest`, "Publishing release");
-            console.log(`\n🎉 Release ${version} published successfully!`);
-            console.log(`📦 https://github.com/EricRhysTaylor/radial-timeline/releases/tag/${version}`);
-            queueDirectoryScan();
-        } else {
-            console.log(`\n✅ Assets uploaded. Release ${version} remains a draft.`);
-        }
+        runCommand(`gh release edit ${version} --draft=false --latest`, "Publishing release");
+        await verifyPublishedAssets(version);
+        console.log(`\n🎉 Release ${version} published successfully!`);
+        console.log(`📦 https://github.com/EricRhysTaylor/radial-timeline/releases/tag/${version}`);
+        queueDirectoryScan();
     } else {
+        await verifyPublishedAssets(version);
         console.log(`\n✅ Assets updated for existing release ${version}.`);
         queueDirectoryScan();
     }
+}
+
+// What Obsidian actually fetches: the three assets from the public download
+// URL. A draft, a missing asset, or a failed publish all show up here as a
+// non-200. Retries briefly because the download CDN can lag a publish.
+const RELEASE_ASSETS = ['manifest.json', 'main.js', 'styles.css'];
+
+async function verifyPublishedAssets(version) {
+    console.log(`\n🔄 Verifying the public download links for ${version}...`);
+    const base = `https://github.com/EricRhysTaylor/radial-timeline/releases/download/${version}`;
+    let failures = [];
+    for (let attempt = 1; attempt <= 6; attempt++) {
+        failures = [];
+        for (const asset of RELEASE_ASSETS) {
+            try {
+                const res = await fetch(`${base}/${asset}`, { method: 'HEAD', redirect: 'follow' });
+                if (res.status !== 200) failures.push(`${asset} → ${res.status}`);
+            } catch (e) {
+                failures.push(`${asset} → ${e.message}`);
+            }
+        }
+        if (!failures.length) {
+            console.log(`✅ All three assets download (200): ${RELEASE_ASSETS.join(', ')}`);
+            return;
+        }
+        if (attempt < 6) await new Promise(r => setTimeout(r, 10000));
+    }
+    console.error(`\n❌ Release ${version} is NOT downloadable: ${failures.join('; ')}`);
+    console.error(`   Obsidian users cannot install or update until this is fixed.`);
+    console.error(`   Check: gh release view ${version} (is it still a draft? are all three assets attached?)`);
+    process.exit(1);
 }
 
 // The community directory does NOT notice new releases on its own — someone
@@ -529,7 +559,9 @@ async function main() {
     console.log(`   2. Add your wiki links, fix typos, make it perfect.`);
     console.log(`   3. SAVE the draft (Do NOT publish yet).`);
     console.log(`   4. Return here and run: npm run release`);
-    console.log(`      (It will detect the draft and run the 'Finish' steps)`);
+    console.log(`      (It will detect the draft and run the 'Finish' steps.`);
+    console.log(`       Answering y to "Finish release" publishes it — there is no later prompt.)`);
+    console.log(`   ⚠️  Obsidian already sees ${newVersion} on main; installs fail until you finish. Do it now.`);
 
     try {
         runCommand(`gh release view ${newVersion} --web`, "Opening GitHub", true);

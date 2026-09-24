@@ -1,4 +1,4 @@
-## Radial Timeline 7.2.1
+## Radial Timeline 7.3.0
 
 Community membership no longer starts with a vault.
 

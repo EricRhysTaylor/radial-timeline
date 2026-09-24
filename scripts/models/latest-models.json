@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-09-15T20:50:24.233Z",
+  "generatedAt": "2026-09-23T21:34:44.862Z",
   "providerFetchedAt": {
     "openai": null,
-    "anthropic": "2026-09-15T20:50:24.233Z",
+    "anthropic": "2026-09-23T21:34:44.862Z",
     "google": null
   },
   "summary": {
     "openai": 120,
-    "anthropic": 11,
+    "anthropic": 12,
     "google": 55
   },
   "models": [
@@ -1930,6 +1930,81 @@
       },
       "label": "Claude Opus 5",
       "createdAt": "2026-07-24T00:00:00Z"
+    },
+    {
+      "provider": "anthropic",
+      "id": "claude-opus-5-5",
+      "raw": {
+        "type": "model",
+        "id": "claude-opus-5-5",
+        "display_name": "Claude Opus 5.5",
+        "created_at": "2026-09-21T16:24:00Z",
+        "max_input_tokens": 1000000,
+        "max_tokens": 128000,
+        "capabilities": {
+          "batch": {
+            "supported": true
+          },
+          "citations": {
+            "supported": true
+          },
+          "code_execution": {
+            "supported": true
+          },
+          "context_management": {
+            "supported": true,
+            "clear_tool_uses_20250919": {
+              "supported": true
+            },
+            "clear_thinking_20251015": {
+              "supported": true
+            },
+            "compact_20260112": {
+              "supported": true
+            }
+          },
+          "effort": {
+            "supported": true,
+            "low": {
+              "supported": true
+            },
+            "medium": {
+              "supported": true
+            },
+            "high": {
+              "supported": true
+            },
+            "xhigh": {
+              "supported": true
+            },
+            "max": {
+              "supported": true
+            }
+          },
+          "image_input": {
+            "supported": true
+          },
+          "pdf_input": {
+            "supported": true
+          },
+          "structured_outputs": {
+            "supported": true
+          },
+          "thinking": {
+            "supported": true,
+            "types": {
+              "enabled": {
+                "supported": false
+              },
+              "adaptive": {
+                "supported": true
+              }
+            }
+          }
+        }
+      },
+      "label": "Claude Opus 5.5",
+      "createdAt": "2026-09-21T16:24:00Z"
     },
     {
       "provider": "anthropic",

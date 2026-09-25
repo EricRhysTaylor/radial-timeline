@@ -61,8 +61,10 @@ export class SceneTimeHeader extends Component {
             const label = sceneTimeLabel(metadata.When, metadata.Duration);
             const snapshot = view.file && this.timing.snapshot(view.file, view.getViewData());
             if (snapshot) {
-                label.text += ` · Elapsed ${snapshot.confirmed ? elapsedLabel(snapshot.elapsed) : '—'}${snapshot.pending ? ` · ${snapshot.pending} cues` : ''}`;
-                label.description += ` · ${elapsedLabel(snapshot.elapsed)} confirmed elapsed; ${snapshot.pending} unconfirmed cues. Optional: click to check elapsed story time.`;
+                const provisional = snapshot.estimated !== snapshot.elapsed;
+                const total = provisional ? `~${elapsedLabel(snapshot.estimated)}` : snapshot.confirmed ? elapsedLabel(snapshot.elapsed) : '—';
+                label.text += ` · Elapsed ${total}${snapshot.pending ? ` · ${snapshot.pending} cues` : ''}`;
+                label.description += ` · ${elapsedLabel(snapshot.elapsed)} confirmed elapsed${provisional ? ` (~${elapsedLabel(snapshot.estimated)} including unconfirmed cues)` : ''}; ${snapshot.pending} unconfirmed cues. Optional: click to check elapsed story time.`;
                 const planned = typeof metadata.Duration === 'string' ? parseDuration(metadata.Duration) : null;
                 const conflict = snapshot.conflict || (planned !== null && snapshot.elapsed * 60000 > planned);
                 badge.toggleClass('ert-time-over', conflict);

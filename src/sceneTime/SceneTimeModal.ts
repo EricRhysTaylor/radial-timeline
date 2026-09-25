@@ -25,7 +25,7 @@ export class SceneTimeModal extends ErtModal {
         const planned = typeof metadata.Duration === 'string' ? parseDuration(metadata.Duration) : null;
         const body = contentEl.createDiv({ cls: 'ert-card-stack' });
         const summary = body.createDiv({ cls: 'ert-glass-card ert-sub-card ert-stack' });
-        summary.createEl('strong', { text: `${elapsedLabel(snapshot.elapsed)} confirmed elapsed · ${snapshot.cues.length} detected cues` });
+        summary.createEl('strong', { text: `${elapsedLabel(snapshot.elapsed)} confirmed elapsed${snapshot.estimated !== snapshot.elapsed ? ` · ~${elapsedLabel(snapshot.estimated)} including unconfirmed cues` : ''} · ${snapshot.cues.length} detected cues` });
         summary.createDiv({ cls: 'ert-time-help', text: 'Optional: use these cues to check elapsed story time. You can ignore this panel. Confirmations affect only this scene’s cue bar and elapsed total, not Timeline Audit, Timeline Scaffold, or your writing-session timer.' });
         if (planned !== null && snapshot.confirmed) {
             const remaining = planned / 60000 - snapshot.elapsed;

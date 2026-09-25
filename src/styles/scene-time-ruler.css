@@ -40,7 +40,7 @@
     border-left-style: solid;
     border-left-color: var(--text-success);
 }
-.ert-time-marker-row { position: relative; display: flex; flex-wrap: wrap; }
+.ert-time-marker-row { position: relative; display: flex; flex-wrap: wrap; align-items: flex-start; height: 100%; }
 .ert-time-marker-row .ert-time-marker { position: absolute; left: 18px; }
 .ert-time-boundary { color: var(--text-muted); margin-left: -11px; }
 
@@ -83,6 +83,29 @@ button.ert-time-marker:focus-visible { outline: 2px solid var(--interactive-acce
     left: 18px;
     pointer-events: auto;
 }
+/* Declared YAML Duration: 3px inside the left edge of the 10px rail, broken between paragraphs like the rail. */
+.ert-time-duration {
+    position: absolute;
+    left: -10px;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--text-muted);
+    pointer-events: none;
+}
+.ert-time-duration.ert-time-duration-over { background: var(--color-yellow); }
+.ert-time-duration.ert-time-duration-stop { bottom: auto; height: var(--ert-time-duration-stop, 0px); }
+.ert-time-duration-arrow {
+    position: absolute;
+    top: 100%;
+    left: -2px;
+    display: flex;
+    color: var(--text-error);
+    pointer-events: auto;
+    cursor: pointer;
+}
+.ert-time-duration-arrow svg { width: 14px; height: 14px; stroke-width: 3; }
+
 .ert-ui .ert-time-cue { border-left: 3px solid var(--ert-time-color); }
 .ert-ui .ert-time-selected { outline: 2px solid var(--interactive-accent); outline-offset: 2px; }
 

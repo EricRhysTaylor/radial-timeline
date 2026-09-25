@@ -1,7 +1,7 @@
 import { StateEffect } from '@codemirror/state';
 import { EditorView, GutterMarker, ViewPlugin, gutter, type ViewUpdate } from '@codemirror/view';
 import { editorInfoField, setTooltip, setIcon } from 'obsidian';
-import { cueDescription, cueState, cueMarkerLabel, type ResolvedCue, type SceneTimeSnapshot } from './model';
+import { cueDescription, cueState, cueMarkerLabel, durationSegment, elapsedLabel, type DurationSegment, type ResolvedCue, type SceneTimeSnapshot } from './model';
 import type { SceneTimeService } from './SceneTimeService';
 import { openSceneLineTime } from './ManualTimeModal';
 import { SceneTimeModal } from './SceneTimeModal';
@@ -29,6 +29,22 @@ export function createTimeTick(doc: Document, cue: ResolvedCue, open: () => void
     button.appendChild(stroke);
     button.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); open(); });
     return button;
+}
+
+/** Declared YAML Duration drawn inside the rail's left edge. A stop line is cut at its cue once measured. */
+export function createDurationLine(parent: HTMLElement, segment: DurationSegment, open: () => void): HTMLElement {
+    const line = parent.createSpan({ cls: `ert-time-duration ert-time-duration-${segment.status}` });
+    if (segment.stopFrom !== null) {
+        line.addClass('ert-time-duration-stop');
+        line.dataset.stopFrom = String(segment.stopFrom);
+    }
+    if (segment.shortfall !== null) {
+        const arrow = line.createSpan({ cls: 'ert-time-duration-arrow' });
+        setIcon(arrow, 'arrow-down');
+        setTooltip(arrow, `Duration ${elapsedLabel(segment.planned)} · time cues reach ${elapsedLabel(segment.planned - segment.shortfall)} · ${elapsedLabel(segment.shortfall)} not accounted for in the prose · Click to review`);
+        arrow.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); open(); });
+    }
+    return line;
 }
 
 export function sceneTimeEditorExtension(service: SceneTimeService) {
@@ -62,13 +78,13 @@ export function sceneTimeEditorExtension(service: SceneTimeService) {
                     const rect = Number.isFinite(position) && position <= this.view.state.doc.length ? this.view.coordsAtPos(position) : null;
                     const delta = rect && first ? rect.top - first.getBoundingClientRect().top : 0;
                     const padding = (parseFloat(el.style.paddingTop) || 0) + delta;
-                    const ticks = Array.from(el.querySelectorAll<HTMLElement>('.ert-time-marker')).map(tick => {
-                        const from = Number(tick.dataset.cueFrom);
+                    const offset = (item: HTMLElement, from: number): number | null => {
                         const anchor = from <= this.view.state.doc.length ? this.view.coordsAtPos(from) : null;
-                        if (!anchor || !tick.parentElement) return { tick, top: null };
-                        return { tick, top: anchor.top - tick.parentElement.getBoundingClientRect().top - delta };
-                    });
-                    return { el, padding, ticks, empty: !gutter?.querySelector('.ert-time-rail') };
+                        return anchor && item.parentElement ? anchor.top - item.parentElement.getBoundingClientRect().top - delta : null;
+                    };
+                    const ticks = Array.from(el.querySelectorAll<HTMLElement>('.ert-time-marker')).map(tick => ({ tick, top: offset(tick, Number(tick.dataset.cueFrom)) }));
+                    const stops = Array.from(el.querySelectorAll<HTMLElement>('.ert-time-duration-stop')).map(line => ({ line, top: offset(line, Number(line.dataset.stopFrom)) }));
+                    return { el, padding, ticks, stops, empty: !gutter?.querySelector('.ert-time-rail') };
                 },
                 write: measurement => {
                     if (!measurement) return;
@@ -79,6 +95,9 @@ export function sceneTimeEditorExtension(service: SceneTimeService) {
                     for (const { tick, top } of measurement.ticks) {
                         if (top !== null) tick.style.top = `${top}px`; // SAFE: measured wrapped-line marker position.
                     }
+                    for (const { line, top } of measurement.stops) {
+                        if (top !== null) line.style.setProperty('--ert-time-duration-stop', `${Math.max(0, top)}px`); // SAFE: duration line ends at its measured stop cue.
+                    }
                 }
             });
         }
@@ -87,15 +106,22 @@ export function sceneTimeEditorExtension(service: SceneTimeService) {
 
     class Marker extends GutterMarker {
         elementClass: string;
-        constructor(readonly cues: ResolvedCue[], readonly boundary: string, readonly lineFrom: number) {
+        constructor(readonly cues: ResolvedCue[], readonly boundary: string, readonly lineFrom: number, readonly duration: DurationSegment | null) {
             super();
             this.elementClass = `ert-time-rail${cues.some(cue => cue.decision && cue.decision.action !== 'exclude' && !cue.conflict) ? ' ert-time-rail-confirmed' : ''}`;
         }
-        eq(other: Marker): boolean { return this.lineFrom === other.lineFrom && this.boundary === other.boundary && JSON.stringify(this.cues) === JSON.stringify(other.cues); }
+        eq(other: Marker): boolean {
+            return this.lineFrom === other.lineFrom && this.boundary === other.boundary && JSON.stringify(this.cues) === JSON.stringify(other.cues)
+                && JSON.stringify(this.duration) === JSON.stringify(other.duration);
+        }
         toDOM(view: EditorView): HTMLElement {
             const row = view.dom.ownerDocument.win.createDiv();
             row.className = 'ert-time-marker-row';
             row.dataset.lineFrom = String(this.lineFrom);
+            if (this.duration) createDurationLine(row, this.duration, () => {
+                const file = editorFile(view);
+                if (file) new SceneTimeModal(service, file, () => view.state.doc.toString()).open();
+            });
             if (this.boundary) {
                 const cap = row.createSpan({ cls: 'ert-time-boundary', text: '━' });
                 setTooltip(cap, this.boundary);
@@ -136,7 +162,7 @@ export function sceneTimeEditorExtension(service: SceneTimeService) {
             const number = view.state.doc.lineAt(line.from).number - 1;
             if (!snapshot.proseLines.has(number)) return null;
             const boundary = number === snapshot.firstLine ? 'Scene start · elapsed 0' : number === snapshot.lastLine ? 'Last prose · end of scene' : '';
-            return new Marker(snapshot.cues.filter(cue => cue.line === number), boundary, line.from);
+            return new Marker(snapshot.cues.filter(cue => cue.line === number), boundary, line.from, durationSegment(snapshot, number, number));
         },
         lineMarkerChange: update => update.docChanged || update.geometryChanged || update.startState.field(editorInfoField, false)?.file !== editorFile(update.view) || update.transactions.some(transaction => transaction.effects.some(effect => effect.is(refreshRuler)))
     })];

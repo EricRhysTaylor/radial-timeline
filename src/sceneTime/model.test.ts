@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cueMarkerLabel, cueState, maskNonProse, resolveSceneTime, scanSceneTime, type TimeDecision } from './model';
+import { cueMarkerLabel, cueState, durationSegment, maskNonProse, resolveSceneTime, scanSceneTime, type TimeDecision } from './model';
 
 describe('scene time detection', () => {
     it.each([
@@ -211,5 +211,39 @@ describe('author controlled elapsed time', () => {
     });
     it('treats an empty scene as no prose and no evidence, not a duration mismatch', () => {
         expect(scanSceneTime('---\nClass: Scene\n---\n')).toMatchObject({ firstLine: -1, lastLine: -1, cues: [] });
+    });
+});
+
+describe('declared duration line', () => {
+    const source = 'Two hours later, she arrives.\n\nShe sleeps for six hours.\n\nThe ship docks.';
+    it('stops at the first cue whose running total passes the declared duration', () => {
+        const scan = scanSceneTime(source);
+        const snapshot = resolveSceneTime(scan, {}, undefined, '3 hours');
+        expect(snapshot.cues.map(cue => cue.estimated)).toEqual([120, 480]);
+        expect(snapshot.duration).toEqual({ planned: 180, status: 'over', stop: { line: 2, from: scan.cues[1].from } });
+        expect(durationSegment(snapshot, 0, 0)).toMatchObject({ status: 'over', stopFrom: null, shortfall: null });
+        expect(durationSegment(snapshot, 2, 2)).toMatchObject({ status: 'over', stopFrom: scan.cues[1].from });
+        expect(durationSegment(snapshot, 4, 4)).toBeNull();
+    });
+    it('runs the full rail and reports the shortfall at the last prose line when the prose falls short', () => {
+        const snapshot = resolveSceneTime(scanSceneTime(source), {}, undefined, '10 hours');
+        expect(snapshot.duration).toMatchObject({ status: 'short', stop: null });
+        expect(durationSegment(snapshot, 0, 0)).toMatchObject({ status: 'short', stopFrom: null, shortfall: null });
+        expect(durationSegment(snapshot, 4, 4)).toMatchObject({ planned: 600, shortfall: 120 });
+    });
+    it('matches exactly without a stop or an arrow', () => {
+        const snapshot = resolveSceneTime(scanSceneTime(source), {}, undefined, '8 hours');
+        expect(snapshot.duration).toMatchObject({ status: 'match', stop: null });
+        expect(durationSegment(snapshot, 4, 4)).toMatchObject({ stopFrom: null, shortfall: null });
+    });
+    it('measures confirmed decisions, not the detected suggestion they replace', () => {
+        const scan = scanSceneTime(source);
+        const snapshot = resolveSceneTime(scan, { [scan.cues[1].key]: { action: 'add', minutes: 30 } }, undefined, '3 hours');
+        expect(snapshot.duration).toMatchObject({ status: 'short', stop: null });
+    });
+    it.each([undefined, '', '0', 'soon', 120])('draws no line without a positive declared duration: %s', duration => {
+        const snapshot = resolveSceneTime(scanSceneTime(source), {}, undefined, duration);
+        expect(snapshot.duration).toBeNull();
+        expect(durationSegment(snapshot, 0, 4)).toBeNull();
     });
 });

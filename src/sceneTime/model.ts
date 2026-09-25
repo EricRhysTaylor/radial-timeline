@@ -23,6 +23,8 @@ export interface SceneTimeScan {
 export interface ResolvedCue extends TimeCue {
     decision?: TimeDecision;
     elapsed: number;
+    /** Provisional running total after this cue; see SceneTimeSnapshot.estimated. */
+    estimated: number;
     conflict: boolean;
     clockLabel?: string;
     clockEstimated?: boolean;
@@ -35,6 +37,25 @@ export interface SceneTimeSnapshot extends SceneTimeScan {
     confirmed: number;
     pending: number;
     conflict: boolean;
+    /** Declared YAML Duration measured against the provisional running total; null without a positive Duration. */
+    duration: SceneDurationTrack | null;
+}
+export interface SceneDurationTrack {
+    /** Declared duration in minutes. */
+    planned: number;
+    /** short: the prose's time cues never reach the declared duration; over: they pass it at `stop`. */
+    status: 'short' | 'match' | 'over';
+    /** First cue whose provisional running total passes the declared duration. */
+    stop: { line: number; from: number } | null;
+}
+/** The stretch of the duration line beside prose lines first..last. */
+export interface DurationSegment {
+    status: SceneDurationTrack['status'];
+    planned: number;
+    /** Offset of the cue where the line stops, when that cue lies in this stretch. */
+    stopFrom: number | null;
+    /** Declared minutes the prose never reaches; set only beside the last prose line. */
+    shortfall: number | null;
 }
 
 const ONES = 'one|two|three|four|five|six|seven|eight|nine';
@@ -132,7 +153,7 @@ export function scanSceneTime(source: string): SceneTimeScan {
         lastLine: indices.length ? indices[indices.length - 1] : -1, proseLines };
 }
 
-export function resolveSceneTime(scan: SceneTimeScan, decisions: Record<string, TimeDecision>, when?: unknown): SceneTimeSnapshot {
+export function resolveSceneTime(scan: SceneTimeScan, decisions: Record<string, TimeDecision>, when?: unknown, duration?: unknown): SceneTimeSnapshot {
     let elapsed = 0;
     let estimate = 0;
     let confirmed = 0;
@@ -154,7 +175,7 @@ export function resolveSceneTime(scan: SceneTimeScan, decisions: Record<string, 
             else if (decision.minutes < elapsed) { conflict = true; cueConflict = true; }
             else { elapsed = decision.minutes; estimate = Math.max(estimate, decision.minutes); }
         }
-        return { ...cue, decision, elapsed, conflict: cueConflict };
+        return { ...cue, decision, elapsed, estimated: estimate, conflict: cueConflict };
     });
     const start = typeof when === 'string' && /\d:\d|\d\s*[ap]m\b/i.test(when) ? parseWhenField(when) : null;
     let clock = start ? start.getHours() * 60 + start.getMinutes() : null;
@@ -182,7 +203,28 @@ export function resolveSceneTime(scan: SceneTimeScan, decisions: Record<string, 
         }
         return { ...cue, clockLabel: label, clockEstimated: estimated || cue.conflict };
     });
-    return { ...scan, cues: timedCues, elapsed, estimated: estimate, confirmed, pending, conflict };
+    return { ...scan, cues: timedCues, elapsed, estimated: estimate, confirmed, pending, conflict, duration: durationTrack(cues, estimate, duration) };
+}
+
+const MINUTE_EPSILON = 1e-6;
+/** The running total never decreases, so the first cue past the declared duration is where the line stops. */
+function durationTrack(cues: ResolvedCue[], estimate: number, duration: unknown): SceneDurationTrack | null {
+    const ms = typeof duration === 'string' ? parseDuration(duration) : null;
+    if (ms === null || !(ms > 0)) return null;
+    const planned = ms / 60000;
+    const stop = cues.find(cue => cue.estimated > planned + MINUTE_EPSILON);
+    return { planned, status: stop ? 'over' : estimate < planned - MINUTE_EPSILON ? 'short' : 'match',
+        stop: stop ? { line: stop.line, from: stop.from } : null };
+}
+
+/** Null once the prose has already run past the declared duration before this stretch. */
+export function durationSegment(snapshot: SceneTimeSnapshot, first: number, last: number): DurationSegment | null {
+    const track = snapshot.duration;
+    if (!track || (track.stop && track.stop.line < first)) return null;
+    const holdsEnd = first <= snapshot.lastLine && snapshot.lastLine <= last;
+    return { status: track.status, planned: track.planned,
+        stopFrom: track.stop && track.stop.line <= last ? track.stop.from : null,
+        shortfall: track.status === 'short' && holdsEnd ? track.planned - snapshot.estimated : null };
 }
 
 export function elapsedLabel(minutes: number): string {

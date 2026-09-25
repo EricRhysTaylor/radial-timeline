@@ -29,6 +29,13 @@ describe('scene time decision persistence', () => {
             expect(f.service.snapshot(f.file, f.source())).toBeNull();
         }
     });
+    it('refreshes the duration line when only the declared Duration changes', () => {
+        const f = fixture();
+        f.plugin.app.metadataCache.getFileCache = () => ({ frontmatter: { Class: 'Scene', Duration: '1 hour' } });
+        expect(f.service.snapshot(f.file, f.source())!.duration?.status).toBe('over');
+        f.plugin.app.metadataCache.getFileCache = () => ({ frontmatter: { Class: 'Scene', Duration: '1 day' } });
+        expect(f.service.snapshot(f.file, f.source())!.duration?.status).toBe('short');
+    });
     it('confirms quantified forward cues in one write and preserves checkpoint accounting', async () => {
         const f = fixture(); await f.service.initialize();
         f.setSource('Two hours later, she arrives.\nShe sleeps for six hours.\nEight hours had passed since departure.\nA few minutes later, she leaves.');

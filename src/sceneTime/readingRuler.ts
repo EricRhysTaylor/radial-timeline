@@ -1,6 +1,7 @@
 import { MarkdownRenderChild, MarkdownView, TFile, type MarkdownPostProcessorContext } from 'obsidian';
 import type { SceneTimeService } from './SceneTimeService';
-import { createTimeTick } from './editorRuler';
+import { createDurationLine, createTimeTick } from './editorRuler';
+import { durationSegment } from './model';
 import { openSceneLineTime } from './ManualTimeModal';
 import { SceneTimeModal } from './SceneTimeModal';
 
@@ -42,6 +43,16 @@ export async function renderReadingTime(service: SceneTimeService, el: HTMLEleme
     if (!section) return;
     const snapshot = service.snapshot(file, source);
     if (!snapshot || !Array.from(snapshot.proseLines).some(line => line >= section.lineStart && line <= section.lineEnd)) return;
+    const review = (key?: string): void => {
+        const currentSource = (): string => {
+            let value = source;
+            service.plugin.app.workspace.iterateAllLeaves(leaf => {
+                if (leaf.view instanceof MarkdownView && leaf.view.file === file) value = leaf.view.getViewData();
+            });
+            return value;
+        };
+        new SceneTimeModal(service, sceneFile, currentSource, key).open();
+    };
     // Reading sections and Live Preview embeds share processors; the editor already has its own gutter.
     class ReadingRail extends MarkdownRenderChild {
         private rail: HTMLElement | undefined;
@@ -81,6 +92,8 @@ export async function renderReadingTime(service: SceneTimeService, el: HTMLEleme
                 if (this.rail.hidden) return;
                 const current = service.snapshot(sceneFile, source);
                 if (!current) return;
+                const segment = durationSegment(current, section!.lineStart, section!.lineEnd);
+                const durationLine = segment && createDurationLine(this.rail, segment, review);
                 const occurrences = new Map<string, number>();
                 for (const cue of current.cues.filter(cue => cue.line >= section!.lineStart && cue.line <= section!.lineEnd)) {
                     const occurrence = occurrences.get(cue.quote) || 0;
@@ -88,19 +101,12 @@ export async function renderReadingTime(service: SceneTimeService, el: HTMLEleme
                     const range = quoteRange(el, cue.quote, occurrence);
                     if (!range) continue; // No rendered anchor: do not place a misleading marker.
                     const rect = range.getBoundingClientRect();
-                    const tick = createTimeTick(el.ownerDocument, cue, () => {
-                        const currentSource = (): string => {
-                            let value = source;
-                            service.plugin.app.workspace.iterateAllLeaves(leaf => {
-                                if (leaf.view instanceof MarkdownView && leaf.view.file === file) value = leaf.view.getViewData();
-                            });
-                            return value;
-                        };
-                        new SceneTimeModal(service, sceneFile, currentSource, cue.key).open();
-                    }, current.cues.filter(item => item.line === cue.line).indexOf(cue));
+                    const top = rect.top - el.getBoundingClientRect().top;
+                    const tick = createTimeTick(el.ownerDocument, cue, () => review(cue.key), current.cues.filter(item => item.line === cue.line).indexOf(cue));
                     // SAFE: measured prose-relative marker position; not a theme/style override.
                     this.rail.appendChild(tick);
-                    tick.style.top = `${rect.top - el.getBoundingClientRect().top}px`; // SAFE: exact rendered phrase anchor; same-line cues use stable vertical stack offsets.
+                    tick.style.top = `${top}px`; // SAFE: exact rendered phrase anchor; same-line cues use stable vertical stack offsets.
+                    if (durationLine && cue.from === segment?.stop?.from) durationLine.style.setProperty('--ert-time-duration-stop', `${Math.max(0, top)}px`); // SAFE: duration line ends at its rendered stop cue.
                 }
             };
             const win = el.ownerDocument.defaultView;

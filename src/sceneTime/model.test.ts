@@ -179,6 +179,17 @@ describe('author controlled elapsed time', () => {
         expect(result.conflict).toBe(true);
         expect(cueState(result.cues[2])).toBe('conflict');
     });
+    it('estimates a provisional total from unconfirmed forward cues', () => {
+        const result = resolveSceneTime(scanSceneTime('She waited for thirty minutes.\n\nThree days earlier, he left.\n\nIn two hours the ship docks.'), {});
+        expect(result.elapsed).toBe(0);
+        expect(result.estimated).toBe(150);
+    });
+    it('reconciles unconfirmed estimates with confirmed decisions', () => {
+        const scan = scanSceneTime(source);
+        const result = resolveSceneTime(scan, { [scan.cues[0].key]: { action: 'add', minutes: 120 } });
+        expect(result.elapsed).toBe(120);
+        expect(result.estimated).toBe(480);
+    });
     it('ignores excluded cues and keeps remaining cues pending', () => {
         const scan = scanSceneTime(source);
         const result = resolveSceneTime(scan, { [scan.cues[0].key]: { action: 'exclude', minutes: 0 } });

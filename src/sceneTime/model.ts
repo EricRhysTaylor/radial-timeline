@@ -30,6 +30,8 @@ export interface ResolvedCue extends TimeCue {
 export interface SceneTimeSnapshot extends SceneTimeScan {
     cues: ResolvedCue[];
     elapsed: number;
+    /** Provisional total: confirmed decisions plus the suggested durations of unconfirmed forward cues. */
+    estimated: number;
     confirmed: number;
     pending: number;
     conflict: boolean;
@@ -132,18 +134,25 @@ export function scanSceneTime(source: string): SceneTimeScan {
 
 export function resolveSceneTime(scan: SceneTimeScan, decisions: Record<string, TimeDecision>, when?: unknown): SceneTimeSnapshot {
     let elapsed = 0;
+    let estimate = 0;
     let confirmed = 0;
     let pending = 0;
     let conflict = false;
     const cues = scan.cues.map(cue => {
         const decision = cue.duplicate ? undefined : decisions[cue.key];
         let cueConflict = false;
-        if (!decision) pending++;
-        else if (decision.action !== 'exclude') {
+        if (!decision) {
+            pending++;
+            // Unconfirmed cues only estimate; backward references never advance the scene.
+            if (cue.suggestedMinutes !== null && cue.kind !== 'backward') {
+                if (cue.kind === 'checkpoint') estimate = Math.max(estimate, cue.suggestedMinutes);
+                else estimate += cue.suggestedMinutes;
+            }
+        } else if (decision.action !== 'exclude') {
             confirmed++;
-            if (decision.action === 'add') elapsed += decision.minutes;
+            if (decision.action === 'add') { elapsed += decision.minutes; estimate += decision.minutes; }
             else if (decision.minutes < elapsed) { conflict = true; cueConflict = true; }
-            else elapsed = decision.minutes;
+            else { elapsed = decision.minutes; estimate = Math.max(estimate, decision.minutes); }
         }
         return { ...cue, decision, elapsed, conflict: cueConflict };
     });
@@ -173,7 +182,7 @@ export function resolveSceneTime(scan: SceneTimeScan, decisions: Record<string, 
         }
         return { ...cue, clockLabel: label, clockEstimated: estimated || cue.conflict };
     });
-    return { ...scan, cues: timedCues, elapsed, confirmed, pending, conflict };
+    return { ...scan, cues: timedCues, elapsed, estimated: estimate, confirmed, pending, conflict };
 }
 
 export function elapsedLabel(minutes: number): string {

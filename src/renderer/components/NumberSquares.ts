@@ -297,8 +297,12 @@ export function renderInnerRingsNumberSquaresAllScenes(params: {
     const number = getScenePrefixNumber(scene.title, scene.number);
     if (!number) return;
     const subplot = scene.subplot && scene.subplot.trim().length > 0 ? scene.subplot : 'Main Plot';
-    // Skip Main Plot scenes - they're always in the outer ring, not inner rings
-    if (subplot === 'Main Plot') return;
+    // The first subplot's ring is the outer ring, which the all-scenes ring
+    // replaces — its squares come from the outer pass. That subplot is 'Main
+    // Plot' only when the book has one; a book without it (e.g. the Odyssey
+    // demo) leads with its largest subplot, whose squares would otherwise be
+    // drawn a second time on the outer ring at the subplot's own angles.
+    if (masterSubplotOrder.indexOf(subplot) === 0) return;
 
     const placement = resolveSubplotRingPlacement({
       scene,

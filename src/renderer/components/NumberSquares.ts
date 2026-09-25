@@ -296,9 +296,6 @@ export function renderInnerRingsNumberSquaresAllScenes(params: {
     if (isBeatNote(scene) || scene.itemType === 'Backdrop') return;
     const number = getScenePrefixNumber(scene.title, scene.number);
     if (!number) return;
-    const subplot = scene.subplot && scene.subplot.trim().length > 0 ? scene.subplot : 'Main Plot';
-    // Skip Main Plot scenes - they're always in the outer ring, not inner rings
-    if (subplot === 'Main Plot') return;
 
     const placement = resolveSubplotRingPlacement({
       scene,
@@ -313,6 +310,11 @@ export function renderInnerRingsNumberSquaresAllScenes(params: {
       outerPositionByKey
     });
     if (!placement) return;
+    // The outermost subplot (masterSubplotOrder[0], whatever its name) owns
+    // the ring that shows every scene in this mode, and the outer-ring pass
+    // already squared those scenes. Drawing them again here, at this
+    // subplot's own spacing, interleaves duplicate numbers on the outer ring.
+    if (placement.ring === NUM_RINGS - 1) return;
     const { ring, segment: actIndex, sceneIndex, startAngle: sceneStartAngle, radius: textPathRadius } = placement;
     const squareSize = getNumberSquareSize(number, squareScale);
     const squareX = textPathRadius * Math.cos(sceneStartAngle);

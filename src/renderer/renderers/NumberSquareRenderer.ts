@@ -131,7 +131,8 @@ export function renderNumberSquares(ctx: NumberSquareRenderContext): string {
             });
         }
 
-        // Then, draw squares for inner subplot rings (excluding Main Plot which is the outer ring)
+        // Then, draw squares for inner subplot rings (excluding the outermost
+        // subplot, whose ring is the all-scenes ring squared above)
         svg += renderInnerRingsNumberSquaresAllScenes({
             plugin,
             NUM_RINGS,

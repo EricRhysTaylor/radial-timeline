@@ -58,6 +58,7 @@
 		"verify:publish": "npm run publish:pdf-smoke && npm run publish:pdf-assembly && npm run publish:pdf-visual",
 		"verify:publish:wizard": "npm run publish:pdf-wizard-visual",
 		"certify:anthropic": "RT_USE_LIVE_OBSIDIAN_REQUEST=1 vitest run src/ai/certification/anthropicCertification.test.ts",
+		"certify:features": "RT_USE_LIVE_OBSIDIAN_REQUEST=1 vitest run src/ai/certification/featureCertification.test.ts",
 		"smoke-model": "tsx scripts/smoke-model.ts",
 		"css-drift": "node scripts/css-drift-check.mjs",
 		"fallback-gate": "node scripts/fallback-gate.mjs",

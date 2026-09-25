@@ -1,0 +1,216 @@
+{
+  "provider": "anthropic",
+  "modelId": "claude-opus-5-5",
+  "vault": "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/Test Vaults/Obsidian Vault AI Certification",
+  "book": "Pride & Prejudice",
+  "generatedAt": "2026-09-25T22:45:33.577Z",
+  "cases": [
+    {
+      "id": "pulse:11 Reading Room",
+      "feature": "pulse",
+      "durationMs": 11823,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 12666,
+        "outputTokens": 1145,
+        "totalTokens": 13811,
+        "rawInputTokens": 12666,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0,
+        "cacheCreation5mInputTokens": 0,
+        "cacheCreation1hInputTokens": 0
+      },
+      "costUSD": 0.073564,
+      "sample": {
+        "previousSceneAnalysis": "- 10 Caroline's futile courtship + / Letter-hovering sets up her book-watching desperation in 11\n- Sparring as intimacy + / Persuasion debate primes the pride-and-temper duel\n- Darcy's growing danger + / 'Bewitched' admission pays off in 11's closing retreat\n- Repeated drawing-room setup - / Near-identical evening structure risks reader fatigue\n- Jane's recovery clock ? / Departure hope creates mild ticking pressure",
+        "currentSceneAnalysis": "- 11 A / Trim opening social summary; reach the room-walk gambit sooner for momentum.\n- Room-walk gambit + / Caroline's ploy backfires, spotlighting Elizabeth instead\n- Resentment confession + / 'Good opinion lost forever' plants major future conflict\n- Thematic thesis duel + / Pride versus prejudice named outright; crisp closing volley\n- Ball announcement + / Netherfield ball seeds a key upcoming set piece\n- Jane-Bingley subplot ? / Warm but summarized; romance stays offstage",
+        "nextSceneAnalysis": "- 12 Darcy's deliberate withdrawal + / Directly acts on 11's felt danger; silence speaks\n- Caroline's relief + / Jealousy from 11 resolves into hollow sudden civility\n- Irony of misreading + / Elizabeth leaves oblivious, echoing 'wilfully misunderstand' jab\n- Tonal deflation at Longbourn ? / Shift resets stage but drops tension briefly\n- Officer subplot hook - / Regiment gossip thin; needs sharper tie to stakes",
+        "sceneGrade": "A"
+      }
+    },
+    {
+      "id": "pulse:20 Refusal Aftermath",
+      "feature": "pulse",
+      "durationMs": 12602,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 14565,
+        "outputTokens": 1207,
+        "totalTokens": 15772,
+        "rawInputTokens": 14565,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0,
+        "cacheCreation5mInputTokens": 0,
+        "cacheCreation1hInputTokens": 0
+      },
+      "costUSD": 0.0824,
+      "sample": {
+        "previousSceneAnalysis": "- 19 Refusal ignored sets fuse + / Collins's self-deception directly triggers Mrs. Bennet's campaign\n- Appeal to father planted + / Elizabeth's plan pays off in the library verdict\n- Mother's complicity established + / Her eagerness to leave foreshadows her lurking outside\n- Entail and poverty stakes + / Collins's portion warning echoes Mrs. Bennet's maintenance threat\n- Proposal length drags - / Comic monologue overstays; momentum sags before chapter turn",
+        "currentSceneAnalysis": "- 20 A / Trim Mrs. Bennet's nerves monologue; give Charlotte a telling glance to foreshadow.\n- Mr. Bennet's reversal + / Perfect comic turn; ally revealed, stakes deflated elegantly\n- Collins's wounded pride + / Imaginary regard exposed; sets up quick transfer of affection\n- Charlotte's quiet entrance ? / Window eavesdropping plants her move; could be sharper\n- Summarized siege - / Mother's coaxing told, not shown; tension flattens mid-scene\n- Collins's face-saving speech + / Sour-grapes resignation closes arc with sharp irony",
+        "nextSceneAnalysis": "- 21 Attentions shift to Charlotte + / Pays off her lingering presence; engagement twist looms\n- Wickham re-enters + / Contrast suitor raises romantic stakes after Collins farce\n- Netherfield departure blow + / Pivots marriage stakes from Elizabeth to Jane effectively\n- Mrs. Bennet's hopes misplaced ? / Two courses gag echoes her blindness; mild escalation\n- Collins thread abruptly dropped - / Aftermath summarized quickly; tonal shift feels slightly jarring",
+        "sceneGrade": "A"
+      }
+    },
+    {
+      "id": "pulse:29 Dinner at Rosings",
+      "feature": "pulse",
+      "durationMs": 12019,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 13732,
+        "outputTokens": 1137,
+        "totalTokens": 14869,
+        "rawInputTokens": 13732,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0,
+        "cacheCreation5mInputTokens": 0,
+        "cacheCreation1hInputTokens": 0
+      },
+      "costUSD": 0.077668,
+      "sample": {
+        "previousSceneAnalysis": "- 28 Invitation hook + / Rosings dinner invite launches Chapter 29 directly.\n- Collins's hype buildup + / Relentless praise primes reader to judge Lady Catherine.\n- Miss de Bourgh preview + / Sickly first glimpse pays off at dinner table.\n- Charlotte's managed marriage ? / Her composure recurs but isn't deepened here.\n- Slow arrival pacing - / Garden tour drags; tension stays low before dinner.",
+        "currentSceneAnalysis": "- 29 B / Trim Collins's pre-dinner instructions; reach Elizabeth's interrogation sooner for sharper conflict.\n- Elizabeth versus Lady Catherine + / Age retort crackles; first real defiance of authority.\n- Darcy resemblance planted + / Subtle family likeness keeps Darcy present offstage.\n- Wickham bias reinforced + / Elizabeth trusts Wickham's view; deepens her misjudgment.\n- Card-table lull - / Deliberately dull stretch risks sapping momentum.\n- Class stakes via entail ? / Entail jab stings but stakes stay abstract.",
+        "nextSceneAnalysis": "- 30 Routine established ? / Summary repeats dinner pattern; low tension until Darcy.\n- Lady Catherine's meddling + / Parish tyranny extends dinner's controlling portrait.\n- Darcy's arrival + / Resemblance payoff; central conflict re-enters Rosings orbit.\n- Jane probe + / Elizabeth's boldness from dinner now targets Darcy.\n- Cousin engagement setup + / Miss de Bourgh gains stakes as Darcy's intended.",
+        "sceneGrade": "B"
+      }
+    },
+    {
+      "id": "pulse:38 Departure from Hunsford",
+      "feature": "pulse",
+      "durationMs": 12597,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 11653,
+        "outputTokens": 1205,
+        "totalTokens": 12858,
+        "rawInputTokens": 11653,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0,
+        "cacheCreation5mInputTokens": 0,
+        "cacheCreation1hInputTokens": 0
+      },
+      "costUSD": 0.070712,
+      "sample": {
+        "previousSceneAnalysis": "- 37 Letter rumination seeds concealment + / Elizabeth's private reckoning sets up her secret-keeping at departure\n- Lady Catherine's farewell echo + / Collins's Rosings message closes this condescension thread neatly\n- Jane's loss weighs forward + / Bingley guilt directly fuels 38's hesitation to confide\n- Departure logistics overlap - / Repeated travel fuss dilutes momentum before actual leaving\n- Family defects foreshadowed ? / Lydia worry pays off later, not in 38",
+        "currentSceneAnalysis": "- 38 B / Trim Collins's speeches; sharpen Elizabeth's internal tension over what to reveal to Jane.\n- Collins's marital boast + / Comic irony underscores what Elizabeth escaped and Charlotte chose\n- Charlotte's clear-eyed choice + / Brief, poignant; adds subtext without overexplaining\n- Much to conceal + / Sharp line crystallizes secret-keeping stakes\n- Transitional pacing sag - / Travel and London stay summarized; low dramatic friction\n- Confession dilemma deferred ? / Tension set up but unresolved; risks feeling static",
+        "nextSceneAnalysis": "- 39 Lydia embodies family folly + / Concrete proof of defects Elizabeth now clearly sees\n- Wickham news reframed + / Elizabeth's hidden knowledge makes Lydia's chatter ironic\n- Brighton threat introduced + / Raises stakes sharply after 38's quiet transition\n- Self-recognition in coarseness + / Elizabeth's growth deepens through uncomfortable mirror\n- Jane confession still pending ? / 38's promised disclosure delayed again; watch reader patience",
+        "sceneGrade": "B"
+      }
+    },
+    {
+      "id": "pulse:47 Searching London",
+      "feature": "pulse",
+      "durationMs": 12089,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 21433,
+        "outputTokens": 1177,
+        "totalTokens": 22610,
+        "rawInputTokens": 21433,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0,
+        "cacheCreation5mInputTokens": 0,
+        "cacheCreation1hInputTokens": 0
+      },
+      "costUSD": 0.10927200000000001,
+      "sample": {
+        "previousSceneAnalysis": "- 46 Letter-driven inciting shock + / Jane's letters launch the crisis the carriage debate dissects\n- Self-reproach seeded + / Elizabeth's guilt carries directly into scene 47's anguish\n- Darcy's exit stakes + / Romantic loss deepens subtext beneath the family crisis\n- Aunt's curiosity hook ? / Mrs. Gardiner's question resurfaces briefly, then lies dormant\n- Momentum into travel + / Rapid departure hands off urgency cleanly to the road",
+        "currentSceneAnalysis": "- 47 B / Trim carriage debate repetition; sharpen Jane interrogation; let Lydia's note land harder.\n- Hope versus dread debate ? / Clarifies stakes but rehashes known facts at length\n- Mrs. Bennet's hysteria + / Comic relief sharpens blame theme and family dysfunction\n- Mary's moralizing + / Brief, pointed irony underscores social ruin stakes\n- Lydia's note reveal + / Her own voice makes the thoughtlessness vivid, chilling\n- Secrecy guilt shared + / Sisters' confession of silence deepens moral conflict",
+        "nextSceneAnalysis": "- 48 Search plan payoff + / Mr. Bennet's Epsom-Clapham leads fail, escalating hopelessness\n- Meryton turns on Wickham + / Public exposure validates Elizabeth's earlier warnings\n- Collins letter cruelty + / Externalizes family disgrace Mary only theorized\n- Father's self-blame + / Answers Elizabeth's guilt with parental accountability\n- Darcy silence thread ? / Keeps romance tension alive through absence alone",
+        "sceneGrade": "B"
+      }
+    },
+    {
+      "id": "gossamer:momentum",
+      "feature": "gossamer",
+      "durationMs": 16236,
+      "passed": true,
+      "summary": "All 15 beats scored and validated (61 scenes, 121693 words).",
+      "usage": {
+        "inputTokens": 239579,
+        "outputTokens": 1443,
+        "totalTokens": 241022,
+        "rawInputTokens": 249,
+        "cacheReadInputTokens": 239330,
+        "cacheCreationInputTokens": 0,
+        "cacheCreation5mInputTokens": 0,
+        "cacheCreation1hInputTokens": 0
+      },
+      "costUSD": 0.077722,
+      "sample": [
+        {
+          "beatName": "Opening Image",
+          "signal": "momentum",
+          "score": 45,
+          "justification": "Bingley's arrival sets a clear marriage-market question, but the scene is largely comic dialogue establishing character rather than driving events."
+        },
+        {
+          "beatName": "Theme Stated",
+          "signal": "momentum",
+          "score": 35,
+          "justification": "Jane and Elizabeth's post-ball talk and Bingley/Darcy background are reflective exposition with little forward push."
+        },
+        {
+          "beatName": "Setup",
+          "signal": "momentum",
+          "score": 45,
+          "justification": "Netherfield dinner deepens Darcy-Elizabeth friction and Bingley's sisters' snobbery, advancing relationships steadily but without urgency."
+        }
+      ]
+    },
+    {
+      "id": "inquiry:setup-core",
+      "feature": "inquiry",
+      "durationMs": 88272,
+      "passed": true,
+      "summary": "Inquiry returned 17 finding(s) over 61 scenes; verdict and refs passed the production result builder.",
+      "usage": {
+        "inputTokens": 244845,
+        "outputTokens": 9070,
+        "totalTokens": 253915,
+        "rawInputTokens": 33,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 244812,
+        "cacheCreation5mInputTokens": 0,
+        "cacheCreation1hInputTokens": 244812
+      },
+      "costUSD": 2.140028,
+      "sample": {
+        "verdict": {
+          "flow": 0.84,
+          "depth": 0.92
+        },
+        "summary": "The story moves smoothly because the early Hertfordshire chapters load nearly every later payoff in advance. The entail, the militia's timetable, Bingley's pliability, Darcy's unforgiving temper and Wickham's checkable claims are all in place early, so the Hunsford, Pemberley and elopement turns fire under pressure without stopping for explanation. The middle stretch (S23–S31) is slower and more reportorial, and several file labels misname their content, which can make the timeline harder to trace.",
+        "firstFinding": {
+          "refId": "scn_a25045e5",
+          "kind": "strength",
+          "headline": "The parents' temperaments are fixed from the first chapter, and the plot runs on them",
+          "bullets": [
+            "Mrs. Bennet's single aim (marrying off her daughters) drives the Collins pressure in S20, the Brighton push in S41 and her euphoria in S49.",
+            "Mr. Bennet's sarcastic detachment sets up his permissiveness in S41 and his late self-reproach in S48."
+          ],
+          "subject": "Parental temperament as causal engine",
+          "span": "S1–S48",
+          "related": [],
+          "supportingRefs": [
+            {
+              "refId": "scn_3aee3333",
+              "refLabel": "50 Mr Bennet's Regrets.md",
+              "refPath": "Pride & Prejudice/50 Mr Bennet's Regrets.md",
+              "quote": "When the first transports of rage which had produced his activity in seeking her were over, he naturally returned to all his former indolence."
+            }
+          ],
+          "evidenceType": "mixed",
+          "lens": "both",
+          "role": "target",
+          "evidenceQuote": "The business of her life was to get her daughters married: its solace was visiting and news."
+        }
+      }
+    }
+  ]
+}

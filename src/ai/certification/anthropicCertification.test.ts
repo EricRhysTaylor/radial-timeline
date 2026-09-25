@@ -14,7 +14,7 @@ import { getAIClient } from '../runtime/aiClient';
 import { buildDefaultAiSettings } from '../settings/aiSettings';
 import { resetPricingToBuiltin } from '../cost/providerPricing';
 import { extractTokenUsage } from '../usage/providerUsage';
-import type { AIRunPreparedEstimate, AIRunRequest, AIRunResult, AIRunValidation, EvidenceDocument, SourceCitation } from '../types';
+import type { AIRunPreparedEstimate, AIRunRequest, AIRunResult, AIRunValidation, EvidenceDocument } from '../types';
 
 type CertificationCaseResult = {
     id: string;
@@ -35,10 +35,10 @@ type CertificationReport = {
 // Certification targets the current Anthropic depth model. Re-run live
 // (RT_ANTHROPIC_API_KEY + RT_USE_LIVE_OBSIDIAN_REQUEST=1) after any Opus
 // promotion — the recorded report in docs/audits/ still reflects the last
-// live run's model until then.
-const PINNED_ANTHROPIC_POLICY = { type: 'pinned', pinnedAlias: 'claude-opus-5' } as const;
-const MODEL_ID = 'claude-opus-5';
-const UNIQUE_CODE = 'AURORA-LATTICE';
+// live run's model until then. RT_CERT_ANTHROPIC_MODEL certifies another
+// catalog model (e.g. the continuity or pro-channel entry).
+const MODEL_ID = (process.env.RT_CERT_ANTHROPIC_MODEL ?? '').trim() || 'claude-opus-5-5';
+const PINNED_ANTHROPIC_POLICY = { type: 'pinned', pinnedAlias: MODEL_ID } as const;
 const REPORT_JSON_PATH = resolve(process.cwd(), 'docs', 'audits', 'anthropic-certification.json');
 const REPORT_MD_PATH = resolve(process.cwd(), 'docs', 'audits', 'anthropic-certification.md');
 
@@ -79,29 +79,54 @@ function primeClientForBuiltinData(client: ReturnType<typeof getAIClient>): void
     internal.providerSnapshot = { source: 'none', snapshot: null };
 }
 
+// The evidence reads like an ordinary manuscript scene. An earlier fixture —
+// a "codename … cite directly" canary over one sentence repeated 220 times —
+// read like a prompt-extraction probe and drew nondeterministic safety
+// refusals (cyber / reasoning_extraction) from Opus 5 and 5.5 on 2026-09-25.
+// The unique ferry name makes each cache group's prefix distinct, and the
+// question never states the answer.
+const SCENE_PEOPLE = ['Mara', 'Tobias', 'the harbormaster', 'Aunt Delphine', 'the schoolteacher', 'Old Ruen'];
+const SCENE_PLACES = ['the breakwater', 'the fish market', 'the chapel steps', 'the salt flats', 'the lighthouse stair', 'the ropewalk'];
+const SCENE_WEATHER = ['a thin rain', 'a white fog', 'a hard east wind', 'low winter sun', 'sleet off the water', 'a still grey morning'];
+const SCENE_ACTIONS = [
+    'mended nets without speaking',
+    'counted the boats that had not come back',
+    'argued about the price of coal',
+    'read the old letters again',
+    'watched the tide turn against the pilings',
+    'carried bread down to the quay'
+];
+
+function buildScenePara(index: number): string {
+    const person = SCENE_PEOPLE[index % SCENE_PEOPLE.length];
+    const place = SCENE_PLACES[(index * 5 + 1) % SCENE_PLACES.length];
+    const weather = SCENE_WEATHER[(index * 7 + 2) % SCENE_WEATHER.length];
+    const action = SCENE_ACTIONS[(index * 11 + 3) % SCENE_ACTIONS.length];
+    return `On the ${index + 1}th day of the thaw, under ${weather}, ${person} ${action} at ${place}. `
+        + `Nobody in the village said what they were all thinking, and the gulls went on crying over the harbor as if nothing had changed.`;
+}
+
+function ferryName(cacheGroup: string): string {
+    return `Kestrel-${cacheGroup}`;
+}
+
 function buildLargeEvidenceDocument(cacheGroup: string): EvidenceDocument {
-    const fillerParagraph = 'Stable manuscript evidence paragraph for Anthropic cache certification. ';
-    const filler = fillerParagraph.repeat(220);
-    const codename = `${UNIQUE_CODE}-${cacheGroup}`;
+    const paragraphs = Array.from({ length: 90 }, (_, index) => buildScenePara(index));
+    paragraphs.splice(45, 0, `That winter Mara crossed the strait every Thursday on the old ferry, the ${ferryName(cacheGroup)}, which smelled of tar and wet wool.`);
     return {
         title: 'Scene S1',
-        content: [
-            `Codename ${codename} appears in the manuscript evidence and should be cited directly.`,
-            filler,
-            'The answer should remain grounded in the attached evidence document.'
-        ].join('\n\n')
+        content: paragraphs.join('\n\n')
     };
 }
 
 function buildCacheableInquiryRequest(task: string, cacheGroup: string): AIRunRequest {
-    const codename = `${UNIQUE_CODE}-${cacheGroup}`;
     return {
         feature: 'InquiryMode',
         task,
         requiredCapabilities: ['longContext', 'jsonStrict', 'reasoningStrong', 'highOutputCap'],
         featureModeInstructions: 'Answer only from the attached manuscript evidence.',
         userInput: 'Use the attached evidence only.',
-        userQuestion: `What codename appears in evidence? Reply with the codename ${codename}.`,
+        userQuestion: 'In the attached scene, what is the name of the ferry Mara takes across the strait? Answer with the name only.',
         promptText: 'Use the attached evidence only.',
         returnType: 'text',
         providerOverride: 'anthropic',
@@ -221,8 +246,8 @@ describe.skipIf(!liveAnthropicKey || !liveRequestTransportEnabled)('Anthropic li
         const baselineInquiryRequest = buildCacheableInquiryRequest('AnthropicCertificationCacheableInquiry', `baseline-${runNonce}`);
         const cacheRepeatTask = 'AnthropicCertificationCacheRepeat';
         const cacheRepeatRequest = buildCacheableInquiryRequest(cacheRepeatTask, `cache-repeat-${runNonce}`);
-        const freshBypassTask = 'AnthropicCertificationFreshBypassWarm';
-        const freshBypassRequest = buildCacheableInquiryRequest(freshBypassTask, `fresh-bypass-${runNonce}`);
+        const freshBypassTask = 'AnthropicCertificationFreshRunWarm';
+        const freshBypassRequest = buildCacheableInquiryRequest(freshBypassTask, `fresh-run-${runNonce}`);
 
         const strictTextRequest: AIRunRequest = {
             feature: 'AnthropicCertification',
@@ -297,7 +322,7 @@ describe.skipIf(!liveAnthropicKey || !liveRequestTransportEnabled)('Anthropic li
 
         cases.push(await executeCase('one_pass_text_success', async () => {
             const { prepared, run, validation, usage } = await prepareAndRun(client, strictTextRequest);
-            expect(run.aiStatus).toBe('success');
+            expect(run.aiStatus, run.error).toBe('success');
             expect(run.content).toBeTruthy();
             expect(validation.schemaMode).toBe('none');
             expect(validation.requestPayloadCaptured).toBe(true);
@@ -318,7 +343,7 @@ describe.skipIf(!liveAnthropicKey || !liveRequestTransportEnabled)('Anthropic li
 
         cases.push(await executeCase('one_pass_json_success', async () => {
             const { prepared, run, validation, usage } = await prepareAndRun(client, strictJsonRequest);
-            expect(run.aiStatus).toBe('success');
+            expect(run.aiStatus, run.error).toBe('success');
             expect(validation.schemaMode).toBe('json_schema');
             expect(validation.requestPayloadCaptured).toBe(true);
             expect(validation.actualUsageCaptured).toBe(true);
@@ -336,23 +361,24 @@ describe.skipIf(!liveAnthropicKey || !liveRequestTransportEnabled)('Anthropic li
             };
         }));
 
-        cases.push(await executeCase('document_citations_text_run', async () => {
+        cases.push(await executeCase('evidence_grounded_text_run', async () => {
+            // Provider citations are disabled product-wide (resolveCitationsEnabled
+            // returns false; Sources come from the schema's evidence_quote field),
+            // so this case certifies that attached evidence reaches the model and
+            // grounds the answer, and that no citation request is sent.
             const { run, validation } = await prepareAndRun(client, {
                 ...baselineInquiryRequest,
-                task: 'AnthropicCertificationCitations',
+                task: 'AnthropicCertificationEvidence',
                 bypassInMemoryCache: true,
                 bypassProviderReuse: true
             });
-            expect(run.aiStatus).toBe('success');
-            expect(validation.evidenceTransport).toBe('document_blocks');
-            expect(validation.citationsRequested).toBe(true);
-            expect((run.citations?.length ?? 0) > 0).toBe(true);
-            expect((run.content ?? '').includes(`${UNIQUE_CODE}-baseline-${runNonce}`)).toBe(true);
+            expect(run.aiStatus, run.error).toBe('success');
+            expect(validation.citationsRequested).toBe(false);
+            expect(run.content ?? '', 'answer is not grounded in the evidence').toContain(ferryName(`baseline-${runNonce}`));
             return {
-                summary: 'Inquiry-style text run used Anthropic document blocks and returned direct manuscript citations.',
+                summary: 'Inquiry-style text run answered from the attached evidence without a provider citation request.',
                 details: {
                     content: run.content,
-                    citations: run.citations as SourceCitation[] | undefined,
                     validation
                 }
             };
@@ -363,7 +389,7 @@ describe.skipIf(!liveAnthropicKey || !liveRequestTransportEnabled)('Anthropic li
                 ...cacheRepeatRequest,
                 bypassInMemoryCache: true
             });
-            expect(run.aiStatus).toBe('success');
+            expect(run.aiStatus, run.error).toBe('success');
             expect(validation.bypassedInMemoryCache).toBe(true);
             expect(validation.bypassedProviderReuse).toBe(false);
             expect(validation.providerReuseRequested).toBe(true);
@@ -385,7 +411,7 @@ describe.skipIf(!liveAnthropicKey || !liveRequestTransportEnabled)('Anthropic li
                 ...cacheRepeatRequest,
                 bypassInMemoryCache: true
             });
-            expect(run.aiStatus).toBe('success');
+            expect(run.aiStatus, run.error).toBe('success');
             expect(validation.providerReuseRequested).toBe(true);
             expect(validation.providerCacheStatus).toBe('hit');
             expect(validation.reuseState).toBe('warm');
@@ -405,13 +431,13 @@ describe.skipIf(!liveAnthropicKey || !liveRequestTransportEnabled)('Anthropic li
                 ...freshBypassRequest,
                 bypassInMemoryCache: true
             });
-            expect(warmup.run.aiStatus).toBe('success');
+            expect(warmup.run.aiStatus, `warmup: ${warmup.run.error ?? ''}`).toBe('success');
             const { run, validation, usage } = await prepareAndRun(client, {
                 ...freshBypassRequest,
                 bypassInMemoryCache: true,
                 bypassProviderReuse: true
             });
-            expect(run.aiStatus).toBe('success');
+            expect(run.aiStatus, run.error).toBe('success');
             expect(validation.bypassedInMemoryCache).toBe(true);
             expect(validation.bypassedProviderReuse).toBe(true);
             expect(validation.providerReuseRequested).toBe(false);

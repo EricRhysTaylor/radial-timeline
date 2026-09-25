@@ -7,6 +7,8 @@ export interface PromoPricing {
     expiresAt?: string;
     standardInputPer1M?: number;
     standardOutputPer1M?: number;
+    standardCacheReadPer1M?: number;
+    standardCacheStoragePer1MPerHour?: number;
 }
 
 export interface ProviderModelPricing {
@@ -55,17 +57,20 @@ export interface ResolvedProviderModelPricing {
 
 export const BUILTIN_PRICING: ProviderPricingTable = {
     anthropic: {
-        // Drop-in upgrade at Opus 4.8 pricing: $5/$25 per MTok; cache write
-        // 1.25× (5m) / 2× (1h), cache read 0.1× — multipliers unchanged.
-        'claude-opus-5': {
-            inputPer1M: 5.0,
-            outputPer1M: 25.0,
-            cacheWrite5mPer1M: 6.25,
-            cacheWrite1hPer1M: 10.0,
-            cacheReadPer1M: 0.5
+        // Current depth model. $4/$20 per MTok; cache writes keep the
+        // standard 1.25× (5m) / 2× (1h) multipliers, but cache reads are
+        // 0.05× input ($0.20), not 0.1×. Verified against
+        // platform.claude.com/docs/en/about-claude/pricing on 2026-09-25.
+        'claude-opus-5-5': {
+            inputPer1M: 4.0,
+            outputPer1M: 20.0,
+            cacheWrite5mPer1M: 5.0,
+            cacheWrite1hPer1M: 8.0,
+            cacheReadPer1M: 0.2
         },
-        // Continuity model (one generation back). Same pricing as Opus 5.
-        'claude-opus-4-8': {
+        // Continuity model (one generation back). $5/$25 per MTok; cache
+        // write 1.25× (5m) / 2× (1h), cache read 0.1×.
+        'claude-opus-5': {
             inputPer1M: 5.0,
             outputPer1M: 25.0,
             cacheWrite5mPer1M: 6.25,
@@ -107,26 +112,26 @@ export const BUILTIN_PRICING: ProviderPricingTable = {
         }
     },
     openai: {
-        // Verified against developers.openai.com/api/docs/pricing on 2026-09-05.
-        // OpenAI lists Sol's $4/$20 as "promotional pricing available at least
-        // through November 21, 2026" with no post-promo rate published, so it
-        // is recorded as the plain rate; re-verify after that date.
-        'gpt-5.6-sol': {
-            inputPer1M: 4.0,
-            outputPer1M: 20.0,
-            cacheReadPer1M: 0.4,
+        // Verified against developers.openai.com/api/docs/models on 2026-09-25.
+        // GPT-6 Sol/Luna prices are permanent (not promotional). OpenAI now
+        // lists cache writes for these models ($2.50 Sol, $0.125 Luna — 1.25×
+        // input); RT's OpenAI path has no write rate and prices the priming
+        // pass at the input rate, so the first pass is quoted ~20% under the
+        // provider's write charge, as for Astra. Long context is 2× input and
+        // cache-read, 1.5× output above 272K.
+        'gpt-6-sol': {
+            inputPer1M: 2.0,
+            outputPer1M: 10.0,
+            cacheReadPer1M: 0.2,
             longContext: {
                 thresholdInputTokens: 272_000,
-                inputPer1M: 8.0,
-                outputPer1M: 30.0,
-                cacheReadPer1M: 0.8
+                inputPer1M: 4.0,
+                outputPer1M: 15.0,
+                cacheReadPer1M: 0.4
             }
         },
         // GPT-6 Astra, 'pro' channel. OpenAI lists cache writes at $12.50
-        // (1.25× input); RT's OpenAI path has no TTL-specific write rate and
-        // prices the priming pass at the input rate, so the first pass is
-        // quoted ~20% under the provider's write charge. Long context is 2×
-        // input and cache-read, 1.5× output above 272K.
+        // (1.25× input); priced at the input rate as above.
         'gpt-6-astra': {
             inputPer1M: 10.0,
             outputPer1M: 50.0,
@@ -138,16 +143,16 @@ export const BUILTIN_PRICING: ProviderPricingTable = {
                 cacheReadPer1M: 2.0
             }
         },
-        // Economy model on the gpt-5 line.
-        'gpt-5.6-luna': {
-            inputPer1M: 0.2,
-            outputPer1M: 1.2,
-            cacheReadPer1M: 0.02,
+        // Economy model on the gpt-6 line.
+        'gpt-6-luna': {
+            inputPer1M: 0.1,
+            outputPer1M: 0.5,
+            cacheReadPer1M: 0.01,
             longContext: {
                 thresholdInputTokens: 272_000,
-                inputPer1M: 0.4,
-                outputPer1M: 1.8,
-                cacheReadPer1M: 0.04
+                inputPer1M: 0.2,
+                outputPer1M: 0.75,
+                cacheReadPer1M: 0.02
             }
         }
     },
@@ -165,11 +170,24 @@ export const BUILTIN_PRICING: ProviderPricingTable = {
                 cacheReadPer1M: 0.4
             }
         },
-        'gemini-3.5-flash': {
-            inputPer1M: 1.5,
-            outputPer1M: 9.0,
-            cacheReadPer1M: 0.15,
-            cacheStoragePer1MPerHour: 1.0
+        // Launch pricing through 2026-12-31: $0.75/$3.75, cache read $0.075,
+        // cache storage $0.50/MTok/hour. From 2027-01-01 the standard rate is
+        // $1.50/$7.50, cache read $0.15, storage $1.00; the promo entry
+        // switches every rate automatically. No long-context tier.
+        // Verified against ai.google.dev/gemini-api/docs/pricing on 2026-09-25.
+        'gemini-3.8-flash': {
+            inputPer1M: 0.75,
+            outputPer1M: 3.75,
+            cacheReadPer1M: 0.075,
+            cacheStoragePer1MPerHour: 0.5,
+            promo: {
+                label: 'Launch pricing through Dec 31, 2026',
+                expiresAt: '2027-01-01T00:00:00Z',
+                standardInputPer1M: 1.5,
+                standardOutputPer1M: 7.5,
+                standardCacheReadPer1M: 0.15,
+                standardCacheStoragePer1MPerHour: 1.0
+            }
         }
     }
 };
@@ -288,13 +306,20 @@ export function getProviderPricing(
     return pricing;
 }
 
-function resolveExpiredPromoRates(pricing: ProviderModelPricing): { inputPer1M: number; outputPer1M: number } {
+function resolveExpiredPromoRates(pricing: ProviderModelPricing): {
+    inputPer1M: number;
+    outputPer1M: number;
+    cacheReadPer1M?: number;
+    cacheStoragePer1MPerHour?: number;
+} {
     const promo = pricing.promo;
     if (!promo) return pricing;
     if (isPromoActive(promo)) return pricing;
     return {
         inputPer1M: promo.standardInputPer1M ?? pricing.inputPer1M,
-        outputPer1M: promo.standardOutputPer1M ?? pricing.outputPer1M
+        outputPer1M: promo.standardOutputPer1M ?? pricing.outputPer1M,
+        cacheReadPer1M: promo.standardCacheReadPer1M ?? pricing.cacheReadPer1M,
+        cacheStoragePer1MPerHour: promo.standardCacheStoragePer1MPerHour ?? pricing.cacheStoragePer1MPerHour
     };
 }
 
@@ -332,8 +357,8 @@ export function resolveProviderModelPricing(
         outputPer1M: effectiveRates.outputPer1M,
         cacheWrite5mPer1M: pricing.cacheWrite5mPer1M,
         cacheWrite1hPer1M: pricing.cacheWrite1hPer1M,
-        cacheReadPer1M: pricing.cacheReadPer1M,
-        cacheStoragePer1MPerHour: pricing.cacheStoragePer1MPerHour,
+        cacheReadPer1M: effectiveRates.cacheReadPer1M,
+        cacheStoragePer1MPerHour: effectiveRates.cacheStoragePer1MPerHour,
         pricingPhase: 'standard',
         promo,
         meta

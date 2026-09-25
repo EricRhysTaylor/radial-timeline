@@ -45,7 +45,7 @@ describe('migrateAiSettings', () => {
             aiSettings: {
                 schemaVersion: 1,
                 provider: 'anthropic',
-                modelPolicy: { type: 'pinned', pinnedAlias: 'claude-opus-4.8' },
+                modelPolicy: { type: 'pinned', pinnedAlias: 'claude-opus-5' },
                 roleTemplateId: 'commercial_genre',
                 roleTemplates: [
                     { id: 'commercial_genre', name: 'Commercial', prompt: 'Prompt', isBuiltIn: true }
@@ -72,7 +72,7 @@ describe('migrateAiSettings', () => {
         } as any);
 
         expect(result.aiSettings.provider).toBe('anthropic');
-        expect(result.aiSettings.modelPolicy).toEqual({ type: 'pinned', pinnedAlias: 'claude-opus-4.8' });
+        expect(result.aiSettings.modelPolicy).toEqual({ type: 'pinned', pinnedAlias: 'claude-opus-5' });
     });
 
     it('migrates legacy local settings into canonical localLlm', () => {

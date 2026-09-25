@@ -4,7 +4,7 @@ import { BUILTIN_MODELS } from '../registry/builtinModels';
 
 describe('computeCaps', () => {
     it('increases output cap for higher access tiers', () => {
-        const model = BUILTIN_MODELS.find(entry => entry.alias === 'claude-opus-4.8');
+        const model = BUILTIN_MODELS.find(entry => entry.alias === 'claude-opus-5');
         expect(model).toBeDefined();
         const tier1 = computeCaps({
             provider: 'anthropic',
@@ -35,7 +35,7 @@ describe('computeCaps', () => {
     });
 
     it('forceMaxOutputCeiling lifts a tier-clamped output cap to the model ceiling', () => {
-        const model = BUILTIN_MODELS.find(entry => entry.alias === 'claude-opus-4.8');
+        const model = BUILTIN_MODELS.find(entry => entry.alias === 'claude-opus-5');
         expect(model).toBeDefined();
         // Tier 1 clamps Opus output to the tier cap (16000) — below the
         // 128k model/provider ceiling reachable via forceMaxOutputCeiling.
@@ -60,7 +60,7 @@ describe('computeCaps', () => {
     });
 
     it('uses deeper reasoning defaults for inquiry when requested', () => {
-        const model = BUILTIN_MODELS.find(entry => entry.alias === 'gpt-5.6-sol');
+        const model = BUILTIN_MODELS.find(entry => entry.alias === 'gpt-6-sol');
         expect(model).toBeDefined();
         const standard = computeCaps({
             provider: 'openai',
@@ -80,7 +80,7 @@ describe('computeCaps', () => {
     });
 
     it('uses expanded OpenAI GPT-5.4 output ceilings', () => {
-        const model = BUILTIN_MODELS.find(entry => entry.alias === 'gpt-5.6-sol');
+        const model = BUILTIN_MODELS.find(entry => entry.alias === 'gpt-6-sol');
         expect(model).toBeDefined();
         const tier1 = computeCaps({
             provider: 'openai',

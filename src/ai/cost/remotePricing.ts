@@ -37,6 +37,8 @@ function isValidPromo(value: unknown): value is PromoPricing {
     if (v.expiresAt !== undefined && typeof v.expiresAt !== 'string') return false;
     if (v.standardInputPer1M !== undefined && !isFinitePositiveOrZero(v.standardInputPer1M)) return false;
     if (v.standardOutputPer1M !== undefined && !isFinitePositiveOrZero(v.standardOutputPer1M)) return false;
+    if (v.standardCacheReadPer1M !== undefined && !isFinitePositiveOrZero(v.standardCacheReadPer1M)) return false;
+    if (v.standardCacheStoragePer1MPerHour !== undefined && !isFinitePositiveOrZero(v.standardCacheStoragePer1MPerHour)) return false;
     return true;
 }
 

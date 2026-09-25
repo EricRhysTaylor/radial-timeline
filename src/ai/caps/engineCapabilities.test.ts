@@ -16,7 +16,7 @@ function byAlias(alias: string): ModelInfo {
 
 describe('resolveEngineCapabilities', () => {
     it('marks Anthropic Inquiry-relevant capabilities as available and batch as not yet used', () => {
-        const model = byAlias('claude-opus-4.8');
+        const model = byAlias('claude-opus-5');
         const resolved = resolveEngineCapabilities(model);
 
         expect(resolved.directManuscriptCitations.status).toBe('available');
@@ -28,7 +28,7 @@ describe('resolveEngineCapabilities', () => {
     });
 
     it('marks OpenAI corpus reuse available while citation acquisition stays separate from annotation rendering', () => {
-        const model = byAlias('gpt-5.6-sol');
+        const model = byAlias('gpt-6-sol');
         const resolved = resolveEngineCapabilities(model);
 
         expect(resolved.directManuscriptCitations.status).toBe('unavailable');
@@ -40,7 +40,7 @@ describe('resolveEngineCapabilities', () => {
     });
 
     it('downgrades OpenAI corpus reuse when a model cannot use the system role path', () => {
-        const base = byAlias('gpt-5.6-sol');
+        const base = byAlias('gpt-6-sol');
         const o1LikeModel: ModelInfo = {
             ...base,
             id: 'o1-mini',
@@ -78,20 +78,20 @@ describe('resolveEngineCapabilities', () => {
     });
 
     it('resolves by model reference and builds a per-model matrix row shape', () => {
-        const model = byAlias('claude-opus-4.8');
+        const model = byAlias('claude-opus-5');
         const byRef = resolveEngineCapabilitiesForRef(BUILTIN_MODELS, {
             provider: model.provider,
             modelId: model.id
         });
-        expect(byRef?.modelAlias).toBe('claude-opus-4.8');
+        expect(byRef?.modelAlias).toBe('claude-opus-5');
 
         const matrix = buildEngineCapabilityMatrix([model]);
         expect(matrix).toEqual([
             {
                 provider: 'anthropic',
-                modelId: 'claude-opus-4-8',
-                modelAlias: 'claude-opus-4.8',
-                modelLabel: 'Claude Opus 4.8',
+                modelId: 'claude-opus-5',
+                modelAlias: 'claude-opus-5',
+                modelLabel: 'Claude Opus 5',
                 contextWindow: 1000000,
                 directManuscriptCitations: 'available',
                 groundedToolAttribution: 'unavailable',
@@ -106,7 +106,7 @@ describe('resolveEngineCapabilities', () => {
 
 describe('getModelUiSignals', () => {
     it('returns citation and reuse labels for Anthropic model with exclusive constraint', () => {
-        const model = byAlias('claude-opus-4.8');
+        const model = byAlias('claude-opus-5');
         const signals = getModelUiSignals(model);
 
         // Sonnet 4.6 has cacheVsCitationsExclusive constraint
@@ -120,7 +120,7 @@ describe('getModelUiSignals', () => {
     });
 
     it('returns reuse label for OpenAI model', () => {
-        const model = byAlias('gpt-5.6-sol');
+        const model = byAlias('gpt-6-sol');
         const signals = getModelUiSignals(model);
 
         expect(signals.citationLabel).toBe('Sources · Limited implementation');
@@ -135,7 +135,7 @@ describe('getModelUiSignals', () => {
     });
 
     it('returns isPreview false for stable models', () => {
-        const stable = byAlias('claude-opus-4.8');
+        const stable = byAlias('claude-opus-5');
         expect(getModelUiSignals(stable).isPreview).toBe(false);
     });
 

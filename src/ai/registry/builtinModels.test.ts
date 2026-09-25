@@ -20,17 +20,17 @@ function byAlias(alias: string) {
  * quarterly process in docs/engineering/standards/model-promotion.md.
  */
 
-describe('BUILTIN_MODELS — OpenAI GPT-5.6 Sol', () => {
+describe('BUILTIN_MODELS — OpenAI GPT-6 Sol', () => {
     it('exposes a 1.05M context / 128k output window', () => {
-        const model = byAlias('gpt-5.6-sol');
-        expect(model.id).toBe('gpt-5.6-sol');
+        const model = byAlias('gpt-6-sol');
+        expect(model.id).toBe('gpt-6-sol');
         expect(model.contextWindow).toBe(1050000);
         expect(model.maxOutput).toBe(128000);
         expect(model.status).toBe('stable');
     });
 
-    it('captures GPT-5.6 Sol request-shape constraints in the model contract', () => {
-        const model = byAlias('gpt-5.6-sol');
+    it('captures GPT-6 Sol request-shape constraints in the model contract', () => {
+        const model = byAlias('gpt-6-sol');
         expect(model.constraints).toMatchObject({
             supportsTemperature: false,
             supportsTopP: false,
@@ -40,11 +40,37 @@ describe('BUILTIN_MODELS — OpenAI GPT-5.6 Sol', () => {
     });
 
     it('declares the structured-output capability', () => {
-        expect(byAlias('gpt-5.6-sol').capabilities).toContain('jsonStrict');
+        expect(byAlias('gpt-6-sol').capabilities).toContain('jsonStrict');
     });
 });
 
-describe('BUILTIN_MODELS — Anthropic Claude Opus 5', () => {
+describe('BUILTIN_MODELS — Anthropic Claude Opus 5.5', () => {
+    it('exposes a 1M context / 128k output window on the stable channel', () => {
+        const model = byAlias('claude-opus-5-5');
+        expect(model.id).toBe('claude-opus-5-5');
+        expect(model.line).toBe('claude-opus');
+        expect(model.contextWindow).toBe(1000000);
+        expect(model.maxOutput).toBe(128000);
+        expect(model.status).toBe('stable');
+        expect(model.tier).toBe('DEEP');
+        expect(model.rollout?.channel).toBe('stable');
+    });
+
+    it('declares always-on thinking (the Fable contract, not the Opus 5 one)', () => {
+        const model = byAlias('claude-opus-5-5');
+        expect(model.constraints).toMatchObject({
+            supportsTemperature: false,
+            supportsTopP: false,
+            supportsAdaptiveThinking: true,
+            thinkingAlwaysOn: true
+        });
+        // Opus 5.5 rejects thinking:{type:'disabled'}, which is exactly what
+        // the thinkingDefaultsOn path sends — the two must never combine.
+        expect(model.constraints?.thinkingDefaultsOn).toBeUndefined();
+    });
+});
+
+describe('BUILTIN_MODELS — Anthropic Claude Opus 5 (continuity)', () => {
     it('exposes a 1M context / 128k output window on the stable channel', () => {
         const model = byAlias('claude-opus-5');
         expect(model.id).toBe('claude-opus-5');
@@ -70,17 +96,6 @@ describe('BUILTIN_MODELS — Anthropic Claude Opus 5', () => {
     });
 });
 
-describe('BUILTIN_MODELS — Anthropic Claude Opus 4.8 (continuity)', () => {
-    it('exposes a 1M context / 128k output window', () => {
-        const model = byAlias('claude-opus-4.8');
-        expect(model.id).toBe('claude-opus-4-8');
-        expect(model.contextWindow).toBe(1000000);
-        expect(model.maxOutput).toBe(128000);
-        expect(model.status).toBe('stable');
-        expect(model.tier).toBe('DEEP');
-    });
-});
-
 describe('BUILTIN_MODELS — Anthropic Claude Fable 5.1', () => {
     it('exposes a 1M context / 128k output window on its own line', () => {
         const model = byAlias('claude-fable-5-1');
@@ -100,7 +115,7 @@ describe('BUILTIN_MODELS — Anthropic Claude Fable 5.1', () => {
             supportsAdaptiveThinking: true,
             thinkingAlwaysOn: true
         });
-        // Keeps latest-stable auto-selection resolving to Opus 4.8.
+        // Keeps latest-stable auto-selection resolving to Opus 5.5.
         expect(model.rollout?.channel).toBe('pro');
     });
 });
@@ -115,13 +130,16 @@ describe('BUILTIN_MODELS — Google Gemini', () => {
         expect(model.constraints?.cacheVsCitationsExclusive).toBe(true);
     });
 
-    it('declares Gemini 3.5 Flash as the stable/speed lane', () => {
-        const model = byAlias('gemini-3.5-flash');
+    it('declares Gemini 3.8 Flash as the stable/speed lane', () => {
+        const model = byAlias('gemini-3.8-flash');
         expect(model.status).toBe('stable');
         expect(model.tier).toBe('FAST');
         expect(model.contextWindow).toBe(1048576);
         expect(model.maxOutput).toBe(65536);
         expect(model.constraints?.cacheVsCitationsExclusive).toBe(true);
+        // Sampling parameters are deprecated on the latest Gemini models.
+        expect(model.constraints?.supportsTemperature).toBe(false);
+        expect(model.constraints?.supportsTopP).toBe(false);
     });
 });
 

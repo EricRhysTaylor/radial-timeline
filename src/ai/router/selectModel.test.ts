@@ -6,10 +6,10 @@ describe('selectModel', () => {
     it('returns pinned alias when eligible', () => {
         const result = selectModel(BUILTIN_MODELS, {
             provider: 'anthropic',
-            policy: { type: 'pinned', pinnedAlias: 'claude-opus-4.8' },
+            policy: { type: 'pinned', pinnedAlias: 'claude-opus-5' },
             requiredCapabilities: ['longContext', 'jsonStrict']
         });
-        expect(result.model.alias).toBe('claude-opus-4.8');
+        expect(result.model.alias).toBe('claude-opus-5');
         expect(result.warnings.length).toBe(0);
     });
 
@@ -29,14 +29,14 @@ describe('selectModel', () => {
             policy: { type: 'latestStable' },
             requiredCapabilities: ['longContext', 'jsonStrict', 'reasoningStrong']
         });
-        expect(result.model.alias).toBe('claude-opus-5');
+        expect(result.model.alias).toBe('claude-opus-5-5');
     });
 
-    it('does NOT auto-default to Claude Fable 5 (2× Opus cost — explicit choice only)', () => {
-        // Fable 5 sits on the 'pro' rollout channel, so latest-stable
+    it('does NOT auto-default to Claude Fable 5.1 (2.5× Opus cost — explicit choice only)', () => {
+        // Fable 5.1 sits on the 'pro' rollout channel, so latest-stable
         // resolution (which reads channel === 'stable') must keep resolving
-        // to Opus 5 for every capability-based feature
-        // (Pulse/Gossamer/Inquiry). This is the cost guard: Fable costs 2× Opus.
+        // to Opus 5.5 for every capability-based feature
+        // (Pulse/Gossamer/Inquiry). This is the cost guard: Fable costs 2.5× Opus.
         const fable = BUILTIN_MODELS.find(m => m.id === 'claude-fable-5-1');
         expect(fable, 'Claude Fable 5.1 must be in the registry').toBeTruthy();
         expect(fable?.rollout?.channel).not.toBe('stable');
@@ -47,7 +47,7 @@ describe('selectModel', () => {
             policy: { type: 'latestStable' },
             requiredCapabilities: [...deepCaps]
         });
-        expect(result.model.alias).toBe('claude-opus-5');
+        expect(result.model.alias).toBe('claude-opus-5-5');
         expect(result.model.id).not.toBe('claude-fable-5-1');
     });
 
@@ -70,7 +70,7 @@ describe('selectModel', () => {
             outputTokensNeeded: 2000
         });
         expect(result.model.provider).toBe('openai');
-        expect(result.model.alias).toBe('gpt-5.6-sol');
+        expect(result.model.alias).toBe('gpt-6-sol');
         expect(result.model.capabilities.includes('highOutputCap')).toBe(true);
     });
 
@@ -80,7 +80,7 @@ describe('selectModel', () => {
             policy: { type: 'latestPro' },
             requiredCapabilities: ['jsonStrict', 'longContext', 'reasoningStrong', 'highOutputCap']
         });
-        expect(result.model.alias).toBe('gpt-5.6-sol');
+        expect(result.model.alias).toBe('gpt-6-sol');
         expect(result.warnings).toContain('OpenAI pro auto-selection is disabled for schema-required workflows; fallback to latest stable.');
     });
 
@@ -93,13 +93,13 @@ describe('selectModel', () => {
         expect(result.model.alias).toBe('gpt-6-astra');
     });
 
-    it('keeps pinned GPT-5.6 Sol selection when explicitly requested', () => {
+    it('keeps pinned GPT-6 Sol selection when explicitly requested', () => {
         const result = selectModel(BUILTIN_MODELS, {
             provider: 'openai',
-            policy: { type: 'pinned', pinnedAlias: 'gpt-5.6-sol' },
+            policy: { type: 'pinned', pinnedAlias: 'gpt-6-sol' },
             requiredCapabilities: ['jsonStrict']
         });
-        expect(result.model.alias).toBe('gpt-5.6-sol');
+        expect(result.model.alias).toBe('gpt-6-sol');
     });
 
     it('ignores access tier for OpenAI latestStable resolution', () => {
@@ -115,7 +115,7 @@ describe('selectModel', () => {
             requiredCapabilities: ['longContext', 'jsonStrict', 'reasoningStrong', 'highOutputCap'],
             accessTier: 4
         });
-        expect(tier1.model.alias).toBe('gpt-5.6-sol');
-        expect(tier4.model.alias).toBe('gpt-5.6-sol');
+        expect(tier1.model.alias).toBe('gpt-6-sol');
+        expect(tier4.model.alias).toBe('gpt-6-sol');
     });
 });

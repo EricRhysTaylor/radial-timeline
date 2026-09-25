@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { TFile, TFolder, normalizePath } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import {
@@ -97,7 +97,7 @@ describe('countContentLogFiles', () => {
 
 describe('buildUsageCostBreakdown', () => {
     it('builds a cache-aware Anthropic cost breakdown from aggregated usage', () => {
-        const breakdown = buildUsageCostBreakdown('anthropic', 'claude-opus-4-8', {
+        const breakdown = buildUsageCostBreakdown('anthropic', 'claude-opus-5', {
             inputTokens: 185_581,
             outputTokens: 18_523,
             rawInputTokens: 53_581,
@@ -132,7 +132,7 @@ describe('buildUsageCostBreakdown', () => {
     });
 
     it('formats readable cost breakdown log lines', () => {
-        const lines = formatUsageCostBreakdownLines('anthropic', 'claude-opus-4-8', {
+        const lines = formatUsageCostBreakdownLines('anthropic', 'claude-opus-5', {
             inputTokens: 185_581,
             outputTokens: 18_523,
             rawInputTokens: 53_581,
@@ -164,7 +164,7 @@ describe('buildUsageCostBreakdown', () => {
     });
 
     it('uses the fresh estimate for cost accuracy when Anthropic created cache but did not hit it', () => {
-        const lines = formatUsageCostBreakdownLines('anthropic', 'claude-opus-4-8', {
+        const lines = formatUsageCostBreakdownLines('anthropic', 'claude-opus-5', {
             inputTokens: 307_895,
             outputTokens: 3_165,
             rawInputTokens: 26,
@@ -188,7 +188,11 @@ describe('buildUsageCostBreakdown', () => {
     it('surfaces the separately-billed Gemini cache storage charge when a TTL is supplied', () => {
         const ttlSeconds = 900; // 15m window
         const storedTokens = 140_000;
-        const lines = formatUsageCostBreakdownLines('google', 'gemini-3.5-flash', {
+        // Pinned past the Gemini 3.8 Flash launch promo, so the standard
+        // $1.00/1M/hr storage rate applies.
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date('2027-02-01T00:00:00Z'));
+        const lines = formatUsageCostBreakdownLines('google', 'gemini-3.8-flash', {
             inputTokens: 140_000,
             outputTokens: 7_000,
             rawInputTokens: 0,
@@ -198,6 +202,7 @@ describe('buildUsageCostBreakdown', () => {
             expectedOutputTokens: 7_000,
             expectedPasses: 1
         }, 'created', ttlSeconds);
+        vi.useRealTimers();
 
         const storageLine = lines.find(line => line.startsWith('- Cache storage (billed separately): '));
         expect(storageLine).toBeTruthy();
@@ -209,7 +214,7 @@ describe('buildUsageCostBreakdown', () => {
     });
 
     it('omits the cache storage line when no TTL is supplied', () => {
-        const lines = formatUsageCostBreakdownLines('google', 'gemini-3.5-flash', {
+        const lines = formatUsageCostBreakdownLines('google', 'gemini-3.8-flash', {
             inputTokens: 140_000,
             outputTokens: 7_000,
             cacheReadInputTokens: 140_000
@@ -223,7 +228,7 @@ describe('buildUsageCostBreakdown', () => {
     });
 
     it('omits cost accuracy when actual cost is unavailable', () => {
-        const lines = formatUsageCostBreakdownLines('anthropic', 'claude-opus-4-8', {
+        const lines = formatUsageCostBreakdownLines('anthropic', 'claude-opus-5', {
             outputTokens: 10_000
         }, {
             executionInputTokens: 100_000,

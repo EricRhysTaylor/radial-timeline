@@ -33,27 +33,62 @@ const LOCAL_CAPS: Capability[] = ['jsonStrict'];
  */
 export const BUILTIN_MODELS: ModelInfo[] = [
     {
-        // Current Anthropic depth model. Same pricing and feature set as
-        // Opus 4.8 ($5/$25 per MTok, 1M context, 128K output) with two
-        // request-contract deltas, both encoded in constraints:
-        //   - Thinking is ON BY DEFAULT when the `thinking` field is omitted
-        //     (opposite of 4.8, where omission meant no thinking). RT's
-        //     non-thinking paths therefore send an explicit
-        //     thinking:{type:'disabled'} — see thinkingDefaultsOn and the
-        //     adapter note in anthropicApi.ts. Disabled is accepted only at
-        //     effort `high` or below (400 at xhigh/max); RT never emits
-        //     effort above 'high'.
-        //   - temperature/top_p remain rejected (same as 4.7/4.8); adaptive
-        //     thinking is the only on-mode (thinking:{type:'enabled'} → 400).
-        // Cache: 5m/1h TTLs and write/read multipliers unchanged from 4.8;
-        // minimum cacheable prefix drops to 512 tokens (4.8: 1024), so
-        // existing cache_control plumbing carries over and shorter prefixes
-        // now cache. Opus 5 draws from its own rate-limit bucket, separate
-        // from the combined Opus 4.x pool.
-        // PENDING VERIFICATION: contract transcribed from Anthropic's
-        // migration guide (2026-07); run
-        //   npm run smoke-model -- --provider anthropic --model claude-opus-5
-        // before first release with this catalog (needs ANTHROPIC_API_KEY).
+        // Current Anthropic depth model (released 2026-09-21, promoted
+        // 2026-09-25, replacing Opus 5). Cheaper than Opus 5 — $4/$20 per
+        // MTok, cache write 5m $5 / 1h $8, cache read $0.20 (0.05× input, not
+        // the usual 0.1×) — with the same 1M context / 128K output.
+        // Request contract matches Fable 5.1, NOT Opus 5, and is encoded in
+        // constraints (per the Opus 5.5 migration guide):
+        //   - Thinking is ALWAYS ON: thinking:{type:'disabled'} and
+        //     {type:'enabled'} both 400, so the Opus 5 thinkingDefaultsOn
+        //     shape (explicit disabled on non-thinking paths) would break
+        //     every structured request. thinkingAlwaysOn routes it through the
+        //     Fable path: `thinking` omitted, output_config.effort on every
+        //     request.
+        //   - Forced tool_choice ('any'/'tool') → 400; structured output uses
+        //     output_config.format (json_schema), as on Fable.
+        //   - temperature/top_p/top_k at non-default values → 400; assistant
+        //     prefill → 400 (RT never prefills).
+        //   - Effort defaults to `medium` (Opus 5: `high`); the always-on path
+        //     always sends an explicit effort, so the default never applies.
+        //   - Refusals may carry stop_details.category 'bio' or
+        //     'reasoning_extraction'; RT surfaces a refusal as a clear error.
+        provider: 'anthropic',
+        id: 'claude-opus-5-5',
+        alias: 'claude-opus-5-5',
+        label: 'Claude Opus 5.5',
+        line: 'claude-opus',
+        tier: 'DEEP',
+        capabilities: [...DEEP_CAPS],
+        personality: { reasoning: 10, writing: 10, determinism: 9 },
+        contextWindow: 1_000_000,
+        maxOutput: 128_000,
+        releasedAt: '2026-09-21',
+        status: 'stable',
+        rollout: {
+            channel: 'stable',
+            status: 'stable',
+            lane: 'default'
+        },
+        constraints: {
+            supportsTemperature: false,
+            supportsTopP: false,
+            supportsAdaptiveThinking: true,
+            thinkingAlwaysOn: true
+        }
+    },
+    {
+        // Continuity model: the immediately-prior Opus, kept one generation
+        // back so authors mid-project aren't force-migrated when Opus 5.5
+        // ships. Auto-selection (latest-stable) resolves to Opus 5.5 — Opus 5
+        // is an explicit opt-in in the picker. Retire when a newer Opus
+        // promotes Opus 5.5 to N-1.
+        // Contract: thinking is ON BY DEFAULT when the `thinking` field is
+        // omitted, so RT's non-thinking paths send an explicit
+        // thinking:{type:'disabled'} (thinkingDefaultsOn; see anthropicApi.ts).
+        // Disabled is accepted only at effort `high` or below; RT never emits
+        // effort above 'high'. temperature/top_p rejected; adaptive thinking is
+        // the only on-mode. Live smoke HTTP 200 on 2026-09-05.
         provider: 'anthropic',
         id: 'claude-opus-5',
         alias: 'claude-opus-5',
@@ -79,46 +114,12 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         }
     },
     {
-        // Continuity model: the immediately-prior Opus, kept one generation
-        // back so authors mid-project aren't force-migrated off 4.8 when
-        // Opus 5 ships. Auto-selection (latest-stable) resolves to Opus 5 —
-        // 4.8 is an explicit opt-in in the picker. Same pricing as Opus 5.
-        // Retire when a newer Opus promotes Opus 5 to N-1.
-        // Opus 4.7+ (incl. 4.8) reject request-level temperature/top_p
-        // (provider-managed sampling) and use adaptive thinking only — the
-        // legacy thinking:{type:'enabled'} shape returns 400. Verified via
-        // smoke probe against Opus 4.7 (2026-05-23); 4.8 keeps the contract
-        // per the migration guide (no breaking changes from 4.7).
-        provider: 'anthropic',
-        id: 'claude-opus-4-8',
-        alias: 'claude-opus-4.8',
-        label: 'Claude Opus 4.8',
-        line: 'claude-opus',
-        tier: 'DEEP',
-        capabilities: [...DEEP_CAPS],
-        personality: { reasoning: 10, writing: 10, determinism: 9 },
-        contextWindow: 1000000,
-        maxOutput: 128000,
-        releasedAt: '2026-05-28',
-        status: 'stable',
-        rollout: {
-            channel: 'stable',
-            status: 'stable',
-            lane: 'default'
-        },
-        constraints: {
-            supportsTemperature: false,
-            supportsTopP: false,
-            supportsAdaptiveThinking: true
-        }
-    },
-    {
         // Premium always-on-thinking model on its own line ('claude-fable'),
         // deliberately kept OFF the 'stable' rollout channel: latest-stable
         // auto-selection (Pulse/Gossamer/Inquiry) reads channel === 'stable'
-        // only, so it continues to resolve to Opus 4.8. Fable is a 'pro'-channel
+        // only, so it continues to resolve to Opus 5.5. Fable is a 'pro'-channel
         // entry — visible and pinnable in the picker, but never the silent
-        // default. This matters because Fable costs 2× Opus ($10/$50 vs $5/$25
+        // default. This matters because Fable costs 2.5× Opus ($10/$50 vs $4/$20
         // per MTok); it must be an explicit author choice.
         //
         // Request-shape facts (verified against Anthropic docs, mid-2026):
@@ -231,23 +232,25 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         }
     },
     {
-        // GPT-5.6 Sol: flagship of the gpt-5.6 family (Luna < Terra < Sol);
-        // Luna below is the economy entry, Terra is not curated.
-        // GA 2026-07-09, replacing GPT-5.5 on the line. Same request contract
-        // per developers.openai.com/api/docs/models/gpt-5.6-sol: Responses
-        // API, reasoning effort (none…max), provider-managed sampling,
-        // structured outputs, prompt caching, 1.05M context / 128K output.
+        // GPT-6 Sol: default OpenAI model (released 2026-09-22, promoted
+        // 2026-09-25, replacing GPT-5.6 Sol). Half GPT-5.6 Sol's price —
+        // $2/$10 per MTok, cached input $0.20 — with the same request contract
+        // per developers.openai.com/api/docs/models/gpt-6-sol: Responses API,
+        // reasoning effort (none…max, default medium), provider-managed
+        // sampling, structured outputs, prompt caching, 1.05M context (922K
+        // max input) / 128K output. OpenAI reports about half GPT-5.6 Sol's
+        // factuality errors.
         provider: 'openai',
-        id: 'gpt-5.6-sol',
-        alias: 'gpt-5.6-sol',
-        label: 'GPT-5.6 Sol',
-        line: 'gpt-5',
+        id: 'gpt-6-sol',
+        alias: 'gpt-6-sol',
+        label: 'GPT-6 Sol',
+        line: 'gpt-6',
         tier: 'BALANCED',
         capabilities: [...DEEP_CAPS, 'toolCalling', 'functionCalling'],
         personality: { reasoning: 10, writing: 9, determinism: 9 },
         contextWindow: 1050000,
         maxOutput: 128000,
-        releasedAt: '2026-07-09',
+        releasedAt: '2026-09-22',
         status: 'stable',
         rollout: {
             channel: 'stable',
@@ -264,17 +267,19 @@ export const BUILTIN_MODELS: ModelInfo[] = [
     {
         // GPT-6 Astra: OpenAI's premium model, public release 2026-09-05
         // (developers.openai.com/api/docs/models/gpt-6-astra). Same request
-        // contract as the 5.6 family (Responses API, reasoning effort low…max,
+        // contract as Sol and Luna (Responses API, reasoning effort low…max,
         // provider-managed sampling, structured outputs, prompt caching) at
-        // 2.5× Sol's price, so it sits on the 'pro' channel: visible and
+        // 5× Sol's price, so it sits on the 'pro' channel: visible and
         // pinnable, auto-selected only under the latestPro policy, never the
-        // silent default. Cyber-sensitive capabilities are gated by OpenAI's
-        // trusted-access program; that does not affect RT's workload.
+        // silent default. Its own line so Sol and Luna (line 'gpt-6') stay
+        // within the two-per-line cap. Cyber-sensitive capabilities are gated
+        // by OpenAI's trusted-access program; that does not affect RT's
+        // workload.
         provider: 'openai',
         id: 'gpt-6-astra',
         alias: 'gpt-6-astra',
         label: 'GPT-6 Astra',
-        line: 'gpt-6',
+        line: 'gpt-6-pro',
         tier: 'DEEP',
         capabilities: [...DEEP_CAPS, 'toolCalling', 'functionCalling'],
         personality: { reasoning: 10, writing: 10, determinism: 9 },
@@ -295,25 +300,26 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         }
     },
     {
-        // Economy model on the gpt-5 line: GPT-5.6 Luna, the cost tier of the
-        // same family (developers.openai.com/api/docs/models/gpt-5.6-luna:
-        // $0.20/$1.20, 1.05M context, 128K output, reasoning effort, structured
-        // outputs, prompt caching — the same request contract as Sol). FAST
-        // tier is the signal that it is the economy choice, as Haiku 4.5 and
-        // Gemini 3.5 Flash are for their providers. Auto-selection resolves to
-        // Sol (newest on the line); Luna is an explicit pick. Dated one day
-        // before Sol so the two never tie on the newest-on-line sort.
+        // Economy model on the gpt-6 line: GPT-6 Luna (released 2026-09-22,
+        // replacing GPT-5.6 Luna). developers.openai.com/api/docs/models/gpt-6-luna:
+        // $0.10/$0.50, cached input $0.01, 1.05M context, 128K output,
+        // reasoning effort, structured outputs, prompt caching — the same
+        // request contract as Sol. FAST tier is the signal that it is the
+        // economy choice, as Haiku 4.5 and Gemini Flash are for their
+        // providers. Auto-selection resolves to Sol; Luna is an explicit pick.
+        // Released the same day as Sol, so it is dated one day earlier here
+        // to keep the newest-on-line sort from ever tying.
         provider: 'openai',
-        id: 'gpt-5.6-luna',
-        alias: 'gpt-5.6-luna',
-        label: 'GPT-5.6 Luna',
-        line: 'gpt-5',
+        id: 'gpt-6-luna',
+        alias: 'gpt-6-luna',
+        label: 'GPT-6 Luna',
+        line: 'gpt-6',
         tier: 'FAST',
         capabilities: [...DEEP_CAPS, 'toolCalling', 'functionCalling'],
         personality: { reasoning: 7, writing: 7, determinism: 8 },
         contextWindow: 1050000,
         maxOutput: 128000,
-        releasedAt: '2026-07-08',
+        releasedAt: '2026-09-21',
         status: 'stable',
         rollout: {
             channel: 'stable',
@@ -342,19 +348,33 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         constraints: { cacheVsCitationsExclusive: true }
     },
     {
+        // Gemini 3.8 Flash (GA 2026-09-02, promoted 2026-09-25, replacing
+        // Gemini 3.5 Flash on the speed lane). ai.google.dev/gemini-api/docs/
+        // models/gemini-3.8-flash: 1,048,576 input / 65,536 output tokens,
+        // structured outputs, caching. Deltas that matter to RT:
+        //   - temperature/top_p/top_k are deprecated on the latest Gemini
+        //     models (changelog 2026-07-21), so sampling is provider-managed.
+        //   - thinking level 'minimal' returns an error; RT sends no
+        //     thinkingConfig, so the model default applies.
+        // Launch pricing through 2026-12-31 is half the standard rate; see
+        // the promo entry in providerPricing.ts.
         provider: 'google',
-        id: 'gemini-3.5-flash',
-        alias: 'gemini-3.5-flash',
-        label: 'Gemini 3.5 Flash',
+        id: 'gemini-3.8-flash',
+        alias: 'gemini-3.8-flash',
+        label: 'Gemini 3.8 Flash',
         line: 'gemini-flash',
         tier: 'FAST',
         capabilities: ['longContext', 'jsonStrict', 'reasoningStrong', 'highOutputCap', 'streaming'],
         personality: { reasoning: 8, writing: 8, determinism: 8 },
         contextWindow: 1048576,
         maxOutput: 65536,
-        releasedAt: '2026-05-01',
+        releasedAt: '2026-09-02',
         status: 'stable',
-        constraints: { cacheVsCitationsExclusive: true }
+        constraints: {
+            cacheVsCitationsExclusive: true,
+            supportsTemperature: false,
+            supportsTopP: false
+        }
     },
     {
         provider: 'ollama',

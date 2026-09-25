@@ -1,6 +1,40 @@
 {
-  "generatedAt": "2026-06-18T15:42:36.000Z",
+  "generatedAt": "2026-09-25T18:00:00.000Z",
   "models": [
+    {
+      "provider": "anthropic",
+      "id": "claude-opus-5-5",
+      "alias": "claude-opus-5-5",
+      "label": "Claude Opus 5.5",
+      "line": "claude-opus",
+      "tier": "DEEP",
+      "capabilities": [
+        "longContext",
+        "jsonStrict",
+        "reasoningStrong",
+        "highOutputCap"
+      ],
+      "personality": {
+        "reasoning": 10,
+        "writing": 10,
+        "determinism": 9
+      },
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "releasedAt": "2026-09-21",
+      "status": "stable",
+      "rollout": {
+        "channel": "stable",
+        "status": "stable",
+        "lane": "default"
+      },
+      "constraints": {
+        "supportsTemperature": false,
+        "supportsTopP": false,
+        "supportsAdaptiveThinking": true,
+        "thinkingAlwaysOn": true
+      }
+    },
     {
       "provider": "anthropic",
       "id": "claude-opus-5",
@@ -33,39 +67,6 @@
         "supportsTopP": false,
         "supportsAdaptiveThinking": true,
         "thinkingDefaultsOn": true
-      }
-    },
-    {
-      "provider": "anthropic",
-      "id": "claude-opus-4-8",
-      "alias": "claude-opus-4.8",
-      "label": "Claude Opus 4.8",
-      "line": "claude-opus",
-      "tier": "DEEP",
-      "capabilities": [
-        "longContext",
-        "jsonStrict",
-        "reasoningStrong",
-        "highOutputCap"
-      ],
-      "personality": {
-        "reasoning": 10,
-        "writing": 10,
-        "determinism": 9
-      },
-      "contextWindow": 1000000,
-      "maxOutput": 128000,
-      "releasedAt": "2026-05-28",
-      "status": "stable",
-      "rollout": {
-        "channel": "stable",
-        "status": "stable",
-        "lane": "default"
-      },
-      "constraints": {
-        "supportsTemperature": false,
-        "supportsTopP": false,
-        "supportsAdaptiveThinking": true
       }
     },
     {
@@ -103,11 +104,76 @@
       }
     },
     {
+      "provider": "anthropic",
+      "id": "claude-sonnet-5",
+      "alias": "claude-sonnet-5",
+      "label": "Claude Sonnet 5",
+      "line": "claude-sonnet",
+      "tier": "BALANCED",
+      "capabilities": [
+        "longContext",
+        "jsonStrict",
+        "reasoningStrong",
+        "highOutputCap",
+        "streaming"
+      ],
+      "personality": {
+        "reasoning": 9,
+        "writing": 9,
+        "determinism": 9
+      },
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "status": "stable",
+      "rollout": {
+        "channel": "stable",
+        "status": "stable",
+        "lane": "default"
+      },
+      "constraints": {
+        "supportsTemperature": false,
+        "supportsTopP": false,
+        "supportsAdaptiveThinking": true
+      }
+    },
+    {
+      "provider": "anthropic",
+      "id": "claude-haiku-4-5",
+      "alias": "claude-haiku-4-5",
+      "label": "Claude Haiku 4.5",
+      "line": "claude-haiku",
+      "tier": "FAST",
+      "capabilities": [
+        "jsonStrict",
+        "streaming"
+      ],
+      "personality": {
+        "reasoning": 6,
+        "writing": 7,
+        "determinism": 8
+      },
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "releasedAt": "2025-10-01",
+      "status": "stable",
+      "rollout": {
+        "channel": "stable",
+        "status": "stable",
+        "lane": "default"
+      },
+      "constraints": {
+        "supportsTemperature": true,
+        "supportsTopP": true,
+        "supportsAdaptiveThinking": false,
+        "supportsReasoningEffort": false
+      }
+    },
+    {
       "provider": "openai",
-      "id": "gpt-5.6-sol",
-      "alias": "gpt-5.6-sol",
-      "label": "GPT-5.6 Sol",
-      "line": "gpt-5",
+      "id": "gpt-6-sol",
+      "alias": "gpt-6-sol",
+      "label": "GPT-6 Sol",
+      "line": "gpt-6",
       "tier": "BALANCED",
       "capabilities": [
         "longContext",
@@ -124,7 +190,7 @@
       },
       "contextWindow": 1050000,
       "maxOutput": 128000,
-      "releasedAt": "2026-07-09",
+      "releasedAt": "2026-09-22",
       "status": "stable",
       "rollout": {
         "channel": "stable",
@@ -143,7 +209,7 @@
       "id": "gpt-6-astra",
       "alias": "gpt-6-astra",
       "label": "GPT-6 Astra",
-      "line": "gpt-6",
+      "line": "gpt-6-pro",
       "tier": "DEEP",
       "capabilities": [
         "longContext",
@@ -176,10 +242,10 @@
     },
     {
       "provider": "openai",
-      "id": "gpt-5.6-luna",
-      "alias": "gpt-5.6-luna",
-      "label": "GPT-5.6 Luna",
-      "line": "gpt-5",
+      "id": "gpt-6-luna",
+      "alias": "gpt-6-luna",
+      "label": "GPT-6 Luna",
+      "line": "gpt-6",
       "tier": "FAST",
       "capabilities": [
         "longContext",
@@ -196,7 +262,7 @@
       },
       "contextWindow": 1050000,
       "maxOutput": 128000,
-      "releasedAt": "2026-07-08",
+      "releasedAt": "2026-09-21",
       "status": "stable",
       "rollout": {
         "channel": "stable",
@@ -238,9 +304,9 @@
     },
     {
       "provider": "google",
-      "id": "gemini-3.5-flash",
-      "alias": "gemini-3.5-flash",
-      "label": "Gemini 3.5 Flash",
+      "id": "gemini-3.8-flash",
+      "alias": "gemini-3.8-flash",
+      "label": "Gemini 3.8 Flash",
       "line": "gemini-flash",
       "tier": "FAST",
       "capabilities": [
@@ -257,10 +323,12 @@
       },
       "contextWindow": 1048576,
       "maxOutput": 65536,
-      "releasedAt": "2026-05-01",
+      "releasedAt": "2026-09-02",
       "status": "stable",
       "constraints": {
-        "cacheVsCitationsExclusive": true
+        "cacheVsCitationsExclusive": true,
+        "supportsTemperature": false,
+        "supportsTopP": false
       }
     },
     {

@@ -15,11 +15,11 @@ import { getActivePricingTable, mergeRemotePricing, resetPricingToBuiltin } from
  */
 
 describe('estimateCorpusCost', () => {
-    it('anchor: claude-opus-4-8 no-cache cost matches input × inputPer1M + output × outputPer1M', () => {
+    it('anchor: claude-opus-5 no-cache cost matches input × inputPer1M + output × outputPer1M', () => {
         // 200k input × $5/M + 10k output × $25/M = $1.00 + $0.25 = $1.25.
         const result = estimateCorpusCost(
             'anthropic',
-            'claude-opus-4-8',
+            'claude-opus-5',
             200_000,
             10_000,
             1,
@@ -35,7 +35,7 @@ describe('estimateCorpusCost', () => {
     it('partial cache reuse: cached cost is lower than fresh cost', () => {
         const result = estimateCorpusCost(
             'anthropic',
-            'claude-opus-4-8',
+            'claude-opus-5',
             200_000,
             10_000,
             1,
@@ -48,7 +48,7 @@ describe('estimateCorpusCost', () => {
     it('full cache reuse: cached < fresh and neither goes negative', () => {
         const result = estimateCorpusCost(
             'anthropic',
-            'claude-opus-4-8',
+            'claude-opus-5',
             200_000,
             10_000,
             1,
@@ -63,7 +63,7 @@ describe('estimateCorpusCost', () => {
     it('multi-pass uses the explicit default cache reuse ratio (0.5)', () => {
         const result = estimateCorpusCost(
             'anthropic',
-            'claude-opus-4-8',
+            'claude-opus-5',
             400_000,
             20_000,
             3
@@ -76,7 +76,7 @@ describe('estimateCorpusCost', () => {
     it('output-heavy estimates stay non-negative and cached <= fresh', () => {
         const result = estimateCorpusCost(
             'anthropic',
-            'claude-opus-4-8',
+            'claude-opus-5',
             20_000,
             120_000,
             1
@@ -91,7 +91,7 @@ describe('estimateCorpusCost', () => {
         // tiers the longer one should be costlier per-token.
         const atThreshold = estimateCorpusCost(
             'anthropic',
-            'claude-opus-4-8',
+            'claude-opus-5',
             200_000,
             10_000,
             1,
@@ -99,7 +99,7 @@ describe('estimateCorpusCost', () => {
         );
         const aboveThreshold = estimateCorpusCost(
             'anthropic',
-            'claude-opus-4-8',
+            'claude-opus-5',
             250_000,
             10_000,
             1,
@@ -109,10 +109,10 @@ describe('estimateCorpusCost', () => {
         expect(aboveThreshold.freshCostUSD).toBeGreaterThan(atThreshold.freshCostUSD);
     });
 
-    it('GPT-5.6 Sol cached runs cost less than fresh runs', () => {
+    it('GPT-6 Sol cached runs cost less than fresh runs', () => {
         const result = estimateCorpusCost(
             'openai',
-            'gpt-5.6-sol',
+            'gpt-6-sol',
             61_600,
             8_000,
             1
@@ -122,7 +122,7 @@ describe('estimateCorpusCost', () => {
     });
 
     it('OpenAI live usage with cached tokens prices at cached-input rate when available', () => {
-        const result = estimateUsageCost('openai', 'gpt-5.6-sol', {
+        const result = estimateUsageCost('openai', 'gpt-6-sol', {
             inputTokens: 61_600,
             outputTokens: 8_000,
             cacheReadInputTokens: 46_200
@@ -139,8 +139,8 @@ describe('estimateCorpusCost', () => {
         expect(result?.totalCostUSD).toBeGreaterThan(0);
     });
 
-    it('GPT-5.6 Sol long-context cached usage stays internally consistent', () => {
-        const result = estimateUsageCost('openai', 'gpt-5.6-sol', {
+    it('GPT-6 Sol long-context cached usage stays internally consistent', () => {
+        const result = estimateUsageCost('openai', 'gpt-6-sol', {
             inputTokens: 300_000,
             outputTokens: 10_000,
             cacheReadInputTokens: 225_000
@@ -174,14 +174,16 @@ describe('estimateCorpusCost', () => {
             totalTokens: 140_621,
             cacheReadInputTokens: 135_700
         };
-        // Flash table: input $1.50/M, output $9.00/M, cacheRead $0.15/M.
-        const created = estimateUsageCost('google', 'gemini-3.5-flash', usage, 'created');
-        const hit = estimateUsageCost('google', 'gemini-3.5-flash', usage, 'hit');
+        // Pro table (under the 200k threshold): input $2.00/M, output $12.00/M,
+        // cacheRead $0.20/M. (Pro, not Flash: Flash's launch promo makes its
+        // rates date-dependent.)
+        const created = estimateUsageCost('google', 'gemini-3.1-pro-preview', usage, 'created');
+        const hit = estimateUsageCost('google', 'gemini-3.1-pro-preview', usage, 'hit');
 
-        // Created ≈ fresh: 135.7k @ $1.50/M + 4.9k @ $9/M ≈ $0.248.
-        expect(created?.totalCostUSD).toBeCloseTo(0.2477, 2);
-        // Hit gets the read discount on the cached prefix ≈ $0.064.
-        expect(hit?.totalCostUSD).toBeCloseTo(0.0645, 2);
+        // Created ≈ fresh: 135.7k @ $2/M + 4.9k @ $12/M ≈ $0.330.
+        expect(created?.totalCostUSD).toBeCloseTo(0.3302, 2);
+        // Hit gets the read discount on the cached prefix ≈ $0.086.
+        expect(hit?.totalCostUSD).toBeCloseTo(0.0860, 2);
         // The created run must be materially pricier than a genuine reuse hit.
         expect((created?.totalCostUSD ?? 0)).toBeGreaterThan((hit?.totalCostUSD ?? 0) * 3);
     });
@@ -212,7 +214,7 @@ describe('estimateCorpusCost', () => {
     it('cacheWriteTtl=5m (default) produces a lower priming-pass cost than 1h', () => {
         const fiveMinute = estimateCorpusCost(
             'anthropic',
-            'claude-opus-4-8',
+            'claude-opus-5',
             200_000,
             10_000,
             1,
@@ -220,7 +222,7 @@ describe('estimateCorpusCost', () => {
         );
         const oneHour = estimateCorpusCost(
             'anthropic',
-            'claude-opus-4-8',
+            'claude-opus-5',
             200_000,
             10_000,
             1,
@@ -234,7 +236,7 @@ describe('estimateCorpusCost', () => {
         // estimate is materially low. This pins that the gap exists.
         const fiveMinute = estimateCorpusCost(
             'anthropic',
-            'claude-opus-4-8',
+            'claude-opus-5',
             300_000,
             3_500,
             1,
@@ -242,7 +244,7 @@ describe('estimateCorpusCost', () => {
         );
         const oneHour = estimateCorpusCost(
             'anthropic',
-            'claude-opus-4-8',
+            'claude-opus-5',
             300_000,
             3_500,
             1,
@@ -254,11 +256,11 @@ describe('estimateCorpusCost', () => {
     });
 
     it('prices the priming pass at the input rate for providers with no explicit cache-write rate', () => {
-        // GPT-5.6 Sol bills the first pass as ordinary input; automatic caching
+        // GPT-6 Sol bills the first pass as ordinary input; automatic caching
         // has no separate write price. The TTL is irrelevant there, so asking
         // for 1h neither throws nor changes the number.
-        const oneHour = estimateCorpusCost('openai', 'gpt-5.6-sol', 61_600, 8_000, 1, { cacheReuseRatio: 0.5, cacheWriteTtl: '1h' });
-        const fiveMinute = estimateCorpusCost('openai', 'gpt-5.6-sol', 61_600, 8_000, 1, { cacheReuseRatio: 0.5, cacheWriteTtl: '5m' });
+        const oneHour = estimateCorpusCost('openai', 'gpt-6-sol', 61_600, 8_000, 1, { cacheReuseRatio: 0.5, cacheWriteTtl: '1h' });
+        const fiveMinute = estimateCorpusCost('openai', 'gpt-6-sol', 61_600, 8_000, 1, { cacheReuseRatio: 0.5, cacheWriteTtl: '5m' });
         expect(Number.isFinite(oneHour.freshCostUSD)).toBe(true);
         expect(oneHour.freshCostUSD).toBeGreaterThan(0);
         expect(oneHour.freshCostUSD).toBe(fiveMinute.freshCostUSD);
@@ -308,13 +310,13 @@ describe('estimateCorpusCost never substitutes one cache-write TTL rate for anot
     });
 
     it('prices creation tokens with no per-TTL split at the TTL the run requested, and not at all without one', () => {
-        const pricing = getActivePricingTable().anthropic['claude-opus-4-8'];
+        const pricing = getActivePricingTable().anthropic['claude-opus-5'];
         const usage = { inputTokens: 10_000, outputTokens: 100, rawInputTokens: 0, cacheReadInputTokens: 0, cacheCreationInputTokens: 10_000 };
-        expect(estimateUsageCost('anthropic', 'claude-opus-4-8', usage)?.cacheCreationCostUSD).toBeUndefined();
-        expect(estimateUsageCost('anthropic', 'claude-opus-4-8', usage)?.totalCostUSD).toBeUndefined();
-        expect(estimateUsageCost('anthropic', 'claude-opus-4-8', usage, undefined, '1h')?.cacheCreationCostUSD)
+        expect(estimateUsageCost('anthropic', 'claude-opus-5', usage)?.cacheCreationCostUSD).toBeUndefined();
+        expect(estimateUsageCost('anthropic', 'claude-opus-5', usage)?.totalCostUSD).toBeUndefined();
+        expect(estimateUsageCost('anthropic', 'claude-opus-5', usage, undefined, '1h')?.cacheCreationCostUSD)
             .toBeCloseTo(0.01 * (pricing.cacheWrite1hPer1M as number), 10);
-        expect(estimateUsageCost('anthropic', 'claude-opus-4-8', usage, undefined, '5m')?.cacheCreationCostUSD)
+        expect(estimateUsageCost('anthropic', 'claude-opus-5', usage, undefined, '5m')?.cacheCreationCostUSD)
             .toBeCloseTo(0.01 * (pricing.cacheWrite5mPer1M as number), 10);
         // Requested TTL with no rate in the table is still unavailable.
         installFiveMinuteOnlyPricing();
@@ -326,9 +328,9 @@ describe('estimateOmnibusCostRange', () => {
     afterEach(() => resetPricingToBuiltin());
 
     it('matches the corpus-cost rate rules exactly: write once at the TTL rate, read N-1 times', () => {
-        const pricing = getActivePricingTable().anthropic['claude-opus-4-8'];
+        const pricing = getActivePricingTable().anthropic['claude-opus-5'];
         const range = estimateOmnibusCostRange({
-            provider: 'anthropic', modelId: 'claude-opus-4-8',
+            provider: 'anthropic', modelId: 'claude-opus-5',
             corpusInputTokens: 100_000, expectedOutputTokensPerQuestion: 2_000, questionCount: 6,
             cacheWriteTtl: '1h'
         });
@@ -339,7 +341,7 @@ describe('estimateOmnibusCostRange', () => {
     });
 
     it('prices question 1 as a cache read when the cache is already warm', () => {
-        const base = { provider: 'anthropic' as const, modelId: 'claude-opus-4-8', corpusInputTokens: 100_000, expectedOutputTokensPerQuestion: 2_000, questionCount: 6, cacheWriteTtl: '1h' as const };
+        const base = { provider: 'anthropic' as const, modelId: 'claude-opus-5', corpusInputTokens: 100_000, expectedOutputTokensPerQuestion: 2_000, questionCount: 6, cacheWriteTtl: '1h' as const };
         const cold = estimateOmnibusCostRange(base);
         const warm = estimateOmnibusCostRange({ ...base, cacheAlreadyWarm: true });
         expect(warm.uncachedUSD).toBe(cold.uncachedUSD);
@@ -356,8 +358,8 @@ describe('estimateOmnibusCostRange', () => {
     });
 
     it('prices the priming question at the input rate for providers without an explicit write rate', () => {
-        const pricing = getActivePricingTable().openai['gpt-5.6-sol'];
-        const range = estimateOmnibusCostRange({ provider: 'openai', modelId: 'gpt-5.6-sol', corpusInputTokens: 50_000, expectedOutputTokensPerQuestion: 1_000, questionCount: 4, cacheWriteTtl: '1h' });
+        const pricing = getActivePricingTable().openai['gpt-6-sol'];
+        const range = estimateOmnibusCostRange({ provider: 'openai', modelId: 'gpt-6-sol', corpusInputTokens: 50_000, expectedOutputTokensPerQuestion: 1_000, questionCount: 4, cacheWriteTtl: '1h' });
         const output = 4 * (1_000 / 1e6) * pricing.outputPer1M;
         expect(range.cachedUSD).toBeCloseTo(0.05 * pricing.inputPer1M + 3 * 0.05 * (pricing.cacheReadPer1M as number) + output, 10);
         expect(range.cachedUSD as number).toBeLessThan(range.uncachedUSD);

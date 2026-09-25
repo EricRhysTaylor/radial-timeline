@@ -33,7 +33,7 @@ describe('computeInquiryAdvisoryContext', () => {
         // citations off everywhere, that nudge would mislead. The advisor
         // should suppress the sources_preferred branch and fall through to
         // other reason codes (or return null).
-        const currentModel = getModel('gpt-5.6-sol');
+        const currentModel = getModel('gpt-6-sol');
         const advisory = computeInquiryAdvisoryContext({
             scope: 'book',
             scopeLabel: 'B1',
@@ -51,7 +51,7 @@ describe('computeInquiryAdvisoryContext', () => {
     });
 
     it('returns null when the current engine already has sources and fits in one pass', () => {
-        const currentModel = getModel('claude-opus-4-8');
+        const currentModel = getModel('claude-opus-5');
         const advisory = computeInquiryAdvisoryContext({
             scope: 'book',
             scopeLabel: 'B1',
@@ -87,7 +87,7 @@ describe('computeInquiryAdvisoryContext', () => {
     });
 
     it('returns precision recommendation for deep analysis questions when another engine is stronger', () => {
-        const openAiStrong = getModel('gpt-5.6-sol');
+        const openAiStrong = getModel('gpt-6-sol');
         const currentModel: ModelInfo = {
             ...openAiStrong,
             id: 'gpt-5.2-precision-lite-test',
@@ -115,7 +115,7 @@ describe('computeInquiryAdvisoryContext', () => {
     });
 
     it('does not suggest a single-pass switch for only a minor pass-count gain', () => {
-        const currentModel = getModel('claude-opus-4-8');
+        const currentModel = getModel('claude-opus-5');
         const advisory = computeInquiryAdvisoryContext({
             scope: 'book',
             scopeLabel: 'B1',
@@ -131,7 +131,7 @@ describe('computeInquiryAdvisoryContext', () => {
     });
 
     it('returns null when no meaningful advisory advantage exists', () => {
-        const currentModel = getModel('claude-opus-4-8');
+        const currentModel = getModel('claude-opus-5');
         const advisory = computeInquiryAdvisoryContext({
             scope: 'book',
             scopeLabel: 'B1',

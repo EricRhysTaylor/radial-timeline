@@ -142,14 +142,14 @@ describe('omnibus cost accumulator', () => {
         acc = accumulateOmnibusPassCost(
             acc,
             'anthropic',
-            'claude-opus-4-8',
+            'claude-opus-5',
             anthropicUsage({ cacheCreationInputTokens: 90_000, cacheCreation1hInputTokens: 90_000 }),
             0
         );
         acc = accumulateOmnibusPassCost(
             acc,
             'anthropic',
-            'claude-opus-4-8',
+            'claude-opus-5',
             anthropicUsage({ cacheReadInputTokens: 90_000 }),
             90_000
         );
@@ -167,7 +167,7 @@ describe('omnibus cost accumulator', () => {
 
     it('counts a pass as unpriced when usage is absent', () => {
         let acc = createOmnibusCostAccumulator();
-        acc = accumulateOmnibusPassCost(acc, 'anthropic', 'claude-opus-4-8', null, 0);
+        acc = accumulateOmnibusPassCost(acc, 'anthropic', 'claude-opus-5', null, 0);
         expect(acc.unpricedPasses).toBe(1);
     });
 });

@@ -1,4 +1,4 @@
-import { describe, expect, it, afterEach } from 'vitest';
+import { describe, expect, it, afterEach, vi } from 'vitest';
 import {
     getProviderPricing,
     resolveProviderModelPricing,
@@ -14,8 +14,8 @@ describe('providerPricing', () => {
         resetPricingToBuiltin();
     });
 
-    it('stores an explicit Claude Opus 4.8 pricing row', () => {
-        const pricing = getProviderPricing('anthropic', 'claude-opus-4-8');
+    it('stores an explicit Claude Opus 5 pricing row', () => {
+        const pricing = getProviderPricing('anthropic', 'claude-opus-5');
 
         expect(pricing.inputPer1M).toBe(5);
         expect(pricing.outputPer1M).toBe(25);
@@ -24,40 +24,49 @@ describe('providerPricing', () => {
         expect(pricing.cacheReadPer1M).toBe(0.5);
     });
 
-    it('stores GPT-5.6 Sol standard pricing with cached input support', () => {
-        const standard = getProviderPricing('openai', 'gpt-5.6-sol');
+    it('stores Claude Opus 5.5 pricing with its 0.05× cache-read rate', () => {
+        const pricing = getProviderPricing('anthropic', 'claude-opus-5-5');
 
-        expect(standard.inputPer1M).toBe(4);
-        expect(standard.outputPer1M).toBe(20);
-        expect(standard.cacheReadPer1M).toBe(0.4);
+        expect(pricing.inputPer1M).toBe(4);
+        expect(pricing.outputPer1M).toBe(20);
+        expect(pricing.cacheWrite5mPer1M).toBe(5);
+        expect(pricing.cacheWrite1hPer1M).toBe(8);
+        expect(pricing.cacheReadPer1M).toBe(0.2);
+    });
+
+    it('stores GPT-6 Sol standard pricing with cached input support', () => {
+        const standard = getProviderPricing('openai', 'gpt-6-sol');
+
+        expect(standard.inputPer1M).toBe(2);
+        expect(standard.outputPer1M).toBe(10);
+        expect(standard.cacheReadPer1M).toBe(0.2);
         expect(standard.longContext?.thresholdInputTokens).toBe(272_000);
-        expect(standard.longContext?.inputPer1M).toBe(8);
-        expect(standard.longContext?.outputPer1M).toBe(30);
-        expect(standard.longContext?.cacheReadPer1M).toBe(0.8);
+        expect(standard.longContext?.inputPer1M).toBe(4);
+        expect(standard.longContext?.outputPer1M).toBe(15);
+        expect(standard.longContext?.cacheReadPer1M).toBe(0.4);
     });
 
     it('does not include GPT-5.5 Pro in built-in pricing', () => {
         expect(() => getProviderPricing('openai', 'gpt-5.5-pro')).toThrowError(/Missing provider pricing/);
     });
 
-    it('applies GPT-5.6 Sol long-context pricing above 272k input tokens', () => {
-        const standard = resolveProviderModelPricing('openai', 'gpt-5.6-sol', 272_000);
-        const longContext = resolveProviderModelPricing('openai', 'gpt-5.6-sol', 272_001);
+    it('applies GPT-6 Sol long-context pricing above 272k input tokens', () => {
+        const standard = resolveProviderModelPricing('openai', 'gpt-6-sol', 272_000);
+        const longContext = resolveProviderModelPricing('openai', 'gpt-6-sol', 272_001);
 
         expect(standard.pricingPhase).toBe('standard');
-        expect(standard.inputPer1M).toBe(4);
-        expect(standard.outputPer1M).toBe(20);
-        expect(standard.cacheReadPer1M).toBe(0.4);
+        expect(standard.inputPer1M).toBe(2);
+        expect(standard.outputPer1M).toBe(10);
+        expect(standard.cacheReadPer1M).toBe(0.2);
         expect(longContext.pricingPhase).toBe('longContext');
-        expect(longContext.inputPer1M).toBe(8);
-        expect(longContext.outputPer1M).toBe(30);
-        expect(longContext.cacheReadPer1M).toBe(0.8);
+        expect(longContext.inputPer1M).toBe(4);
+        expect(longContext.outputPer1M).toBe(15);
+        expect(longContext.cacheReadPer1M).toBe(0.4);
     });
 
     it('stores Gemini Pro cache-read pricing and long-context thresholds', () => {
         const geminiStandard = resolveProviderModelPricing('google', 'gemini-3.1-pro-preview', 200_000);
         const geminiLong = resolveProviderModelPricing('google', 'gemini-3.1-pro-preview', 200_001);
-        const geminiFlash = resolveProviderModelPricing('google', 'gemini-3.5-flash', 200_001);
 
         expect(geminiStandard.inputPer1M).toBe(2);
         expect(geminiStandard.outputPer1M).toBe(12);
@@ -65,9 +74,30 @@ describe('providerPricing', () => {
         expect(geminiLong.inputPer1M).toBe(4);
         expect(geminiLong.outputPer1M).toBe(18);
         expect(geminiLong.cacheReadPer1M).toBe(0.4);
-        expect(geminiFlash.inputPer1M).toBe(1.5);
-        expect(geminiFlash.outputPer1M).toBe(9);
-        expect(geminiFlash.cacheReadPer1M).toBe(0.15);
+    });
+
+    it('prices Gemini 3.8 Flash at launch rates, then every rate at standard after the promo ends', () => {
+        vi.useFakeTimers();
+        try {
+            vi.setSystemTime(new Date('2026-10-01T00:00:00Z'));
+            const launch = resolveProviderModelPricing('google', 'gemini-3.8-flash', 500_000);
+            expect(launch.pricingPhase).toBe('standard');
+            expect(launch.inputPer1M).toBe(0.75);
+            expect(launch.outputPer1M).toBe(3.75);
+            expect(launch.cacheReadPer1M).toBe(0.075);
+            expect(launch.cacheStoragePer1MPerHour).toBe(0.5);
+            expect(launch.promo?.label).toMatch(/Launch pricing/);
+
+            vi.setSystemTime(new Date('2027-01-02T00:00:00Z'));
+            const standard = resolveProviderModelPricing('google', 'gemini-3.8-flash', 500_000);
+            expect(standard.inputPer1M).toBe(1.5);
+            expect(standard.outputPer1M).toBe(7.5);
+            expect(standard.cacheReadPer1M).toBe(0.15);
+            expect(standard.cacheStoragePer1MPerHour).toBe(1);
+            expect(standard.promo).toBeUndefined();
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('isPromoActive returns true for promo without expiresAt', () => {
@@ -106,57 +136,57 @@ describe('providerPricing', () => {
     it('mergeRemotePricing overrides existing model pricing', () => {
         mergeRemotePricing({
             openai: {
-                'gpt-5.6-sol': {
-                    inputPer1M: 2.0,
+                'gpt-6-sol': {
+                    inputPer1M: 3.0,
                     outputPer1M: 8.0
                 }
             }
         }, 'remote');
 
-        const pricing = getProviderPricing('openai', 'gpt-5.6-sol');
-        expect(pricing.inputPer1M).toBe(2.0);
+        const pricing = getProviderPricing('openai', 'gpt-6-sol');
+        expect(pricing.inputPer1M).toBe(3.0);
         expect(pricing.outputPer1M).toBe(8.0);
         // Cache metadata is preserved from the builtin row.
-        expect(pricing.cacheReadPer1M).toBe(0.4);
+        expect(pricing.cacheReadPer1M).toBe(0.2);
     });
 
     it('mergeRemotePricing preserves builtin cache metadata when remote rows are partial', () => {
         mergeRemotePricing({
             openai: {
-                'gpt-5.6-sol': {
-                    inputPer1M: 2.0,
+                'gpt-6-sol': {
+                    inputPer1M: 3.0,
                     outputPer1M: 8.0
                 }
             }
         }, 'remote');
 
-        const pricing = getProviderPricing('openai', 'gpt-5.6-sol');
-        expect(pricing.cacheReadPer1M).toBe(0.4);
+        const pricing = getProviderPricing('openai', 'gpt-6-sol');
+        expect(pricing.cacheReadPer1M).toBe(0.2);
         expect(pricing.longContext?.thresholdInputTokens).toBe(272_000);
-        expect(pricing.longContext?.cacheReadPer1M).toBe(0.8);
+        expect(pricing.longContext?.cacheReadPer1M).toBe(0.4);
     });
 
     it('mergeRemotePricing preserves builtin models not in remote', () => {
         mergeRemotePricing({
             openai: {
-                'gpt-5.6-sol': { inputPer1M: 2.0, outputPer1M: 8.0 }
+                'gpt-6-sol': { inputPer1M: 3.0, outputPer1M: 8.0 }
             }
         }, 'remote');
 
-        const pricing = getProviderPricing('anthropic', 'claude-opus-4-8');
+        const pricing = getProviderPricing('anthropic', 'claude-opus-5');
         expect(pricing.inputPer1M).toBe(5);
     });
 
     it('resetPricingToBuiltin restores original pricing', () => {
         mergeRemotePricing({
             openai: {
-                'gpt-5.6-sol': { inputPer1M: 0, outputPer1M: 0 }
+                'gpt-6-sol': { inputPer1M: 0, outputPer1M: 0 }
             }
         }, 'remote');
         resetPricingToBuiltin();
 
-        const pricing = getProviderPricing('openai', 'gpt-5.6-sol');
-        expect(pricing.inputPer1M).toBe(4);
+        const pricing = getProviderPricing('openai', 'gpt-6-sol');
+        expect(pricing.inputPer1M).toBe(2);
     });
 
     it('resolveProviderModelPricing surfaces active promo', () => {
@@ -257,7 +287,7 @@ describe('providerPricing', () => {
     it('mergeRemotePricing sets source metadata to remote', () => {
         const fetchedAt = new Date().toISOString();
         mergeRemotePricing({
-            openai: { 'gpt-5.6-sol': { inputPer1M: 3, outputPer1M: 10 } }
+            openai: { 'gpt-6-sol': { inputPer1M: 3, outputPer1M: 10 } }
         }, 'remote', fetchedAt);
 
         const meta = getActivePricingMeta();
@@ -267,7 +297,7 @@ describe('providerPricing', () => {
 
     it('mergeRemotePricing sets source metadata to cache', () => {
         mergeRemotePricing({
-            openai: { 'gpt-5.6-sol': { inputPer1M: 3, outputPer1M: 10 } }
+            openai: { 'gpt-6-sol': { inputPer1M: 3, outputPer1M: 10 } }
         }, 'cache', '2026-01-01T00:00:00Z');
 
         const meta = getActivePricingMeta();
@@ -286,10 +316,10 @@ describe('providerPricing', () => {
     it('resolveProviderModelPricing propagates meta', () => {
         const fetchedAt = new Date().toISOString();
         mergeRemotePricing({
-            openai: { 'gpt-5.6-sol': { inputPer1M: 3, outputPer1M: 10 } }
+            openai: { 'gpt-6-sol': { inputPer1M: 3, outputPer1M: 10 } }
         }, 'remote', fetchedAt);
 
-        const resolved = resolveProviderModelPricing('openai', 'gpt-5.6-sol', 50_000);
+        const resolved = resolveProviderModelPricing('openai', 'gpt-6-sol', 50_000);
         expect(resolved.meta.source).toBe('remote');
         expect(resolved.meta.fetchedAt).toBe(fetchedAt);
     });

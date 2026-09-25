@@ -1,27 +1,18 @@
 {
-  "generatedAt": "2026-09-05T18:00:00.000Z",
+  "generatedAt": "2026-09-25T18:00:00.000Z",
   "models": [
     {
       "provider": "anthropic",
+      "modelId": "claude-opus-5-5",
+      "inputPer1M": 4,
+      "outputPer1M": 20,
+      "cacheWrite5mPer1M": 5,
+      "cacheWrite1hPer1M": 8,
+      "cacheReadPer1M": 0.2
+    },
+    {
+      "provider": "anthropic",
       "modelId": "claude-opus-5",
-      "inputPer1M": 5,
-      "outputPer1M": 25,
-      "cacheWrite5mPer1M": 6.25,
-      "cacheWrite1hPer1M": 10,
-      "cacheReadPer1M": 0.5
-    },
-    {
-      "provider": "anthropic",
-      "modelId": "claude-fable-5-1",
-      "inputPer1M": 10,
-      "outputPer1M": 50,
-      "cacheWrite5mPer1M": 12.5,
-      "cacheWrite1hPer1M": 20,
-      "cacheReadPer1M": 0.25
-    },
-    {
-      "provider": "anthropic",
-      "modelId": "claude-opus-4-8",
       "inputPer1M": 5,
       "outputPer1M": 25,
       "cacheWrite5mPer1M": 6.25,
@@ -47,16 +38,25 @@
       "cacheReadPer1M": 0.1
     },
     {
+      "provider": "anthropic",
+      "modelId": "claude-fable-5-1",
+      "inputPer1M": 10,
+      "outputPer1M": 50,
+      "cacheWrite5mPer1M": 12.5,
+      "cacheWrite1hPer1M": 20,
+      "cacheReadPer1M": 0.25
+    },
+    {
       "provider": "openai",
-      "modelId": "gpt-5.6-sol",
-      "inputPer1M": 4,
-      "outputPer1M": 20,
-      "cacheReadPer1M": 0.4,
+      "modelId": "gpt-6-sol",
+      "inputPer1M": 2,
+      "outputPer1M": 10,
+      "cacheReadPer1M": 0.2,
       "longContext": {
         "thresholdInputTokens": 272000,
-        "inputPer1M": 8,
-        "outputPer1M": 30,
-        "cacheReadPer1M": 0.8
+        "inputPer1M": 4,
+        "outputPer1M": 15,
+        "cacheReadPer1M": 0.4
       }
     },
     {
@@ -74,15 +74,15 @@
     },
     {
       "provider": "openai",
-      "modelId": "gpt-5.6-luna",
-      "inputPer1M": 0.2,
-      "outputPer1M": 1.2,
-      "cacheReadPer1M": 0.02,
+      "modelId": "gpt-6-luna",
+      "inputPer1M": 0.1,
+      "outputPer1M": 0.5,
+      "cacheReadPer1M": 0.01,
       "longContext": {
         "thresholdInputTokens": 272000,
-        "inputPer1M": 0.4,
-        "outputPer1M": 1.8,
-        "cacheReadPer1M": 0.04
+        "inputPer1M": 0.2,
+        "outputPer1M": 0.75,
+        "cacheReadPer1M": 0.02
       }
     },
     {
@@ -100,10 +100,18 @@
     },
     {
       "provider": "google",
-      "modelId": "gemini-3.5-flash",
-      "inputPer1M": 1.5,
-      "outputPer1M": 9,
-      "cacheReadPer1M": 0.15
+      "modelId": "gemini-3.8-flash",
+      "inputPer1M": 0.75,
+      "outputPer1M": 3.75,
+      "cacheReadPer1M": 0.075,
+      "promo": {
+        "label": "Launch pricing through Dec 31, 2026",
+        "expiresAt": "2027-01-01T00:00:00Z",
+        "standardInputPer1M": 1.5,
+        "standardOutputPer1M": 7.5,
+        "standardCacheReadPer1M": 0.15,
+        "standardCacheStoragePer1MPerHour": 1
+      }
     }
   ]
 }

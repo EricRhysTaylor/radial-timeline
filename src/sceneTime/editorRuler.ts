@@ -32,17 +32,26 @@ export function createTimeTick(doc: Document, cue: ResolvedCue, open: () => void
 }
 
 /** Declared YAML Duration drawn inside the rail's left edge. A stop line is cut at its cue once measured. */
-export function createDurationLine(parent: HTMLElement, segment: DurationSegment, open: () => void): HTMLElement {
+export function createDurationLine(parent: HTMLElement, segment: DurationSegment, open: (key?: string) => void): HTMLElement {
     const line = parent.createSpan({ cls: `ert-time-duration ert-time-duration-${segment.status}` });
-    if (segment.stopFrom !== null) {
+    if (segment.status === 'over' && !segment.confirmed) line.addClass('ert-time-duration-provisional');
+    const review = (event: MouseEvent, key?: string): void => { event.preventDefault(); event.stopPropagation(); open(key); };
+    const planned = elapsedLabel(segment.planned);
+    const stop = segment.stop;
+    if (stop) {
         line.addClass('ert-time-duration-stop');
-        line.dataset.stopFrom = String(segment.stopFrom);
+        line.dataset.stopFrom = String(stop.from);
+        const cap = line.createSpan({ cls: 'ert-time-duration-cap' });
+        setTooltip(cap, `Duration ${planned} used up here · time cues continue to ${elapsedLabel(segment.reached)}${segment.confirmed ? '' : ' · Dashed until confirmed time alone runs past it'} · Click to review`);
+        cap.addEventListener('click', event => review(event, stop.key));
     }
-    if (segment.shortfall !== null) {
-        const arrow = line.createSpan({ cls: 'ert-time-duration-arrow' });
+    if (segment.arrow) {
+        const arrow = line.createSpan({ cls: `ert-time-duration-arrow ert-time-duration-arrow-${segment.arrow}` });
         setIcon(arrow, 'arrow-down');
-        setTooltip(arrow, `Duration ${elapsedLabel(segment.planned)} · time cues reach ${elapsedLabel(segment.planned - segment.shortfall)} · ${elapsedLabel(segment.shortfall)} not accounted for in the prose · Click to review`);
-        arrow.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); open(); });
+        setTooltip(arrow, segment.arrow === 'shortfall'
+            ? `Duration ${planned} · time cues reach ${elapsedLabel(segment.reached)} · ${elapsedLabel(segment.planned - segment.reached)} not accounted for in the prose · Click to review`
+            : `Duration ${planned} · no time phrases quantify it yet; prose can use time without naming it · Click to review`);
+        arrow.addEventListener('click', event => review(event));
     }
     return line;
 }
@@ -118,9 +127,9 @@ export function sceneTimeEditorExtension(service: SceneTimeService) {
             const row = view.dom.ownerDocument.win.createDiv();
             row.className = 'ert-time-marker-row';
             row.dataset.lineFrom = String(this.lineFrom);
-            if (this.duration) createDurationLine(row, this.duration, () => {
+            if (this.duration) createDurationLine(row, this.duration, key => {
                 const file = editorFile(view);
-                if (file) new SceneTimeModal(service, file, () => view.state.doc.toString()).open();
+                if (file) new SceneTimeModal(service, file, () => view.state.doc.toString(), key).open();
             });
             if (this.boundary) {
                 const cap = row.createSpan({ cls: 'ert-time-boundary', text: '━' });

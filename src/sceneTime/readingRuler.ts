@@ -93,7 +93,7 @@ export async function renderReadingTime(service: SceneTimeService, el: HTMLEleme
                 const current = service.snapshot(sceneFile, source);
                 if (!current) return;
                 const segment = durationSegment(current, section!.lineStart, section!.lineEnd);
-                const durationLine = segment && createDurationLine(this.rail, segment, () => review());
+                const durationLine = segment && createDurationLine(this.rail, segment, review);
                 const occurrences = new Map<string, number>();
                 for (const cue of current.cues.filter(cue => cue.line >= section!.lineStart && cue.line <= section!.lineEnd)) {
                     const occurrence = occurrences.get(cue.quote) || 0;
@@ -106,7 +106,7 @@ export async function renderReadingTime(service: SceneTimeService, el: HTMLEleme
                     // SAFE: measured prose-relative marker position; not a theme/style override.
                     this.rail.appendChild(tick);
                     tick.style.top = `${top}px`; // SAFE: exact rendered phrase anchor; same-line cues use stable vertical stack offsets.
-                    if (durationLine && cue.from === segment?.stopFrom) durationLine.style.setProperty('--ert-time-duration-stop', `${Math.max(0, top)}px`); // SAFE: duration line ends at its rendered stop cue.
+                    if (durationLine && cue.from === segment?.stop?.from) durationLine.style.setProperty('--ert-time-duration-stop', `${Math.max(0, top)}px`); // SAFE: duration line ends at its rendered stop cue.
                 }
             };
             const win = el.ownerDocument.defaultView;

@@ -14,6 +14,7 @@
     outline-offset: 2px;
 }
 .view-header .ert-scene-time.ert-time-over { color: var(--text-error); }
+.view-header .ert-scene-time.ert-time-over-provisional { color: var(--color-yellow); }
 
 .ert-ui .cm-gutter.ert-time-gutter { background: transparent; overflow: visible; }
 .ert-ui.ert-time-gutters {
@@ -94,7 +95,21 @@ button.ert-time-marker:focus-visible { outline: 2px solid var(--interactive-acce
     pointer-events: none;
 }
 .ert-time-duration.ert-time-duration-over { background: var(--color-yellow); }
+/* Unconfirmed overage: dashes let the gray rail show through until confirmed time alone runs past the duration. */
+.ert-time-duration.ert-time-duration-provisional { background: repeating-linear-gradient(to bottom, var(--color-yellow) 0 4px, transparent 4px 7px); }
 .ert-time-duration.ert-time-duration-stop { bottom: auto; height: var(--ert-time-duration-stop, 0px); }
+.ert-time-duration-cap {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 10px;
+    height: 3px;
+    margin-top: -3px;
+    background: var(--color-yellow);
+    pointer-events: auto;
+    cursor: pointer;
+}
+.ert-time-duration-cap::after { content: ''; position: absolute; inset: -5px -2px; }
 .ert-time-duration-arrow {
     position: absolute;
     top: 100%;
@@ -105,6 +120,15 @@ button.ert-time-marker:focus-visible { outline: 2px solid var(--interactive-acce
     cursor: pointer;
 }
 .ert-time-duration-arrow svg { width: 14px; height: 14px; stroke-width: 3; }
+.ert-time-duration-arrow.ert-time-duration-arrow-unquantified { color: var(--text-faint); }
+
+.ert-ui .ert-time-duration-key { display: inline-flex; flex-shrink: 0; }
+.ert-ui .ert-time-duration-key-line { width: 3px; height: 14px; background: var(--text-muted); }
+.ert-ui .ert-time-duration-key-over { width: 3px; height: 14px; background: var(--color-yellow); }
+.ert-ui .ert-time-duration-key-provisional { width: 3px; height: 14px; background: repeating-linear-gradient(to bottom, var(--color-yellow) 0 4px, transparent 4px 7px); }
+.ert-ui .ert-time-duration-key-arrow { color: var(--text-error); }
+.ert-ui .ert-time-duration-key-arrow-unquantified { color: var(--text-faint); }
+.ert-ui .ert-time-duration-key svg { width: 14px; height: 14px; stroke-width: 3; }
 
 .ert-ui .ert-time-cue { border-left: 3px solid var(--ert-time-color); }
 .ert-ui .ert-time-selected { outline: 2px solid var(--interactive-accent); outline-offset: 2px; }

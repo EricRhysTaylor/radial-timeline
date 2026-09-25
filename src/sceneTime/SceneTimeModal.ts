@@ -40,6 +40,18 @@ export class SceneTimeModal extends ErtModal {
             if (state === 'backward') setIcon(item.createSpan({ cls: 'ert-time-backward-icon' }), 'undo-2');
             item.createSpan({ text: label });
         }
+        if (snapshot.duration) {
+            const key = summary.createDiv({ cls: 'ert-time-legend' });
+            for (const [swatches, label] of [[['line'], 'Declared duration'], [['over', 'provisional'], 'Prose runs past it · dashed until confirmed'],
+                [['arrow', 'arrow-unquantified'], 'Prose falls short · gray with no time phrases']] as const) {
+                const item = key.createSpan({ cls: 'ert-time-legend-item' });
+                for (const swatch of swatches) {
+                    const mark = item.createSpan({ cls: `ert-time-duration-key ert-time-duration-key-${swatch}` });
+                    if (swatch.startsWith('arrow')) setIcon(mark, 'arrow-down');
+                }
+                item.createSpan({ text: label });
+            }
+        }
         const eligible = snapshot.cues.filter(cue => !cue.decision && !cue.duplicate && cue.suggestedMinutes !== null
             && (cue.kind === 'advance' || cue.kind === 'checkpoint'));
         new Setting(summary).setName('Use the detected durations')

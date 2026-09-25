@@ -5,7 +5,6 @@ import { sceneTimeLabel } from '../utils/sceneTimeLabel';
 import type { SceneTimeService } from '../sceneTime/SceneTimeService';
 import { SceneTimeModal } from '../sceneTime/SceneTimeModal';
 import { elapsedLabel } from '../sceneTime/model';
-import { parseDuration } from '../utils/date';
 
 /** Owns only the timing badges inserted into open markdown view headers. */
 export class SceneTimeHeader extends Component {
@@ -65,10 +64,16 @@ export class SceneTimeHeader extends Component {
                 const total = provisional ? `~${elapsedLabel(snapshot.estimated)}` : snapshot.confirmed ? elapsedLabel(snapshot.elapsed) : '—';
                 label.text += ` · Elapsed ${total}${snapshot.pending ? ` · ${snapshot.pending} cues` : ''}`;
                 label.description += ` · ${elapsedLabel(snapshot.elapsed)} confirmed elapsed${provisional ? ` (~${elapsedLabel(snapshot.estimated)} including unconfirmed cues)` : ''}; ${snapshot.pending} unconfirmed cues. Optional: click to check elapsed story time.`;
-                const planned = typeof metadata.Duration === 'string' ? parseDuration(metadata.Duration) : null;
-                const conflict = snapshot.conflict || (planned !== null && snapshot.elapsed * 60000 > planned);
+                // Same leeway as the cue bar's duration line: red once confirmed time runs over, yellow while it rests on unconfirmed cues.
+                const over = snapshot.duration?.status === 'over' ? snapshot.duration : null;
+                const conflict = snapshot.conflict || !!over?.confirmed;
                 badge.toggleClass('ert-time-over', conflict);
+                badge.toggleClass('ert-time-over-provisional', !conflict && !!over);
                 if (conflict) label.text += ' · Review timing';
+                else if (over) {
+                    label.text += ' · Check timing';
+                    label.description += ` Unconfirmed time cues run past the declared ${elapsedLabel(over.planned)} duration.`;
+                }
             }
             if (badge.textContent !== label.text) badge.setText(label.text);
             if (badge.getAttribute('aria-label') !== label.description) {

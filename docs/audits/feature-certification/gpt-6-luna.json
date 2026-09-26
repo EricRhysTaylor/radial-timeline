@@ -1,0 +1,139 @@
+{
+  "provider": "openai",
+  "modelId": "gpt-6-luna",
+  "vault": "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/Test Vaults/Obsidian Vault AI Certification",
+  "book": "Pride & Prejudice",
+  "generatedAt": "2026-09-26T17:42:18.245Z",
+  "cases": [
+    {
+      "id": "pulse:16 Wickham's Story",
+      "feature": "pulse",
+      "durationMs": 14923,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 10628,
+        "outputTokens": 1150,
+        "totalTokens": 11778,
+        "cacheReadInputTokens": 0
+      },
+      "costUSD": 0.0016378,
+      "sample": {
+        "previousSceneAnalysis": "- 15 Wickham’s striking entrance + / The chance Meryton meeting gives Elizabeth immediate reason to seek him out.\n- Darcy’s charged reaction + / Their visible mutual recognition plants the mystery Wickham soon explains.\n- A promised reunion + / The Philipses’ invitation naturally brings Wickham and Elizabeth together again.\n- Comic social counterpoint + / Collins’s pompous presence balances the officers’ romantic allure.",
+        "currentSceneAnalysis": "- 16 B / Trim repeated allegations so Wickham’s charm and Elizabeth’s credulity carry the scene.\n- A charming confidant + / Wickham’s easy manner makes Elizabeth—and readers—receptive to his account.\n- Darcy’s alleged betrayal + / The denied living gives their hostility concrete stakes and a compelling mystery.\n- One-sided evidence + / Elizabeth’s quick certainty exposes her prejudice while sustaining dramatic irony.\n- Character complicates accusation + / Wickham’s praise of Darcy’s virtues makes the grievance intriguingly less simple.\n- Wickham eclipses the evening + / Elizabeth’s fixation gives the scene a clear emotional landing.",
+        "nextSceneAnalysis": "- 17 Conflicting judgments + / Jane’s cautious defense counters Elizabeth’s certainty about Wickham’s story.\n- Ball invitation advances plot + / The Netherfield ball turns fresh suspicions into an imminent social test.\n- Romantic plans obstructed + / Collins claims Elizabeth’s first dances, delaying her hoped-for time with Wickham.\n- Suspense through anticipation + / Bad weather and the approaching ball heighten anticipation for the next encounter.",
+        "sceneGrade": "B"
+      }
+    },
+    {
+      "id": "pulse:30 Bingley Returns",
+      "feature": "pulse",
+      "durationMs": 8655,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 8854,
+        "outputTokens": 1026,
+        "totalTokens": 9880,
+        "cacheReadInputTokens": 0
+      },
+      "costUSD": 0.0013984000000000002,
+      "sample": {
+        "previousSceneAnalysis": "- 29 Rosings’ social hierarchy + / The first visit establishes the intimidating world Elizabeth now navigates routinely.\n- Elizabeth’s composure + / Her calm resistance prepares her for sharper encounters with Lady Catherine.\n- Lady Catherine’s intrusion + / Her domineering questions foreshadow continued scrutiny at Hunsford.\n- Darcy’s shadow ? / Wickham’s account colors Elizabeth’s judgment before Darcy arrives.",
+        "currentSceneAnalysis": "- 30 B / Trim routine exposition slightly to sharpen Darcy’s arrival and Elizabeth’s loaded test about Jane.\n- Charlotte’s quiet strategy + / Her room choice reveals resourcefulness within a stifling marriage.\n- Rosings routine - / Repeated social patterns slow momentum before the anticipated arrival.\n- Darcy’s entrance + / His arrival breaks Elizabeth’s comfortable isolation and renews romantic tension.\n- Jane as a test + / Elizabeth’s pointed question probes Darcy’s role in Jane’s separation.",
+        "nextSceneAnalysis": "- 31 Conversation as courtship + / Fitzwilliam’s easy attention gives Elizabeth a lively contrast to Darcy.\n- Darcy watches + / His curiosity intensifies the tension begun by their restrained reunion.\n- Wit replaces reserve + / Their teasing opens a more intimate channel than the previous scene allowed.\n- Lady Catherine’s pressure + / Her interruptions keep their growing rapport under public scrutiny.",
+        "sceneGrade": "B"
+      }
+    },
+    {
+      "id": "pulse:44 Invitation and Visit",
+      "feature": "pulse",
+      "durationMs": 10264,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 13885,
+        "outputTokens": 1188,
+        "totalTokens": 15073,
+        "cacheReadInputTokens": 0
+      },
+      "costUSD": 0.0019825,
+      "sample": {
+        "previousSceneAnalysis": "- 43 Darcy’s invitation + / His request to introduce Georgiana directly launches this visit.\n- Elizabeth’s growing gratitude + / Her softened feelings make the coming reunion emotionally charged.\n- Bingley and Jane + / His arrival gives Elizabeth fresh reason to watch for Jane’s sake.\n- Gardiners’ changed judgment + / Their approval lends credibility to Elizabeth’s reassessment of Darcy.\n- Visit planned + / The Gardiners’ reciprocal call carries the Pemberley encounter forward.",
+        "currentSceneAnalysis": "- 44 B / Trim repeated reflection so the reunion and Elizabeth’s changing feelings retain momentum.\n- Anticipation meets arrival + / The unexpected early visit turns Elizabeth’s hopes into immediate nerves.\n- Georgiana’s shyness + / Elizabeth’s mistaken expectations give their first meeting warmth and relief.\n- Bingley remembers Jane + / Small, guarded remarks revive hope for Jane without resolving it.\n- Darcy’s sustained change + / His courtesy to her relations tests and strengthens Elizabeth’s new respect.\n- Gratitude, not certainty + / Her unresolved desire keeps the romantic turn emotionally credible.",
+        "nextSceneAnalysis": "- 45 The Pemberley invitation answered + / The promised visit brings Elizabeth back into Darcy’s family circle.\n- Georgiana’s bond develops + / Their tentative acquaintance advances the connection established here.\n- Bingley’s guarded longing + / His remembered details sustain Elizabeth’s hopes for Jane.\n- Miss Bingley’s provocation + / Her attack tests Elizabeth’s composure and exposes Darcy’s loyalty.\n- Darcy’s open admiration + / His defense of Elizabeth gives her growing hope a public signal.",
+        "sceneGrade": "B"
+      }
+    },
+    {
+      "id": "gossamer:momentum",
+      "feature": "gossamer",
+      "durationMs": 29833,
+      "passed": true,
+      "summary": "All 15 beats scored and validated (61 scenes, 121693 words).",
+      "usage": {
+        "inputTokens": 165093,
+        "outputTokens": 2984,
+        "totalTokens": 168077,
+        "cacheReadInputTokens": 0
+      },
+      "costUSD": 0.0180013,
+      "sample": [
+        {
+          "beatName": "Opening Image",
+          "signal": "momentum",
+          "score": 45,
+          "justification": "The arrival of Bingley establishes the marriage-driven premise briskly, but the scene mainly introduces the Bennet household and its status quo."
+        },
+        {
+          "beatName": "Theme Stated",
+          "signal": "momentum",
+          "score": 40,
+          "justification": "The conversation about judgment and marriage plants thematic questions, but it advances the plot only slightly."
+        },
+        {
+          "beatName": "Setup",
+          "signal": "momentum",
+          "score": 55,
+          "justification": "Jane’s illness brings Elizabeth to Netherfield and deepens the central relationships while much of the scene remains introductory."
+        }
+      ]
+    },
+    {
+      "id": "inquiry:setup-core",
+      "feature": "inquiry",
+      "durationMs": 40719,
+      "passed": true,
+      "summary": "Inquiry returned 19 finding(s) over 61 scenes; verdict and refs passed the production result builder.",
+      "usage": {
+        "inputTokens": 168196,
+        "outputTokens": 4924,
+        "totalTokens": 173120,
+        "cacheReadInputTokens": 0
+      },
+      "costUSD": 0.0192816,
+      "sample": {
+        "verdict": {
+          "flow": 0.93,
+          "depth": 0.95
+        },
+        "summary": "Momentum depends on a tightly timed chain: marriage and inheritance pressure is established early, attraction and misjudgment build before separation, and withheld information converts into escalating family danger. The long pauses between major turns remain effective because each one sustains a live uncertainty or raises the cost of the next choice.",
+        "firstFinding": {
+          "refId": "scn_38bbc3eb",
+          "kind": "strength",
+          "headline": "The marriage plot has material pressure from the outset.",
+          "bullets": [
+            "The entail and the limited maternal fortune make marriage a practical security issue, not merely a romantic goal.",
+            "This pressure gives Mrs. Bennet’s matchmaking urgency and later makes the cost of Elizabeth’s refusal of Collins legible."
+          ],
+          "subject": "Inheritance and marriage stakes",
+          "span": "B1",
+          "related": [],
+          "evidenceType": "mixed",
+          "lens": "both",
+          "evidenceQuote": "Mr. Bennet’s property consisted almost entirely in an estate of two thousand a year, which, unfortunately for his daughters, was entailed, in default of heirs male, on a distant relation; and their mother’s fortune, though ample for her situation in life, could but ill supply the deficiency of his."
+        }
+      }
+    }
+  ]
+}

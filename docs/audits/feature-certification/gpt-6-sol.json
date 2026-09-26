@@ -1,0 +1,138 @@
+{
+  "provider": "openai",
+  "modelId": "gpt-6-sol",
+  "vault": "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/Test Vaults/Obsidian Vault AI Certification",
+  "book": "Pride & Prejudice",
+  "generatedAt": "2026-09-26T17:40:33.102Z",
+  "cases": [
+    {
+      "id": "pulse:16 Wickham's Story",
+      "feature": "pulse",
+      "durationMs": 12072,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 10628,
+        "outputTokens": 876,
+        "totalTokens": 11504,
+        "cacheReadInputTokens": 0
+      },
+      "costUSD": 0.030016,
+      "sample": {
+        "previousSceneAnalysis": "- 15 Charged first meeting + / Darcy and Wickham’s visible discomfort creates the question Elizabeth pursues.\n- Charm before testimony + / Wickham’s easy manners make his later accusations persuasive.\n- Invitation with purpose + / Mrs. Philips’s invitation gives Elizabeth another chance to meet Wickham.\n- Collins’s private plan + / His quick choice of Elizabeth plants a competing courtship.",
+        "currentSceneAnalysis": "- 16 B / Preserve Wickham’s seductive ambiguity, but trim repeated accusations and sharpen Elizabeth’s untested certainty.\n- Curiosity rewarded + / Wickham raises Darcy unprompted, paying off their charged encounter.\n- Personal grievance + / The lost living gives Elizabeth a concrete injustice to judge.\n- Credibility gap + / Elizabeth trusts Wickham’s looks more readily than his claims warrant.\n- Conversation drag - / Repeated judgments of Darcy slow the scene’s strongest reveal.",
+        "nextSceneAnalysis": "- 17 Belief meets resistance + / Jane’s doubts expose Elizabeth’s confidence as a character fault.\n- Public stakes ahead + / The ball promises another encounter under Elizabeth’s new assumptions.\n- Competing claims + / Collins takes the dances Elizabeth hoped to give Wickham.\n- Private plan surfaces + / Elizabeth recognizes Collins’s intentions; her mother welcomes the match.",
+        "sceneGrade": "B"
+      }
+    },
+    {
+      "id": "pulse:30 Bingley Returns",
+      "feature": "pulse",
+      "durationMs": 12061,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 8854,
+        "outputTokens": 893,
+        "totalTokens": 9747,
+        "cacheReadInputTokens": 0
+      },
+      "costUSD": 0.026638000000000002,
+      "sample": {
+        "previousSceneAnalysis": "- 29 Patronage on display + / Collins’s awe establishes why Rosings dominates their routine.\n- Intrusive authority + / Lady Catherine’s questioning anticipates her inspections at the parsonage.\n- Charlotte’s composure + / Her tact prepares us to recognize her household strategy.\n- Darcy family link + / Elizabeth’s scrutiny of his relations primes his arrival.",
+        "currentSceneAnalysis": "- 30 B / Compress the fortnight’s routine to reach Darcy’s arrival and Elizabeth’s pointed question sooner.\n- Charlotte’s quiet defense + / Her room choice reveals marital compromise without explanation.\n- Routine without escalation - / Repeated calls and dinners briefly stall momentum.\n- Darcy enters the circle + / His arrival disrupts Elizabeth’s comfortable distance from Rosings.\n- Jane as a test + / Elizabeth’s question gives their restrained reunion an edge.",
+        "nextSceneAnalysis": "- 31 Scarcer invitations + / Darcy’s arrival changes the parsonage’s access to Rosings.\n- Fitzwilliam’s easy manner + / His warmth sharpens the contrast with Darcy’s reserve.\n- Attention becomes visible + / Darcy’s scrutiny extends Charlotte’s suspicion that Elizabeth draws him.\n- Verbal contest + / Their guarded reunion becomes lively, revealing mutual attention.",
+        "sceneGrade": "B"
+      }
+    },
+    {
+      "id": "pulse:44 Invitation and Visit",
+      "feature": "pulse",
+      "durationMs": 11541,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 13885,
+        "outputTokens": 863,
+        "totalTokens": 14748,
+        "cacheReadInputTokens": 0
+      },
+      "costUSD": 0.0364,
+      "sample": {
+        "previousSceneAnalysis": "- 43 Unexpected reunion + / Darcy's altered manner makes Elizabeth anxious for another meeting.\n- Sister invitation + / His request gives Georgiana's prompt visit emotional weight.\n- Gardiners welcomed + / Darcy's courtesy prepares their suspicion that he loves Elizabeth.\n- Wickham reconsidered + / Elizabeth's guarded disclosure sets up further evidence against Wickham.",
+        "currentSceneAnalysis": "- 44 B / Keep the charged visit; compress repeated reflections and background reports to preserve momentum.\n- Early arrival + / The unexpected visit sharpens Elizabeth's nerves immediately.\n- Georgiana's shyness + / A mistaken first impression mirrors Elizabeth's reassessment of Darcy.\n- Bingley's exact memory + / His recollection revives Jane's unresolved romantic stakes.\n- Invitation and hesitation + / The Pemberley invitation forces Elizabeth toward her uncertain feelings.",
+        "nextSceneAnalysis": "- 45 Invitation tested + / Elizabeth enters Pemberley, where private hopes face public scrutiny.\n- Georgiana's shyness + / Their tentative acquaintance gains pressure under Miss Bingley's gaze.\n- Wickham's shadow + / Miss Bingley's militia jab weaponizes the history Elizabeth reconsidered.\n- Darcy's visible preference + / His defense confirms the affection Elizabeth dared to suspect.",
+        "sceneGrade": "B"
+      }
+    },
+    {
+      "id": "gossamer:momentum",
+      "feature": "gossamer",
+      "durationMs": 19229,
+      "passed": true,
+      "summary": "All 15 beats scored and validated (61 scenes, 121693 words).",
+      "usage": {
+        "inputTokens": 165093,
+        "outputTokens": 1324,
+        "totalTokens": 166417,
+        "cacheReadInputTokens": 0
+      },
+      "costUSD": 0.343426,
+      "sample": [
+        {
+          "beatName": "[1.01] Opening Image",
+          "signal": "momentum",
+          "score": 68,
+          "justification": "Bingley's arrival gives the Bennets an immediate prospect to pursue and prompts the question of whom he might marry."
+        },
+        {
+          "beatName": "[4.01] Theme Stated",
+          "signal": "momentum",
+          "score": 43,
+          "justification": "Jane and Elizabeth's contrasting judgments establish a consequential difference between them, but the scene chiefly reflects on the ball."
+        },
+        {
+          "beatName": "[8.01] Setup",
+          "signal": "momentum",
+          "score": 51,
+          "justification": "Jane's illness keeps Elizabeth at Netherfield, where conversation and class judgments develop relationships without an urgent turn."
+        }
+      ]
+    },
+    {
+      "id": "inquiry:setup-core",
+      "feature": "inquiry",
+      "durationMs": 74508,
+      "passed": true,
+      "summary": "Inquiry returned 31 finding(s) over 61 scenes; verdict and refs passed the production result builder.",
+      "usage": {
+        "inputTokens": 168196,
+        "outputTokens": 5923,
+        "totalTokens": 174119,
+        "cacheReadInputTokens": 0
+      },
+      "costUSD": 0.39562200000000003,
+      "sample": {
+        "verdict": {
+          "flow": 0.91,
+          "depth": 0.94
+        },
+        "summary": "The story moves smoothly because its pressures are in place before they converge: the entail makes marriage consequential, Jane’s reserve permits a separation, and Wickham’s charm turns an early misjudgment into a later crisis. Letters and visits then deliver reversals at moments when Elizabeth can act on them.",
+        "firstFinding": {
+          "refId": "scn_a25045e5",
+          "kind": "strength",
+          "headline": "A newcomer’s fortune must immediately create marriage pressure.",
+          "bullets": [
+            "Mrs. Bennet treats Bingley’s arrival as an opportunity for her daughters, giving the social visits that follow a clear purpose."
+          ],
+          "subject": "marriage pressure",
+          "span": "S1-S61",
+          "related": [],
+          "evidenceType": "mixed",
+          "lens": "both",
+          "evidenceQuote": "A single man of large fortune; four or five thousand a year. What a fine thing for our girls!"
+        }
+      }
+    }
+  ]
+}

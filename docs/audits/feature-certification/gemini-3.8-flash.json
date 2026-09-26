@@ -1,0 +1,139 @@
+{
+  "provider": "google",
+  "modelId": "gemini-3.8-flash",
+  "vault": "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/Test Vaults/Obsidian Vault AI Certification",
+  "book": "Pride & Prejudice",
+  "generatedAt": "2026-09-26T17:50:46.998Z",
+  "cases": [
+    {
+      "id": "pulse:16 Wickham's Story",
+      "feature": "pulse",
+      "durationMs": 4524,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 10569,
+        "outputTokens": 969,
+        "totalTokens": 11538,
+        "cacheReadInputTokens": 7564
+      },
+      "costUSD": 0.0064548,
+      "sample": {
+        "previousSceneAnalysis": "- 15 Meryton Encounter Setup + / Tense street encounter sparks Elizabeth's curiosity about Wickham and Darcy.\n- Collins's Shift to Elizabeth + / Collins pivoting to Elizabeth raises immediate domestic comedic pressure.\n- Aunt Philips's Invitation + / Directly manufactures the social arena for the subsequent confession.\n- Unanswered Rivalry Mystery + / The unexplained visible hostility demands immediate narrative payoff.",
+        "currentSceneAnalysis": "- 16 A / Superb character dynamics and weaponized gossip; balance Wickham's dialogue length to heighten dramatic tension.\n- Wickham's Seductive Narrative + / Wickham skillfully manipulates Elizabeth by validating her anti-Darcy bias.\n- Collins's Comic Counterweight + / Collins's pompous prattle offers sharp contrast to Wickham's polished charm.\n- Lady Catherine Revelation + / Connecting Darcy to Lady Catherine neatly integrates separate plot threads.\n- Elizabeth's Blind Confirmation + / Elizabeth completely surrenders critical judgment to attractive storytelling.",
+        "nextSceneAnalysis": "- 17 Jane's Skeptical Contrast + / Jane's charitable doubts highlight Elizabeth's rash, biased acceptance.\n- Netherfield Ball Catalyst + / Sets high-stakes stage for Wickham and Darcy's confrontation.\n- Collins's Dance Trap + / Collins claiming Elizabeth's first dances thwarts her Wickham ambitions.\n- Escalating Marriage Stakes + / Collins's looming proposal creates ticking emotional urgency.",
+        "sceneGrade": "A"
+      }
+    },
+    {
+      "id": "pulse:30 Bingley Returns",
+      "feature": "pulse",
+      "durationMs": 9430,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 8878,
+        "outputTokens": 2289,
+        "totalTokens": 11167,
+        "cacheReadInputTokens": 6952
+      },
+      "costUSD": 0.010549649999999999,
+      "sample": {
+        "previousSceneAnalysis": "- 29 Rosings power dynamic established + / Defines the oppressive social sphere Darcy will soon enter.\n- Elizabeth's composure under scrutiny + / Sets up her emotional resilience before Darcy reappears unexpectedly.\n- Domestic survival tactics revealed + / Charlotte's practical coping strategy highlights marriage compromises.\n- Foreshadowing Darcy's social circle + / Mention of connections prepares the reader for arriving guests.",
+        "currentSceneAnalysis": "- 30 A / Excellent pacing shift that disrupts routine with an unexpected, high-stakes romantic confrontation.\n- Routine establishes false calm + / Gives the sudden visitor disruption maximum dramatic impact.\n- Arrival of Darcy and Fitzwilliam + / Instantly reignites central romantic tension and social stakes.\n- Jane inquiry subtext + / Sharp verbal probing reveals unspoken guilt and hidden tension.\n- Charlotte's keen observation + / Validates Elizabeth's magnetism and shifts romantic perception.",
+        "nextSceneAnalysis": "- 31 Verbal sparring escalation + / Builds directly on the uncomfortable parsonage reunion tension.\n- Colonel Fitzwilliam as catalyst + / Third-party presence draws Darcy out of defensive silence.\n- Public challenge of Darcy's pride + / Elizabeth weaponizes his past Hertfordshire slights with playful audacity.\n- Romantic misinterpretation persists + / Elizabeth remains blind to Darcy's genuine fascination despite proximity.",
+        "sceneGrade": "A"
+      }
+    },
+    {
+      "id": "pulse:44 Invitation and Visit",
+      "feature": "pulse",
+      "durationMs": 4193,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 13756,
+        "outputTokens": 784,
+        "totalTokens": 14540
+      },
+      "costUSD": 0.013257,
+      "sample": {
+        "previousSceneAnalysis": "- 43 Housekeeper testimony + / Darcy's softened character directly sets up Elizabeth's open reception.\n- Sister introduction promise + / Darcy's request directly triggers the impending morning call.\n- Gardiner-Darcy rapport + / Warm riverside exchange enables easy social integration at Lambton.\n- Wickham debt disclosure ? / Subtle context on Wickham resurfaces during local background checks.",
+        "currentSceneAnalysis": "- 44 A / Trim the internal monologue about Darcy's motives to keep dramatic pacing taut.\n- Early morning visit + / Accelerated timing raises immediate tension and flusters Elizabeth nicely.\n- Georgiana's true nature + / Subverts pride rumors, showing shy vulnerability and humanizing Darcy.\n- Bingley's lingering feelings + / Mention of Jane sharpens subtext and rekindles romantic stakes.\n- Gardiners' perceptive silence + / Observant restraint amplifies romantic tension without intrusive dialogue.",
+        "nextSceneAnalysis": "- 45 Pemberley return visit + / Directly pays off the reciprocated social call required by etiquette.\n- Caroline Bingley rivalry + / Exploits the romantic jealousy sparked by Elizabeth's rising favor.\n- Shared Wickham secret + / Georgiana's prior introduction renders Wickham's mention deeply fraught.\n- Darcy's open defense + / Solidifies the emotional transformation analyzed during Elizabeth's sleepless night.",
+        "sceneGrade": "A"
+      }
+    },
+    {
+      "id": "gossamer:momentum",
+      "feature": "gossamer",
+      "durationMs": 17409,
+      "passed": true,
+      "summary": "All 15 beats scored and validated (61 scenes, 121693 words).",
+      "usage": {
+        "inputTokens": 166297,
+        "outputTokens": 4171,
+        "totalTokens": 170468,
+        "cacheReadInputTokens": 166130
+      },
+      "costUSD": 0.140364,
+      "sample": [
+        {
+          "beatName": "[1.01] Opening Image",
+          "signal": "momentum",
+          "score": 60,
+          "justification": "Mrs. Bennet's relentless marital scheming immediately establishes the central premise and generates brisk forward curiosity about Bingley's arrival."
+        },
+        {
+          "beatName": "[4.01] Theme Stated",
+          "signal": "momentum",
+          "score": 45,
+          "justification": "The post-ball conversation establishes character contrasts and thematic expectations but operates largely as reflective evaluation rather than plot escalation."
+        },
+        {
+          "beatName": "[8.01] Setup",
+          "signal": "momentum",
+          "score": 55,
+          "justification": "Lively verbal fencing at Netherfield steadily advances the intellectual and romantic dynamic between Elizabeth and Darcy without urgent stakes."
+        }
+      ]
+    },
+    {
+      "id": "inquiry:setup-core",
+      "feature": "inquiry",
+      "durationMs": 27526,
+      "passed": true,
+      "summary": "Inquiry returned 9 finding(s) over 61 scenes; verdict and refs passed the production result builder.",
+      "usage": {
+        "inputTokens": 169847,
+        "outputTokens": 7427,
+        "totalTokens": 177274,
+        "cacheReadInputTokens": 169824
+      },
+      "costUSD": 0.1552365,
+      "sample": {
+        "verdict": {
+          "flow": 0.94,
+          "depth": 0.96
+        },
+        "summary": "The narrative momentum operates on tightly wound causal prerequisites: financial destitution from the legal entail drives immediate marriage urgency, while Bingley's extreme suggestibility and Darcy's early pride create the structural resistance that propels the middle volume.",
+        "firstFinding": {
+          "refId": "scn_38bbc3eb",
+          "kind": "strength",
+          "headline": "The legal entail and financial precarity establish essential narrative stakes",
+          "bullets": [
+            "The entailment of Longbourn away from the female line provides the foundational economic engine for Mrs. Bennet's frantic matchmaking.",
+            "Without this legal and financial vulnerability, Charlotte Lucas's sudden pragmatism and the Bennet family's exposure to ruin upon Mr. Bennet's death would carry no structural urgency."
+          ],
+          "subject": "Economic Stakes",
+          "span": "B1",
+          "related": [],
+          "evidenceType": "mixed",
+          "lens": "both",
+          "role": "context",
+          "evidenceQuote": "Mr. Bennet’s property consisted almost entirely in an estate of two thousand a year, which, unfortunately for his daughters, was entailed, in default of heirs male, on a distant relation; and their mother’s fortune, though ample for her situation in life, could but ill supply the deficiency of his."
+        }
+      }
+    }
+  ]
+}

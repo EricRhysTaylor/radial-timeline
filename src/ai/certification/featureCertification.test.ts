@@ -178,9 +178,14 @@ function refusalOf(run: AIRunResult): string | undefined {
     return undefined;
 }
 
-function costOf(usage: TokenUsage | null | undefined): number | undefined {
+/**
+ * Gemini reports cachedContentTokenCount on the call that CREATES the cache
+ * too, so the run's cache status must be passed through or a first run is
+ * priced at the read discount.
+ */
+function costOf(usage: TokenUsage | null | undefined, cacheStatus?: 'hit' | 'created'): number | undefined {
     if (!usage) return undefined;
-    return estimateUsageCost(PROVIDER as CertProvider, MODEL_ID, usage)?.totalCostUSD;
+    return estimateUsageCost(PROVIDER as CertProvider, MODEL_ID, usage, cacheStatus)?.totalCostUSD;
 }
 
 async function timed(
@@ -246,7 +251,7 @@ async function certifyPulse(plugin: never, app: ReturnType<typeof createInMemory
             const usage = extractTokenUsage(run.provider, run.responseData);
             const refusal = refusalOf(run);
             if (run.aiStatus !== 'success' || !run.content) {
-                return { passed: false, summary: `Run ${run.aiStatus}`, refusal, error: run.error, usage, costUSD: costOf(usage) };
+                return { passed: false, summary: `Run ${run.aiStatus}`, refusal, error: run.error, usage, costUSD: costOf(usage, run.validation?.providerCacheStatus) };
             }
             const parsed = parsePulseAnalysisResponse(run.content, plugin);
             const lastError = (plugin as unknown as { lastAnalysisError: string }).lastAnalysisError;
@@ -254,7 +259,7 @@ async function certifyPulse(plugin: never, app: ReturnType<typeof createInMemory
                 passed: parsed !== null,
                 summary: parsed ? 'Parsed and validated by the production Pulse parser.' : `Pulse parser rejected the response: ${lastError}`,
                 usage,
-                costUSD: costOf(usage),
+                costUSD: costOf(usage, run.validation?.providerCacheStatus),
                 sample: parsed
             };
         }));
@@ -313,7 +318,7 @@ async function certifyGossamer(plugin: never, app: ReturnType<typeof createInMem
         const usage = extractTokenUsage(run.provider, run.responseData);
         const refusal = refusalOf(run);
         if (run.aiStatus !== 'success' || !run.content) {
-            return { passed: false, summary: `Run ${run.aiStatus}`, refusal, error: run.error, usage, costUSD: costOf(usage) };
+            return { passed: false, summary: `Run ${run.aiStatus}`, refusal, error: run.error, usage, costUSD: costOf(usage, run.validation?.providerCacheStatus) };
         }
         const parsed: unknown = JSON.parse(run.content);
         const validation = validateGossamerResponse(unwrapStructuredEnvelope(parsed, ['beats', 'overallAssessment']).value, beats, signal);
@@ -323,7 +328,7 @@ async function certifyGossamer(plugin: never, app: ReturnType<typeof createInMem
                 ? `All ${beats.length} beats scored and validated (${evidence.includedScenes} scenes, ${evidence.totalWords} words).`
                 : `Validator rejected ${validation.failures.length} beat row(s): ${validation.failures.slice(0, 3).map(f => `[${f.code}] ${f.detail}`).join('; ')}`,
             usage,
-            costUSD: costOf(usage),
+            costUSD: costOf(usage, run.validation?.providerCacheStatus),
             sample: validation.ok ? validation.beats.slice(0, 3) : validation.failures.slice(0, 5)
         };
     });
@@ -384,7 +389,7 @@ async function certifyInquiry(plugin: never, app: ReturnType<typeof createInMemo
                 : `Inquiry ${result.aiStatus ?? 'unknown'}: ${result.aiReason ?? ''}`,
             error: passed ? undefined : (result as { aiError?: string }).aiError ?? result.aiReason,
             usage,
-            costUSD: costOf(usage),
+            costUSD: costOf(usage, trace.cacheStatus),
             sample: passed ? { verdict: result.verdict, summary: result.summary, firstFinding: findings[0] } : undefined
         };
     });

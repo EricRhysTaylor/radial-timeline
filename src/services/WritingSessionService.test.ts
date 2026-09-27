@@ -90,6 +90,7 @@ describe('WritingSessionService pure helpers', () => {
         expect(stats.minutesLogged).toBe(60);
         expect(stats.sessionsCompleted).toBe(1);
         expect(stats.wordsDrafted).toBe(1200);
+        expect(stats.wordsLogged).toBe(1200);
         expect(stats.sessionCountByMode.drafting).toBe(1);
         expect(stats.sessionCountByMode.editing).toBe(0);
         expect(stats.scenesCompletedByStage).toEqual({

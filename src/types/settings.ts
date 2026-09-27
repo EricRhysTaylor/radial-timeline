@@ -1016,6 +1016,13 @@ export interface CommunityShareSettings {
     preview: CommunitySharePreviewState;
     publishHistory: CommunitySharePublishHistoryEntry[];
     lastError?: string;
+    /**
+     * Version of the one-time daily-activity season backfill the website has
+     * confirmed. Absent or below COMMUNITY_DAILY_BACKFILL_VERSION means the
+     * next eligible daily sync re-sends the backfill window. Set only after a
+     * backfill sync succeeds; never cleared by pause or disconnect.
+     */
+    dailyBackfillVersion?: number;
 }
 
 export interface RadialTimelineSettings {

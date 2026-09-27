@@ -552,6 +552,16 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
             // the report publish and the daily-sync tests; disclosure only.
             if (mode === 'progress' && settings.tier === 4) {
                 addChip(fieldPills, 'Per-day totals');
+                // Per-day words ride the same words field policy as "Words
+                // written": both go, or neither. The daily rows carry words
+                // from every mode, so say so before they leave the vault.
+                if (settings.fieldPolicy['activity.words_added']) {
+                    addChip(fieldPills, 'Words per day, all modes');
+                    previewFrame.createDiv({
+                        cls: 'ert-communityPreview__note',
+                        text: 'Words per day: words from every session mode — drafting, revising, editing, planning — rounded to 50.'
+                    });
+                }
                 addChip(fieldPills, 'Writing-time pattern');
                 previewFrame.createDiv({
                     cls: 'ert-communityPreview__note',

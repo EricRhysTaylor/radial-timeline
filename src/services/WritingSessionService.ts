@@ -137,7 +137,10 @@ export interface DailyWritingStats {
     date: string;
     minutesLogged: number;
     sessionsCompleted: number;
+    /** Words added in drafting sessions only. */
     wordsDrafted: number;
+    /** Words added across every mode (drafting, revising, editing, planning). */
+    wordsLogged: number;
     sessionCountByMode: Record<WritingSessionMode, number>;
     minutesByMode: Record<WritingSessionMode, number>;
     scenesCompletedByStage: Record<Stage, number>;
@@ -504,16 +507,19 @@ export function buildDailyWritingStats(params: {
     const minutesByMode = cloneModeCounts();
     let minutesLogged = 0;
     let wordsDrafted = 0;
+    let wordsLogged = 0;
 
     const sessionsForDate = sessions.filter(session => recordDateKey(session) === date);
     sessionsForDate.forEach(session => {
         const mode = coerceMode(session.mode);
         const minutes = Math.round(Math.max(0, session.elapsedMs || 0) / 60000);
+        const words = positiveInteger(session.wordsAdded) ?? 0; // SAFE: a session with no recorded word count adds no words
         sessionCountByMode[mode] += 1;
         minutesByMode[mode] += minutes;
         minutesLogged += minutes;
+        wordsLogged += words;
         if (mode === 'drafting') {
-            wordsDrafted += positiveInteger(session.wordsAdded) ?? 0;
+            wordsDrafted += words;
         }
     });
 
@@ -528,6 +534,7 @@ export function buildDailyWritingStats(params: {
         minutesLogged,
         sessionsCompleted: sessionsForDate.length,
         wordsDrafted,
+        wordsLogged,
         sessionCountByMode,
         minutesByMode,
         scenesCompletedByStage,

@@ -215,6 +215,9 @@ export function normalizeCommunityShareSettings(input?: Partial<CommunityShareSe
             summary: preview.summary
         },
         publishHistory,
-        lastError: input?.lastError
+        lastError: input?.lastError,
+        dailyBackfillVersion: typeof input?.dailyBackfillVersion === 'number' && Number.isInteger(input.dailyBackfillVersion)
+            ? input.dailyBackfillVersion
+            : undefined
     };
 }

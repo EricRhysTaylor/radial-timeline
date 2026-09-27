@@ -1461,6 +1461,30 @@ describe('Community daily season backfill', () => {
         expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
     });
 
+    it('runs a due backfill from the scheduled sync even when the report is unchanged, once', async () => {
+        const { plugin } = armDailySync();
+        vi.mocked(buildCommunitySharePreview)
+            .mockResolvedValueOnce({ payloadHash: 'unchanged' } as never)
+            .mockResolvedValueOnce({ payloadHash: 'unchanged' } as never);
+        plugin.settings.communityShare.connection.lastSyncedPayloadHash = 'unchanged';
+        const mockedRequestUrl = vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
+            status: 200,
+            text: JSON.stringify({ ok: true })
+        } as never);
+
+        await expect(syncCommunityShareIfDue(plugin as never)).resolves.toBe('skipped');
+        const urls = mockedRequestUrl.mock.calls.map(([args]) => String((args as { url: string }).url));
+        // No report publish (nothing changed) — only the daily backfill left.
+        expect(urls.some(url => url.includes('/community-share-publish'))).toBe(false);
+        expect(sentDays(mockedRequestUrl)).toHaveLength(1);
+        expect(sentDays(mockedRequestUrl)[0]).toHaveLength(84);
+        expect(plugin.settings.communityShare.dailyBackfillVersion).toBe(COMMUNITY_DAILY_BACKFILL_VERSION);
+
+        // Backfill done: an unchanged report sends nothing at all.
+        await expect(syncCommunityShareIfDue(plugin as never)).resolves.toBe('skipped');
+        expect(mockedRequestUrl).toHaveBeenCalledTimes(1);
+    });
+
     it('leaves the backfill due when the backfill sync fails, and retries it next time', async () => {
         const { plugin } = armDailySync();
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);

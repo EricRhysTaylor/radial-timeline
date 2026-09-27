@@ -963,7 +963,14 @@ async function runShareSync(plugin: RadialTimelinePlugin): Promise<'synced' | 's
 
     try {
         const preview = await buildCommunitySharePreview(plugin);
-        if (preview.payloadHash === current.connection.lastSyncedPayloadHash) return 'skipped';
+        if (preview.payloadHash === current.connection.lastSyncedPayloadHash) {
+            // The report is unchanged, but a due one-time season backfill must
+            // not wait for new writing (a paused author would never get it).
+            // syncCommunityDailyIfEligible applies its own pause/tier/connection
+            // gates and records the marker only on server success.
+            if (isDailyBackfillDue(current)) await syncCommunityDailyIfEligible(plugin);
+            return 'skipped';
+        }
         // A Pause or Disconnect that landed while the preview was building is
         // a clean skip, not a failed sync with an error entry.
         const live = normalizeCommunityShareSettings(plugin.settings.communityShare);

@@ -1,29 +1,18 @@
 {
-  "checkedAt": "2026-09-23T21:35:25.845Z",
+  "checkedAt": "2026-09-27T17:10:33.820Z",
   "mode": "report",
   "snapshotBefore": {
-    "generatedAt": "2026-09-23T21:34:44.862Z"
+    "generatedAt": "2026-09-27T17:08:42.899Z"
   },
   "snapshotAfter": {
-    "generatedAt": "2026-09-23T21:34:44.862Z",
+    "generatedAt": "2026-09-27T17:08:42.899Z",
     "providerFetchedAt": {
-      "openai": null,
-      "anthropic": "2026-09-23T21:34:44.862Z",
-      "google": null
+      "openai": "2026-09-27T17:08:42.899Z",
+      "anthropic": "2026-09-27T17:08:42.899Z",
+      "google": "2026-09-27T17:08:42.899Z"
     }
   },
-  "staleProviders": [
-    {
-      "provider": "openai",
-      "fetchedAt": null,
-      "ageDays": null
-    },
-    {
-      "provider": "google",
-      "fetchedAt": null,
-      "ageDays": null
-    }
-  ],
+  "staleProviders": [],
   "changes": {
     "openai": {
       "added": [],

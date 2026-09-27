@@ -169,18 +169,40 @@ function shouldIncludeField(key: CommunityShareFieldKey, settings: CommunityShar
         && meta.sensitive !== true;
 }
 
-/** One day of shared community activity — aggregates only, mirroring community_daily. */
+/**
+ * One day of shared community activity — aggregates only, mirroring
+ * community_daily. The two word fields travel together under the
+ * `activity.words_added` field policy: both present, or both absent.
+ */
 export interface CommunityDailyEntry {
     date: string;
     minutes_total: number;
     session_count: number;
-    words_added: number;
+    /** Drafting-mode words only, rounded to 50. */
+    words_added?: number;
+    /** All-modes words (drafting, revising, editing, planning), rounded to 50. */
+    words_logged?: number;
     scenes_completed_by_stage: Record<Stage, number>;
     mode_mix: Record<string, number>;
 }
 
-/** Days of daily aggregates sent per sync (server caps at 30). */
+/** Days of daily aggregates sent per normal sync. */
 export const COMMUNITY_DAILY_WINDOW_DAYS = 14;
+
+/**
+ * Days sent by the one-time season backfill: the first successful daily sync
+ * after `words_logged` shipped re-sends this many days so the website can
+ * fill `words_logged` for rows it already holds. The server caps a sync at 84
+ * entries within a 90-day lookback.
+ */
+export const COMMUNITY_DAILY_BACKFILL_DAYS = 84;
+
+/**
+ * Bumped when the daily payload gains a field the website should backfill.
+ * Persisted as `communityShare.dailyBackfillVersion` once the server confirms
+ * a backfill sync; a lower or absent value means the next sync backfills.
+ */
+export const COMMUNITY_DAILY_BACKFILL_VERSION = 1;
 
 /**
  * Per-day activity aggregates for the community website's daily table.
@@ -191,13 +213,18 @@ export const COMMUNITY_DAILY_WINDOW_DAYS = 14;
  *
  * Redaction matches the tier-4 report field policy exactly: minutes rounded
  * to 5, words rounded to 50, mode mix as coarse percentages, completed
- * scenes as per-stage counts. Aggregates only — no session rows, no
- * timestamps, no scene names or paths ever leave the vault.
+ * scenes as per-stage counts. `words_added` (drafting only) and
+ * `words_logged` (all modes) are both gated on the `activity.words_added`
+ * field policy through the same check the weekly report uses: when words are
+ * off, neither is emitted. Aggregates only — no session rows, no timestamps,
+ * no scene names or paths ever leave the vault.
  */
 export async function buildCommunityDailyEntries(
     plugin: RadialTimelinePlugin,
     days: number = COMMUNITY_DAILY_WINDOW_DAYS
 ): Promise<CommunityDailyEntry[]> {
+    const settings = normalizeCommunityShareSettings(plugin.settings.communityShare);
+    const includeWords = shouldIncludeField('activity.words_added', settings);
     const sessions = plugin.getWritingSessionService().getSettings().records;
     const scenes = await plugin.getSceneData();
     const modeKeys: WritingSessionMode[] = ['drafting', 'revising', 'editing', 'planning'];
@@ -209,7 +236,9 @@ export async function buildCommunityDailyEntries(
             date,
             minutes_total: roundTo(stats.minutesLogged, 5),
             session_count: stats.sessionsCompleted,
-            words_added: roundTo(stats.wordsDrafted, 50),
+            ...(includeWords
+                ? { words_added: roundTo(stats.wordsDrafted, 50), words_logged: roundTo(stats.wordsLogged, 50) }
+                : {}),
             scenes_completed_by_stage: stats.scenesCompletedByStage,
             mode_mix: percentMix(Object.fromEntries(modeKeys.map(mode => [mode, stats.minutesByMode[mode] ?? 0]))) // SAFE: a mode with no recorded minutes contributes 0 to the percentage mix
         });

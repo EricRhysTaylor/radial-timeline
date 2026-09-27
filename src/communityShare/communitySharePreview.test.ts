@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildDefaultCommunityShareSettings } from './communityShareSettings';
+import { buildCommunityShareModeUpdate, buildDefaultCommunityShareSettings } from './communityShareSettings';
 import {
+    COMMUNITY_DAILY_BACKFILL_DAYS,
     COMMUNITY_DAILY_WINDOW_DAYS,
     buildCommunityDailyEntries,
     buildCommunityHourModeMixEntries,
@@ -148,12 +149,90 @@ describe('Community daily activity aggregates', () => {
         return `${date.getFullYear()}-${month}-${day}`;
     };
 
+    // Level 3 (progress) exactly as the mode selector writes it: public,
+    // tier 4, the activity bundle on — words included.
+    function progressShareSettings(wordsOn = true) {
+        const settings = buildDefaultCommunityShareSettings();
+        Object.assign(settings, buildCommunityShareModeUpdate('progress'));
+        settings.fieldPolicy['activity.words_added'] = wordsOn;
+        return settings;
+    }
+
+    function sessionsPlugin(records: Array<Record<string, unknown>>, wordsOn = true) {
+        return {
+            settings: { communityShare: progressShareSettings(wordsOn) },
+            getWritingSessionService: () => ({ getSettings: () => ({ records }) }),
+            getSceneData: async () => []
+        };
+    }
+
+    function session(id: string, date: string, mode: string, wordsAdded: number) {
+        return {
+            id, mode, sessionDate: date,
+            startedAt: `${date}T09:00:00.000Z`, endedAt: `${date}T09:30:00.000Z`,
+            elapsedMs: 30 * 60000, wordsAdded
+        };
+    }
+
+    it('words_logged counts a revising-only day that words_added (drafting only) reports as zero', async () => {
+        const todayKey = localKey(new Date());
+        const entries = await buildCommunityDailyEntries(sessionsPlugin([session('r1', todayKey, 'revising', 557)]) as never);
+        const today = entries.at(-1);
+        expect(today?.words_added).toBe(0);
+        expect(today?.words_logged).toBe(550);
+    });
+
+    it('words_logged equals words_added on a drafting-only day', async () => {
+        const todayKey = localKey(new Date());
+        const entries = await buildCommunityDailyEntries(sessionsPlugin([
+            session('d1', todayKey, 'drafting', 400),
+            session('d2', todayKey, 'drafting', 380)
+        ]) as never);
+        const today = entries.at(-1);
+        expect(today?.words_added).toBe(800);
+        expect(today?.words_logged).toBe(800);
+    });
+
+    it('words_logged sums every mode on a mixed day, rounded once to 50', async () => {
+        const todayKey = localKey(new Date());
+        const entries = await buildCommunityDailyEntries(sessionsPlugin([
+            session('d1', todayKey, 'drafting', 610),
+            session('r1', todayKey, 'revising', 240),
+            session('e1', todayKey, 'editing', 130),
+            session('p1', todayKey, 'planning', 45)
+        ]) as never);
+        const today = entries.at(-1);
+        expect(today?.words_added).toBe(600);
+        // 610 + 240 + 130 + 45 = 1025 -> 1050 (the sum is rounded, not each session).
+        expect(today?.words_logged).toBe(1050);
+    });
+
+    it('sends neither word field when the words field policy is off', async () => {
+        const todayKey = localKey(new Date());
+        const entries = await buildCommunityDailyEntries(sessionsPlugin([session('r1', todayKey, 'revising', 557)], false) as never);
+        expect(entries).toHaveLength(COMMUNITY_DAILY_WINDOW_DAYS);
+        for (const entry of entries) {
+            expect(entry).not.toHaveProperty('words_added');
+            expect(entry).not.toHaveProperty('words_logged');
+        }
+        // The rest of the day still ships.
+        expect(entries.at(-1)?.minutes_total).toBe(30);
+    });
+
+    it('builds the backfill window on request', async () => {
+        const entries = await buildCommunityDailyEntries(sessionsPlugin([]) as never, COMMUNITY_DAILY_BACKFILL_DAYS);
+        expect(entries).toHaveLength(84);
+        expect(entries.at(-1)?.date).toBe(localKey(new Date()));
+        expect(new Set(entries.map(entry => entry.date)).size).toBe(84);
+    });
+
     it('builds per-day aggregates with the report redaction policy and no private detail', async () => {
         const now = new Date();
         const todayKey = localKey(now);
         const yesterdayKey = localKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
 
         const plugin = {
+            settings: { communityShare: progressShareSettings() },
             getWritingSessionService: () => ({
                 getSettings: () => ({
                     records: [
@@ -208,6 +287,8 @@ describe('Community daily activity aggregates', () => {
         expect(yesterdayEntry?.minutes_total).toBe(30);
         // Revising minutes never count as drafted words.
         expect(yesterdayEntry?.words_added).toBe(0);
+        expect(yesterdayEntry?.words_logged).toBe(0);
+        expect(todayEntry?.words_logged).toBe(1250);
         expect(yesterdayEntry?.mode_mix).toEqual({ revising: 100 });
 
         // Aggregates only: no scene names, paths, or timestamps leave the vault.

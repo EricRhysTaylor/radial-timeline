@@ -12,7 +12,7 @@ vi.mock('./communitySharePreview', async (importOriginal) => {
 
 import * as obsidian from 'obsidian';
 import { buildDefaultCommunityShareSettings } from './communityShareSettings';
-import { buildCommunitySharePreview } from './communitySharePreview';
+import { COMMUNITY_DAILY_BACKFILL_VERSION, buildCommunitySharePreview } from './communitySharePreview';
 import {
     beginCommunitySharing,
     canPostSessionsToFeed,
@@ -890,6 +890,9 @@ describe('Community Share activation client', () => {
         settings.tier = 4;
         settings.audience = 'public';
         settings.scheduledPublishEnabled = true;
+        settings.fieldPolicy['activity.words_added'] = true;
+        // Season backfill already confirmed: this is the normal 14-day sync.
+        settings.dailyBackfillVersion = COMMUNITY_DAILY_BACKFILL_VERSION;
         settings.connection = {
             status: 'connected',
             connectionId: 'conn-1',
@@ -936,6 +939,7 @@ describe('Community Share activation client', () => {
         expect(todayEntry?.date).toBe(todayKey);
         expect(todayEntry?.minutes_total).toBe(65);
         expect(todayEntry?.words_added).toBe(1250);
+        expect(todayEntry?.words_logged).toBe(1250);
         expect(todayEntry?.session_count).toBe(1);
         expect(todayEntry?.mode_mix).toEqual({ drafting: 100 });
         expect(todayEntry?.scenes_completed_by_stage).toEqual({ Zero: 0, Author: 0, House: 0, Press: 0 });
@@ -1389,5 +1393,152 @@ describe('Community Share activation without a book', () => {
             stats: { minutes: 30, words: 500, mode: 'drafting' as const }
         })).rejects.toMatchObject({ code: 'project_required' });
         expect(request).not.toHaveBeenCalled();
+    });
+});
+
+describe('Community daily season backfill', () => {
+    function armDailySync(options: { backfillVersion?: number; wordsOn?: boolean } = {}) {
+        const harness = createPluginHarness();
+        const { plugin, secrets } = harness;
+        vi.clearAllMocks();
+        const settings = plugin.settings.communityShare;
+        settings.enabled = true;
+        settings.tier = 4;
+        settings.audience = 'public';
+        settings.scheduledPublishEnabled = true;
+        settings.fieldPolicy['activity.words_added'] = options.wordsOn !== false;
+        settings.dailyBackfillVersion = options.backfillVersion;
+        settings.connection = {
+            status: 'connected',
+            connectionId: 'conn-1',
+            profileId: 'profile-1',
+            projectId: 'project-1',
+            secretId: 'rt.community-share.connection-secret'
+        };
+        secrets.set('rt-community-share-connection-secret', 'rtcs_current-secret');
+        const now = new Date();
+        const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        (plugin as { getWritingSessionService: unknown }).getWritingSessionService = () => ({
+            getSettings: () => ({
+                records: [{
+                    id: 'session-1',
+                    mode: 'revising',
+                    startedAt: `${todayKey}T09:00:00.000Z`,
+                    endedAt: `${todayKey}T09:30:00.000Z`,
+                    sessionDate: todayKey,
+                    elapsedMs: 30 * 60000,
+                    wordsAdded: 557
+                }]
+            })
+        });
+        return harness;
+    }
+
+    function sentDays(mock: { mock: { calls: unknown[][] } }): Array<Array<Record<string, unknown>>> {
+        return mock.mock.calls.map(call => (JSON.parse((call[0] as { body: string }).body) as { days: Array<Record<string, unknown>> }).days);
+    }
+
+    it('sends the 84-day backfill on the first sync, records the marker, then resumes 14-day syncs', async () => {
+        const { plugin } = armDailySync();
+        const mockedRequestUrl = vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
+            status: 200,
+            text: JSON.stringify({ ok: true })
+        } as never);
+
+        await syncCommunityDailyIfEligible(plugin as never);
+        expect(plugin.settings.communityShare.dailyBackfillVersion).toBe(COMMUNITY_DAILY_BACKFILL_VERSION);
+        expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
+
+        await syncCommunityDailyIfEligible(plugin as never);
+
+        const [first, second] = sentDays(mockedRequestUrl);
+        expect(first).toHaveLength(84);
+        expect(second).toHaveLength(14);
+        // A revising-only day: drafting words 0, all-modes words 557 -> 550.
+        expect(first.at(-1)).toMatchObject({ words_added: 0, words_logged: 550 });
+        expect(second.at(-1)).toMatchObject({ words_added: 0, words_logged: 550 });
+        // The second sync did not touch settings again.
+        expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
+    });
+
+    it('leaves the backfill due when the backfill sync fails, and retries it next time', async () => {
+        const { plugin } = armDailySync();
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        const mockedRequestUrl = vi.spyOn(obsidian, 'requestUrl')
+            .mockResolvedValueOnce({ status: 503, text: JSON.stringify({ error: { code: 'unavailable', message: 'Try later.' } }) } as never)
+            .mockResolvedValueOnce({ status: 200, text: JSON.stringify({ ok: true }) } as never);
+
+        await syncCommunityDailyIfEligible(plugin as never);
+        expect(plugin.settings.communityShare.dailyBackfillVersion).toBeUndefined();
+        expect(plugin.saveSettings).not.toHaveBeenCalled();
+        expect(warn).toHaveBeenCalledWith('Community daily activity sync failed:', 'Try later.');
+
+        await syncCommunityDailyIfEligible(plugin as never);
+        expect(sentDays(mockedRequestUrl).map(days => days.length)).toEqual([84, 84]);
+        expect(plugin.settings.communityShare.dailyBackfillVersion).toBe(COMMUNITY_DAILY_BACKFILL_VERSION);
+        warn.mockRestore();
+    });
+
+    it('falls back to 14 days in the same sync when the server rejects the backfill with too_many_days', async () => {
+        const { plugin } = armDailySync();
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        const mockedRequestUrl = vi.spyOn(obsidian, 'requestUrl')
+            .mockResolvedValueOnce({ status: 400, text: JSON.stringify({ error: { code: 'too_many_days', message: 'days is limited to 30 entries per sync.' } }) } as never)
+            .mockResolvedValue({ status: 200, text: JSON.stringify({ ok: true }) } as never);
+
+        await syncCommunityDailyIfEligible(plugin as never);
+
+        expect(sentDays(mockedRequestUrl).map(days => days.length)).toEqual([84, 14]);
+        // The fallback is logged, not swallowed, and the backfill stays due.
+        expect(warn).toHaveBeenCalledTimes(1);
+        expect(String(warn.mock.calls[0]?.[0])).toContain('too_many_days');
+        expect(String(warn.mock.calls[0]?.[0])).toContain('retried on the next sync');
+        expect(plugin.settings.communityShare.dailyBackfillVersion).toBeUndefined();
+        // Not a standing-authorization failure: sharing keeps running.
+        expect(plugin.settings.communityShare.scheduledPublishEnabled).toBe(true);
+
+        // Next sync tries the backfill again (exactly once), then falls back again.
+        await syncCommunityDailyIfEligible(plugin as never);
+        expect(sentDays(mockedRequestUrl).map(days => days.length)).toEqual([84, 14, 84]);
+        expect(plugin.settings.communityShare.dailyBackfillVersion).toBe(COMMUNITY_DAILY_BACKFILL_VERSION);
+        warn.mockRestore();
+    });
+
+    it('holds the backfill to the same pause, tier, and disconnect gates as the normal sync', async () => {
+        const mockedRequestUrl = vi.spyOn(obsidian, 'requestUrl');
+
+        const paused = armDailySync();
+        paused.plugin.settings.communityShare.sharingPaused = true;
+        await syncCommunityDailyIfEligible(paused.plugin as never);
+
+        const level2 = armDailySync();
+        level2.plugin.settings.communityShare.tier = 2;
+        await syncCommunityDailyIfEligible(level2.plugin as never);
+
+        const disconnected = armDailySync();
+        disconnected.plugin.settings.communityShare.connection.status = 'disconnected';
+        await syncCommunityDailyIfEligible(disconnected.plugin as never);
+
+        expect(mockedRequestUrl).not.toHaveBeenCalled();
+        for (const harness of [paused, level2, disconnected]) {
+            expect(harness.plugin.settings.communityShare.dailyBackfillVersion).toBeUndefined();
+        }
+    });
+
+    it('sends the backfill without either word field when the words field policy is off', async () => {
+        const { plugin } = armDailySync({ wordsOn: false });
+        const mockedRequestUrl = vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
+            status: 200,
+            text: JSON.stringify({ ok: true })
+        } as never);
+
+        await syncCommunityDailyIfEligible(plugin as never);
+
+        const [days] = sentDays(mockedRequestUrl);
+        expect(days).toHaveLength(84);
+        for (const day of days) {
+            expect(day).not.toHaveProperty('words_added');
+            expect(day).not.toHaveProperty('words_logged');
+        }
     });
 });

@@ -75,9 +75,21 @@ Activity fields are rounded per the contract (minutes to 5, words to 50).
 `communitySharePreview.buildCommunityDailyEntries` emits one row per day
 for the trailing 14 days: date, minutes (rounded to 5), session count, words
 (rounded to 50), scenes completed by stage, and mode mix as integer percent.
+Words travel as two fields: `words_added` (drafting sessions only) and
+`words_logged` (every mode: drafting, revising, editing, planning). Both are
+gated together on the `activity.words_added` field policy through the same
+check the weekly report uses; with words off, neither is emitted.
 It reads the same session store the author sees and the same
 `buildDailyWritingStats` aggregator the plugin's own Progress view uses, so
 what the website shows and what the author sees cannot drift.
+
+One-time season backfill: while `communityShare.dailyBackfillVersion` is
+below `COMMUNITY_DAILY_BACKFILL_VERSION`, the daily sync sends the trailing
+84 days instead of 14, under exactly the same gates, so the website can fill
+`words_logged` on rows it already holds. The marker is recorded only after
+the server confirms; a server that rejects the window (`too_many_days`,
+`date_too_old`) gets the normal 14 days in the same sync and the backfill
+stays due.
 
 `WritingSessionLog.buildCommunityHourModeMix` (via
 `communitySharePreview.buildCommunityHourModeMixEntries`) rolls the trailing

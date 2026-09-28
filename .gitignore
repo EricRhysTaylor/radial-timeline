@@ -56,6 +56,10 @@ tmp/publishing-pdf-qa/
 # Claude Code agent worktrees — created/destroyed by the chip system, never committed.
 .claude/worktrees/
 
+# Per-machine Claude Code approvals ("always allow" clicks). The shared, curated
+# allowlist lives in .claude/settings.json; this public repo must not publish personal rules.
+.claude/settings.local.json
+
 # Local verification hold marker — presence makes backup.mjs a no-op. Never committed.
 .rt-verification-hold
 

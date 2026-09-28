@@ -1,5 +1,5 @@
-import type { App, TextComponent } from 'obsidian';
-import { Setting as ObsidianSetting, normalizePath, Notice, Modal, ButtonComponent, setIcon, setTooltip, TFile, TFolder } from 'obsidian';
+import type { App } from 'obsidian';
+import { Setting as ObsidianSetting, normalizePath, Notice, Modal, ButtonComponent, ExtraButtonComponent, TextComponent, setIcon, setTooltip, TFile, TFolder } from 'obsidian';
 import { NamePromptModal } from '../../ui/NamePromptModal';
 import type RadialTimelinePlugin from '../../main';
 import { CreateBookCopyModal } from '../../modals/CreateBookCopyModal';
@@ -247,7 +247,7 @@ export function renderGeneralSection(params: {
                 sceneStatWarn = false;
             }
 
-            // ── Single-row book card (Setting row) ───────────────────
+            // ── Book card: title + controls on row 1, folder + trash on row 2 ──
             const row = new ObsidianSetting(booksPanel);
             row.settingEl.addClass('ert-row', 'ert-book-card', isActive ? 'is-active' : 'is-inactive');
             if (book.id === autoloadHighlightedBookId) {
@@ -361,6 +361,9 @@ export function renderGeneralSection(params: {
                 row.descEl.addClass('ert-book-card__stat--warn');
             }
 
+            // Row 2 holds the source folder input + trash, spanning under title and controls
+            const folderRow = row.settingEl.createDiv({ cls: 'ert-book-card__folder' });
+
             // Activate: click the row (title stopPropagation prevents conflict)
             if (!isActive) {
                 row.settingEl.addClass('ert-book-card--clickable');
@@ -369,9 +372,11 @@ export function renderGeneralSection(params: {
                     await plugin.setActiveBookId(book.id);
                     renderBooksManager();
                 })(); });
-                // Prevent input/trash clicks from activating
-                row.controlEl.addEventListener('mousedown', (e) => e.stopPropagation()); // SAFE: direct addEventListener; Settings lifecycle manages cleanup
-                row.controlEl.addEventListener('click', (e) => e.stopPropagation()); // SAFE: direct addEventListener; Settings lifecycle manages cleanup
+                // Prevent control/input/trash clicks from activating
+                for (const controlArea of [row.controlEl, folderRow]) {
+                    controlArea.addEventListener('mousedown', (e) => e.stopPropagation()); // SAFE: direct addEventListener; Settings lifecycle manages cleanup
+                    controlArea.addEventListener('click', (e) => e.stopPropagation()); // SAFE: direct addEventListener; Settings lifecycle manages cleanup
+                }
             }
 
             dragHandle.addEventListener('dragstart', (event: DragEvent) => { // SAFE: direct addEventListener; Settings lifecycle manages cleanup
@@ -414,7 +419,7 @@ export function renderGeneralSection(params: {
                 void reorderBooks(from, index);
             });
 
-            // Controls: source folder input + trash
+            // Row 1 controls: saga toggle (above) + book copy + metadata
             let creatingDraft = false;
             let draftButtonRef: ButtonComponent | null = null;
             const setDraftButtonState = (isBusy: boolean) => {
@@ -525,88 +530,86 @@ export function renderGeneralSection(params: {
                 });
             });
 
-            row.addText(text => {
-                text.setPlaceholder('Source folder').setValue(book.sourceFolder || '');
-                text.inputEl.addClass('ert-input--full');
+            const text = new TextComponent(folderRow);
+            text.setPlaceholder('Source folder').setValue(book.sourceFolder || '');
+            text.inputEl.addClass('ert-input--full');
 
-                const inputEl = text.inputEl;
-                let blurCommitTimer: number | null = null;
-                const resetState = () => {
-                    inputEl.removeClass('ert-setting-input-success');
-                    inputEl.removeClass('ert-setting-input-error');
-                };
+            const inputEl = text.inputEl;
+            let blurCommitTimer: number | null = null;
+            const resetState = () => {
+                inputEl.removeClass('ert-setting-input-success');
+                inputEl.removeClass('ert-setting-input-error');
+            };
 
-                const handleBlur = async (overrideValue?: string) => {
-                    resetState();
-                    const raw = (overrideValue ?? text.getValue()).trim();
-                    const normalizedValue = raw ? normalizePath(raw) : '';
+            const handleBlur = async (overrideValue?: string) => {
+                resetState();
+                const raw = (overrideValue ?? text.getValue()).trim();
+                const normalizedValue = raw ? normalizePath(raw) : '';
 
-                    if (raw) {
-                        const isValid = await plugin.validateAndRememberPath(normalizedValue);
-                        if (isValid) {
-                            book.sourceFolder = normalizedValue;
-                            await plugin.persistBookSettings();
-                            updateAddBtnPulse();
-                            inputEl.addClass('ert-setting-input-success');
-                            window.setTimeout(() => { inputEl.removeClass('ert-setting-input-success'); renderBooksManager(); }, 1000);
-                        } else {
-                            inputEl.addClass('ert-setting-input-error');
-                            window.setTimeout(() => inputEl.removeClass('ert-setting-input-error'), 2000);
-                        }
-                    } else {
-                        book.sourceFolder = '';
+                if (raw) {
+                    const isValid = await plugin.validateAndRememberPath(normalizedValue);
+                    if (isValid) {
+                        book.sourceFolder = normalizedValue;
                         await plugin.persistBookSettings();
                         updateAddBtnPulse();
                         inputEl.addClass('ert-setting-input-success');
                         window.setTimeout(() => { inputEl.removeClass('ert-setting-input-success'); renderBooksManager(); }, 1000);
+                    } else {
+                        inputEl.addClass('ert-setting-input-error');
+                        window.setTimeout(() => inputEl.removeClass('ert-setting-input-error'), 2000);
                     }
-                };
+                } else {
+                    book.sourceFolder = '';
+                    await plugin.persistBookSettings();
+                    updateAddBtnPulse();
+                    inputEl.addClass('ert-setting-input-success');
+                    window.setTimeout(() => { inputEl.removeClass('ert-setting-input-success'); renderBooksManager(); }, 1000);
+                }
+            };
 
-                const folderSuggest = new ModalFolderSuggest(app, inputEl, (path) => {
-                    text.setValue(path);
-                    void handleBlur(path);
-                });
-
-                const openFolderSuggest = () => {
-                    window.setTimeout(() => {
-                        if (inputEl.ownerDocument.activeElement !== inputEl) return;
-                        try { folderSuggest.open(); } catch { /* suggest popup is best-effort */ }
-                    }, 0);
-                };
-
-                plugin.registerDomEvent(inputEl, 'keydown', (evt: KeyboardEvent) => {
-                    if (evt.key === 'Enter') {
-                        evt.preventDefault();
-                        inputEl.blur();
-                    }
-                });
-
-                plugin.registerDomEvent(inputEl, 'focus', openFolderSuggest);
-                plugin.registerDomEvent(inputEl, 'click', openFolderSuggest);
-                plugin.registerDomEvent(inputEl, 'blur', () => {
-                    if (blurCommitTimer !== null) {
-                        window.clearTimeout(blurCommitTimer);
-                    }
-                    blurCommitTimer = window.setTimeout(() => {
-                        blurCommitTimer = null;
-                        if (inputEl.ownerDocument.activeElement === inputEl) return;
-                        void handleBlur();
-                    }, 0);
-                });
+            const folderSuggest = new ModalFolderSuggest(app, inputEl, (path) => {
+                text.setValue(path);
+                void handleBlur(path);
             });
 
-            row.addExtraButton(button => {
-                button.setIcon('trash-2');
-                button.setTooltip('Remove profile (files are not deleted)');
-                button.extraSettingsEl.addClass('ert-book-card__trash');
-                button.onClick(async () => {
-                    plugin.settings.books = books.filter(b => b.id !== book.id);
-                    if (book.id === plugin.settings.activeBookId) {
-                        plugin.settings.activeBookId = plugin.settings.books[0]?.id;
-                    }
-                    await plugin.persistBookSettings();
-                    renderBooksManager();
-                });
+            const openFolderSuggest = () => {
+                window.setTimeout(() => {
+                    if (inputEl.ownerDocument.activeElement !== inputEl) return;
+                    try { folderSuggest.open(); } catch { /* suggest popup is best-effort */ }
+                }, 0);
+            };
+
+            plugin.registerDomEvent(inputEl, 'keydown', (evt: KeyboardEvent) => {
+                if (evt.key === 'Enter') {
+                    evt.preventDefault();
+                    inputEl.blur();
+                }
+            });
+
+            plugin.registerDomEvent(inputEl, 'focus', openFolderSuggest);
+            plugin.registerDomEvent(inputEl, 'click', openFolderSuggest);
+            plugin.registerDomEvent(inputEl, 'blur', () => {
+                if (blurCommitTimer !== null) {
+                    window.clearTimeout(blurCommitTimer);
+                }
+                blurCommitTimer = window.setTimeout(() => {
+                    blurCommitTimer = null;
+                    if (inputEl.ownerDocument.activeElement === inputEl) return;
+                    void handleBlur();
+                }, 0);
+            });
+
+            const trashButton = new ExtraButtonComponent(folderRow);
+            trashButton.setIcon('trash-2');
+            trashButton.setTooltip('Remove profile (files are not deleted)');
+            trashButton.extraSettingsEl.addClass('ert-book-card__trash');
+            trashButton.onClick(async () => {
+                plugin.settings.books = books.filter(b => b.id !== book.id);
+                if (book.id === plugin.settings.activeBookId) {
+                    plugin.settings.activeBookId = plugin.settings.books[0]?.id;
+                }
+                await plugin.persistBookSettings();
+                renderBooksManager();
             });
         });
 

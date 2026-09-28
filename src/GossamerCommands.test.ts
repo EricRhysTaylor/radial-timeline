@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { parseScoresAndJustifications, scrubAiCitationArtifacts } from './GossamerCommands';
+import { buildGossamerRunRequest, parsePastedGossamerResponse, scrubAiCitationArtifacts } from './GossamerCommands';
+import { compileRequestPrompt } from './ai/runtime/aiClient';
+import { buildAttachedManuscriptReference, getUnifiedBeatAnalysisJsonSchema } from './ai/prompts/unifiedBeatAnalysis';
+import { CACHE_BREAK_DELIMITER } from './ai/prompts/composeEnvelope';
+import { buildDefaultAiSettings } from './ai/settings/aiSettings';
+import { GOSSAMER_SIGNAL_METADATA } from './types/gossamerSignals';
 
 describe('scrubAiCitationArtifacts', () => {
     it('strips ChatGPT markdown-link citations pointing to sediment attachments', () => {
@@ -23,13 +28,129 @@ describe('scrubAiCitationArtifacts', () => {
         expect(scrubAiCitationArtifacts('')).toBeUndefined();
         expect(scrubAiCitationArtifacts('  [oai_citation:0‡x.md](sediment://f) ')).toBeUndefined();
     });
+});
 
-    it('parseScoresAndJustifications removes citations end-to-end', () => {
-        const clipboard = '1.01 Ordinary World | 40 | Establishes strained normalcy with Trisan’s physical limits  [oai_citation:0‡Manuscript Novl Narr Apr 22 @ 3.23PM.md](sediment://file_00000000068471f5b89939124045a7fe)';
-        const parsed = parseScoresAndJustifications(clipboard);
-        const entry = parsed.get('1.01 Ordinary World');
-        expect(entry?.score).toBe(40);
-        expect(entry?.justification).toBe('Establishes strained normalcy with Trisan’s physical limits');
+/**
+ * Copy AI prompt / Paste AI response parity (regression guard added 2026-09-28).
+ *
+ * The score modal's Copy AI prompt used to hand-write its own prompt: it asked
+ * for pipe-delimited lines instead of the JSON schema, and it injected the
+ * author's role template although the API run deliberately swaps in a neutral
+ * scoring role. Paste-in scores and API scores were produced under different
+ * instructions. Copy now compiles the API run's own request, and Paste runs the
+ * API run's validator. These tests pin both halves.
+ */
+describe('Gossamer Copy AI prompt is the API run request', () => {
+    const aiSettings = buildDefaultAiSettings();
+    const plugin = {
+        settings: { aiSettings },
+        getActiveBookTitle: () => 'Book Two'
+    } as never;
+    const request = buildGossamerRunRequest(plugin, {
+        beats: [
+            { beatName: 'Opening Image', beatNumber: 1, idealRange: '0-20', placement: '1.01', description: 'Status quo aboard the station' },
+            { beatName: 'Catalyst', beatNumber: 2, idealRange: '20-40', placement: '3.01' }
+        ],
+        beatSystem: 'Save The Cat',
+        signal: 'tension',
+        manuscriptText: buildAttachedManuscriptReference('Manuscript Novel.md')
+    });
+    const { finalPrompt } = compileRequestPrompt(plugin, request);
+
+    it('uses the neutral scoring role, never the author role template', () => {
+        const authorRole = aiSettings.roleTemplates.find(role => role.id === aiSettings.roleTemplateId);
+        expect(authorRole?.prompt.trim().length).toBeGreaterThan(0);
+        expect(finalPrompt).toContain('Gossamer Neutral Scoring');
+        expect(finalPrompt).not.toContain(authorRole?.prompt ?? '');
+    });
+
+    it('asks for the JSON schema the API run validates, not pipe-delimited lines', () => {
+        expect(finalPrompt).toContain('Return JSON only');
+        expect(finalPrompt).toContain(JSON.stringify(getUnifiedBeatAnalysisJsonSchema(), null, 2));
+        expect(finalPrompt).not.toContain('Beat Name |');
+    });
+
+    it('carries the signal rubric and beat list, and names the manuscript as an attachment', () => {
+        expect(finalPrompt).toContain(GOSSAMER_SIGNAL_METADATA.tension.promptBlock);
+        expect(finalPrompt).toContain('[1.01] Opening Image — Status quo aboard the station');
+        expect(finalPrompt).toContain('attached as a separate file: "Manuscript Novel.md"');
+        expect(finalPrompt).not.toContain(CACHE_BREAK_DELIMITER);
+    });
+});
+
+describe('parsePastedGossamerResponse', () => {
+    const submitted = [
+        { beatName: 'Opening Image', placement: '1.01' },
+        { beatName: 'Catalyst', placement: '3.01' }
+    ];
+    const reply = (rows: Array<Record<string, unknown>>) => JSON.stringify({
+        beats: rows,
+        overallAssessment: { summary: 'Tension climbs steadily.', strengths: ['a'], improvements: ['b'] }
+    }, null, 2);
+    const goodRows = [
+        { beatName: 'Opening Image', signal: 'tension', score: 20, justification: 'Quiet unease on the station.' },
+        { beatName: 'Catalyst', signal: 'tension', score: 55, justification: 'The distress call lands.' }
+    ];
+
+    it('accepts a chat reply wrapped in a code fence with a sentence before it', () => {
+        const pasted = `Here are the scores:\n\n\`\`\`json\n${reply(goodRows)}\n\`\`\`\n`;
+        const result = parsePastedGossamerResponse(pasted, submitted, 'tension');
+        expect(result.ok).toBe(true);
+        if (result.ok) expect(result.beats.map(beat => beat.score)).toEqual([20, 55]);
+    });
+
+    it('strips ChatGPT attachment citations from justifications', () => {
+        const rows = [
+            { ...goodRows[0], justification: 'Establishes strained normalcy with Trisan’s physical limits  [oai_citation:0‡Manuscript Novl Narr Apr 22 @ 3.23PM.md](sediment://file_00000000068471f5b89939124045a7fe)' },
+            goodRows[1]
+        ];
+        const result = parsePastedGossamerResponse(reply(rows), submitted, 'tension');
+        expect(result.ok).toBe(true);
+        if (result.ok) expect(result.beats[0].justification).toBe('Establishes strained normalcy with Trisan’s physical limits');
+    });
+
+    it('rejects a justification that was only a citation', () => {
+        const rows = [{ ...goodRows[0], justification: '[oai_citation:0‡x.md](sediment://f)' }, goodRows[1]];
+        const result = parsePastedGossamerResponse(reply(rows), submitted, 'tension');
+        expect(result.ok).toBe(false);
+        if (!result.ok) expect(result.failures[0].code).toBe('justification');
+    });
+
+    it('rejects a reply scored for a different signal', () => {
+        const rows = goodRows.map(row => ({ ...row, signal: 'momentum' }));
+        const result = parsePastedGossamerResponse(reply(rows), submitted, 'tension');
+        expect(result.ok).toBe(false);
+        if (!result.ok) expect(result.failures.every(failure => failure.code === 'signal')).toBe(true);
+    });
+
+    it('rejects a reply missing a beat — never a partial fill', () => {
+        const result = parsePastedGossamerResponse(reply([goodRows[0]]), submitted, 'tension');
+        expect(result.ok).toBe(false);
+        if (!result.ok) expect(result.failures[0].code).toBe('count');
+    });
+
+    it('rejects the old pipe-delimited format', () => {
+        const result = parsePastedGossamerResponse('Opening Image | 20 | Quiet unease.\nCatalyst | 55 | The call lands.', submitted, 'tension');
+        expect(result.ok).toBe(false);
+        if (!result.ok) expect(result.failures[0].code).toBe('shape');
+    });
+});
+
+describe('Gossamer score modal uses the API run contract', () => {
+    const source = readFileSync(resolve(process.cwd(), 'src/modals/GossamerScoreModal.ts'), 'utf8');
+
+    it('compiles Copy AI prompt from the shared Gossamer request', () => {
+        expect(source).toContain('buildGossamerRunRequest(');
+        expect(source).toContain('compileRequestPrompt(');
+    });
+
+    it('validates Paste AI response through the shared validator', () => {
+        expect(source).toContain('parsePastedGossamerResponse(');
+    });
+
+    it('never reads the author role template', () => {
+        expect(source).not.toContain('roleTemplates');
+        expect(source).not.toContain('roleTemplateId');
     });
 });
 

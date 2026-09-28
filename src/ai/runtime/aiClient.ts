@@ -318,6 +318,56 @@ export function buildRequestEnvelope(
 }
 
 /**
+ * How a request's fields map onto the envelope's sections. Execution and
+ * `compileRequestPrompt` both read it, so a prompt handed to an AI the author
+ * runs themselves is laid out exactly as the provider call lays it out.
+ */
+function resolveEnvelopeParts(request: AIRunRequest): {
+    featureModeInstructions: string;
+    userInput: string;
+    userQuestion?: string;
+    placeUserQuestionLast: boolean;
+} {
+    const compiledPrompt = request.promptTemplate
+        ? compilePrompt(request.promptTemplate, request.vars || {})
+        : {
+            systemPrompt: request.systemPrompt,
+            userPrompt: request.promptText || ''
+        };
+    const featureModeInstructions = (
+        request.featureModeInstructions
+        || compiledPrompt.systemPrompt
+        || request.systemPrompt
+        || ''
+    ).trim();
+    const isInquiry = request.feature.toLowerCase().includes('inquiry');
+    const hasUserQuestion = typeof request.userQuestion === 'string' && request.userQuestion.trim().length > 0;
+    // Volatile-last layout (question after the cache break) is the default for
+    // Inquiry; any feature can opt in via request.placeUserQuestionLast to make
+    // its stable corpus reusable across provider prompt-cache windows (Gossamer).
+    const placeUserQuestionLast = (request.placeUserQuestionLast ?? isInquiry) && hasUserQuestion;
+    return {
+        featureModeInstructions,
+        userInput: request.userInput ?? compiledPrompt.userPrompt ?? request.promptText ?? '',
+        userQuestion: request.userQuestion,
+        placeUserQuestionLast
+    };
+}
+
+/**
+ * The full prompt a request would send, compiled without a provider, model or
+ * key — for handing the request to an AI the author runs themselves (Gossamer's
+ * Copy AI prompt). Same assembly as execution; only the provider-internal
+ * cache-break delimiter is left out.
+ */
+export function compileRequestPrompt(
+    plugin: RadialTimelinePlugin,
+    request: AIRunRequest
+): ReturnType<typeof composeEnvelope> {
+    return buildRequestEnvelope(plugin, getAiSettings(plugin.settings), request, resolveEnvelopeParts(request));
+}
+
+/**
  * Fixed per-call prompt overhead, in characters, for a request shape.
  *
  * A forecast counting only `featureModeInstructions` understates every call:
@@ -540,12 +590,6 @@ export class AIClient {
         const policy = mergePolicy(basePolicy, request);
         const requiredCapabilities = ensureJsonCapability(request);
 
-        const compiledPrompt = request.promptTemplate
-            ? compilePrompt(request.promptTemplate, request.vars || {})
-            : {
-                systemPrompt: request.systemPrompt,
-                userPrompt: request.promptText || ''
-            };
         // Technical scoring features (Gossamer, etc.) opt out of the user's
         // active role template so a "commercial genre editor" or
         // "literary fiction reviewer" persona cannot bias the scoring pass.
@@ -555,27 +599,14 @@ export class AIClient {
         const roleTemplate = request.bypassRoleTemplate
             ? buildNeutralRoleTemplate(request.feature)
             : resolveActiveRoleTemplate(this.plugin, aiSettings);
-        const featureModeInstructions = (
-            request.featureModeInstructions
-            || compiledPrompt.systemPrompt
-            || request.systemPrompt
-            || ''
-        ).trim();
         const useDocumentBlocks = provider === 'anthropic'
             && request.feature.toLowerCase().includes('inquiry')
             && (request.evidenceDocuments?.length ?? 0) > 0;
 
-        const isInquiry = request.feature.toLowerCase().includes('inquiry');
-        const hasUserQuestion = typeof request.userQuestion === 'string' && request.userQuestion.trim().length > 0;
-        // Volatile-last layout (question after the cache break) is the default for
-        // Inquiry; any feature can opt in via request.placeUserQuestionLast to make
-        // its stable corpus reusable across provider prompt-cache windows (Gossamer).
-        const placeUserQuestionLast = (request.placeUserQuestionLast ?? isInquiry) && hasUserQuestion;
+        const envelopeParts = resolveEnvelopeParts(request);
+        const { featureModeInstructions } = envelopeParts;
         const envelope = buildRequestEnvelope(this.plugin, aiSettings, request, {
-            featureModeInstructions,
-            userInput: request.userInput ?? compiledPrompt.userPrompt ?? request.promptText ?? '',
-            userQuestion: request.userQuestion,
-            placeUserQuestionLast,
+            ...envelopeParts,
             cacheBreakDelimiter: (provider === 'anthropic' || provider === 'google' || provider === 'openai')
                 ? CACHE_BREAK_DELIMITER : undefined
         });

@@ -11,8 +11,8 @@ import {
   collectGossamerManagedSnapshot,
   createGossamerRunId,
   detectDominantStage,
+  filterBeatsBySystem,
   GossamerRun,
-  normalizeBeatName,
   willAppendGossamerPrune
 } from './utils/gossamer';
 import { Notice, TFile, normalizePath } from 'obsidian';
@@ -24,7 +24,7 @@ import { TimelineMode } from './modes/ModeDefinition';
 import { getSortedSceneFiles } from './utils/manuscript';
 import { buildUnifiedBeatAnalysisCacheParts, getUnifiedBeatAnalysisJsonSchema, type UnifiedBeatInfo } from './ai/prompts/unifiedBeatAnalysis';
 import { DEFAULT_GOSSAMER_SIGNAL, GOSSAMER_SIGNAL_METADATA, type GossamerSignalType } from './types/gossamerSignals';
-import { validateGossamerResponse } from './ai/gossamer/responseValidation';
+import { validateGossamerResponse, type SubmittedBeat, type ValidationResult } from './ai/gossamer/responseValidation';
 import { buildGossamerCacheWindow } from './gossamer/cacheWindow';
 import { estimateUsageCost } from './ai/cost/estimateCorpusCost';
 import { validateAiSettings } from './ai/settings/validateAiSettings';
@@ -49,6 +49,7 @@ import {
 import { resolveSelectedBeatModelFromSettings } from './utils/beatSystemState';
 import { FORECAST_CHARS_PER_TOKEN, FORECAST_PROMPT_OVERHEAD_TOKENS } from './ai/forecast/estimateTokensFromVault';
 import type { AIRunRequest, AIProviderId } from './ai/types';
+import type { TimelineItem } from './types';
 import { buildGossamerEvidenceDocument } from './gossamer/evidence/buildGossamerEvidence';
 import { logCountingForensics } from './ai/diagnostics/countingForensics';
 import { toBeatModelMatchKey } from './utils/beatsInputNormalize';
@@ -251,102 +252,6 @@ async function writeGossamerLog(
 }
 
 /**
- * Parse scores from clipboard text in multiple formats:
- * 
- * Format 1 - Simple numeric (positional):
- * "1: 15, 2: 25, 3: 30, 4: 45, 5: 50"
- * 
- * Format 2 - Named beats:
- * "Opening Image: 8"
- * "Theme Stated: 12"
- * 
- * Case-insensitive, handles leading numbers
- */
-export function parseScoresFromClipboard(clipboardText: string): Map<string, number> {
-  const scores = new Map<string, number>();
-
-  // Try Format 1 first: Simple numeric format "1: 15, 2: 25, 3: 30"
-  const simpleFormatRegex = /(\d+)\s*:\s*(\d+)/g;
-  const simpleMatches = Array.from(clipboardText.matchAll(simpleFormatRegex));
-  
-  if (simpleMatches.length > 0) {
-    // Use simple numeric format - store as position → score
-    for (const match of simpleMatches) {
-      const position = parseInt(match[1]);
-      const score = parseInt(match[2]);
-      
-      if (!isNaN(position) && !isNaN(score) && score >= 0 && score <= 100) {
-        // Store with position as key for later mapping
-        scores.set(`__position_${position}`, score);
-      }
-    }
-    return scores;
-  }
-  
-  // Format 2: Named format "Beat Name: 42" (flexible with whitespace)
-  // Handle both full titles like "1 Opening Image: 14" and simplified like "1openingimage: 14"
-  const lineRegex = /^(.+?):\s*(\d+)\s*$/gm;
-  
-  let match;
-  while ((match = lineRegex.exec(clipboardText)) !== null) {
-    const beatName = match[1].trim();
-    const score = parseInt(match[2]);
-    
-    if (!isNaN(score) && score >= 0 && score <= 100) {
-      // Store the score with the exact beat name for matching
-      scores.set(beatName, score);
-      
-      // Also store with normalized name for fuzzy matching
-      const normalizedBeat = normalizeBeatName(beatName);
-      scores.set(normalizedBeat, score);
-      
-      // Store additional variations for better matching
-      // Remove leading numbers and periods for flexible matching
-      const withoutNumber = beatName.replace(/^\d+\.?\s*/, '').trim();
-      if (withoutNumber !== beatName) {
-        scores.set(withoutNumber, score);
-        scores.set(normalizeBeatName(withoutNumber), score);
-      }
-      
-      // Store without percentage annotations (handle various space formats)
-      const withoutPercent = beatName.replace(/\s*\d+(?:\s*-\s*\d+)?\s*%?\s*$/i, '').trim();
-      if (withoutPercent !== beatName) {
-        scores.set(withoutPercent, score);
-        scores.set(normalizeBeatName(withoutPercent), score);
-      }
-      
-      // Store without both number prefix AND percentage for maximum flexibility
-      const withoutNumberAndPercent = beatName
-        .replace(/^\d+\.?\s*/, '') // Remove number prefix
-        .replace(/\s*\d+(?:\s*-\s*\d+)?\s*%?\s*$/i, '') // Remove percentage (handle various space formats)
-        .trim();
-      if (withoutNumberAndPercent !== beatName && withoutNumberAndPercent !== withoutNumber && withoutNumberAndPercent !== withoutPercent) {
-        scores.set(withoutNumberAndPercent, score);
-        scores.set(normalizeBeatName(withoutNumberAndPercent), score);
-      }
-      
-      // Store with just the core beat name (most flexible)
-      const coreBeatName = beatName
-        .replace(/^\d+\.?\s*/, '') // Remove number prefix
-        .replace(/\s*\d+(?:\s*-\s*\d+)?\s*%?\s*$/i, '') // Remove percentage (handle various space formats)
-        .replace(/\s+of\s+/gi, ' ') // Normalize "of" spacing
-        .trim();
-      if (coreBeatName !== beatName && coreBeatName !== withoutNumber && coreBeatName !== withoutPercent && coreBeatName !== withoutNumberAndPercent) {
-        scores.set(coreBeatName, score);
-        scores.set(normalizeBeatName(coreBeatName), score);
-      }
-    }
-  }
-  
-  return scores;
-}
-
-export interface ParsedBeatEntry {
-  score: number;
-  justification?: string;
-}
-
-/**
  * Remove citation/footnote artifacts that some LLM clients inject when they
  * reference an uploaded attachment. These include:
  *   • ChatGPT's `[oai_citation:0‡filename.md](sediment://file_...)` markdown link
@@ -372,64 +277,158 @@ export function scrubAiCitationArtifacts(text: string): string | undefined {
 }
 
 /**
- * Parse LLM response that may include justifications.
- *
- * Preferred format (emitted by the new Copy-AI-Prompt flow):
- *   `Beat Name | 42 | one short sentence justification`
- *
- * If the pipe format isn't detected, falls back to the legacy score-only parser
- * (positional "1: 15, 2: 25" or named "Beat Name: 42") and returns entries
- * without justifications.
- *
- * Returns a Map keyed by beat-name variants (case-insensitive match downstream)
- * or `__position_${n}` for positional rows.
+ * The beat list a Gossamer run scores, in submission order. The API run and the
+ * score modal's Copy/Paste share it, so a pasted response is validated against
+ * the same beats, in the same order, that the prompt listed.
  */
-export function parseScoresAndJustifications(clipboardText: string): Map<string, ParsedBeatEntry> {
-  const results = new Map<string, ParsedBeatEntry>();
+export async function loadGossamerBeats(
+  plugin: RadialTimelinePlugin,
+  beatSystem: string
+): Promise<{ plotBeats: TimelineItem[]; beats: UnifiedBeatInfo[] }> {
+  const scenes = await plugin.getSceneData();
+  let plotBeats = scenes.filter(s => (s.itemType === 'Beat' || s.itemType === 'Plot'));
+  if (beatSystem.trim() !== '' && plotBeats.some(p => p["Beat Model"])) {
+    plotBeats = filterBeatsBySystem(plotBeats, beatSystem);
+  }
+  plotBeats.sort((a, b) => {
+    const aMatch = (a.title || '').match(/^(\d+(?:\.\d+)?)/);
+    const bMatch = (b.title || '').match(/^(\d+(?:\.\d+)?)/);
+    const aNum = aMatch ? parseFloat(aMatch[1]) : 0;
+    const bNum = bMatch ? parseFloat(bMatch[1]) : 0;
+    return aNum - bNum;
+  });
 
-  // Skip markdown-table separator rows like "|---|---|---|"
-  const cleaned = clipboardText
-    .split(/\r?\n/)
-    .filter((line) => !/^\s*\|?\s*:?-{2,}/.test(line))
-    .join('\n');
+  const beats: UnifiedBeatInfo[] = plotBeats.map((beat, index) => {
+    // Get cache for this beat note to read frontmatter fields. asBeatFrontmatter
+    // narrows the untyped Obsidian cache to BeatFrontmatter so `fm.Synopsis`
+    // (a legacy *Backdrop* key, never valid on a Beat) is a compile-time error.
+    const file = plugin.app.vault.getAbstractFileByPath(beat.path || '');
+    const cache = file instanceof TFile ? plugin.app.metadataCache.getFileCache(file) : null;
+    const fm = asBeatFrontmatter(cache?.frontmatter);
 
-  // Pipe-delimited: "Beat Name | 42 | justification"
-  // Tolerates leading/trailing pipes (markdown tables) and missing justification.
-  const pipeRegex = /^\s*\|?\s*([^|\n]+?)\s*\|\s*(\d{1,3})\s*(?:\|\s*([^|\n]+?)\s*)?\|?\s*$/gm;
-  let match;
-  let hits = 0;
-  while ((match = pipeRegex.exec(cleaned)) !== null) {
-    const beatName = match[1].trim();
-    const scoreNum = parseInt(match[2], 10);
-    const justificationRaw = match[3]?.trim();
-    if (isNaN(scoreNum) || scoreNum < 0 || scoreNum > 100) continue;
-    // Skip header-like rows
-    if (/^(beat|beat name|score|justification)$/i.test(beatName)) continue;
-    if (!beatName || beatName.length > 120) continue;
+    const rangeValue = (typeof fm?.Range === 'string' ? fm.Range : '0-100');
+    const rawTitle = beat.title || 'Unknown Beat';
+    const placementMatch = rawTitle.match(/^(\d+(?:\.\d+)?)/);
+    const placement = placementMatch ? placementMatch[1] : undefined;
+    const beatName = rawTitle.replace(/^\d+(?:\.\d+)?\s+/, '');
+    const purpose = readBeatPurpose(fm);
 
-    const entry: ParsedBeatEntry = { score: scoreNum };
-    const cleanedJustification = scrubAiCitationArtifacts(justificationRaw ?? '');
-    if (cleanedJustification) entry.justification = cleanedJustification;
+    return {
+      beatName,
+      beatNumber: index + 1,
+      idealRange: rangeValue,
+      placement,
+      description: purpose
+      // Note: idealRange, previous scores, and previous justifications are intentionally NOT
+      // sent to the AI to avoid anchoring bias. idealRange is used downstream (after response)
+      // for range validation. Historical scores remain in metadata for user reference.
+    };
+  });
 
-    // Register under the raw name + normalized variants for fuzzy match downstream.
-    results.set(beatName, entry);
-    results.set(normalizeBeatName(beatName), entry);
-    const withoutNumber = beatName.replace(/^\d+(?:\.\d+)?\.?\s*/, '').trim();
-    if (withoutNumber && withoutNumber !== beatName) {
-      results.set(withoutNumber, entry);
-      results.set(normalizeBeatName(withoutNumber), entry);
+  return { plotBeats, beats };
+}
+
+/**
+ * The Gossamer AI request for one signal. The API run sends it; the score
+ * modal's Copy AI prompt compiles this same request into text for an AI the
+ * author runs themselves. One definition, so the two cannot drift apart in
+ * role, rubric, beat list or response shape.
+ */
+export function buildGossamerRunRequest(
+  plugin: RadialTimelinePlugin,
+  params: {
+    beats: UnifiedBeatInfo[];
+    beatSystem: string;
+    signal: GossamerSignalType;
+    manuscriptText: string;
+  }
+): AIRunRequest {
+  const signalMeta = GOSSAMER_SIGNAL_METADATA[params.signal];
+  // Cache-split layout: the manuscript + beat list (stableInput) is byte-identical
+  // across all four signals, so it lands in the provider cache prefix and the
+  // second-through-fourth signal runs on the same manuscript reuse it instead of
+  // re-billing the corpus. The signal rubric (volatileQuestion) rides after the
+  // cache break via placeUserQuestionLast. Everything else in the envelope is kept
+  // signal-neutral below so the cached prefix stays identical run-to-run.
+  const { stableInput, volatileQuestion } = buildUnifiedBeatAnalysisCacheParts(
+    params.manuscriptText,
+    params.beats,
+    params.beatSystem,
+    params.signal
+  );
+  const activeBookTitle = typeof plugin.getActiveBookTitle === 'function'
+    ? plugin.getActiveBookTitle()
+    : 'Unknown Book';
+  return {
+    feature: 'Gossamer',
+    task: `Beat${signalMeta.short.charAt(0) + signalMeta.short.slice(1).toLowerCase()}Analysis`,
+    requiredCapabilities: ['jsonStrict', 'longContext', 'reasoningStrong', 'highOutputCap'],
+    // Signal-neutral so the cached prefix is byte-identical across all four signals;
+    // the per-signal rubric rides in userQuestion after the cache break.
+    featureModeInstructions: 'Evaluate the requested narrative signal at each beat using only the submitted manuscript and beat list. The signal and its scoring rubric follow the manuscript.',
+    // Explicit signal-neutral project context. getProjectContext() would otherwise
+    // embed the per-signal `task` into the stable prefix and break cross-signal reuse.
+    projectContext: `Project: Radial Timeline\nBook: ${activeBookTitle}\nFeature: Gossamer\nTask: Beat signal analysis`,
+    userInput: stableInput,
+    userQuestion: volatileQuestion,
+    // Place the signal rubric after the cache-break delimiter so the manuscript
+    // prefix is reused across the four per-signal runs (provider prompt caching).
+    placeUserQuestionLast: true,
+    returnType: 'json',
+    responseSchema: getUnifiedBeatAnalysisJsonSchema(),
+    // Bypass the user's active role template so a "literary fiction editor" or
+    // "commercial genre editor" persona cannot bias a structural scoring pass.
+    // aiClient swaps in a neutral "Gossamer Neutral Scoring" role; logs still
+    // record the bypass plainly via the role template name.
+    bypassRoleTemplate: true,
+    overrides: {
+      // 0.3 stabilizes score histories run-to-run (less random drift between
+      // re-scores of an unchanged manuscript) while keeping justifications
+      // natural. Was 0.7 — too noisy for a scoring task where the user
+      // compares Gossamer<N> values across runs.
+      temperature: 0.3,
+      maxOutputMode: 'high',
+      reasoningDepth: 'deep',
+      jsonStrict: true
     }
-    hits++;
-  }
+  };
+}
 
-  if (hits > 0) return results;
-
-  // Fallback to legacy score-only parser.
-  const legacy = parseScoresFromClipboard(clipboardText);
-  for (const [key, score] of legacy) {
-    results.set(key, { score });
+/**
+ * Validate a Gossamer response pasted back from an AI the author ran
+ * themselves, with the same validator the API run uses. Chat apps wrap the
+ * JSON (a code fence, a sentence before it), so the JSON object is cut from
+ * the reply; ChatGPT tags attachment citations into the text, so those are
+ * stripped from justifications before validation. A justification that was
+ * only a citation is then empty and fails, as any empty justification does.
+ */
+export function parsePastedGossamerResponse(
+  text: string,
+  submittedBeats: readonly SubmittedBeat[],
+  signal: GossamerSignalType
+): ValidationResult {
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}');
+  if (start === -1 || end <= start) {
+    return { ok: false, failures: [{ index: -1, code: 'shape', detail: 'no JSON object found in the pasted response' }] };
   }
-  return results;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text.slice(start, end + 1));
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    return { ok: false, failures: [{ index: -1, code: 'shape', detail: `pasted response is not valid JSON: ${detail}` }] };
+  }
+  const rows = (parsed as { beats?: unknown }).beats;
+  if (Array.isArray(rows)) {
+    for (const row of rows) {
+      if (row && typeof row === 'object' && typeof (row as { justification?: unknown }).justification === 'string') {
+        const cleaned = scrubAiCitationArtifacts((row as { justification: string }).justification);
+        (row as { justification: string }).justification = cleaned ?? '';
+      }
+    }
+  }
+  return validateGossamerResponse(parsed, submittedBeats, signal);
 }
 
 const lastRunByPlugin = new WeakMap<RadialTimelinePlugin, GossamerRun>();
@@ -669,58 +668,14 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
 
       modal.setStatus(t('gossamer.notices.loadingBeats'));
       
-      // Get all beat notes
-      const scenes = await plugin.getSceneData();
-      let plotBeats = scenes.filter(s => (s.itemType === 'Beat' || s.itemType === 'Plot'));
-      
-      // Use centralized filtering helper (single source of truth)
-      const { filterBeatsBySystem } = await import('./utils/gossamer');
-      if (beatSystem && beatSystem.trim() !== '' && plotBeats.some(p => p["Beat Model"])) {
-        plotBeats = filterBeatsBySystem(plotBeats, beatSystem);
-      }
-      
+      const { plotBeats, beats } = await loadGossamerBeats(plugin, beatSystem);
+
       if (plotBeats.length === 0) {
         modal.addError(t('gossamer.notices.noStoryBeats'));
         modal.completeProcessing(false, 'No beats found');
         new Notice(t('gossamer.notices.noStoryBeats'));
         return;
       }
-
-      // Build unified beat info list with all necessary data
-      const beats: UnifiedBeatInfo[] = plotBeats
-      .sort((a, b) => {
-        const aMatch = (a.title || '').match(/^(\d+(?:\.\d+)?)/);
-        const bMatch = (b.title || '').match(/^(\d+(?:\.\d+)?)/);
-        const aNum = aMatch ? parseFloat(aMatch[1]) : 0;
-        const bNum = bMatch ? parseFloat(bMatch[1]) : 0;
-        return aNum - bNum;
-      })
-      .map((beat, index) => {
-        // Get cache for this beat note to read frontmatter fields. asBeatFrontmatter
-        // narrows the untyped Obsidian cache to BeatFrontmatter so `fm.Synopsis`
-        // (a legacy *Backdrop* key, never valid on a Beat) is a compile-time error.
-        const file = plugin.app.vault.getAbstractFileByPath(beat.path || '');
-        const cache = file instanceof TFile ? plugin.app.metadataCache.getFileCache(file) : null;
-        const fm = asBeatFrontmatter(cache?.frontmatter);
-
-        const rangeValue = (typeof fm?.Range === 'string' ? fm.Range : '0-100');
-        const rawTitle = beat.title || 'Unknown Beat';
-        const placementMatch = rawTitle.match(/^(\d+(?:\.\d+)?)/);
-        const placement = placementMatch ? placementMatch[1] : undefined;
-        const beatName = rawTitle.replace(/^\d+(?:\.\d+)?\s+/, '');
-        const purpose = readBeatPurpose(fm);
-
-        return {
-          beatName,
-          beatNumber: index + 1,
-          idealRange: rangeValue,
-          placement,
-          description: purpose
-          // Note: idealRange, previous scores, and previous justifications are intentionally NOT
-          // sent to the AI to avoid anchoring bias. idealRange is used downstream (after response)
-          // for range validation. Historical scores remain in metadata for user reference.
-        };
-      });
 
     modal.setStatus(t('gossamer.notices.assemblingEvidence'));
 
@@ -767,58 +722,15 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
     modal.setStatus(t('gossamer.notices.buildingPrompt'));
     const selectedSignal: GossamerSignalType = plugin.gossamerSelectedSignal ?? DEFAULT_GOSSAMER_SIGNAL;
     const signalMeta = GOSSAMER_SIGNAL_METADATA[selectedSignal];
-    // Cache-split layout: the manuscript + beat list (stableInput) is byte-identical
-    // across all four signals, so it lands in the provider cache prefix and the
-    // second-through-fourth signal runs on the same manuscript reuse it instead of
-    // re-billing the corpus. The signal rubric (volatileQuestion) rides after the
-    // cache break via placeUserQuestionLast. Everything else in the envelope is kept
-    // signal-neutral below so the cached prefix stays identical run-to-run.
-    const { stableInput, volatileQuestion } = buildUnifiedBeatAnalysisCacheParts(
-      evidenceDocument.text,
+    const runRequest = buildGossamerRunRequest(plugin, {
       beats,
       beatSystem,
-      selectedSignal
-    );
+      signal: selectedSignal,
+      manuscriptText: evidenceDocument.text
+    });
     // Full prompt string for the log envelope (stable corpus first, volatile rubric last).
-    const prompt = `${stableInput}\n\n${volatileQuestion}`;
-    const schema = getUnifiedBeatAnalysisJsonSchema();
+    const prompt = `${runRequest.userInput}\n\n${runRequest.userQuestion}`;
     const aiClient = getAIClient(plugin);
-    const activeBookTitle = typeof plugin.getActiveBookTitle === 'function'
-      ? plugin.getActiveBookTitle()
-      : 'Unknown Book';
-    const runRequest: AIRunRequest = {
-      feature: 'Gossamer',
-      task: `Beat${signalMeta.short.charAt(0) + signalMeta.short.slice(1).toLowerCase()}Analysis`,
-      requiredCapabilities: ['jsonStrict', 'longContext', 'reasoningStrong', 'highOutputCap'],
-      // Signal-neutral so the cached prefix is byte-identical across all four signals;
-      // the per-signal rubric rides in userQuestion after the cache break.
-      featureModeInstructions: 'Evaluate the requested narrative signal at each beat using only the submitted manuscript and beat list. The signal and its scoring rubric follow the manuscript.',
-      // Explicit signal-neutral project context. getProjectContext() would otherwise
-      // embed the per-signal `task` into the stable prefix and break cross-signal reuse.
-      projectContext: `Project: Radial Timeline\nBook: ${activeBookTitle}\nFeature: Gossamer\nTask: Beat signal analysis`,
-      userInput: stableInput,
-      userQuestion: volatileQuestion,
-      // Place the signal rubric after the cache-break delimiter so the manuscript
-      // prefix is reused across the four per-signal runs (provider prompt caching).
-      placeUserQuestionLast: true,
-      returnType: 'json',
-      responseSchema: schema,
-      // Bypass the user's active role template so a "literary fiction editor" or
-      // "commercial genre editor" persona cannot bias a structural scoring pass.
-      // aiClient swaps in a neutral "Gossamer Neutral Scoring" role; logs still
-      // record the bypass plainly via the role template name.
-      bypassRoleTemplate: true,
-      overrides: {
-        // 0.3 stabilizes score histories run-to-run (less random drift between
-        // re-scores of an unchanged manuscript) while keeping justifications
-        // natural. Was 0.7 — too noisy for a scoring task where the user
-        // compares Gossamer<N> values across runs.
-        temperature: 0.3,
-        maxOutputMode: 'high',
-        reasoningDepth: 'deep',
-        jsonStrict: true
-      }
-    };
     const prepared = await aiClient.prepareRunEstimate(runRequest);
     const providerExecutionTokens = prepared.ok
       ? prepared.estimate.tokenEstimateInput
@@ -1265,15 +1177,8 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
 
   // Pre-gather manuscript info for confirmation view
   try {
-    // Get scenes and beats to show in confirmation
-    const scenes = await plugin.getSceneData();
-    let plotBeats = scenes.filter(s => (s.itemType === 'Beat' || s.itemType === 'Plot'));
-    
-    // Use centralized filtering helper (single source of truth)
-    const { filterBeatsBySystem } = await import('./utils/gossamer');
-    if (beatSystem && beatSystem.trim() !== '' && plotBeats.some(p => p["Beat Model"])) {
-      plotBeats = filterBeatsBySystem(plotBeats, beatSystem);
-    }
+    // Beats to show in confirmation — the same list the run submits.
+    const { plotBeats } = await loadGossamerBeats(plugin, beatSystem);
     
     // Get sorted scene files (single source of truth)
     const { files: sceneFiles } = await getSortedSceneFiles(plugin);

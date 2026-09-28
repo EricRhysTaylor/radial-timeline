@@ -5,12 +5,12 @@ import { Modal, App, ButtonComponent, Notice, TextComponent, TFile, TAbstractFil
 import { tooltip, tooltipForComponent } from '../utils/tooltip';
 import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
-import { buildDefaultAiSettings } from '../ai/settings/aiSettings';
-import { validateAiSettings } from '../ai/settings/validateAiSettings';
 import type { TimelineItem } from '../types';
 import { clearAllGossamerData, clearGossamerRunSlot, collectGossamerManagedSnapshot, filterBeatsBySystem, GOSSAMER_LEGACY_FIELDS, normalizeBeatName, normalizeGossamerHistory } from '../utils/gossamer';
 import { DEFAULT_GOSSAMER_SIGNAL, GOSSAMER_SIGNAL_METADATA, type GossamerSignalType } from '../types/gossamerSignals';
-import { parseScoresAndJustifications, type ParsedBeatEntry } from '../GossamerCommands';
+import { buildGossamerRunRequest, loadGossamerBeats, parsePastedGossamerResponse } from '../GossamerCommands';
+import { compileRequestPrompt } from '../ai/runtime/aiClient';
+import { buildAttachedManuscriptReference } from '../ai/prompts/unifiedBeatAnalysis';
 import { getSortedSceneFiles } from '../utils/manuscript';
 import { buildGossamerEvidenceDocument } from '../gossamer/evidence/buildGossamerEvidence';
 import { ensureManuscriptOutputFolder, resolveManuscriptOutputFolder } from '../utils/aiOutput';
@@ -631,7 +631,7 @@ export class GossamerScoreModal extends Modal {
     const copyBtn = new ButtonComponent(aiRow)
       .setButtonText(t('gossamer.scoreModal.copyButton'))
       .onClick(async () => {
-        const ok = await this.copyFullAIPrompt(null);
+        const ok = await this.copyFullAIPrompt();
         if (ok) copyBtn.buttonEl.classList.add('ert-gossamer-copy-success');
       });
     const pasteBtn = new ButtonComponent(aiRow)
@@ -686,16 +686,12 @@ export class GossamerScoreModal extends Modal {
   }
 
   /** Flash the paste button green on valid response, red on invalid. */
-  private flashPasteResult(btnEl: HTMLElement, result: { ok: boolean; matchCount: number; expected: number; reason?: string }): void {
+  private flashPasteResult(btnEl: HTMLElement, result: { ok: boolean; matchCount: number; reason?: string }): void {
     btnEl.classList.remove('ert-gossamer-paste-success', 'ert-gossamer-paste-error');
     void btnEl.offsetWidth; // reset animation
     if (result.ok) {
       btnEl.classList.add('ert-gossamer-paste-success');
-      if (result.matchCount < result.expected) {
-        new Notice(t('gossamer.scoreModal.pastePartial', { matched: result.matchCount, expected: result.expected }));
-      } else {
-        new Notice(t('gossamer.scoreModal.pasteSuccess', { matched: result.matchCount }));
-      }
+      new Notice(t('gossamer.scoreModal.pasteSuccess', { matched: result.matchCount }));
     } else {
       btnEl.classList.add('ert-gossamer-paste-error');
       new Notice(t('gossamer.scoreModal.pasteError', { reason: result.reason ?? 'Clipboard format not recognized.' }));
@@ -799,26 +795,25 @@ export class GossamerScoreModal extends Modal {
   }
 
   /**
-   * Assemble the full AI prompt: role + signal rubric + beat list (with
-   * Purpose / Range) + full manuscript + output format. One clipboard blob
-   * that a user can paste into any external LLM; the response can be pasted
-   * back via the Paste AI response button.
+   * Copy the Gossamer prompt for an AI the author runs themselves. It is the
+   * API run's own request (buildGossamerRunRequest) compiled through the same
+   * envelope (compileRequestPrompt), so the neutral scoring role, signal rubric,
+   * beat list and JSON response schema are identical to what the API run sends.
+   * The one difference is the manuscript: no chat message can hold a full book,
+   * so it is saved to the vault for upload and the prompt names that file.
    */
-  private async copyFullAIPrompt(meta: { sceneCount: number; wordCount: number } | null): Promise<boolean> {
+  private async copyFullAIPrompt(): Promise<boolean> {
     try {
-      const settingsSystem = resolveSelectedBeatModelFromSettings(this.plugin.settings);
-      if (!settingsSystem) {
+      const beatSystem = resolveSelectedBeatModelFromSettings(this.plugin.settings);
+      if (!beatSystem) {
         new Notice(t('gossamer.scoreModal.noBookSystem'));
         return false;
       }
-      if (this.entries.length === 0) {
+      const { beats } = await loadGossamerBeats(this.plugin, beatSystem);
+      if (beats.length === 0) {
         new Notice(t('gossamer.scoreModal.noBeatsAvailable'));
         return false;
       }
-
-      const { name: contextTemplateName, prompt: contextPrompt } = this.getActiveAiContextInfo();
-      const activeSignal: GossamerSignalType = this.plugin.gossamerSelectedSignal ?? DEFAULT_GOSSAMER_SIGNAL;
-      const signalMeta = GOSSAMER_SIGNAL_METADATA[activeSignal];
 
       // Gather manuscript evidence (same as automated flow)
       const { files: sceneFiles } = await getSortedSceneFiles(this.plugin);
@@ -837,64 +832,6 @@ export class GossamerScoreModal extends Modal {
         return false;
       }
 
-      const lines: string[] = [];
-      lines.push(`# Gossamer ${signalMeta.label} Analysis — ${settingsSystem}`);
-      lines.push('');
-
-      // Role / context
-      if (contextPrompt) {
-        lines.push('## Role');
-        if (contextTemplateName) lines.push(`Template: ${contextTemplateName}`);
-        lines.push(contextPrompt.trim());
-        lines.push('');
-      }
-
-      // Signal-specific scoring rubric
-      lines.push(`## ${signalMeta.label} Scoring Rubric`);
-      lines.push(signalMeta.promptBlock);
-      lines.push('');
-
-      // Beat list — Purpose only. DO NOT include ideal ranges here: they would
-      // anchor the LLM's scoring toward canonical targets and contaminate the
-      // fresh-eyes judgment. Ranges are used only internally (display, audit).
-      // Beat titles already carry a filename prefix that encodes manuscript position
-      // (e.g. "1.01 Ordinary World", "10.01 Call to Adventure"). No outer enumeration.
-      lines.push(`## Story Beats (${settingsSystem})`);
-      lines.push('Score each beat in the order listed below. Keep your response in the same order.');
-      lines.push('');
-      const missingPurposeBeats: string[] = [];
-      this.entries.forEach((entry) => {
-        lines.push(entry.beatTitle);
-        if (entry.description && entry.description.trim().length > 0) {
-          lines.push(`Purpose: ${entry.description.trim()}`);
-        } else {
-          missingPurposeBeats.push(entry.beatTitle);
-        }
-        lines.push('');
-      });
-
-      // Tell the LLM the manuscript comes in as an attached file (the user will
-      // upload the file saved below). This keeps the pastable prompt small.
-      lines.push('## Manuscript');
-      lines.push('The full manuscript is provided as a separate attached file (upload). Score each beat based on the content of that file.');
-      lines.push('');
-
-      // Output format — pipe-delimited with justification
-      lines.push('## Response Format');
-      lines.push(`Return **only** the block below, one line per beat in the original order. Use pipe (\`|\`) delimiters with no extra commentary before or after:`);
-      lines.push('');
-      lines.push('```');
-      lines.push('Beat Name | score (0-100) | one short sentence justification');
-      lines.push('```');
-      lines.push('');
-      lines.push('Example:');
-      lines.push('```');
-      lines.push(`${this.entries[0]?.beatTitle ?? 'Opening Image'} | 35 | Establishes the protagonist's status quo with quiet unease.`);
-      lines.push('```');
-      lines.push('');
-
-      const prompt = lines.join('\n');
-
       // Save the manuscript to the vault so the user can attach it as a file
       // to the LLM chat. Pasting a 90k-word manuscript into a chat input
       // exceeds every mainstream LLM's single-message limit, so we don't try.
@@ -908,24 +845,37 @@ export class GossamerScoreModal extends Modal {
         extension: 'md'
       });
       const manuscriptPath = `${manuscriptFolder}/${manuscriptFilename}`;
+
+      const request = buildGossamerRunRequest(this.plugin, {
+        beats,
+        beatSystem,
+        signal: this.plugin.gossamerSelectedSignal ?? DEFAULT_GOSSAMER_SIGNAL,
+        manuscriptText: buildAttachedManuscriptReference(manuscriptFilename)
+      });
+      const { finalPrompt } = compileRequestPrompt(this.plugin, request);
+
       const manuscriptFile = await this.plugin.app.vault.create(manuscriptPath, evidenceDocument.text);
       this.lastManuscriptPath = manuscriptPath;
 
-      // Copy the small prompt (no manuscript body) to the clipboard.
-      await navigator.clipboard.writeText(prompt);
+      await navigator.clipboard.writeText(finalPrompt);
 
       // Open the manuscript file in a new tab so the user can find it in their
       // vault folder and upload it to the LLM.
       const leaf = this.plugin.app.workspace.getLeaf('tab');
       await leaf.openFile(manuscriptFile);
 
-      const sceneLabel = meta?.sceneCount ?? evidenceDocument.totalScenes;
-      const wordLabel = (meta?.wordCount ?? evidenceDocument.totalWords).toLocaleString();
       new Notice(
-        t('gossamer.scoreModal.promptCopied', { path: manuscriptPath, scenes: sceneLabel, words: wordLabel }),
+        t('gossamer.scoreModal.promptCopied', {
+          path: manuscriptPath,
+          scenes: evidenceDocument.totalScenes,
+          words: evidenceDocument.totalWords.toLocaleString()
+        }),
         10000
       );
 
+      const missingPurposeBeats = beats
+        .filter(beat => !beat.description || beat.description.trim().length === 0)
+        .map(beat => (beat.placement ? `${beat.placement} ${beat.beatName}` : beat.beatName));
       if (missingPurposeBeats.length > 0) {
         this.showMetadataWarning('Purpose', missingPurposeBeats);
       }
@@ -938,86 +888,67 @@ export class GossamerScoreModal extends Modal {
   }
 
   /**
-   * Read clipboard, parse as AI response (pipe-delimited preferred, with
-   * fallback to legacy score-only formats), and populate the modal entries.
-   * Returns a result object the caller can use to flash the paste button.
+   * Read the AI's reply from the clipboard and check it exactly as the API run
+   * checks its response: every submitted beat, in order, scored for the active
+   * signal, with a 0–100 score and a justification. All or nothing — a reply
+   * that fails any check fills no scores, and the notice names the first
+   * problem. Rows land on their beats by note path, so the modal's own display
+   * order cannot misplace a score.
    */
-  private async pasteFromClipboard(): Promise<{ ok: boolean; matchCount: number; expected: number; reason?: string }> {
+  private async pasteFromClipboard(): Promise<{ ok: boolean; matchCount: number; reason?: string }> {
     let clipboard = '';
     try {
       clipboard = await navigator.clipboard.readText();
     } catch {
-      return { ok: false, matchCount: 0, expected: this.entries.length, reason: t('gossamer.scoreModal.clipboardReadFailed') };
+      return { ok: false, matchCount: 0, reason: t('gossamer.scoreModal.clipboardReadFailed') };
     }
     if (!clipboard || clipboard.trim().length === 0) {
-      return { ok: false, matchCount: 0, expected: this.entries.length, reason: t('gossamer.scoreModal.clipboardEmpty') };
+      return { ok: false, matchCount: 0, reason: t('gossamer.scoreModal.clipboardEmpty') };
     }
 
-    const parsed = parseScoresAndJustifications(clipboard);
-    if (parsed.size === 0) {
+    const beatSystem = resolveSelectedBeatModelFromSettings(this.plugin.settings);
+    if (!beatSystem) {
+      return { ok: false, matchCount: 0, reason: t('gossamer.scoreModal.noBookSystem') };
+    }
+    const { plotBeats, beats } = await loadGossamerBeats(this.plugin, beatSystem);
+    const signal: GossamerSignalType = this.plugin.gossamerSelectedSignal ?? DEFAULT_GOSSAMER_SIGNAL;
+    const validation = parsePastedGossamerResponse(clipboard, beats, signal);
+    if (!validation.ok) {
       return {
         ok: false,
         matchCount: 0,
-        expected: this.entries.length,
-        reason: t('gossamer.scoreModal.noScoresDetected')
+        reason: t('gossamer.scoreModal.pasteRejected', {
+          count: validation.failures.length,
+          detail: validation.failures[0].detail
+        })
       };
     }
 
-    const isPositional = Array.from(parsed.keys())[0]?.startsWith('__position_');
-    let matchCount = 0;
-
-    if (isPositional) {
-      for (let i = 0; i < this.entries.length; i++) {
-        const entry = this.entries[i];
-        const hit = parsed.get(`__position_${i + 1}`);
-        if (hit && entry.inputEl) {
-          entry.inputEl.setValue(hit.score.toString());
-          entry.newScore = hit.score;
-          entry.newJustification = hit.justification;
-          entry.inputEl.inputEl.removeClass('ert-input-error');
-          matchCount++;
-        }
+    const entriesByPath = new Map<string, BeatScoreEntry>();
+    for (const entry of this.entries) {
+      if (entry.beatPath) entriesByPath.set(entry.beatPath, entry);
+    }
+    const placements: Array<{ input: TextComponent; entry: BeatScoreEntry; score: number; justification: string }> = [];
+    const unplaced: string[] = [];
+    validation.beats.forEach((row, index) => {
+      const entry = entriesByPath.get(plotBeats[index]?.path ?? '');
+      if (entry?.inputEl) {
+        placements.push({ input: entry.inputEl, entry, score: row.score, justification: row.justification });
+      } else {
+        unplaced.push(row.beatName);
       }
-    } else {
-      for (const entry of this.entries) {
-        const hit = this.lookupEntryFromParsed(parsed, entry);
-        if (hit && entry.inputEl) {
-          entry.inputEl.setValue(hit.score.toString());
-          entry.newScore = hit.score;
-          entry.newJustification = hit.justification;
-          entry.inputEl.inputEl.removeClass('ert-input-error');
-          matchCount++;
-        }
-      }
+    });
+    if (unplaced.length > 0) {
+      return { ok: false, matchCount: 0, reason: t('gossamer.scoreModal.pasteUnplaced', { list: unplaced.join(', ') }) };
     }
 
-    return { ok: matchCount > 0, matchCount, expected: this.entries.length };
-  }
-
-  /** Try multiple name variants to locate a parsed entry for a given beat. */
-  private lookupEntryFromParsed(parsed: Map<string, ParsedBeatEntry>, entry: BeatScoreEntry): ParsedBeatEntry | undefined {
-    const attempts = new Set<string>();
-    attempts.add(entry.beatTitle);
-    attempts.add(entry.beatTitle.replace(/^\d+(?:\.\d+)?\.?\s*/, '').trim());
-    attempts.add(normalizeBeatName(entry.beatTitle));
-    attempts.add(normalizeBeatName(entry.beatName));
-    attempts.add(entry.beatName);
-
-    for (const key of attempts) {
-      if (!key) continue;
-      const hit = parsed.get(key);
-      if (hit) return hit;
+    for (const { input, entry, score, justification } of placements) {
+      input.setValue(score.toString());
+      input.inputEl.removeClass('ert-input-error');
+      entry.newScore = score;
+      entry.newJustification = justification;
     }
-
-    // Case-insensitive scan as last resort.
-    const lowerKeys = new Map<string, ParsedBeatEntry>();
-    for (const [k, v] of parsed.entries()) lowerKeys.set(k.toLowerCase(), v);
-    for (const key of attempts) {
-      if (!key) continue;
-      const hit = lowerKeys.get(key.toLowerCase());
-      if (hit) return hit;
-    }
-    return undefined;
+    return { ok: true, matchCount: placements.length };
   }
 
   private async saveScores(source: 'manual-entry' | 'clipboard-paste' = 'manual-entry'): Promise<void> {
@@ -1359,22 +1290,6 @@ export class GossamerScoreModal extends Modal {
     const preview = beats.slice(0, 3).join(', ');
     const remainder = beats.length > 3 ? `, +${beats.length - 3} more` : '';
     new Notice(t('gossamer.scoreModal.missingMetadata', { field, preview, remainder }));
-  }
-
-  private getActiveAiContextInfo(): { name: string; prompt: string } {
-    const aiSettings = validateAiSettings(this.plugin.settings.aiSettings ?? buildDefaultAiSettings()).value;
-    const templates = aiSettings.roleTemplates || [];
-    const activeId = aiSettings.roleTemplateId;
-    const active = templates.find(t => t.id === activeId) || templates[0];
-    if (active) {
-      return { name: active.name, prompt: active.prompt };
-    }
-    const signal = this.plugin.gossamerSelectedSignal ?? DEFAULT_GOSSAMER_SIGNAL;
-    const signalLabel = GOSSAMER_SIGNAL_METADATA[signal].label.toLowerCase();
-    return {
-      name: 'Generic Editor',
-      prompt: `Act as a developmental editor evaluating narrative ${signalLabel} across the manuscript beats.`
-    };
   }
 
   onClose(): void {

@@ -13,11 +13,14 @@ Radial Timeline maps your manuscript in Obsidian. Explore scenes, subplots, stor
 ### YouTube Video Suite
 
 *   **[Volume 1: Intro](Getting-Started)**: [Original home page intro video](https://youtu.be/7noTSFaj8Eo)
-*   **[Volume 2: Chronologue Mode](Chronologue-Mode)**: [Chronologue Mode Volume 2](https://youtu.be/XKWq32LB0d0?si=VF6S1OELNKIAB-h-)
+*   **[Volume 2: Chronologue Mode](Chronologue-Mode)**: [Chronologue Mode Volume 2](https://youtu.be/5DsKdFLLeOU)
 *   **[Volume 3: Release 6 Overview](Getting-Started)**: [Overview of New Features](https://youtu.be/YO6hWevwSWc?si=SilQ6xgnQYReGgd0)
 *   **[Volume 4: Inquiry View](Inquiry)**: [Inquiry View Volume 4](https://youtu.be/xfX0rP4-Hv4?si=gSTRnPwbM0wsnlEZ)
 *   **[Volume 5: Author Progress Report (APR)](Author-Progress-Report)**: [Author Progress Report (APR) Volume 5](https://youtu.be/euJ2qOUZgco?si=hjx3aegx7bka7Z61)
 *   **[Volume 6: Gossamer Mode](Gossamer-Mode)**: [Gossamer Mode Volume 6](https://youtu.be/DOUVYXFwigM?si=vBuzvxPteXVjVFmM)
+*   **Volume 8: Community**: [Radial Timeline Community Volume 8](https://youtu.be/2srEjNRs6X4)
+*   **[Short: Book Designer](Book-Designer)**: [Build Your Novel Structure Instantly](https://youtu.be/0vkLaI_LewM)
+*   **Short: Timelapse**: [Watch a novel grow — from scene 1 to 54](https://youtu.be/tBErpewO1wQ)
 
 ### Volume 1 Intro
 

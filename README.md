@@ -61,16 +61,22 @@ If you want the "how-to" details (setup, sets, properties, reordering, advanced 
 
 ## Watch
 
-[![Plan your novel with Radial Timeline in Obsidian — complete author walkthrough & setup guide](https://i.ytimg.com/vi/7noTSFaj8Eo/maxresdefault.jpg)](https://youtu.be/7noTSFaj8Eo)
+[![Writing a novel? Give your book a home before it's published — Radial Timeline Community](https://i.ytimg.com/vi/2srEjNRs6X4/maxresdefault.jpg)](https://youtu.be/2srEjNRs6X4)
 
 Ongoing series on the [Radial Timeline YouTube channel](https://www.youtube.com/@RadialTimeline):
 
 - **Volume 1 — Intro**: [Original home page intro video](https://youtu.be/7noTSFaj8Eo)
-- **Volume 2 — Chronologue Mode**: [Chronologue Mode Volume 2](https://youtu.be/XKWq32LB0d0?si=VF6S1OELNKIAB-h-)
+- **Volume 2 — Chronologue Mode**: [Chronologue Mode Volume 2](https://youtu.be/5DsKdFLLeOU)
 - **Volume 3 — Release 6 Overview**: [Overview of New Features](https://youtu.be/YO6hWevwSWc?si=SilQ6xgnQYReGgd0)
 - **Volume 4 — Inquiry View**: [Inquiry View Volume 4](https://youtu.be/xfX0rP4-Hv4?si=gSTRnPwbM0wsnlEZ)
 - **Volume 5 — Author Progress Report (APR)**: [Author Progress Report (APR) Volume 5](https://youtu.be/euJ2qOUZgco?si=hjx3aegx7bka7Z61)
 - **Volume 6 — Gossamer Mode**: [Gossamer Mode Volume 6](https://youtu.be/DOUVYXFwigM?si=vBuzvxPteXVjVFmM)
+- **Volume 8 — Community**: [Radial Timeline Community Volume 8](https://youtu.be/2srEjNRs6X4)
+
+Shorts:
+
+- **Book Designer**: [Build Your Novel Structure Instantly](https://youtu.be/0vkLaI_LewM)
+- **Timelapse**: [Watch a novel grow — from scene 1 to 54](https://youtu.be/tBErpewO1wQ)
 
 ## Installation
 

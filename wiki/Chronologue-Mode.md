@@ -1,6 +1,6 @@
-<a href="https://www.youtube.com/watch?v=XKWq32LB0d0" target="_blank" rel="noopener">
+<a href="https://www.youtube.com/watch?v=5DsKdFLLeOU" target="_blank" rel="noopener">
   <p align="center">
-    <img src="https://i.ytimg.com/vi/XKWq32LB0d0/maxresdefault.jpg" alt="Chronologue Mode walkthrough" style="max-width: 80%; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
+    <img src="https://i.ytimg.com/vi/5DsKdFLLeOU/maxresdefault.jpg" alt="Chronologue Mode walkthrough" style="max-width: 80%; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
   </p>
   <p align="center" style="font-family: sans-serif; font-size: 16px; margin-top: 10px;">
     Chronologue Mode walkthrough<br>

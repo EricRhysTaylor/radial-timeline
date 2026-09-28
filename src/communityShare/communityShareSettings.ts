@@ -1,4 +1,5 @@
 import type {
+    CommunityDailyBackfillRecord,
     CommunityShareAudience,
     CommunityShareFieldKey,
     CommunityShareFieldPolicy,
@@ -162,7 +163,37 @@ function coerceAudience(value: unknown): CommunityShareAudience {
         : 'private_draft';
 }
 
-export function normalizeCommunityShareSettings(input?: Partial<CommunityShareSettings>): CommunityShareSettings {
+function normalizeDailyBackfill(value: unknown): CommunityDailyBackfillRecord | undefined {
+    if (!value || typeof value !== 'object') return undefined;
+    const record = value as Partial<CommunityDailyBackfillRecord>;
+    if (typeof record.version !== 'number' || !Number.isInteger(record.version)) return undefined;
+    if (typeof record.profileId !== 'string' || !record.profileId) return undefined;
+    if (typeof record.connectionId !== 'string' || !record.connectionId) return undefined;
+    if (typeof record.wordsIncluded !== 'boolean') return undefined;
+    return {
+        version: record.version,
+        profileId: record.profileId,
+        connectionId: record.connectionId,
+        wordsIncluded: record.wordsIncluded
+    };
+}
+
+export function normalizeCommunityShareSettings(raw?: Partial<CommunityShareSettings>): CommunityShareSettings {
+    // Legacy `dailyBackfillVersion` (unreleased, PR #44) was one scalar per
+    // vault: it cannot say which profile/connection received the backfill or
+    // whether words were in it, and it survived activating a different
+    // connection — the exact misattribution it is being replaced for. It is
+    // dropped rather than migrated, so a vault holding it re-sends the season
+    // backfill once under the current gates. That re-send is idempotent on the
+    // server (per-day upsert) and fully consented at send time; attributing
+    // the scalar to the current connection could instead mark a profile that
+    // never received the backfill as complete.
+    let input: Partial<CommunityShareSettings> | undefined;
+    if (raw) {
+        const copy: Partial<CommunityShareSettings> & { dailyBackfillVersion?: unknown } = { ...raw };
+        delete copy.dailyBackfillVersion;
+        input = copy;
+    }
     const defaults = buildDefaultCommunityShareSettings();
     const fieldPolicy = buildDefaultCommunityShareFieldPolicy();
     const incomingPolicy: Partial<CommunityShareFieldPolicy> = input?.fieldPolicy ?? {};
@@ -216,8 +247,6 @@ export function normalizeCommunityShareSettings(input?: Partial<CommunityShareSe
         },
         publishHistory,
         lastError: input?.lastError,
-        dailyBackfillVersion: typeof input?.dailyBackfillVersion === 'number' && Number.isInteger(input.dailyBackfillVersion)
-            ? input.dailyBackfillVersion
-            : undefined
+        dailyBackfill: normalizeDailyBackfill(input?.dailyBackfill)
     };
 }

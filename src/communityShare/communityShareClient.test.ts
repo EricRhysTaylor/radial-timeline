@@ -13,6 +13,7 @@ vi.mock('./communitySharePreview', async (importOriginal) => {
 import * as obsidian from 'obsidian';
 import { buildDefaultCommunityShareSettings } from './communityShareSettings';
 import { COMMUNITY_DAILY_BACKFILL_VERSION, buildCommunitySharePreview } from './communitySharePreview';
+import type { CommunityDailyBackfillRecord } from '../types/settings';
 import {
     beginCommunitySharing,
     canPostSessionsToFeed,
@@ -891,8 +892,14 @@ describe('Community Share activation client', () => {
         settings.audience = 'public';
         settings.scheduledPublishEnabled = true;
         settings.fieldPolicy['activity.words_added'] = true;
-        // Season backfill already confirmed: this is the normal 14-day sync.
-        settings.dailyBackfillVersion = COMMUNITY_DAILY_BACKFILL_VERSION;
+        // Season backfill already confirmed for this connection: this is the
+        // normal 14-day sync.
+        settings.dailyBackfill = {
+            version: COMMUNITY_DAILY_BACKFILL_VERSION,
+            profileId: 'profile-1',
+            connectionId: 'conn-1',
+            wordsIncluded: true
+        };
         settings.connection = {
             status: 'connected',
             connectionId: 'conn-1',
@@ -1397,7 +1404,14 @@ describe('Community Share activation without a book', () => {
 });
 
 describe('Community daily season backfill', () => {
-    function armDailySync(options: { backfillVersion?: number; wordsOn?: boolean } = {}) {
+    const CONFIRMED_CONN_1 = {
+        version: COMMUNITY_DAILY_BACKFILL_VERSION,
+        profileId: 'profile-1',
+        connectionId: 'conn-1',
+        wordsIncluded: true
+    };
+
+    function armDailySync(options: { backfill?: CommunityDailyBackfillRecord; wordsOn?: boolean } = {}) {
         const harness = createPluginHarness();
         const { plugin, secrets } = harness;
         vi.clearAllMocks();
@@ -1407,7 +1421,7 @@ describe('Community daily season backfill', () => {
         settings.audience = 'public';
         settings.scheduledPublishEnabled = true;
         settings.fieldPolicy['activity.words_added'] = options.wordsOn !== false;
-        settings.dailyBackfillVersion = options.backfillVersion;
+        settings.dailyBackfill = options.backfill;
         settings.connection = {
             status: 'connected',
             connectionId: 'conn-1',
@@ -1446,7 +1460,7 @@ describe('Community daily season backfill', () => {
         } as never);
 
         await syncCommunityDailyIfEligible(plugin as never);
-        expect(plugin.settings.communityShare.dailyBackfillVersion).toBe(COMMUNITY_DAILY_BACKFILL_VERSION);
+        expect(plugin.settings.communityShare.dailyBackfill).toEqual(CONFIRMED_CONN_1);
         expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
 
         await syncCommunityDailyIfEligible(plugin as never);
@@ -1478,7 +1492,7 @@ describe('Community daily season backfill', () => {
         expect(urls.some(url => url.includes('/community-share-publish'))).toBe(false);
         expect(sentDays(mockedRequestUrl)).toHaveLength(1);
         expect(sentDays(mockedRequestUrl)[0]).toHaveLength(84);
-        expect(plugin.settings.communityShare.dailyBackfillVersion).toBe(COMMUNITY_DAILY_BACKFILL_VERSION);
+        expect(plugin.settings.communityShare.dailyBackfill).toEqual(CONFIRMED_CONN_1);
 
         // Backfill done: an unchanged report sends nothing at all.
         await expect(syncCommunityShareIfDue(plugin as never)).resolves.toBe('skipped');
@@ -1493,13 +1507,13 @@ describe('Community daily season backfill', () => {
             .mockResolvedValueOnce({ status: 200, text: JSON.stringify({ ok: true }) } as never);
 
         await syncCommunityDailyIfEligible(plugin as never);
-        expect(plugin.settings.communityShare.dailyBackfillVersion).toBeUndefined();
+        expect(plugin.settings.communityShare.dailyBackfill).toBeUndefined();
         expect(plugin.saveSettings).not.toHaveBeenCalled();
         expect(warn).toHaveBeenCalledWith('Community daily activity sync failed:', 'Try later.');
 
         await syncCommunityDailyIfEligible(plugin as never);
         expect(sentDays(mockedRequestUrl).map(days => days.length)).toEqual([84, 84]);
-        expect(plugin.settings.communityShare.dailyBackfillVersion).toBe(COMMUNITY_DAILY_BACKFILL_VERSION);
+        expect(plugin.settings.communityShare.dailyBackfill).toEqual(CONFIRMED_CONN_1);
         warn.mockRestore();
     });
 
@@ -1517,14 +1531,14 @@ describe('Community daily season backfill', () => {
         expect(warn).toHaveBeenCalledTimes(1);
         expect(String(warn.mock.calls[0]?.[0])).toContain('too_many_days');
         expect(String(warn.mock.calls[0]?.[0])).toContain('retried on the next sync');
-        expect(plugin.settings.communityShare.dailyBackfillVersion).toBeUndefined();
+        expect(plugin.settings.communityShare.dailyBackfill).toBeUndefined();
         // Not a standing-authorization failure: sharing keeps running.
         expect(plugin.settings.communityShare.scheduledPublishEnabled).toBe(true);
 
         // Next sync tries the backfill again (exactly once), then falls back again.
         await syncCommunityDailyIfEligible(plugin as never);
         expect(sentDays(mockedRequestUrl).map(days => days.length)).toEqual([84, 14, 84]);
-        expect(plugin.settings.communityShare.dailyBackfillVersion).toBe(COMMUNITY_DAILY_BACKFILL_VERSION);
+        expect(plugin.settings.communityShare.dailyBackfill).toEqual(CONFIRMED_CONN_1);
         warn.mockRestore();
     });
 
@@ -1545,7 +1559,7 @@ describe('Community daily season backfill', () => {
 
         expect(mockedRequestUrl).not.toHaveBeenCalled();
         for (const harness of [paused, level2, disconnected]) {
-            expect(harness.plugin.settings.communityShare.dailyBackfillVersion).toBeUndefined();
+            expect(harness.plugin.settings.communityShare.dailyBackfill).toBeUndefined();
         }
     });
 
@@ -1564,5 +1578,137 @@ describe('Community daily season backfill', () => {
             expect(day).not.toHaveProperty('words_added');
             expect(day).not.toHaveProperty('words_logged');
         }
+        // The record says what was actually delivered: no words.
+        expect(plugin.settings.communityShare.dailyBackfill).toEqual({ ...CONFIRMED_CONN_1, wordsIncluded: false });
+    });
+
+    it('gives a newly activated profile its own backfill instead of inheriting the previous one', async () => {
+        const { plugin } = armDailySync();
+        const mockedRequestUrl = vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
+            status: 200,
+            text: JSON.stringify({ ok: true })
+        } as never);
+        await syncCommunityDailyIfEligible(plugin as never);
+        expect(plugin.settings.communityShare.dailyBackfill).toEqual(CONFIRMED_CONN_1);
+
+        // Activate profile B in the same vault (activation spreads the prior
+        // settings, so the old record survives it — and must not count for B).
+        mockedRequestUrl.mockResolvedValueOnce({
+            status: 201,
+            text: JSON.stringify({
+                connection_id: 'conn-2',
+                connection_secret: 'rtcs_profile-b-secret',
+                secret_expires_at: null,
+                profile_id: 'profile-2',
+                project_id: 'project-2'
+            })
+        } as never);
+        await confirmCommunityShareActivation(plugin as never, 'activation-token-for-profile-b');
+        expect(plugin.settings.communityShare.dailyBackfill).toEqual(CONFIRMED_CONN_1);
+
+        await syncCommunityDailyIfEligible(plugin as never);
+        await syncCommunityDailyIfEligible(plugin as never);
+
+        const dailyCalls = mockedRequestUrl.mock.calls.filter(([args]) => String((args as { url: string }).url).includes('/community-daily-sync'));
+        const windows = dailyCalls.map(call => (JSON.parse((call[0] as { body: string }).body) as { days: unknown[] }).days.length);
+        expect(windows).toEqual([84, 84, 14]);
+        const lastBody = JSON.parse((dailyCalls[2]?.[0] as { body: string }).body) as { connection_id: string };
+        expect(lastBody.connection_id).toBe('conn-2');
+        expect(plugin.settings.communityShare.dailyBackfill).toEqual({
+            version: COMMUNITY_DAILY_BACKFILL_VERSION,
+            profileId: 'profile-2',
+            connectionId: 'conn-2',
+            wordsIncluded: true
+        });
+    });
+
+    it('re-sends the backfill once when words are turned on after a words-off backfill', async () => {
+        const { plugin } = armDailySync({ backfill: { ...CONFIRMED_CONN_1, wordsIncluded: false } });
+        const mockedRequestUrl = vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
+            status: 200,
+            text: JSON.stringify({ ok: true })
+        } as never);
+
+        await syncCommunityDailyIfEligible(plugin as never);
+        await syncCommunityDailyIfEligible(plugin as never);
+
+        const [backfill, normal] = sentDays(mockedRequestUrl);
+        expect(backfill).toHaveLength(84);
+        expect(normal).toHaveLength(14);
+        for (const day of backfill) {
+            expect(day).toHaveProperty('words_added');
+            expect(day).toHaveProperty('words_logged');
+        }
+        expect(plugin.settings.communityShare.dailyBackfill).toEqual(CONFIRMED_CONN_1);
+    });
+
+    it('does not re-send when words are turned off after a words-included backfill', async () => {
+        const { plugin } = armDailySync({ backfill: CONFIRMED_CONN_1, wordsOn: false });
+        const mockedRequestUrl = vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
+            status: 200,
+            text: JSON.stringify({ ok: true })
+        } as never);
+
+        await syncCommunityDailyIfEligible(plugin as never);
+
+        expect(sentDays(mockedRequestUrl).map(days => days.length)).toEqual([14]);
+        expect(plugin.settings.communityShare.dailyBackfill).toEqual(CONFIRMED_CONN_1);
+        expect(plugin.saveSettings).not.toHaveBeenCalled();
+    });
+
+    it('re-sends the backfill for a record from an older backfill version', async () => {
+        const { plugin } = armDailySync({ backfill: { ...CONFIRMED_CONN_1, version: COMMUNITY_DAILY_BACKFILL_VERSION - 1 } });
+        const mockedRequestUrl = vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
+            status: 200,
+            text: JSON.stringify({ ok: true })
+        } as never);
+
+        await syncCommunityDailyIfEligible(plugin as never);
+
+        expect(sentDays(mockedRequestUrl).map(days => days.length)).toEqual([84]);
+        expect(plugin.settings.communityShare.dailyBackfill).toEqual(CONFIRMED_CONN_1);
+    });
+
+    it('does not stamp an in-flight backfill onto a connection that replaced it mid-request', async () => {
+        const { plugin } = armDailySync();
+        const mockedRequestUrl = vi.spyOn(obsidian, 'requestUrl').mockImplementationOnce(async () => {
+            // A reconnect lands while the backfill request is out.
+            plugin.settings.communityShare.connection = {
+                ...plugin.settings.communityShare.connection,
+                connectionId: 'conn-2',
+                profileId: 'profile-2'
+            };
+            return { status: 200, text: JSON.stringify({ ok: true }) } as never;
+        }).mockResolvedValue({ status: 200, text: JSON.stringify({ ok: true }) } as never);
+
+        await syncCommunityDailyIfEligible(plugin as never);
+        expect(plugin.settings.communityShare.dailyBackfill).toBeUndefined();
+        expect(plugin.saveSettings).not.toHaveBeenCalled();
+
+        // The replacement connection still gets its own backfill.
+        await syncCommunityDailyIfEligible(plugin as never);
+        expect(sentDays(mockedRequestUrl).map(days => days.length)).toEqual([84, 84]);
+        expect(plugin.settings.communityShare.dailyBackfill).toEqual({
+            ...CONFIRMED_CONN_1,
+            profileId: 'profile-2',
+            connectionId: 'conn-2'
+        });
+    });
+
+    it('drops the legacy vault-wide dailyBackfillVersion marker and re-sends the backfill once', async () => {
+        const { plugin } = armDailySync();
+        // Pre-fix data: one scalar per vault, no recipient.
+        (plugin.settings.communityShare as unknown as Record<string, unknown>).dailyBackfillVersion = COMMUNITY_DAILY_BACKFILL_VERSION; // SAFE: seeding the retired key the normalizer must strip
+        const mockedRequestUrl = vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
+            status: 200,
+            text: JSON.stringify({ ok: true })
+        } as never);
+
+        await syncCommunityDailyIfEligible(plugin as never);
+        await syncCommunityDailyIfEligible(plugin as never);
+
+        expect(sentDays(mockedRequestUrl).map(days => days.length)).toEqual([84, 14]);
+        expect(plugin.settings.communityShare.dailyBackfill).toEqual(CONFIRMED_CONN_1);
+        expect(plugin.settings.communityShare).not.toHaveProperty('dailyBackfillVersion');
     });
 });

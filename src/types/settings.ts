@@ -1017,12 +1017,27 @@ export interface CommunityShareSettings {
     publishHistory: CommunitySharePublishHistoryEntry[];
     lastError?: string;
     /**
-     * Version of the one-time daily-activity season backfill the website has
-     * confirmed. Absent or below COMMUNITY_DAILY_BACKFILL_VERSION means the
-     * next eligible daily sync re-sends the backfill window. Set only after a
-     * backfill sync succeeds; never cleared by pause or disconnect.
+     * What the website has confirmed receiving from the one-time daily-activity
+     * season backfill. Scoped to the recipient: a backfill delivered to one
+     * profile/connection says nothing about another, so activating a different
+     * connection makes the backfill due again. Set only after a backfill sync
+     * succeeds AND the live connection is still the one it was sent over;
+     * never cleared by pause or disconnect. See isDailyBackfillDue in
+     * communityShareClient.ts for when it is due.
      */
-    dailyBackfillVersion?: number;
+    dailyBackfill?: CommunityDailyBackfillRecord;
+}
+
+/** Record of a confirmed daily-activity season backfill (plugin data, never frontmatter). */
+export interface CommunityDailyBackfillRecord {
+    /** COMMUNITY_DAILY_BACKFILL_VERSION the backfill was sent under. */
+    version: number;
+    /** Website profile that received the backfill. */
+    profileId: string;
+    /** Connection the backfill was sent over. */
+    connectionId: string;
+    /** True when the backfilled days carried words_added/words_logged. */
+    wordsIncluded: boolean;
 }
 
 export interface RadialTimelineSettings {

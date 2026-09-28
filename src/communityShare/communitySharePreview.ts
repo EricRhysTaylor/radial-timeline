@@ -199,10 +199,21 @@ export const COMMUNITY_DAILY_BACKFILL_DAYS = 84;
 
 /**
  * Bumped when the daily payload gains a field the website should backfill.
- * Persisted as `communityShare.dailyBackfillVersion` once the server confirms
- * a backfill sync; a lower or absent value means the next sync backfills.
+ * Persisted as `communityShare.dailyBackfill.version` once the server
+ * confirms a backfill sync; a lower value (or no record) means the next sync
+ * backfills.
  */
 export const COMMUNITY_DAILY_BACKFILL_VERSION = 1;
+
+/**
+ * Whether daily entries carry `words_added`/`words_logged` under these
+ * settings — the single check shared by the entry builder and the backfill
+ * due-check, so "words are now included" can never disagree with what the
+ * builder actually sends.
+ */
+export function communityDailyIncludesWords(settings: CommunityShareSettings): boolean {
+    return shouldIncludeField('activity.words_added', settings);
+}
 
 /**
  * Per-day activity aggregates for the community website's daily table.
@@ -224,7 +235,7 @@ export async function buildCommunityDailyEntries(
     days: number = COMMUNITY_DAILY_WINDOW_DAYS
 ): Promise<CommunityDailyEntry[]> {
     const settings = normalizeCommunityShareSettings(plugin.settings.communityShare);
-    const includeWords = shouldIncludeField('activity.words_added', settings);
+    const includeWords = communityDailyIncludesWords(settings);
     const sessions = plugin.getWritingSessionService().getSettings().records;
     const scenes = await plugin.getSceneData();
     const modeKeys: WritingSessionMode[] = ['drafting', 'revising', 'editing', 'planning'];

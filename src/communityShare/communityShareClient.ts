@@ -9,7 +9,8 @@ import {
     COMMUNITY_SHARE_REPORT_SCHEMA_VERSION,
     buildCommunityDailyEntries,
     buildCommunityHourModeMixEntries,
-    buildCommunitySharePreview
+    buildCommunitySharePreview,
+    communityDailyIncludesWords
 } from './communitySharePreview';
 import type { CommunityShareConnectionSettings, CommunityShareFieldKey, CommunitySharePublishHistoryEntry, CommunityShareSettings } from '../types/settings';
 import type { SessionFeedPost } from '../services/WritingSessionLog';
@@ -825,8 +826,21 @@ const SYNC_STOP_CODES = new Set([
 // sync falls back to the normal window and leaves the backfill due.
 const BACKFILL_WINDOW_REJECTED_CODES = new Set(['too_many_days', 'date_too_old']);
 
+/**
+ * The season backfill is due unless the live connection's recipient has
+ * already confirmed one that covers what the current settings would send:
+ * - no record (never confirmed, or a legacy vault-wide marker was dropped);
+ * - a record from an older COMMUNITY_DAILY_BACKFILL_VERSION;
+ * - a record for a different profile or connection (a newly activated
+ *   connection gets its own backfill);
+ * - a record without words while words are now included.
+ */
 function isDailyBackfillDue(settings: CommunityShareSettings): boolean {
-    return (settings.dailyBackfillVersion ?? 0) < COMMUNITY_DAILY_BACKFILL_VERSION; // SAFE: an absent marker means no backfill has been confirmed yet
+    const record = settings.dailyBackfill;
+    if (!record) return true;
+    if (record.version < COMMUNITY_DAILY_BACKFILL_VERSION) return true;
+    if (record.profileId !== settings.connection.profileId || record.connectionId !== settings.connection.connectionId) return true;
+    return !record.wordsIncluded && communityDailyIncludesWords(settings);
 }
 
 /**
@@ -839,10 +853,12 @@ function isDailyBackfillDue(settings: CommunityShareSettings): boolean {
  * revoked shares never send either field.
  *
  * Window: the normal sync sends the trailing COMMUNITY_DAILY_WINDOW_DAYS.
- * While a season backfill is due (`dailyBackfillVersion` below
- * COMMUNITY_DAILY_BACKFILL_VERSION), it sends COMMUNITY_DAILY_BACKFILL_DAYS
- * instead, under the identical gates, and records the marker only after the
- * server confirms. A server that rejects the backfill window gets the normal
+ * While a season backfill is due (see isDailyBackfillDue), it sends
+ * COMMUNITY_DAILY_BACKFILL_DAYS instead, under the identical gates, and
+ * records `dailyBackfill` — the receiving profile and connection, the
+ * backfill version, and whether the days actually carried words — only after
+ * the server confirms and only if the live connection is still the one the
+ * request went to. A server that rejects the backfill window gets the normal
  * window in the same sync; the backfill stays due for the next one.
  *
  * Silent by design: a standing-authorization failure stops scheduled sharing
@@ -860,9 +876,10 @@ export async function syncCommunityDailyIfEligible(plugin: RadialTimelinePlugin)
         if (!currentSecret) return;
 
         const backfillDue = isDailyBackfillDue(current);
-        const sendDays = async (windowDays: number): Promise<boolean> => {
+        // Resolves to what was delivered (null when nothing was sent).
+        const sendDays = async (windowDays: number): Promise<{ wordsIncluded: boolean } | null> => {
             const days = await buildCommunityDailyEntries(plugin, windowDays);
-            if (!days.length) return false;
+            if (!days.length) return null;
             // Same tier-4 public gate as `days` above — hour_mode_mix is a
             // companion rollup of the identical session store, not a separately
             // gated field. Optional on the wire: the server accepts its absence.
@@ -870,7 +887,7 @@ export async function syncCommunityDailyIfEligible(plugin: RadialTimelinePlugin)
             // Pause is a hard freeze and a disconnect revokes the secret we hold:
             // honour either if it landed while the aggregates were building.
             const live = normalizeCommunityShareSettings(plugin.settings.communityShare);
-            if (!isStillSendable(live, current.connection) || live.audience !== 'public' || live.tier !== 4) return false;
+            if (!isStillSendable(live, current.connection) || live.audience !== 'public' || live.tier !== 4) return null;
 
             await postCommunityFunction(
                 'community-daily-sync',
@@ -884,7 +901,9 @@ export async function syncCommunityDailyIfEligible(plugin: RadialTimelinePlugin)
                 { code: 'daily_sync_failed', message: 'Daily activity sync failed.' },
                 'Daily activity sync returned an unexpected response.'
             );
-            return true;
+            // Truth from the payload itself, not from settings that may have
+            // changed while the entries were building.
+            return { wordsIncluded: days.every(day => day.words_added !== undefined && day.words_logged !== undefined) };
         };
 
         if (!backfillDue) {
@@ -892,9 +911,9 @@ export async function syncCommunityDailyIfEligible(plugin: RadialTimelinePlugin)
             return;
         }
 
-        let backfillSent = false;
+        let backfill: { wordsIncluded: boolean } | null = null;
         try {
-            backfillSent = await sendDays(COMMUNITY_DAILY_BACKFILL_DAYS);
+            backfill = await sendDays(COMMUNITY_DAILY_BACKFILL_DAYS);
         } catch (error) {
             if (!(error instanceof CommunityShareError) || !BACKFILL_WINDOW_REJECTED_CODES.has(error.code)) throw error;
             console.warn(
@@ -904,10 +923,22 @@ export async function syncCommunityDailyIfEligible(plugin: RadialTimelinePlugin)
             await sendDays(COMMUNITY_DAILY_WINDOW_DAYS);
             return;
         }
-        if (backfillSent) {
-            commitCommunityShare(plugin, live => ({ ...live, dailyBackfillVersion: COMMUNITY_DAILY_BACKFILL_VERSION }));
-            await plugin.saveSettings();
-        }
+        const sentConnectionId = current.connection.connectionId;
+        const sentProfileId = current.connection.profileId;
+        if (!backfill || !sentProfileId) return;
+        // The response confirms delivery to the connection the request was
+        // sent over. If a reconnect/activation replaced it while the request
+        // was out, that completion must not be stamped onto the replacement.
+        const live = normalizeCommunityShareSettings(plugin.settings.communityShare);
+        if (live.connection.connectionId !== sentConnectionId || live.connection.profileId !== sentProfileId) return;
+        const record = {
+            version: COMMUNITY_DAILY_BACKFILL_VERSION,
+            profileId: sentProfileId,
+            connectionId: sentConnectionId,
+            wordsIncluded: backfill.wordsIncluded
+        };
+        commitCommunityShare(plugin, state => ({ ...state, dailyBackfill: record }));
+        await plugin.saveSettings();
     } catch (error) {
         const code = error instanceof CommunityShareError ? error.code : 'daily_sync_failed';
         const message = error instanceof Error ? error.message : 'Daily activity sync failed.';

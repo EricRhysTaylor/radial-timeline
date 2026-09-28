@@ -83,13 +83,22 @@ It reads the same session store the author sees and the same
 `buildDailyWritingStats` aggregator the plugin's own Progress view uses, so
 what the website shows and what the author sees cannot drift.
 
-One-time season backfill: while `communityShare.dailyBackfillVersion` is
-below `COMMUNITY_DAILY_BACKFILL_VERSION`, the daily sync sends the trailing
-84 days instead of 14, under exactly the same gates, so the website can fill
-`words_logged` on rows it already holds. The marker is recorded only after
-the server confirms; a server that rejects the window (`too_many_days`,
-`date_too_old`) gets the normal 14 days in the same sync and the backfill
-stays due.
+One-time season backfill: while a backfill is due, the daily sync sends the
+trailing 84 days instead of 14, under exactly the same gates, so the website
+can fill `words_logged` on rows it already holds. Completion is recorded in
+plugin settings as `communityShare.dailyBackfill` — `{ version, profileId,
+connectionId, wordsIncluded }` — scoped to what was actually delivered. It is
+due when there is no record, the record's version is below
+`COMMUNITY_DAILY_BACKFILL_VERSION`, the record names a different profile or
+connection than the live one (activating another connection gets its own
+backfill), or words are now included but the recorded backfill carried none.
+The record is written only after the server confirms, and only if the live
+connection is still the one the request was sent over — an in-flight response
+never stamps a replacement connection. A server that rejects the window
+(`too_many_days`, `date_too_old`) gets the normal 14 days in the same sync and
+the backfill stays due. The pre-release vault-wide `dailyBackfillVersion`
+scalar is dropped on load (it cannot name its recipient), so such a vault
+re-sends the backfill once; the server upserts per day, so that is harmless.
 
 `WritingSessionLog.buildCommunityHourModeMix` (via
 `communitySharePreview.buildCommunityHourModeMixEntries`) rolls the trailing

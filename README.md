@@ -76,7 +76,7 @@ Ongoing series on the [Radial Timeline YouTube channel](https://www.youtube.com/
 Shorts:
 
 - **Book Designer**: [Build Your Novel Structure Instantly](https://youtu.be/0vkLaI_LewM)
-- **Timelapse**: [Watch a novel grow — from scene 1 to 54](https://youtu.be/tBErpewO1wQ)
+- **Timelapse**: [Watch a Novel Progress Across Scenes & Subplots](https://youtu.be/tBErpewO1wQ)
 
 ## Installation
 

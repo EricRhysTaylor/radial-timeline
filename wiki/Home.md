@@ -20,7 +20,7 @@ Radial Timeline maps your manuscript in Obsidian. Explore scenes, subplots, stor
 *   **[Volume 6: Gossamer Mode](Gossamer-Mode)**: [Gossamer Mode Volume 6](https://youtu.be/DOUVYXFwigM?si=vBuzvxPteXVjVFmM)
 *   **Volume 8: Community**: [Radial Timeline Community Volume 8](https://youtu.be/2srEjNRs6X4)
 *   **[Short: Book Designer](Book-Designer)**: [Build Your Novel Structure Instantly](https://youtu.be/0vkLaI_LewM)
-*   **Short: Timelapse**: [Watch a novel grow — from scene 1 to 54](https://youtu.be/tBErpewO1wQ)
+*   **Short: Timelapse**: [Watch a Novel Progress Across Scenes & Subplots](https://youtu.be/tBErpewO1wQ)
 
 ### Volume 1 Intro
 

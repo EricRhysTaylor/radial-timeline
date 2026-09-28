@@ -387,6 +387,14 @@ async function main() {
         }
     }
 
+    // With no provider fetched live (no API keys, e.g. a cloud session) nothing new
+    // was learned. Re-stamping generatedAt would dirty a tracked file on every gate
+    // run and falsely mark the snapshot fresh, so leave it untouched.
+    if (!PROVIDERS.some(provider => fetchStatusByProvider[provider].ok)) {
+        console.log('[update-models] No provider fetched live; snapshot left unchanged.');
+        return;
+    }
+
     await fs.mkdir(path.dirname(OUTPUT_PATH), { recursive: true });
     await fs.writeFile(OUTPUT_PATH, JSON.stringify(payload, null, 2), 'utf8');
     console.log(`[update-models] Wrote ${OUTPUT_PATH}`);

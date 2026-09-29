@@ -8,6 +8,10 @@ vi.mock('../../ai/runtime/aiClient', () => ({
 import { getAIClient } from '../../ai/runtime/aiClient';
 import { InquiryRunnerService } from './InquiryRunnerService';
 import { buildSceneRefIndex } from '../../ai/references/sceneRefNormalizer';
+import { INQUIRY_EVIDENCE_HEADING } from '../promptScaffold';
+
+/** A prompt shaped as the prompt builders shape it: evidence under the shared heading. */
+const EVIDENCE_PROMPT = `Question\n${INQUIRY_EVIDENCE_HEADING}\n## Scene A\nFull`;
 
 const TEST_AI = {
     provider: 'openai',
@@ -400,7 +404,7 @@ describe('InquiryRunnerService execution policy', () => {
             {} as never,
             {
                 systemPrompt: 'system',
-                userPrompt: 'Question\nEvidence:\n## Scene A\nFull',
+                userPrompt: EVIDENCE_PROMPT,
                 ai: TEST_AI,
                 jsonSchema: { type: 'object' },
                 temperature: 0.2,
@@ -448,7 +452,7 @@ describe('InquiryRunnerService execution policy', () => {
             {} as never,
             {
                 systemPrompt: 'system',
-                userPrompt: 'Question\nEvidence:\n## Scene A\nFull',
+                userPrompt: EVIDENCE_PROMPT,
                 ai: TEST_AI,
                 jsonSchema: { type: 'object' },
                 temperature: 0.2,
@@ -495,7 +499,7 @@ describe('InquiryRunnerService execution policy', () => {
             {} as never,
             {
                 systemPrompt: 'system',
-                userPrompt: 'Question\nEvidence:\n## Scene A\nFull',
+                userPrompt: EVIDENCE_PROMPT,
                 ai: TEST_AI,
                 jsonSchema: { type: 'object' },
                 temperature: 0.2,
@@ -566,7 +570,7 @@ describe('InquiryRunnerService execution policy', () => {
             {} as never,
             {
                 systemPrompt: 'system',
-                userPrompt: 'Question\nEvidence:\n## Scene A\nFull',
+                userPrompt: EVIDENCE_PROMPT,
                 ai: TEST_AI,
                 jsonSchema: { type: 'object' },
                 temperature: 0.2,
@@ -620,7 +624,7 @@ describe('InquiryRunnerService execution policy', () => {
             {} as never,
             {
                 systemPrompt: 'system',
-                userPrompt: 'Question\nEvidence:\n## Scene A\nFull',
+                userPrompt: EVIDENCE_PROMPT,
                 ai: TEST_AI,
                 jsonSchema: { type: 'object' },
                 temperature: 0.2,
@@ -663,7 +667,7 @@ describe('InquiryRunnerService execution policy', () => {
             {} as never,
             {
                 systemPrompt: 'system',
-                userPrompt: 'Question\nEvidence:\n## Scene A\nFull',
+                userPrompt: EVIDENCE_PROMPT,
                 ai: TEST_AI,
                 jsonSchema: { type: 'object' },
                 temperature: 0.2,
@@ -710,7 +714,7 @@ describe('InquiryRunnerService execution policy', () => {
             {} as never,
             {
                 systemPrompt: 'system',
-                userPrompt: 'Question\nEvidence:\n## Scene A\nFull',
+                userPrompt: EVIDENCE_PROMPT,
                 ai: ANTHROPIC_AI,
                 jsonSchema: { type: 'object' },
                 temperature: 0.2,
@@ -765,7 +769,7 @@ describe('InquiryRunnerService execution policy', () => {
             {} as never,
             {
                 systemPrompt: 'system',
-                userPrompt: 'Question\nEvidence:\n## Scene A\nFull',
+                userPrompt: EVIDENCE_PROMPT,
                 ai: ANTHROPIC_AI,
                 jsonSchema: { type: 'object' },
                 temperature: 0.2,
@@ -799,7 +803,7 @@ describe('InquiryRunnerService execution policy', () => {
         Object.assign(service, { buildEvidenceChunkPrompts });
 
         const passCount = (service.estimateExecutionPassCountFromPrompt as (...args: unknown[]) => number)(
-            'Question\nEvidence:\n## Scene A\nFull',
+            EVIDENCE_PROMPT,
             {
                 estimatedInputTokens: 194600,
                 safeInputTokens: 162000
@@ -833,7 +837,7 @@ describe('InquiryRunnerService execution policy', () => {
             {} as never,
             {
                 systemPrompt: 'system',
-                userPrompt: 'Question\nEvidence:\n## Scene A\nFull',
+                userPrompt: EVIDENCE_PROMPT,
                 ai: TEST_AI,
                 jsonSchema: { type: 'object' },
                 temperature: 0.2,
@@ -926,7 +930,7 @@ describe('InquiryRunnerService execution policy', () => {
             {} as never,
             {
                 systemPrompt: 'system',
-                userPrompt: 'Question\nEvidence:\n## Scene A\nFull',
+                userPrompt: EVIDENCE_PROMPT,
                 ai: TEST_AI,
                 jsonSchema: { type: 'object' },
                 temperature: 0.2,

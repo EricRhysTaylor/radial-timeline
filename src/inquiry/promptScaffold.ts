@@ -37,6 +37,14 @@ function normalizePromptInput(input: string | InquiryPromptScaffoldInput): Inqui
     };
 }
 
+/**
+ * The line every Inquiry prompt puts its evidence under. The multi-pass
+ * runner splits prompts at this heading, so the prompt builders and the
+ * splitter must use this one constant: when they drifted ("Evidence:" in the
+ * splitter), no real prompt could be split and every multi-pass run failed.
+ */
+export const INQUIRY_EVIDENCE_HEADING = 'EVIDENCE:';
+
 export function buildInquiryPromptParts(input: string | InquiryPromptScaffoldInput): {
     systemPrompt: string;
     instructionText: string;
@@ -174,7 +182,7 @@ export function buildInquiryPromptParts(input: string | InquiryPromptScaffoldInp
         normalized.task || '(not provided)',
         ...targetSceneBlock,
         '',
-        'EVIDENCE:',
+        INQUIRY_EVIDENCE_HEADING,
         normalized.evidenceText
     ].join('\n');
 

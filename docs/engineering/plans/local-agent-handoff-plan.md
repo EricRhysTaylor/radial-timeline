@@ -3,12 +3,13 @@
 ## Status
 
 - **Phase 0** (Gossamer Copy/Paste on the API contract) shipped in `8f0b362`.
-- **Phase 1** (Summary and Synopsis as AI jobs, JSON job files) is built,
-  behind the beta gate (`areBetaCommandsVisible`): visible in development and
-  testing builds, including `npm run deploy`, hidden in public release builds
-  until it has been tried end to end in a real vault.
-- Open questions 1–4 were settled for Phase 1; see the end. Question 5 belongs
-  to Phase 3.
+- **Phases 1–4** are built behind the beta gate (`areBetaCommandsVisible`):
+  visible in development and testing builds, including `npm run deploy`, and
+  hidden in public release builds until tried end to end in a real vault.
+  They cover Summary and Synopsis, Pulse triplets, Gossamer scoring, Inquiry,
+  and one-step preparation for a whole book: the "Prepare AI jobs…" command
+  and a request link the AI client can open itself.
+- All five open questions are settled; see the end.
 
 ## The problem
 
@@ -64,10 +65,10 @@ the provider-internal cache-break delimiter. Execution and the compile share
 
 | Feature | Request built in | Response applied by | Handoff-ready? |
 | --- | --- | --- | --- |
-| Gossamer | `buildGossamerRunRequest` (`src/GossamerCommands.ts`) | `validateGossamerResponse`, then a write loop inline in `runGossamerAiAnalysis`; paste uses `GossamerScoreService.saveScores` instead | Request and validation: yes. Writer: no (two writers) |
-| Pulse (scene triplet) | Inline in `callAiProvider` (`src/sceneAnalysis/aiProvider.ts`), prompt from `buildSceneAnalysisPrompt` | `parsePulseAnalysisResponse` → `applyTripletAnalysisResult` → `updateSceneAnalysis` | Apply: yes. Request: needs extracting |
+| Gossamer | `buildGossamerRunRequest` (`src/GossamerCommands.ts`) | `parsePastedGossamerResponse` (ends in `validateGossamerResponse`), then `writeGossamerScores`. Paste AI response still saves through `GossamerScoreService.saveScores` | Yes: Phase 3. Paste's writer is the remaining drift |
+| Pulse (scene triplet) | `buildTripletPrompt` (`src/sceneAnalysis/Processor.ts`) and `buildPulseRunRequest` (`src/sceneAnalysis/aiProvider.ts`) | `parsePulseAnalysisResponse` → `normalizeParsedAnalysisForTriplet` → `updateSceneAnalysis` | Yes: Phase 2 |
 | Summary / Synopsis | `buildSummaryRunRequest` / `buildSynopsisRunRequest` (`src/sceneAnalysis/summaryRefresh.ts`) | `parseSummaryReply` / `parseSynopsisReply`, then `persistSummaryForScene` (same file) | Yes: Phase 1 |
-| Inquiry | `InquiryRunnerService` | Runner post-processing (`verifyFindingRefs`, lens and role normalization, chunk merging) → `Radial Timeline/Inquiry/Sessions/sessions.json` | No. See "Inquiry" below |
+| Inquiry | `buildInquiryRequest` in `InquiryRunnerService`; `buildClientRun` for a job | `readClientAnswer` (the AI client's JSON check, then `parseResponse` → `buildResult`, which verifies refs), then `persistOmnibusResult` in `InquiryView` | Yes, one pass: Phase 4 |
 
 The pattern Phase 0 set for Gossamer is the pattern for every feature: **one
 exported request builder** used by both the API run and the handoff, and
@@ -113,21 +114,26 @@ There is no `Done/` folder: an applied job and its answer are deleted
 A job (`AiJob` in `src/ai/jobs/aiJobStore.ts`, `schemaVersion: 1`) holds:
 
 - **id**: deterministic per task and target, so preparing again replaces the
-  pending job instead of duplicating it. Phase 1 uses `summary-<hash of the
-  scene path>` and `synopsis-<hash of the scene path>`.
+  pending job instead of duplicating it: `summary-` and `synopsis-<hash of the
+  scene path>`, `pulse-<hash of the scene path>`, `gossamer-<signal>-<hash of
+  the book folder>`, and `inquiry-<hash of scope, book and target
+  scenes>-<hash of the question id>`.
 - **feature and task**, the same values as the `AIRunRequest`
 - **target**: the note path it writes to, and a label for people to read
 - **source fingerprint**: a hash (`fnv1a32Hex` in `src/utils/hash.ts`) of the
-  text the prompt was built from. For a Summary job that is the scene body;
-  for a Synopsis job, the Summary it was written from. Later: the three scene
-  bodies for Pulse, the manuscript export for Gossamer.
-- **the compiled prompt**, the `finalPrompt` from `compileRequestPrompt`,
-  produced by `buildAiJob`, the only place jobs are made
+  compiled prompt itself. Anything that changes the prompt (the scene, a
+  Pulse neighbor, any scene of a Gossamer manuscript or Inquiry corpus, a
+  setting) makes the job stale, with no per-feature list of inputs to keep in
+  step.
+- **promptFile**: the compiled prompt, the `finalPrompt` from
+  `compileRequestPrompt`, in its own `.prompt.txt` file beside the job. A
+  prompt carrying a manuscript is far too long to read as one escaped JSON
+  line. `buildAiJob` is the only place jobs are made.
 - **answerFile**: where to write the answer, relative to the AI Jobs folder
 - **lastRejection**, when the previous answer was sent back or the job was
   rebuilt
-- Later: **signal** for Gossamer, and **attachments** (the manuscript export
-  path, as Copy AI prompt does now)
+- No attachments: Gossamer and Inquiry jobs carry their whole manuscript or
+  corpus inline in the prompt file, exactly as the API request does.
 
 Example: an author flags scenes 20–30 of Book 2 with `Pulse Update: Yes`. The
 plugin writes 11 jobs. The job for scene 24 carries the triplet prompt for
@@ -139,16 +145,17 @@ has four), the JSON shape, and a fingerprint of those three scene bodies.
 The plugin writes this file from `AI_JOB_INSTRUCTIONS` and rewrites it every
 time jobs are prepared. It says, in substance:
 
-- Each file in `Pending/` is a job, and the job's `prompt` is the complete
-  instruction, including the exact JSON the answer must match.
-- Write only that JSON to the job's `answerFile`.
+- Each file in `Pending/` is a job, and the file named in its `promptFile` is
+  the complete instruction, including the exact JSON the answer must match.
+  Read all of it.
+- Write only that JSON to the job's `answerFile`, adding `answeredBy` with the
+  client's name for itself.
 - If a job has `lastRejection`, read its problems and answer the job's current
   prompt again.
 - Do not edit or delete job files, scene notes or anything else. The plugin
   applies the results.
 - When every job is answered, look in `Pending/` again: applying an answer can
-  create a follow-up job.
-- Later, with attachments: if a job lists an attachment, read that file in full.
+  create a follow-up job, and while `Waiting.json` exists more jobs are coming.
 
 It never names a feature or a field, so prompt changes in code never make it
 stale. A test pins that.
@@ -180,24 +187,35 @@ each answer, the job's feature picks an `AiJobHandler`:
 
 ### Starting a run
 
-1. **Commands.** "Prepare AI jobs" commands for Pulse and Summary, driven by
-   the existing author-facing flags `Pulse Update: Yes` and
-   `Summary Update: Yes`, plus Gossamer by signal. No new scene YAML: this
-   respects "Scene YAML belongs to the author" in
-   `docs/engineering/standards/code-doctrine.md`.
-2. **Provider choice.** A "Local agent (subscription)" option in AI settings.
-   With it selected, the existing Run buttons prepare jobs instead of calling
-   an API. Cost forecasts show token size (so authors can judge their plan
-   allowance) but no dollar figure.
-3. **An `obsidian://` link.** A protocol handler (`registerObsidianProtocolHandler`,
-   not used in the plugin today) lets the agent start the work. For example,
-   when the author says "run Pulse on the flagged scenes", the agent opens
-   `obsidian://radial-timeline?prepare=pulse&scope=flagged`. The handler only
-   prepares jobs. It never applies results or edits notes.
-4. **Later, optionally: an MCP server inside the plugin** (desktop only), with
-   three tools: list jobs, get job, submit response. Submitting returns the
-   validator's result immediately. It is only a second transport over the same
-   job objects, so it adds no instructions.
+Built:
+
+1. **"Prepare AI jobs…"** (`src/modals/PrepareAiJobsModal.ts`, run by
+   `AiJobsService` in `src/services/AiJobsService.ts`) prepares any mix of the
+   four features for the active book: Summary and Pulse by the existing flags
+   (`Summary Update: Yes`, `Pulse Update: Yes`), missing results or all scenes;
+   Gossamer by signal; Inquiry for questions without a current briefing or
+   all. No new scene YAML, which respects "Scene YAML belongs to the author" in
+   `docs/engineering/standards/code-doctrine.md`. One feature that cannot be
+   prepared (a book with no beats, say) is reported and does not stop the rest.
+2. **A request link**, `obsidian://radial-timeline-ai-jobs?book=…&prepare=…&scope=…&signals=…`
+   (`registerObsidianProtocolHandler`), lets the client prepare a book itself.
+   For example, an agent prepping demo novels opens
+   `obsidian://radial-timeline-ai-jobs?vault=Demo&book=Frankenstein&prepare=all`,
+   answers every job, then moves on to the next book. The link only switches
+   the active book and prepares jobs. It never applies results or edits notes.
+   A link it cannot read is refused with a notice, never guessed at.
+3. **Ordering.** Inquiry can read scene Summaries. While Summary jobs for the
+   book are pending, its Inquiry jobs are recorded in `Waiting.json` and are
+   written after the apply pass that clears the last of them, provided the
+   book is active. Written earlier, each Inquiry job would go stale as the
+   Summaries landed, and the client would answer every question twice.
+
+Not built:
+
+- **A provider choice.** A "Local agent (subscription)" option in AI settings,
+  under which the existing Run buttons prepare jobs.
+- **An MCP server inside the plugin** (desktop only), with list, get and
+  submit tools. It would be only a second transport over the same job objects.
 
 ## Direct YAML for author-owned fields
 
@@ -213,15 +231,31 @@ through direct writes.
 
 ## Inquiry
 
-Out of scope at first. Inquiry answers reach `sessions.json` only after scene
-reference verification and repair, lens and role normalization, and, for large
-corpora, chunked runs and merging. Anthropic citations are an API feature with
-no chat equivalent.
+Built as single-pass jobs (Phase 4). A client answers the whole corpus in one
+pass. Multi-pass chunking and Anthropic citations are API features with no
+chat equivalent, so they are not offered.
 
-A later phase could hand off single-pass questions whose corpus fits in one
-request (for example, Flow and Depth for a Book 1 that fits in one pass) as
-jobs, without citations. The runner's post-processing would need to be
-callable on a response it did not request itself.
+- **Request.** `InquiryRunnerService.buildClientRun` builds the provider call's
+  own request through `buildInquiryRequest`, the builder the API run and its
+  estimate also use, with the evidence inline as OpenAI and Gemini receive it
+  and the question last. A test compiles both and compares them.
+- **Answer.** `readClientAnswer` runs the AI client's JSON check
+  (`validateJsonResponse`), then the runner's own `parseResponse` and
+  `buildResult`, which verifies and repairs scene refs. An answer none of
+  whose findings cites the corpus is sent back, where an API run would save a
+  failed briefing.
+- **Save.** `InquiryView.saveAiJobAnswer` saves through `persistOmnibusResult`,
+  as an Omnibus pass saves each question: session, log and brief. The
+  briefing's provider is `agent` (`AI_JOB_PROVIDER`) and its model the
+  client's `answeredBy`.
+- **Where it runs.** Jobs go through the Inquiry view, whose session store is
+  the one place sessions are saved. If Inquiry is closed, it is opened in a
+  background tab.
+- **Scope.** A job covers the Inquiry view's scope, book and target scenes. An
+  answer for another scope stays in place until Inquiry is switched back.
+- **Found on the way:** single-question runs never recorded the corpus they
+  saw (`corpusOnlyFingerprint`, `corpusManifestSnapshot`), so their briefings
+  never went stale. Fixed in `7f46390`.
 
 ## Phases
 
@@ -243,8 +277,9 @@ request.
   and each parser accepts only its own field.
 - The job mailbox: `src/ai/jobs/aiJobStore.ts` (format, folder, instructions)
   and `src/ai/jobs/aiJobIngest.ts` (ingest and wiring).
-- `src/sceneAnalysis/summaryRefreshJobs.ts`: the "Prepare AI jobs: Summary
-  refresh (flagged scenes)" command, and the handler that applies answers.
+- `src/sceneAnalysis/summaryRefreshJobs.ts`: preparing Summary jobs (first a
+  command of its own, now part of "Prepare AI jobs…"), and the handler that
+  applies answers.
   As in the API run, the Synopsis is written from the new Summary, so when
   "Also update Synopsis" is on, applying a Summary answer creates the Synopsis
   job.
@@ -252,28 +287,28 @@ request.
   run and jobs call the same builders, parsers and writer, and each ingest
   outcome end to end in an in-memory vault.
 
-To try it: flag a few scenes with `Summary Update: Yes`, run the prepare
-command, point Codex or Claude Code at `Radial Timeline/AI Jobs`, and watch the
-answers apply. What unit tests cannot confirm, and the reason for the beta
+To try it: make a book active, run "Prepare AI jobs…", point Codex or Claude
+Code at `Radial Timeline/AI Jobs`, and watch the answers apply. What unit tests cannot confirm, and the reason for the beta
 gate: that Obsidian fires vault events for `.json` answers written by another
 program. "Apply AI job answers" and the pass at startup work either way.
 
-**Phase 2: Pulse triplets.**
-- Extract `buildPulseRunRequest`, including the four boundary variants.
-- Apply through the existing `applyTripletAnalysisResult`.
-- Fingerprint all three scene bodies.
+**Phase 2: Pulse triplets. Built, behind the beta gate.**
+`buildTripletPrompt` and `buildPulseRunRequest` are the API run's own prompt
+and request; `callAiProvider` is Pulse only. Answers go through
+`parsePulseAnalysisResponse`, `normalizeParsedAnalysisForTriplet` and
+`updateSceneAnalysis`, as in the API run. A job goes stale when the scene or
+either neighbor changes.
 
-**Phase 3: Gossamer.**
-- Extract the write loop from `runGossamerAiAnalysis` into one
-  `applyGossamerResult` used by the API run, Paste and jobs.
-- Today Paste saves through `GossamerScoreService.saveScores`. That writer
-  matches beats by title rather than path, labels AI-pasted scores
-  "Manual entry" / provider `manual`, and does not stamp
-  `Gossamer Last Updated`. This is the remaining Gossamer drift.
-- Then add Gossamer jobs, one per signal, pointing at the manuscript export.
-  Clipboard Copy/Paste stays as the path for chat apps.
+**Phase 3: Gossamer. Built, behind the beta gate.**
+One job per signal, carrying the whole manuscript. `writeGossamerScores` is
+now the one writer the API run and jobs share. Paste AI response still saves
+through `GossamerScoreService.saveScores`, which matches beats by title,
+labels scores `manual` and does not stamp `Gossamer Last Updated`. That is the
+remaining Gossamer drift.
 
-**Phase 4: `obsidian://` handler** for preparing jobs from the agent.
+**Phase 4: Inquiry and one-step preparation. Built, behind the beta gate.**
+Inquiry jobs (see "Inquiry" above), the "Prepare AI jobs…" command, the
+request link and the Summary-before-Inquiry ordering.
 
 **Phase 5 (optional): MCP transport** over the same jobs.
 
@@ -305,8 +340,7 @@ program. "Apply AI job answers" and the pass at startup work either way.
 
 ## Open questions for Eric
 
-Questions 1–4 were settled for Phase 1. Each is a small change if Eric wants
-it otherwise.
+All five are settled. Each is a small change if Eric wants it otherwise.
 
 1. **Job file format. Decided: JSON** (Eric, 2026-09-29), for jobs and answers.
    No generated README listing pending jobs yet; the folder's own listing
@@ -333,13 +367,15 @@ it otherwise.
 4. **Retention. Decided:** an applied job and its answer are deleted
    immediately. The scene's stamp and the frontmatter snapshot taken before
    every write are the record.
-5. **Paste attribution (Phase 3), open.** Should AI-pasted Gossamer scores keep
-   provider `manual`, or get their own provider value so the run history shows
-   they came from an outside AI?
+5. **Outside-AI provider value. Decided (Phase 3):** results from a job record
+   provider `agent` (`AI_JOB_PROVIDER` in `src/utils/modelResolver.ts`) and
+   the client's `answeredBy` as the model, shown as given. Gossamer runs and
+   Inquiry briefings both use it. Paste AI response still records `manual`
+   until it moves onto `writeGossamerScores`.
 
 ## Author-facing copy
 
-**Until Phase 1 leaves beta**, the email and wiki should not promise full
+**Until the AI jobs leave beta**, the email and wiki should not promise full
 plugin functionality through a subscription. The wiki's Commands page documents
 the beta commands, marked beta. Suggested wording for the email:
 
@@ -350,7 +386,7 @@ the beta commands, marked beta. Suggested wording for the email:
 > the built-in run uses. Pulse and Inquiry currently run through a connected
 > API provider.
 
-**After Phase 2:**
+**Once the AI jobs leave beta:**
 
 > Radial Timeline can hand its analyses to your AI client as job files. Your
 > subscription does the work, and the plugin checks and applies the results.

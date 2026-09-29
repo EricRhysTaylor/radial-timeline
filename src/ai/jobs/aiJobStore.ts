@@ -29,6 +29,9 @@ const PENDING_FOLDER = 'Pending';
 const ANSWERS_FOLDER = 'Answers';
 export const AI_JOBS_PENDING_DIR = `${AI_JOBS_DIR}/${PENDING_FOLDER}`;
 export const AI_JOBS_ANSWERS_DIR = `${AI_JOBS_DIR}/${ANSWERS_FOLDER}`;
+/** Jobs to write once the jobs they depend on are answered; kept by the AI jobs service. */
+export const WAITING_FILE = 'Waiting.json';
+export const AI_JOBS_WAITING_PATH = `${AI_JOBS_DIR}/${WAITING_FILE}`;
 
 export const AI_JOB_SCHEMA_VERSION = 1;
 
@@ -102,11 +105,12 @@ This folder holds work that Radial Timeline has handed to an AI client you run y
 3. Write the JSON the prompt asks for, with nothing before or after it, to the path in the job's \`answerFile\` field. Add one more top-level field to it, \`answeredBy\`, naming the app you are running in and your model, for example \`"Claude app · Opus 5.5"\` or \`"Codex app · GPT-6 Sol"\`. It goes in the note's update stamp.
 4. If a job has a \`lastRejection\` field, your earlier answer was not accepted, or the job was rebuilt. Read its \`problems\`, then answer the job's current \`promptFile\` again.
 5. Do not edit or delete job files, scene notes, or any other file in the vault. Radial Timeline checks every answer and applies it itself.
-6. When you have answered every job, look in \`${PENDING_FOLDER}/\` again. Applying an answer can create a follow-up job.
+6. When you have answered every job, look in \`${PENDING_FOLDER}/\` again. Applying an answer can create a follow-up job, and while \`${WAITING_FILE}\` exists more jobs are on their way: they are written once the jobs they depend on are answered. Wait a minute or two, then look again.
 
 ## For the author
 
-- Radial Timeline writes jobs here when you run a "Prepare AI jobs" command.
+- Radial Timeline writes jobs here when you run "Prepare AI jobs", or when your AI client opens a request link (see the Radial Timeline wiki, Commands).
+- \`${WAITING_FILE}\` lists jobs that will be written once the jobs they depend on are answered.
 - Answers are applied while Obsidian is open, the next time it opens, or when you run "Apply AI job answers".
 - An applied job and its answer are deleted. The note's update stamp records who wrote the result, as the client named itself in \`answeredBy\` (for example "by Claude app · Opus 5.5", or "by local agent" if it gave no name), and the previous values are kept in Radial Timeline's snapshots.
 - Jobs contain the text of the notes they are about. You can empty this folder at any time; nothing else depends on it.
@@ -256,6 +260,19 @@ export async function removeAiJob(app: App, id: string): Promise<void> {
     await io.remove(pendingPath(id));
     const prompt = promptPath(id);
     if (await io.exists(prompt)) await io.remove(prompt);
+}
+
+/** Every readable job in the Pending folder. */
+export async function listPendingAiJobs(app: App): Promise<AiJob[]> {
+    const io = vaultIo(app);
+    const dir = normalizePath(AI_JOBS_PENDING_DIR);
+    if (!(await io.exists(dir))) return [];
+    const jobs: AiJob[] = [];
+    for (const path of (await io.list(dir)).files.filter(file => file.endsWith('.json'))) {
+        const read = parseAiJob(await io.read(path));
+        if (read.kind === 'ok') jobs.push(read.job);
+    }
+    return jobs;
 }
 
 /** Ids of the answers waiting in the Answers folder, sorted. */

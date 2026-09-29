@@ -162,9 +162,14 @@ function reportOutcomes(outcomes: AiJobIngestOutcome[], manual: boolean): void {
 /**
  * Wire the mailbox into the plugin: the "Apply AI job answers" command, a pass
  * when the workspace is ready, and a pass shortly after the client writes an
- * answer while Obsidian is open. Passes never overlap.
+ * answer while Obsidian is open. Passes never overlap. `afterPass` runs at the
+ * end of each pass, inside it (it writes the jobs that were waiting on others).
  */
-export function registerAiJobs(plugin: RadialTimelinePlugin, handlers: readonly AiJobHandler[]): void {
+export function registerAiJobs(
+    plugin: RadialTimelinePlugin,
+    handlers: readonly AiJobHandler[],
+    afterPass: () => Promise<void>
+): void {
     let running = false;
     let runAgain = false;
 
@@ -176,6 +181,7 @@ export function registerAiJobs(plugin: RadialTimelinePlugin, handlers: readonly 
         running = true;
         try {
             reportOutcomes(await ingestAiJobAnswers(plugin.app, handlers), manual);
+            await afterPass();
         } finally {
             running = false;
             if (runAgain) {

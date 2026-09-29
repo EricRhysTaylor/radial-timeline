@@ -127,7 +127,7 @@ Radial Timeline may contact external services in these workflows:
 
 ## Known Conflicts
 
-**Plugin conflicts**: If you experience visual glitches or strange behavior (such as the timeline overlapping with other UI elements), it may be due to a conflict with another plugin. Try disabling other plugins to isolate the issue. Please see [known plugin conflicts](https://github.com/EricRhysTaylor/Radial-Timeline/issues?q=label%3A%22Plugin+Conflict%22).
+**Plugin conflicts**: If you experience visual glitches or strange behavior (such as the timeline overlapping with other UI elements), it may be due to a conflict with another plugin. Try disabling other plugins to isolate the issue. Please see [known plugin conflicts](https://github.com/EricRhysTaylor/Radial-Timeline/issues?q=label%3A%22Plugin+Conflict%22), and [Getting help](https://community.radialtimeline.com/help) for known issues and where to report a new one.
 
 ## Technical Notes
 
@@ -161,7 +161,13 @@ All bundled fonts ship with their original license files in `assets/fonts/`.
 
 ## Feedback and Support
 
-Check out the [Discussions](https://github.com/EricRhysTaylor/Radial-Timeline/discussions) group. If you encounter issues or have feature requests, please file an issue on the [GitHub repository issues page](https://github.com/EricRhysTaylor/radial-timeline/issues).
+Every way to get help is on one page: **[Getting help](https://community.radialtimeline.com/help)**.
+
+- **Quick answers and writers helping writers:** the [Radial Timeline Discord](https://discord.gg/ecRG5ctHwM).
+- **Private bug reports and help requests:** [Community Requests](https://community.radialtimeline.com/requests) (sign in with your Community account). A person reads every request on weekdays; expect a reply within three working days.
+- **Plugin bugs on GitHub:** the bug icon (**Report a bug**) in the Radial Timeline and Inquiry views opens the [bug report form](https://github.com/EricRhysTaylor/Radial-Timeline/issues/new/choose) with your versions filled in.
+- **Step-by-step answers:** the [Guide](https://github.com/EricRhysTaylor/Radial-Timeline/wiki).
+- **Feature ideas:** the [feature idea form](https://github.com/EricRhysTaylor/Radial-Timeline/issues/new?template=feature_request.yml), or the Discord.
 
 ## Author
 

@@ -1,0 +1,26 @@
+name: Feature idea
+description: A problem Radial Timeline could solve for your writing.
+title: "[Idea]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for the idea. Describing the problem you want solved helps most, even more than a proposed design.
+        Ideas are also welcome on the [Discord](https://discord.gg/ecRG5ctHwM), where other writers can weigh in.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The writing task or moment where Radial Timeline could help.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help?
+      description: How you imagine it working, if you have a picture of it.
+  - type: textarea
+    id: today
+    attributes:
+      label: How do you handle it today?

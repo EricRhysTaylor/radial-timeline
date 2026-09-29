@@ -1,0 +1,75 @@
+# Plugin bug report form. Field ids are a contract with the plugin's in-app
+# "Report a bug" (src/utils/bugReport.ts buildIssueUrl), which opens
+# issues/new?template=bug_report.yml&<id>=<value> with them prefilled.
+# Rename an id here only together with BUG_FORM_FIELDS there.
+name: Bug report
+description: Radial Timeline did something unexpected, or something stopped working.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time. Radial Timeline is made by a small team, and a clear report is the fastest path to a fix.
+        Questions and how-to answers live on the [Discord](https://discord.gg/ecRG5ctHwM) and in the [Guide](https://github.com/EricRhysTaylor/Radial-Timeline/wiki). Community members can also report privately from [Community Requests](https://community.radialtimeline.com/requests).
+        Describe scenes in your own words; manuscript text and vault paths can stay in your vault.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you were doing, and what went wrong.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Steps help most.
+      placeholder: |
+        1. …
+        2. …
+        3. …
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect instead?
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Radial Timeline version
+      description: Settings → Community plugins → Radial Timeline.
+      placeholder: "7.3.2"
+    validations:
+      required: true
+  - type: input
+    id: obsidian-version
+    attributes:
+      label: Obsidian version
+      description: Settings → General (or Settings → About).
+      placeholder: "1.9.12"
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: macOS, Windows, Linux, iOS, or Android.
+      placeholder: macOS
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where in the plugin
+      description: For example the Radial Timeline view, Inquiry, a settings tab, or an export.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error text or console output
+      description: Anything from Obsidian's developer console (View → Toggle Developer Tools → Console) or Show debug info.
+      render: shell
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot
+      description: Paste or drag an image here. Crop out any manuscript text you would rather keep private.

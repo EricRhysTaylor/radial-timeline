@@ -169,40 +169,42 @@ export async function copyImageToClipboard(blob: Blob): Promise<boolean> {
     }
 }
 
-function formatIssueBody(payload: BugReportPayload): string {
-    const lines: string[] = [];
-    lines.push('### Description');
-    lines.push(payload.description.trim() || '_(none provided)_');
-    lines.push('');
-    if (payload.errorText.trim()) {
-        lines.push('### Error / Log');
-        lines.push('```');
-        lines.push(payload.errorText.trim());
-        lines.push('```');
-        lines.push('');
-    }
-    lines.push('### Screenshot');
-    if (payload.hasScreenshot) {
-        lines.push('_Screenshot is on your clipboard — paste it here with ⌘V / Ctrl+V._');
-    } else {
-        lines.push('_(none)_');
-    }
-    lines.push('');
-    lines.push('### Environment');
-    lines.push(`- Plugin version: ${payload.env.pluginVersion}`);
-    lines.push(`- Obsidian version: ${payload.env.obsidianVersion}`);
-    lines.push(`- Platform: ${payload.env.platform}`);
-    lines.push(`- Reported from: ${payload.env.source === 'rt' ? 'Radial Timeline view' : 'Inquiry view'}`);
-    return lines.join('\n');
+/**
+ * The GitHub bug form (.github/ISSUE_TEMPLATE/bug_report.yml). Blank issues
+ * are disabled on the repo, so the prefilled URL must name the form and fill
+ * its fields by id; a plain issues/new?body=… link lands on the template
+ * chooser and drops everything. Each value here is a field id in that file.
+ */
+export const BUG_FORM_TEMPLATE = 'bug_report.yml';
+export const BUG_FORM_FIELDS = {
+    whatHappened: 'what-happened',
+    pluginVersion: 'plugin-version',
+    obsidianVersion: 'obsidian-version',
+    platform: 'platform',
+    where: 'where',
+    logs: 'logs',
+    screenshot: 'screenshot',
+} as const;
+
+function reportedFromLabel(source: BugReportSource): string {
+    return source === 'rt' ? 'Radial Timeline view' : 'Inquiry view';
 }
 
 export function buildIssueUrl(payload: BugReportPayload): string {
     const title = payload.description.trim().split('\n')[0].slice(0, 80) || 'Bug report';
     const params = new URLSearchParams({
+        template: BUG_FORM_TEMPLATE,
         title: `[Bug]: ${title}`,
-        body: formatIssueBody(payload),
-        labels: 'bug',
+        [BUG_FORM_FIELDS.whatHappened]: payload.description.trim(),
+        [BUG_FORM_FIELDS.pluginVersion]: payload.env.pluginVersion,
+        [BUG_FORM_FIELDS.obsidianVersion]: payload.env.obsidianVersion,
+        [BUG_FORM_FIELDS.platform]: payload.env.platform,
+        [BUG_FORM_FIELDS.where]: reportedFromLabel(payload.env.source),
     });
+    if (payload.errorText.trim()) params.set(BUG_FORM_FIELDS.logs, payload.errorText.trim());
+    if (payload.hasScreenshot) {
+        params.set(BUG_FORM_FIELDS.screenshot, 'Screenshot is on your clipboard — paste it here with ⌘V / Ctrl+V.');
+    }
     return `https://github.com/${BUG_REPORT_REPO}/issues/new?${params.toString()}`;
 }
 
@@ -231,7 +233,7 @@ function formatEmailBody(payload: BugReportPayload): string {
     lines.push(`- Plugin version: ${payload.env.pluginVersion}`);
     lines.push(`- Obsidian version: ${payload.env.obsidianVersion}`);
     lines.push(`- Platform: ${payload.env.platform}`);
-    lines.push(`- Reported from: ${payload.env.source === 'rt' ? 'Radial Timeline view' : 'Inquiry view'}`);
+    lines.push(`- Reported from: ${reportedFromLabel(payload.env.source)}`);
     return lines.join('\n');
 }
 

@@ -13,6 +13,7 @@
  */
 
 import { BUILTIN_MODELS } from '../ai/registry/builtinModels';
+import type { AIProviderId } from '../ai/types';
 
 // Static fallback mappings for "latest" aliases
 // These are updated when we get actual model info from API responses
@@ -81,6 +82,16 @@ export function getModelDisplayName(modelId: string, options?: { debug?: boolean
 
     // For specific versioned models, create a friendly name
     return formatModelName(modelId, debug);
+}
+
+/**
+ * Who produced an AI result, for the "by …" part of an update stamp such as
+ * "Summary Update: <date> by Claude Opus 5.5 API": the model that actually
+ * answered, and whether it ran through a provider API or on the author's own
+ * local server ("Local model qwen3:80b").
+ */
+export function describeAiRunModel(provider: Exclude<AIProviderId, 'none'>, modelId: string): string {
+    return provider === 'ollama' ? `Local model ${modelId}` : `${getModelDisplayName(modelId)} API`;
 }
 
 function formatOpenAiSnapshotName(modelId: string, debug: boolean): string | null {

@@ -21,8 +21,10 @@ import {
     getSynopsisJsonSchema
 } from '../ai/prompts/synopsis';
 import { getAIClient } from '../ai/runtime/aiClient';
+import { extractJsonPayload } from '../ai/runtime/jsonValidator';
 import { getCanonicalAiSettings, resolveConfiguredSelection } from '../ai/runtime/runtimeSelection';
 import { resolveBookScopedFiles } from '../services/NoteScopeResolver';
+import { describeAiRunModel } from '../utils/modelResolver';
 import { snapshotFrontmatterFields } from '../utils/logVaultOps';
 import { normalizeBooleanValue } from '../utils/sceneHelpers';
 import { truncateToWordLimit } from '../utils/synopsisLimits';
@@ -75,16 +77,11 @@ export type SummaryRefreshReply =
     | { ok: false; problem: string };
 
 function readReplyField(reply: string, field: 'summary' | 'synopsis'): SummaryRefreshReply {
-    // Replies can arrive wrapped (a code fence, a sentence before the JSON), so
-    // the object is cut from the first "{" to the last "}".
-    const start = reply.indexOf('{');
-    const end = reply.lastIndexOf('}');
-    if (start === -1 || end <= start) {
-        return { ok: false, problem: 'No JSON object was found in the answer.' };
-    }
+    // Replies can arrive wrapped (a code fence, a sentence before the JSON);
+    // extractJsonPayload is the one place that unwraps them.
     let parsed: unknown;
     try {
-        parsed = JSON.parse(reply.slice(start, end + 1));
+        parsed = JSON.parse(extractJsonPayload(reply));
     } catch (error) {
         const detail = error instanceof Error ? error.message : String(error);
         return { ok: false, problem: `The answer is not valid JSON: ${detail}` };
@@ -108,11 +105,15 @@ export function parseSynopsisReply(reply: string, maxWords: number): SummaryRefr
     return result.ok ? { ok: true, text: truncateToWordLimit(result.text, maxWords) } : result;
 }
 
-/** Send one Summary refresh request to the configured AI provider. Throws on failure. */
+/**
+ * Send one Summary refresh request to the configured AI provider. Throws on
+ * failure. `attribution` names the model that actually answered, for the
+ * Summary Update stamp.
+ */
 export async function sendSummaryRefreshRequest(
     plugin: RadialTimelinePlugin,
     request: AIRunRequest
-): Promise<{ reply: string; advancedContext?: AIRunAdvancedContext }> {
+): Promise<{ reply: string; attribution: string; advancedContext?: AIRunAdvancedContext }> {
     const aiSettings = getCanonicalAiSettings(plugin);
     const selection = resolveConfiguredSelection(aiSettings, { feature: 'SummaryRefresh' });
     const provider = selection?.provider ?? aiSettings.provider;
@@ -120,12 +121,16 @@ export async function sendSummaryRefreshRequest(
         ...request,
         providerOverride: provider === 'none' ? undefined : provider
     });
-    if (result.aiStatus !== 'success' || !result.content) {
+    if (result.aiStatus !== 'success' || !result.content || result.provider === 'none') {
         const detail = result.error || t('sceneAnalysis.aiProvider.genericError', { provider: result.provider });
         new Notice(t('sceneAnalysis.aiProvider.callError', { provider, detail }), 8000);
         throw new Error(detail);
     }
-    return { reply: result.content, advancedContext: result.advancedContext };
+    return {
+        reply: result.content,
+        attribution: describeAiRunModel(result.provider, result.modelResolved || result.modelRequested),
+        advancedContext: result.advancedContext
+    };
 }
 
 /** Target length of a generated Summary, in words. */

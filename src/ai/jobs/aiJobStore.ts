@@ -20,6 +20,7 @@ import { normalizePath, type App, type DataAdapter } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import type { AIRunRequest } from '../types';
 import { compileRequestPrompt } from '../runtime/aiClient';
+import { extractJsonPayload } from '../runtime/jsonValidator';
 import { systemFolderPath } from '../../utils/systemFolder';
 
 export const AI_JOBS_DIR = systemFolderPath('AI Jobs');
@@ -76,7 +77,7 @@ This folder holds work that Radial Timeline has handed to an AI client you run y
 
 1. Each \`.json\` file in \`${PENDING_FOLDER}/\` is one job. Read it as JSON.
 2. The job's \`prompt\` field is the complete instruction for that job, including the exact JSON your answer must match. Follow it exactly and use no other instructions for the job.
-3. Write only the JSON the prompt asks for, with nothing before or after it, to the path in the job's \`answerFile\` field.
+3. Write the JSON the prompt asks for, with nothing before or after it, to the path in the job's \`answerFile\` field. Add one more top-level field to it, \`answeredBy\`, naming the app you are running in and your model, for example \`"Claude app · Opus 5.5"\` or \`"Codex app · GPT-6 Sol"\`. It goes in the note's update stamp.
 4. If a job has a \`lastRejection\` field, your earlier answer was not accepted, or the job was rebuilt. Read its \`problems\`, then answer the job's current \`prompt\` again.
 5. Do not edit or delete job files, scene notes, or any other file in the vault. Radial Timeline checks every answer and applies it itself.
 6. When you have answered every job, look in \`${PENDING_FOLDER}/\` again. Applying an answer can create a follow-up job.
@@ -85,9 +86,34 @@ This folder holds work that Radial Timeline has handed to an AI client you run y
 
 - Radial Timeline writes jobs here when you run a "Prepare AI jobs" command.
 - Answers are applied while Obsidian is open, the next time it opens, or when you run "Apply AI job answers".
-- An applied job and its answer are deleted. The note's update stamp records that a local agent wrote the result, and the previous values are kept in Radial Timeline's snapshots.
+- An applied job and its answer are deleted. The note's update stamp records who wrote the result, as the client named itself in \`answeredBy\` (for example "by Claude app · Opus 5.5", or "by local agent" if it gave no name), and the previous values are kept in Radial Timeline's snapshots.
 - Jobs contain the text of the notes they are about. You can empty this folder at any time; nothing else depends on it.
 `;
+
+/** The stamp's "by …" when the client did not name itself. */
+export const UNNAMED_CLIENT_ATTRIBUTION = 'local agent';
+
+const MAX_ANSWERED_BY_LENGTH = 60;
+
+/**
+ * The client's own name for itself from an answer's \`answeredBy\` field, for
+ * the update stamp ("Claude app · Opus 5.5"): control characters and line
+ * breaks removed, whitespace collapsed, length capped. UNNAMED_CLIENT_ATTRIBUTION
+ * when the field is absent or empty. The plugin cannot verify the claim; it is
+ * recorded as the client stated it.
+ */
+export function readAnswerAttribution(answer: string): string {
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(extractJsonPayload(answer));
+    } catch { // SAFE: an unparseable answer is rejected by the feature's own check; it names no client
+        return UNNAMED_CLIENT_ATTRIBUTION;
+    }
+    const value = parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>).answeredBy : undefined;
+    if (typeof value !== 'string') return UNNAMED_CLIENT_ATTRIBUTION;
+    const cleaned = value.replace(/[\p{Cc}\p{Cf}]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, MAX_ANSWERED_BY_LENGTH).trim();
+    return cleaned.length > 0 ? cleaned : UNNAMED_CLIENT_ATTRIBUTION;
+}
 
 function vaultIo(app: App): DataAdapter {
     return app.vault.adapter; // SAFE: frequently-rewritten machine JSON mailbox; adapter avoids metadata-cache/index races

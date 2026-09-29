@@ -313,8 +313,23 @@ it otherwise.
    serves for now.
 2. **Failed replies. Decided (the recommendation):** the problems are recorded
    on the job as `lastRejection`; the scene note is never marked.
-3. **Attribution. Decided:** the stamp reads "… by local agent"
-   (`LOCAL_AGENT_ATTRIBUTION`). No self-reported model name is recorded.
+3. **Attribution. Decided (revised 2026-09-29 at Eric's request):** the
+   stamp names who produced the text.
+   - AI job: the client names itself in an `answeredBy` field of its answer,
+     for example "by Claude app · Opus 5.5" or "by Codex app · GPT-6 Sol"
+     (`readAnswerAttribution`: one line, 60 characters at most). The plugin
+     cannot verify the claim and records it as stated; with no name, the
+     stamp reads "by local agent".
+   - API run: the model that actually answered, "by Claude Opus 5.5 API"
+     (`describeAiRunModel`).
+   - Local server: the model id the server reported, "by Local model
+     qwen3:80b".
+   This also fixed a Summary refresh bug: API runs were stamped with the
+   *configured* model, and with `gpt-6-sol` when none was configured, so a
+   stamp could name a model that never ran. A resumed run whose only step
+   failed no longer re-stamps the scene at all. Pulse and Gossamer stamps
+   still record the raw model id and can adopt `describeAiRunModel` when
+   Phases 2 and 3 touch them.
 4. **Retention. Decided:** an applied job and its answer are deleted
    immediately. The scene's stamp and the frontmatter snapshot taken before
    every write are the record.

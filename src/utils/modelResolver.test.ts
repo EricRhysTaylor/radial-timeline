@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { cacheResolvedModel, clearResolvedModelCache, getModelDisplayName, getResolvedModelId } from './modelResolver';
+import { cacheResolvedModel, clearResolvedModelCache, describeAiRunModel, getModelDisplayName, getResolvedModelId } from './modelResolver';
 
 beforeEach(() => {
     clearResolvedModelCache();
@@ -27,5 +27,15 @@ describe('getModelDisplayName snapshot formatting', () => {
         expect(getResolvedModelId('gemini-pro-latest')).toBe('gemini-3.1-pro-preview');
         expect(getResolvedModelId('models/gemini-pro-latest')).toBe('gemini-3.1-pro-preview');
         expect(getModelDisplayName('gemini-pro-latest')).toBe('Gemini 3.1 Pro Preview (via latest)');
+    });
+});
+
+describe('describeAiRunModel', () => {
+    it('names a cloud model by its display name, marked as an API run', () => {
+        expect(describeAiRunModel('anthropic', 'claude-opus-5-5')).toBe('Claude Opus 5.5 API');
+    });
+
+    it('names a local-server model by the id the server reported', () => {
+        expect(describeAiRunModel('ollama', 'qwen3:80b')).toBe('Local model qwen3:80b');
     });
 });

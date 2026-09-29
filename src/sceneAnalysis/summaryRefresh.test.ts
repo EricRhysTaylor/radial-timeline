@@ -35,7 +35,7 @@ describe('Summary refresh replies', () => {
         if (!empty.ok) expect(empty.problem).toContain('"summary"');
         const prose = parseSummaryReply('The station hears a call.');
         expect(prose.ok).toBe(false);
-        if (!prose.ok) expect(prose.problem).toContain('No JSON object');
+        if (!prose.ok) expect(prose.problem).toContain('not valid JSON');
     });
 
     it('caps the synopsis at the word limit', () => {

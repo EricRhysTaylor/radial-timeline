@@ -32,9 +32,6 @@ import {
 } from './summaryRefresh';
 import type { SceneData } from './types';
 
-/** What the "Summary Update" stamp records for a result an AI job produced. */
-export const LOCAL_AGENT_ATTRIBUTION = 'local agent';
-
 const SUMMARY_TASK = 'SceneSummary';
 const SYNOPSIS_TASK = 'SceneSynopsis';
 
@@ -99,18 +96,18 @@ export function createSummaryRefreshJobHandler(plugin: RadialTimelinePlugin): Ai
             return buildSynopsisJob(plugin, scene, summary);
         },
 
-        async apply(job, answer) {
+        async apply(job, answer, attribution) {
             const task = assertKnownTask(job);
             if (task === SYNOPSIS_TASK) {
                 const parsed = parseSynopsisReply(answer, getSynopsisGenerationWordLimit(plugin.settings));
                 if (!parsed.ok) return { ok: false, problems: [parsed.problem] };
-                await persistSummaryForScene(plugin, job.target.path, { synopsis: parsed.text }, LOCAL_AGENT_ATTRIBUTION);
+                await persistSummaryForScene(plugin, job.target.path, { synopsis: parsed.text }, attribution);
                 return { ok: true };
             }
 
             const parsed = parseSummaryReply(answer);
             if (!parsed.ok) return { ok: false, problems: [parsed.problem] };
-            await persistSummaryForScene(plugin, job.target.path, { summary: parsed.text }, LOCAL_AGENT_ATTRIBUTION);
+            await persistSummaryForScene(plugin, job.target.path, { summary: parsed.text }, attribution);
             if (plugin.settings.alsoUpdateSynopsis) {
                 const scene = await loadScene(plugin, job.target.path);
                 if (!scene) throw new Error(`Scene ${job.target.path} could not be read after its Summary was written`);

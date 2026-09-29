@@ -21,6 +21,7 @@ import {
     listAiJobAnswerIds,
     readAiJob,
     readAiJobAnswer,
+    readAnswerAttribution,
     removeAiJob,
     removeAiJobAnswer,
     writeAiJob,
@@ -34,8 +35,11 @@ export interface AiJobHandler {
     currentFingerprint(job: AiJob): Promise<string | null>;
     /** A fresh job for the same target, built from its current content. Keeps the job id. */
     rebuild(job: AiJob): Promise<AiJob>;
-    /** Check an answer with the feature's own parser and, when it passes, write it. */
-    apply(job: AiJob, answer: string): Promise<{ ok: true } | { ok: false; problems: string[] }>;
+    /**
+     * Check an answer with the feature's own parser and, when it passes, write
+     * it. `attribution` is the client's name for itself, for the update stamp.
+     */
+    apply(job: AiJob, answer: string, attribution: string): Promise<{ ok: true } | { ok: false; problems: string[] }>;
 }
 
 export type AiJobIngestOutcome =
@@ -75,7 +79,8 @@ async function ingestOne(app: App, id: string, handlers: ReadonlyMap<string, AiJ
         return { id, kind: 'rebuilt' };
     }
 
-    const result = await handler.apply(job, await readAiJobAnswer(app, id));
+    const answer = await readAiJobAnswer(app, id);
+    const result = await handler.apply(job, answer, readAnswerAttribution(answer));
     if (!result.ok) {
         await writeAiJob(app, { ...job, lastRejection: { at: new Date().toISOString(), problems: result.problems } });
         await removeAiJobAnswer(app, id);

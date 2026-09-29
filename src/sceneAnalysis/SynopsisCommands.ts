@@ -27,7 +27,6 @@ import {
 import type { SceneData } from './types';
 import { parseSceneTitle, decodeHtmlEntities } from '../utils/text';
 import { getSynopsisGenerationWordLimit } from '../utils/synopsisLimits';
-import { getCanonicalAiSettings, resolveConfiguredSelection } from '../ai/runtime/runtimeSelection';
 import { t } from '../i18n';
 
 /**
@@ -51,12 +50,6 @@ function isSummaryStale(scene: SceneData, plugin: RadialTimelinePlugin): boolean
 
     // Check Completed date (Status changing to Complete typically updates Due)
     return false;
-}
-
-function getCurrentModelId(plugin: RadialTimelinePlugin): string {
-    return resolveConfiguredSelection(getCanonicalAiSettings(plugin), {
-        feature: 'SummaryRefresh'
-    })?.model.id || 'gpt-6-sol';
 }
 
 function isSameCalendarDay(timestamp: string | undefined, now: Date = new Date()): boolean {
@@ -285,6 +278,10 @@ export async function runSynopsisBatch(
 
         try {
             let newSummary = currentSummary.trim();
+            // The model that produced this scene's new text, for the stamp.
+            // Stays null when no AI step produced anything, and then nothing
+            // is written: a stamp must never name a model that did not run.
+            let attribution: string | null = null;
 
             if (!isResuming || !alreadySummaryUpdatedToday || !newSummary) {
                 const sent = await sendSummaryRefreshRequest(plugin, buildSummaryRunRequest(scene, target));
@@ -296,6 +293,7 @@ export async function runSynopsisBatch(
                     continue;
                 }
                 newSummary = parsed.text;
+                attribution = sent.attribution;
             }
 
             let newSynopsis: string | undefined;
@@ -308,6 +306,7 @@ export async function runSynopsisBatch(
                     const parsed = parseSynopsisReply(sent.reply, synopsisMaxWords);
                     if (!parsed.ok) throw new Error(parsed.problem);
                     newSynopsis = parsed.text;
+                    attribution ??= sent.attribution;
                 } catch (synErr) {
                     console.warn(`Synopsis generation failed for ${sceneName}:`, synErr);
                     const reason = explainSummaryRefreshFailure(synErr, {
@@ -319,12 +318,19 @@ export async function runSynopsisBatch(
                 }
             }
 
+            if (attribution === null) {
+                // Resumed run: the Summary was already refreshed today and the
+                // Synopsis pass failed (its warning is above). Nothing new to write.
+                if (modal.markQueueStatus) modal.markQueueStatus(scene.file.path, 'error');
+                continue;
+            }
+
             try {
                 await persistSummaryForScene(
                     plugin,
                     scene.file.path,
                     { summary: newSummary, synopsis: newSynopsis },
-                    getCurrentModelId(plugin)
+                    attribution
                 );
                 processedCount++;
 

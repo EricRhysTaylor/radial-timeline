@@ -181,7 +181,7 @@ This command is separate from scene pulse analysis: **Pulse** writes short struc
 3. Give your AI client access to the `Radial Timeline/AI Jobs` folder and ask it to work through the jobs. The `AGENTS.md` and `CLAUDE.md` files there tell it how.
 4. Each answer is checked and applied as soon as the client writes it while Obsidian is open, or the next time Obsidian opens. **Apply AI job answers** runs the check on demand.
 
-Accepted answers are written exactly as a built-in run writes them, stamped `Summary Update: <date> by local agent`. An answer that fails the checks goes back to the client with the problem noted on the job. If you edit a scene after its job was written, the job is rebuilt from the new text. With `Also update Synopsis` on, applying a Summary creates the Synopsis job next.
+Accepted answers are written exactly as a built-in run writes them. The stamp names who wrote them, as your AI client names itself, for example `Summary Update: <date> by Claude app · Opus 5.5` (or `by local agent` if it gives no name). Built-in runs name the model that answered, for example `by Claude Opus 5.5 API` or `by Local model qwen3:80b`. An answer that fails the checks goes back to the client with the problem noted on the job. If you edit a scene after its job was written, the job is rebuilt from the new text. With `Also update Synopsis` on, applying a Summary creates the Synopsis job next.
 
 For example: flag scenes 12–15 of Book 2, run the command, then tell Claude Code "work through the Radial Timeline AI jobs".
 

@@ -183,17 +183,27 @@ describe('Summary refresh as AI jobs', () => {
         expect(await readText(app, `${AI_JOBS_DIR}/CLAUDE.md`)).toBe(AI_JOB_INSTRUCTIONS);
     });
 
-    it('writes an accepted Summary to the scene, stamped as a local agent result', async () => {
+    it('writes an accepted Summary to the scene, stamped with the client\'s name for itself', async () => {
+        const { app, plugin, handler } = setup();
+        await prepareSummaryRefreshJobs(plugin);
+        const [summaryJob] = await pendingJobs(app);
+        await answer(app, summaryJob, { summary: 'A1 happens, factually.', answeredBy: 'Claude app · Opus 5.5' });
+
+        expect(await ingestAiJobAnswers(asApp(app), [handler])).toEqual([{ id: summaryJob.id, kind: 'applied' }]);
+        const note = await readText(app, 'Books/BookA/01 A1.md');
+        expect(note).toContain('Summary: A1 happens, factually.');
+        expect(note).toMatch(/Summary Update: .* by Claude app · Opus 5\.5/);
+        expect(await pendingJobs(app)).toEqual([]);
+    });
+
+    it('stamps "local agent" when the client does not name itself', async () => {
         const { app, plugin, handler } = setup();
         await prepareSummaryRefreshJobs(plugin);
         const [summaryJob] = await pendingJobs(app);
         await answer(app, summaryJob, { summary: 'A1 happens, factually.' });
 
-        expect(await ingestAiJobAnswers(asApp(app), [handler])).toEqual([{ id: summaryJob.id, kind: 'applied' }]);
-        const note = await readText(app, 'Books/BookA/01 A1.md');
-        expect(note).toContain('Summary: A1 happens, factually.');
-        expect(note).toMatch(/Summary Update: .* by local agent/);
-        expect(await pendingJobs(app)).toEqual([]);
+        await ingestAiJobAnswers(asApp(app), [handler]);
+        expect(await readText(app, 'Books/BookA/01 A1.md')).toMatch(/Summary Update: .* by local agent/);
     });
 
     it('queues the Synopsis job from the new Summary when "also update Synopsis" is on', async () => {

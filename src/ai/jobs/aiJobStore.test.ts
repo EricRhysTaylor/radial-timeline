@@ -4,7 +4,9 @@ import {
     AI_JOB_SCHEMA_VERSION,
     buildAiJob,
     isAiJobAnswerPath,
-    parseAiJob
+    parseAiJob,
+    readAnswerAttribution,
+    UNNAMED_CLIENT_ATTRIBUTION
 } from './aiJobStore';
 import { compileRequestPrompt } from '../runtime/aiClient';
 import { buildDefaultAiSettings } from '../settings/aiSettings';
@@ -57,10 +59,20 @@ describe('AI jobs', () => {
         if (read.kind === 'invalid') expect(read.reason).toContain('"prompt"');
     });
 
+    it('read the client\'s name for itself from answeredBy, cleaned for a one-line stamp', () => {
+        expect(readAnswerAttribution('{"summary": "x", "answeredBy": "Codex app · GPT-6 Sol"}')).toBe('Codex app · GPT-6 Sol');
+        expect(readAnswerAttribution('```json\n{"answeredBy": "  Claude app\\n· Opus 5.5 "}\n```')).toBe('Claude app · Opus 5.5');
+        expect(readAnswerAttribution(`{"answeredBy": "${'x'.repeat(200)}"}`)).toHaveLength(60);
+        expect(readAnswerAttribution('{"summary": "x"}')).toBe(UNNAMED_CLIENT_ATTRIBUTION);
+        expect(readAnswerAttribution('{"answeredBy": 42}')).toBe(UNNAMED_CLIENT_ATTRIBUTION);
+        expect(readAnswerAttribution('not json')).toBe(UNNAMED_CLIENT_ATTRIBUTION);
+    });
+
     it('come with instructions that name no feature, so prompt changes never make them stale', () => {
         expect(AI_JOB_INSTRUCTIONS).not.toMatch(/Summary|Synopsis|Pulse|Gossamer|Inquiry/);
         expect(AI_JOB_INSTRUCTIONS).toContain('`prompt`');
         expect(AI_JOB_INSTRUCTIONS).toContain('`answerFile`');
         expect(AI_JOB_INSTRUCTIONS).toContain('`lastRejection`');
+        expect(AI_JOB_INSTRUCTIONS).toContain('`answeredBy`');
     });
 });

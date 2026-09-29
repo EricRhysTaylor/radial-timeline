@@ -30,7 +30,7 @@ function getRequired(schema?: Record<string, unknown>): string[] {
  *      bare JSON and JSON with leading/trailing prose.
  *   3. Fall back to the raw string for the parser to surface the original error.
  */
-function extractJsonPayload(raw: string): string {
+export function extractJsonPayload(raw: string): string {
     const trimmed = raw.trim();
     if (!trimmed) return trimmed;
     const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);

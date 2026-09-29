@@ -1023,6 +1023,7 @@
 
 .rt-book-switcher__select {
   max-width: 180px;
+  text-overflow: ellipsis;
   font-size: var(--font-ui-smaller);
   height: 24px;
   padding: 0 20px 0 6px;
@@ -1256,25 +1257,6 @@
   display: none;
   align-items: center;
   line-height: 1;
-}
-
-/* Narrow bars (small monitors, split panes): height is fixed, so let the
-   search input surrender width first, then collapse mode-nav padding and the
-   Chronologue sub-nav labels down to glyphs (⇧ / ⌥ / RT). */
-@media (max-width: 900px) {
-  .ert-timeline-search .ert-timeline-search__input[type="search"] {
-    width: clamp(72px, 10vw, 140px);
-    flex: 1 1 auto;
-  }
-  .ert-timeline-mode-nav__btn {
-    padding: 0 var(--size-4-1);
-  }
-  .ert-timeline-subnav__label {
-    display: none;
-  }
-  .ert-timeline-subnav__glyph {
-    display: inline-flex;
-  }
 }
 
 .ert-timeline-session.clickable-icon {
@@ -2118,8 +2100,11 @@
   display: none;
 }
 
+/* Fixed-size icons never shrink; only the search field and book selector
+   give up width on a tight bar. */
 .ert-timeline-title-action.clickable-icon,
-.rt-book-switcher__manage.clickable-icon {
+.ert-timeline-title-menu.clickable-icon {
+  flex: 0 0 auto;
   width: 24px;
   height: 24px;
   padding: 0;
@@ -2130,17 +2115,18 @@
 }
 
 .ert-timeline-title-action.clickable-icon svg,
-.rt-book-switcher__manage.clickable-icon svg {
+.ert-timeline-title-menu.clickable-icon svg {
   width: 14px;
   height: 14px;
 }
 
 .ert-timeline-title-action.clickable-icon:hover,
-.rt-book-switcher__manage.clickable-icon:hover {
+.ert-timeline-title-menu.clickable-icon:hover {
   color: var(--text-normal);
 }
 
 .ert-timeline-legend__trigger.clickable-icon {
+  flex: 0 0 auto;
   width: 24px;
   height: 24px;
   padding: 0;
@@ -2196,20 +2182,76 @@
    equal flex basis so the center mode nav lands at the real center of the bar
    rather than trailing the left cluster. Left stays left-justified (its own
    justify-content), the right cluster is right-justified against the native
-   "…" actions, and the mode nav keeps its natural width in the middle. */
+   "…" actions, and the mode nav keeps its natural width in the middle.
+   Neither side shrinks below its content: when one side needs more than half
+   the spare room, the flex split gives it that and the mode nav slides toward
+   the other side, instead of the squeezed side spilling over its neighbours. */
 .view-header.ert-timeline-header .view-header-left {
   flex: 1 1 0;
-  min-width: 0;
+  min-width: max-content;
 }
 
 .view-header.ert-timeline-header .rt-book-switcher {
   flex: 1 1 0;
-  min-width: 0;
+  min-width: max-content;
   justify-content: flex-end;
 }
 
 .view-header.ert-timeline-header .ert-timeline-mode-nav {
   flex: 0 0 auto;
+}
+
+/* Narrow bars (small monitors, split panes): height is fixed, so the header
+   steps down instead of wrapping or overlapping. TitleBarFit.ts measures the
+   row and adds these classes in order until it fits, cheapest loss first:
+     --menu      ⌘ / printer / bug / gear fold into one menu button
+     --narrow    the search field and book selector give up some width
+     --narrower  ...and then take their smallest widths
+     --glyphs    mode-nav padding tightens, sub-nav labels drop to glyphs
+                 (⇧ / ⌥ / RT, and the alignment chip's ◔ / ◍)
+     --numerals  inactive modes show only their numeral
+   Every step uses fixed sizes, so the row is always exactly as wide as its
+   content and the fit check can see when a step is not enough. */
+.view-header.ert-timeline-header--menu .ert-timeline-title-action.clickable-icon {
+  display: none;
+}
+
+.view-header:not(.ert-timeline-header--menu) .ert-timeline-title-menu.clickable-icon {
+  display: none;
+}
+
+.view-header.ert-timeline-header--narrow .ert-timeline-search .ert-timeline-search__input[type="search"] {
+  width: 96px;
+}
+
+.view-header.ert-timeline-header--narrow .rt-book-switcher__select {
+  max-width: 120px;
+}
+
+.view-header.ert-timeline-header--narrower .ert-timeline-search .ert-timeline-search__input[type="search"] {
+  width: 64px;
+}
+
+.view-header.ert-timeline-header--narrower .rt-book-switcher__select {
+  max-width: 88px;
+}
+
+.view-header.ert-timeline-header--glyphs .ert-timeline-mode-nav__btn {
+  padding: 0 var(--size-4-1);
+}
+
+.view-header.ert-timeline-header--glyphs .ert-timeline-subnav__label {
+  display: none;
+}
+
+.view-header.ert-timeline-header--glyphs .ert-timeline-subnav__glyph {
+  display: inline-flex;
+}
+
+/* The active mode keeps its name so the row still says where you are; the
+   others keep their numeral (the keyboard shortcut) and their tooltip. */
+.view-header.ert-timeline-header--numerals .ert-timeline-mode-nav__btn:not(.is-active) .ert-timeline-mode-nav__label {
+  display: none;
 }
 
 .ert-timeline-legend.is-visible {

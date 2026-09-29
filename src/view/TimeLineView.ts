@@ -13,7 +13,7 @@ import { t } from '../i18n';
 import type { SubplotAlignment, TimelineItem } from '../types';
 import { renderSvgFromString } from '../utils/svgDom';
 import { openOrRevealFileByPath } from '../utils/fileUtils';
-import { setupRotationController, setupSearchControls as setupSearchControlsExt, setupModeToggleController, setupVersionIndicatorController, setupHelpIconController, setupTooltips, setupSubplotKeyController } from './interactions';
+import { setupRotationController, setupSearchControls as setupSearchControlsExt, setupModeToggleController, setupVersionIndicatorController, setupHelpIconController, setupTooltips, setupSubplotKeyController, setupTitleBarFit } from './interactions';
 import { RendererService } from '../services/RendererService';
 import { ModeManager, createModeManager } from '../modes/ModeManager';
 import { getModeDefinition, getToggleableModes } from '../modes/ModeRegistry';
@@ -182,7 +182,6 @@ export class RadialTimelineView extends ItemView {
     // Book switcher UI
     private bookSwitcherEl?: HTMLElement;
     private bookSwitcherSelect?: HTMLSelectElement;
-    private bookSwitcherManageBtn?: HTMLButtonElement;
     private modeNavButtons?: Map<string, HTMLButtonElement>;
     private chronologueSubNavEl?: HTMLElement;
     private chronologueSubNavBtns?: { shift: HTMLButtonElement; alt: HTMLButtonElement; runtime: HTMLButtonElement };
@@ -322,7 +321,7 @@ export class RadialTimelineView extends ItemView {
     }
 
     private ensureBookSwitcher(): void {
-        const headerEl = this.containerEl.querySelector('.view-header');
+        const headerEl = this.containerEl.querySelector<HTMLElement>('.view-header');
         if (!headerEl) return;
 
         if (!this.bookSwitcherEl) {
@@ -420,56 +419,58 @@ export class RadialTimelineView extends ItemView {
                 this.updateViewTitle();
             });
 
-            const manageBtn = doc.win.createEl('button');
-            manageBtn.className = 'rt-book-switcher__manage ert-timeline-title-action clickable-icon';
-            manageBtn.type = 'button';
-            manageBtn.setAttribute('aria-label', 'Manage books');
-            setIcon(manageBtn, 'settings');
-            applyTooltip(manageBtn, 'Manage books', 'bottom');
-            this.registerDomEvent(manageBtn, 'click', () => {
-                if (this.plugin.settingsTab) {
-                    this.plugin.settingsTab.setActiveTab('core');
-                }
-                openSettingsTab(this.app);
+            // Title actions, in cluster order after the book selector. Each is
+            // an icon button; on a bar too narrow for the full row, TitleBarFit
+            // folds them into one menu built from this same list.
+            const titleActions: Array<{ label: string; icon: string; run: () => void }> = [
+                { label: 'Radial Timeline commands', icon: 'command', run: () => this.openRadialTimelineCommands() },
+                { label: 'Manuscript export', icon: 'printer', run: () => this.plugin.openManuscriptExportModal() },
+                // Same action as the version-indicator fallback; only the
+                // trigger is duplicated here.
+                { label: 'Report a bug', icon: 'bug', run: () => new BugReportModal(this.app, this.plugin, 'rt').open() },
+                {
+                    label: 'Manage books',
+                    icon: 'settings',
+                    run: () => {
+                        if (this.plugin.settingsTab) {
+                            this.plugin.settingsTab.setActiveTab('core');
+                        }
+                        openSettingsTab(this.app);
+                    }
+                },
+            ];
+            const titleActionBtns = titleActions.map(action => {
+                const btn = doc.win.createEl('button');
+                btn.className = 'ert-timeline-title-action clickable-icon';
+                btn.type = 'button';
+                btn.setAttribute('aria-label', action.label);
+                setIcon(btn, action.icon);
+                applyTooltip(btn, action.label, 'bottom');
+                this.registerDomEvent(btn, 'click', (evt: MouseEvent) => {
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                    action.run();
+                });
+                return btn;
             });
 
-            const commandPaletteBtn = doc.win.createEl('button');
-            commandPaletteBtn.className = 'ert-timeline-title-action clickable-icon';
-            commandPaletteBtn.type = 'button';
-            commandPaletteBtn.setAttribute('aria-label', 'Radial Timeline commands');
-            setIcon(commandPaletteBtn, 'command');
-            applyTooltip(commandPaletteBtn, 'Radial Timeline commands', 'bottom');
-            this.registerDomEvent(commandPaletteBtn, 'click', (evt: MouseEvent) => {
+            const actionsMenuBtn = doc.win.createEl('button');
+            actionsMenuBtn.className = 'ert-timeline-title-menu clickable-icon';
+            actionsMenuBtn.type = 'button';
+            actionsMenuBtn.setAttribute('aria-label', 'Timeline actions');
+            actionsMenuBtn.setAttribute('aria-haspopup', 'menu');
+            setIcon(actionsMenuBtn, 'menu');
+            applyTooltip(actionsMenuBtn, 'Timeline actions', 'bottom');
+            this.registerDomEvent(actionsMenuBtn, 'click', (evt: MouseEvent) => {
                 evt.preventDefault();
                 evt.stopPropagation();
-                this.openRadialTimelineCommands();
-            });
-
-            const exportBtn = doc.win.createEl('button');
-            exportBtn.className = 'ert-timeline-title-action clickable-icon';
-            exportBtn.type = 'button';
-            exportBtn.setAttribute('aria-label', 'Manuscript export');
-            setIcon(exportBtn, 'printer');
-            applyTooltip(exportBtn, 'Manuscript export', 'bottom');
-            this.registerDomEvent(exportBtn, 'click', (evt: MouseEvent) => {
-                evt.preventDefault();
-                evt.stopPropagation();
-                this.plugin.openManuscriptExportModal();
-            });
-
-            // Bug report — direct entry point in the title bar. Same action as
-            // the version-indicator fallback; ModeManager/version state are not
-            // duplicated, only this one trigger.
-            const bugBtn = doc.win.createEl('button');
-            bugBtn.className = 'ert-timeline-title-action clickable-icon';
-            bugBtn.type = 'button';
-            bugBtn.setAttribute('aria-label', 'Report a bug');
-            setIcon(bugBtn, 'bug');
-            applyTooltip(bugBtn, 'Report a bug', 'bottom');
-            this.registerDomEvent(bugBtn, 'click', (evt: MouseEvent) => {
-                evt.preventDefault();
-                evt.stopPropagation();
-                new BugReportModal(this.app, this.plugin, 'rt').open();
+                const menu = new Menu();
+                titleActions.forEach(action => menu.addItem(item => item
+                    .setTitle(action.label)
+                    .setIcon(action.icon)
+                    .onClick(() => action.run())));
+                const rect = actionsMenuBtn.getBoundingClientRect();
+                menu.showAtPosition({ x: rect.right, y: rect.bottom, width: rect.width, left: true }, doc);
             });
 
             const sessionBtn = doc.win.createEl('button');
@@ -555,14 +556,13 @@ export class RadialTimelineView extends ItemView {
             booksGroup.appendChild(booksIcon);
             booksGroup.appendChild(select);
             // Right cluster order: legend · search · books · ⌘ · printer · bug · gear
+            // (or the one actions menu in their place on a narrow bar)
             wrapper.appendChild(legendBtn);
             wrapper.appendChild(legendPanel);
             wrapper.appendChild(searchShell);
             wrapper.appendChild(booksGroup);
-            wrapper.appendChild(commandPaletteBtn);
-            wrapper.appendChild(exportBtn);
-            wrapper.appendChild(bugBtn);
-            wrapper.appendChild(manageBtn);
+            titleActionBtns.forEach(btn => wrapper.appendChild(btn));
+            wrapper.appendChild(actionsMenuBtn);
 
             if (actionsEl && actionsEl.parentElement) {
                 actionsEl.parentElement.insertBefore(wrapper, actionsEl);
@@ -647,10 +647,14 @@ export class RadialTimelineView extends ItemView {
             this.modeNavButtons = modeButtons;
             this.buildChronologueSubNav(doc, modeNav, chronologueModeBtn);
             this.buildAlignmentToggle(doc, modeNav);
+            setupTitleBarFit(
+                headerEl,
+                [sessionBtn, subplotKeyBtn, modeNav, legendBtn, booksGroup],
+                (cleanup) => this.register(cleanup)
+            );
 
             this.bookSwitcherEl = wrapper;
             this.bookSwitcherSelect = select;
-            this.bookSwitcherManageBtn = manageBtn;
             this.timelineSearchInput = searchInput;
             this.timelineSearchButton = searchBtn;
             this.searchPanel = new SearchPanelController(

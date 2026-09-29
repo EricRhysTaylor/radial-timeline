@@ -20,7 +20,7 @@ import { fnv1a32Hex } from '../utils/hash';
 import { getActiveBookExportContext } from '../utils/exportContext';
 import { resolveSelectedBeatModelFromSettings } from '../utils/beatSystemState';
 import { getSortedSceneFiles } from '../utils/manuscript';
-import { GOSSAMER_AGENT_PROVIDER } from '../utils/gossamer';
+import { AI_JOB_PROVIDER } from '../utils/modelResolver';
 import { GOSSAMER_SIGNAL_METADATA, GOSSAMER_SIGNAL_TYPES, type GossamerSignalType } from '../types/gossamerSignals';
 import type { TimelineItem } from '../types';
 import type { UnifiedBeatInfo } from '../ai/prompts/unifiedBeatAnalysis';
@@ -112,7 +112,7 @@ export function createGossamerJobHandler(plugin: RadialTimelinePlugin): AiJobHan
                         plotBeats: source.plotBeats,
                         scores: validation.beats,
                         signal,
-                        provider: GOSSAMER_AGENT_PROVIDER,
+                        provider: AI_JOB_PROVIDER,
                         model: attribution,
                         attribution
                     });

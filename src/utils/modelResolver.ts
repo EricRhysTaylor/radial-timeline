@@ -94,6 +94,13 @@ export function describeAiRunModel(provider: Exclude<AIProviderId, 'none'>, mode
     return provider === 'ollama' ? `Local model ${modelId}` : `${getModelDisplayName(modelId)} API`;
 }
 
+/**
+ * The provider recorded on a result that came back through an AI job: an AI
+ * client the author runs themselves answered it. The model recorded with it is
+ * the client's own name for itself ("Claude app · Opus 5.5").
+ */
+export const AI_JOB_PROVIDER = 'agent';
+
 function formatOpenAiSnapshotName(modelId: string, debug: boolean): string | null {
     const snapshotMatch = modelId.match(/^gpt-(\d+\.?\d*)(-pro)?-(\d{4}-\d{2}-\d{2})$/);
     if (!snapshotMatch) return null;

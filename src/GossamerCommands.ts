@@ -446,7 +446,7 @@ export async function writeGossamerScores(
     plotBeats: TimelineItem[];
     scores: readonly ValidatedBeat[];
     signal: GossamerSignalType;
-    /** Run metadata: the provider id, or GOSSAMER_AGENT_PROVIDER for an AI job. */
+    /** Run metadata: the provider id, or AI_JOB_PROVIDER for an AI job. */
     provider: string;
     /** Run metadata: the model id, or the client's name for itself for an AI job. */
     model: string;

@@ -68,6 +68,23 @@ export class InquiryService {
         void this.app.workspace.revealLeaf(leaf);
     }
 
+    /**
+     * The Inquiry view AI jobs run through, since its session store is where
+     * runs are saved: the open one, or a new tab left in the background.
+     * A tab Obsidian has not loaded yet is loaded without being shown.
+     */
+    async getViewForAiJobs(): Promise<InquiryView> {
+        let leaf = this.app.workspace.getLeavesOfType(INQUIRY_VIEW_TYPE)[0];
+        if (!leaf) {
+            leaf = this.app.workspace.getLeaf('tab');
+            await leaf.setViewState({ type: INQUIRY_VIEW_TYPE, active: false });
+        }
+        await leaf.loadIfDeferred();
+        const view = leaf.view;
+        if (!(view instanceof InquiryView)) throw new Error('The Inquiry view could not be opened.');
+        return view;
+    }
+
     async runOmnibusPass(): Promise<void> {
         if (!(this.plugin.settings.enableAiSceneAnalysis ?? true)) {
             new Notice(t('inquiry.notice.aiDisabledInSettings'));

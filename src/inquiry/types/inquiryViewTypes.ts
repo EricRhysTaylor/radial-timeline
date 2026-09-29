@@ -11,6 +11,7 @@ import type {
     InquiryZone
 } from '../state';
 import type { InquirySession } from '../sessionTypes';
+import type { CorpusManifest, InquiryClientRun } from '../runner/types';
 import type { OmnibusRecentQuestionResult } from '../runner/omnibusRecentResults';
 import type { SynopsisQuality } from '../../sceneAnalysis/synopsisQuality';
 
@@ -22,6 +23,23 @@ export type InquiryQuestion = {
     zone: InquiryZone;
     icon: string;
     tier?: InquiryCanonicalQuestionTier;
+};
+
+/** One question's run handed to an AI client the author runs themselves (an AI job). */
+export type InquiryJobRun = {
+    question: InquiryQuestion;
+    manifest: CorpusManifest;
+    run: InquiryClientRun;
+};
+
+/** The enabled questions over one scope, book and target-scene selection, as AI jobs. */
+export type InquiryJobBatch = {
+    scope: InquiryScope;
+    /** The book (its id) or "saga". */
+    scopeKey: string;
+    scopeLabel: string;
+    targetSceneIds: string[];
+    runs: InquiryJobRun[];
 };
 
 export type InquiryBriefModel = {

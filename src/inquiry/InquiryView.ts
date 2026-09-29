@@ -108,6 +108,7 @@ import { getLastAiAdvancedContext } from '../ai/runtime/aiClient';
 // computeCaps, INPUT_TOKEN_GUARD_FACTOR: now used in inquiryReadinessBuilder.ts
 import { resolveCitationsEnabled } from '../ai/caps/computeCaps';
 import { BUILTIN_MODELS } from '../ai/registry/builtinModels';
+import { AI_JOB_PROVIDER } from '../utils/modelResolver';
 import { ANTHROPIC_REQUESTED_CACHE_TTL, buildDefaultAiSettings } from '../ai/settings/aiSettings';
 import { validateAiSettings } from '../ai/settings/validateAiSettings';
 import type { AIProviderId, AiSettingsV1, RTCorpusTokenEstimate, AIRunAdvancedContext } from '../ai/types';
@@ -289,6 +290,8 @@ import type {
     OmnibusCostRangePlan,
     InquiryPurgePreviewItem,
     InquiryPreviewRow,
+    InquiryJobBatch,
+    InquiryJobRun,
     InquiryQuestion,
     InquirySceneDossier,
     InquiryWritebackOutcome,
@@ -6435,6 +6438,123 @@ export class InquiryView extends ItemView {
             briefPath: briefPath ?? undefined,
             normalized
         };
+    }
+
+    /**
+     * The enabled questions as AI jobs, for an AI client the author runs
+     * themselves: each question over the current scope, book and target
+     * scenes, as a sequential Omnibus pass runs them, in one pass per
+     * question. Needs no API key. Throws what blocks a run.
+     */
+    public async buildAiJobBatch(options: {
+        /** Limit the batch to some questions (default all enabled ones). */
+        selectQuestion?: (question: InquiryQuestion) => boolean;
+        /** Leave out questions that already have a briefing, from any engine, on the corpus as it is now. */
+        unansweredOnly?: boolean;
+    } = {}): Promise<InquiryJobBatch> {
+        this.refreshCorpus();
+        this.guidanceState = this.resolveGuidanceState();
+        if (this.isInquiryBlocked()) throw new Error(t('inquiry.runner.inquiryNotConfigured'));
+        if (this.isInquiryGuidanceLockout()) throw new Error(t('inquiry.runner.noScenesAvailable'));
+        if (this.state.scope === 'book' && this.corpus && !this.corpus.bookResolved) {
+            throw new Error(t('inquiry.interaction.bookScopeUnresolved'));
+        }
+        const questions = this.getOmnibusQuestions();
+        if (!questions.length) throw new Error(t('inquiry.notice.noEnabledQuestions'));
+
+        const scopeLabel = this.getScopeLabel();
+        const targetSceneIds = this.getActiveTargetSceneIds();
+        const selectionMode = this.getSelectionMode(targetSceneIds);
+        const activeBookId = this.state.activeBookId ?? this.corpus?.books?.[0]?.id;
+        const buildManifest = (question: InquiryQuestion) => this.buildCorpusManifest(question.id, {
+            modelId: AI_JOB_PROVIDER,
+            questionZone: question.zone
+        });
+        const preflight = buildManifest(questions[0]);
+        if (preflight.entries.some(entry => entry.class === 'scene' && !entry.sceneId)) {
+            await migrateSceneFrontmatterIds(this.plugin);
+        }
+
+        const scopeKey = this.getScopeKey();
+        const runs: InquiryJobRun[] = [];
+        for (const question of questions.filter(options.selectQuestion ?? (() => true))) { // SAFE: no selector means every enabled question
+            const manifest = buildManifest(question);
+            if (!manifest.entries.length) throw new Error(t('inquiry.runner.noScenesAvailable'));
+            const questionText = this.resolveQuestionPromptForRun(question, selectionMode);
+            const questionPromptForm = this.resolveQuestionPromptFormForRun(question, selectionMode);
+            if (options.unansweredOnly) {
+                const latest = this.sessionStore.getLatestByBaseKey(this.sessionStore.buildBaseKey({
+                    questionId: question.id,
+                    questionPromptForm,
+                    questionSignature: this.buildQuestionSignature(questionText),
+                    scope: this.state.scope,
+                    scopeKey,
+                    targetSceneIds
+                }));
+                if (latest && !this.isErrorResult(latest.result)
+                    && latest.result.corpusOnlyFingerprint === manifest.corpusOnlyFingerprint) {
+                    continue;
+                }
+            }
+            const run = await this.runner.buildClientRun({
+                scope: this.state.scope,
+                scopeLabel,
+                targetSceneIds,
+                selectionMode,
+                activeBookId,
+                mode: this.state.mode,
+                questionId: question.id,
+                questionText,
+                questionPromptForm,
+                questionZone: question.zone,
+                corpus: manifest,
+                rules: this.getEvidenceRules()
+            });
+            runs.push({ question, manifest, run });
+        }
+        return { scope: this.state.scope, scopeKey, scopeLabel, targetSceneIds, runs };
+    }
+
+    /**
+     * A client's answer to one AI job run, checked as a provider's answer is
+     * and, when it passes, saved as an Omnibus pass saves each question: the
+     * session, its log and its brief. An answer none of whose findings cites
+     * this corpus is sent back rather than saved as a failed run.
+     */
+    public async saveAiJobAnswer(
+        jobRun: InquiryJobRun,
+        answer: string,
+        attribution: string,
+        submittedAt: Date
+    ): Promise<{ ok: true } | { ok: false; problems: string[] }> {
+        if (this.state.isRunning) {
+            // Not a problem with the answer: left in place until the run ends.
+            throw new Error(t('inquiry.interaction.running'));
+        }
+        const read = this.runner.readClientAnswer(jobRun.run, answer, { provider: AI_JOB_PROVIDER, model: attribution });
+        if (!read.ok) return read;
+        if (this.shouldRejectUnboundHitResult(read.result)) {
+            return {
+                ok: false,
+                problems: ['No finding could be matched to this corpus. Cite each finding by a ref_id exactly as the evidence gives it.']
+            };
+        }
+        const persisted = await this.persistOmnibusResult({
+            question: jobRun.question,
+            result: read.result,
+            trace: {
+                ...this.cloneTrace(jobRun.run.trace),
+                response: { content: answer, responseData: null, aiStatus: 'success' }
+            },
+            manifest: jobRun.manifest,
+            scopeKey: this.getScopeKey(),
+            activeBookId: jobRun.run.subject.activeBookId,
+            targetSceneIds: jobRun.run.subject.targetSceneIds,
+            submittedAt,
+            completedAt: new Date()
+        });
+        this.finishOmnibusRun(persisted.session, persisted.normalized);
+        return { ok: true };
     }
 
     private cloneTrace(trace: InquiryRunTrace): InquiryRunTrace {

@@ -5,10 +5,11 @@ import type {
     InquirySelectionMode,
     InquiryTokenUsageScope,
     InquiryZone,
-    InquiryResult
+    InquiryResult,
+    EvidenceDocumentMeta
 } from '../state';
 import type { SceneInclusion } from '../../types/settings';
-import type { AIProviderId } from '../../ai/types';
+import type { AIProviderId, AIRunRequest } from '../../ai/types';
 import type { TokenEstimateMethod } from '../../ai/tokens/inputTokenEstimate';
 import type { TokenUsage } from '../../ai/usage/providerUsage';
 import type { InquiryQuestionPromptForm } from '../questions/resolveQuestionPrompt';
@@ -96,6 +97,14 @@ export interface InquiryRunnerInput {
     citationsEnabled: boolean;
 }
 
+/**
+ * What one Inquiry run asks and over which corpus, apart from the engine that
+ * answers it. The prompt and the reading of an answer depend on this alone,
+ * which is what lets an AI client the author runs themselves answer the same
+ * run (an AI job).
+ */
+export type InquiryRunSubject = Omit<InquiryRunnerInput, 'ai' | 'citationsEnabled'>;
+
 export interface InquiryOmnibusInput {
     scope: InquiryScope;
     scopeLabel: string;
@@ -176,3 +185,16 @@ export interface InquiryRunTrace {
 export interface InquiryRunner {
     run(input: InquiryRunnerInput): Promise<InquiryResult>;
 }
+
+/**
+ * One Inquiry run handed to an AI client the author runs themselves (an AI
+ * job): the request to answer, and what reading its answer and logging the
+ * run need.
+ */
+export interface InquiryClientRun {
+    subject: InquiryRunSubject;
+    request: AIRunRequest;
+    trace: InquiryRunTrace;
+    evidenceDocumentMeta: EvidenceDocumentMeta[];
+}
+

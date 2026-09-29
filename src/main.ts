@@ -40,6 +40,7 @@ import { registerAiJobs } from './ai/jobs/aiJobIngest';
 import { createSummaryRefreshJobHandler } from './sceneAnalysis/summaryRefreshJobs';
 import { createPulseJobHandler } from './sceneAnalysis/pulseJobs';
 import { createGossamerJobHandler } from './gossamer/gossamerJobs';
+import { createInquiryJobHandler } from './inquiry/inquiryJobs';
 import { HoverHighlighter } from './services/HoverHighlighter';
 import { SceneHighlighter } from './services/SceneHighlighter';
 import { GossamerScoreService } from './services/GossamerScoreService';
@@ -700,7 +701,12 @@ export default class RadialTimelinePlugin extends Plugin {
         // AI jobs: answers written by an AI client the author runs themselves.
         // Beta (development/testing builds) until tried end to end in a real vault.
         if (areBetaCommandsVisible()) {
-            registerAiJobs(this, [createSummaryRefreshJobHandler(this), createPulseJobHandler(this), createGossamerJobHandler(this)]);
+            registerAiJobs(this, [
+                createSummaryRefreshJobHandler(this),
+                createPulseJobHandler(this),
+                createGossamerJobHandler(this),
+                createInquiryJobHandler(this)
+            ]);
         }
 
         // Add settings tab (only once)

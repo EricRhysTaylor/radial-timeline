@@ -131,17 +131,19 @@ describe('characterization: refreshCorpus six-step shape (post Slice 1)', () => 
 });
 
 // ─────────────────────────────────────────────────────────────────────────
-//  Caller surface: refreshCorpus is invoked exactly three times today
-//  (general refresh + omnibus dual-call) — audit §5 #3 + §2d + Risk #5
+//  Caller surface: refreshCorpus is invoked exactly four times today
+//  (general refresh + omnibus dual-call + AI job batch) — audit §5 #3 +
+//  §2d + Risk #5
 // ─────────────────────────────────────────────────────────────────────────
 
 describe('characterization: refreshCorpus callers', () => {
-    it('refreshCorpus is invoked exactly 3 times in InquiryView today', () => {
+    it('refreshCorpus is invoked exactly 4 times in InquiryView today', () => {
         // refreshDataDependencies (1) + runOmnibusInquiry pre-prompt (1) +
-        // runOmnibusInquiry post-prompt scope-unchanged branch (1) = 3.
+        // runOmnibusInquiry post-prompt scope-unchanged branch (1) +
+        // buildAiJobBatch, before its guidance checks (1) = 4.
         // Slice 1 must preserve this exact caller count.
         const calls = INQUIRY_VIEW_SRC.match(/this\.refreshCorpus\(\);/g) ?? [];
-        expect(calls.length).toBe(3);
+        expect(calls.length).toBe(4);
     });
 
     it('runOmnibusInquiry calls refreshCorpus before AND after the plan prompt', () => {

@@ -1712,9 +1712,7 @@ export interface TranslationKeys {
                 sceneFileNotFound: string;
             };
             aiErrors: {
-                aiError: string;
-                jsonParseError: string;
-                emptyResult: string;
+                replyRejected: string;
                 synopsisFailed: string;
                 saveError: string;
                 summaryFailed: string;
@@ -1774,6 +1772,24 @@ export interface TranslationKeys {
                 completeWithErrors: string;
                 completeSuccess: string;
             };
+        };
+    };
+    aiJobs: {
+        commands: {
+            prepareSummary: string;
+            applyAnswers: string;
+        };
+        notices: {
+            preparedSummary: string;
+            noFlaggedScenes: string;
+            summary: string;
+            appliedCount: string;
+            rejectedCount: string;
+            rebuiltCount: string;
+            targetGoneCount: string;
+            failed: string;
+            unmatched: string;
+            nothingToApply: string;
         };
     };
 }
@@ -4067,9 +4083,7 @@ export const en: TranslationKeys = {
                 sceneFileNotFound: 'Scene file not found: {{path}}',
             },
             aiErrors: {
-                aiError: 'AI Error: {{name}}',
-                jsonParseError: 'JSON Parse Error: {{name}}',
-                emptyResult: 'Empty result: {{name}}',
+                replyRejected: 'Summary reply for {{name}} was not accepted: {{problem}}',
                 synopsisFailed: 'Synopsis generation failed for {{name}}. Summary was saved and processing continued. {{reason}}',
                 saveError: 'Save error for {{name}}: {{message}}',
                 summaryFailed: 'Summary generation failed for {{name}}. Processing continued with remaining scenes. {{reason}}',
@@ -4129,6 +4143,24 @@ export const en: TranslationKeys = {
                 completeWithErrors: '{{mode}} estimation complete. {{processed}} scenes updated, {{errors}} errors.',
                 completeSuccess: '{{mode}} estimation complete! {{processed}} scenes updated. Total: {{total}}',
             },
+        },
+    },
+    aiJobs: {
+        commands: {
+            prepareSummary: 'Prepare AI jobs: Summary refresh (flagged scenes)',
+            applyAnswers: 'Apply AI job answers',
+        },
+        notices: {
+            preparedSummary: 'Prepared {{count}} Summary job(s) in {{folder}}. Ask your AI client, such as Codex or Claude Code, to work through the jobs in that folder.',
+            noFlaggedScenes: 'No scenes in {{scope}} are flagged with Summary Update: Yes.',
+            summary: 'AI job answers: {{parts}}. See {{folder}}.',
+            appliedCount: '{{count}} applied',
+            rejectedCount: '{{count}} sent back to the AI client with the problems found',
+            rebuiltCount: '{{count}} rebuilt because the scene changed',
+            targetGoneCount: '{{count}} dropped because the scene is gone',
+            failed: 'AI job answer {{id}} could not be applied: {{detail}}',
+            unmatched: 'These AI job answers have no usable job and were left in place: {{list}}',
+            nothingToApply: 'No AI job answers are waiting.',
         },
     },
 };

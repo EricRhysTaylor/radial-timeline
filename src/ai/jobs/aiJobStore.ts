@@ -1,0 +1,212 @@
+/*
+ * Radial Timeline (tm) Plugin for Obsidian
+ * Copyright (c) 2025 Eric Rhys Taylor
+ * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
+ *
+ * AI job mailbox: work Radial Timeline hands to an AI client the author runs
+ * themselves (Codex, Claude Code) inside their own subscription.
+ *
+ * Each job carries the exact prompt the API run would send for the same
+ * request, compiled by compileRequestPrompt. No feature's instructions exist
+ * anywhere else, so a prompt change in code reaches the next job unchanged.
+ * The instruction file the client reads names no feature and no field.
+ *
+ * Lives in the visible system folder. IO goes through the data adapter, like
+ * the Inquiry sessions sidecar: these are frequently rewritten machine JSON
+ * files, and the adapter avoids metadata-cache/index timing races.
+ */
+
+import { normalizePath, type App, type DataAdapter } from 'obsidian';
+import type RadialTimelinePlugin from '../../main';
+import type { AIRunRequest } from '../types';
+import { compileRequestPrompt } from '../runtime/aiClient';
+import { systemFolderPath } from '../../utils/systemFolder';
+
+export const AI_JOBS_DIR = systemFolderPath('AI Jobs');
+const PENDING_FOLDER = 'Pending';
+const ANSWERS_FOLDER = 'Answers';
+export const AI_JOBS_PENDING_DIR = `${AI_JOBS_DIR}/${PENDING_FOLDER}`;
+export const AI_JOBS_ANSWERS_DIR = `${AI_JOBS_DIR}/${ANSWERS_FOLDER}`;
+
+export const AI_JOB_SCHEMA_VERSION = 1;
+
+export interface AiJobTarget {
+    /** Vault path of the note the answer is applied to. */
+    path: string;
+    /** Human-readable name of the target, for the author and the client. */
+    label: string;
+}
+
+export interface AiJobRejection {
+    at: string;
+    problems: string[];
+}
+
+export interface AiJob {
+    schemaVersion: typeof AI_JOB_SCHEMA_VERSION;
+    id: string;
+    /** AIRunRequest.feature — routes the answer to the feature that applies it. */
+    feature: string;
+    /** AIRunRequest.task — which request within the feature. */
+    task: string;
+    createdAt: string;
+    target: AiJobTarget;
+    /** Hash of the text the prompt was built from; a mismatch at apply time means the job is stale. */
+    sourceFingerprint: string;
+    /** Where the client writes its answer, relative to the AI Jobs folder. */
+    answerFile: string;
+    /** The complete prompt, compiled exactly as the API run would send it. */
+    prompt: string;
+    /** Present when the previous answer was not accepted. */
+    lastRejection?: AiJobRejection;
+}
+
+export const AI_JOB_INSTRUCTION_FILES = ['AGENTS.md', 'CLAUDE.md'] as const;
+
+/**
+ * Written as both AGENTS.md (Codex) and CLAUDE.md (Claude Code). Deliberately
+ * generic: every job carries its own instructions, so this text never changes
+ * when a feature's prompt does.
+ */
+export const AI_JOB_INSTRUCTIONS = `# Radial Timeline AI jobs
+
+This folder holds work that Radial Timeline has handed to an AI client you run yourself, such as Codex or Claude Code. Paths below are relative to this folder.
+
+## For the AI client
+
+1. Each \`.json\` file in \`${PENDING_FOLDER}/\` is one job. Read it as JSON.
+2. The job's \`prompt\` field is the complete instruction for that job, including the exact JSON your answer must match. Follow it exactly and use no other instructions for the job.
+3. Write only the JSON the prompt asks for, with nothing before or after it, to the path in the job's \`answerFile\` field.
+4. If a job has a \`lastRejection\` field, your earlier answer was not accepted, or the job was rebuilt. Read its \`problems\`, then answer the job's current \`prompt\` again.
+5. Do not edit or delete job files, scene notes, or any other file in the vault. Radial Timeline checks every answer and applies it itself.
+6. When you have answered every job, look in \`${PENDING_FOLDER}/\` again. Applying an answer can create a follow-up job.
+
+## For the author
+
+- Radial Timeline writes jobs here when you run a "Prepare AI jobs" command.
+- Answers are applied while Obsidian is open, the next time it opens, or when you run "Apply AI job answers".
+- An applied job and its answer are deleted. The note's update stamp records that a local agent wrote the result, and the previous values are kept in Radial Timeline's snapshots.
+- Jobs contain the text of the notes they are about. You can empty this folder at any time; nothing else depends on it.
+`;
+
+function vaultIo(app: App): DataAdapter {
+    return app.vault.adapter; // SAFE: frequently-rewritten machine JSON mailbox; adapter avoids metadata-cache/index races
+}
+
+function pendingPath(id: string): string {
+    return normalizePath(`${AI_JOBS_PENDING_DIR}/${id}.json`);
+}
+
+function answerPath(id: string): string {
+    return normalizePath(`${AI_JOBS_ANSWERS_DIR}/${id}.json`);
+}
+
+/**
+ * Build a job from the same AIRunRequest the API run sends. The prompt is the
+ * request compiled by compileRequestPrompt, never text assembled here.
+ */
+export function buildAiJob(
+    plugin: RadialTimelinePlugin,
+    request: AIRunRequest,
+    params: { id: string; target: AiJobTarget; sourceFingerprint: string }
+): AiJob {
+    return {
+        schemaVersion: AI_JOB_SCHEMA_VERSION,
+        id: params.id,
+        feature: request.feature,
+        task: request.task,
+        createdAt: new Date().toISOString(),
+        target: params.target,
+        sourceFingerprint: params.sourceFingerprint,
+        answerFile: `${ANSWERS_FOLDER}/${params.id}.json`,
+        prompt: compileRequestPrompt(plugin, request).finalPrompt
+    };
+}
+
+export type AiJobRead =
+    | { kind: 'ok'; job: AiJob }
+    | { kind: 'missing' }
+    | { kind: 'invalid'; reason: string };
+
+/** Parse and validate a job file's contents. */
+export function parseAiJob(raw: string): AiJobRead {
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(raw);
+    } catch (error) {
+        return { kind: 'invalid', reason: `job file is not valid JSON: ${error instanceof Error ? error.message : String(error)}` };
+    }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return { kind: 'invalid', reason: 'job file is not a JSON object' };
+    }
+    const record = parsed as Record<string, unknown>;
+    if (record.schemaVersion !== AI_JOB_SCHEMA_VERSION) {
+        return { kind: 'invalid', reason: `unsupported job schemaVersion ${JSON.stringify(record.schemaVersion)}` };
+    }
+    const target = record.target as Record<string, unknown> | null | undefined;
+    const stringFields = ['id', 'feature', 'task', 'createdAt', 'sourceFingerprint', 'answerFile', 'prompt'] as const;
+    for (const field of stringFields) {
+        const value = record[field];
+        if (typeof value !== 'string' || value.length === 0) {
+            return { kind: 'invalid', reason: `job field "${field}" is missing` };
+        }
+    }
+    if (!target || typeof target.path !== 'string' || typeof target.label !== 'string') {
+        return { kind: 'invalid', reason: 'job field "target" is missing' };
+    }
+    return { kind: 'ok', job: parsed as AiJob };
+}
+
+/** Create the mailbox folders and (re)write the instruction files. */
+export async function ensureAiJobMailbox(app: App): Promise<void> {
+    const io = vaultIo(app);
+    for (const dir of [AI_JOBS_PENDING_DIR, AI_JOBS_ANSWERS_DIR]) {
+        const normalized = normalizePath(dir);
+        if (!(await io.exists(normalized))) {
+            await io.mkdir(normalized);
+        }
+    }
+    for (const name of AI_JOB_INSTRUCTION_FILES) {
+        await io.write(normalizePath(`${AI_JOBS_DIR}/${name}`), AI_JOB_INSTRUCTIONS);
+    }
+}
+
+export async function writeAiJob(app: App, job: AiJob): Promise<void> {
+    await vaultIo(app).write(pendingPath(job.id), JSON.stringify(job, null, 2));
+}
+
+export async function readAiJob(app: App, id: string): Promise<AiJobRead> {
+    const io = vaultIo(app);
+    const path = pendingPath(id);
+    if (!(await io.exists(path))) return { kind: 'missing' };
+    return parseAiJob(await io.read(path));
+}
+
+export async function removeAiJob(app: App, id: string): Promise<void> {
+    await vaultIo(app).remove(pendingPath(id));
+}
+
+/** Ids of the answers waiting in the Answers folder, sorted. */
+export async function listAiJobAnswerIds(app: App): Promise<string[]> {
+    const io = vaultIo(app);
+    const dir = normalizePath(AI_JOBS_ANSWERS_DIR);
+    if (!(await io.exists(dir))) return [];
+    const listing = await io.list(dir);
+    return listing.files
+        .filter(path => path.endsWith('.json'))
+        .map(path => path.slice(path.lastIndexOf('/') + 1, -'.json'.length))
+        .sort((a, b) => a.localeCompare(b));
+}
+
+export async function readAiJobAnswer(app: App, id: string): Promise<string> {
+    return vaultIo(app).read(answerPath(id));
+}
+
+export async function removeAiJobAnswer(app: App, id: string): Promise<void> {
+    await vaultIo(app).remove(answerPath(id));
+}
+
+/** True for a vault path inside the Answers folder that could hold an answer. */
+export function isAiJobAnswerPath(path: string): boolean {
+    return path.startsWith(`${AI_JOBS_ANSWERS_DIR}/`) && path.endsWith('.json');
+}

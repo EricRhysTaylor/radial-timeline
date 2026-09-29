@@ -20,6 +20,15 @@ export interface InMemoryApp {
         create: (path: string, content: string) => Promise<TFile>;
         createFolder: (path: string) => Promise<void>;
         append: (file: TFile, data: string) => Promise<void>;
+        /** Path-based IO over the same files, like Obsidian's DataAdapter. */
+        adapter: {
+            exists: (path: string) => Promise<boolean>;
+            read: (path: string) => Promise<string>;
+            write: (path: string, data: string) => Promise<void>;
+            mkdir: (path: string) => Promise<void>;
+            list: (path: string) => Promise<{ files: string[]; folders: string[] }>;
+            remove: (path: string) => Promise<void>;
+        };
     };
     fileManager: {
         processFrontMatter: (file: TFile, cb: (fm: Record<string, unknown>) => void) => Promise<void>;
@@ -174,6 +183,37 @@ export function createInMemoryApp(initialFiles: Record<string, string>): InMemor
                 const record = records.get(normalizeVaultPath(file.path));
                 if (!record) throw new Error(`File not found: ${file.path}`);
                 record.content += data;
+            },
+            adapter: {
+                async exists(path: string): Promise<boolean> {
+                    const normalized = normalizeVaultPath(path);
+                    return records.has(normalized) || folders.has(normalized);
+                },
+                async read(path: string): Promise<string> {
+                    const record = records.get(normalizeVaultPath(path));
+                    if (!record) throw new Error(`File not found: ${path}`);
+                    return record.content;
+                },
+                async write(path: string, data: string): Promise<void> {
+                    const record = records.get(normalizeVaultPath(path));
+                    if (record) record.content = data;
+                    else addFile(path, data);
+                },
+                async mkdir(path: string): Promise<void> {
+                    const normalized = normalizeVaultPath(path);
+                    collectParentFolders(`${normalized}/x`).forEach(folder => folders.add(folder));
+                },
+                async list(path: string): Promise<{ files: string[]; folders: string[] }> {
+                    const normalized = normalizeVaultPath(path);
+                    const parentOf = (child: string) => child.slice(0, Math.max(0, child.lastIndexOf('/')));
+                    return {
+                        files: Array.from(records.keys()).filter(key => parentOf(key) === normalized),
+                        folders: Array.from(folders).filter(folder => parentOf(folder) === normalized)
+                    };
+                },
+                async remove(path: string): Promise<void> {
+                    if (!records.delete(normalizeVaultPath(path))) throw new Error(`File not found: ${path}`);
+                }
             }
         },
         fileManager: {

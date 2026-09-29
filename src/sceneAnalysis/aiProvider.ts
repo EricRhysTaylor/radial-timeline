@@ -75,7 +75,7 @@ async function writePulseLog(
     const readableTimestamp = formatLogTimestamp(timestampSource);
     const sceneLabel = payload.sceneName?.trim() || 'Scene';
     const safeSceneLabel = sanitizeSegment(sceneLabel) || 'Scene';
-    const logType = payload.commandContext === 'synopsis' ? 'Synopsis' : 'Pulse';
+    const logType = 'Pulse';
 
     const scopeBits = [`Scene ${sceneLabel}`];
     if (payload.subplotName) scopeBits.push(`Subplot ${payload.subplotName}`);
@@ -111,7 +111,7 @@ async function writePulseLog(
                 const contentLogContent = formatAiLogContent({
                     title: contentTitle,
                     metadata: {
-                        feature: payload.commandContext === 'synopsis' ? 'Synopsis' : 'Pulse',
+                        feature: 'Pulse',
                         scopeTarget,
                         provider: payload.provider,
                         modelRequested: payload.modelRequested ?? 'unknown',
@@ -174,7 +174,7 @@ async function writePulseLog(
 
         const summaryContent = formatSummaryLogContent({
             title: summaryTitle,
-            feature: payload.commandContext === 'synopsis' ? 'Synopsis' : 'Pulse',
+            feature: 'Pulse',
             scopeTarget,
             provider: payload.provider,
             modelRequested: payload.modelRequested ?? 'unknown',
@@ -210,7 +210,7 @@ export async function callAiProvider(
 ): Promise<AiProviderResponse> {
     const aiSettings = getCanonicalAiSettings(plugin);
     const selection = resolveConfiguredSelection(aiSettings, {
-        feature: commandContext === 'synopsis' ? 'SummaryRefresh' : 'PulseAnalysis'
+        feature: 'PulseAnalysis'
     });
     const provider = selection?.provider ?? aiSettings.provider;
     const aiClient = getAIClient(plugin);
@@ -219,35 +219,24 @@ export async function callAiProvider(
     let submittedAt: Date | null = null;
     let returnedAt: Date | null = null;
     let runResult: Awaited<ReturnType<typeof aiClient.run>> | null = null;
-    let systemPrompt = '';
+    const systemPrompt = getSceneAnalysisSystemPrompt();
     let modelRequested: string | undefined;
     let modelResolved: string | undefined;
     const providerOverride = provider === 'none' ? undefined : provider;
 
     try {
-        let jsonSchema: Record<string, unknown>;
-        // Legacy `synopsis` commandContext maps to Summary refresh prompts for backward compatibility.
-        if (commandContext === 'synopsis') {
-            const { getSummaryJsonSchema, getSummarySystemPrompt } = await import('../ai/prompts/synopsis');
-            jsonSchema = getSummaryJsonSchema();
-            systemPrompt = getSummarySystemPrompt();
-        } else {
-            jsonSchema = getSceneAnalysisJsonSchema();
-            systemPrompt = getSceneAnalysisSystemPrompt();
-        }
-
         submittedAt = new Date();
         runResult = await aiClient.run({
-            feature: commandContext === 'synopsis' ? 'SummaryRefresh' : 'PulseAnalysis',
-            task: commandContext === 'synopsis' ? 'SceneSummary' : 'ScenePulseTriplet',
+            feature: 'PulseAnalysis',
+            task: 'ScenePulseTriplet',
             requiredCapabilities: ['jsonStrict', 'reasoningStrong'],
             featureModeInstructions: systemPrompt,
             userInput: userPrompt,
             returnType: 'json',
-            responseSchema: jsonSchema,
+            responseSchema: getSceneAnalysisJsonSchema(),
             providerOverride,
             overrides: {
-                temperature: commandContext === 'synopsis' ? 0.2 : 0.1,
+                temperature: 0.1,
                 maxOutputMode: 'high',
                 reasoningDepth: 'deep',
                 jsonStrict: true
@@ -262,47 +251,14 @@ export async function callAiProvider(
         const resolvedProvider = runResult.provider as PulseLogPayload['provider'];
 
         if (runResult.aiStatus !== 'success' || !runResult.content) {
-            if (commandContext !== 'synopsis') {
-                await writePulseLog(plugin, vault, {
-                    provider: resolvedProvider,
-                    modelRequested,
-                    modelResolved,
-                    requestPayload: runResult.requestPayload,
-                    responseData: responseDataForLog,
-                    parsed: null,
-                    status: 'error',
-                    systemPrompt,
-                    userPrompt,
-                    rawTextResult: runResult.content,
-                    sceneName,
-                    subplotName,
-                    commandContext,
-                    tripletInfo,
-                    submittedAt,
-                    returnedAt,
-                    retryCount: runResult.retryCount,
-                    diagnostics: runResult.diagnostics,
-                    normalizationWarnings: runResult.error ? [runResult.error] : undefined
-                });
-            }
-            throw new Error(runResult.error || t('sceneAnalysis.aiProvider.genericError', { provider: resolvedProvider }));
-        }
-
-        const parsedForLog = commandContext !== 'synopsis'
-            ? parsePulseAnalysisResponse(runResult.content, plugin)
-            : null;
-        const parseFailure = commandContext !== 'synopsis' && !parsedForLog
-            ? (plugin.lastAnalysisError.trim() || 'Pulse analysis response failed validation.')
-            : null;
-        if (commandContext !== 'synopsis') {
             await writePulseLog(plugin, vault, {
                 provider: resolvedProvider,
                 modelRequested,
                 modelResolved,
                 requestPayload: runResult.requestPayload,
                 responseData: responseDataForLog,
-                parsed: parsedForLog,
-                status: parseFailure ? 'error' : 'success',
+                parsed: null,
+                status: 'error',
                 systemPrompt,
                 userPrompt,
                 rawTextResult: runResult.content,
@@ -314,9 +270,36 @@ export async function callAiProvider(
                 returnedAt,
                 retryCount: runResult.retryCount,
                 diagnostics: runResult.diagnostics,
-                normalizationWarnings: parseFailure ? [parseFailure] : undefined
+                normalizationWarnings: runResult.error ? [runResult.error] : undefined
             });
+            throw new Error(runResult.error || t('sceneAnalysis.aiProvider.genericError', { provider: resolvedProvider }));
         }
+
+        const parsedForLog = parsePulseAnalysisResponse(runResult.content, plugin);
+        const parseFailure = !parsedForLog
+            ? (plugin.lastAnalysisError.trim() || 'Pulse analysis response failed validation.')
+            : null;
+        await writePulseLog(plugin, vault, {
+            provider: resolvedProvider,
+            modelRequested,
+            modelResolved,
+            requestPayload: runResult.requestPayload,
+            responseData: responseDataForLog,
+            parsed: parsedForLog,
+            status: parseFailure ? 'error' : 'success',
+            systemPrompt,
+            userPrompt,
+            rawTextResult: runResult.content,
+            sceneName,
+            subplotName,
+            commandContext,
+            tripletInfo,
+            submittedAt,
+            returnedAt,
+            retryCount: runResult.retryCount,
+            diagnostics: runResult.diagnostics,
+            normalizationWarnings: parseFailure ? [parseFailure] : undefined
+        });
         if (parseFailure) {
             throw new Error(parseFailure);
         }
@@ -345,7 +328,7 @@ export async function callAiProvider(
             ? (runResult.provider as PulseLogPayload['provider'])
             : (provider === 'none' ? null : provider);
 
-        if (commandContext !== 'synopsis' && logProvider) {
+        if (logProvider) {
             await writePulseLog(plugin, vault, {
                 provider: logProvider,
                 modelRequested,

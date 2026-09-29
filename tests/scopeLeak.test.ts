@@ -36,14 +36,11 @@ if (!testGlobal.window) {
     };
 }
 
-vi.mock('../src/sceneAnalysis/RequestRunner', () => ({
-    createAiRunner: () => async (_prompt: string, _subplot: string | null, _ctx: string, sceneName: string) => ({
-        result: JSON.stringify({ summary: `Scoped summary for ${sceneName}` })
+vi.mock('../src/sceneAnalysis/summaryRefresh', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('../src/sceneAnalysis/summaryRefresh')>()),
+    sendSummaryRefreshRequest: async (_plugin: unknown, request: { userInput?: string }) => ({
+        reply: JSON.stringify({ summary: `Scoped summary for ${(request.userInput ?? '').match(/Scene (\S+):/)?.[1] ?? 'scene'}` })
     })
-}));
-
-vi.mock('../src/sceneAnalysis/aiProvider', () => ({
-    callAiProvider: vi.fn()
 }));
 
 function sceneDoc(title: string): string {

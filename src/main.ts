@@ -36,6 +36,8 @@ import { getAllRefactorAlertIds } from './settings/refactorAlerts';
 import { autoAdoptDetectedBeatsIfEmpty } from './storyBeats/workspaceState';
 import releaseNotesBundle from './data/releaseNotesBundle.json';
 import { CommandRegistrar } from './services/CommandRegistrar';
+import { registerAiJobs } from './ai/jobs/aiJobIngest';
+import { createSummaryRefreshJobHandler } from './sceneAnalysis/summaryRefreshJobs';
 import { HoverHighlighter } from './services/HoverHighlighter';
 import { SceneHighlighter } from './services/SceneHighlighter';
 import { GossamerScoreService } from './services/GossamerScoreService';
@@ -73,7 +75,7 @@ import type { GossamerHistoricalRunOverlay, GossamerMinMaxBand, GossamerRun, Gos
 import { coerceGossamerSignal, DEFAULT_GOSSAMER_SIGNAL, type GossamerSignalType } from './types/gossamerSignals';
 import type { GossamerCacheWindow } from './gossamer/cacheWindow';
 import { seedProEntitlement } from './settings/proEntitlementSeed';
-import { hasProFeatureAccess } from './settings/featureGate';
+import { areBetaCommandsVisible, hasProFeatureAccess } from './settings/featureGate';
 import { DisposableRegistry } from './core/disposable';
 import { systemFolderPath } from './utils/systemFolder';
 
@@ -693,6 +695,11 @@ export default class RadialTimelinePlugin extends Plugin {
 
         // Register ribbon + commands (single orchestration point)
         this.commandRegistrar.registerAll(this.sceneAnalysisService);
+        // AI jobs: answers written by an AI client the author runs themselves.
+        // Beta (development/testing builds) until tried end to end in a real vault.
+        if (areBetaCommandsVisible()) {
+            registerAiJobs(this, [createSummaryRefreshJobHandler(this)]);
+        }
 
         // Add settings tab (only once)
         if (!this._settingsTabAdded) {

@@ -1230,9 +1230,6 @@ export const ja: DeepPartial<TranslationKeys> = {
                 sceneFileNotFound: 'シーンファイルが見つかりません：{{path}}',
             },
             aiErrors: {
-                aiError: 'AI エラー：{{name}}',
-                jsonParseError: 'JSON 解析エラー：{{name}}',
-                emptyResult: '空の結果：{{name}}',
                 synopsisFailed: '{{name}} のシノプシス生成に失敗しました。Summary は保存され、処理は続行されました。{{reason}}',
                 saveError: '{{name}} の保存エラー：{{message}}',
                 summaryFailed: '{{name}} のサマリー生成に失敗しました。残りのシーンで処理が続行されました。{{reason}}',

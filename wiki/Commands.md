@@ -34,6 +34,8 @@ These are the main command-palette entries.
 17. **[Author progress report (APR)](Author-Progress-Report)** ← standalone guide
 18. **[Scene pulse analysis (subplot order)](#scene-pulse-analysis-subplot-order)**
 19. **[Scene pulse analysis (manuscript order)](#scene-pulse-analysis-manuscript-order)**
+20. **[Prepare AI jobs: Summary refresh](#ai-jobs)** *(beta)*
+21. **[Apply AI job answers](#ai-jobs)** *(beta)*
 
 ## Conditional Visibility
 
@@ -47,6 +49,7 @@ Some commands are hidden until their required feature is enabled. Others remain 
 *   **Timeline order** and **Timeline audit** show a release-pending notice in public release builds and are usable in development/testing builds.
 *   **Inquiry omnibus** appears only in development/testing builds.
 *   **Onboard existing manuscript (BETA)** appears in development/testing builds. Choose structure-only import or Local LLM assistance.
+*   **Prepare AI jobs** and **Apply AI job answers** appear in development/testing builds when **AI LLM features** are enabled. They need no API key.
 
 ---
 
@@ -167,6 +170,20 @@ Writes:
 Run modes: flagged scenes, missing summaries only, missing/weak/stale, or regenerate all. You can also set target summary length, weak-summary threshold, and optional Synopsis update length.
 
 This command is separate from scene pulse analysis: **Pulse** writes short structured editorial feedback per scene; **Summary refresh** writes longer summary text for corpus-level use.
+
+<a name="ai-jobs"></a>
+### With your own AI client *(beta)*
+
+**Prepare AI jobs: Summary refresh (flagged scenes)** hands the same work to an AI client you run yourself, such as Codex or Claude Code, so it runs within your ChatGPT or Claude subscription instead of API billing.
+
+1. Flag scenes with `Summary Update: Yes`.
+2. Run the command. Radial Timeline writes one job per flagged scene in `Radial Timeline/AI Jobs/Pending`, carrying the same prompt the built-in run sends.
+3. Give your AI client access to the `Radial Timeline/AI Jobs` folder and ask it to work through the jobs. The `AGENTS.md` and `CLAUDE.md` files there tell it how.
+4. Each answer is checked and applied as soon as the client writes it while Obsidian is open, or the next time Obsidian opens. **Apply AI job answers** runs the check on demand.
+
+Accepted answers are written exactly as a built-in run writes them, stamped `Summary Update: <date> by local agent`. An answer that fails the checks goes back to the client with the problem noted on the job. If you edit a scene after its job was written, the job is rebuilt from the new text. With `Also update Synopsis` on, applying a Summary creates the Synopsis job next.
+
+For example: flag scenes 12–15 of Book 2, run the command, then tell Claude Code "work through the Radial Timeline AI jobs".
 
 Related: [AI Pulse Triplet Analysis](AI-Pulse-Analysis), [Inquiry View](Inquiry).
 

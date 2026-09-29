@@ -1229,9 +1229,6 @@ export const de: DeepPartial<TranslationKeys> = {
                 sceneFileNotFound: 'Szenendatei nicht gefunden: {{path}}',
             },
             aiErrors: {
-                aiError: 'KI-Fehler: {{name}}',
-                jsonParseError: 'JSON-Parse-Fehler: {{name}}',
-                emptyResult: 'Leeres Ergebnis: {{name}}',
                 synopsisFailed: 'Synopsis-Erzeugung für {{name}} fehlgeschlagen. Summary wurde gespeichert und die Verarbeitung fortgesetzt. {{reason}}',
                 saveError: 'Speicherfehler für {{name}}: {{message}}',
                 summaryFailed: 'Zusammenfassungs-Erzeugung für {{name}} fehlgeschlagen. Verarbeitung mit verbleibenden Szenen fortgesetzt. {{reason}}',

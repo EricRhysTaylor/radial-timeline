@@ -1229,9 +1229,6 @@ export const ko: DeepPartial<TranslationKeys> = {
                 sceneFileNotFound: '장면 파일을 찾을 수 없습니다: {{path}}',
             },
             aiErrors: {
-                aiError: 'AI 오류: {{name}}',
-                jsonParseError: 'JSON 구문 분석 오류: {{name}}',
-                emptyResult: '빈 결과: {{name}}',
                 synopsisFailed: '{{name}}의 시놉시스 생성에 실패했습니다. Summary는 저장되었고 처리가 계속되었습니다. {{reason}}',
                 saveError: '{{name}}의 저장 오류: {{message}}',
                 summaryFailed: '{{name}}의 요약 생성에 실패했습니다. 처리가 나머지 장면으로 계속되었습니다. {{reason}}',

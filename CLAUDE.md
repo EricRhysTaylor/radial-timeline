@@ -72,6 +72,14 @@ were filed on the public Editorialist repo and had to be closed.
 - When a remote agent finishes a change that affects the plugin, its final
   message must state plainly that `npm run deploy` + an Obsidian reload on
   the Mac is required to see it — never imply the local plugin already has it.
+- **Standing order: land finished cloud work on `origin/main` yourself.**
+  When the change is verified and ready for Eric to test, merge it — if the
+  session put it on a branch or draft PR, mark the PR ready and merge it
+  (repo convention: a merge commit). Never leave finished work waiting as a
+  draft; `npm run deploy` only pulls `main`, so unmerged work cannot be
+  tested. "Publish" here means landing on `main` for the local vaults; it
+  never means a public release (`npm run release`) unless Eric asks for a
+  release by name. (Owner's standing order, 2026-09-29.)
 
 ## Audit Ownership
 

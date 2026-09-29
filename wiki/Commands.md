@@ -310,7 +310,7 @@ Related: [AI Pulse Triplet Analysis](AI-Pulse-Analysis), [Summary refresh](#summ
 | Scene summaries | One per scene | Flagged `Summary Update: Yes`, without a Summary, or all |
 | Pulse triplet analysis | One per scene, with the scenes before and after it | Flagged `Pulse Update: Yes`, not yet analyzed, or all |
 | Gossamer scoring | One per signal, each carrying the whole manuscript | One signal or all four |
-| Inquiry | One per enabled question, over Inquiry's current scope and target scenes | Questions without a current briefing, or all |
+| Inquiry | One per enabled question, over the active book (Inquiry switches to it) or the saga, with Inquiry's target scenes | Questions without a current briefing, or all |
 
 1. Make the book active. For Inquiry, set its scope and target scenes too.
 2. Run **Prepare AI jobs…**, choose what to prepare, and click **Prepare**. Jobs go to `Radial Timeline/AI Jobs/Pending`.
@@ -321,7 +321,7 @@ Related: [AI Pulse Triplet Analysis](AI-Pulse-Analysis), [Summary refresh](#summ
 
 **Who wrote it.** Accepted answers are written exactly as a built-in run writes them, credited to your AI client as it names itself. For example, `Summary Update: <date> by Claude app · Opus 5.5` (or `by local agent` if it gives no name), a Gossamer run labelled `Codex app · GPT-6 Sol`, or an Inquiry briefing whose model is `Claude app · Opus 5.5`. Built-in runs name the model that answered, for example `by Claude Opus 5.5 API` or `by Local model qwen3:80b`.
 
-**Checks.** An answer that fails the built-in run's checks goes back to the client with the problems noted on the job. If what a job is about changes after it was written, the job is rebuilt from the new text and the earlier answer is discarded. That means the scene for a Summary, the scene or a neighbor for Pulse, and any scene for Gossamer and Inquiry. With `Also update Synopsis` on, applying a Summary creates the Synopsis job next. Inquiry jobs are answered in one pass, never multi-pass. An Inquiry answer none of whose findings cites a scene of the corpus is sent back. A Gossamer or Inquiry answer for another book or scope waits until that book or scope is active again.
+**Checks.** An answer that fails the built-in run's checks goes back to the client with the problems noted on the job. If what a job is about changes after it was written, the job is rebuilt from the new text and the earlier answer is discarded. That means the scene for a Summary, the scene or a neighbor for Pulse, and any scene for Gossamer and Inquiry. With `Also update Synopsis` on, applying a Summary creates the Synopsis job next. Inquiry jobs are answered in one pass, never multi-pass. An Inquiry answer none of whose findings cites a scene of the corpus is sent back. An answer for another book is kept until that book is active again, and an Inquiry answer also until Inquiry is back on the same scope and target scenes. A job is dropped only when its scene file or Inquiry question no longer exists. Preparing a job again with a changed prompt discards an answer written for the old one.
 
 ### Letting the client prepare a book itself
 

@@ -84,11 +84,11 @@ async function ingestOne(app: App, id: string, handlers: ReadonlyMap<string, AiJ
     }
 
     if (fresh.sourceFingerprint !== job.sourceFingerprint) {
+        // A new prompt: writeAiJob discards the answer written for the old one.
         await writeAiJob(app, {
             prompt: rebuilt.prepared.prompt,
             job: { ...fresh, lastRejection: { at: new Date().toISOString(), problems: [STALE_JOB_PROBLEM] } }
         });
-        await removeAiJobAnswer(app, id);
         return { id, kind: 'rebuilt' };
     }
 

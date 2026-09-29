@@ -133,6 +133,19 @@ describe('AI job ingest', () => {
         expect(pending.job.lastRejection?.problems).toEqual([STALE_JOB_PROBLEM]);
     });
 
+    it('discards a waiting answer when the job is prepared again with a different prompt', async () => {
+        const app = await mailboxWith('job-1', '{"value": "for the first prompt"}');
+        await writeAiJob(asApp(app), fakePrepared('job-1', 'a new prompt'));
+        expect(await app.vault.adapter.exists(`${AI_JOBS_ANSWERS_DIR}/job-1.json`)).toBe(false);
+        expect(await ingestAiJobAnswers(asApp(app), [fakeHandler({ prompt: 'a new prompt' })])).toEqual([]);
+    });
+
+    it('keeps a waiting answer when the job is prepared again with the same prompt', async () => {
+        const app = await mailboxWith('job-1', '{"value": "x"}');
+        await writeAiJob(asApp(app), fakePrepared('job-1'));
+        expect(await ingestAiJobAnswers(asApp(app), [fakeHandler()])).toEqual([{ id: 'job-1', kind: 'applied' }]);
+    });
+
     it('drops a job whose target is gone', async () => {
         const app = await mailboxWith('job-1', '{"value": "x"}');
         const outcomes = await ingestAiJobAnswers(asApp(app), [fakeHandler({ prompt: null })]);
@@ -290,6 +303,34 @@ describe('Summary refresh as AI jobs', () => {
         expect(rebuilt.prompt).toContain('A rewritten body.');
         expect(rebuilt.job.lastRejection?.problems).toEqual([STALE_JOB_PROBLEM]);
     });
+
+    it('keeps an answer while its book is not active, and applies it once that book is active again', async () => {
+        const { app, plugin, handler } = setup();
+        await prepareSummaryRefreshJobs(plugin, 'flagged');
+        const [{ job: summaryJob }] = await pendingJobs(app);
+        await answer(app, summaryJob, { summary: 'A1 happens, factually.' });
+
+        Object.assign(plugin.settings, { activeBookId: 'book-b', sourcePath: 'Books/BookB' });
+        const [held] = await ingestAiJobAnswers(asApp(app), [handler]);
+        expect(held.kind).toBe('failed');
+        expect(await app.vault.adapter.exists(`${AI_JOBS_DIR}/${summaryJob.answerFile}`)).toBe(true);
+
+        Object.assign(plugin.settings, { activeBookId: 'book-a', sourcePath: 'Books/BookA' });
+        expect(await ingestAiJobAnswers(asApp(app), [handler])).toEqual([{ id: summaryJob.id, kind: 'applied' }]);
+    });
+
+    it('keeps an answer when its scene cannot be read as a scene just now', async () => {
+        const { app, plugin, handler } = setup();
+        await prepareSummaryRefreshJobs(plugin, 'flagged');
+        const [{ job: summaryJob }] = await pendingJobs(app);
+        await answer(app, summaryJob, { summary: 'A1 happens, factually.' });
+        await app.vault.adapter.write('Books/BookA/01 A1.md', 'Class: Scene (the author is mid-edit and the properties block is open)');
+
+        const [outcome] = await ingestAiJobAnswers(asApp(app), [handler]);
+        expect(outcome.kind).toBe('failed');
+        expect(await app.vault.adapter.exists(`${AI_JOBS_DIR}/${summaryJob.answerFile}`)).toBe(true);
+        expect((await pendingJobs(app)).map(entry => entry.job.id)).toEqual([summaryJob.id]);
+    });
 });
 
 describe('Scene pulse analysis as AI jobs', () => {
@@ -385,5 +426,17 @@ describe('Scene pulse analysis as AI jobs', () => {
         expect(outcome.kind).toBe('rejected');
         const [pending] = await pendingJobs(app);
         expect(pending.job.lastRejection?.problems[0]).toContain('currentSceneAnalysis');
+    });
+
+    it('keeps an answer for a scene of another book instead of dropping it as gone', async () => {
+        const { app, plugin, handler } = setup();
+        await preparePulseJobs(plugin, 'flagged');
+        const [pulse] = await pendingJobs(app);
+        await answer(app, pulse.job, pulseAnswer);
+
+        Object.assign(plugin.settings, { activeBookId: 'book-b', sourcePath: 'Books/BookB' });
+        const [outcome] = await ingestAiJobAnswers(asApp(app), [handler]);
+        expect(outcome.kind).toBe('failed');
+        expect(await app.vault.adapter.exists(`${AI_JOBS_DIR}/${pulse.job.answerFile}`)).toBe(true);
     });
 });

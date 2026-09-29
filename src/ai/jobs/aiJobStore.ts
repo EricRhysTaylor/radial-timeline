@@ -105,7 +105,7 @@ This folder holds work that Radial Timeline has handed to an AI client you run y
 3. Write the JSON the prompt asks for, with nothing before or after it, to the path in the job's \`answerFile\` field. Add one more top-level field to it, \`answeredBy\`, naming the app you are running in and your model, for example \`"Claude app · Opus 5.5"\` or \`"Codex app · GPT-6 Sol"\`. It goes in the note's update stamp.
 4. If a job has a \`lastRejection\` field, your earlier answer was not accepted, or the job was rebuilt. Read its \`problems\`, then answer the job's current \`promptFile\` again.
 5. Do not edit or delete job files, scene notes, or any other file in the vault. Radial Timeline checks every answer and applies it itself.
-6. When you have answered every job, look in \`${PENDING_FOLDER}/\` again. Applying an answer can create a follow-up job, and while \`${WAITING_FILE}\` exists more jobs are on their way: they are written once the jobs they depend on are answered. Wait a minute or two, then look again.
+6. When you have answered every job, look in \`${PENDING_FOLDER}/\` again. Applying an answer can create a follow-up job, and while \`${WAITING_FILE}\` exists more jobs are on their way: they are written once the jobs they depend on are answered. Wait a minute or two, then look again. Each entry's \`waitingFor\` says what it waits for; if the file has not changed after a few more minutes, stop and tell the author what it says.
 
 ## For the author
 
@@ -231,9 +231,23 @@ export async function ensureAiJobMailbox(app: App): Promise<void> {
     }
 }
 
-/** Write a job's prompt file and its JSON record. */
+/**
+ * Write a job's prompt file and its JSON record. An answer is only ever
+ * applied to the prompt it answered: when a job is written with a different
+ * prompt than the one pending under its id (or with none pending), an answer
+ * already waiting for that id is discarded. Otherwise the next pass would
+ * compare the rebuilt prompt with the new job, find them equal, and apply the
+ * old answer.
+ */
 export async function writeAiJob(app: App, prepared: PreparedAiJob): Promise<void> {
     const io = vaultIo(app);
+    const answer = answerPath(prepared.job.id);
+    if (await io.exists(answer)) {
+        const previous = await readAiJob(app, prepared.job.id);
+        if (previous.kind !== 'ok' || previous.job.sourceFingerprint !== prepared.job.sourceFingerprint) {
+            await io.remove(answer);
+        }
+    }
     await io.write(promptPath(prepared.job.id), prepared.prompt);
     await io.write(pendingPath(prepared.job.id), JSON.stringify(prepared.job, null, 2));
 }

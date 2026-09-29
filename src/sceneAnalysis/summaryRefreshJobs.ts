@@ -12,7 +12,6 @@
  * Synopsis" is on), not up front.
  */
 
-import { TFile } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { fnv1a32Hex } from '../utils/hash';
 import { getSynopsisGenerationWordLimit } from '../utils/synopsisLimits';
@@ -25,6 +24,7 @@ import {
     type PreparedAiJob
 } from '../ai/jobs/aiJobStore';
 import type { AiJobHandler } from '../ai/jobs/aiJobIngest';
+import { resolveSceneJobTarget, unreadableSceneError } from '../ai/jobs/sceneJobTarget';
 import { compareScenesByOrder, getAllSceneData } from './data';
 import { classifySynopsis } from './synopsisQuality';
 import {
@@ -46,11 +46,13 @@ function jobId(kind: 'summary' | 'synopsis', scenePath: string): string {
     return `${kind}-${fnv1a32Hex(scenePath)}`;
 }
 
+/** The job's scene as it is now; null when its file is gone. Throws when it cannot be rebuilt now (see resolveSceneJobTarget). */
 async function loadScene(plugin: RadialTimelinePlugin, path: string): Promise<SceneData | null> {
-    const file = plugin.app.vault.getAbstractFileByPath(path);
-    if (!(file instanceof TFile)) return null;
+    const file = resolveSceneJobTarget(plugin, path);
+    if (!file) return null;
     const [scene] = await getAllSceneData(plugin, plugin.app.vault, { files: [file] });
-    return scene ?? null; // SAFE: a file that is no longer a scene note has no job target
+    if (!scene) throw unreadableSceneError(path);
+    return scene;
 }
 
 function currentSummary(scene: SceneData): string | null {

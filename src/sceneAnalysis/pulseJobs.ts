@@ -18,6 +18,7 @@ import { fnv1a32Hex } from '../utils/hash';
 import { normalizeBooleanValue } from '../utils/sceneHelpers';
 import { buildAiJob, ensureAiJobMailbox, writeAiJob, type AiJobScope, type PreparedAiJob } from '../ai/jobs/aiJobStore';
 import type { AiJobHandler } from '../ai/jobs/aiJobIngest';
+import { resolveSceneJobTarget, unreadableSceneError } from '../ai/jobs/sceneJobTarget';
 import { buildPulseRunRequest } from './aiProvider';
 import {
     compareScenesByOrder,
@@ -62,9 +63,10 @@ export function createPulseJobHandler(plugin: RadialTimelinePlugin): AiJobHandle
         feature: 'PulseAnalysis',
 
         async rebuild(job) {
+            if (!resolveSceneJobTarget(plugin, job.target.path)) return null;
             const { all, withContent } = await loadPulseScenes(plugin);
             const scene = all.find(candidate => candidate.file.path === job.target.path);
-            if (!scene) return null;
+            if (!scene) throw unreadableSceneError(job.target.path);
             const triplet = tripletFor(withContent, scene);
             return {
                 prepared: buildPulseJob(plugin, triplet),

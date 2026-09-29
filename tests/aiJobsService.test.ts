@@ -40,11 +40,30 @@ async function writeSummaryJob(app: InMemoryApp, scenePath: string): Promise<str
 
 function setup() {
     const app = createInMemoryApp({});
+    // The metadata cache reports "resolved" when the test says so.
+    const resolvedListeners: Array<() => void> = [];
+    const metadataCache = {
+        ...app.metadataCache,
+        on: vi.fn((_name: string, listener: () => void) => { resolvedListeners.push(listener); return listener; }),
+        offref: vi.fn()
+    };
     const settings = { activeBookId: 'book-1', books, enableAiSceneAnalysis: true };
-    const plugin = { app, settings, getActiveBookTitle: () => 'Pride and Prejudice' } as unknown as RadialTimelinePlugin;
+    const plugin = {
+        app: { ...app, vault: app.vault, metadataCache },
+        settings,
+        getActiveBookTitle: () => 'Pride and Prejudice'
+    } as unknown as RadialTimelinePlugin;
     const service = new AiJobsService(plugin);
-    const writeWaitingJobs = () => (service as unknown as { writeWaitingJobs(): Promise<void> }).writeWaitingJobs();
-    return { app, settings, service, writeWaitingJobs };
+    const internals = service as unknown as { writeWaitingJobs(): Promise<void>; releaseWaitingJobs(): Promise<void> };
+    return {
+        app,
+        settings,
+        service,
+        writeWaitingJobs: () => internals.writeWaitingJobs(),
+        releaseWaitingJobs: () => internals.releaseWaitingJobs(),
+        metadataWaiting: () => resolvedListeners.length > 0,
+        resolveMetadata: () => resolvedListeners.splice(0).forEach(listener => listener())
+    };
 }
 
 describe('Preparing a book\'s AI jobs in one step', () => {
@@ -118,6 +137,38 @@ describe('Preparing a book\'s AI jobs in one step', () => {
         settings.activeBookId = 'book-1';
         await writeWaitingJobs();
         expect(prep.inquiry).toHaveBeenCalledWith(expect.anything(), 'missing');
+    });
+});
+
+describe('Inquiry jobs waiting on Summaries', () => {
+    beforeEach(() => {
+        Object.values(prep).forEach(mock => mock.mockReset());
+        prep.inquiry.mockResolvedValue(27);
+    });
+
+    it('are written only once the metadata cache has re-read the new Summaries', async () => {
+        const { app, service, releaseWaitingJobs, metadataWaiting, resolveMetadata } = setup();
+        await ensureAiJobMailbox(app as never);
+        const summaryId = await writeSummaryJob(app, 'Classics/Pride and Prejudice/01 Netherfield.md');
+        await service.prepare({ inquiry: 'missing' });
+        await removeAiJob(app as never, summaryId);
+
+        const release = releaseWaitingJobs();
+        await vi.waitFor(() => expect(metadataWaiting()).toBe(true));
+        expect(prep.inquiry).not.toHaveBeenCalled();
+        resolveMetadata();
+        await release;
+        expect(prep.inquiry).toHaveBeenCalledWith(expect.anything(), 'missing');
+    });
+
+    it('refuses a Waiting.json Radial Timeline did not write, instead of guessing at it', async () => {
+        const { app, writeWaitingJobs } = setup();
+        await ensureAiJobMailbox(app as never);
+        await app.vault.adapter.write(AI_JOBS_WAITING_PATH, JSON.stringify({ inquiry: [{ bookId: 'book-1' }] }));
+
+        await writeWaitingJobs();
+        expect(prep.inquiry).not.toHaveBeenCalled();
+        expect(await app.vault.adapter.exists(AI_JOBS_WAITING_PATH)).toBe(true);
     });
 });
 

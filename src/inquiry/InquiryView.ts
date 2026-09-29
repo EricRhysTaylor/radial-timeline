@@ -125,7 +125,7 @@ import { InquirySessionStore } from './InquirySessionStore';
 import { readInquirySessionsFromVault, readInquirySidecarVaultIdentity } from './InquiryArtifactStore';
 import type { InquirySession, InquirySessionStatus } from './sessionTypes';
 import { extractSummary, getActiveFrontmatterMappings, normalizeFrontmatterKeys, frontmatterValueToText } from '../utils/frontmatter';
-import { getSequencedBooks, getBookIdForPath } from '../utils/books';
+import { getActiveBook, getSequencedBooks, getBookIdForPath } from '../utils/books';
 import type { InquirySourcesSettings } from '../types/settings';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
 import { hasProFeatureAccess } from '../settings/featureGate';
@@ -6460,6 +6460,7 @@ export class InquiryView extends ItemView {
         this.guidanceState = this.resolveGuidanceState();
         if (this.isInquiryBlocked()) throw new Error(t('inquiry.runner.inquiryNotConfigured'));
         if (this.isInquiryGuidanceLockout()) throw new Error(t('inquiry.runner.noScenesAvailable'));
+        if (this.state.scope === 'book') this.showPluginActiveBook();
         if (this.state.scope === 'book' && this.corpus && !this.corpus.bookResolved) {
             throw new Error(t('inquiry.interaction.bookScopeUnresolved'));
         }
@@ -6469,7 +6470,7 @@ export class InquiryView extends ItemView {
         const scopeLabel = this.getScopeLabel();
         const targetSceneIds = this.getActiveTargetSceneIds();
         const selectionMode = this.getSelectionMode(targetSceneIds);
-        const activeBookId = this.state.activeBookId ?? this.corpus?.books?.[0]?.id;
+        const activeBookId = this.state.activeBookId ?? this.corpus?.books?.[0]?.id; // SAFE: book scope was aligned above; in saga scope the session records the first book, as an Omnibus pass does
         const buildManifest = (question: InquiryQuestion) => this.buildCorpusManifest(question.id, {
             modelId: AI_JOB_PROVIDER,
             questionZone: question.zone
@@ -6517,6 +6518,22 @@ export class InquiryView extends ItemView {
             runs.push({ question, manifest, run });
         }
         return { scope: this.state.scope, scopeKey, scopeLabel, targetSceneIds, runs };
+    }
+
+    /**
+     * Bring Inquiry to the plugin's active book, the book "Prepare AI jobs…"
+     * and the request link prepare. Inquiry keeps a book choice of its own,
+     * and a view that has just opened starts on the first book, so jobs
+     * built from it as it stands could be for a different book.
+     */
+    private showPluginActiveBook(): void {
+        const active = getActiveBook(this.plugin.settings);
+        const [candidate] = resolveBookManagerInquiryBooks(active ? [active] : [], 'book').candidates;
+        if (!active || !candidate) throw new Error('Inquiry jobs need an active book with a source folder in Book Manager.');
+        if (!this.corpus?.books.some(book => book.id === candidate.id)) {
+            throw new Error(`The active book "${active.title}" is not one of Inquiry's books. Check Inquiry's sources in Settings.`);
+        }
+        if (this.state.activeBookId !== candidate.id) this.drillIntoBook(candidate.id);
     }
 
     /**

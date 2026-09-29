@@ -207,8 +207,15 @@ Built:
 3. **Ordering.** Inquiry can read scene Summaries. While Summary jobs for the
    book are pending, its Inquiry jobs are recorded in `Waiting.json` and are
    written after the apply pass that clears the last of them, provided the
-   book is active. Written earlier, each Inquiry job would go stale as the
-   Summaries landed, and the client would answer every question twice.
+   book is active, once the metadata cache has re-read the new Summaries.
+   Written earlier, each Inquiry job would go stale as the Summaries landed,
+   and the client would answer every question twice. Preparation and apply
+   passes take turns with the file.
+4. **Answers are never applied to another prompt or book.** Writing a job
+   with a changed prompt discards an answer waiting for the old one. A scene
+   job for a scene outside the active book, or a scene that cannot be read as
+   one just now, is kept in place rather than dropped
+   (`src/ai/jobs/sceneJobTarget.ts`); only a missing file drops it.
 
 Not built:
 
@@ -251,8 +258,10 @@ chat equivalent, so they are not offered.
 - **Where it runs.** Jobs go through the Inquiry view, whose session store is
   the one place sessions are saved. If Inquiry is closed, it is opened in a
   background tab.
-- **Scope.** A job covers the Inquiry view's scope, book and target scenes. An
-  answer for another scope stays in place until Inquiry is switched back.
+- **Scope.** A job covers the plugin's active book (Inquiry is switched to
+  it first, since a view that has just opened starts on the first book) or
+  the saga, with Inquiry's target scenes. An answer for another scope stays in
+  place until Inquiry is switched back.
 - **Found on the way:** single-question runs never recorded the corpus they
   saw (`corpusOnlyFingerprint`, `corpusManifestSnapshot`), so their briefings
   never went stale. Fixed in `7f46390`.

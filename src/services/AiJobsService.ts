@@ -56,6 +56,12 @@ interface WaitingInquiry {
 }
 
 const SUMMARY_FEATURE = 'SummaryRefresh';
+const WAITING_SCHEMA_VERSION = 1;
+/**
+ * How long a release of waiting Inquiry jobs waits, at most, for the metadata
+ * cache to re-read the Summaries just written (see releaseWaitingJobs).
+ */
+const METADATA_SETTLE_MS = 2000;
 
 function vaultIo(plugin: RadialTimelinePlugin) {
     return plugin.app.vault.adapter; // SAFE: machine JSON beside the job mailbox; adapter avoids metadata-cache/index races, as aiJobStore does
@@ -70,9 +76,13 @@ async function readWaiting(plugin: RadialTimelinePlugin): Promise<WaitingInquiry
     } catch (error) {
         throw new Error(`${AI_JOBS_WAITING_PATH} is not valid JSON (${error instanceof Error ? error.message : String(error)}). Delete it and prepare Inquiry again.`);
     }
-    const inquiry = parsed && typeof parsed === 'object' ? (parsed as { inquiry?: unknown }).inquiry : undefined;
-    if (!Array.isArray(inquiry)) throw new Error(`${AI_JOBS_WAITING_PATH} has no "inquiry" list. Delete it and prepare Inquiry again.`);
-    return inquiry as WaitingInquiry[];
+    const record = parsed && typeof parsed === 'object' ? parsed as { schemaVersion?: unknown; inquiry?: unknown } : {};
+    const entries = Array.isArray(record.inquiry) ? record.inquiry as Array<Partial<WaitingInquiry>> : null;
+    const valid = record.schemaVersion === WAITING_SCHEMA_VERSION && entries?.every(entry =>
+        typeof entry?.bookId === 'string' && (entry.scope === 'missing' || entry.scope === 'all') && typeof entry.waitingFor === 'string'
+    );
+    if (!valid || !entries) throw new Error(`${AI_JOBS_WAITING_PATH} is not a list of waiting Inquiry jobs Radial Timeline wrote. Delete it and prepare Inquiry again.`);
+    return entries as WaitingInquiry[];
 }
 
 async function writeWaiting(plugin: RadialTimelinePlugin, inquiry: WaitingInquiry[]): Promise<void> {
@@ -81,7 +91,7 @@ async function writeWaiting(plugin: RadialTimelinePlugin, inquiry: WaitingInquir
         if (await vaultIo(plugin).exists(path)) await vaultIo(plugin).remove(path);
         return;
     }
-    await vaultIo(plugin).write(path, JSON.stringify({ schemaVersion: 1, inquiry }, null, 2));
+    await vaultIo(plugin).write(path, JSON.stringify({ schemaVersion: WAITING_SCHEMA_VERSION, inquiry }, null, 2));
 }
 
 async function hasPendingSummaryJobs(plugin: RadialTimelinePlugin, book: BookProfile): Promise<boolean> {
@@ -131,7 +141,16 @@ async function attemptPrepare(feature: AiJobFeatureKey, write: () => Promise<num
 }
 
 export class AiJobsService {
+    /** Waiting.json is read, changed and written back by preparation and by apply passes: one at a time. */
+    private waitingTurn: Promise<unknown> = Promise.resolve();
+
     constructor(private readonly plugin: RadialTimelinePlugin) {}
+
+    private withWaitingFile<T>(work: () => Promise<T>): Promise<T> {
+        const turn = this.waitingTurn.then(work, work);
+        this.waitingTurn = turn.catch(() => undefined); // SAFE: a failed turn is reported by its own caller; the next turn still runs
+        return turn;
+    }
 
     /** Commands, the request link, and answer handling. Beta: called only when beta commands are visible. */
     register(): void {
@@ -141,7 +160,7 @@ export class AiJobsService {
             createPulseJobHandler(plugin),
             createGossamerJobHandler(plugin),
             createInquiryJobHandler(plugin)
-        ], () => this.writeWaitingJobs());
+        ], () => this.releaseWaitingJobs());
 
         plugin.addCommand({
             id: 'prepare-ai-jobs',
@@ -184,17 +203,47 @@ export class AiJobsService {
         const { plugin } = this;
         const book = getActiveBook(plugin.settings);
         if (!book || !(await hasPendingSummaryJobs(plugin, book))) return false;
-        const waiting = (await readWaiting(plugin)).filter(entry => entry.bookId !== book.id);
-        waiting.push({
-            bookId: book.id,
-            scope,
-            waitingFor: `The Summary jobs for "${book.title}" to be answered and applied while it is the active book.`
+        await this.withWaitingFile(async () => {
+            const waiting = (await readWaiting(plugin)).filter(entry => entry.bookId !== book.id);
+            waiting.push({
+                bookId: book.id,
+                scope,
+                waitingFor: `The Summary jobs for "${book.title}" to be answered and applied while it is the active book.`
+            });
+            await writeWaiting(plugin, waiting);
         });
-        await writeWaiting(plugin, waiting);
         return true;
     }
 
-    /** Write the Inquiry jobs whose Summary jobs have all been applied. Runs after every apply pass. */
+    /**
+     * After each apply pass: write the waiting Inquiry jobs that are ready.
+     * Inquiry reads Summaries from the metadata cache, which re-reads a note
+     * some moments after its frontmatter is written, so a release first waits
+     * for the cache to report the vault resolved (at most METADATA_SETTLE_MS).
+     * Built sooner, the jobs could carry the previous Summaries, go stale as
+     * the cache caught up, and be answered twice.
+     */
+    private async releaseWaitingJobs(): Promise<void> {
+        const path = normalizePath(AI_JOBS_WAITING_PATH);
+        if (!(await vaultIo(this.plugin).exists(path))) return;
+        await this.metadataSettled();
+        await this.withWaitingFile(() => this.writeWaitingJobs());
+    }
+
+    private metadataSettled(): Promise<void> {
+        const { metadataCache } = this.plugin.app;
+        return new Promise(resolve => {
+            const finish = () => {
+                metadataCache.offref(ref);
+                window.clearTimeout(timer);
+                resolve();
+            };
+            const ref = metadataCache.on('resolved', finish);
+            const timer = window.setTimeout(finish, METADATA_SETTLE_MS);
+        });
+    }
+
+    /** Write the Inquiry jobs whose Summary jobs have all been applied. Call inside withWaitingFile. */
     private async writeWaitingJobs(): Promise<void> {
         const { plugin } = this;
         let waiting: WaitingInquiry[];

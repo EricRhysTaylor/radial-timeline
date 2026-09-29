@@ -122,7 +122,6 @@ Radial Timeline may contact external services in these workflows:
 - AI provider requests when you actively use enabled AI features
 - Optional provider/model/pricing metadata refreshes governed by AI privacy settings
 - A version check against the GitHub Releases API runs once at plugin load (throttled to once a day). It carries no vault data or identity; it only compares version numbers so the timeline can show an update indicator.
-- A Discord presence chip in the Radial Timeline View title bar polls a public `discord-presence` endpoint roughly every 60 seconds, **by default, for every user**. It is not gated on connecting to Community and does not require any sign-in — it only reports whether the Discord community is currently staffed. See [Radial Timeline View → Discord Presence Chip](https://github.com/EricRhysTaylor/Radial-Timeline/wiki/Radial-Timeline-View#discord-presence-chip)
 - Community Share calls: once you connect, your Book Manager book titles (or public labels), loglines, and target dates sync to your private My Share list as project shells at every level; report publishing and daily-activity sync are sent only at a sharing level above Private — see [Settings → Community](https://github.com/EricRhysTaylor/Radial-Timeline/wiki/Settings-Community)
 
 ## Known Conflicts
@@ -161,13 +160,13 @@ All bundled fonts ship with their original license files in `assets/fonts/`.
 
 ## Feedback and Support
 
-Every way to get help is on one page: **[Getting help](https://community.radialtimeline.com/help)**.
+Every way to get help is on one page: **[Getting help](https://community.radialtimeline.com/help)**, also one click away from **GET HELP** in the corner of the Radial Timeline View.
 
-- **Quick answers and writers helping writers:** the [Radial Timeline Discord](https://discord.gg/ecRG5ctHwM).
+- **Quick answers and writers helping writers:** the [Radial Timeline Community](https://community.radialtimeline.com), where writers share setups and answer each other's questions.
 - **Private bug reports and help requests:** [Community Requests](https://community.radialtimeline.com/requests) (sign in with your Community account). A person reads every request on weekdays; expect a reply within three working days.
 - **Plugin bugs on GitHub:** the bug icon (**Report a bug**) in the Radial Timeline and Inquiry views opens the [bug report form](https://github.com/EricRhysTaylor/Radial-Timeline/issues/new/choose) with your versions filled in.
 - **Step-by-step answers:** the [Guide](https://github.com/EricRhysTaylor/Radial-Timeline/wiki).
-- **Feature ideas:** the [feature idea form](https://github.com/EricRhysTaylor/Radial-Timeline/issues/new?template=feature_request.yml), or the Discord.
+- **Feature ideas:** the [feature idea form](https://github.com/EricRhysTaylor/Radial-Timeline/issues/new?template=feature_request.yml), or share it with other writers on the [Community](https://community.radialtimeline.com).
 
 ## Author
 

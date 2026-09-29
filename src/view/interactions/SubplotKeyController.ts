@@ -11,7 +11,8 @@
  *
  * Three ways in:
  * - Hover the layers trigger icon in the view title bar (right of the
- *   Discord chip; created once by TimeLineView, wired here per render).
+ *   writing-session control; created once by TimeLineView, wired here per
+ *   render).
  * - Click the trigger to pin the key open (survives re-renders).
  * - Hold Shift to show the key while held (not in Chronologue mode, which
  *   owns Shift for elapsed-time comparison).

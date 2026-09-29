@@ -1,14 +1,14 @@
 # Blank issues are off: every issue starts from a form, and questions go to
-# the places that answer them. The Discord invite mirrors the platform's
-# office_hours row (the discord-presence source); update both together.
+# the places that answer them. The Community help page is the hub for every
+# help route.
 blank_issues_enabled: false
 contact_links:
-  - name: Quick answers and writers helping writers
-    url: https://discord.gg/ecRG5ctHwM
-    about: The Radial Timeline Discord is always open for how-to questions and setups.
+  - name: Getting help
+    url: https://community.radialtimeline.com/help
+    about: Every way to get help in one place, including how-to answers, the Guide, and known issues.
   - name: Private bug report or help request (Community)
     url: https://community.radialtimeline.com/requests
     about: A private thread with the Radial Timeline team. Sign in with your Community account.
-  - name: Getting help
-    url: https://community.radialtimeline.com/help
-    about: Every way to get help in one place, including the Guide and known issues.
+  - name: The Guide
+    url: https://github.com/EricRhysTaylor/Radial-Timeline/wiki
+    about: Setup, scenes, beats, and every view, step by step.

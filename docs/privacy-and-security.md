@@ -54,21 +54,13 @@ External requests occur in these areas:
 - A version check against the GitHub Releases API, once at plugin load and
   at most once a day. It carries no vault data or identity; it compares
   version numbers so the timeline can show an update indicator.
-- **Discord presence chip** — the chip in the Radial Timeline View title bar
-  polls a public `discord-presence` endpoint roughly every 60 seconds. This
-  happens **by default, for every user**: it is not gated on connecting to
-  Community, and it requires no account or sign-in. The request carries no
-  vault data and no author identity — it is a GET that asks only whether the
-  Discord community is currently staffed, and the response is a boolean plus
-  an invite URL. A failed request leaves the chip muted; it never escalates
-  to a Notice.
 - **Community Share** — report publishing and the `community-daily-sync`
   call, sent only after the author connects to Community and selects a
   sharing level above Private. See below.
 
-Two paths above run by default without an account or any author action: the
-Discord presence chip and the version check. Neither carries author data.
-Every other path is optional and author-triggered.
+One path above runs by default without an account or any author action: the
+version check, which carries no author data. Every other path is optional and
+author-triggered.
 
 ## Community Share
 

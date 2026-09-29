@@ -11,7 +11,7 @@ body:
     attributes:
       value: |
         Thank you for taking the time. Radial Timeline is made by a small team, and a clear report is the fastest path to a fix.
-        Questions and how-to answers live on the [Discord](https://discord.gg/ecRG5ctHwM) and in the [Guide](https://github.com/EricRhysTaylor/Radial-Timeline/wiki). Community members can also report privately from [Community Requests](https://community.radialtimeline.com/requests).
+        Questions and how-to answers live on the [Community help page](https://community.radialtimeline.com/help) and in the [Guide](https://github.com/EricRhysTaylor/Radial-Timeline/wiki). Community members can also report privately from [Community Requests](https://community.radialtimeline.com/requests).
         Describe scenes in your own words; manuscript text and vault paths can stay in your vault.
   - type: textarea
     id: what-happened

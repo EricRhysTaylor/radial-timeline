@@ -4,7 +4,8 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 
-const WIKI_URL = 'https://github.com/EricRhysTaylor/radial-timeline/wiki';
+/** Community help hub: every help route (Guide, Requests, bug form, known issues) on one page. */
+const HELP_URL = 'https://community.radialtimeline.com/help';
 
 interface HelpIconView {
     renderScope: {
@@ -15,7 +16,7 @@ interface HelpIconView {
 
 /**
  * Setup click handlers for the help icon
- * - Opens the GitHub Wiki
+ * - Opens the Community help hub
  */
 export function setupHelpIconController(view: HelpIconView, svg: SVGSVGElement): void {
     const helpIcon = svg.querySelector('#help-icon');
@@ -25,20 +26,20 @@ export function setupHelpIconController(view: HelpIconView, svg: SVGSVGElement):
     const hitArea = helpIcon.querySelector('.rt-help-icon-hitarea');
     
     // Handler function
-    const openWiki = (ev: Event) => {
+    const openHelp = (ev: Event) => {
         ev.stopPropagation();
-        window.open(WIKI_URL, '_blank');
+        window.open(HELP_URL, '_blank');
     };
 
     // Handle click on icon area
     if (hitArea) {
-        view.renderScope.registerDomEvent(hitArea as unknown as HTMLElement, 'click', openWiki);
+        view.renderScope.registerDomEvent(hitArea as unknown as HTMLElement, 'click', openHelp);
     }
 
     // Also handle click on the icon group itself
     const iconGroup = helpIcon.querySelector('g');
     if (iconGroup) {
-        view.renderScope.registerDomEvent(iconGroup as unknown as HTMLElement, 'click', openWiki);
+        view.renderScope.registerDomEvent(iconGroup as unknown as HTMLElement, 'click', openHelp);
     }
     
     // Set cursor to pointer

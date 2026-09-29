@@ -7,7 +7,7 @@ body:
     attributes:
       value: |
         Thank you for the idea. Describing the problem you want solved helps most, even more than a proposed design.
-        Ideas are also welcome on the [Discord](https://discord.gg/ecRG5ctHwM), where other writers can weigh in.
+        Ideas are also welcome on the [Community](https://community.radialtimeline.com), where other writers can weigh in.
   - type: textarea
     id: problem
     attributes:

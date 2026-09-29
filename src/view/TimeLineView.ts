@@ -40,7 +40,6 @@ import {
 } from '../renderer/ChangeDetection';
 import { WritingSessionCompletionModal } from '../modals/WritingSessionCompletionModal';
 import { canPostSessionsToFeed, postSessionToCommunityFeed } from '../communityShare/communityShareClient';
-import { DiscordChip } from '../communityShare/discordChip';
 import { projectSessionFeedPost } from '../services/WritingSessionLog';
 import { isRenderedOnTimeline } from '../utils/sceneHelpers';
 import { SearchPanelController } from './interactions/SearchPanelController';
@@ -208,7 +207,6 @@ export class RadialTimelineView extends ItemView {
     private writingSessionButton?: HTMLButtonElement;
     private writingSessionLabel?: HTMLElement;
     private writingSessionPanel?: HTMLElement;
-    private discordChip?: DiscordChip;
     private writingSessionTickInterval?: number;
     private gossamerCachePillEl?: HTMLElement;
     private gossamerCacheTickInterval?: number;
@@ -494,18 +492,6 @@ export class RadialTimelineView extends ItemView {
             doc.body.appendChild(sessionPanel);
             this.register(() => sessionPanel.remove());
 
-            // Discord presence chip (shown to every user): fetch/timer state
-            // outlives panel re-renders. Wake events refetch presence.
-            this.discordChip = new DiscordChip();
-            this.register(() => {
-                this.discordChip?.destroy();
-                this.discordChip = undefined;
-            });
-            this.registerDomEvent(window, 'focus', () => this.discordChip?.onWake());
-            this.registerDomEvent(doc, 'visibilitychange', () => {
-                if (doc.visibilityState === 'visible') this.discordChip?.onWake();
-            });
-
             let hideLegendTimer: number | null = null;
             const showLegend = () => {
                 if (hideLegendTimer !== null) {
@@ -594,23 +580,15 @@ export class RadialTimelineView extends ItemView {
                 headerEl.insertBefore(sessionBtn, headerEl.firstChild);
             }
 
-            // Discord chip lives in the title bar beside the session control —
-            // muted "Discord" link normally, green when Eric is online (per the
-            // discord-presence endpoint). Persistent host; state on the controller.
-            const discordChipHost = doc.win.createSpan();
-            discordChipHost.className = 'ert-timeline-discord-chip-host';
-            sessionBtn.parentElement?.insertBefore(discordChipHost, sessionBtn.nextSibling);
-            this.discordChip?.mount(discordChipHost);
-
-            // Subplot ring key trigger — action icon slot right of the Discord
-            // chip. Hidden until SubplotKeyController wires it to a rendered
+            // Subplot ring key trigger — action icon slot right of the writing-
+            // session control. Hidden until SubplotKeyController wires it to a rendered
             // timeline with 2+ subplot rings; no tooltip by design.
             const subplotKeyBtn = doc.win.createEl('button');
             subplotKeyBtn.className = 'ert-timeline-subplot-key__trigger clickable-icon';
             subplotKeyBtn.type = 'button';
             subplotKeyBtn.hidden = true;
             setIcon(subplotKeyBtn, 'layers');
-            discordChipHost.parentElement?.insertBefore(subplotKeyBtn, discordChipHost.nextSibling);
+            sessionBtn.parentElement?.insertBefore(subplotKeyBtn, sessionBtn.nextSibling);
             this.subplotKeyTriggerEl = subplotKeyBtn;
 
             // Center mode navigation — compact text buttons that replace the
@@ -1254,9 +1232,6 @@ export class RadialTimelineView extends ItemView {
             this.pulseWritingSessionTitleCount(pulseColor);
         }
         this.writingSessionLastTitlePulseKey = snapshot.pulseKey;
-        // Ensure the title-bar Discord chip stays mounted (cheap; no-op once
-        // mounted — the chip's own poll drives its content).
-        this.discordChip?.sync();
         this.syncOpenWritingSessionPanel();
         this.updateWritingSessionRing(undefined, { pulseColor });
         this.updateTabTimerIcon();

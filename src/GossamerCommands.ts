@@ -24,7 +24,8 @@ import { TimelineMode } from './modes/ModeDefinition';
 import { getSortedSceneFiles } from './utils/manuscript';
 import { buildUnifiedBeatAnalysisCacheParts, getUnifiedBeatAnalysisJsonSchema, type UnifiedBeatInfo } from './ai/prompts/unifiedBeatAnalysis';
 import { DEFAULT_GOSSAMER_SIGNAL, GOSSAMER_SIGNAL_METADATA, type GossamerSignalType } from './types/gossamerSignals';
-import { validateGossamerResponse, type SubmittedBeat, type ValidationResult } from './ai/gossamer/responseValidation';
+import { validateGossamerResponse, type SubmittedBeat, type ValidatedBeat, type ValidationResult } from './ai/gossamer/responseValidation';
+import { describeAiRunModel } from './utils/modelResolver';
 import { buildGossamerCacheWindow } from './gossamer/cacheWindow';
 import { estimateUsageCost } from './ai/cost/estimateCorpusCost';
 import { validateAiSettings } from './ai/settings/validateAiSettings';
@@ -64,7 +65,7 @@ interface ResolvedGossamerEvidence {
 /**
  * Gossamer always uses full scene bodies. No summary mode, no fallback.
  */
-const resolveGossamerEvidence = async (params: {
+export const resolveGossamerEvidence = async (params: {
   plugin: RadialTimelinePlugin;
   sceneFiles: TFile[];
 }): Promise<ResolvedGossamerEvidence> => {
@@ -429,6 +430,106 @@ export function parsePastedGossamerResponse(
     }
   }
   return validateGossamerResponse(parsed, submittedBeats, signal);
+}
+
+/**
+ * Write one Gossamer run's validated scores to the beat notes, row i of
+ * `scores` to `plotBeats[i]` (the order the prompt listed them). Detects the
+ * manuscript's dominant stage, archives the fields it changes, appends a run
+ * slot with its metadata, stamps "Gossamer Last Updated … by <attribution>",
+ * reveals the new run and refreshes the timeline. The API run and AI jobs both
+ * write through here.
+ */
+export async function writeGossamerScores(
+  plugin: RadialTimelinePlugin,
+  params: {
+    plotBeats: TimelineItem[];
+    scores: readonly ValidatedBeat[];
+    signal: GossamerSignalType;
+    /** Run metadata: the provider id, or GOSSAMER_AGENT_PROVIDER for an AI job. */
+    provider: string;
+    /** Run metadata: the model id, or the client's name for itself for an AI job. */
+    model: string;
+    /** Who produced the scores, for the "Gossamer Last Updated" stamp. */
+    attribution: string;
+  }
+): Promise<{ runId: string; updateCount: number; unmatchedBeats: string[]; snapshotPath: string | null }> {
+  let dominantStage = 'Zero';
+  try {
+    dominantStage = detectDominantStage(await plugin.getSceneData());
+  } catch (e) {
+    console.error('[Gossamer] Failed to detect dominant stage, defaulting to Zero:', sanitizeLogPayload(e).sanitized);
+  }
+
+  const runId = createGossamerRunId();
+  const createdAt = new Date().toISOString();
+  const unmatchedBeats: string[] = [];
+  const matchedTargets: Array<{ beat: ValidatedBeat; file: TFile }> = [];
+  params.scores.forEach((beat, i) => {
+    const path = params.plotBeats[i]?.path;
+    const file = path ? plugin.app.vault.getAbstractFileByPath(path) : null;
+    if (file instanceof TFile) matchedTargets.push({ beat, file });
+    else unmatchedBeats.push(beat.beatName);
+  });
+
+  const filesToSnapshot = matchedTargets
+    .map(({ file }) => file)
+    .filter((file, index, array) => array.findIndex((candidate) => candidate.path === file.path) === index)
+    .filter((file) => {
+      const priorFrontmatter = plugin.app.metadataCache.getFileCache(file)?.frontmatter;
+      if (!priorFrontmatter) return false;
+      return willAppendGossamerPrune(priorFrontmatter) || Object.keys(collectGossamerManagedSnapshot(priorFrontmatter)).length > 0;
+    });
+  const snapshotPath = await archiveGossamerFrontmatterFields(plugin.app, filesToSnapshot, {
+    operation: 'gossamer-ai-run',
+    selectFields: (frontmatter) => collectGossamerManagedSnapshot(frontmatter),
+    meta: {
+      scope: 'beat-note',
+      signal: params.signal,
+      beatCount: filesToSnapshot.length
+    }
+  });
+
+  const timestamp = new Date().toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+  for (const { beat, file } of matchedTargets) {
+    await plugin.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
+      // Append new score to end (G1=oldest, newest=highest number)
+      const { nextIndex, updated } = appendGossamerScore(fm);
+      Object.assign(fm, updated);
+      fm[`Gossamer${nextIndex}`] = beat.score;
+      fm[`Gossamer${nextIndex} Justification`] = beat.justification;
+      applyGossamerRunMetadata(fm, nextIndex, {
+        runId,
+        createdAt,
+        provider: params.provider,
+        model: params.model,
+        stage: dominantStage,
+        signal: params.signal
+      });
+      fm['Gossamer Last Updated'] = `${timestamp} by ${params.attribution}`;
+    });
+  }
+
+  // Auto-reveal the new run. latestOnly already shows the newest; an empty
+  // visibleRunIds already means "show all". Only explicit compare selections
+  // need the new runId appended so the stack keeps the fresh data visible.
+  if (!plugin.gossamerLatestOnly && plugin.gossamerVisibleRunIds.length > 0) {
+    const existing = plugin.gossamerVisibleRunIds.filter((id) => id !== runId);
+    plugin.gossamerVisibleRunIds = [...existing, runId].slice(-30);
+    await plugin.saveGossamerRunFilterState();
+  }
+
+  // Direct refresh on all views bypasses the debounce for immediate feedback.
+  plugin.getTimelineViews().forEach(v => v.refreshTimeline());
+
+  return { runId, updateCount: matchedTargets.length, unmatchedBeats, snapshotPath };
 }
 
 const lastRunByPlugin = new WeakMap<RadialTimelinePlugin, GossamerRun>();
@@ -990,99 +1091,18 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
 
     // Save results to beat notes
     modal.setStatus(t('gossamer.notices.updatingBeats'));
-    
-    // Detect dominant stage for this run
-    let dominantStage = 'Zero';
-    try {
-      const allScenes = await plugin.getSceneData();
-      dominantStage = detectDominantStage(allScenes);
-    } catch (e) {
-      console.error('[Gossamer] Failed to detect dominant stage, defaulting to Zero:', sanitizeLogPayload(e).sanitized);
-    }
-    
-    let updateCount = 0;
-    const unmatchedBeats: string[] = [];
-    const runId = createGossamerRunId();
-    const createdAt = new Date().toISOString();
-    const runProvider = result.provider;
-    const runModel = result.modelResolved || result.modelRequested || 'ai-model';
-    const matchedTargets: Array<{ beat: EnrichedBeatAnalysis; file: TFile }> = [];
-
-    // Match beats by index - Gemini returns them in the same order they were sent
-    for (let i = 0; i < analysis.beats.length; i++) {
-      const beat = analysis.beats[i];
-      const matchingBeat = plotBeats[i]; // Direct index match - no searching needed!
-
-      if (!matchingBeat) {
-        unmatchedBeats.push(beat.beatName);
-        continue;
-      }
-
-      // Use the file path from the matched beat
-      const file = matchingBeat.path ? plugin.app.vault.getAbstractFileByPath(matchingBeat.path) : null;
-      if (!file || !(file instanceof TFile)) {
-        unmatchedBeats.push(beat.beatName);
-        continue;
-      }
-      matchedTargets.push({ beat, file });
-    }
-
-    const filesToSnapshot = matchedTargets
-      .map(({ file }) => file)
-      .filter((file, index, array) => array.findIndex((candidate) => candidate.path === file.path) === index)
-      .filter((file) => {
-        const priorFrontmatter = plugin.app.metadataCache.getFileCache(file)?.frontmatter;
-        if (!priorFrontmatter) return false;
-        return willAppendGossamerPrune(priorFrontmatter) || Object.keys(collectGossamerManagedSnapshot(priorFrontmatter)).length > 0;
-      });
-    const snapshotPath = await archiveGossamerFrontmatterFields(plugin.app, filesToSnapshot, {
-      operation: 'gossamer-ai-run',
-      selectFields: (frontmatter) => collectGossamerManagedSnapshot(frontmatter),
-      meta: {
-        scope: 'beat-note',
-        signal: selectedSignal,
-        beatCount: filesToSnapshot.length
-      }
+    // A successful run always names the provider that answered.
+    const runProvider = result.provider as Exclude<AIProviderId, 'none'>;
+    const runModel = result.modelResolved || result.modelRequested;
+    const { updateCount, unmatchedBeats, snapshotPath } = await writeGossamerScores(plugin, {
+      plotBeats,
+      scores: analysis.beats,
+      signal: selectedSignal,
+      provider: runProvider,
+      model: runModel,
+      attribution: describeAiRunModel(runProvider, runModel)
     });
 
-    for (const { beat, file } of matchedTargets) {
-      // Update beat note with scores
-      await plugin.app.fileManager.processFrontMatter(file, (yaml: Record<string, unknown>) => {
-        const fm = yaml;
-
-        // Append new score to end (G1=oldest, newest=highest number)
-        const { nextIndex, updated } = appendGossamerScore(fm);
-        Object.assign(fm, updated);
-        
-        // Set new score, stage, and justification at next available index
-        fm[`Gossamer${nextIndex}`] = beat.score;
-        fm[`Gossamer${nextIndex} Justification`] = beat.justification || '';
-        applyGossamerRunMetadata(fm, nextIndex, {
-          runId,
-          createdAt,
-          provider: runProvider,
-          model: runModel,
-          stage: dominantStage,
-          signal: selectedSignal
-        });
-        
-        // Add timestamp and model info
-        const now = new Date();
-        const timestamp = now.toLocaleString(undefined, {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true
-        });
-        const modelId = runModel;
-        fm['Gossamer Last Updated'] = `${timestamp} by ${modelId}`;
-      });
-      
-      updateCount++;
-    }
-    
     // Log unmatched beats
     if (unmatchedBeats.length > 0) {
       modal.addError(t('gossamer.notices.unmatchedBeats', { count: unmatchedBeats.length, list: unmatchedBeats.join(', ') }));
@@ -1152,19 +1172,6 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
 
     modal.completeProcessing(true, successMessage);
     new Notice(logMessage);
-
-    // Auto-reveal the new run. latestOnly already shows the newest; an empty
-    // visibleRunIds already means "show all". Only explicit compare selections
-    // need the new runId appended so the stack keeps the fresh data visible.
-    if (!plugin.gossamerLatestOnly && plugin.gossamerVisibleRunIds.length > 0) {
-      const existing = plugin.gossamerVisibleRunIds.filter((id) => id !== runId);
-      plugin.gossamerVisibleRunIds = [...existing, runId].slice(-30);
-      await plugin.saveGossamerRunFilterState();
-    }
-
-    // Refresh timeline AFTER processing completes to show updated Gossamer scores
-    // Use direct refresh on all views to bypass debounce for immediate visual feedback
-    plugin.getTimelineViews().forEach(v => v.refreshTimeline());
 
     } catch (e) {
       const errorMsg = (e as Error)?.message || 'Unknown error';

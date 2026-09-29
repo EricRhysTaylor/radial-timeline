@@ -233,7 +233,15 @@ function formatGossamerRunTimestamp(value: string | undefined, fallbackIndex: nu
   }
 }
 
+/**
+ * Run-metadata provider for scores an AI client the author runs themselves
+ * wrote through an AI job. Its model field holds the client's name for itself
+ * ("Claude app · Opus 5.5"), shown as given rather than read as a model id.
+ */
+export const GOSSAMER_AGENT_PROVIDER = 'agent';
+
 function buildGossamerRunModelLabel(metadata: GossamerSlotMetadata): string {
+  if (metadata.provider === GOSSAMER_AGENT_PROVIDER && metadata.model) return metadata.model;
   if (metadata.model) return getModelDisplayName(metadata.model);
   if (metadata.provider === 'manual') return 'Manual entry';
   if (metadata.provider) return metadata.provider;

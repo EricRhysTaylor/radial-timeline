@@ -1712,9 +1712,7 @@ export interface TranslationKeys {
                 sceneFileNotFound: string;
             };
             aiErrors: {
-                aiError: string;
-                jsonParseError: string;
-                emptyResult: string;
+                replyRejected: string;
                 synopsisFailed: string;
                 saveError: string;
                 summaryFailed: string;
@@ -1774,6 +1772,59 @@ export interface TranslationKeys {
                 completeWithErrors: string;
                 completeSuccess: string;
             };
+        };
+    };
+    aiJobs: {
+        commands: {
+            prepare: string;
+            applyAnswers: string;
+        };
+        features: {
+            summary: string;
+            pulse: string;
+            gossamer: string;
+            inquiry: string;
+        };
+        modal: {
+            badge: string;
+            title: string;
+            subtitle: string;
+            off: string;
+            allScenes: string;
+            summaryDesc: string;
+            summaryFlagged: string;
+            summaryMissing: string;
+            pulseDesc: string;
+            pulseFlagged: string;
+            pulseMissing: string;
+            gossamerDesc: string;
+            allSignals: string;
+            inquiryDesc: string;
+            inquiryMissing: string;
+            inquiryAll: string;
+            cancel: string;
+            prepare: string;
+        };
+        notices: {
+            prepared: string;
+            nothingSelected: string;
+            featureWritten: string;
+            featureWaiting: string;
+            featureBlocked: string;
+            waitingWritten: string;
+            waitingBlocked: string;
+            waitingUnreadable: string;
+            requestRejected: string;
+            aiDisabled: string;
+            unknownBook: string;
+            summary: string;
+            appliedCount: string;
+            rejectedCount: string;
+            rebuiltCount: string;
+            targetGoneCount: string;
+            failed: string;
+            unmatched: string;
+            nothingToApply: string;
         };
     };
 }
@@ -4067,9 +4118,7 @@ export const en: TranslationKeys = {
                 sceneFileNotFound: 'Scene file not found: {{path}}',
             },
             aiErrors: {
-                aiError: 'AI Error: {{name}}',
-                jsonParseError: 'JSON Parse Error: {{name}}',
-                emptyResult: 'Empty result: {{name}}',
+                replyRejected: 'Summary reply for {{name}} was not accepted: {{problem}}',
                 synopsisFailed: 'Synopsis generation failed for {{name}}. Summary was saved and processing continued. {{reason}}',
                 saveError: 'Save error for {{name}}: {{message}}',
                 summaryFailed: 'Summary generation failed for {{name}}. Processing continued with remaining scenes. {{reason}}',
@@ -4129,6 +4178,59 @@ export const en: TranslationKeys = {
                 completeWithErrors: '{{mode}} estimation complete. {{processed}} scenes updated, {{errors}} errors.',
                 completeSuccess: '{{mode}} estimation complete! {{processed}} scenes updated. Total: {{total}}',
             },
+        },
+    },
+    aiJobs: {
+        commands: {
+            prepare: 'Prepare AI jobs…',
+            applyAnswers: 'Apply AI job answers',
+        },
+        features: {
+            summary: 'Scene summaries',
+            pulse: 'Pulse triplet analysis',
+            gossamer: 'Gossamer scoring',
+            inquiry: 'Inquiry',
+        },
+        modal: {
+            badge: 'AI jobs',
+            title: 'Prepare AI jobs',
+            subtitle: 'Hand the AI work for {{book}} to an AI client you run yourself, such as Codex or Claude Code. It answers in its own subscription, with the same prompts an API run sends, and Radial Timeline applies each answer with the same checks.',
+            off: 'Off',
+            allScenes: 'All scenes',
+            summaryDesc: 'One job per scene. With "Also update synopsis" on, each applied Summary adds a Synopsis job.',
+            summaryFlagged: 'Scenes flagged Summary Update: Yes',
+            summaryMissing: 'Scenes without a Summary',
+            pulseDesc: 'One job per scene, with the scenes before and after it for context.',
+            pulseFlagged: 'Scenes flagged Pulse Update: Yes',
+            pulseMissing: 'Scenes not yet analyzed',
+            gossamerDesc: 'One job per signal. Each carries the whole manuscript.',
+            allSignals: 'All signals',
+            inquiryDesc: 'One job per enabled question, over Inquiry\'s current scope and target scenes. Inquiry can read scene summaries, so while Summary jobs are pending its jobs wait and are written once those are answered.',
+            inquiryMissing: 'Questions without a current briefing',
+            inquiryAll: 'All enabled questions',
+            cancel: 'Cancel',
+            prepare: 'Prepare',
+        },
+        notices: {
+            prepared: 'AI jobs for {{book}}:\n{{lines}}\nAsk your AI client to work through the jobs in {{folder}}.',
+            nothingSelected: 'Nothing was selected, so no AI jobs were prepared.',
+            featureWritten: '{{feature}}: {{count}} job(s)',
+            featureWaiting: '{{feature}}: waiting for the Summary jobs to be answered',
+            featureBlocked: '{{feature}}: not prepared ({{reason}})',
+            waitingWritten: 'The Summary jobs for {{book}} are answered, so {{count}} Inquiry job(s) were written to {{folder}}.',
+            waitingBlocked: 'The Inquiry jobs waiting for {{book}} could not be prepared: {{reason}}',
+            waitingUnreadable: 'AI jobs waiting on others could not be read: {{detail}}',
+            requestRejected: 'AI job request not run: {{problem}}',
+            aiDisabled: 'AI features are turned off in settings.',
+            unknownBook: 'no book named "{{book}}" in Book Manager',
+            summary: 'AI job answers: {{parts}}. See {{folder}}.',
+            appliedCount: '{{count}} applied',
+            rejectedCount: '{{count}} sent back to the AI client with the problems found',
+            rebuiltCount: '{{count}} rebuilt because what they were about changed after they were written',
+            targetGoneCount: '{{count}} dropped because their scene or question no longer exists',
+            failed: 'AI job answer {{id}} could not be applied: {{detail}}',
+            unmatched: 'These AI job answers have no usable job and were left in place: {{list}}',
+            nothingToApply: 'No AI job answers are waiting.',
         },
     },
 };

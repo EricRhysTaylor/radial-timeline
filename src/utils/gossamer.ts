@@ -9,7 +9,7 @@ import { normalizeBeatSetNameInput, toBeatMatchKey, toBeatModelMatchKey } from '
 import { comparePrefixTokens, extractPrefixToken } from './prefixOrder';
 import { coerceGossamerSignal, DEFAULT_GOSSAMER_SIGNAL, type GossamerSignalType } from '../types/gossamerSignals';
 import type { TimelineItem } from '../types';
-import { getModelDisplayName } from './modelResolver';
+import { AI_JOB_PROVIDER, getModelDisplayName } from './modelResolver';
 
 export type GossamerBeatStatus = 'present' | 'outlineOnly' | 'missing';
 
@@ -234,6 +234,9 @@ function formatGossamerRunTimestamp(value: string | undefined, fallbackIndex: nu
 }
 
 function buildGossamerRunModelLabel(metadata: GossamerSlotMetadata): string {
+  // An AI job's model field is the client's name for itself, shown as given
+  // rather than read as a model id.
+  if (metadata.provider === AI_JOB_PROVIDER && metadata.model) return metadata.model;
   if (metadata.model) return getModelDisplayName(metadata.model);
   if (metadata.provider === 'manual') return 'Manual entry';
   if (metadata.provider) return metadata.provider;

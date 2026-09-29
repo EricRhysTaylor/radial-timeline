@@ -26,6 +26,18 @@ Radial Timeline is a **desktop-only** Obsidian plugin. It is not intended for Ob
   additionally governed by privacy/network settings in the AI panel.
 - Choosing **Provider → Local LLM** keeps analysis on a runtime you host
   yourself; no manuscript content reaches a hosted provider on that path.
+- **AI jobs** (beta) hand work to an AI client the author runs themselves,
+  such as Codex or Claude Code. The plugin makes no network request on this
+  path: it writes job files to `Radial Timeline/AI Jobs/` in the vault, and
+  reads the answers the client writes back there. A job contains the text it
+  covers: one scene (Summary), a scene and its neighbors (Pulse), or the whole
+  Inquiry corpus or manuscript (Gossamer, Inquiry). What the client does with
+  that text is governed by the client and the author's own subscription.
+  Applied jobs and their answers are deleted; the folder can be emptied at any
+  time. The plugin never runs an AI client itself or uses a subscription
+  login. Jobs can also be prepared through the request link
+  `obsidian://radial-timeline-ai-jobs`, which only writes job files in the
+  vault (and can switch the active book); it sends nothing anywhere.
 
 ## Desktop integration (Pandoc export)
 

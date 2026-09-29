@@ -36,14 +36,12 @@ if (!testGlobal.window) {
     };
 }
 
-vi.mock('../src/sceneAnalysis/RequestRunner', () => ({
-    createAiRunner: () => async (_prompt: string, _subplot: string | null, _ctx: string, sceneName: string) => ({
-        result: JSON.stringify({ summary: `Scoped summary for ${sceneName}` })
+vi.mock('../src/sceneAnalysis/summaryRefresh', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('../src/sceneAnalysis/summaryRefresh')>()),
+    sendSummaryRefreshRequest: async (_plugin: unknown, request: { userInput?: string }) => ({
+        reply: JSON.stringify({ summary: `Scoped summary for ${(request.userInput ?? '').match(/Scene (\S+):/)?.[1] ?? 'scene'}` }),
+        attribution: 'GPT-6 Luna API'
     })
-}));
-
-vi.mock('../src/sceneAnalysis/aiProvider', () => ({
-    callAiProvider: vi.fn()
 }));
 
 function sceneDoc(title: string): string {
@@ -129,7 +127,9 @@ describe('Scope leak protections', () => {
         const b1 = await readFile(app, 'Books/BookB/01 B1.md');
 
         expect(a1).toContain('Summary: Scoped summary for');
-        expect(a1).toContain('Summary Update:');
+        // Stamped with the model that answered, never a configured-model guess.
+        expect(a1).toMatch(/Summary Update: .* by GPT-6 Luna API/);
+        expect(a1).not.toContain('gpt-6-sol');
         expect(b1).not.toContain('Summary: Scoped summary for');
         expect(b1).not.toContain('Summary Update:');
         expect(Object.keys(plugin.settings.aiUpdateTimestamps)).toHaveLength(3);

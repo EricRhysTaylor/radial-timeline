@@ -9,6 +9,7 @@ import type { CitationIntegrityWarning, CitationRepairDiagnostic, EvidenceDocume
 import { computeCitationIntegritySummary } from '../state';
 import type {
     CorpusManifestEntry,
+    InquiryClientRun,
     InquiryExecutionPath,
     InquiryExecutionState,
     InquiryFailureStage,
@@ -17,15 +18,17 @@ import type {
     InquiryRunExecutionOptions,
     InquiryRunTrace,
     InquiryRunner,
-    InquiryRunnerInput
+    InquiryRunnerInput,
+    InquiryRunSubject
 } from './types';
 import { getAIClient } from '../../ai/runtime/aiClient';
-import type { AIRunPreparedEstimate, AIRunResult, AIProviderId } from '../../ai/types';
+import { validateJsonResponse } from '../../ai/runtime/jsonValidator';
+import type { AIRunPreparedEstimate, AIRunRequest, AIRunResult, AIProviderId } from '../../ai/types';
 import { extractTokenUsage } from '../../ai/usage/providerUsage';
 import { readSceneId } from '../../utils/sceneIds';
 import { buildSceneRefIndex, isStableSceneId, normalizeSceneRef } from '../../ai/references/sceneRefNormalizer';
 import { cleanEvidenceBody } from '../utils/evidenceCleaning';
-import { estimateTokensFromChars, type TokenEstimateMethod } from '../../ai/tokens/inputTokenEstimate';
+import { estimateHeuristicInputTokens, estimateTokensFromChars, estimateUncertaintyTokens, type TokenEstimateMethod } from '../../ai/tokens/inputTokenEstimate';
 import { logCountingForensics } from '../../ai/diagnostics/countingForensics';
 import { buildInquiryJsonSchema, buildInquiryOmnibusJsonSchema } from '../jsonSchema';
 import { buildInquiryPromptParts, INQUIRY_ROLE_TEMPLATE_GUARDRAIL } from '../promptScaffold';
@@ -512,6 +515,83 @@ export class InquiryRunnerService implements InquiryRunner {
         };
     }
 
+    /**
+     * This run as an AI job, for an AI client the author runs themselves: the
+     * provider call's request with the evidence inline (as OpenAI and Gemini
+     * receive it) and the question last, and the trace the run's log is
+     * written from. The client answers in one pass. No provider counts the
+     * prompt, so the trace carries the character estimate and no output cap.
+     */
+    async buildClientRun(subject: InquiryRunSubject): Promise<InquiryClientRun> {
+        const evidenceBlocks = await this.buildEvidenceBlocks(subject);
+        const { systemPrompt, userPrompt, evidenceText, cacheableUserInput } = this.buildPrompt(subject, evidenceBlocks);
+        const request = this.buildInquiryRequest({
+            task: 'AnalyzeCorpus',
+            systemPrompt,
+            userPrompt,
+            userInput: cacheableUserInput,
+            userQuestion: this.appendVolatileTargetScenes(subject.questionText, subject.targetSceneIds),
+            jsonSchema: this.getJsonSchema()
+        });
+        return {
+            subject,
+            request,
+            evidenceDocumentMeta: evidenceBlocks.map(block => block.meta).filter((meta): meta is EvidenceDocumentMeta => !!meta),
+            trace: {
+                systemPrompt,
+                userPrompt,
+                evidenceText,
+                tokenEstimate: {
+                    inputTokens: estimateHeuristicInputTokens({ systemPrompt, userPrompt }),
+                    outputTokens: Number.NaN,
+                    totalTokens: Number.NaN,
+                    inputChars: systemPrompt.length + userPrompt.length,
+                    estimationMethod: 'heuristic_chars',
+                    uncertaintyTokens: estimateUncertaintyTokens('heuristic_chars'),
+                    effectiveInputCeiling: Number.NaN,
+                    expectedPassCount: 1
+                },
+                outputTokenCap: Number.NaN,
+                response: null,
+                executionPassCount: 1,
+                executionPath: 'one_pass',
+                sanitizationNotes: [],
+                notes: ['Answered through an AI job by an AI client the author runs; the plugin sent no provider request.']
+            }
+        };
+    }
+
+    /**
+     * A client's answer to buildClientRun's request, read as a provider's
+     * answer is: the AI client's JSON check against the schema, then the same
+     * parse, scoring and binding of findings to the corpus. `client` is who
+     * answered, recorded as the result's provider and model.
+     */
+    readClientAnswer(
+        run: InquiryClientRun,
+        content: string,
+        client: { provider: string; model: string }
+    ): { ok: true; result: InquiryResult } | { ok: false; problems: string[] } {
+        const validation = validateJsonResponse(content, this.getJsonSchema());
+        if (!validation.ok) {
+            return { ok: false, problems: [validation.error?.message ?? 'The answer is not valid JSON.'] }; // SAFE: validateJsonResponse sets error on every failure; the literal covers the optional type
+        }
+        let parsed: RawInquiryResponse;
+        try {
+            parsed = this.parseResponse(validation.normalizedRaw ?? content); // SAFE: normalizedRaw is set only when an envelope was unwrapped, as the AI client accepts it
+        } catch (error) {
+            return { ok: false, problems: [error instanceof Error ? error.message : String(error)] };
+        }
+        const aiMeta = {
+            aiProvider: client.provider,
+            aiModelRequested: client.model,
+            aiModelResolved: client.model,
+            aiStatus: 'success' as const,
+            aiReason: undefined
+        };
+        return { ok: true, result: this.buildResult(run.subject, parsed, aiMeta, undefined, run.evidenceDocumentMeta) };
+    }
+
     estimateExecutionPassCountFromPrompt(
         userPrompt: string,
         options?: {
@@ -529,7 +609,7 @@ export class InquiryRunnerService implements InquiryRunner {
         return chunkCount + 1;
     }
 
-    private async buildEvidenceBlocks(input: InquiryRunnerInput): Promise<EvidenceBlock[]> {
+    private async buildEvidenceBlocks(input: InquiryRunSubject): Promise<EvidenceBlock[]> {
         const blocks: EvidenceBlock[] = [];
         const allEntries = input.corpus.entries;
         const sceneEntries = allEntries
@@ -827,7 +907,7 @@ export class InquiryRunnerService implements InquiryRunner {
     }
 
     private buildPrompt(
-        input: InquiryRunnerInput,
+        input: InquiryRunSubject,
         evidence: EvidenceBlock[]
     ): { systemPrompt: string; userPrompt: string; evidenceText: string; instructionPrompt: string; cacheableUserInput: string } {
         const evidenceText = evidence.map(block => {
@@ -1195,19 +1275,7 @@ export class InquiryRunnerService implements InquiryRunner {
             options.evidenceBlocks
         );
         return aiClient.run({
-            feature: 'InquiryMode',
-            task: options.task,
-            requiredCapabilities: ['longContext', 'jsonStrict', 'reasoningStrong', 'highOutputCap'],
-            featureModeInstructions: [
-                options.systemPrompt,
-                INQUIRY_ROLE_TEMPLATE_GUARDRAIL
-            ].filter(Boolean).join('\n'),
-            userInput: effectiveUserInput,
-            userQuestion: options.userQuestion,
-            promptText: options.userPrompt,
-            systemPrompt: undefined,
-            returnType: 'json',
-            responseSchema: options.jsonSchema,
+            ...this.buildInquiryRequest({ ...options, userInput: effectiveUserInput }),
             providerOverride: options.ai.provider,
             overrides: {
                 temperature: options.temperature,
@@ -1260,19 +1328,7 @@ export class InquiryRunnerService implements InquiryRunner {
             options.evidenceBlocks
         );
         const prepared = await aiClient.prepareRunEstimate({
-            feature: 'InquiryMode',
-            task: options.task,
-            requiredCapabilities: ['longContext', 'jsonStrict', 'reasoningStrong', 'highOutputCap'],
-            featureModeInstructions: [
-                options.systemPrompt,
-                INQUIRY_ROLE_TEMPLATE_GUARDRAIL
-            ].filter(Boolean).join('\n'),
-            userInput: effectiveUserInput,
-            userQuestion: options.userQuestion,
-            promptText: options.userPrompt,
-            systemPrompt: undefined,
-            returnType: 'json',
-            responseSchema: options.jsonSchema,
+            ...this.buildInquiryRequest({ ...options, userInput: effectiveUserInput }),
             policyOverride: this.resolvePolicyOverrideForAi(options.ai),
             providerOverride: options.ai.provider,
             overrides: {
@@ -1292,6 +1348,36 @@ export class InquiryRunnerService implements InquiryRunner {
         });
         if (!prepared.ok) return null;
         return prepared.estimate;
+    }
+
+    /**
+     * What every Inquiry request says, whoever answers it: the provider run,
+     * its estimate, and the AI job an AI client the author runs answers.
+     * Provider handling (model, output ceiling, caching) is added per call.
+     */
+    private buildInquiryRequest(options: {
+        task: string;
+        systemPrompt: string;
+        userPrompt: string;
+        userInput: string;
+        userQuestion?: string;
+        jsonSchema: Record<string, unknown>;
+    }): AIRunRequest {
+        return {
+            feature: 'InquiryMode',
+            task: options.task,
+            requiredCapabilities: ['longContext', 'jsonStrict', 'reasoningStrong', 'highOutputCap'],
+            featureModeInstructions: [
+                options.systemPrompt,
+                INQUIRY_ROLE_TEMPLATE_GUARDRAIL
+            ].filter(Boolean).join('\n'),
+            userInput: options.userInput,
+            userQuestion: options.userQuestion,
+            promptText: options.userPrompt,
+            systemPrompt: undefined,
+            returnType: 'json',
+            responseSchema: options.jsonSchema
+        };
     }
 
     private shouldUseInstructionPrompt(
@@ -2051,7 +2137,7 @@ export class InquiryRunnerService implements InquiryRunner {
     }
 
     private buildResult(
-        input: InquiryRunnerInput,
+        input: InquiryRunSubject,
         parsed: RawInquiryResponse,
         aiMeta: Pick<InquiryResult, 'aiProvider' | 'aiModelRequested' | 'aiModelResolved' | 'aiStatus' | 'aiReason'>,
         citations?: InquiryCitation[],
@@ -2474,7 +2560,7 @@ export class InquiryRunnerService implements InquiryRunner {
         };
     }
 
-    private buildCanonicalSceneRefIndex(input: InquiryRunnerInput): ReturnType<typeof buildSceneRefIndex> {
+    private buildCanonicalSceneRefIndex(input: InquiryRunSubject): ReturnType<typeof buildSceneRefIndex> {
         type SceneRefIndexEntry = Parameters<typeof buildSceneRefIndex>[0][number];
         const entries: SceneRefIndexEntry[] = [];
 
@@ -2520,7 +2606,7 @@ export class InquiryRunnerService implements InquiryRunner {
         return buildSceneRefIndex(entries);
     }
 
-    private buildCanonicalBookRefIndex(input: InquiryRunnerInput): BookRefIndex {
+    private buildCanonicalBookRefIndex(input: InquiryRunSubject): BookRefIndex {
         const entries: BookRefEntry[] = [];
         const seen = new Set<string>();
         input.corpus.entries
@@ -2996,9 +3082,7 @@ export class InquiryRunnerService implements InquiryRunner {
                 questionPromptForm: 'standard',
                 questionZone: 'setup',
                 corpus: input.corpus,
-                rules: input.rules,
-                ai: input.ai,
-                citationsEnabled: input.citationsEnabled
+                rules: input.rules
             });
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);

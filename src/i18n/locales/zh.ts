@@ -1231,9 +1231,6 @@ export const zh: DeepPartial<TranslationKeys> = {
                 sceneFileNotFound: '未找到场景文件：{{path}}',
             },
             aiErrors: {
-                aiError: 'AI 错误：{{name}}',
-                jsonParseError: 'JSON 解析错误：{{name}}',
-                emptyResult: '空结果：{{name}}',
                 synopsisFailed: '{{name}} 的概要生成失败。Summary 已保存且处理继续。{{reason}}',
                 saveError: '{{name}} 的保存错误：{{message}}',
                 summaryFailed: '{{name}} 的摘要生成失败。处理已继续其余场景。{{reason}}',

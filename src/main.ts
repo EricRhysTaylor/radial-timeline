@@ -36,6 +36,7 @@ import { getAllRefactorAlertIds } from './settings/refactorAlerts';
 import { autoAdoptDetectedBeatsIfEmpty } from './storyBeats/workspaceState';
 import releaseNotesBundle from './data/releaseNotesBundle.json';
 import { CommandRegistrar } from './services/CommandRegistrar';
+import { AiJobsService } from './services/AiJobsService';
 import { HoverHighlighter } from './services/HoverHighlighter';
 import { SceneHighlighter } from './services/SceneHighlighter';
 import { GossamerScoreService } from './services/GossamerScoreService';
@@ -73,7 +74,7 @@ import type { GossamerHistoricalRunOverlay, GossamerMinMaxBand, GossamerRun, Gos
 import { coerceGossamerSignal, DEFAULT_GOSSAMER_SIGNAL, type GossamerSignalType } from './types/gossamerSignals';
 import type { GossamerCacheWindow } from './gossamer/cacheWindow';
 import { seedProEntitlement } from './settings/proEntitlementSeed';
-import { hasProFeatureAccess } from './settings/featureGate';
+import { areBetaCommandsVisible, hasProFeatureAccess } from './settings/featureGate';
 import { DisposableRegistry } from './core/disposable';
 import { systemFolderPath } from './utils/systemFolder';
 
@@ -693,6 +694,11 @@ export default class RadialTimelinePlugin extends Plugin {
 
         // Register ribbon + commands (single orchestration point)
         this.commandRegistrar.registerAll(this.sceneAnalysisService);
+        // AI jobs: work handed to an AI client the author runs themselves.
+        // Beta (development/testing builds) until tried end to end in a real vault.
+        if (areBetaCommandsVisible()) {
+            new AiJobsService(this).register();
+        }
 
         // Add settings tab (only once)
         if (!this._settingsTabAdded) {

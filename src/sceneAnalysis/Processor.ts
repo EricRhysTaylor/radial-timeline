@@ -43,7 +43,7 @@ export interface TripletMetric {
     source: 'runtime' | 'words' | 'default';
 }
 
-interface SceneTriplet {
+export interface SceneTriplet {
     prev: SceneData | null;
     current: SceneData;
     next: SceneData | null;
@@ -62,6 +62,33 @@ function buildTripletSceneRefs(triplet: SceneTriplet): {
         ? resolveSceneReferenceId(readSceneId(triplet.next.frontmatter), triplet.next.file.path)
         : undefined;
     return { prevRefId, currentRefId, nextRefId };
+}
+
+/** Scene numbers of a triplet as the Pulse prompt and progress UI show them. */
+function tripletSceneNumbers(triplet: SceneTriplet): { prevNum: string; currentNum: string; nextNum: string } {
+    return {
+        prevNum: triplet.prev ? String(triplet.prev.sceneNumber ?? 'N/A') : 'N/A', // SAFE: sceneNumber is null for unnumbered scene files — 'N/A' is a display placeholder
+        currentNum: String(triplet.current.sceneNumber ?? 'N/A'), // SAFE: sceneNumber is null for unnumbered scene files — 'N/A' is a display placeholder
+        nextNum: triplet.next ? String(triplet.next.sceneNumber ?? 'N/A') : 'N/A' // SAFE: sceneNumber is null for unnumbered scene files — 'N/A' is a display placeholder
+    };
+}
+
+/**
+ * The Pulse prompt for one triplet: the one place it is built, for every API
+ * run order (manuscript, subplot, entire subplot) and for AI jobs.
+ */
+export function buildTripletPrompt(plugin: RadialTimelinePlugin, triplet: SceneTriplet): string {
+    const { prevNum, currentNum, nextNum } = tripletSceneNumbers(triplet);
+    return buildSceneAnalysisPrompt(
+        triplet.prev ? triplet.prev.body : null,
+        triplet.current.body,
+        triplet.next ? triplet.next.body : null,
+        prevNum,
+        currentNum,
+        nextNum,
+        getActiveContextPrompt(plugin),
+        buildTripletSceneRefs(triplet)
+    );
 }
 
 /**
@@ -133,7 +160,7 @@ function isReviewableLocalOutputError(error: unknown): boolean {
     ].some(token => message.includes(token));
 }
 
-function normalizeParsedAnalysisForTriplet(
+export function normalizeParsedAnalysisForTriplet(
     parsedAnalysis: ParsedSceneAnalysis | null | undefined,
     triplet: SceneTriplet
 ): ParsedSceneAnalysis | null {
@@ -150,13 +177,13 @@ async function applyTripletAnalysisResult(input: {
     triplet: SceneTriplet;
     parsedAnalysis: ParsedSceneAnalysis | null;
     provider: Provider | null | undefined;
-    modelIdUsed: string | null;
+    attribution: string | null;
 }): Promise<{ route: 'write' | 'warning' | 'skip'; success: boolean }> {
     return applySceneAnalysisSafeWrite({
         provider: input.provider,
         parsedAnalysis: input.parsedAnalysis,
         writeAnalysis: (analysis) =>
-            updateSceneAnalysis(input.vault, input.triplet.current.file, analysis, input.plugin, input.modelIdUsed),
+            updateSceneAnalysis(input.vault, input.triplet.current.file, analysis, input.plugin, input.attribution),
         writeWarning: (warning) =>
             setSceneAnalysisReviewWarning(input.vault, input.triplet.current.file, input.plugin, warning)
     });
@@ -239,28 +266,13 @@ export async function processWithModal(
 
         if (!shouldProcess) continue;
 
-        const prevBody = triplet.prev ? triplet.prev.body : null;
-        const currentBody = triplet.current.body;
-        const nextBody = triplet.next ? triplet.next.body : null;
-        const prevNum = triplet.prev ? String(triplet.prev.sceneNumber ?? 'N/A') : 'N/A'; // SAFE: sceneNumber is null for unnumbered scene files — 'N/A' is a display placeholder
-        const currentNum = String(triplet.current.sceneNumber ?? 'N/A'); // SAFE: sceneNumber is null for unnumbered scene files — 'N/A' is a display placeholder
-        const nextNum = triplet.next ? String(triplet.next.sceneNumber ?? 'N/A') : 'N/A'; // SAFE: sceneNumber is null for unnumbered scene files — 'N/A' is a display placeholder
+        const { prevNum, currentNum, nextNum } = tripletSceneNumbers(triplet);
 
         if (modal && typeof modal.setTripletInfo === 'function') {
             modal.setTripletInfo(prevNum, currentNum, nextNum, triplet.current.file.path, triplet.current.file.basename);
         }
 
-        const contextPrompt = getActiveContextPrompt(plugin);
-        const userPrompt = buildSceneAnalysisPrompt(
-            prevBody,
-            currentBody,
-            nextBody,
-            prevNum,
-            currentNum,
-            nextNum,
-            contextPrompt,
-            buildTripletSceneRefs(triplet)
-        );
+        const userPrompt = buildTripletPrompt(plugin, triplet);
 
         const sceneNameForLog = triplet.current.file.basename;
         const tripletForLog = buildPulseTriplet(prevNum, currentNum, nextNum).scenes;
@@ -305,7 +317,7 @@ export async function processWithModal(
                     triplet,
                     parsedAnalysis,
                     provider: aiResult.providerUsed,
-                    modelIdUsed: aiResult.modelIdUsed
+                    attribution: aiResult.attribution
                 });
 
                 if (safeWrite.success) {
@@ -410,24 +422,9 @@ export async function processBySubplotOrder(
 
                 notice.setMessage(t('sceneAnalysis.pipeline.notices.processingScene', { num: triplet.current.sceneNumber ?? 'N/A', current: totalProcessedCount + 1, total: totalTripletsAcrossSubplots, name: subplotName })); // SAFE: sceneNumber is null for unnumbered scene files — 'N/A' is a display placeholder
 
-                const prevBody = triplet.prev ? triplet.prev.body : null;
-                const currentBody = triplet.current.body;
-                const nextBody = triplet.next ? triplet.next.body : null;
-                const prevNum = triplet.prev ? String(triplet.prev.sceneNumber ?? 'N/A') : 'N/A'; // SAFE: sceneNumber is null for unnumbered scene files — 'N/A' is a display placeholder
-                const currentNum = String(triplet.current.sceneNumber ?? 'N/A'); // SAFE: sceneNumber is null for unnumbered scene files — 'N/A' is a display placeholder
-                const nextNum = triplet.next ? String(triplet.next.sceneNumber ?? 'N/A') : 'N/A'; // SAFE: sceneNumber is null for unnumbered scene files — 'N/A' is a display placeholder
+                const { prevNum, currentNum, nextNum } = tripletSceneNumbers(triplet);
 
-                const contextPrompt = getActiveContextPrompt(plugin);
-                const userPrompt = buildSceneAnalysisPrompt(
-                    prevBody,
-                    currentBody,
-                    nextBody,
-                    prevNum,
-                    currentNum,
-                    nextNum,
-                    contextPrompt,
-                    buildTripletSceneRefs(triplet)
-                );
+                const userPrompt = buildTripletPrompt(plugin, triplet);
 
                 const sceneNameForLog = triplet.current.file.basename;
                 const tripletForLog = buildPulseTriplet(prevNum, currentNum, nextNum).scenes;
@@ -448,7 +445,7 @@ export async function processBySubplotOrder(
                             triplet,
                             parsedAnalysis,
                             provider: aiResult.providerUsed,
-                            modelIdUsed: aiResult.modelIdUsed
+                            attribution: aiResult.attribution
                         });
                         if (safeWrite.success) {
                             await plugin.saveSettings();
@@ -548,28 +545,13 @@ export async function processSubplotWithModal(
             }
         };
 
-        const prevBody = triplet.prev ? triplet.prev.body : null;
-        const currentBody = triplet.current.body;
-        const nextBody = triplet.next ? triplet.next.body : null;
-        const prevNum = triplet.prev ? String(triplet.prev.sceneNumber ?? 'N/A') : 'N/A'; // SAFE: sceneNumber is null for unnumbered scene files — 'N/A' is a display placeholder
-        const currentNum = String(triplet.current.sceneNumber ?? 'N/A'); // SAFE: sceneNumber is null for unnumbered scene files — 'N/A' is a display placeholder
-        const nextNum = triplet.next ? String(triplet.next.sceneNumber ?? 'N/A') : 'N/A'; // SAFE: sceneNumber is null for unnumbered scene files — 'N/A' is a display placeholder
+        const { prevNum, currentNum, nextNum } = tripletSceneNumbers(triplet);
 
         if (modal && typeof modal.setTripletInfo === 'function') {
             modal.setTripletInfo(prevNum, currentNum, nextNum, triplet.current.file.path, sceneName);
         }
 
-        const contextPrompt = getActiveContextPrompt(plugin);
-        const userPrompt = buildSceneAnalysisPrompt(
-            prevBody,
-            currentBody,
-            nextBody,
-            prevNum,
-            currentNum,
-            nextNum,
-            contextPrompt,
-            buildTripletSceneRefs(triplet)
-        );
+        const userPrompt = buildTripletPrompt(plugin, triplet);
 
         const sceneNameForLog = triplet.current.file.basename;
         const tripletForLog = buildPulseTriplet(prevNum, currentNum, nextNum).scenes;
@@ -607,7 +589,7 @@ export async function processSubplotWithModal(
                     triplet,
                     parsedAnalysis,
                     provider: aiResult.providerUsed,
-                    modelIdUsed: aiResult.modelIdUsed
+                    attribution: aiResult.attribution
                 });
 
                 if (safeWrite.success) {
@@ -701,28 +683,13 @@ export async function processEntireSubplotWithModalInternal(
             }
         };
 
-        const prevBody = triplet.prev ? triplet.prev.body : null;
-        const currentBody = triplet.current.body;
-        const nextBody = triplet.next ? triplet.next.body : null;
-        const prevNum = triplet.prev ? String(triplet.prev.sceneNumber ?? 'N/A') : 'N/A'; // SAFE: sceneNumber is null for unnumbered scene files — 'N/A' is a display placeholder
-        const currentNum = String(triplet.current.sceneNumber ?? 'N/A'); // SAFE: sceneNumber is null for unnumbered scene files — 'N/A' is a display placeholder
-        const nextNum = triplet.next ? String(triplet.next.sceneNumber ?? 'N/A') : 'N/A'; // SAFE: sceneNumber is null for unnumbered scene files — 'N/A' is a display placeholder
+        const { prevNum, currentNum, nextNum } = tripletSceneNumbers(triplet);
 
         if (modal && typeof modal.setTripletInfo === 'function') {
             modal.setTripletInfo(prevNum, currentNum, nextNum, triplet.current.file.path, sceneName);
         }
 
-        const contextPrompt = getActiveContextPrompt(plugin);
-        const userPrompt = buildSceneAnalysisPrompt(
-            prevBody,
-            currentBody,
-            nextBody,
-            prevNum,
-            currentNum,
-            nextNum,
-            contextPrompt,
-            buildTripletSceneRefs(triplet)
-        );
+        const userPrompt = buildTripletPrompt(plugin, triplet);
 
         const sceneNameForLog = triplet.current.file.basename;
         const tripletForLog = buildPulseTriplet(prevNum, currentNum, nextNum).scenes;
@@ -760,7 +727,7 @@ export async function processEntireSubplotWithModalInternal(
                     triplet,
                     parsedAnalysis,
                     provider: aiResult.providerUsed,
-                    modelIdUsed: aiResult.modelIdUsed
+                    attribution: aiResult.attribution
                 });
 
                 if (safeWrite.success) {

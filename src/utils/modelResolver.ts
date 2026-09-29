@@ -13,6 +13,7 @@
  */
 
 import { BUILTIN_MODELS } from '../ai/registry/builtinModels';
+import type { AIProviderId } from '../ai/types';
 
 // Static fallback mappings for "latest" aliases
 // These are updated when we get actual model info from API responses
@@ -82,6 +83,23 @@ export function getModelDisplayName(modelId: string, options?: { debug?: boolean
     // For specific versioned models, create a friendly name
     return formatModelName(modelId, debug);
 }
+
+/**
+ * Who produced an AI result, for the "by …" part of an update stamp such as
+ * "Summary Update: <date> by Claude Opus 5.5 API": the model that actually
+ * answered, and whether it ran through a provider API or on the author's own
+ * local server ("Local model qwen3:80b").
+ */
+export function describeAiRunModel(provider: Exclude<AIProviderId, 'none'>, modelId: string): string {
+    return provider === 'ollama' ? `Local model ${modelId}` : `${getModelDisplayName(modelId)} API`;
+}
+
+/**
+ * The provider recorded on a result that came back through an AI job: an AI
+ * client the author runs themselves answered it. The model recorded with it is
+ * the client's own name for itself ("Claude app · Opus 5.5").
+ */
+export const AI_JOB_PROVIDER = 'agent';
 
 function formatOpenAiSnapshotName(modelId: string, debug: boolean): string | null {
     const snapshotMatch = modelId.match(/^gpt-(\d+\.?\d*)(-pro)?-(\d{4}-\d{2}-\d{2})$/);

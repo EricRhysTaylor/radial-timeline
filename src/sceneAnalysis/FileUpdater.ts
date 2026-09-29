@@ -29,7 +29,7 @@ export async function updateSceneAnalysis(
   file: TFile,
   parsedAnalysis: ParsedSceneAnalysis,
   plugin: RadialTimelinePlugin,
-  modelIdUsed: string | null
+  attribution: string | null
 ): Promise<boolean> {
   try {
     await snapshotFrontmatterFields(plugin.app, [file], {
@@ -78,13 +78,13 @@ export async function updateSceneAnalysis(
       for (const key of pulseKeys) {
         if (Object.prototype.hasOwnProperty.call(fmObj, key)) {
           // Replace flag with timestamp string (interpreted as false by normalizeBooleanValue)
-          fmObj[key] = `${timestamp}${modelIdUsed ? ` by ${modelIdUsed}` : ' by Unknown Model'}`;
+          fmObj[key] = `${timestamp}${attribution ? ` by ${attribution}` : ' by Unknown Model'}`;
           updatedFlag = true;
           break; // Only update the first matching key
         }
       }
       if (!updatedFlag) {
-        fmObj['Pulse Update'] = `${timestamp}${modelIdUsed ? ` by ${modelIdUsed}` : ' by Unknown Model'}`;
+        fmObj['Pulse Update'] = `${timestamp}${attribution ? ` by ${attribution}` : ' by Unknown Model'}`;
       }
 
       const b1 = parsedAnalysis['previousSceneAnalysis']?.trim();

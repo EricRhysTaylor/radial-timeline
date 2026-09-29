@@ -140,6 +140,16 @@ describe('InquiryView payload accounting', () => {
         expect(runnerSource.includes('questionText: input.questionText')).toBe(true);
     });
 
+    it('records the corpus a single-question run saw, so its briefing can go stale', () => {
+        const viewSource = readFileSync(resolve(process.cwd(), 'src/inquiry/InquiryView.ts'), 'utf8');
+        const runInquiry = viewSource.slice(
+            viewSource.indexOf('private async runInquiry('),
+            viewSource.indexOf('public reopenSessionByKey(')
+        );
+        expect(runInquiry).toContain('result.corpusOnlyFingerprint = manifest.corpusOnlyFingerprint;');
+        expect(runInquiry).toContain('result.corpusManifestSnapshot = manifest.snapshot;');
+    });
+
     it('offers a corpus-level cancel all targeting action in the global corpus context menu', () => {
         const viewSource = readFileSync(resolve(process.cwd(), 'src/inquiry/InquiryView.ts'), 'utf8');
         const corpusSource = readFileSync(resolve(process.cwd(), 'src/inquiry/corpus/inquiryCorpusStripRenderer.ts'), 'utf8');

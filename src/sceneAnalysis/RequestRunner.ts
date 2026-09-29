@@ -14,7 +14,8 @@ export type AiRunner = (
 ) => Promise<{
     result: string | null;
     parsedAnalysis?: ParsedSceneAnalysis | null;
-    modelIdUsed: string | null;
+    /** Who produced the result, for the update stamp ("Claude Opus 5.5 API"). */
+    attribution: string | null;
     providerUsed?: Provider | null;
     advancedContext?: AIRunAdvancedContext;
   }>;
@@ -33,7 +34,8 @@ export function createAiRunner(
   ) => Promise<{
     result: string | null;
     parsedAnalysis?: ParsedSceneAnalysis | null;
-    modelIdUsed: string | null;
+    /** Who produced the result, for the update stamp ("Claude Opus 5.5 API"). */
+    attribution: string | null;
     providerUsed?: Provider | null;
     advancedContext?: AIRunAdvancedContext;
   }>

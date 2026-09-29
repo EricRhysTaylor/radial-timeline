@@ -23,7 +23,8 @@ export interface SceneData {
 export interface AiProviderResponse {
     result: string | null;
     parsedAnalysis?: ParsedSceneAnalysis | null;
-    modelIdUsed: string | null;
+    /** Who produced the result, for the update stamp ("Claude Opus 5.5 API"). */
+    attribution: string | null;
     providerUsed?: Exclude<'openai' | 'anthropic' | 'google' | 'ollama', 'none'> | null;
     advancedContext?: AIRunAdvancedContext;
 }

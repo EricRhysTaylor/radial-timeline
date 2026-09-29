@@ -7,7 +7,7 @@
 import { Notice, type Vault } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { getSceneAnalysisJsonSchema, getSceneAnalysisSystemPrompt } from '../ai/prompts/sceneAnalysis';
-import type { AIProviderId } from '../ai/types';
+import type { AIProviderId, AIRunRequest } from '../ai/types';
 import type { AiProviderResponse, ParsedSceneAnalysis } from './types';
 import { parsePulseAnalysisResponse } from './responseParsing';
 import { getAIClient } from '../ai/runtime/aiClient';
@@ -26,6 +26,7 @@ import {
 import { ensurePulseContentLogFolder, resolvePulseContentLogFolder } from '../inquiry/utils/logs';
 import { normalizePath } from 'obsidian';
 import { t } from '../i18n';
+import { describeAiRunModel } from '../utils/modelResolver';
 
 type PulseLogPayload = {
     provider: Exclude<AIProviderId, 'none'>;
@@ -199,6 +200,28 @@ async function writePulseLog(
     }
 }
 
+/**
+ * The Pulse (scene triplet) AI request for one triplet prompt. The API run
+ * sends it; AI jobs compile the same request for an outside client.
+ */
+export function buildPulseRunRequest(userPrompt: string): AIRunRequest {
+    return {
+        feature: 'PulseAnalysis',
+        task: 'ScenePulseTriplet',
+        requiredCapabilities: ['jsonStrict', 'reasoningStrong'],
+        featureModeInstructions: getSceneAnalysisSystemPrompt(),
+        userInput: userPrompt,
+        returnType: 'json',
+        responseSchema: getSceneAnalysisJsonSchema(),
+        overrides: {
+            temperature: 0.1,
+            maxOutputMode: 'high',
+            reasoningDepth: 'deep',
+            jsonStrict: true
+        }
+    };
+}
+
 export async function callAiProvider(
     plugin: RadialTimelinePlugin,
     vault: Vault,
@@ -226,22 +249,7 @@ export async function callAiProvider(
 
     try {
         submittedAt = new Date();
-        runResult = await aiClient.run({
-            feature: 'PulseAnalysis',
-            task: 'ScenePulseTriplet',
-            requiredCapabilities: ['jsonStrict', 'reasoningStrong'],
-            featureModeInstructions: systemPrompt,
-            userInput: userPrompt,
-            returnType: 'json',
-            responseSchema: getSceneAnalysisJsonSchema(),
-            providerOverride,
-            overrides: {
-                temperature: 0.1,
-                maxOutputMode: 'high',
-                reasoningDepth: 'deep',
-                jsonStrict: true
-            }
-        });
+        runResult = await aiClient.run({ ...buildPulseRunRequest(userPrompt), providerOverride });
         returnedAt = new Date();
 
         responseDataForLog = runResult.responseData;
@@ -307,7 +315,7 @@ export async function callAiProvider(
         return {
             result: runResult.content,
             parsedAnalysis: parsedForLog,
-            modelIdUsed: runResult.modelResolved || runResult.modelRequested,
+            attribution: describeAiRunModel(resolvedProvider, runResult.modelResolved || runResult.modelRequested),
             providerUsed: resolvedProvider,
             advancedContext: runResult.advancedContext
         };

@@ -6,10 +6,12 @@
  * Applies answers an outside AI client wrote to the AI job mailbox, each
  * through its feature's own checks and writer (an AiJobHandler).
  *
- * Per answer: a job whose source changed since it was written is rebuilt from
- * the current text instead of applied; an answer that fails the feature's
- * checks is sent back by recording the problems on the job; an accepted
- * answer is applied and the job and answer are deleted.
+ * Per answer, the job is first rebuilt from the vault as it is now. If the
+ * rebuilt prompt differs, the job's source changed since it was written: the
+ * rebuilt job replaces it and the answer is discarded, never applied to text
+ * it was not written for. Otherwise the answer goes to the feature's own
+ * checks: rejected answers are sent back by recording the problems on the
+ * job; an accepted answer is applied and the job and answer are deleted.
  */
 
 import { Notice, debounce, type App } from 'obsidian';
@@ -22,24 +24,32 @@ import {
     readAiJob,
     readAiJobAnswer,
     readAnswerAttribution,
+    recordAiJobRejection,
     removeAiJob,
     removeAiJobAnswer,
     writeAiJob,
-    type AiJob
+    type AiJob,
+    type PreparedAiJob
 } from './aiJobStore';
+
+export type AiJobApplyResult = { ok: true } | { ok: false; problems: string[] };
+
+/** A job rebuilt from the vault as it is now, with the step that applies an answer to it. */
+export interface RebuiltAiJob {
+    prepared: PreparedAiJob;
+    /**
+     * Check an answer with the feature's own parser and, when it passes, write
+     * it with the feature's own writer. `attribution` is the client's name for
+     * itself, for the update stamp.
+     */
+    apply(answer: string, attribution: string): Promise<AiJobApplyResult>;
+}
 
 export interface AiJobHandler {
     /** Matches AiJob.feature. */
     feature: string;
-    /** Fingerprint of the job's source as it is now, or null when the target no longer exists. */
-    currentFingerprint(job: AiJob): Promise<string | null>;
-    /** A fresh job for the same target, built from its current content. Keeps the job id. */
-    rebuild(job: AiJob): Promise<AiJob>;
-    /**
-     * Check an answer with the feature's own parser and, when it passes, write
-     * it. `attribution` is the client's name for itself, for the update stamp.
-     */
-    apply(job: AiJob, answer: string, attribution: string): Promise<{ ok: true } | { ok: false; problems: string[] }>;
+    /** The same job (same id) built from the vault as it is now; null when its target no longer exists. */
+    rebuild(job: AiJob): Promise<RebuiltAiJob | null>;
 }
 
 export type AiJobIngestOutcome =
@@ -51,7 +61,7 @@ export type AiJobIngestOutcome =
     | { id: string; kind: 'failed'; detail: string };
 
 export const STALE_JOB_PROBLEM =
-    'The note changed after this job was written, so the job was rebuilt from its current text and the earlier answer was discarded. Answer the new prompt.';
+    'What this job is about changed after it was written, so the job was rebuilt from the current text and the earlier answer was discarded. Answer the new prompt.';
 
 async function ingestOne(app: App, id: string, handlers: ReadonlyMap<string, AiJobHandler>): Promise<AiJobIngestOutcome> {
     const read = await readAiJob(app, id);
@@ -62,27 +72,30 @@ async function ingestOne(app: App, id: string, handlers: ReadonlyMap<string, AiJ
     const handler = handlers.get(job.feature);
     if (!handler) return { id, kind: 'unmatched', reason: `no handler for feature "${job.feature}"` };
 
-    const fingerprint = await handler.currentFingerprint(job);
-    if (fingerprint === null) {
+    const rebuilt = await handler.rebuild(job);
+    if (rebuilt === null) {
         await removeAiJob(app, id);
         await removeAiJobAnswer(app, id);
         return { id, kind: 'target-gone' };
     }
+    const fresh = rebuilt.prepared.job;
+    if (fresh.id !== job.id) {
+        throw new Error(`rebuilt job id "${fresh.id}" does not match "${job.id}"`);
+    }
 
-    if (fingerprint !== job.sourceFingerprint) {
-        const fresh = await handler.rebuild(job);
-        if (fresh.id !== job.id) {
-            throw new Error(`rebuilt job id "${fresh.id}" does not match "${job.id}"`);
-        }
-        await writeAiJob(app, { ...fresh, lastRejection: { at: new Date().toISOString(), problems: [STALE_JOB_PROBLEM] } });
+    if (fresh.sourceFingerprint !== job.sourceFingerprint) {
+        await writeAiJob(app, {
+            prompt: rebuilt.prepared.prompt,
+            job: { ...fresh, lastRejection: { at: new Date().toISOString(), problems: [STALE_JOB_PROBLEM] } }
+        });
         await removeAiJobAnswer(app, id);
         return { id, kind: 'rebuilt' };
     }
 
     const answer = await readAiJobAnswer(app, id);
-    const result = await handler.apply(job, answer, readAnswerAttribution(answer));
+    const result = await rebuilt.apply(answer, readAnswerAttribution(answer));
     if (!result.ok) {
-        await writeAiJob(app, { ...job, lastRejection: { at: new Date().toISOString(), problems: result.problems } });
+        await recordAiJobRejection(app, job, result.problems);
         await removeAiJobAnswer(app, id);
         return { id, kind: 'rejected', problems: result.problems };
     }

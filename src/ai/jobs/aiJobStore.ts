@@ -21,6 +21,7 @@ import type RadialTimelinePlugin from '../../main';
 import type { AIRunRequest } from '../types';
 import { compileRequestPrompt } from '../runtime/aiClient';
 import { extractJsonPayload } from '../runtime/jsonValidator';
+import { fnv1a32Hex } from '../../utils/hash';
 import { systemFolderPath } from '../../utils/systemFolder';
 
 export const AI_JOBS_DIR = systemFolderPath('AI Jobs');
@@ -52,14 +53,35 @@ export interface AiJob {
     task: string;
     createdAt: string;
     target: AiJobTarget;
-    /** Hash of the text the prompt was built from; a mismatch at apply time means the job is stale. */
+    /**
+     * Hash of the compiled prompt. At apply time the job is rebuilt from the
+     * vault as it is now; a different hash means the prompt's source changed
+     * (the scene, a neighbor, the manuscript, a setting) and the job is stale.
+     */
     sourceFingerprint: string;
+    /**
+     * The complete prompt, compiled exactly as the API run would send it,
+     * relative to the AI Jobs folder. A separate plain-text file rather than a
+     * JSON string: a prompt carrying a scene or a whole manuscript is far too
+     * long to read as one escaped line.
+     */
+    promptFile: string;
     /** Where the client writes its answer, relative to the AI Jobs folder. */
     answerFile: string;
-    /** The complete prompt, compiled exactly as the API run would send it. */
-    prompt: string;
     /** Present when the previous answer was not accepted. */
     lastRejection?: AiJobRejection;
+}
+
+/**
+ * Which targets a "Prepare AI jobs" run covers: those the author flagged for
+ * an update, those with no result yet, or all of them.
+ */
+export type AiJobScope = 'flagged' | 'missing' | 'all';
+
+/** A job and its prompt text, as built; written as two files. */
+export interface PreparedAiJob {
+    job: AiJob;
+    prompt: string;
 }
 
 export const AI_JOB_INSTRUCTION_FILES = ['AGENTS.md', 'CLAUDE.md'] as const;
@@ -75,10 +97,10 @@ This folder holds work that Radial Timeline has handed to an AI client you run y
 
 ## For the AI client
 
-1. Each \`.json\` file in \`${PENDING_FOLDER}/\` is one job. Read it as JSON.
-2. The job's \`prompt\` field is the complete instruction for that job, including the exact JSON your answer must match. Follow it exactly and use no other instructions for the job.
+1. Each \`.json\` file in \`${PENDING_FOLDER}/\` is one job. Read it as JSON. Jobs are independent; answer them in any order.
+2. The file named in the job's \`promptFile\` field is the complete instruction for that job, including the exact JSON your answer must match. Follow it exactly and use no other instructions for the job. It is plain text and can be very long, with long lines: read all of it, in chunks if you need to, never a truncated preview.
 3. Write the JSON the prompt asks for, with nothing before or after it, to the path in the job's \`answerFile\` field. Add one more top-level field to it, \`answeredBy\`, naming the app you are running in and your model, for example \`"Claude app · Opus 5.5"\` or \`"Codex app · GPT-6 Sol"\`. It goes in the note's update stamp.
-4. If a job has a \`lastRejection\` field, your earlier answer was not accepted, or the job was rebuilt. Read its \`problems\`, then answer the job's current \`prompt\` again.
+4. If a job has a \`lastRejection\` field, your earlier answer was not accepted, or the job was rebuilt. Read its \`problems\`, then answer the job's current \`promptFile\` again.
 5. Do not edit or delete job files, scene notes, or any other file in the vault. Radial Timeline checks every answer and applies it itself.
 6. When you have answered every job, look in \`${PENDING_FOLDER}/\` again. Applying an answer can create a follow-up job.
 
@@ -123,6 +145,10 @@ function pendingPath(id: string): string {
     return normalizePath(`${AI_JOBS_PENDING_DIR}/${id}.json`);
 }
 
+function promptPath(id: string): string {
+    return normalizePath(`${AI_JOBS_PENDING_DIR}/${id}.prompt.txt`);
+}
+
 function answerPath(id: string): string {
     return normalizePath(`${AI_JOBS_ANSWERS_DIR}/${id}.json`);
 }
@@ -134,18 +160,22 @@ function answerPath(id: string): string {
 export function buildAiJob(
     plugin: RadialTimelinePlugin,
     request: AIRunRequest,
-    params: { id: string; target: AiJobTarget; sourceFingerprint: string }
-): AiJob {
+    params: { id: string; target: AiJobTarget }
+): PreparedAiJob {
+    const prompt = compileRequestPrompt(plugin, request).finalPrompt;
     return {
-        schemaVersion: AI_JOB_SCHEMA_VERSION,
-        id: params.id,
-        feature: request.feature,
-        task: request.task,
-        createdAt: new Date().toISOString(),
-        target: params.target,
-        sourceFingerprint: params.sourceFingerprint,
-        answerFile: `${ANSWERS_FOLDER}/${params.id}.json`,
-        prompt: compileRequestPrompt(plugin, request).finalPrompt
+        prompt,
+        job: {
+            schemaVersion: AI_JOB_SCHEMA_VERSION,
+            id: params.id,
+            feature: request.feature,
+            task: request.task,
+            createdAt: new Date().toISOString(),
+            target: params.target,
+            sourceFingerprint: fnv1a32Hex(prompt),
+            promptFile: `${PENDING_FOLDER}/${params.id}.prompt.txt`,
+            answerFile: `${ANSWERS_FOLDER}/${params.id}.json`
+        }
     };
 }
 
@@ -170,7 +200,7 @@ export function parseAiJob(raw: string): AiJobRead {
         return { kind: 'invalid', reason: `unsupported job schemaVersion ${JSON.stringify(record.schemaVersion)}` };
     }
     const target = record.target as Record<string, unknown> | null | undefined;
-    const stringFields = ['id', 'feature', 'task', 'createdAt', 'sourceFingerprint', 'answerFile', 'prompt'] as const;
+    const stringFields = ['id', 'feature', 'task', 'createdAt', 'sourceFingerprint', 'promptFile', 'answerFile'] as const;
     for (const field of stringFields) {
         const value = record[field];
         if (typeof value !== 'string' || value.length === 0) {
@@ -197,8 +227,21 @@ export async function ensureAiJobMailbox(app: App): Promise<void> {
     }
 }
 
-export async function writeAiJob(app: App, job: AiJob): Promise<void> {
-    await vaultIo(app).write(pendingPath(job.id), JSON.stringify(job, null, 2));
+/** Write a job's prompt file and its JSON record. */
+export async function writeAiJob(app: App, prepared: PreparedAiJob): Promise<void> {
+    const io = vaultIo(app);
+    await io.write(promptPath(prepared.job.id), prepared.prompt);
+    await io.write(pendingPath(prepared.job.id), JSON.stringify(prepared.job, null, 2));
+}
+
+/** Record why an answer was sent back, on the job the client will read again. */
+export async function recordAiJobRejection(app: App, job: AiJob, problems: string[]): Promise<void> {
+    const rejected: AiJob = { ...job, lastRejection: { at: new Date().toISOString(), problems } };
+    await vaultIo(app).write(pendingPath(job.id), JSON.stringify(rejected, null, 2));
+}
+
+export async function readAiJobPrompt(app: App, id: string): Promise<string> {
+    return vaultIo(app).read(promptPath(id));
 }
 
 export async function readAiJob(app: App, id: string): Promise<AiJobRead> {
@@ -209,7 +252,10 @@ export async function readAiJob(app: App, id: string): Promise<AiJobRead> {
 }
 
 export async function removeAiJob(app: App, id: string): Promise<void> {
-    await vaultIo(app).remove(pendingPath(id));
+    const io = vaultIo(app);
+    await io.remove(pendingPath(id));
+    const prompt = promptPath(id);
+    if (await io.exists(prompt)) await io.remove(prompt);
 }
 
 /** Ids of the answers waiting in the Answers folder, sorted. */

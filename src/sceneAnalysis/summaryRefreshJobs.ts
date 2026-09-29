@@ -12,14 +12,21 @@
  * Synopsis" is on), not up front.
  */
 
-import { Notice, TFile } from 'obsidian';
+import { TFile } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
-import { t } from '../i18n';
 import { fnv1a32Hex } from '../utils/hash';
 import { getSynopsisGenerationWordLimit } from '../utils/synopsisLimits';
-import { AI_JOBS_DIR, buildAiJob, ensureAiJobMailbox, writeAiJob, type AiJob } from '../ai/jobs/aiJobStore';
+import {
+    buildAiJob,
+    ensureAiJobMailbox,
+    writeAiJob,
+    type AiJob,
+    type AiJobScope,
+    type PreparedAiJob
+} from '../ai/jobs/aiJobStore';
 import type { AiJobHandler } from '../ai/jobs/aiJobIngest';
 import { compareScenesByOrder, getAllSceneData } from './data';
+import { classifySynopsis } from './synopsisQuality';
 import {
     buildSummaryRunRequest,
     buildSynopsisRunRequest,
@@ -51,20 +58,18 @@ function currentSummary(scene: SceneData): string | null {
     return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
 }
 
-export function buildSummaryJob(plugin: RadialTimelinePlugin, scene: SceneData): AiJob {
+export function buildSummaryJob(plugin: RadialTimelinePlugin, scene: SceneData): PreparedAiJob {
     return buildAiJob(plugin, buildSummaryRunRequest(scene, resolveSummaryTargetWords(plugin.settings)), {
         id: jobId('summary', scene.file.path),
-        target: { path: scene.file.path, label: scene.file.basename },
-        sourceFingerprint: fnv1a32Hex(scene.body)
+        target: { path: scene.file.path, label: scene.file.basename }
     });
 }
 
-export function buildSynopsisJob(plugin: RadialTimelinePlugin, scene: SceneData, summaryText: string): AiJob {
+export function buildSynopsisJob(plugin: RadialTimelinePlugin, scene: SceneData, summaryText: string): PreparedAiJob {
     const request = buildSynopsisRunRequest(scene, summaryText, getSynopsisGenerationWordLimit(plugin.settings));
     return buildAiJob(plugin, request, {
         id: jobId('synopsis', scene.file.path),
-        target: { path: scene.file.path, label: scene.file.basename },
-        sourceFingerprint: fnv1a32Hex(summaryText)
+        target: { path: scene.file.path, label: scene.file.basename }
     });
 }
 
@@ -77,65 +82,65 @@ export function createSummaryRefreshJobHandler(plugin: RadialTimelinePlugin): Ai
     return {
         feature: 'SummaryRefresh',
 
-        async currentFingerprint(job) {
-            const task = assertKnownTask(job);
-            const scene = await loadScene(plugin, job.target.path);
-            if (!scene) return null;
-            if (task === SUMMARY_TASK) return fnv1a32Hex(scene.body);
-            const summary = currentSummary(scene);
-            return summary === null ? null : fnv1a32Hex(summary);
-        },
-
         async rebuild(job) {
             const task = assertKnownTask(job);
             const scene = await loadScene(plugin, job.target.path);
-            if (!scene) throw new Error(`Scene ${job.target.path} is no longer available`);
-            if (task === SUMMARY_TASK) return buildSummaryJob(plugin, scene);
+            if (!scene) return null;
+
+            if (task === SUMMARY_TASK) {
+                return {
+                    prepared: buildSummaryJob(plugin, scene),
+                    apply: async (answer, attribution) => {
+                        const parsed = parseSummaryReply(answer);
+                        if (!parsed.ok) return { ok: false, problems: [parsed.problem] };
+                        await persistSummaryForScene(plugin, scene.file.path, { summary: parsed.text }, attribution);
+                        if (plugin.settings.alsoUpdateSynopsis) {
+                            const updated = await loadScene(plugin, scene.file.path);
+                            if (!updated) throw new Error(`Scene ${scene.file.path} could not be read after its Summary was written`);
+                            await writeAiJob(plugin.app, buildSynopsisJob(plugin, updated, parsed.text));
+                        }
+                        return { ok: true };
+                    }
+                };
+            }
+
+            // The Synopsis is written from the scene's Summary; without one there is nothing to write from.
             const summary = currentSummary(scene);
-            if (summary === null) throw new Error(`Scene ${job.target.path} no longer has a Summary`);
-            return buildSynopsisJob(plugin, scene, summary);
-        },
-
-        async apply(job, answer, attribution) {
-            const task = assertKnownTask(job);
-            if (task === SYNOPSIS_TASK) {
-                const parsed = parseSynopsisReply(answer, getSynopsisGenerationWordLimit(plugin.settings));
-                if (!parsed.ok) return { ok: false, problems: [parsed.problem] };
-                await persistSummaryForScene(plugin, job.target.path, { synopsis: parsed.text }, attribution);
-                return { ok: true };
-            }
-
-            const parsed = parseSummaryReply(answer);
-            if (!parsed.ok) return { ok: false, problems: [parsed.problem] };
-            await persistSummaryForScene(plugin, job.target.path, { summary: parsed.text }, attribution);
-            if (plugin.settings.alsoUpdateSynopsis) {
-                const scene = await loadScene(plugin, job.target.path);
-                if (!scene) throw new Error(`Scene ${job.target.path} could not be read after its Summary was written`);
-                await writeAiJob(plugin.app, buildSynopsisJob(plugin, scene, parsed.text));
-            }
-            return { ok: true };
+            if (summary === null) return null;
+            return {
+                prepared: buildSynopsisJob(plugin, scene, summary),
+                apply: async (answer, attribution) => {
+                    const parsed = parseSynopsisReply(answer, getSynopsisGenerationWordLimit(plugin.settings));
+                    if (!parsed.ok) return { ok: false, problems: [parsed.problem] };
+                    await persistSummaryForScene(plugin, scene.file.path, { synopsis: parsed.text }, attribution);
+                    return { ok: true };
+                }
+            };
         }
     };
 }
 
-/** Write a Summary job for every scene in the active book flagged with Summary Update: Yes. */
-export async function prepareSummaryRefreshJobs(plugin: RadialTimelinePlugin): Promise<void> {
-    const scope = resolveSummaryRefreshScope(plugin);
-    if (scope.reason) {
-        new Notice(scope.reason);
-        return;
-    }
-    const scenes = (await getAllSceneData(plugin, plugin.app.vault, { files: scope.files }))
-        .filter(isFlaggedForSummaryRefresh)
+function inSummaryScope(plugin: RadialTimelinePlugin, scene: SceneData, scope: AiJobScope): boolean {
+    if (scope === 'flagged') return isFlaggedForSummaryRefresh(scene);
+    if (scope === 'missing') return classifySynopsis(scene.frontmatter.Summary, plugin.settings.synopsisWeakThreshold ?? 75) === 'missing'; // SAFE: settings saved before the threshold existed; 75 is the shipped default
+    return true;
+}
+
+/**
+ * Write a Summary job for each scene of the active book in scope: flagged with
+ * Summary Update: Yes, missing a Summary, or all. Returns how many were written.
+ */
+export async function prepareSummaryRefreshJobs(plugin: RadialTimelinePlugin, scope: AiJobScope): Promise<number> {
+    const bookScope = resolveSummaryRefreshScope(plugin);
+    if (bookScope.reason) throw new Error(bookScope.reason);
+    const scenes = (await getAllSceneData(plugin, plugin.app.vault, { files: bookScope.files }))
+        .filter(scene => inSummaryScope(plugin, scene, scope))
         .sort(compareScenesByOrder);
-    if (scenes.length === 0) {
-        new Notice(t('aiJobs.notices.noFlaggedScenes', { scope: scope.scopeSummary }));
-        return;
-    }
+    if (scenes.length === 0) return 0;
 
     await ensureAiJobMailbox(plugin.app);
     for (const scene of scenes) {
         await writeAiJob(plugin.app, buildSummaryJob(plugin, scene));
     }
-    new Notice(t('aiJobs.notices.preparedSummary', { count: scenes.length, folder: AI_JOBS_DIR }), 10000);
+    return scenes.length;
 }

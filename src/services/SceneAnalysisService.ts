@@ -9,7 +9,6 @@ import { normalizeBooleanValue } from '../utils/sceneHelpers';
 import { getCredential } from '../ai/credentials/credentials';
 import { CANONICAL_PROVIDER_LABELS, getCanonicalAiSettings, resolveConfiguredSelection } from '../ai/runtime/runtimeSelection';
 import { getLocalLlmSettings } from '../ai/localLlm/settings';
-import { areBetaCommandsVisible } from '../settings/featureGate';
 import { t } from '../i18n';
 
 export class SceneAnalysisService {
@@ -19,25 +18,6 @@ export class SceneAnalysisService {
         this.registerManuscriptCommand();
         this.registerSubplotCommand();
         this.registerSynopsisCommand();
-        // Beta (development/testing builds) until tried end to end in a real vault.
-        if (areBetaCommandsVisible()) this.registerSummaryJobsCommand();
-    }
-
-    /** Summary refresh handed to an AI client the author runs; needs no API key. */
-    private registerSummaryJobsCommand(): void {
-        this.plugin.addCommand({
-            id: 'prepare-summary-ai-jobs',
-            name: t('aiJobs.commands.prepareSummary'),
-            checkCallback: (checking) => {
-                if (!this.plugin.settings.enableAiSceneAnalysis) return false;
-                if (checking) return true;
-                void (async () => {
-                    const { prepareSummaryRefreshJobs } = await import('../sceneAnalysis/summaryRefreshJobs');
-                    await prepareSummaryRefreshJobs(this.plugin);
-                })();
-                return true;
-            }
-        });
     }
 
     private registerSynopsisCommand(): void {

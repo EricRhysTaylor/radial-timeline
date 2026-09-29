@@ -133,6 +133,9 @@ export const moment = {
   locale: () => 'en',
 };
 
+// Obsidian app API version (the runtime's `apiVersion` export)
+export const apiVersion = '1.9.12';
+
 // Platform detection
 export const Platform = {
   isMobile: false,

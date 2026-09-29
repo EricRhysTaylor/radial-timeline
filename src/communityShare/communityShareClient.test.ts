@@ -37,6 +37,7 @@ function createPluginHarness(options: {
 } = {}) {
     const secrets = new Map<string, string>();
     const plugin = {
+        manifest: { version: '7.3.2' },
         app: {
             secretStorage: {
                 getSecret: (id: string) => secrets.get(id) ?? null,
@@ -405,6 +406,11 @@ describe('Community Share activation client', () => {
         expect(body.plugin_installation_id_hash).toMatch(/^[0-9a-f]{64}$/);
         expect(body.installation_label).toBeUndefined();
         expect(JSON.stringify(body)).not.toContain('rtpi_');
+        // The client travels in ONE header, never in the body.
+        expect((request as { headers?: Record<string, string> }).headers).toEqual({
+            'X-RT-Client': 'plugin=7.3.2; obsidian=1.9.12; platform=macos'
+        });
+        expect(body).not.toHaveProperty('plugin_version');
 
         expect(secrets.get('rt-community-share-installation-id')).toMatch(/^rtpi_/);
         expect(secrets.get('rt-community-share-connection-secret')).toBe('rtcs_returned-secret');
@@ -451,6 +457,8 @@ describe('Community Share activation client', () => {
         expect(cleanupBody.connection_id).toBe('conn-1');
         expect(cleanupBody.current_secret).toBe('rtcs_returned-secret');
         expect(cleanupBody.mode).toBe('disconnect_only');
+        expect((cleanupRequest as { headers?: Record<string, string> }).headers?.['X-RT-Client'])
+            .toBe('plugin=7.3.2; obsidian=1.9.12; platform=macos');
     });
 
     it('restores the prior connection secret when a replace fails to store the new one', async () => {

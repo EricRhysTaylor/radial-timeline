@@ -1,4 +1,4 @@
-import { requestUrl } from 'obsidian';
+import { apiVersion, Platform, requestUrl } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { deleteSecret, getSecret, isSecretStorageAvailable, setSecret } from '../ai/credentials/secretStorage';
 import { canShareAprToCommunity, deriveCommunityShareMode, normalizeCommunityShareSettings } from './communityShareSettings';
@@ -109,12 +109,37 @@ interface CommunityCallFailure {
 }
 
 /**
+ * The client this installation runs, sent as ONE header on every community
+ * call: `X-RT-Client: plugin=<manifest version>; obsidian=<apiVersion>;
+ * platform=<macos|windows|linux|ios|android>`. The platform records it on the
+ * connection (support reads it for bug reports; My Share shows it). Coarse by
+ * design: versions and an OS family, never a hostname, user name, device name
+ * or vault path.
+ */
+function communityClientHeaders(plugin: RadialTimelinePlugin): Record<string, string> {
+    const parts = [`plugin=${plugin.manifest.version}`, `obsidian=${apiVersion}`];
+    const platform = clientPlatform();
+    if (platform) parts.push(`platform=${platform}`);
+    return { 'X-RT-Client': parts.join('; ') };
+}
+
+function clientPlatform(): 'macos' | 'windows' | 'linux' | 'ios' | 'android' | null {
+    if (Platform.isIosApp) return 'ios';
+    if (Platform.isAndroidApp) return 'android';
+    if (Platform.isMacOS) return 'macos';
+    if (Platform.isWin) return 'windows';
+    if (Platform.isLinux) return 'linux';
+    return null;
+}
+
+/**
  * POST one community function and return its parsed success body. A non-2xx
  * answer becomes a CommunityShareError carrying the server's code and message
  * when it sent them and `failure` otherwise; a 2xx body that fails `isSuccess`
  * is an invalid_response. Callers check consent (assertStillSendable) first.
  */
 async function postCommunityFunction<T>(
+    plugin: RadialTimelinePlugin,
     endpoint: string,
     body: Record<string, unknown>,
     isSuccess: (value: unknown) => value is T,
@@ -125,6 +150,7 @@ async function postCommunityFunction<T>(
         url: `${FUNCTIONS_BASE_URL}/${endpoint}`,
         method: 'POST',
         contentType: 'application/json',
+        headers: communityClientHeaders(plugin),
         body: JSON.stringify(body),
         throw: false
     });
@@ -227,12 +253,13 @@ async function getOrCreateInstallationId(plugin: RadialTimelinePlugin): Promise<
     return next;
 }
 
-async function cleanupUnstoredConnection(connectionId: string, currentSecret: string): Promise<void> {
+async function cleanupUnstoredConnection(plugin: RadialTimelinePlugin, connectionId: string, currentSecret: string): Promise<void> {
     try {
         await requestUrl({
             url: `${FUNCTIONS_BASE_URL}/community-share-disconnect`,
             method: 'POST',
             contentType: 'application/json',
+            headers: communityClientHeaders(plugin),
             body: JSON.stringify({
                 connection_id: connectionId,
                 current_secret: currentSecret,
@@ -260,6 +287,7 @@ export async function confirmCommunityShareActivation(
     const installationId = await getOrCreateInstallationId(plugin);
     const pluginInstallationIdHash = await sha256Hex(installationId);
     const parsed = await postCommunityFunction(
+        plugin,
         'community-activation-confirm',
         {
             activation_token: token,
@@ -287,7 +315,7 @@ export async function confirmCommunityShareActivation(
         if (priorSecret && priorSecret !== parsed.connection_secret) {
             await setSecret(plugin.app, secretId, priorSecret);
         }
-        await cleanupUnstoredConnection(parsed.connection_id, parsed.connection_secret);
+        await cleanupUnstoredConnection(plugin, parsed.connection_id, parsed.connection_secret);
         throw new CommunityShareError(
             'secret_storage_failed',
             'The website connection was confirmed, but RT could not save it locally. Generate a new connection code and try again.'
@@ -364,6 +392,7 @@ export async function publishCommunityShareReport(
     }
 
     const parsed = await postCommunityFunction(
+        plugin,
         'community-share-publish',
         {
             connection_id: current.connection.connectionId,
@@ -589,6 +618,7 @@ export async function uploadAprToCommunity(
     }
 
     const parsed = await postCommunityFunction(
+        plugin,
         'community-apr-upload',
         {
             connection_id: connectionId,
@@ -620,6 +650,7 @@ export async function fetchCommunityShareContext(plugin: RadialTimelinePlugin): 
     assertStillSendable(plugin, connection, true);
 
     const parsed = await postCommunityFunction(
+        plugin,
         'community-share-context',
         {
             connection_id: connectionId,
@@ -656,6 +687,7 @@ export async function syncCommunityProjects(plugin: RadialTimelinePlugin): Promi
     assertStillSendable(plugin, connection);
 
     const parsed = await postCommunityFunction(
+        plugin,
         'community-project-sync',
         {
             connection_id: connectionId,
@@ -899,6 +931,7 @@ export async function syncCommunityDailyIfEligible(plugin: RadialTimelinePlugin)
             if (!isStillSendable(live, current.connection) || live.audience !== 'public' || live.tier !== 4) return null;
 
             await postCommunityFunction(
+                plugin,
                 'community-daily-sync',
                 {
                     connection_id: current.connection.connectionId,
@@ -1062,6 +1095,7 @@ async function callReportAction(
     body: Record<string, unknown>
 ): Promise<ReportActionSuccess> {
     return postCommunityFunction(
+        plugin,
         endpoint,
         body,
         isReportActionSuccess,
@@ -1213,6 +1247,7 @@ export async function postSessionToCommunityFeed(
         throw new CommunityShareError('sharing_level_required', 'The sharing level changed before the session could be posted.');
     }
     await postCommunityFunction(
+        plugin,
         'community-session-post',
         {
             connection_id: current.connection.connectionId,

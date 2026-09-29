@@ -429,7 +429,7 @@ interface ProjectSyncSuccess {
     created: number;
     updated: number;
     projects: Array<{ id: string; book_key: string; title: string; visibility: string }>;
-    /** The connection's bound project after this sync; absent on servers that predate project-less activation. */
+    /** The connection's bound project after this sync (null while unbound); absent on servers that predate project-less activation. */
     connection_project_id?: string | null;
 }
 
@@ -467,7 +467,8 @@ function isAprUploadSuccess(value: unknown): value is AprUploadSuccess {
 
 function isProjectSyncSuccess(value: unknown): value is ProjectSyncSuccess {
     const v = value as ProjectSyncSuccess;
-    return !!v && v.ok === true && Array.isArray(v.projects);
+    return !!v && v.ok === true && Array.isArray(v.projects)
+        && (v.connection_project_id === undefined || v.connection_project_id === null || typeof v.connection_project_id === 'string');
 }
 
 function isCommunityShareContext(value: unknown): value is CommunityShareContext {
@@ -679,20 +680,28 @@ export async function syncCommunityProjects(plugin: RadialTimelinePlugin): Promi
         'The project sync returned an unexpected response.'
     );
 
-    // A connection activated without a book is bound server-side to the first
-    // synced shell; the response carries that binding as connection_project_id.
-    // Store it once. Servers that predate the field omit it, and a connection
-    // that already has a project is never re-pointed from here.
-    if (!connection.projectId && typeof parsed.connection_project_id === 'string') {
+    // The server's binding is authoritative on every sync. A connection
+    // activated without a book is bound to the first synced shell, and the
+    // website's "Change book" control (community-connection-rebind) re-points
+    // a bound connection at another book; either way the response carries the
+    // binding after this call as connection_project_id. Store it whenever it
+    // differs from the cached id. Servers that predate the field omit it.
+    // A changed binding changes the report's project, so a ready preview goes
+    // stale and is reviewed again before the next manual publish.
+    if (parsed.connection_project_id !== undefined) {
         const boundProjectId = parsed.connection_project_id;
         const live = normalizeCommunityShareSettings(plugin.settings.communityShare);
-        if (live.connection.connectionId === connection.connectionId && !live.connection.projectId) {
+        if (live.connection.connectionId === connection.connectionId
+            && (live.connection.projectId ?? null) !== boundProjectId) { // SAFE: an absent cached id and null both mean unbound
             commitCommunityShare(plugin, current => ({
                 ...current,
                 connection: {
                     ...current.connection,
                     projectId: boundProjectId
-                }
+                },
+                preview: current.preview.status === 'ready'
+                    ? { ...current.preview, status: 'stale' }
+                    : current.preview
             }));
             await plugin.saveSettings();
         }

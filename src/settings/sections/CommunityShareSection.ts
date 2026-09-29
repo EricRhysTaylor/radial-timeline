@@ -80,6 +80,8 @@ const MY_SHARE_URL = 'https://community.radialtimeline.com/me';
 // fetch result lives module-side and refreshes at most once per TTL.
 interface WebsiteContextCache {
     connectionId: string;
+    /** The cached book binding at fetch time; a website rebind (seen by project sync) changes it and forces a refetch. */
+    projectId: string | null;
     fetchedAt: number;
     context?: CommunityShareContext;
     error?: string;
@@ -90,7 +92,8 @@ const WEBSITE_CONTEXT_TTL_MS = 5 * 60 * 1000;
 
 function getCachedWebsiteContext(settings: CommunityShareSettings): WebsiteContextCache | null {
     const connectionId = settings.connection.connectionId;
-    if (!connectionId || !websiteContextCache || websiteContextCache.connectionId !== connectionId) return null;
+    if (!connectionId || !websiteContextCache || websiteContextCache.connectionId !== connectionId
+        || websiteContextCache.projectId !== (settings.connection.projectId ?? null)) return null; // SAFE: an absent cached id and null both mean unbound
     return websiteContextCache;
 }
 
@@ -612,18 +615,21 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     // TTL. Failures render as an explicit "could not load" note — the
     // preview never substitutes plugin-local values for website fields.
     const contextConnectionId = settings.connection.connectionId;
+    const contextProjectId = settings.connection.projectId ?? null; // SAFE: an absent cached id and null both mean unbound
     const contextFresh = websiteContextCache
         && websiteContextCache.connectionId === contextConnectionId
+        && websiteContextCache.projectId === contextProjectId
         && Date.now() - websiteContextCache.fetchedAt < WEBSITE_CONTEXT_TTL_MS;
     if (mode !== 'private' && isConnected && contextConnectionId && !contextFresh && !websiteContextInflight) {
         websiteContextInflight = true;
         void fetchCommunityShareContext(plugin)
             .then(context => {
-                websiteContextCache = { connectionId: contextConnectionId, fetchedAt: Date.now(), context };
+                websiteContextCache = { connectionId: contextConnectionId, projectId: contextProjectId, fetchedAt: Date.now(), context };
             })
             .catch(error => {
                 websiteContextCache = {
                     connectionId: contextConnectionId,
+                    projectId: contextProjectId,
                     fetchedAt: Date.now(),
                     error: error instanceof Error ? error.message : 'Could not load your public profile from the website.'
                 };

@@ -961,7 +961,9 @@ export interface CommunityShareConnectionSettings {
     /**
      * Bound website project. `null` for a connection activated without a book
      * (decision 2026-09-23): the server binds it on the first successful
-     * project sync, which stores `connection_project_id` here.
+     * project sync. Every project sync stores the server's
+     * `connection_project_id` here when it differs, so a book changed on the
+     * website (My Share "Change book") reaches the plugin on the next sync.
      */
     projectId?: string | null;
     publicSlug?: string;

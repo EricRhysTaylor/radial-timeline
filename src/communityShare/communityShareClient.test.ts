@@ -1312,13 +1312,8 @@ describe('Community Share activation without a book', () => {
         expect(context.connected_project_id).toBeNull();
     });
 
-    it('stores the project the server binds on the first sync, and never re-points it afterwards', async () => {
-        const harness = createPluginHarness();
-        connectUnbound(harness);
-        const { plugin } = harness;
-        vi.clearAllMocks();
-        const request = vi.spyOn(obsidian, 'requestUrl');
-        const syncBody = (connectionProjectId: string) => ({
+    function syncBody(connectionProjectId: string | null) {
+        return {
             status: 200,
             text: JSON.stringify({
                 ok: true,
@@ -1327,19 +1322,80 @@ describe('Community Share activation without a book', () => {
                 projects: [{ id: 'p-1', book_key: 'book-1', title: 'Public Project Alias', visibility: 'private' }],
                 connection_project_id: connectionProjectId
             })
-        });
+        };
+    }
 
-        request.mockResolvedValueOnce(syncBody('p-1') as never);
+    it('stores the project the server binds on the first sync', async () => {
+        const harness = createPluginHarness();
+        connectUnbound(harness);
+        const { plugin } = harness;
+        vi.clearAllMocks();
+        vi.spyOn(obsidian, 'requestUrl').mockResolvedValueOnce(syncBody('p-1') as never);
+
         await syncCommunityProjects(plugin as never);
+
         expect(plugin.settings.communityShare.connection.projectId).toBe('p-1');
         expect(plugin.settings.communityShare.connection.connectionId).toBe('conn-1');
         expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
+    });
 
-        // A bound connection keeps its project even if a later response differs.
-        request.mockResolvedValueOnce(syncBody('p-other') as never);
+    it('writes nothing when the server reports the binding the plugin already holds', async () => {
+        const harness = createPluginHarness();
+        connectUnbound(harness).connection.projectId = 'p-1';
+        const { plugin } = harness;
+        vi.clearAllMocks();
+        vi.spyOn(obsidian, 'requestUrl').mockResolvedValueOnce(syncBody('p-1') as never);
+
         await syncCommunityProjects(plugin as never);
+
         expect(plugin.settings.communityShare.connection.projectId).toBe('p-1');
+        expect(plugin.saveSettings).not.toHaveBeenCalled();
+    });
+
+    it('follows a book changed on the website: the next sync stores the new binding and stales a ready preview', async () => {
+        const harness = createPluginHarness();
+        const settings = connectUnbound(harness);
+        settings.connection.projectId = 'p-1';
+        settings.preview = { ...settings.preview, status: 'ready', previewHash: 'preview-hash', payloadHash: 'payload-hash' };
+        const { plugin } = harness;
+        vi.clearAllMocks();
+        vi.spyOn(obsidian, 'requestUrl').mockResolvedValueOnce(syncBody('p-2') as never);
+
+        await syncCommunityProjects(plugin as never);
+
+        const live = plugin.settings.communityShare;
+        expect(live.connection.projectId).toBe('p-2');
+        expect(live.connection.connectionId).toBe('conn-1');
+        expect(live.preview.status).toBe('stale');
         expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps an unbound connection unbound when the server reports null, without a settings write', async () => {
+        const harness = createPluginHarness();
+        connectUnbound(harness);
+        const { plugin } = harness;
+        vi.clearAllMocks();
+        vi.spyOn(obsidian, 'requestUrl').mockResolvedValueOnce(syncBody(null) as never);
+
+        await syncCommunityProjects(plugin as never);
+
+        expect(plugin.settings.communityShare.connection.projectId).toBeNull();
+        expect(plugin.saveSettings).not.toHaveBeenCalled();
+    });
+
+    it('rejects a sync response whose connection_project_id is neither a string nor null', async () => {
+        const harness = createPluginHarness();
+        connectUnbound(harness).connection.projectId = 'p-1';
+        const { plugin } = harness;
+        vi.clearAllMocks();
+        vi.spyOn(obsidian, 'requestUrl').mockResolvedValueOnce({
+            status: 200,
+            text: JSON.stringify({ ok: true, created: 0, updated: 1, projects: [], connection_project_id: 42 })
+        } as never);
+
+        await expect(syncCommunityProjects(plugin as never)).rejects.toMatchObject({ code: 'invalid_response' });
+        expect(plugin.settings.communityShare.connection.projectId).toBe('p-1');
+        expect(plugin.saveSettings).not.toHaveBeenCalled();
     });
 
     it('leaves the connection unbound when an older server omits connection_project_id', async () => {

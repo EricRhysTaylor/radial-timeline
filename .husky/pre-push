@@ -3,7 +3,8 @@
 # The Stop hook in .claude/settings.json only nags once the commits are already
 # on origin/main, and it leaves no trace at all when a session ends abnormally.
 # That is how CSS-drift and compliance debt landed on 2026-08-07 and did not
-# surface until an unrelated session three days later.
+# surface until an unrelated session three days later. The Stop hook is also
+# skipped in cloud sessions, so there this pre-push run is the only gate.
 #
 # `npm run backup` runs the gates itself before pushing, so it sets the skip
 # below rather than paying for them twice. To override deliberately (an

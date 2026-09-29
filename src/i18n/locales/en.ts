@@ -1211,9 +1211,10 @@ export interface TranslationKeys {
             exportFolderMissing: string;
             openExplorerSidebar: string;
             explorerNoReveal: string;
-            pastePartial: string;
             pasteSuccess: string;
             pasteError: string;
+            pasteRejected: string;
+            pasteUnplaced: string;
             noBookSystem: string;
             noBeatsAvailable: string;
             noScenesInBook: string;
@@ -1222,7 +1223,6 @@ export interface TranslationKeys {
             promptCopyFailed: string;
             clipboardReadFailed: string;
             clipboardEmpty: string;
-            noScoresDetected: string;
             invalidScore: string;
             errorsList: string;
             noChanges: string;
@@ -3554,8 +3554,8 @@ export const en: TranslationKeys = {
             aiMetaSuffix: ' · {{count}} beats · {{label}}',
             tooltipNormalizeAvailable: 'Compact numbering gaps and drop orphan justifications',
             tooltipNormalizeNone: 'No gaps or orphan justifications detected — nothing to normalize',
-            tooltipCopy: 'Assemble prompt (role · rubric · beats · manuscript) and copy to clipboard',
-            tooltipPaste: 'Parse clipboard response and save in one step',
+            tooltipCopy: 'Copy the same prompt the AI run sends (scoring role · rubric · beats · JSON format). The manuscript is saved as a file to upload with it.',
+            tooltipPaste: 'Check the AI\'s JSON reply the same way the AI run does, then save in one step',
             tooltipSave: 'Save manually entered scores',
             tooltipCancel: 'Close without saving',
             normalizeConfirmMessage: 'Will renumber and clean {{count}} beat{{plural}} with gaps or orphaned justifications. RT will archive removed Gossamer fields before cleanup.',
@@ -3566,9 +3566,10 @@ export const en: TranslationKeys = {
             exportFolderMissing: 'Export folder not found yet — click "Copy AI prompt" to generate a manuscript first.',
             openExplorerSidebar: 'Open the File Explorer sidebar to see the revealed file.',
             explorerNoReveal: 'File explorer does not support reveal.',
-            pastePartial: '✓ Pasted {{matched}} of {{expected}} beats. Check for any misnamed rows.',
             pasteSuccess: '✓ Pasted {{matched}} scores + justifications.',
-            pasteError: '⚠️ {{reason}} Expected: "Beat Name | 42 | justification"',
+            pasteError: '⚠️ {{reason}}',
+            pasteRejected: 'Reply not accepted, so no scores were filled ({{count}} problem(s)). First: {{detail}}',
+            pasteUnplaced: 'These beats are not in this list, so no scores were filled: {{list}}',
             noBookSystem: 'No active beat system selected for this book.',
             noBeatsAvailable: 'No beats available. Add Beat notes with the selected Beat Model first.',
             noScenesInBook: 'No scenes found in the active book folder. Configure the book profile first.',
@@ -3577,7 +3578,6 @@ export const en: TranslationKeys = {
             promptCopyFailed: 'Failed to copy AI prompt to clipboard.',
             clipboardReadFailed: 'Could not read clipboard.',
             clipboardEmpty: 'Clipboard is empty.',
-            noScoresDetected: 'No scores detected. Expected "Beat Name | 42 | justification" per line.',
             invalidScore: 'Invalid score for "{{title}}"',
             errorsList: 'Errors: {{list}}',
             noChanges: 'No changes to save.',

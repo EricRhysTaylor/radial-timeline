@@ -83,6 +83,7 @@ These describe design direction but are not always authoritative rules.
 
 - **[v7-removals.md](plans/v7-removals.md)** — Migration shims and deprecated fallbacks to delete when cutting v7. Grep `TODO(v7)` for in-code touch points.
 - **[parts-first-class-markers-implementation.md](plans/parts-first-class-markers-implementation.md)** — Decouple publishing Parts from narrative Acts: `Part:` becomes an explicit scene marker like `Chapter`. Executable plan; decisions D1–D4 and the migration-journal contract are settled. Origin: issue #30.
+- **[local-agent-handoff-plan.md](plans/local-agent-handoff-plan.md)** — Let subscription AI clients (Codex, Claude Code) run Pulse, Summary and Gossamer through a job mailbox in the vault, with every prompt compiled from the API run's own request and every reply applied by the API run's own code. Phase 0 (Gossamer Copy/Paste on the shared contract) shipped; open questions await decisions.
 
 ---
 

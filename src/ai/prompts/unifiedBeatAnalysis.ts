@@ -154,6 +154,16 @@ ${manuscriptText}`;
   return { stableInput, volatileQuestion: buildSignalInstruction(signal) };
 }
 
+/**
+ * Stands in for the manuscript text when the Gossamer prompt is handed to an AI
+ * the author runs themselves. A full manuscript exceeds what a chat message
+ * accepts, so it travels as an attached file and the prompt names that file.
+ * Everything else in the prompt is the API run's, unchanged.
+ */
+export function buildAttachedManuscriptReference(fileName: string): string {
+  return `The full manuscript is attached as a separate file: "${fileName}". Read all of it and score from its text.`;
+}
+
 export function buildUnifiedBeatAnalysisPromptParts(
   manuscriptText: string,
   beats: UnifiedBeatInfo[],

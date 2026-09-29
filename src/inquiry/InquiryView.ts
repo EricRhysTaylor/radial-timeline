@@ -5698,6 +5698,10 @@ export class InquiryView extends ItemView {
             result.submittedAt = submittedAt.toISOString();
             result.completedAt = completedAt.toISOString();
             result.roundTripMs = completedAt.getTime() - submittedAt.getTime();
+            // The corpus the run saw, which staleness is read from; an Omnibus
+            // pass records the same (persistOmnibusResult).
+            result.corpusOnlyFingerprint = manifest.corpusOnlyFingerprint;
+            result.corpusManifestSnapshot = manifest.snapshot;
             this.applyTokenEstimateFromTrace(result, runTrace);
             result.aiModelNextRunOnly = false; // Legacy field — always false.
             result = this.applyCorpusOverrideSummary(result);

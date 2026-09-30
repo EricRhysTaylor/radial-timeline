@@ -2462,25 +2462,38 @@
    a red count for unread support requests (admins), a blue count for
    requests awaiting a reply, a dot for an unread reply. Static on purpose:
    no transitions or animation near the scene-hover path. */
+/* A labelled pill, sized and set like the Discord pill it replaced
+   (icon + "Mailbox" in the timeline's mono face), so it reads at a glance. */
 .ert-timeline-mailbox.clickable-icon {
   position: relative;
   flex: 0 0 auto;
-  width: 24px;
+  width: auto;
   height: 24px;
-  padding: 0;
+  box-sizing: border-box;
+  margin-inline-start: var(--size-4-1);
+  padding: 0 0.5rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
+  font-family: 'Radial Timeline JetBrains Mono', var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+  font-weight: 100;
+  font-synthesis: none;
+  line-height: 1;
+  white-space: nowrap;
+  border-radius: var(--radius-m);
   color: var(--text-muted);
 }
 
 .ert-timeline-mailbox.clickable-icon svg {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
 }
 
 .ert-timeline-mailbox.clickable-icon:hover {
   color: var(--text-normal);
+  background: var(--background-modifier-hover);
 }
 
 /* The last check failed: the icon stays, dimmed; the tooltip says why. */

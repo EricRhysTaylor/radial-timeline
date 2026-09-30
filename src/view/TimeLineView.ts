@@ -590,6 +590,11 @@ export class RadialTimelineView extends ItemView {
             mailboxBtn.className = 'ert-timeline-mailbox clickable-icon';
             mailboxBtn.type = 'button';
             setIcon(mailboxBtn, 'mail');
+            // Named like the Discord pill it replaced: icon + "Mailbox".
+            const mailboxLabel = doc.win.createSpan();
+            mailboxLabel.className = 'ert-timeline-mailbox__label';
+            mailboxLabel.setText('Mailbox');
+            mailboxBtn.appendChild(mailboxLabel);
             const mailboxMarkEl = doc.win.createSpan();
             mailboxBtn.appendChild(mailboxMarkEl);
             sessionBtn.parentElement?.insertBefore(mailboxBtn, sessionBtn.nextSibling);

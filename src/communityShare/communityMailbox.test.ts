@@ -9,13 +9,13 @@ import { buildDefaultCommunityShareSettings } from './communityShareSettings';
 import {
     COMMUNITY_SITE_URL,
     CommunityMailbox,
-    mailboxDestination,
-    mailboxMark,
+    mailboxBadge,
+    mailboxMenuEntries,
     mailboxTooltip
 } from './communityMailbox';
 
 const QUESTION = '55555555-5555-4555-8555-555555555555';
-const EMPTY: CommunityMailboxAnswer = { ok: true, support_unread: false, replies: { count: 0, latest_post_id: null }, admin: null };
+const EMPTY: CommunityMailboxAnswer = { ok: true, support_unread: 0, replies: { count: 0, latest_post_id: null }, admin: null };
 const answer = (patch: Partial<CommunityMailboxAnswer>): CommunityMailboxAnswer => ({ ...EMPTY, ...patch });
 
 const fetchMock = vi.mocked(fetchCommunityMailbox);
@@ -41,48 +41,54 @@ function deferred<T>() {
     return { promise, resolve };
 }
 
-describe('mailboxMark mirrors the website account chip', () => {
+describe('mailboxBadge works like the website account chip', () => {
     it('shows the inbox count first: red while unread, blue while only awaiting', () => {
-        expect(mailboxMark(answer({ admin: { unread: 2, awaiting: 5 }, support_unread: true }))).toEqual({ kind: 'count', tone: 'unread', count: 2 });
-        expect(mailboxMark(answer({ admin: { unread: 0, awaiting: 3 } }))).toEqual({ kind: 'count', tone: 'awaiting', count: 3 });
+        expect(mailboxBadge(answer({ admin: { unread: 2, awaiting: 5 }, support_unread: 1 }))).toEqual({ tone: 'unread', count: 2 });
+        expect(mailboxBadge(answer({ admin: { unread: 0, awaiting: 3 } }))).toEqual({ tone: 'awaiting', count: 3 });
     });
 
-    it('falls back to a dot for an unread team reply or question reply', () => {
-        expect(mailboxMark(answer({ admin: { unread: 0, awaiting: 0 }, support_unread: true }))).toEqual({ kind: 'dot' });
-        expect(mailboxMark(answer({ replies: { count: 1, latest_post_id: QUESTION } }))).toEqual({ kind: 'dot' });
+    it('otherwise counts conversations with new replies in gold: requests plus questions', () => {
+        expect(mailboxBadge(answer({ admin: { unread: 0, awaiting: 0 }, support_unread: 1 }))).toEqual({ tone: 'new', count: 1 });
+        expect(mailboxBadge(answer({ support_unread: 2, replies: { count: 3, latest_post_id: QUESTION } }))).toEqual({ tone: 'new', count: 5 });
     });
 
     it('shows nothing when all is read, and before the first answer', () => {
-        expect(mailboxMark(EMPTY)).toBeNull();
-        expect(mailboxMark(answer({ admin: { unread: 0, awaiting: 0 } }))).toBeNull();
-        expect(mailboxMark(null)).toBeNull();
+        expect(mailboxBadge(EMPTY)).toBeNull();
+        expect(mailboxBadge(answer({ admin: { unread: 0, awaiting: 0 } }))).toBeNull();
+        expect(mailboxBadge(null)).toBeNull();
     });
 });
 
-describe('mailboxDestination opens what the mark is about', () => {
-    it('routes the inbox, Requests, then the newest question', () => {
-        expect(mailboxDestination(answer({ admin: { unread: 1, awaiting: 1 }, support_unread: true }))).toBe(`${COMMUNITY_SITE_URL}/admin/support`);
-        expect(mailboxDestination(answer({ admin: { unread: 0, awaiting: 2 } }))).toBe(`${COMMUNITY_SITE_URL}/admin/support`);
-        expect(mailboxDestination(answer({ support_unread: true, replies: { count: 1, latest_post_id: QUESTION } }))).toBe(`${COMMUNITY_SITE_URL}/requests`);
-        expect(mailboxDestination(answer({ replies: { count: 1, latest_post_id: QUESTION } }))).toBe(`${COMMUNITY_SITE_URL}/posts/${QUESTION}`);
+describe('mailboxMenuEntries mirrors the website account menu', () => {
+    it('lists Requests, New replies while there are some, and the Support inbox for admins, each with its count', () => {
+        expect(mailboxMenuEntries(answer({
+            support_unread: 2,
+            replies: { count: 1, latest_post_id: QUESTION },
+            admin: { unread: 0, awaiting: 4 }
+        }))).toEqual([
+            { label: 'Requests', icon: 'mail', url: `${COMMUNITY_SITE_URL}/requests`, badge: { tone: 'new', count: 2 } },
+            { label: 'New replies', icon: 'reply', url: `${COMMUNITY_SITE_URL}/posts/${QUESTION}`, badge: { tone: 'new', count: 1 } },
+            { label: 'Support inbox', icon: 'inbox', url: `${COMMUNITY_SITE_URL}/admin/support`, badge: { tone: 'awaiting', count: 4 } }
+        ]);
     });
 
-    it('defaults to Requests, and never builds a link from a non-UUID id', () => {
-        expect(mailboxDestination(EMPTY)).toBe(`${COMMUNITY_SITE_URL}/requests`);
-        expect(mailboxDestination(null)).toBe(`${COMMUNITY_SITE_URL}/requests`);
-        expect(mailboxDestination(answer({ replies: { count: 1, latest_post_id: '../admin' } }))).toBe(`${COMMUNITY_SITE_URL}/requests`);
+    it('keeps Requests reachable with nothing new, before the first check, and for a member', () => {
+        const requestsOnly = [{ label: 'Requests', icon: 'mail', url: `${COMMUNITY_SITE_URL}/requests`, badge: null }];
+        expect(mailboxMenuEntries(EMPTY)).toEqual(requestsOnly);
+        expect(mailboxMenuEntries(null)).toEqual(requestsOnly);
+        expect(mailboxMenuEntries(answer({ admin: { unread: 0, awaiting: 0 } })).map(e => e.label)).toEqual(['Requests', 'Support inbox']);
     });
 });
 
 describe('mailboxTooltip', () => {
     it('names what is new, says nothing new, or says why a check failed', () => {
-        expect(mailboxTooltip({ visible: true, answer: answer({ admin: { unread: 2, awaiting: 3 }, support_unread: true }), error: null }))
-            .toBe('Community mailbox: 2 unread in the support inbox · a new reply in Requests');
-        expect(mailboxTooltip({ visible: true, answer: answer({ replies: { count: 3, latest_post_id: QUESTION } }), error: null }))
-            .toBe('Community mailbox: new replies to 3 of your questions');
-        expect(mailboxTooltip({ visible: true, answer: EMPTY, error: null })).toBe('Community mailbox: nothing new');
+        expect(mailboxTooltip({ visible: true, answer: answer({ admin: { unread: 2, awaiting: 3 }, support_unread: 1 }), error: null }))
+            .toBe('Mailbox: 2 unread in the support inbox · a new reply in Requests');
+        expect(mailboxTooltip({ visible: true, answer: answer({ support_unread: 2, replies: { count: 3, latest_post_id: QUESTION } }), error: null }))
+            .toBe('Mailbox: new replies on 2 requests · new replies to 3 of your questions');
+        expect(mailboxTooltip({ visible: true, answer: EMPTY, error: null })).toBe('Mailbox: nothing new');
         expect(mailboxTooltip({ visible: true, answer: null, error: 'This connection has been disconnected.' }))
-            .toContain("couldn't check for new replies (This connection has been disconnected.)");
+            .toBe("Mailbox: couldn't check for new replies (This connection has been disconnected.).");
     });
 });
 
@@ -106,12 +112,12 @@ describe('CommunityMailbox', () => {
     });
 
     it('checks when the first view subscribes, then hourly while one stays open', async () => {
-        fetchMock.mockResolvedValue(answer({ support_unread: true }));
+        fetchMock.mockResolvedValue(answer({ support_unread: 1 }));
         const mailbox = new CommunityMailbox(connectedPlugin() as never);
         const painted = vi.fn();
         const unsubscribe = mailbox.subscribe(painted);
         await vi.waitFor(() => expect(painted).toHaveBeenCalled());
-        expect(mailbox.view()).toEqual({ visible: true, answer: answer({ support_unread: true }), error: null });
+        expect(mailbox.view()).toEqual({ visible: true, answer: answer({ support_unread: 1 }), error: null });
         expect(fetchMock).toHaveBeenCalledTimes(1);
 
         mailbox.subscribe(() => {}); // a second view does not check again
@@ -146,7 +152,7 @@ describe('CommunityMailbox', () => {
     });
 
     it('keeps the icon but drops the mark when a check fails', async () => {
-        fetchMock.mockResolvedValueOnce(answer({ support_unread: true }));
+        fetchMock.mockResolvedValueOnce(answer({ support_unread: 1 }));
         const mailbox = new CommunityMailbox(connectedPlugin() as never);
         mailbox.subscribe(() => {});
         await vi.waitFor(() => expect(mailbox.view().answer).not.toBeNull());
@@ -171,7 +177,7 @@ describe('CommunityMailbox', () => {
         expect(mailbox.view().visible).toBe(false);
         expect(painted).toHaveBeenCalledTimes(1);
 
-        pending.resolve(answer({ support_unread: true }));
+        pending.resolve(answer({ support_unread: 1 }));
         await vi.runOnlyPendingTimersAsync();
         expect(mailbox.view()).toEqual({ visible: false, answer: null, error: null });
 

@@ -7,24 +7,28 @@
 /**
  * Community mailbox: the title-bar Mailbox pill (mail icon + "Mailbox") right
  * of the writing-session control, where the Discord pill was until 7.3.2. It
- * mirrors the website account chip: the admin support inbox count (red while
- * a request is unread, blue while requests only await a reply), else a dot
- * for an unread reply (a team reply in Requests, or a reply to one of your
- * questions).
+ * works like the website account chip, in the same colours: the admin support
+ * inbox count (red while a request is unread, blue while requests only await
+ * a reply), else a gold count of conversations with new replies (your
+ * requests with a team reply plus your questions with new replies; the
+ * website shows a gold dot for the same thing). Clicking opens a menu like the
+ * website's account menu: Requests, New replies, and the Support inbox for
+ * admins, each with its own count.
  *
  * The server is the single source of truth: `community-mailbox` returns the
  * facts the website itself shows. This module never computes a count and
- * never marks anything read. Clicking opens the website, and reading there
- * clears the mark on the next check.
+ * never marks anything read. The menu opens the website, and reading there
+ * clears the badge on the next check.
  *
  * Shown only on a vault connected to the Community, with the Advanced toggle
  * on (the default). It checks only while a timeline view shows it: when the
  * first view opens, hourly after that, and when a timeline window regains
  * focus (the "I just read it on the website" return). A failed check keeps
- * the icon, drops the mark and says why in the tooltip; it never raises a
+ * the pill, drops the badge and says why in the tooltip; it never raises a
  * Notice.
  */
 
+import { Menu } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { tooltip as applyTooltip } from '../utils/tooltip';
 import { fetchCommunityMailbox, type CommunityMailboxAnswer } from './communityShareClient';
@@ -35,7 +39,6 @@ export const COMMUNITY_SITE_URL = 'https://community.radialtimeline.com';
 const POLL_MS = 60 * 60e3;
 const JITTER_MS = 5 * 60e3; // 0–5 min added to every hourly check
 const WAKE_REFETCH_GAP_MS = 60e3; // debounce focus/visibility checks
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export interface MailboxView {
     /** Connected to the Community and the toggle is on. */
@@ -46,61 +49,123 @@ export interface MailboxView {
     error: string | null;
 }
 
-export type MailboxMark =
-    | { kind: 'count'; tone: 'unread' | 'awaiting'; count: number }
-    | { kind: 'dot' }
-    | null;
+/**
+ * One count in the website chip's colours: red `unread` (support requests
+ * the admin has not opened), blue `awaiting` (open requests awaiting a team
+ * reply), gold `new` (conversations with new replies for you).
+ */
+export interface MailboxBadge {
+    tone: 'unread' | 'awaiting' | 'new';
+    count: number;
+}
 
-/** The website chip's mark: the inbox count when there is one, else a dot for any unread reply. */
-export function mailboxMark(answer: CommunityMailboxAnswer | null): MailboxMark {
-    if (!answer) return null;
-    if (answer.admin && answer.admin.unread > 0) return { kind: 'count', tone: 'unread', count: answer.admin.unread };
-    if (answer.admin && answer.admin.awaiting > 0) return { kind: 'count', tone: 'awaiting', count: answer.admin.awaiting };
-    if (answer.support_unread || answer.replies.count > 0) return { kind: 'dot' };
+/** The admin support inbox badge (website lib/support.ts adminInboxBadge). */
+function inboxBadge(answer: CommunityMailboxAnswer | null): MailboxBadge | null {
+    const admin = answer?.admin;
+    if (!admin) return null;
+    if (admin.unread > 0) return { tone: 'unread', count: admin.unread };
+    if (admin.awaiting > 0) return { tone: 'awaiting', count: admin.awaiting };
     return null;
 }
 
-/** Where a click goes: to whatever the mark is about, else Requests. */
-export function mailboxDestination(answer: CommunityMailboxAnswer | null): string {
-    if (answer?.admin && (answer.admin.unread > 0 || answer.admin.awaiting > 0)) return `${COMMUNITY_SITE_URL}/admin/support`;
-    if (answer?.support_unread) return `${COMMUNITY_SITE_URL}/requests`;
-    // The id is server input: only a UUID becomes part of the link.
-    const post = answer?.replies.latest_post_id;
-    if (answer && answer.replies.count > 0 && post && UUID_RE.test(post)) return `${COMMUNITY_SITE_URL}/posts/${post}`;
-    return `${COMMUNITY_SITE_URL}/requests`;
+/** The pill's badge: the inbox count when there is one, else the gold count of conversations with new replies. */
+export function mailboxBadge(answer: CommunityMailboxAnswer | null): MailboxBadge | null {
+    if (!answer) return null;
+    const inbox = inboxBadge(answer);
+    if (inbox) return inbox;
+    const fresh = answer.support_unread + answer.replies.count;
+    return fresh > 0 ? { tone: 'new', count: fresh } : null;
+}
+
+export interface MailboxMenuEntry {
+    label: string;
+    icon: string;
+    url: string;
+    badge: MailboxBadge | null;
+}
+
+/**
+ * The pill's menu, item for item the mailbox part of the website account
+ * menu: Requests, New replies (only while there are some; opens the newest
+ * question with a reply), and the Support inbox for admins.
+ */
+export function mailboxMenuEntries(answer: CommunityMailboxAnswer | null): MailboxMenuEntry[] {
+    const entries: MailboxMenuEntry[] = [{
+        label: 'Requests',
+        icon: 'mail',
+        url: `${COMMUNITY_SITE_URL}/requests`,
+        badge: answer && answer.support_unread > 0 ? { tone: 'new', count: answer.support_unread } : null
+    }];
+    if (answer && answer.replies.count > 0 && answer.replies.latest_post_id) {
+        entries.push({
+            label: 'New replies',
+            icon: 'reply',
+            url: `${COMMUNITY_SITE_URL}/posts/${answer.replies.latest_post_id}`,
+            badge: { tone: 'new', count: answer.replies.count }
+        });
+    }
+    if (answer?.admin) {
+        entries.push({ label: 'Support inbox', icon: 'inbox', url: `${COMMUNITY_SITE_URL}/admin/support`, badge: inboxBadge(answer) });
+    }
+    return entries;
 }
 
 export function mailboxTooltip(view: MailboxView): string {
-    if (view.error) return `Community mailbox: couldn't check for new replies (${view.error}). Click to open it on the website.`;
+    if (view.error) return `Mailbox: couldn't check for new replies (${view.error}).`;
     const answer = view.answer;
-    if (!answer) return 'Community mailbox';
+    if (!answer) return 'Mailbox';
     const notes: string[] = [];
-    if (answer.admin && answer.admin.unread > 0) notes.push(`${answer.admin.unread} unread in the support inbox`);
-    else if (answer.admin && answer.admin.awaiting > 0) notes.push(`${answer.admin.awaiting} awaiting a reply in the support inbox`);
-    if (answer.support_unread) notes.push('a new reply in Requests');
+    const inbox = inboxBadge(answer);
+    if (inbox?.tone === 'unread') notes.push(`${inbox.count} unread in the support inbox`);
+    if (inbox?.tone === 'awaiting') notes.push(`${inbox.count} awaiting a reply in the support inbox`);
+    if (answer.support_unread === 1) notes.push('a new reply in Requests');
+    else if (answer.support_unread > 1) notes.push(`new replies on ${answer.support_unread} requests`);
     if (answer.replies.count === 1) notes.push('new replies to your question');
     else if (answer.replies.count > 1) notes.push(`new replies to ${answer.replies.count} of your questions`);
-    return notes.length ? `Community mailbox: ${notes.join(' · ')}` : 'Community mailbox: nothing new';
+    return notes.length ? `Mailbox: ${notes.join(' · ')}` : 'Mailbox: nothing new';
 }
 
-/** Paint one title-bar mailbox button from the shared state. */
-export function paintMailboxButton(button: HTMLElement, markEl: HTMLElement, view: MailboxView): void {
+/** Paint a badge element (the pill's corner, or a menu item). */
+function paintBadge(el: HTMLElement, badge: MailboxBadge | null): void {
+    el.hidden = badge === null;
+    el.className = 'ert-mailbox-badge';
+    el.setText('');
+    if (!badge) return;
+    el.classList.add(`is-${badge.tone}`);
+    el.setText(badge.count > 99 ? '99+' : String(badge.count));
+}
+
+/** Paint one title-bar Mailbox pill from the shared state. */
+export function paintMailboxButton(button: HTMLElement, badgeEl: HTMLElement, view: MailboxView): void {
     button.hidden = !view.visible;
     if (!view.visible) return;
-    const mark = mailboxMark(view.answer);
-    markEl.hidden = mark === null;
-    markEl.className = 'ert-timeline-mailbox__mark';
-    markEl.setText('');
-    if (mark?.kind === 'count') {
-        markEl.classList.add('is-count', mark.tone === 'unread' ? 'is-unread' : 'is-awaiting');
-        markEl.setText(mark.count > 99 ? '99+' : String(mark.count));
-    } else if (mark?.kind === 'dot') {
-        markEl.classList.add('is-dot');
-    }
+    paintBadge(badgeEl, mailboxBadge(view.answer));
     button.classList.toggle('is-stale', view.error !== null);
     const label = mailboxTooltip(view);
     button.setAttribute('aria-label', label);
     applyTooltip(button, label, 'bottom');
+}
+
+/** Open the pill's menu just below it; each item opens its Community page. */
+export function openMailboxMenu(anchor: HTMLElement, answer: CommunityMailboxAnswer | null): void {
+    const doc = anchor.ownerDocument;
+    const menu = new Menu();
+    for (const entry of mailboxMenuEntries(answer)) {
+        menu.addItem(item => {
+            const title = doc.win.createFragment();
+            title.appendText(entry.label);
+            if (entry.badge) {
+                const badgeEl = title.createSpan();
+                paintBadge(badgeEl, entry.badge);
+                badgeEl.classList.add('ert-mailbox-badge--menu');
+            }
+            item.setTitle(title)
+                .setIcon(entry.icon)
+                .onClick(() => { window.open(entry.url, '_blank'); });
+        });
+    }
+    const rect = anchor.getBoundingClientRect();
+    menu.showAtPosition({ x: rect.left, y: rect.bottom }, doc);
 }
 
 /**

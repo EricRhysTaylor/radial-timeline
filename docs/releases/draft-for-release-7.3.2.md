@@ -5,7 +5,7 @@ Your vault follows the book you choose on your Community page.
 ### Community
 
 - **Your book follows My Share.** Choose a different book with **Change book** on My Share and the next book sync picks it up: the Community Share preview and the connected book in settings both show the book you chose.
-- **A mailbox in the title bar.** On a vault connected to the Community, a **Mailbox** button beside the writing-session control shows a dot when the team has answered one of your requests or someone has replied to your question. Click it to read the reply on the Community. To hide it, turn off **Show Community mailbox** in **Settings → Advanced**.
+- **A mailbox in the title bar.** On a vault connected to the Community, a **Mailbox** button beside the writing-session control works like your account menu on the Community website. A gold number counts your requests the team has answered and your questions with new replies, and clicking it opens a menu of Requests and New replies to read them on the Community. To hide it, turn off **Show Community mailbox** in **Settings → Advanced**.
 - **Bug reports that carry the details.** Bug reports from the Community include your plugin version, Obsidian version, and platform, so fixes land faster. My Share shows the same line for the vault you connected.
 
 ### Getting help

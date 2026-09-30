@@ -21,6 +21,12 @@
   --ert-pro-accent-rgb-base: 217, 70, 239;
   --ert-social-accent-color-base: #ffd41d;
   --ert-social-accent-rgb-base: 255, 212, 29;
+  /* Community account colours (Brand/brand-guidelines.md, Community palette),
+     shared with the website account chip: the title-bar Mailbox badges. */
+  --ert-community-gold: #F2C94C;
+  --ert-community-account-blue: #58B9FF;
+  --ert-community-alert-red: #FF6B6B;
+  --ert-community-badge-ink: #050505;
   --rt-legacy-black: #000000;
   --rt-legacy-gray: #666666;
   --rt-legacy-gray-light: #888888;

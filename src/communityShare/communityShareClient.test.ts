@@ -1111,7 +1111,7 @@ describe('Community mailbox client', () => {
         harness.secrets.set('rt-community-share-connection-secret', 'rtcs_current-secret');
         return harness;
     }
-    const mailboxBody = { ok: true, support_unread: true, replies: { count: 1, latest_post_id: 'post-1' }, admin: null };
+    const mailboxBody = { ok: true, support_unread: 2, replies: { count: 1, latest_post_id: '55555555-5555-4555-8555-555555555555' }, admin: null };
 
     it('reads the mailbox with only the connection id and secret, even while sharing is paused', async () => {
         const { plugin } = connectedHarness();
@@ -1138,13 +1138,21 @@ describe('Community mailbox client', () => {
         expect(request).not.toHaveBeenCalled();
     });
 
-    it('rejects a malformed answer and passes server refusals through', async () => {
+    it.each([
+        ['a count without a question', { replies: { count: 2, latest_post_id: null } }],
+        ['a question id that is not a UUID', { replies: { count: 1, latest_post_id: '../admin' } }],
+        ['a yes/no instead of a count', { support_unread: true }],
+    ])('rejects a malformed answer: %s', async (_name, patch) => {
         const { plugin } = connectedHarness();
         vi.spyOn(obsidian, 'requestUrl').mockResolvedValueOnce({
             status: 200,
-            text: JSON.stringify({ ...mailboxBody, replies: { count: 2, latest_post_id: null } })
+            text: JSON.stringify({ ...mailboxBody, ...patch })
         } as never);
         await expect(fetchCommunityMailbox(plugin as never)).rejects.toMatchObject({ code: 'invalid_response' });
+    });
+
+    it('passes server refusals through', async () => {
+        const { plugin } = connectedHarness();
         vi.spyOn(obsidian, 'requestUrl').mockResolvedValueOnce({
             status: 409,
             text: JSON.stringify({ error: { code: 'connection_disconnected', message: 'This connection has been disconnected.' } })

@@ -666,8 +666,8 @@ export async function fetchCommunityShareContext(plugin: RadialTimelinePlugin): 
 /** community-mailbox: the website account chip's mailbox facts for this member. */
 export interface CommunityMailboxAnswer {
     ok: true;
-    /** A team reply in Requests the member has not seen. */
-    support_unread: boolean;
+    /** The member's requests with a team reply they have not seen. */
+    support_unread: number;
     /** The member's questions with unread replies; latest_post_id is the newest (null when count is 0). */
     replies: { count: number; latest_post_id: string | null };
     /** Community admins only: unread requests and requests awaiting a reply. */
@@ -678,15 +678,20 @@ function isMailboxCount(value: unknown): value is number {
     return typeof value === 'number' && Number.isInteger(value) && value >= 0;
 }
 
+const MAILBOX_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function isCommunityMailboxAnswer(value: unknown): value is CommunityMailboxAnswer {
     if (!value || typeof value !== 'object') return false;
     const answer = value as Partial<CommunityMailboxAnswer>;
     const replies = answer.replies;
     const admin = answer.admin;
     return answer.ok === true
-        && typeof answer.support_unread === 'boolean'
+        && isMailboxCount(answer.support_unread)
         && !!replies && isMailboxCount(replies.count)
-        && (replies.count === 0 ? replies.latest_post_id === null : typeof replies.latest_post_id === 'string')
+        // The question id becomes part of a link: only a UUID is accepted.
+        && (replies.count === 0
+            ? replies.latest_post_id === null
+            : typeof replies.latest_post_id === 'string' && MAILBOX_UUID_RE.test(replies.latest_post_id))
         && (admin === null || (!!admin && isMailboxCount(admin.unread) && isMailboxCount(admin.awaiting)));
 }
 

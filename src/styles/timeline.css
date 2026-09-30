@@ -2459,10 +2459,9 @@
 
 /* Community mailbox: a labelled pill (mail icon + "Mailbox" in the
    timeline's mono face) right of the writing-session control, sized and set
-   like the Discord pill it replaced. The mark on its corner mirrors the
-   website account chip: a red count for unread support requests (admins), a
-   blue count for requests awaiting a reply, a dot for an unread reply.
-   Static on purpose: no transitions or animation near the scene-hover path. */
+   like the Discord pill it replaced. The badge on its corner works like the
+   website account chip's (.ert-mailbox-badge below). Static on purpose: no
+   transitions or animation near the scene-hover path. */
 .ert-timeline-mailbox.clickable-icon {
   position: relative;
   flex: 0 0 auto;
@@ -2500,47 +2499,58 @@
   opacity: 0.45;
 }
 
-.ert-timeline-mailbox[hidden],
-.ert-timeline-mailbox__mark[hidden] {
+.ert-timeline-mailbox[hidden] {
   display: none;
 }
 
-.ert-timeline-mailbox__mark {
-  position: absolute;
-  top: 0;
-  right: 0;
-  pointer-events: none;
-  box-shadow: 0 0 0 1.5px var(--background-primary);
-}
-
-.ert-timeline-mailbox__mark.is-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--interactive-accent);
-}
-
-.ert-timeline-mailbox__mark.is-count {
-  top: -2px;
-  right: -4px;
-  min-width: 14px;
-  height: 14px;
-  padding: 0 3px;
+/* A mailbox count in the website account chip's colours and shape (tokens in
+   variables.css): gold for new replies, red for support requests an admin
+   has not opened, blue for requests awaiting a reply; dark ink on all three.
+   Used on the Mailbox pill's corner and in its menu. */
+.ert-mailbox-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
   box-sizing: border-box;
-  border-radius: 7px;
-  font-size: 9px;
-  font-weight: var(--font-bold);
-  line-height: 14px;
-  text-align: center;
-  color: var(--text-on-accent);
+  border-radius: 99px;
+  font-family: var(--font-interface);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--ert-community-badge-ink);
 }
 
-.ert-timeline-mailbox__mark.is-unread {
-  background: var(--color-red);
+.ert-mailbox-badge[hidden] {
+  display: none;
 }
 
-.ert-timeline-mailbox__mark.is-awaiting {
-  background: var(--color-blue);
+.ert-mailbox-badge.is-new {
+  background: var(--ert-community-gold);
+}
+
+.ert-mailbox-badge.is-unread {
+  background: var(--ert-community-alert-red);
+}
+
+.ert-mailbox-badge.is-awaiting {
+  background: var(--ert-community-account-blue);
+}
+
+/* On the pill: its top-right corner, ringed in the title bar's background
+   the way the website chip rings its badge. */
+.ert-timeline-mailbox > .ert-mailbox-badge {
+  position: absolute;
+  top: -5px;
+  right: -6px;
+  pointer-events: none;
+  box-shadow: 0 0 0 2px var(--background-primary);
+}
+
+/* In the pill's menu: after the item label. */
+.ert-mailbox-badge--menu {
+  margin-inline-start: var(--size-4-2);
 }
 
 .ert-timeline-subplot-key {

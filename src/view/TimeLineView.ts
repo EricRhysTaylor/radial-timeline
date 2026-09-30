@@ -40,7 +40,7 @@ import {
 } from '../renderer/ChangeDetection';
 import { WritingSessionCompletionModal } from '../modals/WritingSessionCompletionModal';
 import { canPostSessionsToFeed, postSessionToCommunityFeed } from '../communityShare/communityShareClient';
-import { mailboxDestination, paintMailboxButton } from '../communityShare/communityMailbox';
+import { openMailboxMenu, paintMailboxButton } from '../communityShare/communityMailbox';
 import { projectSessionFeedPost } from '../services/WritingSessionLog';
 import { isRenderedOnTimeline } from '../utils/sceneHelpers';
 import { SearchPanelController } from './interactions/SearchPanelController';
@@ -589,22 +589,23 @@ export class RadialTimelineView extends ItemView {
             const mailboxBtn = doc.win.createEl('button');
             mailboxBtn.className = 'ert-timeline-mailbox clickable-icon';
             mailboxBtn.type = 'button';
+            mailboxBtn.setAttribute('aria-haspopup', 'menu');
             setIcon(mailboxBtn, 'mail');
             // Named like the Discord pill it replaced: icon + "Mailbox".
             const mailboxLabel = doc.win.createSpan();
             mailboxLabel.className = 'ert-timeline-mailbox__label';
             mailboxLabel.setText('Mailbox');
             mailboxBtn.appendChild(mailboxLabel);
-            const mailboxMarkEl = doc.win.createSpan();
-            mailboxBtn.appendChild(mailboxMarkEl);
+            const mailboxBadgeEl = doc.win.createSpan();
+            mailboxBtn.appendChild(mailboxBadgeEl);
             sessionBtn.parentElement?.insertBefore(mailboxBtn, sessionBtn.nextSibling);
-            const paintMailbox = () => paintMailboxButton(mailboxBtn, mailboxMarkEl, mailbox.view());
+            const paintMailbox = () => paintMailboxButton(mailboxBtn, mailboxBadgeEl, mailbox.view());
             this.register(mailbox.subscribe(paintMailbox));
             paintMailbox();
             this.registerDomEvent(mailboxBtn, 'click', (evt: MouseEvent) => {
                 evt.preventDefault();
                 evt.stopPropagation();
-                window.open(mailboxDestination(mailbox.view().answer), '_blank');
+                openMailboxMenu(mailboxBtn, mailbox.view().answer);
             });
             // Coming back from the website is when a mark may have cleared.
             this.registerDomEvent(doc.win, 'focus', () => mailbox.onWake());

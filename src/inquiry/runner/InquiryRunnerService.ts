@@ -31,7 +31,7 @@ import { cleanEvidenceBody } from '../utils/evidenceCleaning';
 import { estimateHeuristicInputTokens, estimateTokensFromChars, estimateUncertaintyTokens, type TokenEstimateMethod } from '../../ai/tokens/inputTokenEstimate';
 import { logCountingForensics } from '../../ai/diagnostics/countingForensics';
 import { buildInquiryJsonSchema, buildInquiryOmnibusJsonSchema } from '../jsonSchema';
-import { buildInquiryPromptParts, INQUIRY_ROLE_TEMPLATE_GUARDRAIL } from '../promptScaffold';
+import { buildInquiryPromptParts, INQUIRY_EVIDENCE_HEADING, INQUIRY_ROLE_TEMPLATE_GUARDRAIL } from '../promptScaffold';
 import { BUILTIN_MODELS } from '../../ai/registry/builtinModels';
 import { buildInquiryBookAnchorId } from '../services/canonicalInquiryCorpus';
 import { fnv1a32Hex, fnv1a32HexUnpadded } from '../../utils/hash';
@@ -39,6 +39,9 @@ import { fnv1a32Hex, fnv1a32HexUnpadded } from '../../utils/hash';
 export { cleanEvidenceBody } from '../utils/evidenceCleaning';
 
 const BOOK_FOLDER_REGEX = /^Book\s+(\d+)/i;
+
+/** Where multi-pass splits a prompt: its evidence starts on the line after this. */
+const EVIDENCE_MARKER = `\n${INQUIRY_EVIDENCE_HEADING}\n`;
 
 function isSinglePassPlanningBudgetError(message: string): boolean {
     const normalized = message.toLowerCase();
@@ -599,10 +602,18 @@ export class InquiryRunnerService implements InquiryRunner {
             safeInputTokens?: number;
         }
     ): number {
+        // As a run decides (decideExecutionPlan): one pass unless the input
+        // overflows the safe budget. The chunk plan always splits at least in
+        // two, so it only counts passes for a prompt that would be split.
+        const estimated = options?.estimatedInputTokens;
+        const safe = options?.safeInputTokens;
+        const overflows = typeof estimated === 'number' && typeof safe === 'number'
+            && Number.isFinite(estimated) && Number.isFinite(safe) && safe > 0 && estimated > safe;
+        if (!overflows) return 1;
         const chunkPlan = this.buildEvidenceChunkPrompts(userPrompt, {
             maxChunkTokens: 12000,
-            estimatedInputTokens: options?.estimatedInputTokens,
-            safeInputTokens: options?.safeInputTokens
+            estimatedInputTokens: estimated,
+            safeInputTokens: safe
         });
         const chunkCount = chunkPlan ? chunkPlan.prompts.length : 0;
         if (chunkCount <= 1) return 1;
@@ -936,7 +947,7 @@ export class InquiryRunnerService implements InquiryRunner {
             schemaText,
             ...manifestBlock,
             '',
-            'EVIDENCE:',
+            INQUIRY_EVIDENCE_HEADING,
             '(Evidence provided as document attachments.)'
         ].join('\n');
 
@@ -946,7 +957,7 @@ export class InquiryRunnerService implements InquiryRunner {
             schemaText,
             ...manifestBlock,
             '',
-            'EVIDENCE:',
+            INQUIRY_EVIDENCE_HEADING,
             evidenceText
         ].join('\n');
 
@@ -1040,7 +1051,7 @@ export class InquiryRunnerService implements InquiryRunner {
         const userPrompt = [
             ...promptParts,
             '',
-            'EVIDENCE:',
+            INQUIRY_EVIDENCE_HEADING,
             evidenceText
         ].join('\n');
 
@@ -1054,7 +1065,7 @@ export class InquiryRunnerService implements InquiryRunner {
             schema,
             ...manifestBlock,
             '',
-            'EVIDENCE:',
+            INQUIRY_EVIDENCE_HEADING,
             '(Evidence provided as document attachments.)'
         ].join('\n');
 
@@ -1064,7 +1075,7 @@ export class InquiryRunnerService implements InquiryRunner {
             schema,
             ...manifestBlock,
             '',
-            'EVIDENCE:',
+            INQUIRY_EVIDENCE_HEADING,
             evidenceText
         ].join('\n');
 
@@ -1707,8 +1718,7 @@ export class InquiryRunnerService implements InquiryRunner {
             chunkOutputs.push(chunkRun.content);
         }
 
-        const marker = '\nEvidence:\n';
-        const splitAt = options.userPrompt.indexOf(marker);
+        const splitAt = options.userPrompt.indexOf(EVIDENCE_MARKER);
         if (splitAt < 0) {
             const usageSummary = this.finalizeUsageAccumulator(usageAccumulator);
             return {
@@ -1720,7 +1730,7 @@ export class InquiryRunnerService implements InquiryRunner {
                 usage: usageSummary.usage
             };
         }
-        const prefix = options.userPrompt.slice(0, splitAt + marker.length);
+        const prefix = options.userPrompt.slice(0, splitAt + EVIDENCE_MARKER.length);
         const synthesisEvidence = [
             sceneRefLedger.synthesisBlock,
             chunkOutputs
@@ -1799,11 +1809,10 @@ export class InquiryRunnerService implements InquiryRunner {
             safeInputTokens?: number;
         }
     ): ChunkPromptPlan | null {
-        const marker = '\nEvidence:\n';
-        const splitAt = userPrompt.indexOf(marker);
+        const splitAt = userPrompt.indexOf(EVIDENCE_MARKER);
         if (splitAt < 0) return null;
-        const prefix = userPrompt.slice(0, splitAt + marker.length);
-        const evidence = userPrompt.slice(splitAt + marker.length).trim();
+        const prefix = userPrompt.slice(0, splitAt + EVIDENCE_MARKER.length);
+        const evidence = userPrompt.slice(splitAt + EVIDENCE_MARKER.length).trim();
         if (!evidence) return null;
 
         const maxChunkTokens = this.resolveChunkTokenBudget({

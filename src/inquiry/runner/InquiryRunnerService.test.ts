@@ -68,7 +68,7 @@ describe('InquiryRunnerService execution integrity', () => {
     it('keeps cacheable prefixes free of TASK and target-scene selection so they survive question changes', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/inquiry/runner/InquiryRunnerService.ts'), 'utf8');
         expect(source).toContain('Deliberately omits TASK *and* the target-scene block so the volatile');
-        expect(source).toContain("'EVIDENCE:',");
+        expect(source).toContain('INQUIRY_EVIDENCE_HEADING,');
         expect(source).toContain("'(Evidence provided as document attachments.)'");
         // Target selection is question-dependent: it must be folded into the
         // volatile question, never the cacheable prefix or the corpus manifest.

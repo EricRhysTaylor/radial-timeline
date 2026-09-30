@@ -10,6 +10,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { InquiryRunnerService } from './InquiryRunnerService';
+import { INQUIRY_EVIDENCE_HEADING } from '../promptScaffold';
 
 type ChunkPromptPlan = {
     prompts: string[];
@@ -43,8 +44,10 @@ function callChunker(userPrompt: string, options: ChunkOptions): ChunkPromptPlan
     return runner.buildEvidenceChunkPrompts(userPrompt, options);
 }
 
+const PREFIX = `Instructions: do the thing.\n${INQUIRY_EVIDENCE_HEADING}\n`;
+
 function wrapEvidence(body: string): string {
-    return `Instructions: do the thing.\nEvidence:\n${body}`;
+    return `${PREFIX}${body}`;
 }
 
 describe('buildEvidenceChunkPrompts cascade', () => {
@@ -78,7 +81,7 @@ describe('buildEvidenceChunkPrompts cascade', () => {
         expect(plan!.prompts.length).toBeGreaterThanOrEqual(2);
     });
 
-    it('returns null when the prompt lacks the Evidence marker', () => {
+    it('returns null when the prompt lacks the evidence heading', () => {
         // Defensive guard at the top of the chunker — no marker means no
         // evidence to slice and the caller (multi-pass) bails out cleanly.
         const plan = callChunker('Just a prompt, no marker.', { maxChunkTokens: 4000 });
@@ -91,7 +94,7 @@ describe('buildEvidenceChunkPrompts cascade', () => {
         const plan = callChunker(wrapEvidence(body), { maxChunkTokens: 2000 });
         expect(plan).not.toBeNull();
         for (const prompt of plan!.prompts) {
-            expect(prompt.startsWith('Instructions: do the thing.\nEvidence:\n')).toBe(true);
+            expect(prompt.startsWith(PREFIX)).toBe(true);
         }
     });
 });

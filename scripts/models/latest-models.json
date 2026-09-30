@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-09-27T17:08:42.899Z",
+  "generatedAt": "2026-09-29T17:08:57.811Z",
   "providerFetchedAt": {
-    "openai": "2026-09-27T17:08:42.899Z",
-    "anthropic": "2026-09-27T17:08:42.899Z",
-    "google": "2026-09-27T17:08:42.899Z"
+    "openai": "2026-09-29T17:08:57.811Z",
+    "anthropic": "2026-09-29T17:08:57.811Z",
+    "google": "2026-09-29T17:08:57.811Z"
   },
   "summary": {
     "openai": 134,
-    "anthropic": 12,
+    "anthropic": 13,
     "google": 61
   },
   "models": [
@@ -2518,6 +2518,81 @@
       },
       "label": "Claude Sonnet 5",
       "createdAt": "2026-06-29T00:00:00Z"
+    },
+    {
+      "provider": "anthropic",
+      "id": "claude-sonnet-5-5",
+      "raw": {
+        "type": "model",
+        "id": "claude-sonnet-5-5",
+        "display_name": "Claude Sonnet 5.5",
+        "created_at": "2026-09-28T00:00:00Z",
+        "max_input_tokens": 1000000,
+        "max_tokens": 128000,
+        "capabilities": {
+          "batch": {
+            "supported": true
+          },
+          "citations": {
+            "supported": true
+          },
+          "code_execution": {
+            "supported": true
+          },
+          "context_management": {
+            "supported": true,
+            "clear_tool_uses_20250919": {
+              "supported": true
+            },
+            "clear_thinking_20251015": {
+              "supported": true
+            },
+            "compact_20260112": {
+              "supported": true
+            }
+          },
+          "effort": {
+            "supported": true,
+            "low": {
+              "supported": true
+            },
+            "medium": {
+              "supported": true
+            },
+            "high": {
+              "supported": true
+            },
+            "xhigh": {
+              "supported": true
+            },
+            "max": {
+              "supported": true
+            }
+          },
+          "image_input": {
+            "supported": true
+          },
+          "pdf_input": {
+            "supported": true
+          },
+          "structured_outputs": {
+            "supported": true
+          },
+          "thinking": {
+            "supported": true,
+            "types": {
+              "enabled": {
+                "supported": false
+              },
+              "adaptive": {
+                "supported": true
+              }
+            }
+          }
+        }
+      },
+      "label": "Claude Sonnet 5.5",
+      "createdAt": "2026-09-28T00:00:00Z"
     },
     {
       "provider": "google",

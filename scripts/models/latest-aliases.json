@@ -1,6 +1,6 @@
 {
-  "checkedAt": "2026-09-27T17:09:43.269Z",
-  "snapshotGeneratedAt": "2026-09-27T17:08:42.899Z",
+  "checkedAt": "2026-09-29T17:11:17.097Z",
+  "snapshotGeneratedAt": "2026-09-29T17:08:57.811Z",
   "tokenLimits": {
     "gemini-pro-latest": 65536,
     "gemini-flash-latest": 65536
@@ -31,9 +31,9 @@
   },
   "anthropic": {
     "newestModel": {
-      "id": "claude-opus-5-5",
-      "displayName": "Claude Opus 5.5",
-      "createdAt": "2026-09-21T16:24:00Z"
+      "id": "claude-sonnet-5-5",
+      "displayName": "Claude Sonnet 5.5",
+      "createdAt": "2026-09-28T00:00:00Z"
     }
   }
 }

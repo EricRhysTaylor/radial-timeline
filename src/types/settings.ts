@@ -1142,6 +1142,8 @@ export interface RadialTimelineSettings {
     enableSceneTitleAutoExpand?: boolean;
     /** Show the scene-note cue ruler; header timing remains visible. */
     showSceneTimeCueBar?: boolean;
+    /** Title-bar Community mailbox (connected vaults only). Default on. */
+    showCommunityMailbox?: boolean;
     showChapterMarkers?: boolean;
     showRecentMovesOverlay?: boolean;
     enableManuscriptRippleRename?: boolean;

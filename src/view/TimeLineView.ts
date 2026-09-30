@@ -40,6 +40,7 @@ import {
 } from '../renderer/ChangeDetection';
 import { WritingSessionCompletionModal } from '../modals/WritingSessionCompletionModal';
 import { canPostSessionsToFeed, postSessionToCommunityFeed } from '../communityShare/communityShareClient';
+import { mailboxDestination, paintMailboxButton } from '../communityShare/communityMailbox';
 import { projectSessionFeedPost } from '../services/WritingSessionLog';
 import { isRenderedOnTimeline } from '../utils/sceneHelpers';
 import { SearchPanelController } from './interactions/SearchPanelController';
@@ -580,15 +581,41 @@ export class RadialTimelineView extends ItemView {
                 headerEl.insertBefore(sessionBtn, headerEl.firstChild);
             }
 
-            // Subplot ring key trigger — action icon slot right of the writing-
-            // session control. Hidden until SubplotKeyController wires it to a rendered
+            // Community mailbox — right of the writing-session control, where
+            // the Discord pill was. Mirrors the website account chip; state and
+            // checking live on the plugin-wide CommunityMailbox, which checks
+            // only while a view like this one is subscribed.
+            const mailbox = this.plugin.communityMailbox;
+            const mailboxBtn = doc.win.createEl('button');
+            mailboxBtn.className = 'ert-timeline-mailbox clickable-icon';
+            mailboxBtn.type = 'button';
+            setIcon(mailboxBtn, 'mail');
+            const mailboxMarkEl = doc.win.createSpan();
+            mailboxBtn.appendChild(mailboxMarkEl);
+            sessionBtn.parentElement?.insertBefore(mailboxBtn, sessionBtn.nextSibling);
+            const paintMailbox = () => paintMailboxButton(mailboxBtn, mailboxMarkEl, mailbox.view());
+            this.register(mailbox.subscribe(paintMailbox));
+            paintMailbox();
+            this.registerDomEvent(mailboxBtn, 'click', (evt: MouseEvent) => {
+                evt.preventDefault();
+                evt.stopPropagation();
+                window.open(mailboxDestination(mailbox.view().answer), '_blank');
+            });
+            // Coming back from the website is when a mark may have cleared.
+            this.registerDomEvent(doc.win, 'focus', () => mailbox.onWake());
+            this.registerDomEvent(doc, 'visibilitychange', () => {
+                if (doc.visibilityState === 'visible') mailbox.onWake();
+            });
+
+            // Subplot ring key trigger — action icon slot right of the
+            // mailbox. Hidden until SubplotKeyController wires it to a rendered
             // timeline with 2+ subplot rings; no tooltip by design.
             const subplotKeyBtn = doc.win.createEl('button');
             subplotKeyBtn.className = 'ert-timeline-subplot-key__trigger clickable-icon';
             subplotKeyBtn.type = 'button';
             subplotKeyBtn.hidden = true;
             setIcon(subplotKeyBtn, 'layers');
-            sessionBtn.parentElement?.insertBefore(subplotKeyBtn, sessionBtn.nextSibling);
+            mailboxBtn.parentElement?.insertBefore(subplotKeyBtn, mailboxBtn.nextSibling);
             this.subplotKeyTriggerEl = subplotKeyBtn;
 
             // Center mode navigation — compact text buttons that replace the
@@ -649,7 +676,7 @@ export class RadialTimelineView extends ItemView {
             this.buildAlignmentToggle(doc, modeNav);
             setupTitleBarFit(
                 headerEl,
-                [sessionBtn, subplotKeyBtn, modeNav, legendBtn, booksGroup],
+                [sessionBtn, mailboxBtn, subplotKeyBtn, modeNav, legendBtn, booksGroup],
                 (cleanup) => this.register(cleanup)
             );
 

@@ -105,6 +105,7 @@ export const DEFAULT_SETTINGS: RadialTimelineSettings = {
     aiUpdateTimestamps: {}, // Internal AI update timestamps (per-scene)
     discontinuityThreshold: undefined, // Default to auto-calculated (3x median gap or 30 days)
     showSceneTimeCueBar: true,
+    showCommunityMailbox: true,
     enableSceneTitleAutoExpand: true, // Default: enabled to maintain current behavior
     showChapterMarkers: false,
     showRecentMovesOverlay: true,

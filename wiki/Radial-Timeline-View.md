@@ -91,6 +91,17 @@ The title bar also includes the compact count/session button used for Sessions.
   <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Writing Session panel — timer, daily goal context, and session controls</div>
 </div>
 
+## Community Mailbox
+
+On a vault connected to the Community, a mail icon sits just right of the writing-session control. It shows the same mark as your account menu on the Community website:
+
+*   **A dot** means there is an unread reply: the team answered one of your requests, or someone replied to one of your questions.
+*   **Click the icon** to open what the mark is about: your Requests, or your newest question with a reply. Reading it there clears the mark the next time the plugin checks.
+*   The plugin checks about once an hour while a timeline is open, and again when you come back to Obsidian. It never marks anything as read.
+*   If a check fails, the icon dims and its tooltip says why.
+
+The icon does not appear on a vault that is not connected. To hide it on a connected vault, turn off **Show Community mailbox** in **Settings → Advanced**.
+
 ## Timeline Legend
 
 The legend is a quick visual guide for the current mode.

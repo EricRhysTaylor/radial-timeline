@@ -59,6 +59,7 @@ import { hasSecret } from './ai/credentials/secretStorage';
 import type { AIProviderId } from './ai/types';
 import { migrateAuthorProgressSettings } from './authorProgress/authorProgressConfig';
 import { scheduleCommunityProjectSync, cancelPendingCommunityProjectSync } from './communityShare/communityShareClient';
+import { CommunityMailbox } from './communityShare/communityMailbox';
 import { DEFAULT_BOOK_TITLE, createBookId, deriveBookTitleFromSourcePath, getActiveBook, getSagaBooks, getTimelineScope, isSagaScopeAvailable, normalizeBookProfile, shouldSeedBookProfileFromLegacySettings } from './utils/books';
 import { adaptPandocLayoutsToPublishingModel } from './utils/publishingModel';
 import { convertExportProfileToLegacyManuscriptExportTemplate, migratePublishingModelState } from './utils/publishingMigration';
@@ -248,6 +249,8 @@ export default class RadialTimelinePlugin extends Plugin {
     private themeService!: ThemeService;
     private timelineMetricsService!: TimelineMetricsService;
     private writingSessionService!: WritingSessionService;
+    /** Title-bar Community mailbox; timeline views subscribe to paint their button. */
+    public communityMailbox!: CommunityMailbox;
     private lastWritingActivitySignalMs = 0;
     private settingsService!: SettingsService;
     private publishingValidationService!: PublishingValidationService;
@@ -677,6 +680,9 @@ export default class RadialTimelinePlugin extends Plugin {
         this.authorProgressService = new AuthorProgressService(this, this.app);
 
         // CSS variables for publish stage colors are set once on layout ready
+
+        this.communityMailbox = new CommunityMailbox(this);
+        this.register(() => this.communityMailbox.destroy());
 
         // Register the view
         this.registerView(
@@ -1324,6 +1330,7 @@ export default class RadialTimelinePlugin extends Plugin {
 
     async saveSettings(): Promise<void> {
         this.sceneTimeHeader?.settingsChanged();
+        this.communityMailbox?.settingsChanged();
         // Single chokepoint for the blocked state. Every save path in the
         // plugin — including the fire-and-forget `void plugin.saveSettings()`
         // sites — funnels through here, so latching it off here is what makes

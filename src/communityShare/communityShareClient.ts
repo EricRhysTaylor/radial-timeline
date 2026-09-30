@@ -663,6 +663,55 @@ export async function fetchCommunityShareContext(plugin: RadialTimelinePlugin): 
     return parsed;
 }
 
+/** community-mailbox: the website account chip's mailbox facts for this member. */
+export interface CommunityMailboxAnswer {
+    ok: true;
+    /** A team reply in Requests the member has not seen. */
+    support_unread: boolean;
+    /** The member's questions with unread replies; latest_post_id is the newest (null when count is 0). */
+    replies: { count: number; latest_post_id: string | null };
+    /** Community admins only: unread requests and requests awaiting a reply. */
+    admin: { unread: number; awaiting: number } | null;
+}
+
+function isMailboxCount(value: unknown): value is number {
+    return typeof value === 'number' && Number.isInteger(value) && value >= 0;
+}
+
+export function isCommunityMailboxAnswer(value: unknown): value is CommunityMailboxAnswer {
+    if (!value || typeof value !== 'object') return false;
+    const answer = value as Partial<CommunityMailboxAnswer>;
+    const replies = answer.replies;
+    const admin = answer.admin;
+    return answer.ok === true
+        && typeof answer.support_unread === 'boolean'
+        && !!replies && isMailboxCount(replies.count)
+        && (replies.count === 0 ? replies.latest_post_id === null : typeof replies.latest_post_id === 'string')
+        && (admin === null || (!!admin && isMailboxCount(admin.unread) && isMailboxCount(admin.awaiting)));
+}
+
+/**
+ * Read the connected member's Community mailbox for the timeline title bar.
+ * READ-only: nothing is marked seen (reading happens on the website). Allowed
+ * while sharing is paused, since pausing stops progress leaving, not reading
+ * your own replies.
+ */
+export async function fetchCommunityMailbox(plugin: RadialTimelinePlugin): Promise<CommunityMailboxAnswer> {
+    const { connectionId, currentSecret, connection } = await requireActiveConnection(plugin);
+    assertStillSendable(plugin, connection, true);
+    return postCommunityFunction(
+        plugin,
+        'community-mailbox',
+        {
+            connection_id: connectionId,
+            current_secret: currentSecret
+        },
+        isCommunityMailboxAnswer,
+        { code: 'mailbox_failed', message: 'Could not check your Community mailbox.' },
+        'The Community mailbox returned an unexpected response.'
+    );
+}
+
 /**
  * Sync every Book Manager book to the community website as a project shell.
  * New shells arrive PRIVATE; the author chooses what to share on the website.

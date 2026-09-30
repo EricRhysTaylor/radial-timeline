@@ -21,6 +21,7 @@ import {
     disconnectCommunityShare,
     postSessionToCommunityFeed,
     resumeCommunitySharing,
+    fetchCommunityMailbox,
     fetchCommunityShareContext,
     pauseCommunitySharing,
     publishCommunityShareReport,
@@ -1091,6 +1092,66 @@ describe('Community Share activation client', () => {
         await expect(fetchCommunityShareContext(plugin as never))
             .rejects
             .toMatchObject({ code: 'connection_secret_invalid' });
+    });
+});
+
+describe('Community mailbox client', () => {
+    function connectedHarness() {
+        const harness = createPluginHarness();
+        vi.clearAllMocks();
+        const settings = harness.plugin.settings.communityShare;
+        settings.enabled = true;
+        settings.connection = {
+            status: 'connected',
+            connectionId: 'conn-1',
+            profileId: 'profile-1',
+            projectId: null,
+            secretId: 'rt.community-share.connection-secret'
+        };
+        harness.secrets.set('rt-community-share-connection-secret', 'rtcs_current-secret');
+        return harness;
+    }
+    const mailboxBody = { ok: true, support_unread: true, replies: { count: 1, latest_post_id: 'post-1' }, admin: null };
+
+    it('reads the mailbox with only the connection id and secret, even while sharing is paused', async () => {
+        const { plugin } = connectedHarness();
+        plugin.settings.communityShare.sharingPaused = true;
+        const mockedRequestUrl = vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
+            status: 200,
+            text: JSON.stringify(mailboxBody)
+        } as never);
+
+        const result = await fetchCommunityMailbox(plugin as never);
+
+        const request = mockedRequestUrl.mock.calls[0]?.[0] as { body: string; url: string };
+        expect(request.url).toContain('/community-mailbox');
+        expect(JSON.parse(request.body)).toEqual({ connection_id: 'conn-1', current_secret: 'rtcs_current-secret' });
+        expect(result).toEqual(mailboxBody);
+        expect(plugin.saveSettings).not.toHaveBeenCalled();
+    });
+
+    it('never calls the server for a vault that is not connected', async () => {
+        const { plugin } = createPluginHarness();
+        const request = vi.spyOn(obsidian, 'requestUrl');
+        request.mockClear();
+        await expect(fetchCommunityMailbox(plugin as never)).rejects.toMatchObject({ code: 'connection_required' });
+        expect(request).not.toHaveBeenCalled();
+    });
+
+    it('rejects a malformed answer and passes server refusals through', async () => {
+        const { plugin } = connectedHarness();
+        vi.spyOn(obsidian, 'requestUrl').mockResolvedValueOnce({
+            status: 200,
+            text: JSON.stringify({ ...mailboxBody, replies: { count: 2, latest_post_id: null } })
+        } as never);
+        await expect(fetchCommunityMailbox(plugin as never)).rejects.toMatchObject({ code: 'invalid_response' });
+        vi.spyOn(obsidian, 'requestUrl').mockResolvedValueOnce({
+            status: 409,
+            text: JSON.stringify({ error: { code: 'connection_disconnected', message: 'This connection has been disconnected.' } })
+        } as never);
+        await expect(fetchCommunityMailbox(plugin as never))
+            .rejects
+            .toMatchObject({ code: 'connection_disconnected', message: 'This connection has been disconnected.' });
     });
 });
 

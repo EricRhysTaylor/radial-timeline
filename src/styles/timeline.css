@@ -2457,6 +2457,80 @@
   display: none;
 }
 
+/* Community mailbox: title-bar icon right of the writing-session control
+   (where the Discord pill was). The mark mirrors the website account chip:
+   a red count for unread support requests (admins), a blue count for
+   requests awaiting a reply, a dot for an unread reply. Static on purpose:
+   no transitions or animation near the scene-hover path. */
+.ert-timeline-mailbox.clickable-icon {
+  position: relative;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.ert-timeline-mailbox.clickable-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.ert-timeline-mailbox.clickable-icon:hover {
+  color: var(--text-normal);
+}
+
+/* The last check failed: the icon stays, dimmed; the tooltip says why. */
+.ert-timeline-mailbox.clickable-icon.is-stale svg {
+  opacity: 0.45;
+}
+
+.ert-timeline-mailbox[hidden],
+.ert-timeline-mailbox__mark[hidden] {
+  display: none;
+}
+
+.ert-timeline-mailbox__mark {
+  position: absolute;
+  top: 0;
+  right: 0;
+  pointer-events: none;
+  box-shadow: 0 0 0 1.5px var(--background-primary);
+}
+
+.ert-timeline-mailbox__mark.is-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--interactive-accent);
+}
+
+.ert-timeline-mailbox__mark.is-count {
+  top: -2px;
+  right: -4px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  box-sizing: border-box;
+  border-radius: 7px;
+  font-size: 9px;
+  font-weight: var(--font-bold);
+  line-height: 14px;
+  text-align: center;
+  color: var(--text-on-accent);
+}
+
+.ert-timeline-mailbox__mark.is-unread {
+  background: var(--color-red);
+}
+
+.ert-timeline-mailbox__mark.is-awaiting {
+  background: var(--color-blue);
+}
+
 .ert-timeline-subplot-key {
   position: absolute;
   top: var(--size-4-3);

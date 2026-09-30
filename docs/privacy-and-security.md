@@ -69,6 +69,14 @@ External requests occur in these areas:
 - **Community Share** — report publishing and the `community-daily-sync`
   call, sent only after the author connects to Community and selects a
   sharing level above Private. See below.
+- **Community mailbox** — on a connected vault only, while a timeline view
+  is open: a `community-mailbox` check about once an hour and when Obsidian
+  regains focus. It sends the connection id and secret (plus the plugin,
+  Obsidian and platform versions every Community call carries) and receives
+  counts of unread replies. It sends no vault data and marks nothing as read.
+  It runs while sharing is paused, because it reads replies rather than
+  sharing anything, and stops when **Show Community mailbox** (Settings →
+  Advanced) is off or the vault is disconnected.
 
 One path above runs by default without an account or any author action: the
 version check, which carries no author data. Every other path is optional and

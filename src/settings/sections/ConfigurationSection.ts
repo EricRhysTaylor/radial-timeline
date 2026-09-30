@@ -161,6 +161,18 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
                 }));
         }
     });
+    createDenseRow(displayContainer, {
+        title: 'Show Community mailbox',
+        description: 'When this vault is connected to the Community, a mail icon beside the writing-session control marks new replies to your requests and questions. It checks the website about once an hour and when Obsidian regains focus.',
+        control: (setting) => {
+            setting.addToggle(toggle => toggle
+                .setValue(plugin.settings.showCommunityMailbox !== false)
+                .onChange(async (value) => {
+                    plugin.settings.showCommunityMailbox = value;
+                    await plugin.saveSettings();
+                }));
+        }
+    });
     const buildChapterMarkerDescription = (status?: string): string => {
         const base = t('settings.configuration.chapterMarkers.desc');
         return status ? `${base} ${status}` : base;

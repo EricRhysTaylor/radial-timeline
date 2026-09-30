@@ -39,4 +39,27 @@ describe('APR renderer', () => {
         expect(outerBorder?.[1]).toBe(String(layout.strokes.centerRing));
         expect(innerStageRing?.[1]).toBe(String(layout.strokes.centerRing));
     });
+
+    it('shows the center percentage as the number alone, with no % glyph behind it', () => {
+        const exportPreset = getExportPreset('large', 'standard');
+        const scenes = [{ title: 'Scene', status: 'Completed', 'Publish Stage': 'Author', act: 1, actNumber: 1, subplot: 'Main Plot' } as TimelineItem];
+        const { svgString } = createAprSVG(scenes, {
+            size: 'large',
+            exportPreset,
+            bookTitle: 'Book',
+            progressPercent: 96,
+            showScenes: false,
+            showProgressPercent: true,
+            showBranding: false,
+            stageColors: DEFAULT_SETTINGS.publishStageColors,
+            publishStageLabel: 'Author',
+            portableSvg: true,
+        });
+
+        const center = svgString.match(/<g class="apr-center-percent"[\s\S]*?<\/g>/)?.[0] ?? '';
+        expect(center.match(/<text/g)).toHaveLength(1);
+        expect(center).toContain('96');
+        expect(center).not.toContain('%');
+        expect(svgString).not.toContain('--apr-percent-symbol-color');
+    });
 });

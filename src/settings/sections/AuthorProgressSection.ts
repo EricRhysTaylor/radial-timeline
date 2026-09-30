@@ -644,8 +644,6 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
     let authorTextRef: TextComponent | undefined;
     let percentNumberColorPickerRef: ColorSwatchHandle | undefined;
     let percentNumberTextRef: TextComponent | undefined;
-    let percentSymbolColorPickerRef: ColorSwatchHandle | undefined;
-    let percentSymbolTextRef: TextComponent | undefined;
 
     const themeButton = themeControl.createEl('button', { cls: 'ert-pillBtn ert-pillBtn--social' });
     themeButton.type = 'button';
@@ -670,7 +668,6 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
                     aprBookAuthorColor: palette.bookTitle,
                     aprAuthorColor: palette.authorName,
                     aprPercentNumberColor: palette.percentNumber,
-                    aprPercentSymbolColor: palette.percentSymbol,
                 });
                 bookTitleColorPickerRef?.setValue(palette.bookTitle);
                 bookTitleTextRef?.setValue(palette.bookTitle);
@@ -678,8 +675,6 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
                 authorTextRef?.setValue(palette.authorName);
                 percentNumberColorPickerRef?.setValue(palette.percentNumber);
                 percentNumberTextRef?.setValue(palette.percentNumber);
-                percentSymbolColorPickerRef?.setValue(palette.percentSymbol);
-                percentSymbolTextRef?.setValue(palette.percentSymbol);
             },
             paletteSeedColor
         );
@@ -794,7 +789,6 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
         'aprBookAuthorColor',
         'aprAuthorColor',
         'aprPercentNumberColor',
-        'aprPercentSymbolColor',
         'aprTheme',
         'aprSpokeColorMode',
         'aprSpokeColor',
@@ -1314,29 +1308,6 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
             sizePlaceholders: ['Auto'],
             showSizeControls: false,
             weightDefault: 400
-        }
-    });
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // % SYMBOL
-    // ─────────────────────────────────────────────────────────────────────────
-    const percentSymbolColorFallback = styleSettings.aprBookAuthorColor || bookTitleColorFallback;
-    const currentPercentSymbolColor = styleSettings.aprPercentSymbolColor || percentSymbolColorFallback;
-
-    addElementBlock(themeBody, {
-        label: t('settings.authorProgress.styling.percentSymbol.label'),
-        desc: t('settings.authorProgress.styling.percentSymbol.desc'),
-        dataTypo: 'percent-symbol',
-        color: {
-            key: 'aprPercentSymbolColor',
-            value: currentPercentSymbolColor,
-            fallback: percentSymbolColorFallback,
-            setPickerRef: (picker) => {
-                percentSymbolColorPickerRef = picker;
-            },
-            setTextRef: (text) => {
-                percentSymbolTextRef = text;
-            }
         }
     });
 
@@ -2035,7 +2006,6 @@ async function renderHeroPreview(
             authorColor: resolvedStyle.aprAuthorColor ?? resolvedStyle.aprBookAuthorColor ?? (plugin.settings.publishStageColors?.Press),
             engineColor: resolvedStyle.aprEngineColor,
             percentNumberColor: resolvedStyle.aprPercentNumberColor ?? resolvedStyle.aprBookAuthorColor ?? (plugin.settings.publishStageColors?.Press),
-            percentSymbolColor: resolvedStyle.aprPercentSymbolColor ?? resolvedStyle.aprBookAuthorColor ?? (plugin.settings.publishStageColors?.Press),
             theme: resolvedStyle.aprTheme || 'dark',
             spokeColor: resolvedStyle.aprSpokeColorMode === 'custom' ? resolvedStyle.aprSpokeColor
                 : resolvedStyle.aprSpokeColorMode === 'sync' ? resolvedStyle.aprBackgroundColor

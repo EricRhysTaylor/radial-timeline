@@ -50,7 +50,6 @@ export class AprPaletteModal extends Modal {
             defaults.aprBookAuthorColor = palette.bookTitle;
             defaults.aprAuthorColor = palette.authorName;
             defaults.aprPercentNumberColor = palette.percentNumber;
-            defaults.aprPercentSymbolColor = palette.percentSymbol;
             await this.plugin.saveSettings();
             this.onApply(palette);
             this.close();
@@ -77,7 +76,7 @@ export class AprPaletteModal extends Modal {
             const swatches = schemeSetting.controlEl.createDiv({
                 cls: 'ert-apr-palette-swatches ert-apr-palette-swatches--generate'
             });
-            [generated.bookTitle, generated.authorName, generated.percentNumber, generated.percentSymbol].forEach(color => {
+            [generated.bookTitle, generated.authorName, generated.percentNumber].forEach(color => {
                 const swatch = swatches.createDiv({
                     cls: 'ert-apr-palette-swatch ert-apr-palette-swatch--generate'
                 });
@@ -104,7 +103,7 @@ export class AprPaletteModal extends Modal {
             paletteCard.createDiv({ text: palette.name, cls: 'ert-apr-palette-name' });
             
             const swatches = paletteCard.createDiv({ cls: 'ert-apr-palette-swatches' });
-            [palette.bookTitle, palette.authorName, palette.percentNumber, palette.percentSymbol].forEach(color => {
+            [palette.bookTitle, palette.authorName, palette.percentNumber].forEach(color => {
                 const swatch = swatches.createDiv({ cls: 'ert-apr-palette-swatch' });
                 swatch.style.backgroundColor = color; // SAFE: inline style used for dynamic color preview swatch
             });

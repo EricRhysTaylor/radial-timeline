@@ -483,13 +483,14 @@ export interface AprCenterPercentOptions {
 }
 
 /**
- * Render the large center percentage
+ * Render the large center percentage: the number alone. (The faded % glyph
+ * that sat behind it was removed at Eric's request, 2026-09-30: it distracted
+ * from the number.)
  */
 export function renderAprCenterPercent(
     percent: number,
     layout: AprLayoutSpec,
     numberColor: string,
-    symbolColor: string,
     options?: Partial<AprCenterPercentOptions>
 ): string {
     if (!layout.centerLabel.enabled) return '';
@@ -509,13 +510,8 @@ export function renderAprCenterPercent(
     const baseNumberPx = layout.centerLabel.numberPx;
     const numberPx = Math.max(1, sizeOverride ?? baseNumberPx);
     const scaleRatio = baseNumberPx > 0 ? numberPx / baseNumberPx : 1;
-    const percentPx = Math.max(1, layout.centerLabel.percentPx * APR_CENTER_METRIC.percentSizeScale);
     const centerDy = layout.centerLabel.dyPx * scaleRatio;
-    const numberWidthPx = numberPx * APR_CENTER_METRIC.digitWidthEm * digits;
-    const percentGapPx = numberPx * APR_CENTER_METRIC.percentGapEm;
     const numberX = APR_CENTER_METRIC.numberOpticalNudgeByDigitsPx[digits];
-    const percentOffsetPx = ((numberWidthPx / 2) + percentGapPx) * APR_CENTER_METRIC.percentAnchorFactor;
-    const percentX = numberX + percentOffsetPx;
     const fontFamily = APR_CENTER_METRIC.fontFamily;
     const fontFamilyEscaped = escapeXml(fontFamily);
     const numberY = resolvePortableBaselineY(
@@ -526,28 +522,9 @@ export function renderAprCenterPercent(
         false,
         numberPx
     );
-    const percentY = resolvePortableBaselineY(
-        APR_CENTER_METRIC.percentDyPx + layout.centerLabel.percentBaselineShiftPx + APR_CENTER_METRIC.percentBaselineShiftPx,
-        '%',
-        fontFamily,
-        APR_CENTER_METRIC.percentWeight,
-        false,
-        percentPx
-    );
 
     return `
         <g class="apr-center-percent" transform="translate(0 0)">
-            <text 
-                x="${percentX}"
-                y="${percentY}"
-                text-anchor="middle"
-                font-family="${fontFamilyEscaped}"
-                font-weight="${APR_CENTER_METRIC.percentWeight}"
-                font-size="${percentPx}"
-                fill="${color('--apr-percent-symbol-color', symbolColor)}"
-                fill-opacity="0.3">
-                %
-            </text>
             <text 
                 x="${numberX}"
                 y="${numberY}"

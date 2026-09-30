@@ -597,7 +597,6 @@ export interface AuthorProgressDefaults {
     aprAuthorColor?: string;
     aprEngineColor?: string;
     aprPercentNumberColor?: string; // Color for the center percent number
-    aprPercentSymbolColor?: string; // Color for the center % symbol
     aprTheme?: 'dark' | 'light' | 'none'; // Controls stroke/border contrast
     aprSpokeColorMode?: 'dark' | 'light' | 'none' | 'custom' | 'sync'; // Act spokes color mode
     aprSpokeColor?: string; // Custom spokes color (used when mode is 'custom')
@@ -660,7 +659,6 @@ export interface AprStyleSettings {
     aprAuthorColor?: string;
     aprEngineColor?: string;
     aprPercentNumberColor?: string;
-    aprPercentSymbolColor?: string;
     aprTheme?: 'dark' | 'light' | 'none';
     aprSpokeColorMode?: 'dark' | 'light' | 'none' | 'custom' | 'sync';
     aprSpokeColor?: string;

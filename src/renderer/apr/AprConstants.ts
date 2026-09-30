@@ -64,20 +64,10 @@ export const APR_TEXT_COLORS = {
 export const APR_CENTER_METRIC = {
     fontFamily: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
     numberWeight: 700 as const,   // Bold
-    percentWeight: 900 as const,  // Black
     // Portable baseline math tuning
     baselineFallbackEm: 0.38,
     baselineOpticalShiftEm: 0.03,
     numberDyPx: -1,
-    percentDyPx: -3,
-    percentBaselineShiftPx: 0,
-
-    // Width + spacing model for number/% positioning
-    percentSizeScale: 0.90,
-    digitWidthEm: 0.56,
-    percentGapEm: 0.10,
-    // Compresses % horizontal offset so large glyph stays optically centered
-    percentAnchorFactor: 0,
 
     numberOpticalNudgeByDigitsPx: {
         1: 0,

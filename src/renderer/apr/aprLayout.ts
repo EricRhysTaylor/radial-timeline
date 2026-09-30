@@ -41,10 +41,7 @@ export type AprLayoutSpec = {
     centerLabel: {
         enabled: boolean;
         numberPx: number;
-        percentPx: number;
         dyPx: number;
-        percentDxPx: number;
-        percentBaselineShiftPx: number;
         letterSpacing: string;
     };
 };
@@ -61,8 +58,6 @@ export const kPercent = 0.5;
 
 export const CENTER_OPTICS = {
     yShiftEm: -0.04,
-    percentDxEm: 0.08,
-    percentBaselineShiftEm: 0.12,
 } as const;
 
 // =============================================================================
@@ -133,15 +128,7 @@ export function computeAprLayout(preset: AprPreset, data: AprData = {}): AprLayo
     const centerNumberPx = preset.enableCenterLabel
         ? scaledClamp(baseCenterNumberPx * fitScale, 18, 120)
         : 0;
-    // % symbol sized to fill (and slightly overflow) the inner circle
-    const centerPercentPx = preset.enableCenterLabel
-        ? innerDiameter * 1.1
-        : 0;
-
     const centerDyPx = preset.enableCenterLabel ? centerNumberPx * CENTER_OPTICS.yShiftEm : 0;
-    // % symbol centered — no horizontal offset or baseline shift
-    const percentDxPx = 0;
-    const percentBaselineShiftPx = 0;
 
     return {
         preset,
@@ -175,10 +162,7 @@ export function computeAprLayout(preset: AprPreset, data: AprData = {}): AprLayo
         centerLabel: {
             enabled: preset.enableCenterLabel,
             numberPx: centerNumberPx,
-            percentPx: centerPercentPx,
             dyPx: centerDyPx,
-            percentDxPx,
-            percentBaselineShiftPx,
             letterSpacing: '-0.04em',
         },
     };

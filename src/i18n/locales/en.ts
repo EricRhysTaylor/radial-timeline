@@ -427,7 +427,6 @@ export interface TranslationKeys {
                 autoButton: string;
                 title: { label: string; desc: string; };
                 author: { label: string; desc: string; placeholder: string; };
-                percentSymbol: { label: string; desc: string; };
                 percentNumber: { label: string; desc: string; };
                 stageBadge: { label: string; desc: string; };
                 transparentMode: { name: string; desc: string; };
@@ -2562,7 +2561,6 @@ export const en: TranslationKeys = {
                     desc: 'Outer ring author name text.',
                     placeholder: 'Author',
                 },
-                percentSymbol: { label: '% Symbol', desc: 'Center percent symbol.' },
                 percentNumber: { label: '% Number', desc: 'Center progress number.' },
                 stageBadge: { label: 'Stage / RT', desc: 'Stage badge typography. The RT logo follows the Publish stage color.' },
                 transparentMode: {

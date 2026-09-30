@@ -41,7 +41,6 @@ export interface AprRenderOptions {
     authorColor?: string;
     engineColor?: string;
     percentNumberColor?: string; // Color for center percent number
-    percentSymbolColor?: string; // Color for center % symbol
     theme?: 'dark' | 'light' | 'none';
     spokeColor?: string; // Custom spokes color (used when theme mode allows custom)
     // Typography settings
@@ -147,7 +146,6 @@ export function createAprSVG(scenes: TimelineItem[], opts: AprRenderOptions): Ap
         authorColor,
         engineColor,
         percentNumberColor,
-        percentSymbolColor,
         theme = 'dark',
         spokeColor,
         debugLabel,
@@ -263,7 +261,6 @@ export function createAprSVG(scenes: TimelineItem[], opts: AprRenderOptions): Ap
     const authorColorResolvedInput = normalizeOptionalColor(authorColor);
     const engineColorResolvedInput = normalizeOptionalColor(engineColor);
     const percentNumberColorResolvedInput = normalizeOptionalColor(percentNumberColor);
-    const percentSymbolColorResolvedInput = normalizeOptionalColor(percentSymbolColor);
     const pressStageColor = stageColorMap.Press;
     const wantsTransparent = transparentCenter || backgroundColorResolved === 'transparent';
     const bgFill = wantsTransparent ? 'none' : (backgroundColorResolved ?? structural.background);
@@ -277,7 +274,6 @@ export function createAprSVG(scenes: TimelineItem[], opts: AprRenderOptions): Ap
     const stageBadgeColorResolved = stageBadgeColor;
     const rtAttributionColorResolved = stageBadgeColorResolved;
     const percentNumberColorResolved = percentNumberColorResolvedInput ?? bookTitleColorResolved;
-    const percentSymbolColorResolved = percentSymbolColorResolvedInput ?? bookTitleColorResolved;
     const progressColor = stageColorMap.Press;
     const progressGhostColor = structural.border;
     const progressGhostOpacity = 0.25;
@@ -292,7 +288,6 @@ export function createAprSVG(scenes: TimelineItem[], opts: AprRenderOptions): Ap
         `--apr-author-color: ${authorColorResolved}`,
         `--apr-engine-color: ${engineColorResolved}`,
         `--apr-percent-number-color: ${percentNumberColorResolved}`,
-        `--apr-percent-symbol-color: ${percentSymbolColorResolved}`,
         `--apr-stage-badge-color: ${stageBadgeColorResolved}`,
         `--apr-countdown-color: ${stageBadgeColorResolved}`,
         `--apr-rt-attrib-color: ${rtAttributionColorResolved}`,
@@ -311,17 +306,12 @@ export function createAprSVG(scenes: TimelineItem[], opts: AprRenderOptions): Ap
 
     // Progress-mode defs (plaid patterns) + filters. patternScale densifies plaid at small sizes.
     // Chromium renders filters and patternTransform fine in both canvas rasterization and direct SVG embed.
-    const percentShadow = `
-        <filter id="aprPercentShadow" x="-50%" y="-50%" width="200%" height="200%">
-            <feDropShadow dx="0" dy="2" stdDeviation="2.2" flood-color="#000" flood-opacity="0.45"/>
-        </filter>
-    `;
     const grayscaleFilter = grayscaleScenes ? `
         <filter id="aprGrayscale" color-interpolation-filters="sRGB">
             <feColorMatrix type="saturate" values="0" />
         </filter>
     ` : '';
-    svg += `<defs>${renderDefs(stageColorMap, patternScale, portableSvg, opts.workingPatternId, opts.customWorkingPatterns, aprIdPrefix)}${percentShadow}${grayscaleFilter}</defs>`;
+    svg += `<defs>${renderDefs(stageColorMap, patternScale, portableSvg, opts.workingPatternId, opts.customWorkingPatterns, aprIdPrefix)}${grayscaleFilter}</defs>`;
 
     // ─────────────────────────────────────────────────────────────────────────
     // RING-ONLY MODE (Teaser): Solid progress ring, no scene details
@@ -353,7 +343,7 @@ export function createAprSVG(scenes: TimelineItem[], opts: AprRenderOptions): Ap
 
     // Center percent (optional)
     if (showProgressPercentFinal) {
-        svg += renderAprCenterPercent(progressPercent, layout, percentNumberColorResolved, percentSymbolColorResolved, {
+        svg += renderAprCenterPercent(progressPercent, layout, percentNumberColorResolved, {
             percentNumberFontSize1Digit,
             percentNumberFontSize2Digit,
             percentNumberFontSize3Digit,

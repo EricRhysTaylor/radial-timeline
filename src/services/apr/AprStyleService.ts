@@ -21,7 +21,6 @@ type AprRenderStyleOptions = Pick<
     | 'authorColor'
     | 'engineColor'
     | 'percentNumberColor'
-    | 'percentSymbolColor'
     | 'theme'
     | 'spokeColor'
     | 'showRtAttribution'
@@ -53,7 +52,6 @@ export class AprStyleService {
         'aprAuthorColor',
         'aprEngineColor',
         'aprPercentNumberColor',
-        'aprPercentSymbolColor',
         'aprTheme',
         'aprSpokeColorMode',
         'aprSpokeColor',
@@ -116,7 +114,6 @@ export class AprStyleService {
             aprAuthorColor: defaults.aprAuthorColor,
             aprEngineColor: defaults.aprEngineColor,
             aprPercentNumberColor: defaults.aprPercentNumberColor,
-            aprPercentSymbolColor: defaults.aprPercentSymbolColor,
             aprTheme: defaults.aprTheme,
             aprSpokeColorMode: defaults.aprSpokeColorMode,
             aprSpokeColor: defaults.aprSpokeColor,
@@ -271,7 +268,6 @@ export class AprStyleService {
             authorColor: style.aprAuthorColor ?? style.aprBookAuthorColor ?? fallbackColor,
             engineColor: style.aprEngineColor,
             percentNumberColor: style.aprPercentNumberColor ?? style.aprBookAuthorColor ?? fallbackColor,
-            percentSymbolColor: style.aprPercentSymbolColor ?? style.aprBookAuthorColor ?? fallbackColor,
             theme: style.aprTheme ?? 'dark',
             spokeColor: style.aprSpokeColorMode === 'custom'
                 ? style.aprSpokeColor

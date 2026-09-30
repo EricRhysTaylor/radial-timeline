@@ -1,7 +1,7 @@
 import { apiVersion, Platform, requestUrl } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { deleteSecret, getSecret, isSecretStorageAvailable, setSecret } from '../ai/credentials/secretStorage';
-import { canShareAprToCommunity, deriveCommunityShareMode, normalizeCommunityShareSettings } from './communityShareSettings';
+import { canShareAprToCommunity, deriveCommunityShareMode, hasActiveCommunityConnection, normalizeCommunityShareSettings } from './communityShareSettings';
 import {
     COMMUNITY_DAILY_BACKFILL_DAYS,
     COMMUNITY_DAILY_BACKFILL_VERSION,
@@ -366,7 +366,7 @@ export async function publishCommunityShareReport(
     if (current.sharingPaused) {
         throw new CommunityShareError('sharing_paused', 'Sharing is paused. Resume sharing before publishing.');
     }
-    if (!current.enabled || current.connection.status !== 'connected' || !current.connection.connectionId || !current.connection.secretId) {
+    if (!hasActiveCommunityConnection(current)) {
         throw new CommunityShareError('connection_required', 'Connect Community Share before sharing.');
     }
     assertReportPublishAllowed(current, mode);
@@ -555,7 +555,7 @@ async function requireActiveConnection(plugin: RadialTimelinePlugin): Promise<{
     connection: CommunityShareConnectionSettings;
 }> {
     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
-    if (!current.enabled || current.connection.status !== 'connected' || !current.connection.connectionId || !current.connection.secretId) { // SAFE: connection precondition — any missing piece throws connection_required below, no silent default
+    if (!hasActiveCommunityConnection(current)) {
         throw new CommunityShareError('connection_required', 'Connect Community Share before syncing with the website.');
     }
     const currentSecret = await getSecret(plugin.app, current.connection.secretId);

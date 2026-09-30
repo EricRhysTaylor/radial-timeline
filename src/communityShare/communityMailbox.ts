@@ -5,11 +5,12 @@
  */
 
 /**
- * Community mailbox: the title-bar mail icon right of the writing-session
- * control (where the Discord pill was until 7.3.2). It mirrors the website
- * account chip: the admin support inbox count (red while a request is unread,
- * blue while requests only await a reply), else a dot for an unread reply (a
- * team reply in Requests, or a reply to one of your questions).
+ * Community mailbox: the title-bar Mailbox pill (mail icon + "Mailbox") right
+ * of the writing-session control, where the Discord pill was until 7.3.2. It
+ * mirrors the website account chip: the admin support inbox count (red while
+ * a request is unread, blue while requests only await a reply), else a dot
+ * for an unread reply (a team reply in Requests, or a reply to one of your
+ * questions).
  *
  * The server is the single source of truth: `community-mailbox` returns the
  * facts the website itself shows. This module never computes a count and
@@ -27,7 +28,7 @@
 import type RadialTimelinePlugin from '../main';
 import { tooltip as applyTooltip } from '../utils/tooltip';
 import { fetchCommunityMailbox, type CommunityMailboxAnswer } from './communityShareClient';
-import { normalizeCommunityShareSettings } from './communityShareSettings';
+import { hasActiveCommunityConnection, normalizeCommunityShareSettings } from './communityShareSettings';
 
 export const COMMUNITY_SITE_URL = 'https://community.radialtimeline.com';
 
@@ -169,9 +170,8 @@ export class CommunityMailbox {
     private currentKey(): string | null {
         if (this.plugin.settings.showCommunityMailbox === false) return null;
         const share = normalizeCommunityShareSettings(this.plugin.settings.communityShare);
-        const { status, connectionId, secretId } = share.connection;
-        if (!share.enabled || status !== 'connected' || !connectionId || !secretId) return null;
-        return `${connectionId}|${secretId}`;
+        if (!hasActiveCommunityConnection(share)) return null;
+        return `${share.connection.connectionId}|${share.connection.secretId}`;
     }
 
     private async refresh(): Promise<void> {

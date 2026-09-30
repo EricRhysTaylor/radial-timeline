@@ -2457,13 +2457,12 @@
   display: none;
 }
 
-/* Community mailbox: title-bar icon right of the writing-session control
-   (where the Discord pill was). The mark mirrors the website account chip:
-   a red count for unread support requests (admins), a blue count for
-   requests awaiting a reply, a dot for an unread reply. Static on purpose:
-   no transitions or animation near the scene-hover path. */
-/* A labelled pill, sized and set like the Discord pill it replaced
-   (icon + "Mailbox" in the timeline's mono face), so it reads at a glance. */
+/* Community mailbox: a labelled pill (mail icon + "Mailbox" in the
+   timeline's mono face) right of the writing-session control, sized and set
+   like the Discord pill it replaced. The mark on its corner mirrors the
+   website account chip: a red count for unread support requests (admins), a
+   blue count for requests awaiting a reply, a dot for an unread reply.
+   Static on purpose: no transitions or animation near the scene-hover path. */
 .ert-timeline-mailbox.clickable-icon {
   position: relative;
   flex: 0 0 auto;

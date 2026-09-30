@@ -163,7 +163,7 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
     });
     createDenseRow(displayContainer, {
         title: 'Show Community mailbox',
-        description: 'When this vault is connected to the Community, a mail icon beside the writing-session control marks new replies to your requests and questions. It checks the website about once an hour and when Obsidian regains focus.',
+        description: 'When this vault is connected to the Community, a Mailbox button beside the writing-session control marks new replies to your requests and questions. It checks the website about once an hour and when Obsidian regains focus.',
         control: (setting) => {
             setting.addToggle(toggle => toggle
                 .setValue(plugin.settings.showCommunityMailbox !== false)

@@ -1,6 +1,7 @@
 import type {
     CommunityDailyBackfillRecord,
     CommunityShareAudience,
+    CommunityShareConnectionSettings,
     CommunityShareFieldKey,
     CommunityShareFieldPolicy,
     CommunityShareSettings,
@@ -101,6 +102,24 @@ export function buildCommunityShareFieldPolicyForMode(mode: CommunityShareMode):
 export function deriveCommunityShareMode(settings: CommunityShareSettings): CommunityShareMode {
     if (!settings.enabled || settings.tier === 0) return 'private';
     return settings.tier >= 3 ? 'progress' : 'profile_books';
+}
+
+/** Settings whose vault holds a live Community connection with a stored secret. */
+export type ActiveCommunityShareSettings = CommunityShareSettings & {
+    connection: CommunityShareConnectionSettings & { status: 'connected'; connectionId: string; secretId: string };
+};
+
+/**
+ * The one "this vault is connected" check: Community on, connected, with a
+ * connection id and a stored secret id. Every secret-authenticated call
+ * (requireActiveConnection, report publish) and the title-bar mailbox's
+ * show/hide use it, so the mailbox is visible exactly when its check can run.
+ */
+export function hasActiveCommunityConnection(settings: CommunityShareSettings): settings is ActiveCommunityShareSettings {
+    return settings.enabled
+        && settings.connection.status === 'connected'
+        && Boolean(settings.connection.connectionId)
+        && Boolean(settings.connection.secretId);
 }
 
 /** APR is a curated project artifact available from Level 2 upward. */

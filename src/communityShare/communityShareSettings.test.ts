@@ -5,6 +5,7 @@ import {
     buildDefaultCommunityShareSettings,
     canShareAprToCommunity,
     deriveCommunityShareMode,
+    hasActiveCommunityConnection,
     normalizeCommunityShareSettings
 } from './communityShareSettings';
 
@@ -143,5 +144,25 @@ describe('Community Share settings', () => {
         expect(deriveCommunityShareMode(normalizeCommunityShareSettings({ enabled: true, tier: 2 }))).toBe('profile_books');
         expect(deriveCommunityShareMode(normalizeCommunityShareSettings({ enabled: true, tier: 3 }))).toBe('progress');
         expect(deriveCommunityShareMode(normalizeCommunityShareSettings({ enabled: true, tier: 5 }))).toBe('progress');
+    });
+});
+
+describe('hasActiveCommunityConnection', () => {
+    const connected = () => normalizeCommunityShareSettings({
+        enabled: true,
+        connection: { status: 'connected', connectionId: 'conn-1', secretId: 'rt.community-share.connection-secret' }
+    });
+
+    it('is true only with Community on, connected, and both ids present', () => {
+        expect(hasActiveCommunityConnection(connected())).toBe(true);
+        expect(hasActiveCommunityConnection({ ...connected(), enabled: false })).toBe(false);
+        expect(hasActiveCommunityConnection({ ...connected(), connection: { ...connected().connection, status: 'disconnected' } })).toBe(false);
+        expect(hasActiveCommunityConnection({ ...connected(), connection: { ...connected().connection, connectionId: undefined } })).toBe(false);
+        expect(hasActiveCommunityConnection({ ...connected(), connection: { ...connected().connection, secretId: undefined } })).toBe(false);
+        expect(hasActiveCommunityConnection(buildDefaultCommunityShareSettings())).toBe(false);
+    });
+
+    it('ignores a paused share: pausing stops sharing, not the connection', () => {
+        expect(hasActiveCommunityConnection({ ...connected(), sharingPaused: true })).toBe(true);
     });
 });

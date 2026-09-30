@@ -16,7 +16,7 @@ Advanced is currently grouped into three areas:
 *   **Recent drag move overlay in narrative mode**: Shows the last committed scene and beat drag moves.
 *   **Readability size**: Switches curated timeline text sizing between `Normal` and `Large`.
 *   **Show scene time cue bar**: Shows time-phrase markers beside Scene notes in editing and Reading view. Turn it off to hide the bar; the time summary in the note's title bar stays visible. See [Scene Time](Scene-Time).
-*   **Show Community mailbox**: On a vault connected to the Community, shows the mail icon beside the writing-session control that marks new replies to your requests and questions. On by default. Turning it off also stops its hourly check. See [Radial Timeline View](Radial-Timeline-View#community-mailbox).
+*   **Show Community mailbox**: On a vault connected to the Community, shows the **Mailbox** button beside the writing-session control that marks new replies to your requests and questions. On by default. Turning it off also stops its hourly check. See [Radial Timeline View](Radial-Timeline-View#community-mailbox).
 
 ### Schema & Manuscript
 

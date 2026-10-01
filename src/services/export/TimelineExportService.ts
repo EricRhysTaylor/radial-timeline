@@ -14,7 +14,7 @@
  *      correctly OUTSIDE Obsidian, so we bake the computed presentation styles
  *      onto a detached clone before serializing.
  *
- *   2. Export timeline data (JSON) — a schema-stamped, vault-agnostic snapshot
+ *   2. Export timeline for sharing (JSON) — a schema-stamped, vault-agnostic snapshot
  *      of everything the renderer consumes (TimelineItem[], book/matter meta,
  *      and a renderConfig snapshot). Reproduces the render elsewhere.
  *

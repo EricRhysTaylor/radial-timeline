@@ -20,7 +20,7 @@ export interface TimelineDataExportChoice {
 }
 
 /**
- * Consent dialog shown before the "Export timeline data (JSON)" command
+ * Consent dialog shown before the "Export timeline for sharing" command
  * writes a file. Per Amendment 1's consent flow (§1 Export): states what the
  * file contains — structural fields visible immediately once a share is
  * activated, and revealing fields held for later per-scene reveal — and

@@ -2989,11 +2989,11 @@ export const en: TranslationKeys = {
         gossamerAnalysis: 'Gossamer analysis',
         authorProgressReport: 'Author progress report (APR)',
         exportTimelineImage: 'Export timeline as image (SVG / PNG)',
-        exportTimelineData: 'Export timeline data (JSON)',
+        exportTimelineData: 'Export timeline for sharing',
     },
     timelineDataExportModal: {
         badge: 'Export',
-        title: 'Export timeline data',
+        title: 'Export timeline for sharing',
         subtitle: 'Nothing is shared by exporting. The file stays in your vault until you upload it to your Community share and activate it.',
         structuralHeading: 'Shared when you activate',
         structuralBody: 'Scene numbers, acts, subplot names, status, publish stage, book title, and author.',

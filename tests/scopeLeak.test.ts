@@ -129,7 +129,7 @@ describe('Scope leak protections', () => {
         expect(a1).toContain('Summary: Scoped summary for');
         // Stamped with the model that answered, never a configured-model guess.
         expect(a1).toMatch(/Summary Update: .* by GPT-6 Luna API/);
-        expect(a1).not.toContain('gpt-6-sol');
+        expect(a1).not.toContain('gpt-6.1-sol');
         expect(b1).not.toContain('Summary: Scoped summary for');
         expect(b1).not.toContain('Summary Update:');
         expect(Object.keys(plugin.settings.aiUpdateTimestamps)).toHaveLength(3);

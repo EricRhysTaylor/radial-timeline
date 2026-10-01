@@ -70,7 +70,7 @@ describe('selectModel', () => {
             outputTokensNeeded: 2000
         });
         expect(result.model.provider).toBe('openai');
-        expect(result.model.alias).toBe('gpt-6-sol');
+        expect(result.model.alias).toBe('gpt-6.1-sol');
         expect(result.model.capabilities.includes('highOutputCap')).toBe(true);
     });
 
@@ -80,7 +80,7 @@ describe('selectModel', () => {
             policy: { type: 'latestPro' },
             requiredCapabilities: ['jsonStrict', 'longContext', 'reasoningStrong', 'highOutputCap']
         });
-        expect(result.model.alias).toBe('gpt-6-sol');
+        expect(result.model.alias).toBe('gpt-6.1-sol');
         expect(result.warnings).toContain('OpenAI pro auto-selection is disabled for schema-required workflows; fallback to latest stable.');
     });
 
@@ -93,13 +93,13 @@ describe('selectModel', () => {
         expect(result.model.alias).toBe('gpt-6-astra');
     });
 
-    it('keeps pinned GPT-6 Sol selection when explicitly requested', () => {
+    it('keeps pinned GPT-6.1 Sol selection when explicitly requested', () => {
         const result = selectModel(BUILTIN_MODELS, {
             provider: 'openai',
-            policy: { type: 'pinned', pinnedAlias: 'gpt-6-sol' },
+            policy: { type: 'pinned', pinnedAlias: 'gpt-6.1-sol' },
             requiredCapabilities: ['jsonStrict']
         });
-        expect(result.model.alias).toBe('gpt-6-sol');
+        expect(result.model.alias).toBe('gpt-6.1-sol');
     });
 
     it('ignores access tier for OpenAI latestStable resolution', () => {
@@ -115,7 +115,7 @@ describe('selectModel', () => {
             requiredCapabilities: ['longContext', 'jsonStrict', 'reasoningStrong', 'highOutputCap'],
             accessTier: 4
         });
-        expect(tier1.model.alias).toBe('gpt-6-sol');
-        expect(tier4.model.alias).toBe('gpt-6-sol');
+        expect(tier1.model.alias).toBe('gpt-6.1-sol');
+        expect(tier4.model.alias).toBe('gpt-6.1-sol');
     });
 });

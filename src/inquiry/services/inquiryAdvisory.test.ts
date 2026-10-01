@@ -33,7 +33,7 @@ describe('computeInquiryAdvisoryContext', () => {
         // citations off everywhere, that nudge would mislead. The advisor
         // should suppress the sources_preferred branch and fall through to
         // other reason codes (or return null).
-        const currentModel = getModel('gpt-6-sol');
+        const currentModel = getModel('gpt-6.1-sol');
         const advisory = computeInquiryAdvisoryContext({
             scope: 'book',
             scopeLabel: 'B1',
@@ -87,7 +87,7 @@ describe('computeInquiryAdvisoryContext', () => {
     });
 
     it('returns precision recommendation for deep analysis questions when another engine is stronger', () => {
-        const openAiStrong = getModel('gpt-6-sol');
+        const openAiStrong = getModel('gpt-6.1-sol');
         const currentModel: ModelInfo = {
             ...openAiStrong,
             id: 'gpt-5.2-precision-lite-test',

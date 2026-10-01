@@ -77,13 +77,11 @@ export const BUILTIN_PRICING: ProviderPricingTable = {
             cacheWrite1hPer1M: 10.0,
             cacheReadPer1M: 0.5
         },
-        // Mid tier. $2/$10 per MTok launched as intro pricing through
-        // 2026-08-31; Anthropic then made it the standard price (the scheduled
-        // rise to $3/$15 was cancelled), so the promo entry is gone and the cache
-        // rates are the real multipliers on $2: write 1.25×/2×, read 0.1×.
-        // Verified against platform.claude.com/docs/en/about-claude/pricing on
-        // 2026-09-05.
-        'claude-sonnet-5': {
+        // Mid tier: Claude Sonnet 5.5, same price as Sonnet 5 (whose $2/$10
+        // intro price became standard). Standard multipliers on $2: write
+        // 1.25×/2×, read 0.1×. Verified against
+        // platform.claude.com/docs/en/about-claude/pricing on 2026-10-01.
+        'claude-sonnet-5-5': {
             inputPer1M: 2.0,
             outputPer1M: 10.0,
             cacheWrite5mPer1M: 2.5,
@@ -112,22 +110,23 @@ export const BUILTIN_PRICING: ProviderPricingTable = {
         }
     },
     openai: {
-        // Verified against developers.openai.com/api/docs/models on 2026-09-25.
-        // GPT-6 Sol/Luna prices are permanent (not promotional). OpenAI now
-        // lists cache writes for these models ($2.50 Sol, $0.125 Luna — 1.25×
-        // input); RT's OpenAI path has no write rate and prices the priming
-        // pass at the input rate, so the first pass is quoted ~20% under the
+        // Verified against developers.openai.com/api/docs/models on 2026-10-01.
+        // GPT-6.1 Sol/GPT-6 Luna prices are permanent (not promotional).
+        // OpenAI lists cache writes ($2.50 Sol, $0.125 Luna — 1.25× input);
+        // RT's OpenAI path has no write rate and prices the priming pass at
+        // the input rate, so the first pass is quoted ~20% under the
         // provider's write charge, as for Astra. Long context is 2× input and
-        // cache-read, 1.5× output above 272K.
-        'gpt-6-sol': {
+        // cache-read, 1.5× output above 272K. 6.1 Sol halves cache reads to
+        // $0.10 (GPT-6 Sol: $0.20).
+        'gpt-6.1-sol': {
             inputPer1M: 2.0,
             outputPer1M: 10.0,
-            cacheReadPer1M: 0.2,
+            cacheReadPer1M: 0.1,
             longContext: {
                 thresholdInputTokens: 272_000,
                 inputPer1M: 4.0,
                 outputPer1M: 15.0,
-                cacheReadPer1M: 0.4
+                cacheReadPer1M: 0.2
             }
         },
         // GPT-6 Astra, 'pro' channel. OpenAI lists cache writes at $12.50

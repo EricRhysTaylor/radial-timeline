@@ -11,12 +11,21 @@
       "notifyUntil": "curated"
     },
     {
-      "id": "openai-gpt-6-sol-2026-09-22",
+      "id": "anthropic-claude-sonnet-5-5-2026-09-28",
+      "provider": "anthropic",
+      "modelId": "claude-sonnet-5-5",
+      "label": "Claude Sonnet 5.5",
+      "announcedAt": "2026-09-28",
+      "sourceUrl": "https://platform.claude.com/docs/en/models/sonnet-5-5/overview",
+      "notifyUntil": "curated"
+    },
+    {
+      "id": "openai-gpt-6.1-sol-2026-09-27",
       "provider": "openai",
-      "modelId": "gpt-6-sol",
-      "label": "GPT-6 Sol",
-      "announcedAt": "2026-09-22",
-      "sourceUrl": "https://developers.openai.com/api/docs/models/gpt-6-sol",
+      "modelId": "gpt-6.1-sol",
+      "label": "GPT-6.1 Sol",
+      "announcedAt": "2026-09-27",
+      "sourceUrl": "https://developers.openai.com/api/docs/models/gpt-6.1-sol",
       "notifyUntil": "curated"
     },
     {

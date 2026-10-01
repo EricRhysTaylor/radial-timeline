@@ -10,7 +10,7 @@ import {
     type CostComparisonModel
 } from './costComparison';
 
-const anthropic: CostComparisonModel = { provider: 'anthropic', modelId: 'claude-sonnet-5', providerLabel: 'Anthropic', modelLabel: 'Claude Sonnet 5' };
+const anthropic: CostComparisonModel = { provider: 'anthropic', modelId: 'claude-sonnet-5-5', providerLabel: 'Anthropic', modelLabel: 'Claude Sonnet 5.5' };
 
 function deps(overrides: Partial<CostComparisonDeps> = {}): CostComparisonDeps {
     return {

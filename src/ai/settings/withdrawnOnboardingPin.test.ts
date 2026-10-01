@@ -58,7 +58,7 @@ describe('withdrawn onboarding pin — one-time migration', () => {
 
     it('LEAVES a different alias, an added provider, or added overrides', () => {
         const cases = [
-            { modelPolicy: { type: 'pinned', pinnedAlias: 'claude-sonnet-5' } },
+            { modelPolicy: { type: 'pinned', pinnedAlias: 'claude-sonnet-5-5' } },
             { provider: 'anthropic', modelPolicy: { ...SEEDED.modelPolicy } },
             { modelPolicy: { ...SEEDED.modelPolicy }, overrides: { jsonStrict: true } }
         ];

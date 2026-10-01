@@ -106,7 +106,7 @@ const answer = {
         kind: 'payoff', lens: 'both', headline: 'The premise lands on page one.', bullets: ['The colony is named first.'],
         recommended_action: '', subject: '', span: '', evidence_quote: '', supporting_refs: [], role: ''
     }],
-    answeredBy: 'Codex app · GPT-6 Sol'
+    answeredBy: 'Codex app · GPT-6.1 Sol'
 };
 
 async function answerJob(app: InMemoryApp, label: string, body: unknown = answer): Promise<AiJob> {
@@ -145,7 +145,7 @@ describe('Inquiry questions as AI jobs', () => {
         const job = await answerJob(app, 'Core setup');
 
         expect(await ingestAiJobAnswers(app as unknown as App, [handler])).toEqual([{ id: job.id, kind: 'applied' }]);
-        expect(saved).toEqual([{ questionId: 'setup-core', attribution: 'Codex app · GPT-6 Sol', submittedAt: new Date(job.createdAt) }]);
+        expect(saved).toEqual([{ questionId: 'setup-core', attribution: 'Codex app · GPT-6.1 Sol', submittedAt: new Date(job.createdAt) }]);
         expect((await pendingJobs(app)).map(entry => entry.job.id)).not.toContain(job.id);
     });
 

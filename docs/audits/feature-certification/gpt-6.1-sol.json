@@ -1,0 +1,29 @@
+{
+  "provider": "openai",
+  "modelId": "gpt-6.1-sol",
+  "vault": "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/Test Vaults/Obsidian Vault AI Certification",
+  "book": "Pride & Prejudice",
+  "generatedAt": "2026-10-01T19:03:36.737Z",
+  "cases": [
+    {
+      "id": "pulse:31 Easter at Rosings",
+      "feature": "pulse",
+      "durationMs": 30887,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 7713,
+        "outputTokens": 1046,
+        "totalTokens": 8759,
+        "cacheReadInputTokens": 0
+      },
+      "costUSD": 0.025886,
+      "sample": {
+        "previousSceneAnalysis": "- 30 Routine Primed for Disruption + / Repetitive Rosings visits make the lively piano encounter consequential.\n- Contrasting Cousins + / Fitzwilliam's ease primes Darcy's reserve for direct comparison.\n- Intrusive Patronage + / Lady Catherine's surveillance prepares her interruptions and musical condescension.\n- Assumed Marriage + / Anne's presumed claim motivates Elizabeth's scrutiny of Darcy.\n- Jane's Unanswered Question ? / Jane's unresolved hurt recedes while romantic friction takes precedence.",
+        "currentSceneAnalysis": "- 31 A / Trim invitation logistics and closing commentary to foreground the charged piano exchange.\n- Attention Becomes Action + / Darcy leaves his aunt to approach Elizabeth, advancing romantic tension.\n- Banter Carries Grievance + / Elizabeth's teasing revives his ballroom slight without sacrificing momentum.\n- Reserve Meets Accountability + / The practice analogy challenges Darcy's excuse while exposing shared vulnerability.\n- Intimacy Under Interruption + / Lady Catherine disrupts emerging rapport and reinforces unequal social standing.\n- Misread Romantic Evidence + / Elizabeth studies Anne's prospects while overlooking Darcy's attention to herself.",
+        "nextSceneAnalysis": "- 32 Public Interest, Private Visit + / Darcy's morning call extends his deliberate approach at the piano.\n- Fluency Falls Away + / Private silence tests the social difficulty exposed through public banter.\n- Courtship Beneath Geography + / Distance talk turns playful rapport toward marriage and family separation.\n- Attraction Remains Misread + / Charlotte recognizes romantic possibilities Elizabeth's earlier scrutiny failed to register.\n- Repeated Ambiguity - / Repeated visits reiterate uncertainty; compress summary to preserve escalating tension.",
+        "sceneGrade": "A"
+      }
+    }
+  ]
+}

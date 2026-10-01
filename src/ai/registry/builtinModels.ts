@@ -168,16 +168,28 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         }
     },
     {
-        // Mid-tier Anthropic model. 1M context and the same request contract
-        // as Opus 5 (adaptive thinking is the only on-mode; temperature and
-        // top_p are rejected), at $2/$10 per MTok against Opus's $5/$25 — the
-        // launch intro price, made permanent by Anthropic in 2026-09.
-        // BALANCED: strong enough for Inquiry, and the default recommendation
-        // for whole-manuscript onboarding.
+        // Mid-tier Anthropic model: Claude Sonnet 5.5 (released 2026-09-28,
+        // promoted 2026-10-01, replacing Sonnet 5). Same price as Sonnet 5 —
+        // $2/$10 per MTok, cache write 5m $2.50 / 1h $4, cache read $0.20 —
+        // with 1M context / 128K output. BALANCED: strong enough for Inquiry,
+        // and the default recommendation for whole-manuscript onboarding.
+        // Request contract moved to the always-on path (Fable 5.1 / Opus 5.5),
+        // NOT Sonnet 5's:
+        //   - Forced tool_choice ('any'/'tool') → 400, so structured output
+        //     must use output_config.format (json_schema).
+        //   - thinking:{type:'disabled'} and {type:'enabled'} → 400; adaptive
+        //     thinking is on by default. thinkingAlwaysOn omits `thinking` and
+        //     sends an explicit output_config.effort.
+        //   - temperature/top_p/top_k at non-default values → 400 (as Sonnet 5).
+        //   - Refusals may carry stop_details.category; RT surfaces them.
+        // No releasedAt, deliberately (as Sonnet 5 had none): latest-stable
+        // auto-selection sorts the 'stable' channel newest-first, and Sonnet
+        // 5.5 (2026-09-28) postdates Opus 5.5 (2026-09-21), so dating it would
+        // make Sonnet the silent Anthropic default. Sonnet is an explicit pick.
         provider: 'anthropic',
-        id: 'claude-sonnet-5',
-        alias: 'claude-sonnet-5',
-        label: 'Claude Sonnet 5',
+        id: 'claude-sonnet-5-5',
+        alias: 'claude-sonnet-5-5',
+        label: 'Claude Sonnet 5.5',
         line: 'claude-sonnet',
         tier: 'BALANCED',
         capabilities: [...DEEP_CAPS, 'streaming'],
@@ -193,7 +205,8 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         constraints: {
             supportsTemperature: false,
             supportsTopP: false,
-            supportsAdaptiveThinking: true
+            supportsAdaptiveThinking: true,
+            thinkingAlwaysOn: true
         }
     },
     {
@@ -232,25 +245,25 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         }
     },
     {
-        // GPT-6 Sol: default OpenAI model (released 2026-09-22, promoted
-        // 2026-09-25, replacing GPT-5.6 Sol). Half GPT-5.6 Sol's price —
-        // $2/$10 per MTok, cached input $0.20 — with the same request contract
-        // per developers.openai.com/api/docs/models/gpt-6-sol: Responses API,
-        // reasoning effort (none…max, default medium), provider-managed
-        // sampling, structured outputs, prompt caching, 1.05M context (922K
-        // max input) / 128K output. OpenAI reports about half GPT-5.6 Sol's
-        // factuality errors.
+        // GPT-6.1 Sol: default OpenAI model (API-live 2026-09-27, promoted
+        // 2026-10-01, replacing GPT-6 Sol). Same $2/$10 per MTok; cached input
+        // halves to $0.10. Request contract per
+        // developers.openai.com/api/docs/models/gpt-6.1-sol: Responses API,
+        // reasoning effort (low…max, default medium — `none` is gone; RT
+        // never sends an effort on this path), provider-managed sampling,
+        // structured outputs, prompt caching, 1.05M context (922K max input)
+        // / 128K output.
         provider: 'openai',
-        id: 'gpt-6-sol',
-        alias: 'gpt-6-sol',
-        label: 'GPT-6 Sol',
+        id: 'gpt-6.1-sol',
+        alias: 'gpt-6.1-sol',
+        label: 'GPT-6.1 Sol',
         line: 'gpt-6',
         tier: 'BALANCED',
         capabilities: [...DEEP_CAPS, 'toolCalling', 'functionCalling'],
         personality: { reasoning: 10, writing: 9, determinism: 9 },
         contextWindow: 1050000,
         maxOutput: 128000,
-        releasedAt: '2026-09-22',
+        releasedAt: '2026-09-27',
         status: 'stable',
         rollout: {
             channel: 'stable',
@@ -307,8 +320,8 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         // request contract as Sol. FAST tier is the signal that it is the
         // economy choice, as Haiku 4.5 and Gemini Flash are for their
         // providers. Auto-selection resolves to Sol; Luna is an explicit pick.
-        // Released the same day as Sol, so it is dated one day earlier here
-        // to keep the newest-on-line sort from ever tying.
+        // Dated before Sol (6.1 Sol: 2026-09-27) so the newest-on-line sort
+        // always resolves to Sol.
         provider: 'openai',
         id: 'gpt-6-luna',
         alias: 'gpt-6-luna',

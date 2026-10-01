@@ -13,7 +13,7 @@
  *
  * Env:
  *   RT_CERT_PROVIDER   anthropic | openai | google          (required)
- *   RT_CERT_MODEL      catalog model id, e.g. gpt-6-sol       (required)
+ *   RT_CERT_MODEL      catalog model id, e.g. gpt-6.1-sol     (required)
  *   RT_CERT_VAULT      vault folder (default: ../Test Vaults/Obsidian Vault AI Certification)
  *   RT_CERT_BOOK       book folder inside the vault (default: Pride & Prejudice)
  *   RT_CERT_FEATURES   comma list of pulse,gossamer,inquiry (default: all three)

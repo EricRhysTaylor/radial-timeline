@@ -21,7 +21,7 @@
     },
     {
       "provider": "anthropic",
-      "modelId": "claude-sonnet-5",
+      "modelId": "claude-sonnet-5-5",
       "inputPer1M": 2,
       "outputPer1M": 10,
       "cacheWrite5mPer1M": 2.5,
@@ -48,15 +48,15 @@
     },
     {
       "provider": "openai",
-      "modelId": "gpt-6-sol",
+      "modelId": "gpt-6.1-sol",
       "inputPer1M": 2,
       "outputPer1M": 10,
-      "cacheReadPer1M": 0.2,
+      "cacheReadPer1M": 0.1,
       "longContext": {
         "thresholdInputTokens": 272000,
         "inputPer1M": 4,
         "outputPer1M": 15,
-        "cacheReadPer1M": 0.4
+        "cacheReadPer1M": 0.2
       }
     },
     {

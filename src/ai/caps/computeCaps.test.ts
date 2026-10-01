@@ -60,7 +60,7 @@ describe('computeCaps', () => {
     });
 
     it('uses deeper reasoning defaults for inquiry when requested', () => {
-        const model = BUILTIN_MODELS.find(entry => entry.alias === 'gpt-6-sol');
+        const model = BUILTIN_MODELS.find(entry => entry.alias === 'gpt-6.1-sol');
         expect(model).toBeDefined();
         const standard = computeCaps({
             provider: 'openai',
@@ -80,7 +80,7 @@ describe('computeCaps', () => {
     });
 
     it('uses expanded OpenAI GPT-5.4 output ceilings', () => {
-        const model = BUILTIN_MODELS.find(entry => entry.alias === 'gpt-6-sol');
+        const model = BUILTIN_MODELS.find(entry => entry.alias === 'gpt-6.1-sol');
         expect(model).toBeDefined();
         const tier1 = computeCaps({
             provider: 'openai',

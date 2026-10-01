@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-29T17:08:57.811Z",
+  "generatedAt": "2026-10-01T17:09:09.071Z",
   "providerFetchedAt": {
-    "openai": "2026-09-29T17:08:57.811Z",
-    "anthropic": "2026-09-29T17:08:57.811Z",
-    "google": "2026-09-29T17:08:57.811Z"
+    "openai": "2026-10-01T17:09:09.071Z",
+    "anthropic": "2026-10-01T17:09:09.071Z",
+    "google": "2026-10-01T17:09:09.071Z"
   },
   "summary": {
-    "openai": 134,
+    "openai": 135,
     "anthropic": 13,
     "google": 61
   },
@@ -994,6 +994,18 @@
         "shutdown_date": null
       },
       "createdAt": "2026-09-14T17:12:17.000Z"
+    },
+    {
+      "provider": "openai",
+      "id": "gpt-6.1-sol",
+      "raw": {
+        "id": "gpt-6.1-sol",
+        "object": "model",
+        "created": 1790552874,
+        "owned_by": "system",
+        "shutdown_date": null
+      },
+      "createdAt": "2026-09-27T23:47:54.000Z"
     },
     {
       "provider": "openai",

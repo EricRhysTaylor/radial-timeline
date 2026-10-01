@@ -15,12 +15,12 @@ describe('release channel curation', () => {
         const picker = getPickerModelsForProvider(BUILTIN_MODELS, 'openai').map(model => model.alias);
         // Sol is the auto-selected default; Astra is 2.5× its price and is
         // offered second as an explicit choice; Luna is the economy pick.
-        expect(picker).toEqual(['gpt-6-sol', 'gpt-6-astra', 'gpt-6-luna']);
+        expect(picker).toEqual(['gpt-6.1-sol', 'gpt-6-astra', 'gpt-6-luna']);
     });
 
-    it('keeps GPT-6 Astra off the stable channel so latest-stable stays GPT-6 Sol', () => {
+    it('keeps GPT-6 Astra off the stable channel so latest-stable stays GPT-6.1 Sol', () => {
         const stable = selectLatestModelByReleaseChannel(BUILTIN_MODELS, 'openai', 'stable');
-        expect(stable?.alias).toBe('gpt-6-sol');
+        expect(stable?.alias).toBe('gpt-6.1-sol');
         const astra = BUILTIN_MODELS.find(model => model.id === 'gpt-6-astra');
         expect(astra?.rollout?.channel).toBe('pro');
         expect(selectLatestModelByReleaseChannel(BUILTIN_MODELS, 'openai', 'pro')?.alias).toBe('gpt-6-astra');
@@ -48,7 +48,7 @@ describe('release channel curation', () => {
         //   - Sonnet 5 / Haiku 4.5: the BALANCED and FAST task-fit lanes added
         //     2026-08-21. Neither may displace Opus 5.5 as the default.
         expect(picker.slice(2).sort()).toEqual(
-            ['claude-haiku-4-5', 'claude-opus-5', 'claude-sonnet-5'].sort()
+            ['claude-haiku-4-5', 'claude-opus-5', 'claude-sonnet-5-5'].sort()
         );
     });
 
@@ -64,7 +64,7 @@ describe('release channel curation', () => {
         // With one stable model, latest-stable resolves to that model.
         // Resolution is by status === 'stable' even without an explicit
         // rollout block.
-        expect(stable?.alias).toBe('gpt-6-sol');
+        expect(stable?.alias).toBe('gpt-6.1-sol');
     });
 
     it('selectLatestModelByReleaseChannel returns the newest stable Anthropic model', () => {

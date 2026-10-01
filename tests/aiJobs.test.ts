@@ -364,7 +364,7 @@ describe('Scene pulse analysis as AI jobs', () => {
             { ref_id: 'Books/BookA/02 Distress call.md', scene: '2', title: 'Rising stakes', grade: '+', comment: 'The call raises stakes' }
         ],
         nextSceneAnalysis: [{ ref_id: 'Books/BookA/03 Launch.md', scene: '3', title: 'Payoff', grade: '+', comment: 'Launch answers the call' }],
-        answeredBy: 'Codex app · GPT-6 Sol'
+        answeredBy: 'Codex app · GPT-6.1 Sol'
     };
 
     it('prepares jobs by scope: flagged, not yet analyzed, or all', async () => {
@@ -401,7 +401,7 @@ describe('Scene pulse analysis as AI jobs', () => {
         const note = await readText(app, 'Books/BookA/02 Distress call.md');
         expect(note).toContain('2 B / Tighten the middle');
         expect(note).toContain('Rising stakes + / The call raises stakes');
-        expect(note).toMatch(/Pulse Update: .* by Codex app · GPT-6 Sol/);
+        expect(note).toMatch(/Pulse Update: .* by Codex app · GPT-6.1 Sol/);
     });
 
     it('rebuilds the job when a neighboring scene changes', async () => {

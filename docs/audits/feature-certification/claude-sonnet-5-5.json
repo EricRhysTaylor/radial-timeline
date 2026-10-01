@@ -1,0 +1,33 @@
+{
+  "provider": "anthropic",
+  "modelId": "claude-sonnet-5-5",
+  "vault": "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/Test Vaults/Obsidian Vault AI Certification",
+  "book": "Pride & Prejudice",
+  "generatedAt": "2026-10-01T19:03:05.111Z",
+  "cases": [
+    {
+      "id": "pulse:31 Easter at Rosings",
+      "feature": "pulse",
+      "durationMs": 9999,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 12180,
+        "outputTokens": 1122,
+        "totalTokens": 13302,
+        "rawInputTokens": 12180,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0,
+        "cacheCreation5mInputTokens": 0,
+        "cacheCreation1hInputTokens": 0
+      },
+      "costUSD": 0.03558,
+      "sample": {
+        "previousSceneAnalysis": "- 30 Darcy's arrival + / Sets up the first Darcy-Elizabeth encounter at Rosings.\n- Jane probe + / Elizabeth's loaded question primes her sparring in scene 31.\n- Fitzwilliam introduced + / Establishes the genial foil who warms the piano scene.\n- Lady Catherine's dominance ? / Routine description; her control pays off later.\n- Summary-heavy opening - / Long routine exposition slows momentum before the confrontation.",
+        "currentSceneAnalysis": "- 31 A / Sparkling banter and subtext; trim Lady Catherine's repetition slightly for sharper pacing.\n- Piano duel + / Playful flirtation and challenge crackle with subtext.\n- Ball retaliation + / Callback to Darcy's snub reopens their history charmingly.\n- Darcy's watching + / His curiosity quietly signals growing interest.\n- Lady Catherine's monologue - / Comic but repetitive; slows the central tension.\n- Miss Bingley dismissal ? / Elizabeth misreads Darcy; effective dramatic irony.",
+        "nextSceneAnalysis": "- 32 Darcy alone + / Pays off scene 31's spark with a private, awkward encounter.\n- Bingley subtext + / Elizabeth's Jane probe resumes with sharper, riskier edges.\n- Charlotte's theory + / Raises romantic stakes while Elizabeth stays blind.\n- Fitzwilliam's role ? / Wickham comparison adds texture but diffuses focus.\n- Closing summary - / Expository wrap-up softens the tension just built.",
+        "sceneGrade": "A"
+      }
+    }
+  ]
+}

@@ -105,9 +105,9 @@
     },
     {
       "provider": "anthropic",
-      "id": "claude-sonnet-5",
-      "alias": "claude-sonnet-5",
-      "label": "Claude Sonnet 5",
+      "id": "claude-sonnet-5-5",
+      "alias": "claude-sonnet-5-5",
+      "label": "Claude Sonnet 5.5",
       "line": "claude-sonnet",
       "tier": "BALANCED",
       "capabilities": [
@@ -133,7 +133,8 @@
       "constraints": {
         "supportsTemperature": false,
         "supportsTopP": false,
-        "supportsAdaptiveThinking": true
+        "supportsAdaptiveThinking": true,
+        "thinkingAlwaysOn": true
       }
     },
     {
@@ -170,9 +171,9 @@
     },
     {
       "provider": "openai",
-      "id": "gpt-6-sol",
-      "alias": "gpt-6-sol",
-      "label": "GPT-6 Sol",
+      "id": "gpt-6.1-sol",
+      "alias": "gpt-6.1-sol",
+      "label": "GPT-6.1 Sol",
       "line": "gpt-6",
       "tier": "BALANCED",
       "capabilities": [
@@ -190,7 +191,7 @@
       },
       "contextWindow": 1050000,
       "maxOutput": 128000,
-      "releasedAt": "2026-09-22",
+      "releasedAt": "2026-09-27",
       "status": "stable",
       "rollout": {
         "channel": "stable",

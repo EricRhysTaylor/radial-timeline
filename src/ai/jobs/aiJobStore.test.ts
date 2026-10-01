@@ -62,7 +62,7 @@ describe('AI jobs', () => {
     });
 
     it('read the client\'s name for itself from answeredBy, cleaned for a one-line stamp', () => {
-        expect(readAnswerAttribution('{"summary": "x", "answeredBy": "Codex app · GPT-6 Sol"}')).toBe('Codex app · GPT-6 Sol');
+        expect(readAnswerAttribution('{"summary": "x", "answeredBy": "Codex app · GPT-6.1 Sol"}')).toBe('Codex app · GPT-6.1 Sol');
         expect(readAnswerAttribution('```json\n{"answeredBy": "  Claude app\\n· Opus 5.5 "}\n```')).toBe('Claude app · Opus 5.5');
         expect(readAnswerAttribution(`{"answeredBy": "${'x'.repeat(200)}"}`)).toHaveLength(60);
         expect(readAnswerAttribution('{"summary": "x"}')).toBe(UNNAMED_CLIENT_ATTRIBUTION);

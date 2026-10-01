@@ -170,7 +170,7 @@ describe('model catalog dispatch contract: invariants', () => {
             expect(profile.preferredOpenAiEndpoint).toBe('responses');
             expect(profile.supportsTemperature).toBe(false);
             expect(profile.supportsTopP).toBe(false);
-            // Reasoning-effort capability is declared for GPT-6 Sol — pin so
+            // Reasoning-effort capability is declared for GPT-6.1 Sol — pin so
             // that future plumbing through to dispatch params can be
             // detected by extending this assertion.
             expect(profile.supportsReasoningEffort).toBe(true);

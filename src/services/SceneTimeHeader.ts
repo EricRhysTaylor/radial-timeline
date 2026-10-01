@@ -5,6 +5,7 @@ import { sceneTimeLabel } from '../utils/sceneTimeLabel';
 import type { SceneTimeService } from '../sceneTime/SceneTimeService';
 import { SceneTimeModal } from '../sceneTime/SceneTimeModal';
 import { elapsedLabel } from '../sceneTime/model';
+import { t } from '../i18n';
 
 /** Owns only the timing badges inserted into open markdown view headers. */
 export class SceneTimeHeader extends Component {
@@ -62,17 +63,18 @@ export class SceneTimeHeader extends Component {
             if (snapshot) {
                 const provisional = snapshot.estimated !== snapshot.elapsed;
                 const total = provisional ? `~${elapsedLabel(snapshot.estimated)}` : snapshot.confirmed ? elapsedLabel(snapshot.elapsed) : '—';
-                label.text += ` · Elapsed ${total}${snapshot.pending ? ` · ${snapshot.pending} cues` : ''}`;
-                label.description += ` · ${elapsedLabel(snapshot.elapsed)} confirmed elapsed${provisional ? ` (~${elapsedLabel(snapshot.estimated)} including unconfirmed cues)` : ''}; ${snapshot.pending} unconfirmed cues. Optional: click to check elapsed story time.`;
+                label.text += ` · ${t('sceneTime.header.elapsed', { total })}${snapshot.pending ? ` · ${t('sceneTime.header.cues', { count: snapshot.pending })}` : ''}`;
+                label.description += ` · ${t(provisional ? 'sceneTime.header.descriptionProvisional' : 'sceneTime.header.description',
+                    { elapsed: elapsedLabel(snapshot.elapsed), estimated: elapsedLabel(snapshot.estimated), count: snapshot.pending })}`;
                 // Same leeway as the cue bar's duration line: red once confirmed time runs over, yellow while it rests on unconfirmed cues.
                 const over = snapshot.duration?.status === 'over' ? snapshot.duration : null;
                 const conflict = snapshot.conflict || !!over?.confirmed;
                 badge.toggleClass('ert-time-over', conflict);
                 badge.toggleClass('ert-time-over-provisional', !conflict && !!over);
-                if (conflict) label.text += ' · Review timing';
+                if (conflict) label.text += ` · ${t('sceneTime.header.reviewTiming')}`;
                 else if (over) {
-                    label.text += ' · Check timing';
-                    label.description += ` Unconfirmed time cues run past the declared ${elapsedLabel(over.planned)} duration.`;
+                    label.text += ` · ${t('sceneTime.header.checkTiming')}`;
+                    label.description += ` ${t('sceneTime.header.overDuration', { duration: elapsedLabel(over.planned) })}`;
                 }
             }
             if (badge.textContent !== label.text) badge.setText(label.text);

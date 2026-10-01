@@ -22,7 +22,7 @@ Publish Stage: Zero       # Progress stage (Zero/Author/House/Press)
 Status: Todo              # Scene status (Todo/Working/Complete)
 Due:                      # Target completion date (YYYY-MM-DD). When setting Scene to Complete, change this to that day's date for better novel completion estimate
 Pulse Update:             # AI-generated scene pulse analysis flag
-Summary Update:           # Summary refresh flag
+Summary Update:           # Summary scene refresh flag
 ```
 
 Book Designer and Create note generate the core scaffold above. `ID` is inserted automatically for stable scene citations, and the scene properties editor can maintain the current core and advanced field order.

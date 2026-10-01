@@ -3,6 +3,7 @@ import { attachManualTimes, manualTimeKey, manualTimeQuote } from './manualTime'
 import type RadialTimelinePlugin from '../main';
 import { getActiveFrontmatterMappings, normalizeFrontmatterKeys } from '../utils/frontmatter';
 import { resolveSceneTime, scanSceneTime, type SceneTimeSnapshot, type TimeDecision } from './model';
+import { t } from '../i18n';
 
 const STORE_DIR = 'Radial Timeline/Scene Time';
 const STORE_PATH = `${STORE_DIR}/decisions.json`;
@@ -12,18 +13,18 @@ export function parseTimeStore(raw: string): TimeStore {
     const value: unknown = JSON.parse(raw);
     if (!value || typeof value !== 'object' || !('schemaVersion' in value) || value.schemaVersion !== 1
         || !('scenes' in value) || !value.scenes || typeof value.scenes !== 'object' || Array.isArray(value.scenes)) {
-        throw new Error('Unsupported scene time decisions file');
+        throw new Error(t('sceneTime.errors.unsupportedFile'));
     }
     const scenes = value.scenes as Record<string, unknown>; // SAFE: non-array object validated above.
     for (const decisions of Object.values(scenes)) {
-        if (!decisions || typeof decisions !== 'object' || Array.isArray(decisions)) throw new Error('Invalid scene time decisions');
+        if (!decisions || typeof decisions !== 'object' || Array.isArray(decisions)) throw new Error(t('sceneTime.errors.invalidDecisions'));
         const entries = decisions as Record<string, unknown>; // SAFE: non-array object validated above.
         for (const key of Object.keys(entries)) manualTimeQuote(key);
         for (const decision of Object.values(entries)) {
             if (!decision || typeof decision !== 'object' || !('action' in decision) || typeof decision.action !== 'string'
                 || !['add', 'checkpoint', 'exclude'].includes(decision.action) || !('minutes' in decision)
                 || typeof decision.minutes !== 'number' || !Number.isFinite(decision.minutes) || decision.minutes < 0) {
-                throw new Error('Invalid scene time contribution');
+                throw new Error(t('sceneTime.errors.invalidContribution'));
             }
         }
     }
@@ -46,7 +47,7 @@ export class SceneTimeService extends Component {
             const io = this.plugin.app.vault.adapter; // SAFE: JSON sidecar loads before the Vault index is ready.
             if (await io.exists(STORE_PATH)) this.data = parseTimeStore(await io.read(STORE_PATH));
         } catch (error) {
-            this.error = `Scene time decisions could not be loaded: ${error instanceof Error ? error.message : String(error)}`;
+            this.error = t('sceneTime.errors.loadFailed', { detail: error instanceof Error ? error.message : String(error) });
             new Notice(this.error);
         }
     }
@@ -58,7 +59,7 @@ export class SceneTimeService extends Component {
             if (!(file instanceof TFile) || !this.data.scenes[oldPath]) return;
             const newPath = file.path;
             void this.write(data => {
-                if (data.scenes[newPath]) throw new Error('Scene time destination already has decisions; source decisions were preserved.');
+                if (data.scenes[newPath]) throw new Error(t('sceneTime.errors.renameConflict'));
                 data.scenes[newPath] = data.scenes[oldPath];
                 delete data.scenes[oldPath];
             }).catch(error => new Notice(String(error)));
@@ -94,26 +95,26 @@ export class SceneTimeService extends Component {
     }
 
     async assignSelection(file: TFile, source: string, quote: string, minutes: number): Promise<void> {
-        if (!this.metadata(file)) throw new Error('Select prose in a Scene note.');
+        if (!this.metadata(file)) throw new Error(t('sceneTime.errors.selectProse'));
         if (!quote.trim() || /[\r\n]/.test(quote) || !Number.isFinite(minutes) || minutes <= 0)
-            throw new Error('Select one line of prose and enter a positive duration.');
+            throw new Error(t('sceneTime.errors.selectOneLine'));
         let current = await this.plugin.app.vault.cachedRead(file);
         this.plugin.app.workspace.iterateAllLeaves(leaf => {
             if (leaf.view instanceof MarkdownView && leaf.view.file === file) current = leaf.view.getViewData();
         });
-        if (current !== source) throw new Error('The note changed. Select the text again.');
+        if (current !== source) throw new Error(t('sceneTime.errors.noteChanged'));
         const key = manualTimeKey(quote);
         await this.write(data => {
             const decisions = data.scenes[file.path] || {};
             const next = { ...decisions, [key]: { action: 'add' as const, minutes } };
             if (attachManualTimes(source, scanSceneTime(source), next).includes(key))
-                throw new Error('Choose unique prose without overlapping time cues or assignments.');
+                throw new Error(t('sceneTime.errors.notUnique'));
             data.scenes[file.path] = next;
         });
     }
 
     async removeManualTime(file: TFile, key: string): Promise<void> {
-        if (manualTimeQuote(key) === null) throw new Error('Not a manual assignment.');
+        if (manualTimeQuote(key) === null) throw new Error(t('sceneTime.errors.notManual'));
         await this.write(data => { if (data.scenes[file.path]) delete data.scenes[file.path][key]; });
     }
 
@@ -137,8 +138,8 @@ export class SceneTimeService extends Component {
         });
         const source = openSource !== null ? openSource : await this.plugin.app.vault.cachedRead(file);
         const cue = this.snapshot(file, source)?.cues.find(item => item.key === key);
-        if (!cue || cue.duplicate) throw new Error('This marker changed or is duplicated. Review the current prose before saving.');
-        if (decision && (!Number.isFinite(decision.minutes) || decision.minutes < 0)) throw new Error('Enter a non-negative elapsed duration.');
+        if (!cue || cue.duplicate) throw new Error(t('sceneTime.errors.markerChanged'));
+        if (decision && (!Number.isFinite(decision.minutes) || decision.minutes < 0)) throw new Error(t('sceneTime.errors.nonNegative'));
         await this.write(data => {
             const decisions = data.scenes[file.path] || {};
             if (decision) decisions[key] = decision;
@@ -153,15 +154,15 @@ export class SceneTimeService extends Component {
             if (leaf.view instanceof MarkdownView && leaf.view.file === file) source = leaf.view.getViewData();
         });
         const snapshot = this.snapshot(file, source);
-        if (!snapshot) throw new Error('This note is no longer a scene.');
+        if (!snapshot) throw new Error(t('sceneTime.errors.notScene'));
         const cues = keys.map(key => snapshot.cues.find(cue => cue.key === key));
         if (cues.some(cue => !cue || cue.duplicate || cue.decision || cue.suggestedMinutes === null
             || (cue.kind !== 'advance' && cue.kind !== 'checkpoint'))) {
-            throw new Error('The cues changed. Reopen scene time before confirming all.');
+            throw new Error(t('sceneTime.errors.cuesChanged'));
         }
         await this.write(data => {
             const decisions = data.scenes[file.path] || {};
-            if (keys.some(key => decisions[key])) throw new Error('A cue was already confirmed. Reopen scene time before confirming all.');
+            if (keys.some(key => decisions[key])) throw new Error(t('sceneTime.errors.alreadyConfirmed'));
             for (const cue of cues) {
                 if (!cue || cue.suggestedMinutes === null) continue;
                 decisions[cue.key] = { action: cue.kind === 'checkpoint' ? 'checkpoint' : 'add', minutes: cue.suggestedMinutes };

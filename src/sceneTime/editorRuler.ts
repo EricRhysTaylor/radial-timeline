@@ -5,6 +5,7 @@ import { cueDescription, cueState, cueMarkerLabel, durationSegment, elapsedLabel
 import type { SceneTimeService } from './SceneTimeService';
 import { openSceneLineTime } from './ManualTimeModal';
 import { SceneTimeModal } from './SceneTimeModal';
+import { t } from '../i18n';
 
 const refreshRuler = StateEffect.define<null>();
 function editorFile(view: EditorView) {
@@ -17,7 +18,8 @@ export function createTimeTick(doc: Document, cue: ResolvedCue, open: () => void
     button.type = 'button';
     button.dataset.cueFrom = String(cue.from);
     button.style.setProperty('--ert-time-lane', String(lane)); // SAFE: stable source-line stack position prevents marker overlap.
-    setTooltip(button, `“${cue.quote}” · ${cueDescription(cue)}${cue.clockLabel ? ` · ${cue.clockEstimated ? 'Estimated story clock' : 'Story clock'} ${cue.clockLabel}` : ''} · Click to review`);
+    const clock = cue.clockLabel ? ` · ${t(cue.clockEstimated ? 'sceneTime.ruler.estimatedStoryClock' : 'sceneTime.ruler.storyClock', { clock: cue.clockLabel })}` : '';
+    setTooltip(button, `“${cue.quote}” · ${cueDescription(cue)}${clock} · ${t('sceneTime.ruler.clickToReview')}`);
     const stroke = doc.win.createSpan();
     stroke.className = 'ert-time-tick';
     const label = cueMarkerLabel(cue);
@@ -42,15 +44,15 @@ export function createDurationLine(parent: HTMLElement, segment: DurationSegment
         line.addClass('ert-time-duration-stop');
         line.dataset.stopFrom = String(stop.from);
         const cap = line.createSpan({ cls: 'ert-time-duration-cap' });
-        setTooltip(cap, `Duration ${planned} used up here · time cues continue to ${elapsedLabel(segment.reached)}${segment.confirmed ? '' : ' · Dashed until confirmed time alone runs past it'} · Click to review`);
+        setTooltip(cap, `${t('sceneTime.ruler.durationUsedUp', { duration: planned, reached: elapsedLabel(segment.reached) })}${segment.confirmed ? '' : ` · ${t('sceneTime.ruler.dashedUntilConfirmed')}`} · ${t('sceneTime.ruler.clickToReview')}`);
         cap.addEventListener('click', event => review(event, stop.key));
     }
     if (segment.arrow) {
         const arrow = line.createSpan({ cls: `ert-time-duration-arrow ert-time-duration-arrow-${segment.arrow}` });
         setIcon(arrow, 'arrow-down');
-        setTooltip(arrow, segment.arrow === 'shortfall'
-            ? `Duration ${planned} · time cues reach ${elapsedLabel(segment.reached)} · ${elapsedLabel(segment.planned - segment.reached)} not accounted for in the prose · Click to review`
-            : `Duration ${planned} · no time phrases quantify it yet; prose can use time without naming it · Click to review`);
+        setTooltip(arrow, `${segment.arrow === 'shortfall'
+            ? t('sceneTime.ruler.durationShortfall', { duration: planned, reached: elapsedLabel(segment.reached), missing: elapsedLabel(segment.planned - segment.reached) })
+            : t('sceneTime.ruler.durationUnquantified', { duration: planned })} · ${t('sceneTime.ruler.clickToReview')}`);
         arrow.addEventListener('click', event => review(event));
     }
     return line;
@@ -152,7 +154,7 @@ export function sceneTimeEditorExtension(service: SceneTimeService) {
             mouseover: (_view, _line, event) => {
                 const target = event.target as HTMLElement | null; // SAFE: gutter events originate in our HTML marker elements.
                 const rail = target?.closest<HTMLElement>('.ert-time-rail');
-                if (rail) rail.title = 'Click the strip to assign or review scene time';
+                if (rail) rail.title = t('sceneTime.ruler.railTitle');
                 return false;
             },
             click: (view, line, event) => {
@@ -170,7 +172,7 @@ export function sceneTimeEditorExtension(service: SceneTimeService) {
             if (!snapshot) return null;
             const number = view.state.doc.lineAt(line.from).number - 1;
             if (!snapshot.proseLines.has(number)) return null;
-            const boundary = number === snapshot.firstLine ? 'Scene start · elapsed 0' : number === snapshot.lastLine ? 'Last prose · end of scene' : '';
+            const boundary = number === snapshot.firstLine ? t('sceneTime.ruler.sceneStart') : number === snapshot.lastLine ? t('sceneTime.ruler.sceneEnd') : '';
             return new Marker(snapshot.cues.filter(cue => cue.line === number), boundary, line.from, durationSegment(snapshot, number, number));
         },
         lineMarkerChange: update => update.docChanged || update.geometryChanged || update.startState.field(editorInfoField, false)?.file !== editorFile(update.view) || update.transactions.some(transaction => transaction.effects.some(effect => effect.is(refreshRuler)))

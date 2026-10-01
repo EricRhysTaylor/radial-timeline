@@ -1,4 +1,5 @@
 import { maskNonProse, type SceneTimeScan, type TimeDecision } from './model';
+import { t } from '../i18n';
 
 const PREFIX = 'manual-selection-v1:';
 export const manualTimeKey = (quote: string): string => PREFIX + JSON.stringify(quote);
@@ -6,9 +7,9 @@ export function manualTimeQuote(key: string): string | null {
     if (!key.startsWith(PREFIX)) return null;
     try {
         const quote: unknown = JSON.parse(key.slice(PREFIX.length));
-        if (typeof quote !== 'string' || !quote.trim() || /[\r\n]/.test(quote)) throw new Error('Invalid manual scene time anchor.');
+        if (typeof quote !== 'string' || !quote.trim() || /[\r\n]/.test(quote)) throw new Error(t('sceneTime.errors.invalidAnchor'));
         return quote;
-    } catch { throw new Error('Invalid manual scene time anchor.'); }
+    } catch { throw new Error(t('sceneTime.errors.invalidAnchor')); }
 }
 
 /** Exact unique prose selections survive surrounding edits; ambiguous anchors never transfer. */

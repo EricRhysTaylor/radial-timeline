@@ -83,7 +83,7 @@ Secondary pages should summarize in one line and link to the canonical page.
   - `Radial-Timeline-View`
 - Good:
   - `Publishing`
-  - `Manage subplots`
+  - `Subplot manager`
   - `Radial Timeline View`
 - Sidebar links must look professional:
   - no visible `#anchors`

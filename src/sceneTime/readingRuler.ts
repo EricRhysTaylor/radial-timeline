@@ -4,6 +4,7 @@ import { createDurationLine, createTimeTick } from './editorRuler';
 import { durationSegment } from './model';
 import { openSceneLineTime } from './ManualTimeModal';
 import { SceneTimeModal } from './SceneTimeModal';
+import { t } from '../i18n';
 
 /** Find a rendered quote across emphasis/link text nodes without modifying prose. */
 function quoteRange(el: HTMLElement, quote: string, occurrence: number): Range | null {
@@ -59,7 +60,7 @@ export async function renderReadingTime(service: SceneTimeService, el: HTMLEleme
         onload(): void {
             el.addClass('ert-time-reading-block');
             this.rail = el.createDiv({ cls: 'ert-time-reading-rail' });
-            this.rail.title = 'Click the strip to assign or review scene time';
+            this.rail.title = t('sceneTime.ruler.railTitle');
             this.rail.addEventListener('click', event => {
                 if (event.target !== this.rail) return;
                 const current = service.snapshot(sceneFile, source);

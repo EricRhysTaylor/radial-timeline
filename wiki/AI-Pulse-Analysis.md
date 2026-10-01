@@ -33,4 +33,4 @@ For the command-specific batch workflows, see:
 
 *   [Scene pulse analysis (manuscript order)](Commands#scene-pulse-analysis-manuscript-order)
 *   [Scene pulse analysis (subplot order)](Commands#scene-pulse-analysis-subplot-order)
-*   [Summary refresh](Commands#summary-refresh)
+*   [Summary scene refresh](Commands#summary-refresh)

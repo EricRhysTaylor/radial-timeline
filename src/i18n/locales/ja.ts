@@ -504,7 +504,7 @@ export const ja: DeepPartial<TranslationKeys> = {
         inquiryOmnibusPass: 'Inquiry オムニバス',
         searchTimeline: 'タイムラインを検索',
         createNote: 'ノートを作成…',
-        manageSubplots: 'サブプロットを管理',
+        subplotManager: 'サブプロットマネージャー',
         bookDesigner: 'ブックデザイナー',
         timelineOrder: 'タイムラインスキャフォールド',
         timelineAudit: 'タイムライン監査',

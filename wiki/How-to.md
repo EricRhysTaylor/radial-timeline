@@ -83,7 +83,7 @@ This method automatically updates ordering for you.
 
 ### Manage Subplots in Bulk
 
-Need to rename or delete a subplot across dozens of scenes? Use the **[Manage subplots](Commands#manage-subplots)** command (command palette → "Radial timeline: Manage subplots"). The panel lets you:
+Need to rename or delete a subplot across dozens of scenes? Use the **[Subplot manager](Commands#manage-subplots)** command (command palette → "Radial timeline: Subplot manager"). The panel lets you:
 
 * Rename a subplot and automatically update the frontmatter of every scene using it.
 * Delete a subplot and strip the tag from all scenes in one action.

@@ -584,7 +584,7 @@ export interface TranslationKeys {
         inquiryOmnibusPass: string;
         searchTimeline: string;
         createNote: string;
-        manageSubplots: string;
+        subplotManager: string;
         bookDesigner: string;
         timelineOrder: string;
         timelineAudit: string;
@@ -1830,6 +1830,29 @@ export interface TranslationKeys {
             nothingToApply: string;
         };
     };
+    sceneTime: {
+        manual: { title: string; subtitle: string; elapsedName: string; elapsedPlaceholder: string; assignButton: string; invalidDuration: string; };
+        modal: {
+            title: string; subtitle: string; badge: string;
+            summaryConfirmed: string; summaryEstimated: string; summaryCues: string; help: string;
+            overDuration: string; remainingDuration: string; conflict: string;
+            confirmAllName: string; confirmAllDesc: string; confirmAllButton: string;
+            howCountedSummary: string; howCountedBody: string; noCues: string;
+            unmatchedName: string; unmatchedDesc: string; remove: string;
+            cueMeta: string; showParagraph: string; manualName: string; removeAssignment: string; restoreCue: string; duplicate: string;
+            contribution: string; actionAdd: string; actionCheckpoint: string; exclude: string; contributionPlaceholder: string;
+            confirm: string; clearConfirmation: string; clockAfter: string; positiveDuration: string; invalidDuration: string;
+        };
+        legend: { detected: string; confirmed: string; manual: string; uncertain: string; backward: string; excluded: string; declaredDuration: string; durationOver: string; durationShort: string; };
+        cue: { conflict: string; excluded: string; manual: string; checkpoint: string; advance: string; backwardCandidate: string; clockCandidate: string; checkpointCandidate: string; uncertainCandidate: string; advanceCandidate: string; notConfirmed: string; };
+        ruler: { railTitle: string; clickToReview: string; storyClock: string; estimatedStoryClock: string; durationUsedUp: string; dashedUntilConfirmed: string; durationShortfall: string; durationUnquantified: string; sceneStart: string; sceneEnd: string; };
+        header: { elapsed: string; cues: string; description: string; descriptionProvisional: string; reviewTiming: string; checkTiming: string; overDuration: string; };
+        errors: {
+            loadFailed: string; unsupportedFile: string; invalidDecisions: string; invalidContribution: string; invalidAnchor: string; renameConflict: string;
+            notScene: string; selectProse: string; selectOneLine: string; noteChanged: string; notUnique: string; notManual: string;
+            markerChanged: string; nonNegative: string; cuesChanged: string; alreadyConfirmed: string;
+        };
+    };
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2983,7 +3006,7 @@ export const en: TranslationKeys = {
         inquiryOmnibusPass: 'Inquiry omnibus',
         searchTimeline: 'Search timeline',
         createNote: 'Create note\u2026',
-        manageSubplots: 'Manage subplots',
+        subplotManager: 'Subplot manager',
         bookDesigner: 'Book designer',
         timelineOrder: 'Timeline scaffold',
         timelineAudit: 'Timeline audit',
@@ -4188,8 +4211,8 @@ export const en: TranslationKeys = {
     },
     aiJobs: {
         commands: {
-            prepare: 'Prepare AI jobs…',
-            checkResults: 'Check for AI job results',
+            prepare: 'Prepare AI jobs… (AI testing)',
+            checkResults: 'Check for AI job results (AI testing)',
         },
         features: {
             summary: 'Scene summaries',
@@ -4237,6 +4260,117 @@ export const en: TranslationKeys = {
             failed: 'AI job answer {{id}} could not be applied: {{detail}}',
             unmatched: 'These AI job answers have no usable job and were left in place: {{list}}',
             nothingToApply: 'No AI job answers are waiting.',
+        },
+    },
+    sceneTime: {
+        manual: {
+            title: 'Assign scene time',
+            subtitle: 'Give this action an elapsed duration, even when the prose contains no time phrase. A blue [10h] marker appears beside it and contributes to the title-bar total.',
+            elapsedName: 'Elapsed time',
+            // Duration input is parsed by parseDuration, which reads English units only ("10 hours", "10h", "30 min").
+            elapsedPlaceholder: 'e.g. 10 hours',
+            assignButton: 'Assign time',
+            invalidDuration: 'Enter a duration such as “10 hours”.',
+        },
+        modal: {
+            title: 'Scene time',
+            subtitle: 'The vertical cue bar marks time phrases beside your prose. Give an uncertain phrase such as “a few minutes” a fixed duration, then confirm it to include that time in the title-bar elapsed total. Your choices are saved for this scene, helping you compare the time accounted for in the prose with its declared duration. To time action without a time phrase, click the gray strip beside that paragraph and enter its duration. Blue bracketed markers show these manual assignments. This check is optional.',
+            badge: 'OPTIONAL TIME CHECK • {{scene}}',
+            summaryConfirmed: '{{elapsed}} confirmed elapsed',
+            summaryEstimated: '~{{estimated}} including unconfirmed cues',
+            summaryCues: '{{count}} detected cues',
+            help: 'Optional: use these cues to check elapsed story time. You can ignore this panel. Confirmations affect only this scene’s cue bar and elapsed total, not Timeline Audit, Timeline Scaffold, or your writing-session timer.',
+            overDuration: '{{over}} beyond the scene’s declared duration of {{duration}}.',
+            remainingDuration: 'Duration {{duration}} · {{remaining}} not quantified by confirmed cues.',
+            conflict: 'A checkpoint goes backward. Resolve it before treating this as a reconciled total.',
+            confirmAllName: 'Use the detected durations',
+            confirmAllDesc: '{{count}} quantified forward cues. Vague phrases, clock anchors and backward references stay optional. You can change any decision below.',
+            confirmAllButton: 'Confirm all',
+            howCountedSummary: 'How elapsed time is counted',
+            howCountedBody: 'Confirm only elapsed time in this scene’s present action. Dialogue, plans, memories and parallel action can mention time without advancing it. Checkpoints replace the cumulative total; advances add to it. Unquantified time is not necessarily missing.',
+            noCues: 'No supported time phrases detected. Prose can still consume time without quantifying it.',
+            unmatchedName: 'Unmatched assignment: “{{quote}}” [{{duration}}]',
+            unmatchedDesc: 'Saved but not counted: the text changed, is duplicated, or overlaps a detected cue. Remove this assignment and select the current text to assign it again.',
+            remove: 'Remove',
+            cueMeta: 'Line {{line}} • {{description}}',
+            showParagraph: 'Show paragraph',
+            manualName: 'Manually assigned duration',
+            removeAssignment: 'Remove assignment',
+            restoreCue: 'Restore cue',
+            duplicate: 'This identical paragraph occurs more than once. Make its wording distinct before attaching a saved decision.',
+            contribution: 'Contribution',
+            actionAdd: 'Advance by',
+            actionCheckpoint: 'Elapsed since start',
+            exclude: 'Exclude',
+            contributionPlaceholder: 'e.g. 2 hours',
+            confirm: 'Confirm',
+            clearConfirmation: 'Clear confirmation',
+            clockAfter: 'Clock after confirmed contributions: {{clock}}',
+            positiveDuration: 'Enter a positive duration.',
+            invalidDuration: 'Enter a duration such as “2 hours” or “30 min”.',
+        },
+        legend: {
+            detected: 'Detected',
+            confirmed: 'Confirmed',
+            manual: 'Manual',
+            uncertain: 'Uncertain / clock',
+            backward: 'Backward',
+            excluded: 'Excluded',
+            declaredDuration: 'Declared duration',
+            durationOver: 'Prose runs past it · dashed until confirmed',
+            durationShort: 'Prose falls short · gray with no time phrases',
+        },
+        cue: {
+            conflict: 'Checkpoint is earlier than the confirmed elapsed time. Review the sequence.',
+            excluded: 'Excluded from elapsed time',
+            manual: 'Manually assigned {{duration}} · Elapsed {{elapsed}}',
+            checkpoint: 'Checkpoint {{duration}} · Confirmed elapsed {{elapsed}}',
+            advance: 'Advance {{duration}} · Confirmed elapsed {{elapsed}}',
+            backwardCandidate: 'Backward reference',
+            clockCandidate: 'Clock anchor',
+            checkpointCandidate: 'Checkpoint candidate',
+            uncertainCandidate: 'Uncertain cue',
+            advanceCandidate: 'Advance candidate',
+            notConfirmed: 'Not confirmed',
+        },
+        ruler: {
+            railTitle: 'Click the strip to assign or review scene time',
+            clickToReview: 'Click to review',
+            storyClock: 'Story clock {{clock}}',
+            estimatedStoryClock: 'Estimated story clock {{clock}}',
+            durationUsedUp: 'Duration {{duration}} used up here · time cues continue to {{reached}}',
+            dashedUntilConfirmed: 'Dashed until confirmed time alone runs past it',
+            durationShortfall: 'Duration {{duration}} · time cues reach {{reached}} · {{missing}} not accounted for in the prose',
+            durationUnquantified: 'Duration {{duration}} · no time phrases quantify it yet; prose can use time without naming it',
+            sceneStart: 'Scene start · elapsed 0',
+            sceneEnd: 'Last prose · end of scene',
+        },
+        header: {
+            elapsed: 'Elapsed {{total}}',
+            cues: '{{count}} cues',
+            description: '{{elapsed}} confirmed elapsed; {{count}} unconfirmed cues. Optional: click to check elapsed story time.',
+            descriptionProvisional: '{{elapsed}} confirmed elapsed (~{{estimated}} including unconfirmed cues); {{count}} unconfirmed cues. Optional: click to check elapsed story time.',
+            reviewTiming: 'Review timing',
+            checkTiming: 'Check timing',
+            overDuration: 'Unconfirmed time cues run past the declared {{duration}} duration.',
+        },
+        errors: {
+            loadFailed: 'Scene time decisions could not be loaded: {{detail}}',
+            unsupportedFile: 'Unsupported scene time decisions file',
+            invalidDecisions: 'Invalid scene time decisions',
+            invalidContribution: 'Invalid scene time contribution',
+            invalidAnchor: 'Invalid manual scene time anchor.',
+            renameConflict: 'Scene time destination already has decisions; source decisions were preserved.',
+            notScene: 'This note is no longer a scene.',
+            selectProse: 'Select prose in a Scene note.',
+            selectOneLine: 'Select one line of prose and enter a positive duration.',
+            noteChanged: 'The note changed. Select the text again.',
+            notUnique: 'Choose unique prose without overlapping time cues or assignments.',
+            notManual: 'Not a manual assignment.',
+            markerChanged: 'This marker changed or is duplicated. Review the current prose before saving.',
+            nonNegative: 'Enter a non-negative elapsed duration.',
+            cuesChanged: 'The cues changed. Reopen scene time before confirming all.',
+            alreadyConfirmed: 'A cue was already confirmed. Reopen scene time before confirming all.',
         },
     },
 };

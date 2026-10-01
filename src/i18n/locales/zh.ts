@@ -505,7 +505,7 @@ export const zh: DeepPartial<TranslationKeys> = {
         inquiryOmnibusPass: 'Inquiry 总览',
         searchTimeline: '搜索时间轴',
         createNote: '创建笔记…',
-        manageSubplots: '管理副情节',
+        subplotManager: '副情节管理器',
         bookDesigner: '书籍设计器',
         timelineOrder: '时间轴脚手架',
         timelineAudit: '时间轴审计',

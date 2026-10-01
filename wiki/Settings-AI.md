@@ -3,7 +3,7 @@
   <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Settings → AI</div>
 </div>
 
-The AI tab controls provider setup, model selection, prompt framing, cost awareness, and the defaults used by Inquiry, Pulse, Gossamer, and Summary Refresh.
+The AI tab controls provider setup, model selection, prompt framing, cost awareness, and the defaults used by Inquiry, Pulse, Gossamer, and Summary scene refresh.
 
 ## AI Toggle
 
@@ -48,11 +48,11 @@ Set defaults for analysis and scene hover display.
 *   **Pulse context**: Include previous and next scene analysis in the scene hover reveal.
 *   **Synopsis max words**: Base target for stored Synopsis generation.
 
-### Summary Refresh Defaults
+### Summary Scene Refresh Defaults
 
-*   **Target summary length**: Default word target when opening Summary Refresh.
+*   **Target summary length**: Default word target when opening Summary scene refresh.
 *   **Treat summary as weak if under**: Default threshold for selecting scenes as weak/stale in the Inquiry View Corpus model.
-*   **Also update Synopsis**: When enabled, Summary Refresh also rewrites `Synopsis` using the configured cap.
+*   **Also update Synopsis**: When enabled, Summary scene refresh also rewrites `Synopsis` using the configured cap.
 
 > [!NOTE]
 > AI diagnostics logging lives on the Advanced tab as **Enable AI content logs** — see [Settings → Advanced](Settings-Advanced).

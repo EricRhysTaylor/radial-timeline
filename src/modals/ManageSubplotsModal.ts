@@ -1,5 +1,5 @@
 /*
- * Manage Subplots Modal
+ * Subplot manager modal
  * 
  * A specialized modal for managing subplots (rename, delete) with a custom UI 
  * that matches the Gossamer/Pulse aesthetic.
@@ -8,6 +8,7 @@
 import { App, Modal, ButtonComponent } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { SubplotManagementService, SubplotStats } from '../services/SubplotManagementService';
+import { t } from '../i18n';
 import { scheduleFocusAfterPaint } from '../utils/domFocus';
 
 export class ManageSubplotsModal extends Modal {
@@ -37,7 +38,7 @@ export class ManageSubplotsModal extends Modal {
         // Hero Section (generic header)
         const hero = contentEl.createDiv({ cls: 'ert-modal-header' });
         hero.createSpan({ text: 'Configuration', cls: 'ert-modal-badge' });
-        hero.createDiv({ text: 'Manage Subplots', cls: 'ert-modal-title' });
+        hero.createDiv({ text: t('commands.subplotManager'), cls: 'ert-modal-title' });
         hero.createDiv({ text: 'Rename or remove subplots across the timeline. Orphaned scenes will be moved to Main Plot.', cls: 'ert-modal-subtitle' });
 
         // Single card container (avoid extra nesting)

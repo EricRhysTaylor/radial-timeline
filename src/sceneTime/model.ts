@@ -1,4 +1,5 @@
 import { parseDuration, parseWhenField } from '../utils/date';
+import { t } from '../i18n';
 
 export type CueKind = 'advance' | 'checkpoint' | 'clock' | 'uncertain' | 'backward' | 'manual';
 export type TimeDecision = { action: 'add' | 'checkpoint' | 'exclude'; minutes: number };
@@ -261,11 +262,13 @@ export function cueState(cue: ResolvedCue): string {
 
 export function cueDescription(cue: ResolvedCue): string {
     const state = cueState(cue);
-    if (state === 'conflict') return 'Checkpoint is earlier than the confirmed elapsed time. Review the sequence.';
-    if (cue.decision?.action === 'exclude') return 'Excluded from elapsed time';
-    if (cue.kind === 'manual') return `Manually assigned ${elapsedLabel(cue.decision?.minutes ?? 0)} · Elapsed ${elapsedLabel(cue.elapsed)}`;
-    if (cue.decision) return `${cue.decision.action === 'checkpoint' ? 'Checkpoint' : 'Advance'} ${elapsedLabel(cue.decision.minutes)} · Confirmed elapsed ${elapsedLabel(cue.elapsed)}`;
-    return `${cue.kind === 'backward' ? 'Backward reference' : cue.kind === 'clock' ? 'Clock anchor' : cue.kind === 'checkpoint' ? 'Checkpoint candidate' : cue.kind === 'uncertain' ? 'Uncertain cue' : 'Advance candidate'}${cue.suggestedMinutes !== null ? ` · ${elapsedLabel(cue.suggestedMinutes)}` : ''} · Not confirmed`;
+    if (state === 'conflict') return t('sceneTime.cue.conflict');
+    if (cue.decision?.action === 'exclude') return t('sceneTime.cue.excluded');
+    if (cue.kind === 'manual') return t('sceneTime.cue.manual', { duration: elapsedLabel(cue.decision?.minutes ?? 0), elapsed: elapsedLabel(cue.elapsed) });
+    if (cue.decision) return t(cue.decision.action === 'checkpoint' ? 'sceneTime.cue.checkpoint' : 'sceneTime.cue.advance', { duration: elapsedLabel(cue.decision.minutes), elapsed: elapsedLabel(cue.elapsed) });
+    const kind = cue.kind === 'backward' ? 'sceneTime.cue.backwardCandidate' : cue.kind === 'clock' ? 'sceneTime.cue.clockCandidate'
+        : cue.kind === 'checkpoint' ? 'sceneTime.cue.checkpointCandidate' : cue.kind === 'uncertain' ? 'sceneTime.cue.uncertainCandidate' : 'sceneTime.cue.advanceCandidate';
+    return `${t(kind)}${cue.suggestedMinutes !== null ? ` · ${elapsedLabel(cue.suggestedMinutes)}` : ''} · ${t('sceneTime.cue.notConfirmed')}`;
 }
 
 /** Clock anchors are explicit; dawn/dusk and bare twelve-hour clocks stay unquantified. */

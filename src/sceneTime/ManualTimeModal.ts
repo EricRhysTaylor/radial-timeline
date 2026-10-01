@@ -10,13 +10,13 @@ class ManualTimeModal extends ErtModal {
         private source: string, private quote: string) { super(service.plugin.app); }
     onOpen(): void {
         this.applyShell({ width: 'min(600px, 96vw)', containerClasses: ['ert-manuscript-surface'] });
-        this.mountHeader({ title: 'Assign scene time', subtitle: 'Give this action an elapsed duration, even when the prose contains no time phrase. A blue [10h] marker appears beside it and contributes to the title-bar total.' });
+        this.mountHeader({ title: t('sceneTime.manual.title'), subtitle: t('sceneTime.manual.subtitle') });
         this.contentEl.createEl('p', { text: this.quote });
         let duration = '';
-        new Setting(this.contentEl).setName('Elapsed time').addText(input => input.setPlaceholder('e.g. 10 hours').onChange(value => { duration = value; }))
-            .addButton(button => button.setButtonText('Assign time').setCta().onClick(async () => {
+        new Setting(this.contentEl).setName(t('sceneTime.manual.elapsedName')).addText(input => input.setPlaceholder(t('sceneTime.manual.elapsedPlaceholder')).onChange(value => { duration = value; }))
+            .addButton(button => button.setButtonText(t('sceneTime.manual.assignButton')).setCta().onClick(async () => {
                 const ms = parseDuration(duration);
-                if (ms === null || !Number.isFinite(ms) || ms <= 0) { new Notice('Enter a duration such as “10 hours”.'); return; }
+                if (ms === null || !Number.isFinite(ms) || ms <= 0) { new Notice(t('sceneTime.manual.invalidDuration')); return; }
                 button.setDisabled(true);
                 try { await this.service.assignSelection(this.file, this.source, this.quote, ms / 60000); this.close(); }
                 catch (error) { new Notice(String(error)); button.setDisabled(false); }

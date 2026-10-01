@@ -21,5 +21,5 @@ Your vault follows the book you choose on your Community page.
 ### Commands
 
 - **Set your Open hotkey again.** The command that opens the timeline has a new ID, so a hotkey you assigned to **Radial timeline: Open** needs to be assigned again in **Settings → Hotkeys**.
-- **Clearer names.** **Summary refresh** is now **Summary scene refresh**, and **Assign scene time to selection** follows your Obsidian language.
+- **Clearer names.** **Summary refresh** is now **Summary scene refresh**, **Manage subplots** is now **Subplot manager**, and **Assign scene time to selection** follows your Obsidian language.
 - **AI off keeps AI commands out of the way.** With **Enable AI LLM features** turned off, **Gossamer analysis** leaves the command palette like the other AI commands, and the Timeline audit AI scan and the runtime estimator's AI mode tell you AI is off instead of running. To score Gossamer by hand, open **Gossamer score manager**, copy the prompt, and enter the scores yourself.

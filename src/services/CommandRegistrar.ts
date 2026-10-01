@@ -174,7 +174,7 @@ export class CommandRegistrar {
 
         this.plugin.addCommand({
             id: 'manage-subplots',
-            name: t('commands.manageSubplots'),
+            name: t('commands.subplotManager'),
             callback: () => {
                 new ManageSubplotsModal(this.app, this.plugin).open();
             }

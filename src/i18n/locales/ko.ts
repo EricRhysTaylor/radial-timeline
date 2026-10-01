@@ -503,7 +503,7 @@ export const ko: DeepPartial<TranslationKeys> = {
         inquiryOmnibusPass: 'Inquiry 옴니버스',
         searchTimeline: '타임라인 검색',
         createNote: '노트 만들기…',
-        manageSubplots: '서브플롯 관리',
+        subplotManager: '서브플롯 관리자',
         bookDesigner: '북 디자이너',
         timelineOrder: '타임라인 스캐폴드',
         timelineAudit: '타임라인 감사',

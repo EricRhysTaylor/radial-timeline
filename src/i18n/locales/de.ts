@@ -503,7 +503,7 @@ export const de: DeepPartial<TranslationKeys> = {
         inquiryOmnibusPass: 'Inquiry Omnibus',
         searchTimeline: 'Timeline durchsuchen',
         createNote: 'Notiz erstellen…',
-        manageSubplots: 'Nebenhandlungen verwalten',
+        subplotManager: 'Nebenhandlungs-Manager',
         bookDesigner: 'Book Designer',
         timelineOrder: 'Timeline-Scaffold',
         timelineAudit: 'Timeline-Audit',

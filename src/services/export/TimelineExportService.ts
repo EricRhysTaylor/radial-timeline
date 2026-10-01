@@ -8,13 +8,13 @@
  * Two user-facing export flows that also serve as the fixture corpus for the
  * greenfield web timeline engine (Stage 0):
  *
- *   1. Export timeline as image (SVG / PNG) — a self-contained image of the
+ *   1. Timeline image export (SVG / PNG) — a self-contained image of the
  *      currently rendered radial timeline. The live SVG relies on the plugin's
  *      external CSS (classes + custom properties); an exported file must render
  *      correctly OUTSIDE Obsidian, so we bake the computed presentation styles
  *      onto a detached clone before serializing.
  *
- *   2. Export timeline for sharing (JSON) — a schema-stamped, vault-agnostic snapshot
+ *   2. Timeline share export (JSON) — a schema-stamped, vault-agnostic snapshot
  *      of everything the renderer consumes (TimelineItem[], book/matter meta,
  *      and a renderConfig snapshot). Reproduces the render elsewhere.
  *

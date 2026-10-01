@@ -16,7 +16,7 @@ import { ManuscriptOptionsModal, ManuscriptModalResult, type ManuscriptExportOut
 import { PlanetaryTimeModal } from '../modals/PlanetaryTimeModal';
 import { BookDesignerModal } from '../modals/BookDesignerModal';
 import { OnboardingModal } from '../modals/OnboardingModal';
-import { TimelineRepairModal } from '../modals/TimelineRepairModal';
+import { TimelineScaffoldModal } from '../modals/TimelineScaffoldModal';
 import { TimelineAuditModal } from '../modals/TimelineAuditModal';
 import { AuthorProgressModal } from '../modals/AuthorProgressModal';
 import { TimelineImageExportModal } from '../modals/TimelineImageExportModal';
@@ -200,10 +200,10 @@ export class CommandRegistrar {
         }
 
         this.plugin.addCommand({
-            id: 'timeline-order',
-            name: t('commands.timelineOrder'),
+            id: 'timeline-date-scaffold',
+            name: t('commands.timelineDateScaffold'),
             callback: () => {
-                new TimelineRepairModal(this.app, this.plugin).open();
+                new TimelineScaffoldModal(this.app, this.plugin).open();
             }
         });
 

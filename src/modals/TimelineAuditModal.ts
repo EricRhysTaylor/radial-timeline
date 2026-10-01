@@ -12,7 +12,7 @@ import { t } from '../i18n';
 import { renderWithYamlTokens } from '../utils/yamlTokenRender';
 import { applyAuditFindings, buildAuditApplyPlan } from '../timelineAudit/apply';
 import { buildSnapshotFromFiles, saveTimelineSnapshot } from '../timelineRepair/timelineSnapshot';
-import { TimelineRepairModal } from './TimelineRepairModal';
+import { TimelineScaffoldModal } from './TimelineScaffoldModal';
 import { runAuditPipeline } from '../timelineAudit/AuditPipeline';
 import { buildTimelineOverviewEntries, scrollFindingCardIntoView } from '../timelineAudit/TimelineOverviewStrip';
 import {
@@ -1086,7 +1086,7 @@ export class TimelineAuditModal extends Modal {
             .setButtonText(t('timelineAuditModal.detail.adjustRippleButton'))
             .onClick(() => {
                 this.close();
-                new TimelineRepairModal(this.app, this.plugin, { focusScenePath: finding.path }).open();
+                new TimelineScaffoldModal(this.app, this.plugin, { focusScenePath: finding.path }).open();
             });
         setTooltip(rippleButton.buttonEl, t('timelineAuditModal.detail.adjustRippleHelp'));
     }

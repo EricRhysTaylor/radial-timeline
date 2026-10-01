@@ -1,6 +1,6 @@
 *   [Home](Home)
 *   [Getting Started](Getting-Started)
-    *   [Onboard Existing Manuscript](Onboard-Existing-Manuscript)
+    *   [Manuscript Onboarding (in testing)](Onboard-Existing-Manuscript)
     *   [Sample Vault (Pride & Prejudice)](Sample-Vault)
 *   [How to](How-to)
 *   [FAQ](FAQ)

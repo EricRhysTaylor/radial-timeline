@@ -1,6 +1,6 @@
 # Interactive Timeline export — what the JSON file contains
 
-Wiki-source copy for the "Export timeline for sharing" command. The in-app
+Wiki-source copy for the "Timeline share export" command. The in-app
 consent dialog states only the essentials; this page carries the full
 explanation. When the public wiki page is written, it should be drawn from
 here (contract: `Platform/COMMUNITY-SHARE-AMENDMENT-1-INTERACTIVE-TIMELINE.md`,

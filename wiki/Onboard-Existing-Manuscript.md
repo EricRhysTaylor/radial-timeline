@@ -1,8 +1,8 @@
 Onboarding imports your draft as scene notes with frontmatter. Review scene splits and properties before creating the book folder. Your source manuscript is preserved.
 
-Start it from the Welcome screen (**Onboard manuscript**) or the Command Palette: **Radial timeline: Onboard existing manuscript (BETA)**.
+Start it from the Welcome screen (**Manuscript onboarding**) or the Command Palette: **Radial timeline: Manuscript onboarding (BETA)**.
 
-> **Beta — development/testing builds.** Onboarding is available from the Welcome screen and Command Palette in these builds. [Report issues](https://github.com/EricRhysTaylor/radial-timeline/issues).
+> **Undergoing testing — not released yet.** Manuscript onboarding does not appear in release builds of the plugin. [Report issues](https://github.com/EricRhysTaylor/radial-timeline/issues).
 
 ---
 

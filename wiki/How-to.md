@@ -97,7 +97,7 @@ Use it to keep subplot names consistent after reorganizing your story.
   <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Search — matching scenes highlighted in yellow across all subplot rings</div>
 </div>
 
-Open **Radial timeline: Search timeline**, choose **Search options**, and press **Enter** to search.
+Open **Radial timeline: Timeline search**, choose **Search options**, and press **Enter** to search.
 
 *   **Timeline fields** searches scene titles, synopses, characters, subplots, durations, dates, planetary-time text, and custom properties enabled in hover metadata.
 *   **Scene body** searches the prose. Open a matching scene to see the matching passages highlighted in the editor.

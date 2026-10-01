@@ -9,14 +9,14 @@ You get two workspaces: the **[Radial Timeline View](Radial-Timeline-View)** for
   </div>
 </div>
 
-The Welcome screen offers these starting points; onboarding appears in development/testing builds:
+The Welcome screen offers these starting points:
 
 1.  **Set Book Project** — choose the manuscript folder that drives the timeline, exports, Inquiry scope, and Book Manager. The right first step for a fresh vault.
-2.  **Onboard existing manuscript** — bring an existing draft in from a [Scrivener export, a Word document, or one big file](Onboard-Existing-Manuscript), with or without AI assistance.
+2.  **Manuscript onboarding** *(in testing — not yet released)* — bring an existing draft in from a [Scrivener export, a Word document, or one big file](Onboard-Existing-Manuscript), with or without AI assistance.
 3.  **Explore a sample vault** — get the free, fully analyzed [Pride & Prejudice sample vault](Sample-Vault) (sign up with your email and the download link arrives in your inbox). No API key needed to explore it.
 4.  **Visit the website** — [radialtimeline.com](https://radialtimeline.com) for support docs and the [Community](Settings-Community), where you can share your writing journey at your own comfort level.
 
-> **Coming from Scrivener, Word, or another tool?** In development/testing builds, use **[Onboard existing manuscript](Onboard-Existing-Manuscript)** — it splits your draft into scene notes, fills the YAML across acts, and previews everything before anything is written. Scene order follows the leading number in each scene's filename and its `Act` field. See [Scene Properties (Core + Advanced)](YAML-Frontmatter) for the full schema.
+> **Coming from Scrivener, Word, or another tool?** **[Manuscript onboarding](Onboard-Existing-Manuscript)** *(in testing — not yet released)* splits your draft into scene notes, fills the YAML across acts, and previews everything before anything is written. Scene order follows the leading number in each scene's filename and its `Act` field. See [Scene Properties (Core + Advanced)](YAML-Frontmatter) for the full schema.
 
 ---
 
@@ -46,7 +46,7 @@ The four modes in the Radial Timeline View — switch with `1`/`2`/`3`/`4` or th
 *   **Chronologue** (`3`) — story-world time, duration, and gaps
 *   **Gossamer** (`4`) — beat-level scoring across Momentum, Tension, Activity, Interiority
 
-**Day to day:** write scenes, keep `Synopsis` current, update `Status` from Todo → Working → Complete. Use **Search timeline** to find scenes across metadata. See [How to](How-to) for task recipes (reordering, subplots, rotation, search).
+**Day to day:** write scenes, keep `Synopsis` current, update `Status` from Todo → Working → Complete. Use **Timeline search** to find scenes across metadata. See [How to](How-to) for task recipes (reordering, subplots, rotation, search).
 
 **When you're ready to share:** run **Radial timeline: Manuscript export** to compile to Markdown, an outline, Word (DOCX), or PDF. Word requires Pandoc; PDF requires [Pandoc](https://pandoc.org/installing.html) and a LaTeX distribution; configure under **Settings → Publish**. See [Publishing](Publishing) for templates and Signature setup.
 

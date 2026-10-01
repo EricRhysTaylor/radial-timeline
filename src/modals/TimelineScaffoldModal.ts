@@ -63,7 +63,7 @@ import { TimelineAuditModal } from './TimelineAuditModal';
 // Modal Class
 // ============================================================================
 
-export class TimelineRepairModal extends Modal {
+export class TimelineScaffoldModal extends Modal {
     private readonly plugin: RadialTimelinePlugin;
 
     // State
@@ -324,10 +324,10 @@ export class TimelineRepairModal extends Modal {
         const header = this.contentEl.createDiv({ cls: 'ert-modal-header' });
         const badgeRow = header.createDiv({ cls: 'ert-modal-badge-row' });
         badgeRow.createSpan({ cls: 'ert-modal-badge', text: this.buildConfigBadgeText() });
-        badgeRow.createSpan({ cls: 'ert-timeline-tool-pill', text: t('timelineRepairModal.config.noAiPill') });
-        header.createDiv({ cls: 'ert-modal-title', text: t('timelineRepairModal.config.title') });
+        badgeRow.createSpan({ cls: 'ert-timeline-tool-pill', text: t('timelineScaffoldModal.config.noAiPill') });
+        header.createDiv({ cls: 'ert-modal-title', text: t('timelineScaffoldModal.config.title') });
         const subtitleEl = header.createDiv({ cls: 'ert-modal-subtitle' });
-        renderWithYamlTokens(subtitleEl, t('timelineRepairModal.config.subtitle'));
+        renderWithYamlTokens(subtitleEl, t('timelineScaffoldModal.config.subtitle'));
 
         // Express card — populated at the end of this method, once the anchor
         // and pattern inputs it reads from exist.
@@ -344,7 +344,7 @@ export class TimelineRepairModal extends Modal {
 
         const anchorSection = leftCol.createDiv({ cls: 'ert-timeline-repair-config-block' });
         const anchorHeader = anchorSection.createDiv({ cls: 'ert-timeline-repair-block-header' });
-        anchorHeader.createEl('h5', { text: t('timelineRepairModal.anchor.name'), cls: 'ert-timeline-repair-block-title' });
+        anchorHeader.createEl('h5', { text: t('timelineScaffoldModal.anchor.name'), cls: 'ert-timeline-repair-block-title' });
 
         const anchorPill = anchorHeader.createSpan({
             cls: 'ert-timeline-repair-compliance-chip ert-timeline-repair-anchor-pill'
@@ -352,20 +352,20 @@ export class TimelineRepairModal extends Modal {
         anchorPill.addClass(`ert-compliance-${defaultAnchor.source === 'authored' ? 'authored' : 'pattern-based'}`);
         anchorPill.setText(
             defaultAnchor.source === 'authored'
-                ? t('timelineRepairModal.anchor.pillAuthored')
-                : t('timelineRepairModal.anchor.pillFallback')
+                ? t('timelineScaffoldModal.anchor.pillAuthored')
+                : t('timelineScaffoldModal.anchor.pillFallback')
         );
 
         anchorSection.createDiv({
             cls: 'ert-timeline-repair-section-desc',
-            text: t('timelineRepairModal.anchor.desc')
+            text: t('timelineScaffoldModal.anchor.desc')
         });
 
         const anchorRow = anchorSection.createDiv({ cls: 'ert-timeline-repair-anchor-row' });
 
         // Date input
         const dateInputContainer = anchorRow.createDiv({ cls: 'ert-timeline-repair-input-group' });
-        dateInputContainer.createEl('label', { text: t('timelineRepairModal.anchor.dateLabel'), cls: 'ert-timeline-repair-label' });
+        dateInputContainer.createEl('label', { text: t('timelineScaffoldModal.anchor.dateLabel'), cls: 'ert-timeline-repair-label' });
         const dateInput = dateInputContainer.createEl('input', {
             type: 'date',
             cls: 'ert-timeline-repair-date-input ert-input ert-input--full'
@@ -374,7 +374,7 @@ export class TimelineRepairModal extends Modal {
 
         // Time input
         const timeInputContainer = anchorRow.createDiv({ cls: 'ert-timeline-repair-input-group' });
-        timeInputContainer.createEl('label', { text: t('timelineRepairModal.anchor.timeLabel'), cls: 'ert-timeline-repair-label' });
+        timeInputContainer.createEl('label', { text: t('timelineScaffoldModal.anchor.timeLabel'), cls: 'ert-timeline-repair-label' });
         const timeInput = timeInputContainer.createEl('input', {
             type: 'time',
             cls: 'ert-timeline-repair-time-input ert-input ert-input--full'
@@ -385,7 +385,7 @@ export class TimelineRepairModal extends Modal {
 
         const previewSection = leftCol.createDiv({ cls: 'ert-timeline-repair-config-block ert-timeline-repair-preview-section' });
         previewSection.createDiv({ cls: 'ert-timeline-repair-block-header' })
-            .createEl('h5', { text: t('timelineRepairModal.preview.name'), cls: 'ert-timeline-repair-block-title' });
+            .createEl('h5', { text: t('timelineScaffoldModal.preview.name'), cls: 'ert-timeline-repair-block-title' });
         const previewPanel = previewSection.createDiv({ cls: 'ert-timeline-repair-preview-panel' });
         const previewStart = previewPanel.createDiv({ cls: 'ert-timeline-repair-preview-start' });
         const previewStrip = previewPanel.createDiv({ cls: 'ert-timeline-repair-preview-strip' });
@@ -415,10 +415,10 @@ export class TimelineRepairModal extends Modal {
         // Pattern selection
         const patternSection = rightCol.createDiv({ cls: 'ert-timeline-repair-config-block' });
         patternSection.createDiv({ cls: 'ert-timeline-repair-block-header' })
-            .createEl('h5', { text: t('timelineRepairModal.pattern.name'), cls: 'ert-timeline-repair-block-title' });
+            .createEl('h5', { text: t('timelineScaffoldModal.pattern.name'), cls: 'ert-timeline-repair-block-title' });
         patternSection.createDiv({
             cls: 'ert-timeline-repair-section-desc',
-            text: t('timelineRepairModal.pattern.desc')
+            text: t('timelineScaffoldModal.pattern.desc')
         });
 
         const patternRow = patternSection.createDiv({ cls: 'ert-timeline-repair-pattern-grid' });
@@ -465,17 +465,17 @@ export class TimelineRepairModal extends Modal {
 
         const baseRow = optionsSection.createDiv({ cls: 'ert-timeline-repair-option-row ert-is-static' });
         const baseText = baseRow.createDiv({ cls: 'ert-timeline-repair-level-text' });
-        baseText.createDiv({ cls: 'ert-timeline-repair-level-title', text: t('timelineRepairModal.refinements.baseScaffoldTitle') });
+        baseText.createDiv({ cls: 'ert-timeline-repair-level-title', text: t('timelineScaffoldModal.refinements.baseScaffoldTitle') });
         renderWithYamlTokens(
             baseText.createDiv({ cls: 'ert-timeline-repair-level-desc' }),
-            t('timelineRepairModal.refinements.baseScaffoldDesc')
+            t('timelineScaffoldModal.refinements.baseScaffoldDesc')
         );
 
         // Action buttons
         const buttonRow = this.contentEl.createDiv({ cls: 'ert-modal-actions' });
 
         const restoreBtn = new ButtonComponent(buttonRow)
-            .setButtonText(t('timelineRepairModal.config.restoreButton'))
+            .setButtonText(t('timelineScaffoldModal.config.restoreButton'))
             .setDisabled(true)
             .onClick((evt) => { void this.openRestoreMenu(evt); });
         restoreBtn.buttonEl.addClass('ert-timeline-repair-restore-btn');
@@ -483,22 +483,22 @@ export class TimelineRepairModal extends Modal {
         void getLatestTimelineSnapshot(this.app).then(meta => {
             if (meta) {
                 restoreBtn.setDisabled(false);
-                setTooltip(restoreBtn.buttonEl, t('timelineRepairModal.config.restoreTooltip', {
+                setTooltip(restoreBtn.buttonEl, t('timelineScaffoldModal.config.restoreTooltip', {
                     label: meta.snapshot.displayLabel
                 }));
             } else {
-                setTooltip(restoreBtn.buttonEl, t('timelineRepairModal.config.restoreEmptyTooltip'));
+                setTooltip(restoreBtn.buttonEl, t('timelineScaffoldModal.config.restoreEmptyTooltip'));
             }
         });
 
         const resetBtn = new ButtonComponent(buttonRow)
-            .setButtonText(t('timelineRepairModal.reset.button'))
+            .setButtonText(t('timelineScaffoldModal.reset.button'))
             .onClick(() => { void this.handleResetMetadata(); });
         resetBtn.buttonEl.addClass('ert-timeline-repair-reset-btn');
-        setTooltip(resetBtn.buttonEl, t('timelineRepairModal.reset.tooltip'));
+        setTooltip(resetBtn.buttonEl, t('timelineScaffoldModal.reset.tooltip'));
 
         new ButtonComponent(buttonRow)
-            .setButtonText(t('timelineRepairModal.config.previewButton'))
+            .setButtonText(t('timelineScaffoldModal.config.previewButton'))
             .setCta()
             .onClick(async () => {
                 const anchorWhen = this.parseAnchorWhenFromInputs(dateInput.value, timeInput.value, defaultAnchorWhen);
@@ -515,7 +515,7 @@ export class TimelineRepairModal extends Modal {
             });
 
         new ButtonComponent(buttonRow)
-            .setButtonText(t('timelineRepairModal.config.cancelButton'))
+            .setButtonText(t('timelineScaffoldModal.config.cancelButton'))
             .onClick(() => this.close());
 
         this.renderExpressCard(expressCard, () => ({
@@ -537,15 +537,15 @@ export class TimelineRepairModal extends Modal {
         const missingCount = this.scenes.filter(s => !(s.when instanceof Date)).length;
 
         const text = card.createDiv({ cls: 'ert-timeline-repair-level-text' });
-        text.createDiv({ cls: 'ert-timeline-repair-level-title', text: t('timelineRepairModal.express.title') });
+        text.createDiv({ cls: 'ert-timeline-repair-level-title', text: t('timelineScaffoldModal.express.title') });
 
         if (missingCount === 0) {
             text.createDiv({
                 cls: 'ert-timeline-repair-level-desc',
-                text: `${t('timelineRepairModal.express.fullyDated', { count: this.scenes.length })} ${t('timelineRepairModal.express.fullyDatedHint')}`
+                text: `${t('timelineScaffoldModal.express.fullyDated', { count: this.scenes.length })} ${t('timelineScaffoldModal.express.fullyDatedHint')}`
             });
             new ButtonComponent(card)
-                .setButtonText(t('timelineRepairModal.express.openAuditButton'))
+                .setButtonText(t('timelineScaffoldModal.express.openAuditButton'))
                 .onClick(() => {
                     this.close();
                     new TimelineAuditModal(this.app, this.plugin, {}).open();
@@ -555,11 +555,11 @@ export class TimelineRepairModal extends Modal {
 
         renderWithYamlTokens(
             text.createDiv({ cls: 'ert-timeline-repair-level-desc' }),
-            t('timelineRepairModal.express.desc')
+            t('timelineScaffoldModal.express.desc')
         );
 
         const expressBtn = new ButtonComponent(card)
-            .setButtonText(t('timelineRepairModal.express.button'))
+            .setButtonText(t('timelineScaffoldModal.express.button'))
             .setCta()
             .onClick(async () => {
                 expressBtn.setDisabled(true);
@@ -583,14 +583,14 @@ export class TimelineRepairModal extends Modal {
 
         const summary = getChangeSummary(this.session);
         if (summary.totalChanges === 0) {
-            new Notice(t('timelineRepairModal.apply.noChangesNotice'));
+            new Notice(t('timelineScaffoldModal.apply.noChangesNotice'));
             return;
         }
 
         const written = await this.persistSessionChanges();
         if (written === null) return;
         if (written.failed === 0) {
-            new Notice(t('timelineRepairModal.express.successNotice', { count: written.success }));
+            new Notice(t('timelineScaffoldModal.express.successNotice', { count: written.success }));
         }
         this.close();
     }
@@ -653,9 +653,9 @@ export class TimelineRepairModal extends Modal {
 
         // Header
         const header = this.contentEl.createDiv({ cls: 'ert-modal-header' });
-        header.createSpan({ cls: 'ert-modal-badge', text: t('timelineRepairModal.analyzing.badge') });
-        header.createDiv({ cls: 'ert-modal-title', text: t('timelineRepairModal.analyzing.title') });
-        const statusEl = header.createDiv({ cls: 'ert-modal-subtitle', text: t('timelineRepairModal.analyzing.statusApplying') });
+        header.createSpan({ cls: 'ert-modal-badge', text: t('timelineScaffoldModal.analyzing.badge') });
+        header.createDiv({ cls: 'ert-modal-title', text: t('timelineScaffoldModal.analyzing.title') });
+        const statusEl = header.createDiv({ cls: 'ert-modal-subtitle', text: t('timelineScaffoldModal.analyzing.statusApplying') });
 
         // Progress card
         const progressCard = this.contentEl.createDiv({ cls: 'ert-glass-card' });
@@ -665,16 +665,16 @@ export class TimelineRepairModal extends Modal {
         progressBar.setCssProps({ '--progress-width': '0%' });
 
         const progressText = progressCard.createDiv({ cls: 'ert-pulse-progress-text' });
-        progressText.setText(t('timelineRepairModal.analyzing.preparing'));
+        progressText.setText(t('timelineScaffoldModal.analyzing.preparing'));
 
         // Abort button
         const buttonRow = this.contentEl.createDiv({ cls: 'ert-modal-actions' });
         new ButtonComponent(buttonRow)
-            .setButtonText(t('timelineRepairModal.analyzing.abortButton'))
+            .setButtonText(t('timelineScaffoldModal.analyzing.abortButton'))
             .setDestructive()
             .onClick(() => {
                 this.abortController?.abort();
-                new Notice(t('timelineRepairModal.analyzing.abortedNotice'));
+                new Notice(t('timelineScaffoldModal.analyzing.abortedNotice'));
                 this.showConfigPhase();
             });
 
@@ -689,15 +689,15 @@ export class TimelineRepairModal extends Modal {
                     onPhaseChange: (phase) => {
                         switch (phase) {
                             case 'pattern':
-                                statusEl.setText(t('timelineRepairModal.analyzing.phasePattern'));
+                                statusEl.setText(t('timelineScaffoldModal.analyzing.phasePattern'));
                                 progressBar.setCssProps({ '--progress-width': '30%' });
                                 break;
                             case 'cues':
-                                statusEl.setText(t('timelineRepairModal.analyzing.phaseCues'));
+                                statusEl.setText(t('timelineScaffoldModal.analyzing.phaseCues'));
                                 progressBar.setCssProps({ '--progress-width': '70%' });
                                 break;
                             case 'complete':
-                                statusEl.setText(t('timelineRepairModal.analyzing.phaseComplete'));
+                                statusEl.setText(t('timelineScaffoldModal.analyzing.phaseComplete'));
                                 progressBar.setCssProps({ '--progress-width': '100%' });
                                 break;
                         }
@@ -745,23 +745,23 @@ export class TimelineRepairModal extends Modal {
         this.summaryBarEl = badgeRow.createSpan({ cls: 'ert-modal-badge ert-timeline-repair-review-badge' });
         this.updateSummaryBar();
 
-        header.createDiv({ cls: 'ert-modal-title', text: t('timelineRepairModal.review.title') });
+        header.createDiv({ cls: 'ert-modal-title', text: t('timelineScaffoldModal.review.title') });
         header.createDiv({
             cls: 'ert-modal-subtitle',
-            text: t('timelineRepairModal.review.subtitle')
+            text: t('timelineScaffoldModal.review.subtitle')
         });
 
         // Filter toggles
         const filterRow = this.contentEl.createDiv({ cls: 'ert-timeline-repair-filter-row' });
 
-        this.needsReviewPillEl = this.createFilterPill(filterRow, t('timelineRepairModal.review.filterNeedsReview'), this.filterNeedsReview, (val) => {
+        this.needsReviewPillEl = this.createFilterPill(filterRow, t('timelineScaffoldModal.review.filterNeedsReview'), this.filterNeedsReview, (val) => {
             this.filterNeedsReview = val;
             this.chronoOrderSnapshot = undefined; // recompute chrono with the filtered set
             this.renderSceneList();
         });
 
         if (this.result.cueRefined > 0) {
-            this.createFilterPill(filterRow, t('timelineRepairModal.review.filterTextCues'), this.filterKeywordDerived, (val) => {
+            this.createFilterPill(filterRow, t('timelineScaffoldModal.review.filterTextCues'), this.filterKeywordDerived, (val) => {
                 this.filterKeywordDerived = val;
                 this.chronoOrderSnapshot = undefined;
                 this.renderSceneList();
@@ -770,11 +770,11 @@ export class TimelineRepairModal extends Modal {
 
         // Overwrite author dates toggle (re-runs analysis)
         const overwriteContainer = filterRow.createDiv({ cls: 'ert-timeline-repair-overwrite-toggle' });
-        overwriteContainer.createSpan({ text: t('timelineRepairModal.review.overwriteAuthorDates') });
+        overwriteContainer.createSpan({ text: t('timelineScaffoldModal.review.overwriteAuthorDates') });
 
         const overwriteHelp = overwriteContainer.createSpan({ cls: 'ert-timeline-repair-overwrite-help' });
         setIcon(overwriteHelp, 'help-circle');
-        setTooltip(overwriteHelp, t('timelineRepairModal.review.overwriteAuthorDatesHelp'));
+        setTooltip(overwriteHelp, t('timelineScaffoldModal.review.overwriteAuthorDatesHelp'));
 
         const overwriteToggle = new ToggleComponent(overwriteContainer);
         overwriteToggle.setValue(this.config ? !this.config.preserveAuthoredDates : false);
@@ -784,11 +784,11 @@ export class TimelineRepairModal extends Modal {
 
         // Ripple mode toggle
         const rippleContainer = filterRow.createDiv({ cls: 'ert-timeline-repair-ripple-toggle' });
-        rippleContainer.createSpan({ text: t('timelineRepairModal.review.rippleMode') });
+        rippleContainer.createSpan({ text: t('timelineScaffoldModal.review.rippleMode') });
 
         const rippleHelp = rippleContainer.createSpan({ cls: 'ert-timeline-repair-ripple-help' });
         setIcon(rippleHelp, 'help-circle');
-        setTooltip(rippleHelp, t('timelineRepairModal.review.rippleModeHelp'));
+        setTooltip(rippleHelp, t('timelineScaffoldModal.review.rippleModeHelp'));
 
         // Anchored-dates override — only meaningful while ripple is on.
         // Count = authored dates a cascade would otherwise hold in place
@@ -798,11 +798,11 @@ export class TimelineRepairModal extends Modal {
         ).length;
         const anchoredContainer = filterRow.createDiv({ cls: 'ert-timeline-repair-ripple-anchored' });
         anchoredContainer.toggleClass('ert-is-hidden', !this.session.rippleEnabled);
-        anchoredContainer.createSpan({ text: t('timelineRepairModal.review.rippleAnchoredToggle', { count: anchoredCount }) });
+        anchoredContainer.createSpan({ text: t('timelineScaffoldModal.review.rippleAnchoredToggle', { count: anchoredCount }) });
 
         const anchoredHelp = anchoredContainer.createSpan({ cls: 'ert-timeline-repair-ripple-help' });
         setIcon(anchoredHelp, 'help-circle');
-        setTooltip(anchoredHelp, t('timelineRepairModal.review.rippleAnchoredHelp', { count: anchoredCount }));
+        setTooltip(anchoredHelp, t('timelineScaffoldModal.review.rippleAnchoredHelp', { count: anchoredCount }));
 
         const anchoredToggle = new ToggleComponent(anchoredContainer);
         anchoredToggle.setValue(this.session.rippleIncludeAnchored);
@@ -827,11 +827,11 @@ export class TimelineRepairModal extends Modal {
         const historyGroup = filterRow.createDiv({ cls: 'ert-timeline-repair-history-group' });
         this.undoBtnEl = historyGroup.createEl('button', { cls: 'ert-iconBtn ert-timeline-repair-history-btn' });
         setIcon(this.undoBtnEl, 'undo-2');
-        setTooltip(this.undoBtnEl, t('timelineRepairModal.review.undoTooltip'));
+        setTooltip(this.undoBtnEl, t('timelineScaffoldModal.review.undoTooltip'));
         this.undoBtnEl.addEventListener('click', () => this.handleUndo());
         this.redoBtnEl = historyGroup.createEl('button', { cls: 'ert-iconBtn ert-timeline-repair-history-btn' });
         setIcon(this.redoBtnEl, 'redo-2');
-        setTooltip(this.redoBtnEl, t('timelineRepairModal.review.redoTooltip'));
+        setTooltip(this.redoBtnEl, t('timelineScaffoldModal.review.redoTooltip'));
         this.redoBtnEl.addEventListener('click', () => this.handleRedo());
         this.updateHistoryButtons();
 
@@ -843,7 +843,7 @@ export class TimelineRepairModal extends Modal {
 
         this.contentEl.createDiv({
             cls: 'ert-timeline-tool-snapshot-note',
-            text: t('timelineRepairModal.review.snapshotAssurance')
+            text: t('timelineScaffoldModal.review.snapshotAssurance')
         });
 
         // Action buttons. DOM order: audit-open first (pinned left via CSS),
@@ -853,17 +853,17 @@ export class TimelineRepairModal extends Modal {
 
         const auditOpenBtn = new ButtonComponent(buttonRow)
             .setButtonText(this.auditIncluded.size === 0
-                ? t('timelineRepairModal.review.openAuditButtonAll')
-                : t('timelineRepairModal.review.openAuditButton', { count: this.auditIncluded.size }))
+                ? t('timelineScaffoldModal.review.openAuditButtonAll')
+                : t('timelineScaffoldModal.review.openAuditButton', { count: this.auditIncluded.size }))
             .onClick(() => this.openFocusedAudit());
         auditOpenBtn.buttonEl.addClass('ert-timeline-repair-audit-open-btn');
 
         new ButtonComponent(buttonRow)
-            .setButtonText(t('timelineRepairModal.review.backButton'))
+            .setButtonText(t('timelineScaffoldModal.review.backButton'))
             .onClick(() => this.showConfigPhase());
 
         new ButtonComponent(buttonRow)
-            .setButtonText(t('timelineRepairModal.review.applyButton'))
+            .setButtonText(t('timelineScaffoldModal.review.applyButton'))
             .setCta()
             .setDisabled(!this.session.hasUnsavedChanges)
             .onClick(() => this.applyChanges());
@@ -893,14 +893,14 @@ export class TimelineRepairModal extends Modal {
         // count only claims dates the author actually owns.
         const authoredCount = this.session.entries.filter(e => e.source === 'authored' && !e.stampedWhenSource).length;
         const parts: string[] = [
-            t('timelineRepairModal.review.badge').toUpperCase(),
-            t('timelineRepairModal.review.summaryChanged', { count: changedCount }).toUpperCase()
+            t('timelineScaffoldModal.review.badge').toUpperCase(),
+            t('timelineScaffoldModal.review.summaryChanged', { count: changedCount }).toUpperCase()
         ];
         if (authoredCount > 0) {
-            parts.push(t('timelineRepairModal.review.summaryAuthored', { count: authoredCount }).toUpperCase());
+            parts.push(t('timelineScaffoldModal.review.summaryAuthored', { count: authoredCount }).toUpperCase());
         }
         if (reviewCount > 0) {
-            parts.push(t('timelineRepairModal.review.summaryNeedReview', { count: reviewCount }).toUpperCase());
+            parts.push(t('timelineScaffoldModal.review.summaryNeedReview', { count: reviewCount }).toUpperCase());
         }
         this.summaryBarEl.setText(parts.join(' • '));
         this.needsReviewPillEl?.toggleClass('ert-has-warnings', reviewCount > 0);
@@ -962,8 +962,8 @@ export class TimelineRepairModal extends Modal {
         if (btn) {
             btn.disabled = false;
             btn.setText(count === 0
-                ? t('timelineRepairModal.review.openAuditButtonAll')
-                : t('timelineRepairModal.review.openAuditButton', { count }));
+                ? t('timelineScaffoldModal.review.openAuditButtonAll')
+                : t('timelineScaffoldModal.review.openAuditButton', { count }));
         }
     }
 
@@ -1001,7 +1001,7 @@ export class TimelineRepairModal extends Modal {
                     const badge = titleEl.parentElement.createSpan({ cls: 'ert-timeline-repair-open-badge' });
                     titleEl.parentElement.insertBefore(badge, titleEl.nextSibling);
                     setIcon(badge, 'file-text');
-                    setTooltip(badge, t('timelineRepairModal.review.openInWorkspace'));
+                    setTooltip(badge, t('timelineScaffoldModal.review.openInWorkspace'));
                 }
             } else if (!isOpen && existingBadge) {
                 existingBadge.remove();
@@ -1060,7 +1060,7 @@ export class TimelineRepairModal extends Modal {
         if (entries.length === 0) {
             this.sceneListEl.createDiv({
                 cls: 'ert-timeline-repair-empty',
-                text: t('timelineRepairModal.review.emptyFilter')
+                text: t('timelineScaffoldModal.review.emptyFilter')
             });
             return;
         }
@@ -1140,9 +1140,9 @@ export class TimelineRepairModal extends Modal {
             text: `#${chronoPosition}`,
             cls: 'ert-timeline-repair-scene-number'
         });
-        setTooltip(chronoNumber, t('timelineRepairModal.review.chronoPosition', { count: chronoPosition }));
+        setTooltip(chronoNumber, t('timelineScaffoldModal.review.chronoPosition', { count: chronoPosition }));
         line1.createSpan({
-            text: entry.scene.title || t('timelineRepairModal.review.untitled'),
+            text: entry.scene.title || t('timelineScaffoldModal.review.untitled'),
             cls: 'ert-timeline-repair-scene-title'
         });
 
@@ -1150,7 +1150,7 @@ export class TimelineRepairModal extends Modal {
             cls: 'ert-timeline-repair-narrative-pill',
             text: `N${idx + 1}`
         });
-        setTooltip(narrativePill, t('timelineRepairModal.review.narrativePlacement', { count: idx + 1 }));
+        setTooltip(narrativePill, t('timelineScaffoldModal.review.narrativePlacement', { count: idx + 1 }));
 
         // Status / warning icons — clustered together after the title pills
         // so the row reads: identity → state icons → evidence (cue chips).
@@ -1159,27 +1159,27 @@ export class TimelineRepairModal extends Modal {
         if (this.openNotePaths.has(entry.file.path)) {
             const openBadge = line1.createSpan({ cls: 'ert-timeline-repair-open-badge' });
             setIcon(openBadge, 'file-text');
-            setTooltip(openBadge, t('timelineRepairModal.review.openInWorkspace'));
+            setTooltip(openBadge, t('timelineScaffoldModal.review.openInWorkspace'));
         }
         if (entry.originalWhen === null && entry.source !== 'authored') {
             const missingBadge = line1.createSpan({ cls: 'ert-timeline-repair-missing-badge' });
             setIcon(missingBadge, 'calendar-off');
-            setTooltip(missingBadge, t('timelineRepairModal.review.warningMissingWhen'));
+            setTooltip(missingBadge, t('timelineScaffoldModal.review.warningMissingWhen'));
         }
         if (entry.hasBackwardTime) {
             const warningBadge = line1.createSpan({ cls: 'ert-timeline-repair-warning-badge' });
             setIcon(warningBadge, 'alert-triangle');
-            warningBadge.setAttribute('aria-label', t('timelineRepairModal.review.warningBackwardTime'));
+            warningBadge.setAttribute('aria-label', t('timelineScaffoldModal.review.warningBackwardTime'));
         }
         if (entry.hasLargeGap) {
             const gapBadge = line1.createSpan({ cls: 'ert-timeline-repair-gap-badge' });
             setIcon(gapBadge, 'clock');
-            gapBadge.setAttribute('aria-label', t('timelineRepairModal.review.warningLargeGap'));
+            gapBadge.setAttribute('aria-label', t('timelineScaffoldModal.review.warningLargeGap'));
         }
         if (this.duplicateWhenIndices.has(idx)) {
             const dupBadge = line1.createSpan({ cls: 'ert-timeline-repair-duplicate-badge' });
             setIcon(dupBadge, 'copy');
-            setTooltip(dupBadge, t('timelineRepairModal.review.warningDuplicateWhen'));
+            setTooltip(dupBadge, t('timelineScaffoldModal.review.warningDuplicateWhen'));
         }
 
         // Pattern compliance chip — sits at the right edge of line 1.
@@ -1252,8 +1252,8 @@ export class TimelineRepairModal extends Modal {
         // Controls read as three clusters — [step back] [time-of-day] [step
         // forward] — plus the audit toggle, instead of nine loose icons.
         const stepBackGroup = controlsArea.createDiv({ cls: 'ert-timeline-repair-step-group' });
-        buildShiftBtn(stepBackGroup, 'chevrons-left', 'timelineRepairModal.review.shiftDayBack', () => this.handleDayShift(idx, -1));
-        buildShiftBtn(stepBackGroup, 'chevron-left', 'timelineRepairModal.review.shiftHourBack', () => this.handleHourShift(idx, -1));
+        buildShiftBtn(stepBackGroup, 'chevrons-left', 'timelineScaffoldModal.review.shiftDayBack', () => this.handleDayShift(idx, -1));
+        buildShiftBtn(stepBackGroup, 'chevron-left', 'timelineScaffoldModal.review.shiftHourBack', () => this.handleHourShift(idx, -1));
 
         // Time bucket pills — icon-only, Lucide sunrise/sun/sunset/moon.
         // ert-iconBtn opts out of the generic .ert-ui.ert-scope--modal button
@@ -1284,8 +1284,8 @@ export class TimelineRepairModal extends Modal {
         }
 
         const stepFwdGroup = controlsArea.createDiv({ cls: 'ert-timeline-repair-step-group' });
-        buildShiftBtn(stepFwdGroup, 'chevron-right', 'timelineRepairModal.review.shiftHourForward', () => this.handleHourShift(idx, 1));
-        buildShiftBtn(stepFwdGroup, 'chevrons-right', 'timelineRepairModal.review.shiftDayForward', () => this.handleDayShift(idx, 1));
+        buildShiftBtn(stepFwdGroup, 'chevron-right', 'timelineScaffoldModal.review.shiftHourForward', () => this.handleHourShift(idx, 1));
+        buildShiftBtn(stepFwdGroup, 'chevrons-right', 'timelineScaffoldModal.review.shiftDayForward', () => this.handleDayShift(idx, 1));
 
         // Audit handoff toggle (subtle, single icon).
         // ert-iconBtn opts out of the generic .ert-ui.ert-scope--modal button
@@ -1296,8 +1296,8 @@ export class TimelineRepairModal extends Modal {
         const isIncluded = this.auditIncluded.has(entry.file.path);
         if (isIncluded) auditBtn.addClass('ert-is-active');
         setTooltip(auditBtn, isIncluded
-            ? t('timelineRepairModal.review.auditToggleOn')
-            : t('timelineRepairModal.review.auditToggleOff'));
+            ? t('timelineScaffoldModal.review.auditToggleOn')
+            : t('timelineScaffoldModal.review.auditToggleOff'));
         auditBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             const path = entry.file.path;
@@ -1305,12 +1305,12 @@ export class TimelineRepairModal extends Modal {
                 this.auditIncluded.delete(path);
                 auditBtn.removeClass('ert-is-active');
                 card.removeClass('ert-is-audit-selected');
-                setTooltip(auditBtn, t('timelineRepairModal.review.auditToggleOff'));
+                setTooltip(auditBtn, t('timelineScaffoldModal.review.auditToggleOff'));
             } else {
                 this.auditIncluded.add(path);
                 auditBtn.addClass('ert-is-active');
                 card.addClass('ert-is-audit-selected');
-                setTooltip(auditBtn, t('timelineRepairModal.review.auditToggleOn'));
+                setTooltip(auditBtn, t('timelineScaffoldModal.review.auditToggleOn'));
             }
             this.updateAuditFooter();
         });
@@ -1318,7 +1318,7 @@ export class TimelineRepairModal extends Modal {
         // Per-scene date history — every applied When change, restorable.
         const historyBtn = controlsArea.createEl('button', { cls: 'ert-iconBtn ert-timeline-repair-row-history' });
         setIcon(historyBtn, 'history');
-        setTooltip(historyBtn, t('timelineRepairModal.review.historyTooltip'));
+        setTooltip(historyBtn, t('timelineScaffoldModal.review.historyTooltip'));
         historyBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             void this.openSceneHistoryMenu(e, entry);
@@ -1336,7 +1336,7 @@ export class TimelineRepairModal extends Modal {
 
         if (records.length === 0) {
             menu.addItem(item => item
-                .setTitle(t('timelineRepairModal.review.historyEmpty'))
+                .setTitle(t('timelineScaffoldModal.review.historyEmpty'))
                 .setDisabled(true));
         }
 
@@ -1349,7 +1349,7 @@ export class TimelineRepairModal extends Modal {
             });
             const restorable = record.prev ? parseWhenField(record.prev) : null;
             menu.addItem(item => {
-                item.setTitle(t('timelineRepairModal.review.historyItem', {
+                item.setTitle(t('timelineScaffoldModal.review.historyItem', {
                     stamp,
                     prev: record.prev ?? '—', // SAFE: change-log display — the em dash marks "no previous value" in the before column
                     next: record.next,
@@ -1569,7 +1569,7 @@ export class TimelineRepairModal extends Modal {
         const summary = getChangeSummary(this.session);
 
         if (summary.totalChanges === 0) {
-            new Notice(t('timelineRepairModal.apply.noChangesNotice'));
+            new Notice(t('timelineScaffoldModal.apply.noChangesNotice'));
             return;
         }
 
@@ -1580,7 +1580,7 @@ export class TimelineRepairModal extends Modal {
         const written = await this.persistSessionChanges();
         if (written === null) return;
         if (written.failed === 0) {
-            new Notice(t('timelineRepairModal.apply.successWithSnapshotNotice', { count: written.success }));
+            new Notice(t('timelineScaffoldModal.apply.successWithSnapshotNotice', { count: written.success }));
         }
         this.close();
     }
@@ -1606,7 +1606,7 @@ export class TimelineRepairModal extends Modal {
             });
             await saveTimelineSnapshot(this.app, snapshot);
         } catch (error) {
-            new Notice(t('timelineRepairModal.apply.snapshotFailedNotice', {
+            new Notice(t('timelineScaffoldModal.apply.snapshotFailedNotice', {
                 message: error instanceof Error ? error.message : String(error)
             }));
             return null;
@@ -1619,7 +1619,7 @@ export class TimelineRepairModal extends Modal {
                 }
             });
             if (result.failed > 0) {
-                new Notice(t('timelineRepairModal.apply.partialNotice', { success: result.success, failed: result.failed }));
+                new Notice(t('timelineScaffoldModal.apply.partialNotice', { success: result.success, failed: result.failed }));
             }
             return result;
         } catch (error) {
@@ -1644,31 +1644,31 @@ export class TimelineRepairModal extends Modal {
             new Notice(`Reset failed: ${error instanceof Error ? error.message : String(error)}`);
             return;
         }
-        new Notice(t('timelineRepairModal.reset.successNotice'));
+        new Notice(t('timelineScaffoldModal.reset.successNotice'));
     }
 
     private showResetConfirmDialog(): Promise<boolean> {
         return new Promise((resolve) => {
             const modal = new Modal(this.app);
-            modal.titleEl.setText(t('timelineRepairModal.reset.title'));
+            modal.titleEl.setText(t('timelineScaffoldModal.reset.title'));
 
             const bodyEl = modal.contentEl.createDiv();
-            renderWithYamlTokens(bodyEl, t('timelineRepairModal.reset.body', { count: this.scenes.length }));
+            renderWithYamlTokens(bodyEl, t('timelineScaffoldModal.reset.body', { count: this.scenes.length }));
             modal.contentEl.createDiv({
-                text: t('timelineRepairModal.reset.note'),
+                text: t('timelineScaffoldModal.reset.note'),
                 cls: 'ert-timeline-repair-confirm-warning'
             });
 
             const buttonRow = modal.contentEl.createDiv({ cls: 'ert-modal-actions' });
             new ButtonComponent(buttonRow)
-                .setButtonText(t('timelineRepairModal.reset.confirmButton'))
+                .setButtonText(t('timelineScaffoldModal.reset.confirmButton'))
                 .setCta()
                 .onClick(() => {
                     modal.close();
                     resolve(true);
                 });
             new ButtonComponent(buttonRow)
-                .setButtonText(t('timelineRepairModal.confirm.cancelButton'))
+                .setButtonText(t('timelineScaffoldModal.confirm.cancelButton'))
                 .onClick(() => {
                     modal.close();
                     resolve(false);
@@ -1685,16 +1685,16 @@ export class TimelineRepairModal extends Modal {
     private async openRestoreMenu(evt: MouseEvent): Promise<void> {
         const metas = await listTimelineSnapshots(this.app);
         if (metas.length === 0) {
-            new Notice(t('timelineRepairModal.restore.noSnapshotNotice'));
+            new Notice(t('timelineScaffoldModal.restore.noSnapshotNotice'));
             return;
         }
         const menu = new Menu();
         for (const meta of metas.slice(0, 10)) {
             const tool = meta.snapshot.tool === 'audit'
-                ? t('timelineRepairModal.restore.toolAudit')
-                : t('timelineRepairModal.restore.toolScaffold');
+                ? t('timelineScaffoldModal.restore.toolAudit')
+                : t('timelineScaffoldModal.restore.toolScaffold');
             menu.addItem(item => item
-                .setTitle(t('timelineRepairModal.restore.menuItem', {
+                .setTitle(t('timelineScaffoldModal.restore.menuItem', {
                     label: meta.snapshot.displayLabel,
                     count: meta.snapshot.entries.length,
                     tool
@@ -1709,25 +1709,25 @@ export class TimelineRepairModal extends Modal {
         try {
             const result = await restoreTimelineSnapshot(this.app, meta);
             if (result.failed > 0) {
-                new Notice(t('timelineRepairModal.restore.partialNotice', {
+                new Notice(t('timelineScaffoldModal.restore.partialNotice', {
                     restored: result.restored,
                     failed: result.failed,
                     label: result.snapshotLabel
                 }));
             } else if (result.restored < result.total) {
-                new Notice(t('timelineRepairModal.restore.partialOfTotalNotice', {
+                new Notice(t('timelineScaffoldModal.restore.partialOfTotalNotice', {
                     restored: result.restored,
                     total: result.total,
                     label: result.snapshotLabel
                 }));
             } else {
-                new Notice(t('timelineRepairModal.restore.successNotice', {
+                new Notice(t('timelineScaffoldModal.restore.successNotice', {
                     restored: result.restored,
                     label: result.snapshotLabel
                 }));
             }
             if (result.noFrontmatterPaths.length > 0) {
-                new Notice(t('timelineRepairModal.restore.noFrontmatterNotice', {
+                new Notice(t('timelineScaffoldModal.restore.noFrontmatterNotice', {
                     count: result.noFrontmatterPaths.length,
                     paths: result.noFrontmatterPaths.join(', ')
                 }), 0);
@@ -1741,20 +1741,20 @@ export class TimelineRepairModal extends Modal {
     private showConfirmDialog(changeCount: number): Promise<boolean> {
         return new Promise((resolve) => {
             const modal = new Modal(this.app);
-            modal.titleEl.setText(t('timelineRepairModal.confirm.title'));
+            modal.titleEl.setText(t('timelineScaffoldModal.confirm.title'));
 
             modal.contentEl.createDiv({
-                text: t('timelineRepairModal.confirm.description', { count: changeCount })
+                text: t('timelineScaffoldModal.confirm.description', { count: changeCount })
             });
             modal.contentEl.createDiv({
-                text: t('timelineRepairModal.confirm.warning'),
+                text: t('timelineScaffoldModal.confirm.warning'),
                 cls: 'ert-timeline-repair-confirm-warning'
             });
 
             const buttonRow = modal.contentEl.createDiv({ cls: 'ert-modal-actions' });
 
             new ButtonComponent(buttonRow)
-                .setButtonText(t('timelineRepairModal.confirm.applyButton'))
+                .setButtonText(t('timelineScaffoldModal.confirm.applyButton'))
                 .setCta()
                 .onClick(() => {
                     modal.close();
@@ -1762,7 +1762,7 @@ export class TimelineRepairModal extends Modal {
                 });
 
             new ButtonComponent(buttonRow)
-                .setButtonText(t('timelineRepairModal.confirm.cancelButton'))
+                .setButtonText(t('timelineScaffoldModal.confirm.cancelButton'))
                 .onClick(() => {
                     modal.close();
                     resolve(false);
@@ -1773,4 +1773,4 @@ export class TimelineRepairModal extends Modal {
     }
 }
 
-export default TimelineRepairModal;
+export default TimelineScaffoldModal;

@@ -62,7 +62,7 @@ const WELCOME_COPY = {
             secondary: '→ or open Book Designer'
         },
         onboard: {
-            title: 'Onboard existing manuscript',
+            title: 'Manuscript onboarding',
             desc: 'Bring an existing draft into the timeline. Point it at your book folder and it splits scenes, fills the YAML across acts, and previews everything before anything is written.',
             cta: 'Onboard manuscript'
         }

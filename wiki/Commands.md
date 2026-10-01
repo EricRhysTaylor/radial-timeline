@@ -19,22 +19,22 @@ These are the main command-palette entries.
 2. **[Create note…](#create-note)**
 3. **Open inquiry** — opens the [Inquiry View](Inquiry).
 4. **[Book designer](Book-Designer)** ← standalone guide
-5. **[Onboard manuscript](#onboard-manuscript)** *(beta)*
-6. **[Timeline scaffold](#timeline-order)**
-7. **[Timeline audit](#timeline-audit)** *(beta)*
+5. **[Manuscript onboarding](#onboard-manuscript)** *(in testing — not yet released)*
+6. **[Timeline date scaffold](#timeline-order)**
+7. **[Timeline date audit](#timeline-audit)** *(beta)*
 8. **[Subplot manager](#manage-subplots)**
 9. **[Summary scene refresh](#summary-refresh)**
-10. **[Search timeline](#search-timeline)**
+10. **[Timeline search](#search-timeline)**
 11. **[Gossamer analysis](#gossamer-analysis)**
 12. **[Runtime estimator](#runtime-estimator)** *(Pro)*
 13. **[Manuscript export](Manuscript-Export)** ← standalone guide
-14. **[Inquiry omnibus](#inquiry-omnibus-pass)** *(beta)*
+14. **[Inquiry omnibus](#inquiry-omnibus-pass)** *(in testing — not yet released)*
 15. **[Gossamer score manager](#gossamer-score-manager)**
 16. **[Planetary time calculator](#planetary-time-calculator)**
 17. **[Author progress report (APR)](Author-Progress-Report)** ← standalone guide
 18. **[Scene pulse analysis (subplot order)](#scene-pulse-analysis-subplot-order)**
 19. **[Scene pulse analysis (manuscript order)](#scene-pulse-analysis-manuscript-order)**
-20. **[Export timeline for sharing](#export-timeline-for-sharing)**
+20. **[Timeline share export](#timeline-share-export)**
 
 ## Conditional Visibility
 
@@ -45,8 +45,7 @@ Some commands are hidden until their required feature is enabled. Others remain 
 *   **Gossamer analysis** also needs an active beat system, story beats, and scene content. To score by hand without AI, use **[Gossamer score manager](#gossamer-score-manager)**.
 *   **Runtime estimator** is a **Pro** workflow. Runtime configuration lives in [Settings → Core](Settings-Core#runtime-estimation).
 *   **Planetary time calculator** is visible, but it needs at least one configured planetary profile before it can produce a conversion.
-*   **Inquiry omnibus** appears only in development/testing builds.
-*   **Onboard existing manuscript (BETA)** appears in development/testing builds. Choose structure-only import or Local LLM assistance.
+*   **Inquiry omnibus** and **Manuscript onboarding** are undergoing testing and are not released yet. They do not appear in release builds.
 
 ---
 
@@ -72,12 +71,12 @@ Related: [Scene Properties (Core + Advanced)](YAML-Frontmatter).
 ---
 
 <a name="onboard-manuscript"></a>
-## Onboard manuscript *(beta)*
+## Manuscript onboarding *(in testing — not yet released)*
 
 Opens the guided onboarding flow for importing an existing manuscript.
 
 > [!NOTE]
-> Currently undergoing beta testing. Available only in development/testing builds for now. Choose structure-only import or Local LLM assistance — see [Settings → AI → Local LLM](Settings-AI#local-llm) for setup and the hardware guidance in [Onboarding And Local Model Hardware](Settings-AI#onboarding-and-local-model-hardware).
+> Undergoing testing and not released yet — it does not appear in release builds of the plugin. It offers structure-only import or Local LLM assistance — see [Settings → AI → Local LLM](Settings-AI#local-llm) for setup and the hardware guidance in [Onboarding And Local Model Hardware](Settings-AI#onboarding-and-local-model-hardware).
 
 Walks a book folder through a four-stage sequence — preparing and reading the source text, proposing scene splits for confirmation, generating scene profiles (characters, places, summaries) for review, and writing the accepted result to the vault. Each stage is reviewable before it commits anything.
 
@@ -86,36 +85,36 @@ Related: [Settings → AI → Local LLM](Settings-AI#local-llm), [Book Designer]
 ---
 
 <a name="timeline-order"></a>
-## Timeline scaffold
+## Timeline date scaffold
 
-Opens Timeline Scaffold, which fills missing `When` dates in story order. No AI is involved.
+Opens Timeline Date Scaffold, which fills missing `When` dates in story order. No AI is involved.
 
 <div style="text-align: center; margin: 20px 0;">
-  <img src="images/panel-timeline-order.png" alt="Timeline scaffold command panel" style="width: 560px; max-width: 100%; border-radius: 8px;" />
+  <img src="images/panel-timeline-order.png" alt="Timeline date scaffold command panel" style="width: 560px; max-width: 100%; border-radius: 8px;" />
 </div>
 
 The wizard helps you normalize `When` values in manuscript order, then review the proposed timeline before writing changes back to frontmatter. It supports scaffold-based chronology setup, anchor date and time selection, time-bucket adjustments (morning/afternoon/evening/night), ripple mode for cascading changes, needs-review filtering, and undo/redo before applying.
 
-Use [Timeline audit](#timeline-audit) to review chronology and continuity findings.
+Use [Timeline date audit](#timeline-audit) to review chronology and continuity findings.
 
 Related: [Chronologue Mode](Chronologue-Mode).
 
 ---
 
 <a name="timeline-audit"></a>
-## Timeline audit *(beta)*
+## Timeline date audit *(beta)*
 
-Opens the timeline audit panel.
+Opens the Timeline Date Audit panel.
 
 <div style="text-align: center; margin: 20px 0;">
-  <img src="images/panel-timeline-audit.webp" alt="Timeline audit panel" style="width: 560px; max-width: 100%; border-radius: 8px;" />
+  <img src="images/panel-timeline-audit.webp" alt="Timeline date audit panel" style="width: 560px; max-width: 100%; border-radius: 8px;" />
 </div>
 
 Surfaces contradictions, missing `When` values, summary/body disagreement, continuity problems, and unresolved findings. The panel shows overview stats, finding filters, and finding cards with evidence and suggested actions.
 
 The audit includes a deterministic pass and can optionally run a continuity pass. AI findings appear alongside deterministic findings for review. From the panel you can filter findings by issue type, inspect evidence, mark items for review, apply accepted fixes where supported, and rerun the audit after changes.
 
-Related: [Timeline scaffold](#timeline-order), [Chronologue Mode](Chronologue-Mode).
+Related: [Timeline date scaffold](#timeline-order), [Chronologue Mode](Chronologue-Mode).
 
 ---
 
@@ -167,12 +166,12 @@ Related: [AI Pulse Triplet Analysis](AI-Pulse-Analysis), [Inquiry View](Inquiry)
 ---
 
 <a name="search-timeline"></a>
-## Search timeline
+## Timeline search
 
 Opens the timeline search bar.
 
 <div style="text-align: center; margin: 20px 0;">
-  <img src="images/panel-search-timeline.png" alt="Search timeline panel" style="width: 500px; max-width: 100%; border-radius: 8px;" />
+  <img src="images/panel-search-timeline.png" alt="Timeline search panel" style="width: 500px; max-width: 100%; border-radius: 8px;" />
 </div>
 
 Choose **Timeline fields**, **Scene body**, or both in **Search options**. Press **Enter** for text search, or enable **Local LLM assist** for concept matching with verified evidence quotes. See [Search](How-to#search) for scope, highlighting, and local AI setup.
@@ -212,12 +211,12 @@ Related: [Settings → Core → Runtime estimation](Settings-Core#runtime-estima
 ---
 
 <a name="inquiry-omnibus-pass"></a>
-## Inquiry omnibus *(beta)*
+## Inquiry omnibus *(in testing — not yet released)*
 
 Runs all enabled Inquiry questions in one batch.
 
 > [!NOTE]
-> Currently undergoing beta testing. Available only in development/testing builds for now.
+> Undergoing testing and not released yet — it does not appear in release builds of the plugin.
 
 <div style="text-align: center; margin: 20px 0;">
   <img src="images/panel-inquiry-omnibus.png" alt="Inquiry omnibus command panel" style="width: 560px; max-width: 100%; border-radius: 8px;" />
@@ -289,8 +288,8 @@ Related: [AI Pulse Triplet Analysis](AI-Pulse-Analysis), [Summary scene refresh]
 
 ---
 
-<a name="export-timeline-for-sharing"></a>
-## Export timeline for sharing
+<a name="timeline-share-export"></a>
+## Timeline share export
 
 Writes the file you upload on your Community **My Share** page to build your Interactive Timeline. Exporting shares nothing: the file is written to `Radial Timeline/Community/` in your vault and stays there until you upload it and activate the share.
 

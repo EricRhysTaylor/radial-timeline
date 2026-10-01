@@ -6,7 +6,7 @@
 // --- Imports and constants added for standalone module ---
 import { executeCommandById, openSettingsTab } from '../utils/obsidianInternals';
 import { ItemView, WorkspaceLeaf, MarkdownView, TFile, Notice, setIcon, Menu, Component } from 'obsidian';
-import { TimelineRepairModal } from '../modals/TimelineRepairModal';
+import { TimelineScaffoldModal } from '../modals/TimelineScaffoldModal';
 import { TimelineAuditModal } from '../modals/TimelineAuditModal';
 import RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
@@ -313,7 +313,7 @@ export class RadialTimelineView extends ItemView {
             .setTitle(t('commands.timelineOrder'))
             .setIcon('calendar-plus')
             .setSection('pane')
-            .onClick(() => new TimelineRepairModal(this.app, this.plugin).open()));
+            .onClick(() => new TimelineScaffoldModal(this.app, this.plugin).open()));
         menu.addItem(item => item
             .setTitle(t('commands.timelineAudit'))
             .setIcon('calendar-search')

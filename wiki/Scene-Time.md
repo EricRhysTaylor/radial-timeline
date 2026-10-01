@@ -65,7 +65,7 @@ Some action takes time even when the prose never says so, like a long climb or a
 1.  Click the gray strip beside the paragraph.
 2.  Enter how long the action takes, such as "10 hours".
 
-A blue bracketed marker appears beside the paragraph, and the time counts toward the title-bar total. You can also select a line of prose and run the command **Assign scene time to selection**.
+A blue bracketed marker appears beside the paragraph, and the time counts toward the title-bar total. You can also select a line of prose and run the command **Scene time assignment**.
 
 ## Turning the cue bar off
 
@@ -73,6 +73,6 @@ Go to **Settings → Advanced → Timeline Display** and turn off **Show scene t
 
 ## What Scene Time changes
 
-Scene Time only affects the cue bar and the elapsed total in the title bar. It does not change Timeline Audit, Timeline Scaffold, or your writing-session timer.
+Scene Time only affects the cue bar and the elapsed total in the title bar. It does not change Timeline Date Audit, Timeline Date Scaffold, or your writing-session timer.
 
 Your decisions are saved per scene in the `Radial Timeline/Scene Time` folder of your vault. Your notes and their properties are never edited. If you rewrite a paragraph, review its time phrase again.

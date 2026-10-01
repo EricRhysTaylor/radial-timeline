@@ -112,9 +112,9 @@ Inquiry works with all supported AI providers, including Anthropic, OpenAI, Gemi
 4.  Click the question's **number badge** to run that single question against your selected AI provider.
 5.  Review findings in the results panel — each finding includes a headline, supporting bullets, a recommended action, and scene citations.
 
-### Omnibus Pass *(beta)*
+### Omnibus Pass *(in testing — not yet released)*
 
-The Omnibus Pass runs enabled questions across all three zones via the `Inquiry omnibus` command. It is currently available in development builds only.
+The Omnibus Pass runs enabled questions across all three zones via the `Inquiry omnibus` command. It is undergoing testing and is not released yet, so the command does not appear in release builds.
 
 **Corpus overrides**: Any Corpus Manager overrides set in the Inquiry view are applied to the Omnibus run. Otherwise, the run uses the Inquiry Settings corpus configuration.
 

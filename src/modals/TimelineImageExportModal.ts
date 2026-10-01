@@ -8,6 +8,7 @@ import { App, ButtonComponent, Modal } from 'obsidian';
 import { scheduleClassAfterPaint } from '../utils/domClassEffects';
 import { scheduleFocusAfterPaint } from '../utils/domFocus';
 import type { TimelineImageFormat } from '../services/export/TimelineExportService';
+import { t } from '../i18n';
 
 export interface TimelineImageExportChoice {
     format: TimelineImageFormat;
@@ -61,7 +62,7 @@ export class TimelineImageExportModal extends Modal {
         contentEl.addClass('ert-modal-container', 'ert-stack');
         const header = contentEl.createDiv({ cls: 'ert-modal-header' });
         header.createSpan({ cls: 'ert-modal-badge', text: 'Export' });
-        header.createDiv({ cls: 'ert-modal-title', text: 'Export timeline as image' });
+        header.createDiv({ cls: 'ert-modal-title', text: t('commands.exportTimelineImage') });
         header.createDiv({
             cls: 'ert-modal-subtitle',
             text: 'Exports the currently rendered timeline. Choose a format and resolution.',

@@ -454,7 +454,7 @@ export interface TranslationKeys {
             attribution: { name: string; desc: string; };
         };
     };
-    timelineRepairModal: {
+    timelineScaffoldModal: {
         config: { noAiPill: string; title: string; subtitle: string; statTotalScenes: string; statWithWhen: string; statMissingWhen: string; previewButton: string; cancelButton: string; restoreButton: string; restoreTooltip: string; restoreEmptyTooltip: string; };
         express: { title: string; desc: string; button: string; successNotice: string; fullyDated: string; fullyDatedHint: string; openAuditButton: string; };
         anchor: { name: string; desc: string; dateLabel: string; timeLabel: string; pillAuthored: string; pillFallback: string; };
@@ -586,7 +586,7 @@ export interface TranslationKeys {
         createNote: string;
         subplotManager: string;
         bookDesigner: string;
-        timelineOrder: string;
+        timelineDateScaffold: string;
         timelineAudit: string;
         manuscriptExport: string;
         planetaryTimeCalculator: string;
@@ -2110,7 +2110,7 @@ export const en: TranslationKeys = {
                 capabilitiesTitle: 'Model capabilities',
                 capabilitiesDesc: 'Local servers do not report what their models can do, so Radial Timeline assumes strict JSON output and nothing more. Declare what your model actually handles — features that need more than you declare will refuse to run locally rather than return unreliable results.',
                 capabilityReasoningStrongName: 'Extended reasoning',
-                capabilityReasoningStrongDesc: 'The model holds a multi-step chain of thought and reaches a judgement, rather than pattern-matching a short answer. Required by Summary scene refresh, Pulse analysis, Runtime estimates, and Timeline audit. Reasoning-tuned models in the 20B+ range typically qualify; small instruct models do not.',
+                capabilityReasoningStrongDesc: 'The model holds a multi-step chain of thought and reaches a judgement, rather than pattern-matching a short answer. Required by Summary scene refresh, Pulse analysis, Runtime estimates, and Timeline date audit. Reasoning-tuned models in the 20B+ range typically qualify; small instruct models do not.',
                 capabilityLongContextName: 'Long context',
                 capabilityLongContextDesc: 'The model keeps a manuscript-sized prompt coherent across its full context window, not just accepting it without truncating. Required by Gossamer.',
                 capabilityHighOutputCapName: 'High output ceiling',
@@ -2659,11 +2659,11 @@ export const en: TranslationKeys = {
             },
         },
     },
-    timelineRepairModal: {
+    timelineScaffoldModal: {
         config: {
             noAiPill: 'No AI · Deterministic',
-            title: 'Timeline Scaffold',
-            subtitle: 'Fills missing `When` dates in story order so Chronologue can mirror your draft — one date per scene, following the pattern you pick. Dates you have already authored are preserved as anchors. Need to find problems in existing dates instead? Use Timeline Audit.',
+            title: 'Timeline Date Scaffold',
+            subtitle: 'Fills missing `When` dates in story order so Chronologue can mirror your draft — one date per scene, following the pattern you pick. Dates you have already authored are preserved as anchors. Need to find problems in existing dates instead? Use Timeline Date Audit.',
             statTotalScenes: 'Total Scenes',
             statWithWhen: 'With Date',
             statMissingWhen: 'Missing Date',
@@ -2679,8 +2679,8 @@ export const en: TranslationKeys = {
             button: 'Scaffold & Apply',
             successNotice: 'Dated {{count}} scenes in manuscript order — Chronologue is ready. Snapshot saved.',
             fullyDated: 'All {{count}} scenes already have dates — there is nothing to fill.',
-            fullyDatedHint: 'Use Timeline Audit to find problems in existing dates.',
-            openAuditButton: 'Open Timeline Audit',
+            fullyDatedHint: 'Use Timeline Date Audit to find problems in existing dates.',
+            openAuditButton: 'Open Timeline Date Audit',
         },
         anchor: {
             name: 'Anchor',
@@ -2694,7 +2694,7 @@ export const en: TranslationKeys = {
         pattern: { name: 'Pattern', desc: 'Choose how scenes should be spaced across time.' },
         refinements: {
             name: 'Refinements',
-            desc: 'Timeline Scaffold always applies the selected pattern first. Text cues can gently adjust scenes when the manuscript clearly implies a different time.',
+            desc: 'Timeline Date Scaffold always applies the selected pattern first. Text cues can gently adjust scenes when the manuscript clearly implies a different time.',
             baseScaffoldTitle: 'Base scaffold',
             baseScaffoldDesc: 'Fills missing scene dates using the selected pattern. Existing `When` dates are preserved as anchors.',
             alwaysOn: 'Always on',
@@ -2702,7 +2702,7 @@ export const en: TranslationKeys = {
             textCuesDesc: 'Looks for clear phrases like "next morning" or "three days later" to refine scaffolded `When` dates. Existing dates are not affected.',
         },
         analyzing: {
-            badge: 'Beta · Timeline Scaffold',
+            badge: 'Beta · Timeline Date Scaffold',
             title: 'Scaffolding timeline dates...',
             statusApplying: 'Applying pattern spacing...',
             preparing: 'Preparing...',
@@ -2713,7 +2713,7 @@ export const en: TranslationKeys = {
             phaseComplete: 'Scaffold ready',
         },
         review: {
-            badge: 'Beta · Timeline Scaffold',
+            badge: 'Beta · Timeline Date Scaffold',
             title: 'Review scaffolded dates',
             subtitle: 'Review the proposed timeline before applying dates to your scenes. Use the filters to focus on cue-adjusted or review-needed scenes. Adjust days or time buckets where the scaffold misses intent.',
             filterNeedsReview: 'Needs Review',
@@ -2732,10 +2732,10 @@ export const en: TranslationKeys = {
             overwriteAuthorDatesHelp: 'OFF preserves existing scene dates and scaffolds around them. ON allows the scaffold to replace existing dates.',
             backButton: 'Back',
             applyButton: 'Apply Scaffolded Dates',
-            openAuditButton: 'Open Timeline Audit ({{count}})',
-            openAuditButtonAll: 'Open Timeline Audit',
-            auditToggleOn: 'Marked for Timeline Audit. Click to remove.',
-            auditToggleOff: 'Send this scene to Timeline Audit.',
+            openAuditButton: 'Open Timeline Date Audit ({{count}})',
+            openAuditButtonAll: 'Open Timeline Date Audit',
+            auditToggleOn: 'Marked for Timeline Date Audit. Click to remove.',
+            auditToggleOff: 'Send this scene to Timeline Date Audit.',
             narrativePlacement: 'Narrative placement {{count}}',
             chronoPosition: 'Chronological position {{count}}',
             emptyFilter: 'No scenes match the current filters.',
@@ -2791,10 +2791,10 @@ export const en: TranslationKeys = {
         header: {
             badge: 'Beta',
             aiPill: 'AI optional',
-            title: 'Timeline Audit',
-            subtitle: 'Finds problems in scenes that already have `When` dates. Each scene’s date is checked against its summary, synopsis, and body text to flag contradictions, time-of-day mismatches, and order conflicts — direct text evidence outranks inference. Missing dates entirely? Use Timeline Scaffold to fill them first.',
+            title: 'Timeline Date Audit',
+            subtitle: 'Finds problems in scenes that already have `When` dates. Each scene’s date is checked against its summary, synopsis, and body text to flag contradictions, time-of-day mismatches, and order conflicts — direct text evidence outranks inference. Missing dates entirely? Use Timeline Date Scaffold to fill them first.',
             aiEnhancedBadge: 'AI-enhanced',
-            focusedScope: 'Focused: {{count}} scenes from Timeline Scaffold',
+            focusedScope: 'Focused: {{count}} scenes from Timeline Date Scaffold',
             focusedClear: 'Clear focus',
         },
         loading: {
@@ -2806,7 +2806,7 @@ export const en: TranslationKeys = {
             reRunAudit: 'Re-run audit',
             applyAccepted: 'Apply accepted changes',
             close: 'Close',
-            snapshotAssurance: 'A snapshot of every affected `When` date is saved automatically before applying — restore from Timeline Scaffold.',
+            snapshotAssurance: 'A snapshot of every affected `When` date is saved automatically before applying — restore from Timeline Date Scaffold.',
         },
         empty: {
             noResults: 'No audit results available.',
@@ -2855,7 +2855,7 @@ export const en: TranslationKeys = {
             manuscriptSummary: 'Entire manuscript · {{count}} scenes in narrative order',
             rangeSummary: 'Narrative scenes {{start}}–{{end}} · {{count}} scenes',
             markedSummary: '{{count}} scenes marked for AI scan',
-            focusedSummary: '{{count}} scenes sent from Timeline Scaffold',
+            focusedSummary: '{{count}} scenes sent from Timeline Date Scaffold',
             evidence: 'Uses {{provider}} to read each selected scene’s summary, synopsis, full manuscript text, and adjacent narrative scenes. Existing dates are treated as provisional.',
             providerLocal: 'Local LLM',
             providerConfigured: 'your configured AI provider',
@@ -2914,7 +2914,7 @@ export const en: TranslationKeys = {
             whenInvalid: 'YAML When: invalid in frontmatter ({{raw}}).',
             whenCurrent: 'YAML When: {{when}}.',
             adjustRippleButton: 'Adjust with ripple',
-            adjustRippleHelp: 'Opens Timeline Scaffold focused on this scene with Ripple on — nudge its date and every later scene shifts in step. Use Apply instead when only this one scene’s date is wrong.',
+            adjustRippleHelp: 'Opens Timeline Date Scaffold focused on this scene with Ripple on — nudge its date and every later scene shifts in step. Use Apply instead when only this one scene’s date is wrong.',
         },
         evidenceSource: { summary: 'Summary', synopsis: 'Synopsis', body: 'Body', neighbor: 'Neighbor', ai: 'AI' },
         evidenceTier: { direct: 'Direct text', strongInference: 'Strong inference', ambiguous: 'Ambiguous cue' },
@@ -3005,26 +3005,26 @@ export const en: TranslationKeys = {
         openTimeline: 'Open',
         openInquiry: 'Open inquiry',
         inquiryOmnibusPass: 'Inquiry omnibus',
-        searchTimeline: 'Search timeline',
+        searchTimeline: 'Timeline search',
         createNote: 'Create note\u2026',
         subplotManager: 'Subplot manager',
         bookDesigner: 'Book designer',
-        timelineOrder: 'Timeline scaffold',
-        timelineAudit: 'Timeline audit',
+        timelineDateScaffold: 'Timeline date scaffold',
+        timelineAudit: 'Timeline date audit',
         manuscriptExport: 'Manuscript export',
         planetaryTimeCalculator: 'Planetary time calculator',
         gossamerScoreManager: 'Gossamer score manager',
         gossamerAnalysis: 'Gossamer analysis',
         authorProgressReport: 'Author progress report (APR)',
-        exportTimelineImage: 'Export timeline as image (SVG / PNG)',
-        exportTimelineData: 'Export timeline for sharing',
-        assignSceneTime: 'Assign scene time to selection',
+        exportTimelineImage: 'Timeline image export (SVG / PNG)',
+        exportTimelineData: 'Timeline share export',
+        assignSceneTime: 'Scene time assignment',
         copyPerformanceReport: 'Copy performance report (dev)',
-        onboardManuscript: 'Onboard existing manuscript (BETA)',
+        onboardManuscript: 'Manuscript onboarding (BETA)',
     },
     timelineDataExportModal: {
         badge: 'Export',
-        title: 'Export timeline for sharing',
+        title: 'Timeline share export',
         subtitle: 'Nothing is shared by exporting. The file stays in your vault until you upload it to your Community share and activate it.',
         structuralHeading: 'Shared when you activate',
         structuralBody: 'Scene numbers, acts, subplot names, status, publish stage, book title, and author.',
@@ -4280,7 +4280,7 @@ export const en: TranslationKeys = {
             summaryConfirmed: '{{elapsed}} confirmed elapsed',
             summaryEstimated: '~{{estimated}} including unconfirmed cues',
             summaryCues: '{{count}} detected cues',
-            help: 'Optional: use these cues to check elapsed story time. You can ignore this panel. Confirmations affect only this scene’s cue bar and elapsed total, not Timeline Audit, Timeline Scaffold, or your writing-session timer.',
+            help: 'Optional: use these cues to check elapsed story time. You can ignore this panel. Confirmations affect only this scene’s cue bar and elapsed total, not Timeline Date Audit, Timeline Date Scaffold, or your writing-session timer.',
             overDuration: '{{over}} beyond the scene’s declared duration of {{duration}}.',
             remainingDuration: 'Duration {{duration}} · {{remaining}} not quantified by confirmed cues.',
             conflict: 'A checkpoint goes backward. Resolve it before treating this as a reconciled total.',

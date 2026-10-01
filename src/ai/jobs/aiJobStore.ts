@@ -111,7 +111,7 @@ This folder holds work that Radial Timeline has handed to an AI client you run y
 
 - Radial Timeline writes jobs here when you run "Prepare AI jobs", or when your AI client opens a request link (see the Radial Timeline wiki, Commands).
 - \`${WAITING_FILE}\` lists jobs that will be written once the jobs they depend on are answered.
-- Answers are applied while Obsidian is open, the next time it opens, or when you run "Apply AI job answers".
+- Answers are applied while Obsidian is open, the next time it opens, or when you run "Check for AI job results".
 - An applied job and its answer are deleted. The note's update stamp records who wrote the result, as the client named itself in \`answeredBy\` (for example "by Claude app · Opus 5.5", or "by local agent" if it gave no name), and the previous values are kept in Radial Timeline's snapshots.
 - Jobs contain the text of the notes they are about. You can empty this folder at any time; nothing else depends on it.
 `;

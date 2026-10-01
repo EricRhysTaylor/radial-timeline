@@ -595,6 +595,9 @@ export interface TranslationKeys {
         authorProgressReport: string;
         exportTimelineImage: string;
         exportTimelineData: string;
+        assignSceneTime: string;
+        copyPerformanceReport: string;
+        onboardManuscript: string;
     };
     timelineDataExportModal: {
         badge: string;
@@ -625,6 +628,7 @@ export interface TranslationKeys {
     notices: {
         settingsSaved: string;
         invalidInput: string;
+        aiTurnedOff: string;
     };
     manuscriptModal: {
         badge: string;
@@ -1776,7 +1780,7 @@ export interface TranslationKeys {
     aiJobs: {
         commands: {
             prepare: string;
-            applyAnswers: string;
+            checkResults: string;
         };
         features: {
             summary: string;
@@ -2082,7 +2086,7 @@ export const en: TranslationKeys = {
                 capabilitiesTitle: 'Model capabilities',
                 capabilitiesDesc: 'Local servers do not report what their models can do, so Radial Timeline assumes strict JSON output and nothing more. Declare what your model actually handles — features that need more than you declare will refuse to run locally rather than return unreliable results.',
                 capabilityReasoningStrongName: 'Extended reasoning',
-                capabilityReasoningStrongDesc: 'The model holds a multi-step chain of thought and reaches a judgement, rather than pattern-matching a short answer. Required by Summary refresh, Pulse analysis, Runtime estimates, and Timeline audit. Reasoning-tuned models in the 20B+ range typically qualify; small instruct models do not.',
+                capabilityReasoningStrongDesc: 'The model holds a multi-step chain of thought and reaches a judgement, rather than pattern-matching a short answer. Required by Summary scene refresh, Pulse analysis, Runtime estimates, and Timeline audit. Reasoning-tuned models in the 20B+ range typically qualify; small instruct models do not.',
                 capabilityLongContextName: 'Long context',
                 capabilityLongContextDesc: 'The model keeps a manuscript-sized prompt coherent across its full context window, not just accepting it without truncating. Required by Gossamer.',
                 capabilityHighOutputCapName: 'High output ceiling',
@@ -2098,15 +2102,15 @@ export const en: TranslationKeys = {
                 synopsisMaxWordsName: 'Synopsis max words',
                 synopsisMaxWordsDesc: 'Base cap for generated Synopsis text. Hover can use a little more when space allows, but this remains the stored Synopsis target.',
                 synopsisMaxWordsInvalid: 'Synopsis length must be between 10 and 300 words.',
-                summaryRefreshTitle: 'Summary Refresh Defaults',
+                summaryRefreshTitle: 'Summary Scene Refresh Defaults',
                 targetSummaryName: 'Target summary length',
-                targetSummaryDesc: 'Default word count used when opening Summary refresh. You can still change it per run.',
+                targetSummaryDesc: 'Default word count used when opening Summary scene refresh. You can still change it per run.',
                 targetSummaryInvalid: 'Target summary length must be between 75 and 500 words.',
                 weakThresholdName: 'Treat summary as weak if under',
-                weakThresholdDesc: 'Default threshold used to decide which scenes are selected for Summary refresh.',
+                weakThresholdDesc: 'Default threshold used to decide which scenes are selected for Summary scene refresh.',
                 weakThresholdInvalid: 'Weak summary threshold must be between 10 and 300 words.',
                 alsoUpdateSynopsisName: 'Also update Synopsis',
-                alsoUpdateSynopsisDesc: 'When enabled, Summary refresh also writes Synopsis using the configured Synopsis max words.',
+                alsoUpdateSynopsisDesc: 'When enabled, Summary scene refresh also writes Synopsis using the configured Synopsis max words.',
             },
         },
         progress: {
@@ -2990,6 +2994,9 @@ export const en: TranslationKeys = {
         authorProgressReport: 'Author progress report (APR)',
         exportTimelineImage: 'Export timeline as image (SVG / PNG)',
         exportTimelineData: 'Export timeline for sharing',
+        assignSceneTime: 'Assign scene time to selection',
+        copyPerformanceReport: 'Copy performance report (dev)',
+        onboardManuscript: 'Onboard existing manuscript (BETA)',
     },
     timelineDataExportModal: {
         badge: 'Export',
@@ -3020,6 +3027,7 @@ export const en: TranslationKeys = {
     notices: {
         settingsSaved: 'Settings saved.',
         invalidInput: 'Invalid input.',
+        aiTurnedOff: 'AI features are turned off. Turn on "Enable AI LLM features" in Settings → AI to use this.',
     },
     manuscriptModal: {
         badge: 'Export',
@@ -3768,7 +3776,7 @@ export const en: TranslationKeys = {
             cancelButton: 'Cancel',
         },
         processingModal: {
-            titleSummaryRefresh: 'Summary refresh',
+            titleSummaryRefresh: 'Summary scene refresh',
             titleScenePulse: 'Scene pulse analysis',
             titleProcessingSubplot: 'Processing subplot: {{name}}',
             titleProcessingEntireSubplot: 'Processing entire subplot: {{name}}',
@@ -3804,7 +3812,7 @@ export const en: TranslationKeys = {
             },
             controls: {
                 targetLengthLabel: 'Target summary length',
-                targetLengthHelp: 'Target word count for Summary refresh. Each completed scene is written immediately to frontmatter.',
+                targetLengthHelp: 'Target word count for Summary scene refresh. Each completed scene is written immediately to frontmatter.',
                 weakThresholdLabel: 'Treat summary as weak if under',
                 weakThresholdHelp: 'Only used to decide which scenes are selected for update.',
                 alsoUpdateSynopsis: 'Also update Synopsis',
@@ -3896,7 +3904,7 @@ export const en: TranslationKeys = {
                 ollamaNotResponding: 'Launch the {{backend}} server and confirm the Local LLM base URL points to the running endpoint.',
                 connectionRefused: 'The plugin could not contact the local server. Check that it is running and that Obsidian has network permission.',
                 schemaJson: 'The response was not valid JSON. Try switching to a larger or more instruction-following model.',
-                contextTooLong: 'This pass exceeded the model budget for that request. Summary refresh sends the full scene text, and optional Synopsis adds a second full-scene pass. Processing continues; only this scene/pass failed.',
+                contextTooLong: 'This pass exceeded the model budget for that request. Summary scene refresh sends the full scene text, and optional Synopsis adds a second full-scene pass. Processing continues; only this scene/pass failed.',
             },
             aiAdvanced: {
                 summary: 'AI prompt & context',
@@ -4111,7 +4119,7 @@ export const en: TranslationKeys = {
             notices: {
                 reopeningSession: 'Reopening active processing session...',
                 noScenesScope: 'No scene notes found in the active book scope.',
-                scopeMessage: 'Summary refresh scope: {{scope}}',
+                scopeMessage: 'Summary scene refresh scope: {{scope}}',
                 noMatchingScenes: 'No scenes found matching the selected criteria.',
                 sceneFileNotFound: 'Scene file not found: {{path}}',
             },
@@ -4120,14 +4128,14 @@ export const en: TranslationKeys = {
                 synopsisFailed: 'Synopsis generation failed for {{name}}. Summary was saved and processing continued. {{reason}}',
                 saveError: 'Save error for {{name}}: {{message}}',
                 summaryFailed: 'Summary generation failed for {{name}}. Processing continued with remaining scenes. {{reason}}',
-                contextTooLongWithSize: 'The {{pass}} request exceeded the model budget for this pass. Scene text was about {{words}} words. Summary refresh sends the full scene text, and optional Synopsis sends another full-scene request.',
-                contextTooLongNoSize: 'The {{pass}} request exceeded the model budget for this pass. Summary refresh sends the full scene text, and optional Synopsis sends another full-scene request.',
+                contextTooLongWithSize: 'The {{pass}} request exceeded the model budget for this pass. Scene text was about {{words}} words. Summary scene refresh sends the full scene text, and optional Synopsis sends another full-scene request.',
+                contextTooLongNoSize: 'The {{pass}} request exceeded the model budget for this pass. Summary scene refresh sends the full scene text, and optional Synopsis sends another full-scene request.',
                 unknownPassFailure: 'Unknown {{pass}} failure.',
             },
         },
         service: {
             commands: {
-                summaryRefresh: 'Summary refresh',
+                summaryRefresh: 'Summary scene refresh',
                 scenePulseManuscript: 'Scene pulse analysis (manuscript order)',
                 scenePulseSubplot: 'Scene pulse analysis (subplot order)',
                 runtimeEstimator: 'Runtime estimator',
@@ -4181,7 +4189,7 @@ export const en: TranslationKeys = {
     aiJobs: {
         commands: {
             prepare: 'Prepare AI jobs…',
-            applyAnswers: 'Apply AI job answers',
+            checkResults: 'Check for AI job results',
         },
         features: {
             summary: 'Scene summaries',

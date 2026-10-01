@@ -22,12 +22,12 @@ export function resolveSceneJobTarget(plugin: RadialTimelinePlugin, path: string
     if (!(file instanceof TFile)) return null;
     const { sourcePath } = resolveActiveBookSourcePath(plugin.app, plugin.settings);
     if (!isPathInExplicitFolderScope(file.path, sourcePath)) {
-        throw new Error(`This job is for "${path}", which is not in the active book. Make its book active, then run Apply AI job answers.`);
+        throw new Error(`This job is for "${path}", which is not in the active book. Make its book active, then run Check for AI job results.`);
     }
     return file;
 }
 
 /** For a scene file that exists but did not read as a scene, for example while its properties are being edited. */
 export function unreadableSceneError(path: string): Error {
-    return new Error(`"${path}" could not be read as a scene just now. Check its properties, then run Apply AI job answers.`);
+    return new Error(`"${path}" could not be read as a scene just now. Check its properties, then run Check for AI job results.`);
 }

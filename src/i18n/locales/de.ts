@@ -512,10 +512,13 @@ export const de: DeepPartial<TranslationKeys> = {
         gossamerScoreManager: 'Gossamer Score-Manager',
         gossamerAnalysis: 'Gossamer-Analyse',
         authorProgressReport: 'Autoren-Fortschrittsbericht (APR)',
+        exportTimelineData: 'Timeline zum Teilen exportieren',
+        assignSceneTime: 'Szenenzeit der Auswahl zuweisen',
     },
     notices: {
         settingsSaved: 'Einstellungen gespeichert.',
         invalidInput: 'Ungültige Eingabe.',
+        aiTurnedOff: 'KI-Funktionen sind ausgeschaltet. Schalten Sie "KI-LLM-Funktionen aktivieren" unter Einstellungen → AI ein, um dies zu nutzen.',
     },
     manuscriptModal: {
         badge: 'Export',

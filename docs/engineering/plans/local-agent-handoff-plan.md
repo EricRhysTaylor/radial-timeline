@@ -164,7 +164,7 @@ stale. A test pins that.
 
 `ingestAiJobAnswers` (`src/ai/jobs/aiJobIngest.ts`) runs when the workspace is
 ready, about 1.5 seconds after an answer is written or changed while Obsidian
-is open, and on the "Apply AI job answers" command. Passes never overlap. For
+is open, and on the "Check for AI job results" command. Passes never overlap. For
 each answer, the job's feature picks an `AiJobHandler`:
 
 - **Fingerprint check first.** If the target is gone, the job and answer are
@@ -299,7 +299,7 @@ request.
 To try it: make a book active, run "Prepare AI jobs…", point Codex or Claude
 Code at `Radial Timeline/AI Jobs`, and watch the answers apply. What unit tests cannot confirm, and the reason for the beta
 gate: that Obsidian fires vault events for `.json` answers written by another
-program. "Apply AI job answers" and the pass at startup work either way.
+program. "Check for AI job results" and the pass at startup work either way.
 
 **Phase 2: Pulse triplets. Built, behind the beta gate.**
 `buildTripletPrompt` and `buildPulseRunRequest` are the API run's own prompt

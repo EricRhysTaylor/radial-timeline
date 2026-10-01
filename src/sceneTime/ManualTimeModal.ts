@@ -3,6 +3,7 @@ import { SceneTimeModal } from './SceneTimeModal';
 import { ErtModal } from '../ui/ErtModal';
 import { parseDuration } from '../utils/date';
 import type { SceneTimeService } from './SceneTimeService';
+import { t } from '../i18n';
 
 class ManualTimeModal extends ErtModal {
     constructor(private service: SceneTimeService, private file: TFile,
@@ -29,7 +30,7 @@ export function registerManualTime(service: SceneTimeService): void {
     const open = (editor: Editor, view: MarkdownView): void => {
         if (view.file) new ManualTimeModal(service, view.file, editor.getValue(), editor.getSelection()).open();
     };
-    service.plugin.addCommand({ id: 'assign-scene-time', name: 'Assign scene time to selection',
+    service.plugin.addCommand({ id: 'assign-scene-time', name: t('commands.assignSceneTime'),
         editorCheckCallback: (checking, editor, context) => {
             if (!('getViewData' in context) || !eligible(editor, context)) return false;
             if (!checking) open(editor, context);

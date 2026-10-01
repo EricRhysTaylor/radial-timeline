@@ -179,6 +179,12 @@ async function processScenes(
     mode: RuntimeMode,
     modal: RuntimeProcessingModal
 ): Promise<RuntimeProcessResult> {
+    // AI mode would otherwise fall back to local estimates scene by scene
+    // and report them as AI results.
+    if (mode === 'ai' && !plugin.settings.enableAiSceneAnalysis) {
+        new Notice(t('notices.aiTurnedOff'));
+        return { message: t('notices.aiTurnedOff') };
+    }
     const scenes = await getScenesForScope(plugin, scope, subplotFilter, overrideExisting, statusFilters);
     
     if (scenes.length === 0) {

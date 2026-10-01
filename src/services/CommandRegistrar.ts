@@ -91,7 +91,7 @@ export class CommandRegistrar {
 
     private registerCommands(): void {
         this.plugin.addCommand({
-            id: 'open-radial-timeline-view',
+            id: 'open-timeline-view',
             name: t('commands.openTimeline'),
             callback: () => {
                 void this.plugin.getTimelineService().activateView();
@@ -128,7 +128,7 @@ export class CommandRegistrar {
         if (areBetaCommandsVisible()) {
             this.plugin.addCommand({
                 id: 'copy-performance-report',
-                name: 'Copy performance report (dev)',
+                name: t('commands.copyPerformanceReport'),
                 callback: async () => {
                     const rows = summarizePerfMeasurements(this.plugin);
                     const view = this.plugin.getTimelineViews()[0];
@@ -192,7 +192,7 @@ export class CommandRegistrar {
         if (areBetaCommandsVisible()) {
             this.plugin.addCommand({
                 id: 'onboard-manuscript',
-                name: 'Onboard existing manuscript (BETA)',
+                name: t('commands.onboardManuscript'),
                 callback: () => {
                     new OnboardingModal(this.app, this.plugin).open();
                 }
@@ -239,11 +239,16 @@ export class CommandRegistrar {
             }
         });
 
+        // The in-plugin AI run. Hidden while AI is off, like the other AI
+        // commands; the manual path (copy the prompt, enter scores by hand)
+        // lives in the Gossamer score manager and works without AI.
         this.plugin.addCommand({
             id: 'gossamer-analysis',
             name: t('commands.gossamerAnalysis'),
-            callback: () => {
-                void runGossamerAiAnalysis(this.plugin);
+            checkCallback: (checking) => {
+                if (!this.plugin.settings.enableAiSceneAnalysis) return false;
+                if (!checking) void runGossamerAiAnalysis(this.plugin);
+                return true;
             }
         });
 
@@ -256,10 +261,26 @@ export class CommandRegistrar {
             }
         });
 
-        // Dev-only tooling: these two feed the web-engine fixture corpus and
-        // have no use for authors, so they stay behind the same beta-command
-        // gate as the other internal-testing commands above. Never ships in
-        // release builds.
+        // Export the timeline render input pipeline as schema-stamped JSON:
+        // the file authors upload to their Community share (Interactive
+        // Timeline). Gated behind a consent dialog (Amendment 1 §Consent flow,
+        // step 1 Export) that states what the file contains before anything is
+        // written, and offers the generic-ring-names toggle.
+        this.plugin.addCommand({
+            id: 'export-timeline-data',
+            name: t('commands.exportTimelineData'),
+            callback: () => {
+                new TimelineDataExportConsentModal(this.app, async (choice) => {
+                    const service = new TimelineExportService(this.plugin, this.app);
+                    await service.exportDataJson({ genericSubplotNames: choice.genericSubplotNames });
+                }).open();
+            }
+        });
+
+        // Dev-only tooling: the image export feeds the web-engine fixture
+        // corpus and has no use for authors, so it stays behind the same
+        // beta-command gate as the other internal-testing commands above.
+        // Never ships in release builds.
         if (areBetaCommandsVisible()) {
             // Export the currently rendered timeline as a self-contained image.
             this.plugin.addCommand({
@@ -269,21 +290,6 @@ export class CommandRegistrar {
                     new TimelineImageExportModal(this.app, async (choice) => {
                         const service = new TimelineExportService(this.plugin, this.app);
                         await service.exportImage(choice.format, choice.scale);
-                    }).open();
-                }
-            });
-
-            // Export the timeline render input pipeline as schema-stamped JSON.
-            // Gated behind a consent dialog (Amendment 1 §Consent flow, step 1
-            // Export) that states what the file contains before anything is
-            // written, and offers the generic-ring-names toggle.
-            this.plugin.addCommand({
-                id: 'export-timeline-data',
-                name: t('commands.exportTimelineData'),
-                callback: () => {
-                    new TimelineDataExportConsentModal(this.app, async (choice) => {
-                        const service = new TimelineExportService(this.plugin, this.app);
-                        await service.exportDataJson({ genericSubplotNames: choice.genericSubplotNames });
                     }).open();
                 }
             });

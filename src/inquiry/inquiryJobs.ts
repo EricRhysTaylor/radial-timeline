@@ -57,7 +57,7 @@ export function createInquiryJobHandler(plugin: RadialTimelinePlugin): AiJobHand
             if (contextHash(batch) !== jobContext) {
                 // Not an error in the answer, and not a reason to discard it:
                 // Inquiry is on another book, scope or target selection now.
-                throw new Error(`This job is for ${job.target.label}. Switch Inquiry back to that scope and target selection, then run Apply AI job answers.`);
+                throw new Error(`This job is for ${job.target.label}. Switch Inquiry back to that scope and target selection, then run Check for AI job results.`);
             }
             const [jobRun] = batch.runs;
             if (!jobRun) return null; // the question was removed or turned off

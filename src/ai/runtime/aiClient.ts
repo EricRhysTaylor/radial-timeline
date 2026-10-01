@@ -45,6 +45,7 @@ import { extractTokenUsage } from '../usage/providerUsage';
 import { estimateTokensFromChars } from '../estimates';
 import { resolveAccessTier } from './runtimeSelection';
 import { fnv1a32HexUnpadded } from '../../utils/hash';
+import { t } from '../../i18n';
 
 const DEFAULT_REMOTE_PROVIDER_SNAPSHOT_URL = 'https://raw.githubusercontent.com/ericrhystaylor/radial-timeline/HEAD/scripts/models/latest-models.json';
 const DEFAULT_REMOTE_PRICING_URL = 'https://raw.githubusercontent.com/ericrhystaylor/radial-timeline/main/scripts/models/pricing.json';
@@ -555,7 +556,31 @@ export class AIClient {
         return this.providerSnapshot;
     }
 
+    /**
+     * The master switch (Settings → AI → Enable AI LLM features). Every AI
+     * request, provider token counting included, passes through run() or
+     * prepareRunEstimate(), so this one check is what keeps "AI off sends
+     * nothing" true for every feature, whether or not its own entry point
+     * hides while AI is off.
+     */
+    private refusalWhileAiOff(): AIRunResult | null {
+        if (this.plugin.settings.enableAiSceneAnalysis) return null;
+        return {
+            content: null,
+            responseData: null,
+            provider: 'none',
+            modelRequested: 'none',
+            modelResolved: 'none',
+            aiStatus: 'unavailable',
+            warnings: [t('notices.aiTurnedOff')],
+            reason: 'AI features are turned off in settings.',
+            error: t('notices.aiTurnedOff')
+        };
+    }
+
     async prepareRunEstimate(request: AIRunRequest): Promise<AIRunEstimateResult> {
+        const refusal = this.refusalWhileAiOff();
+        if (refusal) return { ok: false, result: refusal };
         const aiSettings = getAiSettings(this.plugin.settings);
         if (!this.registryReady) {
             await this.refreshRegistry();
@@ -764,6 +789,8 @@ export class AIClient {
     }
 
     async run(request: AIRunRequest): Promise<AIRunResult> {
+        const refusal = this.refusalWhileAiOff();
+        if (refusal) return refusal;
         const prepared = request.preparedEstimate
             ? { ok: true as const, estimate: request.preparedEstimate }
             : await this.prepareRunEstimate(request);

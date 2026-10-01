@@ -160,7 +160,7 @@ function reportOutcomes(outcomes: AiJobIngestOutcome[], manual: boolean): void {
 }
 
 /**
- * Wire the mailbox into the plugin: the "Apply AI job answers" command, a pass
+ * Wire the mailbox into the plugin: the "Check for AI job results" command, a pass
  * when the workspace is ready, and a pass shortly after the client writes an
  * answer while Obsidian is open. Passes never overlap. `afterPass` runs at the
  * end of each pass, inside it (it writes the jobs that were waiting on others).
@@ -197,8 +197,8 @@ export function registerAiJobs(
     }, 1500, true);
 
     plugin.addCommand({
-        id: 'apply-ai-job-answers',
-        name: t('aiJobs.commands.applyAnswers'),
+        id: 'check-ai-job-results',
+        name: t('aiJobs.commands.checkResults'),
         checkCallback: (checking) => {
             if (!plugin.settings.enableAiSceneAnalysis) return false;
             if (!checking) void run(true);

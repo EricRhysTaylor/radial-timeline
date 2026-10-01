@@ -514,10 +514,13 @@ export const zh: DeepPartial<TranslationKeys> = {
         gossamerScoreManager: 'Gossamer 评分管理器',
         gossamerAnalysis: 'Gossamer 分析',
         authorProgressReport: '作者进度报告 (APR)',
+        exportTimelineData: '导出用于分享的时间轴',
+        assignSceneTime: '为所选内容指定场景时间',
     },
     notices: {
         settingsSaved: '设置已保存。',
         invalidInput: '无效输入。',
+        aiTurnedOff: 'AI 功能已关闭。如需使用，请在设置 → AI 中开启「启用 AI LLM 功能」。',
     },
     manuscriptModal: {
         badge: '导出',

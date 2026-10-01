@@ -512,10 +512,13 @@ export const ko: DeepPartial<TranslationKeys> = {
         gossamerScoreManager: 'Gossamer 점수 관리자',
         gossamerAnalysis: 'Gossamer 분석',
         authorProgressReport: '저자 진행 보고서 (APR)',
+        exportTimelineData: '공유용 타임라인 내보내기',
+        assignSceneTime: '선택 영역에 장면 시간 지정',
     },
     notices: {
         settingsSaved: '설정이 저장되었습니다.',
         invalidInput: '잘못된 입력입니다.',
+        aiTurnedOff: 'AI 기능이 꺼져 있습니다. 사용하려면 설정 → AI에서 "AI LLM 기능 활성화"를 켜세요.',
     },
     manuscriptModal: {
         badge: '내보내기',

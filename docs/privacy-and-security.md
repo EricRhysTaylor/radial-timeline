@@ -18,8 +18,11 @@ Radial Timeline is a **desktop-only** Obsidian plugin. It is not intended for Ob
   setting.
 - That toggle is the master switch for AI-assisted features. While it is off,
   the Inquiry ribbon icon is hidden, Inquiry refuses to open and shows a
-  notice instead, and the Pulse and Summary refresh commands are hidden from
-  the command palette.
+  notice instead, and the Pulse, Summary scene refresh, and Gossamer analysis
+  commands are hidden from the command palette. Behind those, the AI client
+  itself refuses every AI run and every provider token count while the switch
+  is off, so no feature can send manuscript text to a provider by another
+  path.
 - When AI is off, normal plugin use does not dispatch manuscript content to AI
   providers.
 - Remote model metadata, provider snapshot, and pricing refresh behavior is

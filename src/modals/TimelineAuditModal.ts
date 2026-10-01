@@ -293,6 +293,10 @@ export class TimelineAuditModal extends Modal {
     }
 
     private startAiAudit(): void {
+        if (!this.plugin.settings.enableAiSceneAnalysis) {
+            new Notice(t('notices.aiTurnedOff'));
+            return;
+        }
         const aiService = this.plugin.getTimelineAuditAiService();
         const latest = aiService.getLatestState();
         if (latest.status === 'running') {

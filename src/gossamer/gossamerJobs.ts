@@ -100,7 +100,7 @@ export function createGossamerJobHandler(plugin: RadialTimelinePlugin): AiJobHan
                 // Not an error in the answer, and not a reason to discard it:
                 // the scores belong to another book. Left in place until that
                 // book is active again.
-                throw new Error(`This Gossamer job is for the book in "${job.target.path}". Make that the active book, then run Apply AI job answers.`);
+                throw new Error(`This Gossamer job is for the book in "${job.target.path}". Make that the active book, then run Check for AI job results.`);
             }
             const source = await loadGossamerSource(plugin);
             return {

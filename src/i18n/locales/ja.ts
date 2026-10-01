@@ -513,10 +513,13 @@ export const ja: DeepPartial<TranslationKeys> = {
         gossamerScoreManager: 'Gossamer スコアマネージャー',
         gossamerAnalysis: 'Gossamer 分析',
         authorProgressReport: '著者進捗レポート (APR)',
+        exportTimelineData: 'タイムラインを共有用にエクスポート',
+        assignSceneTime: '選択範囲にシーン時間を割り当て',
     },
     notices: {
         settingsSaved: '設定を保存しました。',
         invalidInput: '無効な入力です。',
+        aiTurnedOff: 'AI 機能はオフになっています。使用するには、設定 → AI で「AI LLM 機能を有効にする」をオンにしてください。',
     },
     manuscriptModal: {
         badge: 'エクスポート',

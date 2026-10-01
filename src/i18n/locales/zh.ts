@@ -1387,6 +1387,13 @@ export const zh: DeepPartial<TranslationKeys> = {
             checkTiming: '检查时间',
             overDuration: '未确认的时间线索超出了声明的时长 {{duration}}。',
         },
+        label: {
+            description: 'When: {{when}} · Duration: {{duration}}',
+            notSet: '未设置',
+            sunMoon: '太阳/月亮表示钟点时段（白天：06:00–18:00），而非当地日出或日落。',
+            whenNotSet: 'When 未设置',
+            durationNotSet: 'Duration 未设置',
+        },
         errors: {
             loadFailed: '无法加载场景时间决定：{{detail}}',
             unsupportedFile: '不受支持的场景时间决定文件',

@@ -1386,6 +1386,13 @@ export const ja: DeepPartial<TranslationKeys> = {
             checkTiming: '時間を確認',
             overDuration: '未確定の時間キューが、宣言された所要時間 {{duration}} を超えています。',
         },
+        label: {
+            description: 'When: {{when}} · Duration: {{duration}}',
+            notSet: '未設定',
+            sunMoon: '太陽/月は時計上の時間帯（昼: 06:00–18:00）を示し、現地の日の出・日の入りではありません。',
+            whenNotSet: 'When 未設定',
+            durationNotSet: 'Duration 未設定',
+        },
         errors: {
             loadFailed: 'シーン時間の判断を読み込めませんでした: {{detail}}',
             unsupportedFile: '対応していないシーン時間の判断ファイルです',

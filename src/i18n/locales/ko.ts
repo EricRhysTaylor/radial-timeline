@@ -1385,6 +1385,13 @@ export const ko: DeepPartial<TranslationKeys> = {
             checkTiming: '시간 확인',
             overDuration: '미확정 시간 단서가 선언된 소요 시간 {{duration}}을(를) 초과합니다.',
         },
+        label: {
+            description: 'When: {{when}} · Duration: {{duration}}',
+            notSet: '미설정',
+            sunMoon: '해/달은 시계상 시간대(낮: 06:00–18:00)를 나타내며, 현지 일출이나 일몰이 아닙니다.',
+            whenNotSet: 'When 미설정',
+            durationNotSet: 'Duration 미설정',
+        },
         errors: {
             loadFailed: '장면 시간 결정을 불러오지 못했습니다: {{detail}}',
             unsupportedFile: '지원되지 않는 장면 시간 결정 파일',

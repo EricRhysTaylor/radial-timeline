@@ -1,4 +1,5 @@
 import { formatLocalDateKey, parseDuration, parseWhenField } from './date';
+import { t } from '../i18n';
 
 /** Display author timing without inventing a clock time for partial dates. */
 export function sceneTimeLabel(when: unknown, duration: unknown): { text: string; description: string } {
@@ -12,15 +13,15 @@ export function sceneTimeLabel(when: unknown, duration: unknown): { text: string
         ...(date.getSeconds() ? { second: '2-digit' as const } : {})
     });
     const parts: string[] = [];
-    let description = `When: ${rawWhen || 'Not set'} · Duration: ${rawDuration || 'Not set'}`;
+    let description = t('sceneTime.label.description', { when: rawWhen || t('sceneTime.label.notSet'), duration: rawDuration || t('sceneTime.label.notSet') });
     if (start && hasClock) {
         const isDay = start.getHours() >= 6 && start.getHours() < 18;
         parts.push(`${isDay ? '☀' : '☾'} ${clock(start)} ${start.toLocaleDateString([], { weekday: 'short' })}`);
-        description += ' · Sun/moon indicates clock hours (day: 06:00–18:00), not local sunrise or sunset.';
+        description += ` · ${t('sceneTime.label.sunMoon')}`;
     } else {
-        parts.push(rawWhen || 'When not set');
+        parts.push(rawWhen || t('sceneTime.label.whenNotSet'));
     }
-    parts.push(rawDuration || 'Duration not set');
+    parts.push(rawDuration || t('sceneTime.label.durationNotSet'));
     const durationMs = parseDuration(rawDuration);
     if (start && hasClock && durationMs !== null && Number.isFinite(durationMs)) {
         const end = new Date(start.getTime() + durationMs);

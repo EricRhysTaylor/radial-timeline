@@ -1385,6 +1385,13 @@ export const de: DeepPartial<TranslationKeys> = {
             checkTiming: 'Zeitablauf prüfen',
             overDuration: 'Unbestätigte Zeithinweise gehen über die angegebene Dauer von {{duration}} hinaus.',
         },
+        label: {
+            description: 'When: {{when}} · Duration: {{duration}}',
+            notSet: 'Nicht gesetzt',
+            sunMoon: 'Sonne/Mond zeigt die Uhrzeit an (Tag: 06:00–18:00), nicht den örtlichen Sonnenauf- oder -untergang.',
+            whenNotSet: 'When nicht gesetzt',
+            durationNotSet: 'Duration nicht gesetzt',
+        },
         errors: {
             loadFailed: 'Szenenzeit-Entscheidungen konnten nicht geladen werden: {{detail}}',
             unsupportedFile: 'Nicht unterstützte Datei mit Szenenzeit-Entscheidungen',

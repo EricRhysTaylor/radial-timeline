@@ -1847,6 +1847,7 @@ export interface TranslationKeys {
         cue: { conflict: string; excluded: string; manual: string; checkpoint: string; advance: string; backwardCandidate: string; clockCandidate: string; checkpointCandidate: string; uncertainCandidate: string; advanceCandidate: string; notConfirmed: string; };
         ruler: { railTitle: string; clickToReview: string; storyClock: string; estimatedStoryClock: string; durationUsedUp: string; dashedUntilConfirmed: string; durationShortfall: string; durationUnquantified: string; sceneStart: string; sceneEnd: string; };
         header: { elapsed: string; cues: string; description: string; descriptionProvisional: string; reviewTiming: string; checkTiming: string; overDuration: string; };
+        label: { description: string; notSet: string; sunMoon: string; whenNotSet: string; durationNotSet: string; };
         errors: {
             loadFailed: string; unsupportedFile: string; invalidDecisions: string; invalidContribution: string; invalidAnchor: string; renameConflict: string;
             notScene: string; selectProse: string; selectOneLine: string; noteChanged: string; notUnique: string; notManual: string;
@@ -4353,6 +4354,13 @@ export const en: TranslationKeys = {
             reviewTiming: 'Review timing',
             checkTiming: 'Check timing',
             overDuration: 'Unconfirmed time cues run past the declared {{duration}} duration.',
+        },
+        label: {
+            description: 'When: {{when}} · Duration: {{duration}}',
+            notSet: 'Not set',
+            sunMoon: 'Sun/moon indicates clock hours (day: 06:00–18:00), not local sunrise or sunset.',
+            whenNotSet: 'When not set',
+            durationNotSet: 'Duration not set',
         },
         errors: {
             loadFailed: 'Scene time decisions could not be loaded: {{detail}}',

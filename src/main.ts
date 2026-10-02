@@ -775,18 +775,6 @@ export default class RadialTimelinePlugin extends Plugin {
         return pending;
     }
 
-    /** Show or hide the Inquiry ribbon icon and close open Inquiry views when hiding. */
-    public setInquiryVisible(visible: boolean): void {
-        this.commandRegistrar.setInquiryRibbonVisible(visible);
-        if (!visible) {
-            // Close any open Inquiry leaves
-            const leaves = this.app.workspace.getLeavesOfType(INQUIRY_VIEW_TYPE);
-            for (const leaf of leaves) {
-                leaf.detach();
-            }
-        }
-    }
-
     /** Whether a vault path is a scene note (Class: Scene), whether or not a timeline is open. */
     public isSceneFile(path: string): boolean {
         return this.sceneDataService.isSceneFile(path);

@@ -253,7 +253,7 @@ export function renderAiSection(params: {
         plugin.settings.enableAiSceneAnalysis = value;
         await plugin.saveSettings();
         params.toggleAiSettingsVisibility(value);
-        plugin.setInquiryVisible(value);
+        plugin.getInquiryService().notifyAiSettingsChanged();
         plugin.onSettingChanged(IMPACT_FULL); // Tier 3: number square colors + AI pulse elements
         updateAiHeroState(value);
     };

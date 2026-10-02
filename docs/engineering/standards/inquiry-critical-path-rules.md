@@ -235,35 +235,38 @@ Capabilities are added only when the feature exists and is wired end-to-end.
 
 ---
 
-## 12. No Key Is a Capability Limit, Not an Error
+## 12. Viewing Inquiry Is Independent of AI Permission
 
-A missing/absent API key disables **running** a new Inquiry, but it is never an
-error or an alert. Alert/red visuals are reserved for genuine run errors and
-genuine misconfiguration (no books/sources, no scenes). Every alert/red surface
-MUST exclude the no-key case so a keyless (e.g. demo) vault stays calm.
+Inquiry's ribbon, command, and view remain available regardless of the AI toggle.
+Turning AI off must not close the view or discard a displayed saved result.
+Opening Inquiry or browsing packaged sessions never enables AI or changes the
+selected provider. This is the owner-directed behavior as of 2026-10-01.
 
-**Single source of truth:** `InquiryView.isInquiryApiKeyMissing()` — derived from
-`plugin.credentialPresence`, a REAL stored secret (`hasSecret`), never the
-always-present secret-ID alias (`rt.<provider>.api-key`).
+**Permission and configuration gate execution.** `InquiryView.isInquiryReadOnly()`
+is the shared predicate: AI is not explicitly enabled, the selected provider has
+no usable credential, or the engine is blocked/unavailable. It gates new analyses,
+force-reruns, Omnibus, simulations, pending-edit application, and provider token
+estimates. Client-job preparation also requires explicit AI enablement, but keeps
+its existing external-client contract (no API key required). AIClient independently
+enforces the master switch at the request boundary.
 
-**Display is separate from capability.** `guidanceState` answers "what is shown"
-(`'results'` wins over `'no-api-key'` — a saved briefing renders normally without
-a key). `isInquiryApiKeyMissing()` / `isInquiryRunDisabled()` answer "what can
-run." These dimensions are orthogonal and must not be collapsed.
+**Display is separate from capability.** A displayed saved briefing remains a
+`results` view. Otherwise the `read-only` guidance explains how to enable and
+configure new analysis. Saved questions remain clickable and model-agnostic in
+read-only mode, including the fresh Local LLM default with no available server.
 
-Surfaces that MUST stay calm when `isInquiryApiKeyMissing()`:
+**No key is a capability limit, not an error.** Credential presence comes from
+`isInquiryApiKeyMissing()`, using the resolved engine's real credential state,
+never an always-present secret-ID alias. The broader read-only predicate also
+keeps these surfaces calm while AI is off or unavailable:
 
-- ring colour (alert override) → red only for `not-configured` / `no-scenes`
-- engine badge pulse (`is-engine-pulse-red`)
-- minimap pressure / flow gauge (reset to neutral — no real estimate)
-- engine popover readiness strip (`is-demo` calm state, not `is-error`)
-- zone affordances: a saved briefing is the available result, not a foreign-model prior
+- engine badge pulse and readiness strip;
+- minimap pressure / flow gauge (neutral, with no provider estimate request);
+- zone affordances (a saved briefing is available, not a foreign-model prior).
 
-These surfaces have *different* alert conditions by design (misconfig vs error vs
-no-estimate), so they are deliberately NOT unified into one presentation value —
-that would either change behaviour or merely relocate four conditions (a failed
-refactor per the playbook). The only shared invariant is the no-key exclusion
-above, enforced by the source-grep guard in `InquiryView.noKeyCalm.test.ts`.
+Ring alerts retain their distinct book/source/scene configuration conditions.
+These presentation conditions must not be collapsed into a single UI state.
+The source invariant guard and behavioral access tests enforce this boundary.
 
 ---
 

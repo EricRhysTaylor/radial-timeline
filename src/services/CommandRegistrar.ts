@@ -50,8 +50,6 @@ import { t } from '../i18n';
 import { writeManagedOutput } from '../utils/logVaultOps';
 
 export class CommandRegistrar {
-    private inquiryRibbonIcon: HTMLElement | null = null;
-
     constructor(private plugin: RadialTimelinePlugin, private app: App) { }
 
     // Single orchestration point for every command + ribbon registration.
@@ -69,24 +67,13 @@ export class CommandRegistrar {
         new ManuscriptOptionsModal(this.app, this.plugin, (result) => this.handleManuscriptExport(result)).open();
     }
 
-    /** Hide or show the Inquiry ribbon icon based on AI enabled state. */
-    setInquiryRibbonVisible(visible: boolean): void {
-        if (this.inquiryRibbonIcon) {
-            this.inquiryRibbonIcon.toggleClass('ert-hidden', !visible);
-        }
-    }
-
     private registerRibbon(): void {
         this.plugin.addRibbonIcon('rt-logo', t('commands.openTimeline'), () => {
             void this.plugin.getTimelineService().activateView();
         });
-        this.inquiryRibbonIcon = this.plugin.addRibbonIcon('waves', t('commands.openInquiry'), () => {
+        this.plugin.addRibbonIcon('waves', t('commands.openInquiry'), () => {
             void this.plugin.getInquiryService().activateView();
         });
-        // Hide Inquiry ribbon if AI is disabled on load
-        if (!(this.plugin.settings.enableAiSceneAnalysis ?? true)) {
-            this.inquiryRibbonIcon.toggleClass('ert-hidden', true);
-        }
     }
 
     private registerCommands(): void {

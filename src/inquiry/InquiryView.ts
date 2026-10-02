@@ -594,7 +594,7 @@ export class InquiryView extends ItemView {
     private minimapResultPreviewActive = false;
     private guidanceState: InquiryGuidanceState = 'ready';
     // Stamped name of a packaged demo vault (from the sidecar), or null. Used to
-    // make the no-api-key state read as an honest "Demo Vault" rather than a
+    // make the read-only state read as an honest "Demo Vault" rather than a
     // half-configured engine.
     private demoVaultName: string | null = null;
     private inquiryRunTokenCounter = 0;
@@ -1172,10 +1172,10 @@ export class InquiryView extends ItemView {
 
         // ── 1. Header summary (non-repeated) ──
         if (this.enginePanelMetaEl) {
-            // In Demo Mode be honest: no key is set, this is a packaged vault.
+            // Saved-result browsing does not claim that an AI engine is configured.
             this.enginePanelMetaEl.setText(
                 this.isInquiryDemoMode()
-                    ? `No API key set · Demo Vault: ${this.getDemoVaultLabel()}`
+                    ? `Saved briefings · Demo Vault: ${this.getDemoVaultLabel()}`
                     : `${engine.providerLabel} · ${engine.modelLabel}`
             );
         }
@@ -1191,7 +1191,8 @@ export class InquiryView extends ItemView {
             providerLabel: engine.provider === 'ollama' ? 'Local LLM' : engine.providerLabel,
             popoverState: resolveEnginePopoverState(readinessUi),
             blocked: !!engine.blocked,
-            readOnlyNoKey: this.isInquiryApiKeyMissing(),
+            readOnly: this.isInquiryReadOnly(),
+            readOnlyReason: this.getInquiryReadOnlyMessage(),
             hasSavedBriefings: this.hasInquirySessions(),
             corpusSummary: buildInquiryEngineCorpusSummary(
                 currentCorpus.corpus,
@@ -1211,8 +1212,8 @@ export class InquiryView extends ItemView {
             // "Last run cost" / "Cache created" come from baked session data. With
             // no real key (Demo Mode) they're stale dev metadata — suppress them so
             // a keyless vault doesn't claim a warm cache or a prior run cost.
-            recentRun: engine.hasCredential ? this.buildEngineRecentRunSnapshot() : undefined,
-            cacheWindow: engine.hasCredential ? this.buildEngineCacheWindowSnapshot() : undefined
+            recentRun: !this.isInquiryReadOnly() ? this.buildEngineRecentRunSnapshot() : undefined,
+            cacheWindow: !this.isInquiryReadOnly() ? this.buildEngineCacheWindowSnapshot() : undefined
         });
 
         // ── Guard (error/failure guidance) ──
@@ -1296,7 +1297,7 @@ export class InquiryView extends ItemView {
         // calm capability limit, not a diagnosable failure, so don't raise the red
         // guard for it (Demo Mode stays calm).
         const corpus = this.getCurrentCorpusContext();
-        if (corpus.requestEstimateMethod === 'unavailable' && corpus.requestEstimateFailureMessage && !this.isInquiryApiKeyMissing()) {
+        if (corpus.requestEstimateMethod === 'unavailable' && corpus.requestEstimateFailureMessage && !this.isInquiryReadOnly()) {
             const reason = formatTokenCountFailureReason(corpus.requestEstimateFailureMessage)
                 || 'provider token count failed'; // SAFE: UX default — formatter may yield an empty reason; generic text keeps the error readable
             return {
@@ -1763,6 +1764,10 @@ export class InquiryView extends ItemView {
     }
 
     private async handleBriefingPendingEditsClick(session: InquirySession): Promise<void> {
+        if (this.isInquiryReadOnly()) {
+            this.notifyInteraction(this.getInquiryReadOnlyMessage());
+            return;
+        }
         if (this.isInquiryBlocked()) return;
         if (this.state.isRunning) {
             this.notifyInteraction(t('inquiry.interaction.running'));
@@ -2552,11 +2557,9 @@ export class InquiryView extends ItemView {
                 }
                 const priorByBase = this.sessionStore.getLatestByBaseKey(baseKey);
                 if (priorByBase && !this.isErrorResult(priorByBase.result)) {
-                    // With no key there is no "selected model" to re-run against,
-                    // and the saved session never key-matches (the current model
-                    // is empty). Treat a saved briefing as the available result
-                    // ("Open previous result"), not a foreign-model prior.
-                    if (this.isInquiryApiKeyMissing()) {
+                    // When analysis is unavailable, the saved briefing is the
+                    // available result, regardless of the selected provider.
+                    if (this.isInquiryReadOnly()) {
                         cachedIds.add(prompt.id);
                         continue;
                     }
@@ -2678,9 +2681,7 @@ export class InquiryView extends ItemView {
             priorPromptIds,
             stalePromptIds,
             onPromptSelect: (zone, promptId, event) => {
-                // No-key demo stays browsable: let the click through so runInquiry's
-                // no-key guard reopens this zone's saved briefing. Otherwise a
-                // run-disabled view swallows the click.
+                // Keep saved results clickable while new analysis is disabled.
                 if (this.isInquiryRunDisabled() && !this.isInquiryDemoMode()) return;
                 if (this.state.isRunning) {
                     this.notifyInteraction(t('inquiry.interaction.running'));
@@ -3050,9 +3051,9 @@ export class InquiryView extends ItemView {
     onAiSettingsChanged(): void {
         this._resolvedEngine = null;
         this._currentCorpusContext = null;
-        // Adding/removing a provider key flips the no-api-key read-only state, so
-        // recompute guidance here — otherwise the calm read-only screen would
-        // persist until the view is reopened.
+        this.updateGlyphPromptState();
+        // Permission and engine changes update browsing/run affordances in place;
+        // keep the tab and any displayed saved result open.
         this.guidanceState = this.resolveGuidanceState();
         this.updateGuidance();
         this.updateEngineBadge();
@@ -3281,7 +3282,7 @@ export class InquiryView extends ItemView {
         // A missing key is a calm capability limit, not an error — don't pulse red
         // for it (Demo Mode / keyless vaults stay calm).
         const red = (hasError || readinessUi.readiness.state === 'blocked')
-            && !this.isInquiryApiKeyMissing();
+            && !this.isInquiryReadOnly();
         this.engineBadgeGroup.classList.remove('is-engine-pulse-amber');
         this.engineBadgeGroup.classList.toggle('is-engine-pulse-red', red);
     }
@@ -3589,7 +3590,7 @@ export class InquiryView extends ItemView {
         // freshly-loaded corpus. The post-settle update will paint the real state.
         // Pending OR no key → reset to a neutral gauge. Without a key there's no
         // real estimate to show, and a missing key is calm, not an alert.
-        if (readinessUi.pending || this.isInquiryApiKeyMissing()) {
+        if (readinessUi.pending || this.isInquiryReadOnly()) {
             this.minimap.resetPressureGauge();
             this.minimap.updateReuseStatus(null);
             return;
@@ -5014,36 +5015,33 @@ export class InquiryView extends ItemView {
         if (this.state.isRunning) return 'running';
         if (!this.isInquiryConfigured()) return 'not-configured';
         if (this.getInquirySceneCount() === 0) return 'no-scenes';
-        // A displayed briefing is ALWAYS a results view — it must render
-        // identically with or without a key. "No key" gates running a NEW
-        // inquiry (a capability, via isInquiryApiKeyMissing()), never the
-        // display of an existing one. So results wins over no-api-key here.
+        // Displayed results do not depend on permission to run new analysis.
         if (this.isResultsState()) return 'results';
-        // Configured + has scenes + no result shown + no key → read-only Demo
-        // Mode (browse saved briefings), without the red misconfiguration alert.
-        if (this.isInquiryApiKeyMissing()) return 'no-api-key';
+        // AI off or unavailable: browse saved results without a run alert.
+        if (this.isInquiryReadOnly()) return 'read-only';
         return 'ready';
     }
 
-    /**
-     * True when the active provider has no usable credential. The resolver
-     * never throws — it returns a blocked DTO with hasCredential:false — so this
-     * is a pure read. AI-disabled / unconfigured cases are caught upstream
-     * (the view won't open) and by the earlier guidance branches.
-     */
     private isInquiryApiKeyMissing(): boolean {
         return !this.getResolvedEngine().hasCredential;
     }
 
-    /**
-     * Demo Mode: a packaged vault being explored read-only — no usable key AND
-     * saved briefings present to browse. Drives the honest "Demo Vault" copy.
-     */
+    /** Viewing saved work never grants permission to contact an AI provider. */
+    private isInquiryReadOnly(): boolean {
+        return !this.plugin.settings.enableAiSceneAnalysis
+            || this.isInquiryApiKeyMissing()
+            || !!this.getResolvedEngine().blocked;
+    }
+
+    private getInquiryReadOnlyMessage(): string {
+        if (!this.plugin.settings.enableAiSceneAnalysis) return t('notices.aiTurnedOff');
+        if (this.isInquiryApiKeyMissing()) return t('inquiry.interaction.noApiKey');
+        return 'Configure an available AI provider and model in Settings → AI to run new analyses.';
+    }
+
+    /** Saved briefings remain browsable while AI is off or the engine is unavailable. */
     private isInquiryDemoMode(): boolean {
-        // Predicate-based (not the display-state label) so the honest "Demo
-        // Vault" engine copy holds whether the empty prompt OR a saved briefing
-        // is on screen.
-        return this.isInquiryApiKeyMissing() && this.hasInquirySessions();
+        return this.isInquiryReadOnly() && this.hasInquirySessions();
     }
 
     private getDemoVaultLabel(): string {
@@ -5070,11 +5068,10 @@ export class InquiryView extends ItemView {
     }
 
     private isInquiryRunDisabled(): boolean {
-        // Run capability is independent of the DISPLAY state: a missing key
-        // disables running even while a briefing is shown (state === 'results').
+        // Run permission/configuration is independent of the displayed result.
         return this.guidanceState === 'not-configured'
             || this.guidanceState === 'no-scenes'
-            || this.isInquiryApiKeyMissing();
+            || this.isInquiryReadOnly();
     }
 
     private isInquiryGuidanceLockout(): boolean {
@@ -5108,7 +5105,7 @@ export class InquiryView extends ItemView {
         const runLocked = running || (runDisabled && !browsable);
         if (this.rootSvg) {
             // Red alert is reserved for genuine misconfiguration (not-configured /
-            // no-scenes) — NOT the calm no-api-key read-only state, which disables
+            // no-scenes) — NOT the calm read-only state, which disables
             // running but must never paint the ring red.
             this.rootSvg.classList.toggle('is-inquiry-blocked', blocked || lockout);
             this.rootSvg.classList.toggle('is-run-locked', runLocked);
@@ -5157,7 +5154,7 @@ export class InquiryView extends ItemView {
             return;
         }
 
-        if (state === 'no-api-key') {
+        if (state === 'read-only') {
             // Calm read-only message — uses `is-guidance` (text-normal fill), not
             // `is-guidance-alert` (red). No reopen needed: cleared live when a key
             // is added via onAiSettingsChanged().
@@ -5171,7 +5168,7 @@ export class InquiryView extends ItemView {
             this.setGuidanceTextLines(
                 this.isInquiryDemoMode()
                     ? [`Demo Vault — ${this.getDemoVaultLabel()}`, 'Select a Briefing to begin.']
-                    : [t('inquiry.preview.noApiKeyHero'), t('inquiry.preview.noApiKeyHelp')],
+                    : ['Inquiry is available for browsing.', this.getInquiryReadOnlyMessage()],
                 GUIDANCE_LINE_HEIGHT
             );
             return;
@@ -5252,10 +5249,10 @@ export class InquiryView extends ItemView {
                 : t('inquiry.help.runningTooltip'))
             : (corpusAlert
                 ? t('inquiry.help.corpusTooltip')
-                : (state === 'no-api-key'
+                : (state === 'read-only'
                     ? (this.isInquiryDemoMode()
                         ? 'Demo Vault Active. Select a Briefing to begin.'
-                        : t('inquiry.help.noApiKeyTooltip'))
+                        : this.getInquiryReadOnlyMessage())
                     : (isAlert
                         ? (state === 'not-configured' ? t('inquiry.help.configTooltip') : t('inquiry.help.noScenesTooltip'))
                         : (isResults ? t('inquiry.help.resultsTooltip') : (hasSessions ? t('inquiry.help.tooltip') : t('inquiry.help.onboardingTooltip'))))));
@@ -5498,16 +5495,16 @@ export class InquiryView extends ItemView {
         question: InquiryQuestion,
         options?: { bypassTokenGuard?: boolean; promptOverride?: InquiryQuestionPromptForm; forceRerun?: boolean }
     ): Promise<void> {
-        if (this.isInquiryApiKeyMissing()) {
-            // No key → no run. Open THIS question's saved briefing if it has one;
-            // otherwise point to the saved briefings (demo) or explain.
+        if (this.isInquiryReadOnly()) {
+            // Never run while AI is off or unavailable, including force-rerun.
+            // Open the saved answer without changing the author's AI settings.
             const saved = this.findSavedSessionForQuestion(question);
             if (saved && this.reopenSessionByKey(saved.key)) return;
             if (this.isInquiryDemoMode()) {
                 this.briefingPopover.show();
                 return;
             }
-            this.notifyInteraction(t('inquiry.interaction.noApiKey'));
+            this.notifyInteraction(this.getInquiryReadOnlyMessage());
             return;
         }
         if (this.isInquiryRunDisabled()) return;
@@ -5840,6 +5837,10 @@ export class InquiryView extends ItemView {
     }
 
     public async runOmnibusPass(): Promise<void> {
+        if (this.isInquiryReadOnly()) {
+            new Notice(this.getInquiryReadOnlyMessage());
+            return;
+        }
         if (Platform.isMobile) { // SAFE: Platform imported from obsidian at top of file
             new Notice(t('inquiry.notice.omnibusMobileOnly'));
             return;
@@ -6456,6 +6457,7 @@ export class InquiryView extends ItemView {
         /** Leave out questions that already have a briefing, from any engine, on the corpus as it is now. */
         unansweredOnly?: boolean;
     } = {}): Promise<InquiryJobBatch> {
+        if (!this.plugin.settings.enableAiSceneAnalysis) throw new Error(t('notices.aiTurnedOff'));
         this.refreshCorpus();
         this.guidanceState = this.resolveGuidanceState();
         if (this.isInquiryBlocked()) throw new Error(t('inquiry.runner.inquiryNotConfigured'));
@@ -6854,7 +6856,7 @@ export class InquiryView extends ItemView {
         if (this.state.isRunning) return t('inquiry.runner.inquiryAlreadyRunning');
         if (this.isInquiryBlocked()) return t('inquiry.runner.inquiryNotConfigured');
         if (this.guidanceState === 'no-scenes') return t('inquiry.runner.noScenesAvailable');
-        if (this.isInquiryApiKeyMissing()) return t('inquiry.interaction.noApiKey');
+        if (this.isInquiryReadOnly()) return this.getInquiryReadOnlyMessage();
         if (!questions.length) return t('inquiry.runner.noEnabledQuestions');
         if (!providerPlan.choice) return providerPlan.disabledReason || 'Provider unavailable'; // SAFE: UX default when the provider plan carries no specific reason
         return null;
@@ -7103,6 +7105,7 @@ export class InquiryView extends ItemView {
         result: InquiryResult,
         options?: { notify?: boolean }
     ): Promise<boolean> {
+        if (this.isInquiryReadOnly()) return false;
         if (session.pendingEditsApplied) return true;
         if (session.status === 'simulated' || result.aiReason === 'simulated') {
             if (options?.notify) {
@@ -8655,9 +8658,10 @@ export class InquiryView extends ItemView {
         const stats = this.getPayloadStats();
         const engine = this.getResolvedEngine();
         const activeBookId = this.getCanonicalActiveBookId();
-        // Blocked engines (e.g. ollama) cannot produce estimates — skip the
-        // snapshot request entirely and refresh displays to show the blocked state.
-        if (engine.blocked) {
+        // Browsing must not initiate provider token-count requests. Invalidate
+        // stale estimates when permission is withdrawn or the engine is unavailable.
+        if (this.isInquiryReadOnly()) {
+            this.plugin.getInquiryEstimateService().invalidate();
             this.refreshEstimateDisplays();
             return;
         }

@@ -5,7 +5,7 @@ import { resolve } from 'node:path';
 /**
  * Source-grep regression guard for the cross-cutting invariant:
  * "No key is a capability limit, not an error." Every alert/red surface in the
- * Inquiry view must EXCLUDE isInquiryApiKeyMissing() so a keyless (demo) vault
+ * Inquiry view must EXCLUDE isInquiryReadOnly() so a keyless (demo) vault
  * stays calm. See docs/engineering/standards/inquiry-critical-path-rules.md §12.
  *
  * These sites have different alert conditions by design and are intentionally
@@ -21,9 +21,9 @@ describe('Inquiry: no-key is calm, not an error (invariant guard)', () => {
         .replace(/(^|[^:])\/\/.*$/gm, '$1')
         .replace(/\s+/g, ' ');
 
-    it('a displayed briefing wins over no-api-key (results resolved before no-api-key)', () => {
+    it('a displayed briefing wins over read-only (results resolved before read-only)', () => {
         const resultsIdx = code.indexOf("return 'results'");
-        const noKeyIdx = code.indexOf("return 'no-api-key'");
+        const noKeyIdx = code.indexOf("return 'read-only'");
         expect(resultsIdx).toBeGreaterThan(-1);
         expect(noKeyIdx).toBeGreaterThan(-1);
         expect(resultsIdx).toBeLessThan(noKeyIdx);
@@ -35,14 +35,14 @@ describe('Inquiry: no-key is calm, not an error (invariant guard)', () => {
     });
 
     it('engine badge pulse excludes no-key', () => {
-        expect(code).toMatch(/readiness\.state === 'blocked'\) && !this\.isInquiryApiKeyMissing\(\)/);
+        expect(code).toMatch(/readiness\.state === 'blocked'\) && !this\.isInquiryReadOnly\(\)/);
     });
 
     it('minimap flow gauge resets when no key', () => {
-        expect(code).toContain('readinessUi.pending || this.isInquiryApiKeyMissing()');
+        expect(code).toContain('readinessUi.pending || this.isInquiryReadOnly()');
     });
 
     it('engine readiness strip calm state is driven by no-key, not demo-only', () => {
-        expect(code).toContain('readOnlyNoKey: this.isInquiryApiKeyMissing()');
+        expect(code).toContain('readOnly: this.isInquiryReadOnly()');
     });
 });

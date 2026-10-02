@@ -74,10 +74,10 @@ export function renderInquiryEngineReadinessStrip(args: {
     recentRun?: EngineRecentRunSnapshot;
     /** Active provider cache window for the current corpus, if any. Drives the TTL countdown pill. */
     cacheWindow?: EngineCacheWindowSnapshot;
-    /** Calm read-only state: no usable key. A missing key is a capability limit,
-     *  not a failure — render a neutral strip, never the red "blocked / no
-     *  eligible model" error. Applies to ANY keyless vault, not only demos. */
-    readOnlyNoKey?: boolean;
+    /** AI off or unavailable: saved results remain accessible without run alerts. */
+    readOnly?: boolean;
+    /** Why new analysis requires setup or explicit AI permission. */
+    readOnlyReason: string;
     /** Saved briefings present (demo vault) — tunes the read-only message. */
     hasSavedBriefings?: boolean;
     /** Wall-clock for testability. Defaults to Date.now() when omitted. */
@@ -92,7 +92,7 @@ export function renderInquiryEngineReadinessStrip(args: {
         return;
     }
 
-    const stateClass = args.readOnlyNoKey
+    const stateClass = args.readOnly
         ? 'is-readonly'
         : args.popoverState === 'ready'
             ? 'is-ready'
@@ -102,15 +102,14 @@ export function renderInquiryEngineReadinessStrip(args: {
     args.readinessEl.classList.remove('is-ready', 'is-amber', 'is-error', 'is-readonly');
     args.readinessEl.classList.add(stateClass);
 
-    // No usable key → calm neutral strip (never the red "blocked" error), no
-    // cache/cost pills. Message tunes to whether saved briefings exist; the
-    // popover header already names the Demo Vault when applicable.
-    if (args.readOnlyNoKey) {
+    // Browsing has no run cost/cache status. Explain the separate opt-in/setup
+    // requirement while keeping saved results available.
+    if (args.readOnly) {
         args.readinessStatusEl.setText('Read-only');
         args.readinessCorpusEl.setText(args.corpusSummary);
         args.readinessMessageEl.setText(args.hasSavedBriefings
-            ? 'Saved briefings are ready to explore. Add a key in AI settings to run new analyses.'
-            : 'Add a key in AI settings to run an Inquiry.');
+            ? `Saved briefings are ready to explore. ${args.readOnlyReason}`
+            : args.readOnlyReason);
         args.readinessScopeEl.setText(args.runScopeLabel);
         args.readinessActionsEl.empty();
         return;

@@ -1206,6 +1206,14 @@
   filter: saturate(0.3);
   opacity: 0.95;
 }
+/* The question dots are hollow (fill: none) elsewhere, so the band shows
+   through and a muted cached ring/number sinks into it. In demo browse each
+   dot sits on a canvas-coloured disc instead — black in dark theme via the
+   override below — so muted dots keep their edge without being brightened.
+   The extra .inq-zone-dot outranks the later is-active fill: none. */
+.ert-inquiry-root.is-demo-browse .inq-zone-dot .inq-zone-dot-circle {
+  fill: var(--background-primary);
+}
 
 /* Desaturated zones sink into Obsidian's dark grey, so in dark theme the
    demo canvas drops to black: contrast comes from the ground, not from

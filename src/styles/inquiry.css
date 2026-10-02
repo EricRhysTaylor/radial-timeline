@@ -1206,24 +1206,23 @@
   filter: saturate(0.3);
   opacity: 0.95;
 }
-/* The question dots are hollow (fill: none) elsewhere, so the band shows
-   through and a muted cached ring/number sinks into it. In demo browse each
-   dot sits on a canvas-coloured disc instead — black in dark theme via the
-   override below — so muted dots keep their edge without being brightened.
-   The extra .inq-zone-dot outranks the later is-active fill: none. */
-.ert-inquiry-root.is-demo-browse .inq-zone-dot .inq-zone-dot-circle {
-  fill: var(--background-primary);
+/* Demo browse, dark theme: every saved question is a muted (cached/stale)
+   dot, and at 30-35% zone colour over a desaturated band those dots were
+   all but invisible (~1.4:1). Each dot sits on a black disc instead of
+   showing the band through, and the muted ring/number are lifted — ring to
+   full zone colour, number toward white. States stay distinct: processed
+   still adds its glow, the active dot keeps full saturation, stale keeps
+   its dash. The muted colours are per-dot variables (see the cached/stale
+   rules) so hover/processed specificity is untouched. The extra
+   .inq-zone-dot outranks the later is-active fill: none. */
+.theme-dark .ert-inquiry-root.is-demo-browse .inq-zone-dot {
+  --ert-inquiry-dot-backing: #000000;
+  --ert-inquiry-dot-muted-ring: var(--ert-inquiry-zone-color);
+  --ert-inquiry-dot-muted-text: color-mix(in srgb, var(--ert-inquiry-zone-color) 75%, #ffffff);
+  --ert-inquiry-dot-muted-signature-opacity: 0.85;
 }
-
-/* Desaturated zones sink into Obsidian's dark grey, so in dark theme the
-   demo canvas drops to black: contrast comes from the ground, not from
-   brightening the zones. Overriding --background-primary (not just the bg
-   rect) keeps every fill that matches the canvas — centre disc, icon-button
-   backs, dossier fades — in step, and paints the letterbox around the
-   square SVG as well. */
-.theme-dark .ert-inquiry-root.is-demo-browse {
-  --background-primary: #000000;
-  background-color: var(--background-primary);
+.theme-dark .ert-inquiry-root.is-demo-browse .inq-zone-dot .inq-zone-dot-circle {
+  fill: var(--ert-inquiry-dot-backing);
 }
 
 .ert-inquiry-zone-pod.is-duplicate-pulse .ert-inquiry-zone-pill {
@@ -1269,6 +1268,11 @@
 
 .inq-zone-dot {
   cursor: pointer;
+  /* Muted (cached/stale) colours. Defined per dot so they resolve against
+     this dot's zone colour; demo browse lifts them (see is-demo-browse). */
+  --ert-inquiry-dot-muted-ring: color-mix(in srgb, var(--ert-inquiry-zone-color) 30%, transparent);
+  --ert-inquiry-dot-muted-text: color-mix(in srgb, var(--ert-inquiry-zone-color) 35%, transparent);
+  --ert-inquiry-dot-muted-signature-opacity: 0.4;
 }
 
 .inq-zone-dot-hit {
@@ -1351,7 +1355,7 @@
 
 .ert-inquiry-svg:not(.is-running) .inq-zone-dot.is-signature.is-cached .inq-zone-dot-text,
 .ert-inquiry-svg:not(.is-running) .inq-zone-dot.is-signature.is-stale .inq-zone-dot-text {
-  opacity: 0.4;
+  opacity: var(--ert-inquiry-dot-muted-signature-opacity);
 }
 
 .inq-zone-dot.is-signature.is-active .inq-zone-dot-text,
@@ -1380,22 +1384,22 @@
 
 /* Cached result — muted zone-color ring indicating a rehydratable session exists */
 .ert-inquiry-svg:not(.is-running) .inq-zone-dot.is-cached .inq-zone-dot-circle {
-  stroke: color-mix(in srgb, var(--ert-inquiry-zone-color) 30%, transparent);
+  stroke: var(--ert-inquiry-dot-muted-ring);
 }
 
 .ert-inquiry-svg:not(.is-running) .inq-zone-dot.is-cached:not(.is-signature) .inq-zone-dot-text {
-  fill: color-mix(in srgb, var(--ert-inquiry-zone-color) 35%, transparent);
+  fill: var(--ert-inquiry-dot-muted-text);
 }
 
 /* Stale prior run — same muted zone-color treatment as cached, with only the dash
    marking corpus/context drift. Clicking triggers a fresh run rather than rehydrating. */
 .ert-inquiry-svg:not(.is-running) .inq-zone-dot.is-stale .inq-zone-dot-circle {
-  stroke: color-mix(in srgb, var(--ert-inquiry-zone-color) 30%, transparent);
+  stroke: var(--ert-inquiry-dot-muted-ring);
   stroke-dasharray: 3 2;
 }
 
 .ert-inquiry-svg:not(.is-running) .inq-zone-dot.is-stale:not(.is-signature) .inq-zone-dot-text {
-  fill: color-mix(in srgb, var(--ert-inquiry-zone-color) 35%, transparent);
+  fill: var(--ert-inquiry-dot-muted-text);
 }
 
 .inq-zone-dot.is-duplicate-pulse .inq-zone-dot-circle {

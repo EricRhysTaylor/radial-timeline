@@ -5099,9 +5099,10 @@ export class InquiryView extends ItemView {
         // Demo Mode is BROWSABLE: running is disabled, but the zones remain
         // clickable to open their saved briefings (and visible, not run-locked
         // faint). is-demo-browse marks the root so the zones desaturate rather
-        // than dim, over a black canvas that keeps them legible. Run-lock
-        // (pointer-events off + faint) applies only when you genuinely can't
-        // interact: actually running, or misconfigured.
+        // than dim, with the question dots lifted onto dark discs so muted
+        // ones stay legible. Run-lock (pointer-events off + faint) applies
+        // only when you genuinely can't interact: actually running, or
+        // misconfigured.
         const browsable = this.isInquiryDemoMode();
         const runLocked = running || (runDisabled && !browsable);
         if (this.rootSvg) {

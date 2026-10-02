@@ -44,9 +44,36 @@ and session persistence remain in place.
 
 No additional code changes are proposed by this post-change audit. There is no
 new UI chrome requiring CSS token-scope validation. The implementation is
-verified automatically; live desktop testing is tracked in the session handoff
-because the Mac was locked when the test was attempted. Do not treat the earlier
-P&P test of the previous build as verification of this build.
+verified automatically and in the live desktop checks below.
+
+## Live desktop verification — 2026-10-02
+
+Tested in Obsidian 1.13.7 using the disposable `Inquiry always available
+2026-10-01` vault, initially without plugin data.json. Its main.js SHA-256 was
+`9966f50b479113af029f7f95c9781106a751706d1ed70ee218922d62ef223051`, matching
+the verified implementation build from `f7b67753`.
+
+- Inquiry's ribbon was present and opened the view with AI off, before book
+  setup. It showed unresolved-book guidance rather than an AI access gate.
+- The timeline welcome card detected Pride & Prejudice. Opening the sample
+  established the book and its 61-scene Inquiry corpus.
+- Setup (`Set1`), Pressure (`Pres1`), and Payoff (`Pay1`) each displayed their
+  saved answer with AI off and the unchanged default Ollama selection. No
+  credentials were entered and no model was configured.
+- Enabling AI in this disposable profile showed Local LLM not reachable.
+  Turning AI back off retained the Inquiry tab, ribbon, and displayed Payoff
+  answer.
+- Closing and reopening the QA vault restored the Inquiry tab. Clicking Setup
+  loaded the saved answer again. Persisted `enableAiSceneAnalysis` remained
+  false and the provider remained `ollama`.
+- A structural comparison of the QA and canonical sessions.json found only a
+  changed top-level `savedAt`; all session records and analysis content were
+  unchanged.
+
+These checks exercised saved-result browsing and view availability. Actual
+provider execution was not part of this desktop test; execution refusal is
+covered by the automated behavioral tests above. The finalized downloadable
+demo package still needs its separate release acceptance test.
 
 ## Limits
 

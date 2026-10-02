@@ -1198,13 +1198,24 @@
    looking broken. This replaces the run-lock dim (55% opacity), which made
    saved briefings nearly invisible. The big zone bands grey out together; the
    open/active prompt marker keeps full colour as the focal point. */
-.ert-inquiry-svg.is-demo-browse .inq-zone-segment-path {
+.ert-inquiry-root.is-demo-browse .inq-zone-segment-path {
   filter: saturate(0.3);
 }
-.ert-inquiry-svg.is-demo-browse .ert-inquiry-zone-pod:not(.is-active),
-.ert-inquiry-svg.is-demo-browse .inq-zone-dot:not(.is-active) {
+.ert-inquiry-root.is-demo-browse .ert-inquiry-zone-pod:not(.is-active),
+.ert-inquiry-root.is-demo-browse .inq-zone-dot:not(.is-active) {
   filter: saturate(0.3);
   opacity: 0.95;
+}
+
+/* Desaturated zones sink into Obsidian's dark grey, so in dark theme the
+   demo canvas drops to black: contrast comes from the ground, not from
+   brightening the zones. Overriding --background-primary (not just the bg
+   rect) keeps every fill that matches the canvas — centre disc, icon-button
+   backs, dossier fades — in step, and paints the letterbox around the
+   square SVG as well. */
+.theme-dark .ert-inquiry-root.is-demo-browse {
+  --background-primary: #000000;
+  background-color: var(--background-primary);
 }
 
 .ert-inquiry-zone-pod.is-duplicate-pulse .ert-inquiry-zone-pill {

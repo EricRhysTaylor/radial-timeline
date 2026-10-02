@@ -5098,9 +5098,10 @@ export class InquiryView extends ItemView {
 
         // Demo Mode is BROWSABLE: running is disabled, but the zones remain
         // clickable to open their saved briefings (and visible, not run-locked
-        // faint). is-demo-browse marks the SVG so the zones desaturate rather
-        // than dim. Run-lock (pointer-events off + faint) applies only when you
-        // genuinely can't interact: actually running, or misconfigured.
+        // faint). is-demo-browse marks the root so the zones desaturate rather
+        // than dim, over a black canvas that keeps them legible. Run-lock
+        // (pointer-events off + faint) applies only when you genuinely can't
+        // interact: actually running, or misconfigured.
         const browsable = this.isInquiryDemoMode();
         const runLocked = running || (runDisabled && !browsable);
         if (this.rootSvg) {
@@ -5109,7 +5110,6 @@ export class InquiryView extends ItemView {
             // running but must never paint the ring red.
             this.rootSvg.classList.toggle('is-inquiry-blocked', blocked || lockout);
             this.rootSvg.classList.toggle('is-run-locked', runLocked);
-            this.rootSvg.classList.toggle('is-demo-browse', browsable);
             this.rootSvg.classList.toggle('is-no-scenes', state === 'no-scenes');
             this.rootSvg.classList.toggle('is-guidance-lockout', lockout);
         }
@@ -5118,6 +5118,7 @@ export class InquiryView extends ItemView {
         }
         this.contentEl.classList.toggle('is-inquiry-blocked', blocked);
         this.contentEl.classList.toggle('is-guidance-lockout', lockout);
+        this.contentEl.classList.toggle('is-demo-browse', browsable);
 
         this.zonePromptElements.forEach(({ group }) => {
             const disabled = runLocked;

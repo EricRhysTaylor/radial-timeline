@@ -42,13 +42,13 @@ const WELCOME_COPY = {
         },
         sampleChecking: {
             title: 'Explore a sample vault',
-            desc: 'Checking this vault for packaged Radial Timeline sample data before opening the signup page.',
+            desc: 'Checking this vault for saved sample books and analysis.',
             cta: 'Checking vault...'
         },
         sampleGet: {
-            title: 'Explore a sample vault',
-            desc: 'Sign up with your email and the download link arrives in your inbox: Pride & Prejudice, a finished novel fully mapped in the timeline with AI analysis already run. No API key needed to explore it.',
-            cta: 'Get the sample vault'
+            title: 'Explore Pride & Prejudice',
+            desc: 'Explore all 61 chapters with saved Pulse analysis, four Gossamer signals, and three Inquiry sessions. Download the complete free demo vault. No signup or API key needed.',
+            cta: 'Get the free demo vault'
         },
         sampleOpen: {
             title: (name: string) => `${name} detected`,
@@ -497,7 +497,7 @@ export function renderWelcomeScreen({ container, plugin, refreshTimeline }: Welc
         }
     }
 
-    // Hero cards: Book Project · [Onboard] · Sample Vault · Website. The onboard
+    // Hero cards: Sample Vault · Book Project · [Onboard] · Website. The onboard
     // card follows "Set Book Project" (onboarding needs a book folder) and, like
     // its command, is dev-build only until the feature ships.
     const showOnboard = !__RT_RELEASE__;
@@ -507,6 +507,17 @@ export function renderWelcomeScreen({ container, plugin, refreshTimeline }: Welc
     // Two-pass numbering keeps badges 01..N sequential in the built order.
     let cardNumber = 0;
     const nextNumber = (): string => String(++cardNumber).padStart(2, '0');
+
+    const sampleRefs = buildCard(cards, plugin, {
+        hero: true,
+        number: nextNumber(),
+        icon: CARD_ICONS.sample,
+        title: WELCOME_COPY.cards.sampleChecking.title,
+        desc: WELCOME_COPY.cards.sampleChecking.desc,
+        ctaLabel: WELCOME_COPY.cards.sampleChecking.cta,
+        onActivate: () => undefined
+    });
+    sampleRefs.root.addClass('rt-welcome-card-pending');
 
     const designRefs = buildCard(cards, plugin, {
         number: nextNumber(),
@@ -529,17 +540,6 @@ export function renderWelcomeScreen({ container, plugin, refreshTimeline }: Welc
             onActivate: () => { new OnboardingModal(plugin.app, plugin).open(); }
         })
         : null;
-
-    const sampleRefs = buildCard(cards, plugin, {
-        hero: true,
-        number: nextNumber(),
-        icon: CARD_ICONS.sample,
-        title: WELCOME_COPY.cards.sampleChecking.title,
-        desc: WELCOME_COPY.cards.sampleChecking.desc,
-        ctaLabel: WELCOME_COPY.cards.sampleChecking.cta,
-        onActivate: () => undefined
-    });
-    sampleRefs.root.addClass('rt-welcome-card-pending');
 
     const websiteRefs = buildCard(cards, plugin, {
         number: nextNumber(),

@@ -1,246 +1,35 @@
-# Sample Vaults — Engineering Spec
+# Sample vaults — implemented contract
 
-This document is the contract between the Radial Timeline plugin and the
-sample vaults we publish (Pride & Prejudice, Sherlock Holmes, future
-additions). Read this before touching any code path that reads `Sample
-Vault Config.md`, writes the import marker, or gates Demo Mode.
+Updated October 2, 2026. This replaces the earlier unimplemented `Sample Vault Config.md` / import-marker proposal. Do not emit that proposed manifest or add another demo-state switch.
 
-## Goals
+## Portable content
 
-A recipient who unzips a sample vault should be one Community Plugins
-install away from a working, fully-explorable demo — including with no
-API key configured. The shipped zip contains **public-domain content
-only**: no `.obsidian/`, no plugin binary, no plugin internal state. The
-plugin materializes its runtime configuration from a single declarative
-manifest the vault carries.
+A public ZIP contains manuscript notes, author-facing scene/beat metadata, character notes, source text, guides, saved Inquiry briefings, and `Radial Timeline/Inquiry/Sessions/sessions.json`. It excludes `.obsidian`, plugin binaries, private settings, provider credentials, logs, recovery archives, old exports, and unfinished publishing templates. Install the plugin separately.
 
-## Architectural principles
+The Inquiry sessions sidecar carries saved results and the book identity. `InquiryArtifactStore` reads it; `WelcomeScreen` detects the sample, and the explicit **Open the sample vault** action configures the book. Existing user settings are not silently replaced on plugin load. No `Sample Vault Config.md`, hidden import marker, or sample schema migration framework is implemented or required.
 
-1. **Vault ships content only.** Sample vault zips contain no `.obsidian/`,
-   no plugin binary, no `data.json`. The recipient installs the plugin
-   from Community Plugins; the plugin then reads the vault's declarative
-   manifest and writes its own `data.json` using its current schema.
-   This sidesteps `data.json` schema drift entirely.
+Scene IDs and literary prose are preserved. Preparation changes belong in the designated canonical vault; ZIPs are regenerated from that source. Operational state never belongs in scene YAML.
 
-2. **Single declarative manifest.** Each sample vault contains one
-   `Sample Vault Config.md` at `Radial Timeline/Demo/Sample Vault Config.md`
-   (or anywhere in the vault — discovered by frontmatter scan, see below).
-   This is the only file that travels with the vault carrying machine-
-   readable configuration.
+## AI access and versions
 
-3. **First-run import is idempotent.** The plugin records a marker file
-   when it successfully imports a sample. Subsequent loads detect the
-   marker and skip re-import unless schema has bumped. User edits to
-   plugin settings are never silently overwritten.
+On current main, Inquiry view access is independent of AI permission. Saved results remain browsable with AI off and no credentials. New generative actions require explicit AI enablement and a configured provider. See `inquiry-critical-path-rules.md` for the access boundary.
 
-4. **Demo Mode is derived state.** When no usable API key is configured
-   for the currently-selected model provider, the plugin enters Demo
-   Mode automatically. Adding a key leaves Demo Mode automatically.
-   It is never a persisted setting.
+Public plugin **7.3.1** predates that change: its Inquiry view requires the AI toggle, although saved demo results do not require an API key. The October 2 download guide states this distinction. Do not claim the always-visible view fix or Pulse completion cost/cache display has shipped publicly until a plugin release includes those commits.
 
-5. **Refresh, don't migrate.** When schema versions diverge, the plugin
-   tells the recipient where to download a fresh zip. We do not maintain
-   a plugin-side migration layer for sample-vault config — that's a
-   buggy maintenance burden disproportionate to the value.
+## Packaging and acceptance
 
-## Sample Vault Config.md — schema v1
+Use [the maintained packager](../../scripts/demo-vaults/README.md). It has required YAML parsing, explicit inclusion lists, full source-chapter comparison, boundary-aware Pulse checks, latest Gossamer-run consistency, Inquiry evidence validation, wiki-link validation, deterministic ZIPs, and SHA-256 inventory output. Existing output directories are refused.
 
-The shipped file is a markdown note with YAML frontmatter. The body is
-human-readable explanation; the frontmatter is the machine contract.
+The current checked-in contract is for the prepared P&P chapter layout. Other source layouts require explicit preparation and their own validation before publication. Automated checks do not replace literary review, verify AI opinions, or authorize provider calls.
 
-### Frontmatter fields (v1)
+Test the exact extracted ZIP in a fresh profile: sample detection, book initialization, four timeline modes, all saved Inquiry examples, scene navigation, and reopening. Keep provider calls user-operated. Back up the previous public ZIP and verify actual downloaded bytes after upload, including the website and email redirect paths.
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `rt_sample_vault` | bool | ✅ | Must be `true`. Identifies this as a Sample Vault Config (the plugin uses this for discovery). |
-| `sample_id` | string | ✅ | Stable identifier (e.g. `pride-and-prejudice`). Used for marker filenames and compatibility logic. Path-independent. |
-| `display_name` | string | ✅ | Human-facing name (e.g. `"Pride & Prejudice Sample Vault"`). Used in banners, status indicators, marketing copy. |
-| `schema_version` | int | ✅ | Compatibility contract. Bumped only when the schema itself changes incompatibly. |
-| `plugin_version_tested` | string | optional | Informational only — e.g. `"1.2.3"`. Tells humans which plugin version this vault was last regenerated against. Never used for runtime decisions. |
-| `book_folder` | string | ✅ | Vault-relative path to the book folder (e.g. `"Pride & Prejudice"`). |
-| `extra_corpus` | list[string] | optional | Additional folders to include in Inquiry's corpus (e.g. `[Characters]`). |
-| `question_set` | string | optional | Identifier of the Inquiry question set to activate by default. |
-| `act_labels` | list[string] | optional | The act label tuple to apply (e.g. `["Act 1", "Act 2", "Act 3"]`). Overrides any seasonal-default heuristic on first import. |
+## Published sample
 
-### Example
-
-```yaml
----
-rt_sample_vault: true
-sample_id: pride-and-prejudice
-display_name: "Pride & Prejudice Sample Vault"
-schema_version: 1
-plugin_version_tested: "1.2.3"
-book_folder: "Pride & Prejudice"
-extra_corpus:
-  - Characters
-question_set: p_and_p_zones
-act_labels: ["Act 1", "Act 2", "Act 3"]
----
-```
-
-### Discovery
-
-The plugin discovers `Sample Vault Config.md` by **scanning the vault for
-any `.md` file whose frontmatter has `rt_sample_vault: true`**. This lets
-recipients move/rename the file without breaking discovery. If multiple
-files match, the plugin uses the one with the lexically smallest path and
-logs a console warning naming the duplicates.
-
-## First-run import state machine
-
-When the plugin loads a vault, it runs this decision once per vault session:
-
-| Marker state | Existing RT config in `data.json` | Action |
+| Sample | Included analysis | Release |
 |---|---|---|
-| Marker present, `sample_id` matches, `schema_version` matches | any | **No action.** Plugin proceeds normally. |
-| Marker present, `schema_version` differs from vault's `Sample Vault Config.md` | any | Show one-shot **schema-drift banner** (see copy below). Do not modify config. |
-| Marker missing, no book registered | n/a | **Run import.** Apply all declared fields. Write marker. |
-| Marker missing, book registered, config **matches** what import would write | matches | Treat as already-imported. Write marker. No UI. |
-| Marker missing, book registered, config **differs** from what import would write | differs | Show **one-shot "Restore demo defaults?" banner** (see below), defaulting to "Keep my settings". Do not modify config unless user opts in. |
+| Pride & Prejudice | 61 chapters with Pulse, 15 beats with four reviewed October Gossamer signals, 3 saved Inquiry sessions | October 2, 2026 content refresh; direct free download |
 
-### "Config matches" comparison
+Older Gossamer runs remain explicitly identified as history in the guide. The updated readings are the October 2 Claude Opus 5.5 runs. No blanket claim is made that every historical analysis used that model.
 
-Compare only the fields declared in `Sample Vault Config.md`:
-`book_folder`, `extra_corpus`, `question_set`, `act_labels`. Other plugin
-state (model preferences, schedules, theme, hotkeys) is never inspected.
-
-### Marker file
-
-Path: `.radial-timeline/imports/<sample_id>.md` (hidden — `.radial-timeline/`
-is the canonical disposable runtime state directory).
-
-Format — markdown with frontmatter, for consistency with the rest of our
-manifest layer:
-
-```yaml
----
-sample_id: pride-and-prejudice
-schema_version: 1
-imported_at: 2026-06-05T16:42:00Z
-plugin_version: 1.2.3
----
-
-# Sample Vault Import Marker
-
-Records that the Pride & Prejudice sample vault was imported and
-configured. Do not edit. Deleting this file will cause the plugin to
-re-detect import state on next load.
-```
-
-Deleting `.radial-timeline/` is supported and intended — it forces a
-clean re-detection. The state-machine row "marker missing, config matches"
-handles this case gracefully (no surprise overwrite).
-
-## Banner copy
-
-### Schema-drift banner
-
-> *"This sample vault was tested with Radial Timeline ≤[plugin_version_tested].
-> Configuration may behave differently with the current plugin. A fresh
-> copy of the sample is available at [radialtimeline.com/samples](https://www.radialtimeline.com/samples)
-> — your current vault and any edits you've made will not be touched."*
-
-Actions: `[Open download page]` `[Dismiss]`. Show once per session, suppress
-on subsequent loads of the same schema-mismatch state.
-
-### Restore-defaults banner
-
-> *"This appears to be a [display_name], but your Radial Timeline settings
-> differ from the sample defaults. Would you like to restore the demo
-> configuration?"*
-
-Actions: `[Keep my settings]` (default, prominent) and `[Restore demo defaults]`.
-
-## Demo Mode
-
-### Activation rule
-
-Demo Mode is ON when:
-- The currently-selected model provider has no API key configured, AND
-- That state was not produced by the user explicitly setting an empty key
-  (i.e. it's "key was never set" not "key was deleted").
-
-Demo Mode is OFF the moment a usable key is configured for the active
-provider. Switching providers re-evaluates. Demo Mode is never a stored
-setting.
-
-### Behavior in Demo Mode
-
-| Surface | Behavior |
-|---|---|
-| Status bar (bottom-left) | Shows: `Demo Mode · read-only · add API key to run new analyses` |
-| Read-only AI surfaces (frontmatter Pulse Triplet / Gossamer scores, `Radial Timeline/Recover/` snapshots, past Inquiry sessions) | Fully accessible. No changes. |
-| "Run new Inquiry" button | Disabled. Tooltip: *"Add an API key in Settings → Models to run new analyses."* |
-| "Run Gossamer pass" button | Same — disabled, same tooltip. |
-| "Regenerate Pulse Triplet for this scene" | Same. |
-| Any other generative AI action | Same. |
-| Inquiry view shutdown / "red mode" | **Never trigger in Demo Mode.** The recipient should never see a panicked error state when they have no key — this is the explicit replacement for that UX. |
-
-### Demo Mode vs. broken keys
-
-Distinguish "no API key at all" (→ Demo Mode) from "wrong or expired API
-key" (→ error toast on the failing request). Don't lump both under Demo
-Mode or recipients with broken keys will think their key isn't being read.
-
-## Maintenance — who keeps this current
-
-### Plugin code changes that bump schema_version
-
-Bump `schema_version` in this doc, in the `Sample Vault Config.md`
-generator inside `package_sample_vault.py`, and in the plugin's reader,
-when any of the following happen:
-
-- Required field renamed or removed
-- Field type changed incompatibly
-- Field semantics changed (e.g. `extra_corpus` switches from path list to
-  glob pattern list)
-
-Forward-compatible additions (new optional fields) do **not** require a
-schema bump.
-
-### Published-samples table
-
-When a new sample vault ships or an existing one is regenerated, update
-this table. Source of truth is the `Sample Vault Config.md` inside the
-shipped zip.
-
-| sample_id | display_name | schema_version | last regenerated against plugin version |
-|---|---|---|---|
-| `pride-and-prejudice` | Pride & Prejudice Sample Vault | 1 | _(TODO: fill at first release)_ |
-
-### Regeneration steps (for the publishing checklist)
-
-1. Pull latest from the canonical source vault repo.
-2. Update plugin to the target version locally and run the AI passes you
-   want preserved (Pulse Triplet, Gossamer, Inquiry).
-3. Run `vault_qa.py` against the canonical vault. Refuse to proceed if
-   blockers remain.
-4. Run `package_sample_vault.py` with the current `plugin_version_tested`
-   value. The packager re-runs the QA gate and emits `dist/<display_name>/`.
-5. Manually spot-check the dist — open it as an Obsidian vault on a
-   clean profile, confirm Demo Mode renders correctly without an API key,
-   confirm Inquiry sessions rehydrate from `Radial Timeline/Recover/`.
-6. Zip the dist folder. Upload. Update the published-samples table above.
-7. Tag the plugin release notes: "Sample vaults compatible with this
-   release: pride-and-prejudice@v1, sherlock-holmes@vN, …"
-
-## Open questions for the plugin team
-
-1. **Where in the codebase does the discovery + first-run import live?**
-   Probably a startup hook in the plugin's main load path, executed after
-   the vault index is ready but before any view renders.
-
-2. **Should the schema-drift banner offer a "download fresh copy" button
-   that opens the browser**, or just give the URL as copyable text?
-   Recommend the button — one fewer step for the recipient.
-
-3. **`question_set` slug format.** Currently `Sample Vault Config.md` uses
-   string slugs (e.g. `p_and_p_zones`). The plugin needs a matching
-   registry of question sets keyed by these slugs. If you choose a
-   different identifier scheme (UUIDs, paths), the packager script needs
-   to know what shape to emit.
-
-4. **Sample vault listing on radialtimeline.com.** The schema-drift banner
-   links to `radialtimeline.com/samples`. That page needs to exist
-   before shipping the schema-drift banner, or the link 404s.
+Website entry: `https://www.radialtimeline.com/resources/free`. Counted download: `https://community.radialtimeline.com/go/site-demo-pp`. Release inventory and acceptance evidence are maintained alongside the canonical demo artifacts in Command Center.

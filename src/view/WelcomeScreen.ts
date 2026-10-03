@@ -4,6 +4,7 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 /* global __RT_RELEASE__ -- build-time flag injected by esbuild define; see esbuild.config.mjs */
+import { DEMO_LIBRARY_URL } from '../settings/bonusVaults';
 import { openSettingsTab } from '../utils/obsidianInternals';
 import { normalizePath, setIcon, TFolder } from 'obsidian';
 import RadialTimelinePlugin from '../main';
@@ -87,7 +88,7 @@ const WELCOME_COPY = {
 // Functional links (wiki, issues, mail) stay direct.
 const WELCOME_URLS = {
     website: 'https://community.radialtimeline.com/go/rt-welcome-site',
-    sampleVault: 'https://community.radialtimeline.com/go/rt-welcome-demo',
+    sampleVault: DEMO_LIBRARY_URL,
     wiki: 'https://github.com/EricRhysTaylor/radial-timeline/wiki',
     community: 'https://community.radialtimeline.com/go/rt-welcome-community',
     issues: 'https://github.com/EricRhysTaylor/radial-timeline/issues',

@@ -1,62 +1,46 @@
-import type RadialTimelinePlugin from '../main';
 import { PRIDE_AND_PREJUDICE_THUMB } from '../branding/bonusVaultThumbs';
 
-/**
- * Bonus ("Website Exclusive") vaults surfaced in the Pro settings tab.
- *
- * These are sample/demo novels that mirror the marketing site's "Featured
- * vaults" grid. An `available` vault renders vibrant with its own artwork; a
- * `coming-soon` vault renders muted behind an incognito glyph placeholder.
- *
- * Delivery model (decided): hybrid — activating a vault downloads a zip from
- * Supabase Storage, unpacks it to a user-chosen folder, and opens it as a
- * standalone Obsidian vault by default, with an advanced "install into a
- * subfolder of the current vault" option. The download/unpack pipeline is not
- * built yet; `downloadPath` is the eventual Supabase object key and is left
- * undefined until hosting is wired.
- */
-export type BonusVaultStatus = 'available' | 'coming-soon';
-
+/** Curated demo library. Only published collections have an active action. */
 export interface BonusVaultDef {
-    /** Stable id, also used as the install-tracking key in settings. */
     id: string;
-    /** Display title, e.g. "Pride & Prejudice". */
     title: string;
-    /** Author surname shown in the meta line, e.g. "Austen". */
     author: string;
-    /** Unit-count label shown after the author, e.g. "61 scenes". */
     countLabel: string;
-    /** Visual/availability state. */
-    status: BonusVaultStatus;
-    /** Inlined data-URL thumbnail (available vaults only). */
+    status: 'available' | 'coming-soon';
     thumb?: string;
-    /** Eventual Supabase Storage object key for the downloadable zip. */
-    downloadPath?: string;
-    /** Rough download size shown on the action row, e.g. "8 MB". */
-    approxSizeLabel?: string;
 }
+
+// Reuse the established plugin discovery route; the website owns downloads.
+export const DEMO_LIBRARY_URL = 'https://community.radialtimeline.com/go/rt-welcome-demo';
 
 export const BONUS_VAULTS: readonly BonusVaultDef[] = [
     {
         id: 'pride-and-prejudice',
         title: 'Pride & Prejudice',
         author: 'Austen',
-        countLabel: '61 scenes',
+        countLabel: '61 chapters',
         status: 'available',
         thumb: PRIDE_AND_PREJUDICE_THUMB
+    },
+    {
+        id: 'odyssey',
+        title: 'The Odyssey',
+        author: 'Homer',
+        countLabel: '89 scenes',
+        status: 'coming-soon'
     },
     {
         id: 'sherlock-holmes',
         title: 'Sherlock Holmes',
         author: 'Doyle',
-        countLabel: '56 stories',
+        countLabel: '4 novels · 56 chapters',
+        status: 'coming-soon'
+    },
+    {
+        id: 'faerie-queene',
+        title: 'The Faerie Queene',
+        author: 'Spenser',
+        countLabel: 'In preparation',
         status: 'coming-soon'
     }
 ];
-
-/** True when the user has activated/installed the given bonus vault. */
-export function isBonusVaultInstalled(plugin: RadialTimelinePlugin, id: string): boolean {
-    return Array.isArray(plugin.settings.installedBonusVaults)
-        && plugin.settings.installedBonusVaults.includes(id);
-}
-

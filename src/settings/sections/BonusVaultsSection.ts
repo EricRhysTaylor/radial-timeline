@@ -1,10 +1,10 @@
-import { Notice, setIcon } from 'obsidian';
+import { setIcon } from 'obsidian';
 import type { App } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import { ERT_CLASSES } from '../../ui/classes';
 import {
     BONUS_VAULTS,
-    isBonusVaultInstalled,
+    DEMO_LIBRARY_URL,
     type BonusVaultDef
 } from '../bonusVaults';
 
@@ -68,14 +68,14 @@ export function renderBonusVaultsSection({
     });
     const pillIcon = pill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON });
     setIcon(pillIcon, 'sparkles');
-    pill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: 'WEBSITE EXCLUSIVES' });
-    header.createDiv({ cls: ERT_CLASSES.SECTION_TITLE, text: 'Bonus vaults' });
+    pill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: 'FREE DEMOS' });
+    header.createDiv({ cls: ERT_CLASSES.SECTION_TITLE, text: 'Demo vaults' });
     header.createEl('p', {
         cls: ERT_CLASSES.SECTION_DESC,
         text:
-            'Sample novels built in Radial Timeline. Activate one to download it as a ' +
-            'standalone vault you can open and explore — a complete worked example, ' +
-            'separate from your own manuscript.'
+            'Explore complete worked examples with saved analysis. Start with the free ' +
+            'Pride & Prejudice vault; no API key or signup is needed to browse its results. ' +
+            'Downloads and opening instructions are on the website.'
     });
 
     // ── Card grid ────────────────────────────────────────────
@@ -91,11 +91,9 @@ function renderCard(
     vault: BonusVaultDef
 ): void {
     const isComingSoon = vault.status === 'coming-soon';
-    const isInstalled = !isComingSoon && isBonusVaultInstalled(plugin, vault.id);
 
     const card = grid.createDiv({ cls: 'ert-bonus-card' });
-    card.toggleClass('is-available', vault.status === 'available' && !isInstalled);
-    card.toggleClass('is-installed', isInstalled);
+    card.toggleClass('is-available', vault.status === 'available');
     card.toggleClass('is-coming-soon', isComingSoon);
 
     // Thumbnail / placeholder
@@ -109,13 +107,6 @@ function renderCard(
         const placeholder = thumbWrap.createDiv({ cls: 'ert-bonus-card__placeholder' });
         buildIncognitoGlyph(placeholder);
     }
-    if (isInstalled) {
-        const badge = thumbWrap.createSpan({ cls: 'ert-bonus-card__statusBadge' });
-        const badgeIcon = badge.createSpan({ cls: 'ert-bonus-card__statusBadge-icon' });
-        setIcon(badgeIcon, 'check');
-        badge.createSpan({ text: 'Installed' });
-    }
-
     // Title + meta
     card.createDiv({ cls: 'ert-bonus-card__title', text: vault.title });
     card.createDiv({
@@ -132,36 +123,17 @@ function renderCard(
             attr: { type: 'button', disabled: 'true' }
         });
         btn.disabled = true;
-    } else if (isInstalled) {
-        const openBtn = action.createEl('button', {
-            cls: 'ert-bonus-card__btn ert-bonus-card__btn--primary',
-            text: 'Open vault',
-            attr: { type: 'button' }
-        });
-        plugin.registerDomEvent(openBtn, 'click', () => {
-            // STUB: standalone-vault open is wired with the download pipeline.
-            new Notice('Opening bonus vaults is coming soon.');
-        });
-        const removeBtn = action.createEl('button', {
-            cls: 'ert-bonus-card__btn ert-bonus-card__btn--ghost',
-            text: 'Remove',
-            attr: { type: 'button' }
-        });
-        plugin.registerDomEvent(removeBtn, 'click', () => {
-            new Notice('Removing bonus vaults is coming soon.');
-        });
     } else {
         const btn = action.createEl('button', {
             cls: 'ert-bonus-card__btn ert-bonus-card__btn--primary',
             attr: { type: 'button' }
         });
         const btnIcon = btn.createSpan({ cls: 'ert-bonus-card__btn-icon' });
-        setIcon(btnIcon, 'download');
-        btn.createSpan({ text: 'Activate' });
+        setIcon(btnIcon, 'external-link');
+        btn.createSpan({ text: 'View demo & download' });
+        btn.setAttr('aria-label', `View ${vault.title} demo and download instructions`);
         plugin.registerDomEvent(btn, 'click', () => {
-            // STUB: download from Supabase Storage, unpack, and open as a
-            // standalone vault. Pipeline not built yet (UI-first increment).
-            new Notice(`“${vault.title}” download is coming soon.`);
+            window.open(DEMO_LIBRARY_URL, '_blank', 'noopener,noreferrer');
         });
     }
 }

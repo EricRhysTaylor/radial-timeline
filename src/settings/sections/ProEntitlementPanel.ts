@@ -169,11 +169,9 @@ export function renderProEntitlementPanel({
     const heroCopy = heroContent.createEl('p', { cls: `${ERT_CLASSES.SECTION_DESC} ert-hero-subtitle ert-pro-hero-body` });
     heroCopy.appendText('Pro is a collection of ');
     heroCopy.createEl('strong', { text: 'Pro workflows' });
-    heroCopy.appendText(' — the deeper end of Radial Timeline. Evaluate your story with deeper INQUIRY+ questions, track structure and momentum across scenes, and generate polished manuscripts with PANDOC PDF EXPORTS and custom LaTeX templates. Share progress through APR CAMPAIGNS, and explore WEBSITE EXCLUSIVES including template vaults such as ');
+    heroCopy.appendText(' — the deeper end of Radial Timeline. Evaluate your story with deeper INQUIRY+ questions, track structure and momentum across scenes, and generate polished manuscripts with PANDOC PDF EXPORTS and custom LaTeX templates. Share progress through APR CAMPAIGNS, and explore free demo vaults such as ');
     heroCopy.createSpan({ cls: 'ert-mono-inline', text: 'Pride & Prejudice' });
-    heroCopy.appendText(' and ');
-    heroCopy.createSpan({ cls: 'ert-mono-inline', text: 'Sherlock Holmes' });
-    heroCopy.appendText(', Omnibus Inquiry briefings, and guided workflow demonstrations.');
+    heroCopy.appendText(' with saved Pulse, Gossamer, and Inquiry examples. More classics are in preparation.');
 
     const featureStrip = heroContent.createDiv({ cls: 'ert-pro-hero-pillStrip' });
     const featureItems = [
@@ -181,7 +179,7 @@ export function renderProEntitlementPanel({
         { icon: 'share-2', label: 'APR Campaigns' },
         { icon: 'waves', label: 'Inquiry+' },
         { icon: 'waypoints', label: 'Structure' },
-        { icon: 'sparkles', label: 'Website Exclusives' }
+        { icon: 'sparkles', label: 'Free demo vaults' }
     ];
     featureItems.forEach(({ icon, label }) => {
         const item = featureStrip.createDiv({ cls: 'ert-pro-hero-pill' });

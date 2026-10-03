@@ -352,7 +352,9 @@ The delimiter is no longer sent to the model.
     runtime estimation also write results back without skipping that cache.
     For onboarding it may be useful, replaying finished scenes when a failed
     stage is retried.
-  - Still open: Summary refresh uses the author's role template (an editor
-    persona) for a "neutral factual summarizer" task. Gossamer deliberately
-    bypasses the role template for neutrality.
+  - Summary refresh now bypasses the author's role template (owner decision),
+    as Gossamer does. Both passes run under the neutral feature template, so an
+    editor persona no longer colors a factual summary. AI jobs compile the same
+    request, so a summary job written before this change and not yet applied
+    reads as stale, like any settings change.
 

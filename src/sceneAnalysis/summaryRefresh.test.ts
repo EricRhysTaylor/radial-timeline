@@ -51,6 +51,11 @@ describe('Summary refresh requests', () => {
         expect(buildSummaryRunRequest(scene, 200).bypassProviderReuse).toBeUndefined();
     });
 
+    it('both passes use the neutral role template, never the author persona', () => {
+        expect(buildSummaryRunRequest(scene, 200).bypassRoleTemplate).toBe(true);
+        expect(buildSynopsisRunRequest(scene, 'A factual summary.', 30).bypassRoleTemplate).toBe(true);
+    });
+
     it('sends the summary schema with the Summary pass', () => {
         const request = buildSummaryRunRequest(scene, 200);
         expect(request.feature).toBe('SummaryRefresh');

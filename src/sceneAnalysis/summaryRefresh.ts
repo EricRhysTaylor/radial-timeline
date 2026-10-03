@@ -58,6 +58,10 @@ export function buildSummaryRunRequest(scene: SceneData, targetWords: number): A
         // in-memory answer cache would hand a quick re-run (the author
         // re-flags a summary they didn't like) the previous text verbatim.
         bypassInMemoryCache: true,
+        // A factual record of events, not editorial work: the author's role
+        // template (often an editor persona) must not color it. aiClient
+        // swaps in the neutral feature template, as for Gossamer.
+        bypassRoleTemplate: true,
         overrides: SUMMARY_REFRESH_OVERRIDES
     };
 }
@@ -72,8 +76,10 @@ export function buildSynopsisRunRequest(scene: SceneData, summaryText: string, m
         userInput: buildSynopsisPrompt(summaryText, sceneNumberLabel(scene), maxWords),
         returnType: 'json',
         responseSchema: getSynopsisJsonSchema(),
-        // Regenerates the Synopsis; never the previous answer (see Summary pass).
+        // Regenerates the Synopsis; never the previous answer, and no author
+        // persona (see Summary pass).
         bypassInMemoryCache: true,
+        bypassRoleTemplate: true,
         overrides: SUMMARY_REFRESH_OVERRIDES
     };
 }

@@ -335,4 +335,24 @@ The delimiter is no longer sent to the model.
     was already scored on the same unchanged input this session ("…adds
     another reading; it does not replace the earlier one"), so the author can
     cancel an accidental repeat.
+- **Scene summaries (Summary refresh) were evaluated like Pulse.**
+  - Each call carries one scene, never the manuscript. The batch runs
+    sequentially, two passes per scene: a Summary from the scene text, then a
+    Synopsis from the new Summary.
+  - The text shared between calls is about 500 tokens, below every cache
+    minimum, so prompt caching has nothing to reuse here. Whole-book caching
+    would only add cost: a summary needs only its scene.
+  - The OpenAI explicit-mode fix already removed the 1.25× write surcharge on
+    these calls.
+  - Fixed: a quick re-run (the author re-flags a summary they didn't like) got
+    the previous text back verbatim from RT's 2-minute in-memory answer cache.
+    Both passes now skip it. Pulse had the same bug and gets the same fix. Its
+    triplet design is unchanged.
+  - Still open, a judgment call per feature: onboarding, the timeline audit and
+    runtime estimation also write results back without skipping that cache.
+    For onboarding it may be useful, replaying finished scenes when a failed
+    stage is retried.
+  - Still open: Summary refresh uses the author's role template (an editor
+    persona) for a "neutral factual summarizer" task. Gossamer deliberately
+    bypasses the role template for neutrality.
 

@@ -54,6 +54,10 @@ export function buildSummaryRunRequest(scene: SceneData, targetWords: number): A
         userInput: buildSummaryPrompt(scene.body, sceneNumberLabel(scene), targetWords),
         returnType: 'json',
         responseSchema: getSummaryJsonSchema(),
+        // A refresh regenerates and overwrites the Summary. RT's 2-minute
+        // in-memory answer cache would hand a quick re-run (the author
+        // re-flags a summary they didn't like) the previous text verbatim.
+        bypassInMemoryCache: true,
         overrides: SUMMARY_REFRESH_OVERRIDES
     };
 }
@@ -68,6 +72,8 @@ export function buildSynopsisRunRequest(scene: SceneData, summaryText: string, m
         userInput: buildSynopsisPrompt(summaryText, sceneNumberLabel(scene), maxWords),
         returnType: 'json',
         responseSchema: getSynopsisJsonSchema(),
+        // Regenerates the Synopsis; never the previous answer (see Summary pass).
+        bypassInMemoryCache: true,
         overrides: SUMMARY_REFRESH_OVERRIDES
     };
 }

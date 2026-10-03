@@ -44,6 +44,13 @@ describe('Summary refresh replies', () => {
 });
 
 describe('Summary refresh requests', () => {
+    it('regenerates on every run: both passes skip the in-memory answer cache', () => {
+        expect(buildSummaryRunRequest(scene, 200).bypassInMemoryCache).toBe(true);
+        expect(buildSynopsisRunRequest(scene, 'A factual summary.', 30).bypassInMemoryCache).toBe(true);
+        // Only the answer cache: provider prompt caching is not bypassed.
+        expect(buildSummaryRunRequest(scene, 200).bypassProviderReuse).toBeUndefined();
+    });
+
     it('sends the summary schema with the Summary pass', () => {
         const request = buildSummaryRunRequest(scene, 200);
         expect(request.feature).toBe('SummaryRefresh');

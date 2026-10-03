@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type RadialTimelinePlugin from '../main';
 import type { Vault } from 'obsidian';
 import type { AIRunResult } from '../ai/types';
-import { callAiProvider } from './aiProvider';
+import { buildPulseRunRequest, callAiProvider } from './aiProvider';
 
 const { run } = vi.hoisted(() => ({ run: vi.fn() }));
 vi.mock('../ai/runtime/aiClient', () => ({ getAIClient: () => ({ run }) }));
@@ -56,3 +56,12 @@ describe('Pulse provider usage observation', () => {
         expect(observer.mock.calls[0][0]).toMatchObject({ costUSD: null, partial: true });
     });
 });
+
+describe('Pulse run request', () => {
+    it('regenerates on every run: skips the in-memory answer cache, not the provider cache', () => {
+        const request = buildPulseRunRequest('Triplet prompt');
+        expect(request.bypassInMemoryCache).toBe(true);
+        expect(request.bypassProviderReuse).toBeUndefined();
+    });
+});
+

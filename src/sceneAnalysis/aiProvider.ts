@@ -215,6 +215,10 @@ export function buildPulseRunRequest(userPrompt: string): AIRunRequest {
         userInput: userPrompt,
         returnType: 'json',
         responseSchema: getSceneAnalysisJsonSchema(),
+        // Every run regenerates and overwrites the scene's Pulse: RT's 2-minute
+        // in-memory answer cache would hand a re-run the previous analysis
+        // verbatim instead of the new one the author asked for.
+        bypassInMemoryCache: true,
         overrides: {
             temperature: 0.1,
             maxOutputMode: 'high',

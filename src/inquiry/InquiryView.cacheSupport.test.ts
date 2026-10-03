@@ -3,10 +3,12 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 describe('InquiryView OpenAI cache support', () => {
-    it('persists OpenAI cache windows and exposes persisted eligible reuse context', () => {
+    it('persists OpenAI cache windows only on provider proof and exposes persisted eligible reuse context', () => {
         const viewSource = readFileSync(resolve(process.cwd(), 'src/inquiry/InquiryView.ts'), 'utf8');
-        // resolveCacheWindowExpiry is untouched (chunk 3b explicitly excludes it).
-        expect(viewSource.includes("if (trace?.cacheReuseState !== 'eligible' && trace?.cacheReuseState !== 'warm') return null;")).toBe(true);
+        // An OpenAI window opens on the provider's create/hit verdict or
+        // reported cache tokens — never because the request was eligible.
+        expect(viewSource.includes("if (!trace?.cacheStatus && !cacheTokensReported) return null;")).toBe(true);
+        expect(viewSource.includes("trace?.cacheReuseState !== 'eligible'")).toBe(false);
         // R1 chunk 3b: persisted-reuse mapping moved to the pure module;
         // InquiryView keeps engine + sessionStore lookup then delegates.
         // The provider-mismatch + reuseState derivation now live there and

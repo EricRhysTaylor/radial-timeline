@@ -23,7 +23,6 @@ import {
 import { t } from './i18n';
 
 export { calculateSceneCount, calculateFlaggedCount, getDistinctSubplotNames } from './sceneAnalysis/data';
-export { processBySubplotOrder } from './sceneAnalysis/Processor';
 export {
     testYamlUpdateFormatting,
     purgeBeatsByManuscriptOrder,

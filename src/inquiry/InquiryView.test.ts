@@ -559,7 +559,7 @@ describe('InquiryView payload accounting', () => {
         const viewSource = readFileSync(resolve(process.cwd(), 'src/inquiry/InquiryView.ts'), 'utf8');
         expect(viewSource.includes('private getObservedCacheMetrics(trace?: InquiryRunTrace | null):')).toBe(true);
         expect(viewSource.includes('usage.cacheReadInputTokens')).toBe(true);
-        expect(viewSource.includes('const observedCacheMetrics = this.getObservedCacheMetrics(runTrace);')).toBe(true);
+        expect(viewSource.includes('const observedCacheMetrics = this.getObservedCacheMetrics(trace);')).toBe(true);
         expect(viewSource.includes('this.updateRunningHud();')).toBe(true);
     });
 

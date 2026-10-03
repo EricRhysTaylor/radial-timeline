@@ -3,7 +3,7 @@ import type { RadialTimelineSettings } from '../../types';
 import { computeCaps, INPUT_TOKEN_GUARD_FACTOR, type ComputedCaps } from '../caps/computeCaps';
 import { mapErrorToUserMessage, mapProviderFailureToError, MalformedJsonError } from '../errors';
 import { compilePrompt } from '../prompts/compilePrompt';
-import { composeEnvelope, CACHE_BREAK_DELIMITER } from '../prompts/composeEnvelope';
+import { composeEnvelope, CACHE_BREAK_DELIMITER, splitAtCacheBreak } from '../prompts/composeEnvelope';
 import { buildOutputRulesText } from '../prompts/outputRules';
 import { providerSupportsCorpusReuse, sanitizeDispatchParams, type AiProvider, type ProviderDispatchParams } from '../../api/providerCapabilities';
 import { ModelRegistry } from '../registry/modelRegistry';
@@ -143,7 +143,12 @@ function inferProviderReuseRequested(provider: AIProviderId, requestPayload: unk
     const payload = asRecord(requestPayload);
     if (!payload) return false;
     if (provider === 'openai') {
-        return typeof payload.prompt_cache_retention === 'string' && payload.prompt_cache_retention.trim().length > 0;
+        // Explicit-mode requests cache only at a block carrying a breakpoint.
+        const input = Array.isArray(payload.input) ? payload.input : [];
+        return input.some(message => {
+            const content = asRecord(message)?.content;
+            return Array.isArray(content) && content.some(block => asRecord(block)?.prompt_cache_breakpoint);
+        });
     }
     if (provider === 'google') {
         return typeof payload.cachedContent === 'string' && payload.cachedContent.trim().length > 0;
@@ -949,9 +954,11 @@ export class AIClient {
         let cachedStableTokens: number | undefined;
         let stableText: string | undefined;
         if (cacheDelimiterUsed) {
-            const delimIndex = userPrompt.indexOf(CACHE_BREAK_DELIMITER);
-            if (delimIndex > 0) {
-                stableText = userPrompt.slice(0, delimIndex);
+            const split = splitAtCacheBreak(userPrompt);
+            if (split) {
+                // The same (trimmed) stable text the provider adapters cache, so
+                // the Gemini peek below hashes the key the cache manager stored.
+                stableText = split.stable;
                 // Anthropic: only user stable block is cached
                 // Gemini: system instruction goes inside cached content too
                 const stableTokens = provider === 'google'
@@ -1042,32 +1049,25 @@ export class AIClient {
             advancedContext.totalInputTokens = actualUsage.inputTokens;
         }
 
-        if (!bypassProviderReuse && provider === 'anthropic') {
-            // Cache-CREATE runs report cacheReadInputTokens=0 and cacheCreationInputTokens>0;
-            // cache-HIT runs report the inverse. Take the max so both paths populate the
+        if (!bypassProviderReuse && (provider === 'anthropic' || provider === 'openai')) {
+            // Both report cache reads and writes per call. Cache-CREATE runs report
+            // cacheReadInputTokens=0 and cacheCreationInputTokens>0; cache-HIT runs
+            // report the inverse. Take the max so both paths populate the
             // cached-prefix metric. (`??` short-circuits at 0 — read=0 would otherwise
             // suppress the creation tokens and leave the cached-overlay metric undefined.)
-            const anthropicReadTokens = typeof actualUsage?.cacheReadInputTokens === 'number'
+            const readTokens = typeof actualUsage?.cacheReadInputTokens === 'number'
                 && Number.isFinite(actualUsage.cacheReadInputTokens) && actualUsage.cacheReadInputTokens > 0
                 ? actualUsage.cacheReadInputTokens
                 : 0;
-            const anthropicCreationTokens = typeof actualUsage?.cacheCreationInputTokens === 'number'
+            const creationTokens = typeof actualUsage?.cacheCreationInputTokens === 'number'
                 && Number.isFinite(actualUsage.cacheCreationInputTokens) && actualUsage.cacheCreationInputTokens > 0
                 ? actualUsage.cacheCreationInputTokens
                 : ((actualUsage?.cacheCreation5mInputTokens ?? 0) + (actualUsage?.cacheCreation1hInputTokens ?? 0));
-            const anthropicCachedTokens = Math.max(anthropicReadTokens, anthropicCreationTokens);
-            const anthropicTotalInputTokens = actualUsage?.inputTokens ?? tokenEstimateInput;
-            if (anthropicCachedTokens > 0 && anthropicTotalInputTokens > 0) {
-                advancedContext.cachedStableTokens = anthropicCachedTokens;
-                advancedContext.cachedStableRatio = Math.min(anthropicCachedTokens / anthropicTotalInputTokens, 1);
-            }
-        }
-        if (!bypassProviderReuse && provider === 'openai') {
-            const openAiCachedTokens = Math.max(0, actualUsage?.cacheReadInputTokens ?? 0);
-            const openAiTotalInputTokens = actualUsage?.inputTokens ?? tokenEstimateInput;
-            if (openAiCachedTokens > 0 && openAiTotalInputTokens > 0) {
-                advancedContext.cachedStableTokens = openAiCachedTokens;
-                advancedContext.cachedStableRatio = Math.min(openAiCachedTokens / openAiTotalInputTokens, 1);
+            const cachedTokens = Math.max(readTokens, creationTokens);
+            const totalInputTokens = actualUsage?.inputTokens ?? tokenEstimateInput;
+            if (cachedTokens > 0 && totalInputTokens > 0) {
+                advancedContext.cachedStableTokens = cachedTokens;
+                advancedContext.cachedStableRatio = Math.min(cachedTokens / totalInputTokens, 1);
             }
         }
 

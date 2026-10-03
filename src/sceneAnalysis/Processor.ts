@@ -4,8 +4,7 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 
-import { sleep } from '../utils/sleep';
-import { Notice, type Vault } from 'obsidian';
+import type { Vault } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { buildDefaultAiSettings } from '../ai/settings/aiSettings';
 import { getCanonicalAiSettings, resolveConfiguredSelection } from '../ai/runtime/runtimeSelection';
@@ -353,135 +352,6 @@ export async function processWithModal(
     plugin.refreshTimelineIfNeeded(null);
 }
 
-export async function processBySubplotOrder(
-    plugin: RadialTimelinePlugin,
-    vault: Vault
-): Promise<void> {
-    const notice = new Notice(t('sceneAnalysis.pipeline.notices.processingSubplotInit'), 0);
-
-    try {
-        const allScenes = await getAllSceneData(plugin, vault);
-        if (allScenes.length < 1) {
-            new Notice(t('sceneAnalysis.pipeline.notices.noScenesValid'));
-            notice.hide();
-            return;
-        }
-
-        const scenesBySubplot: Record<string, SceneData[]> = {};
-        allScenes.forEach(scene => {
-            const subplotList = getSubplotNamesFromFM(scene.frontmatter);
-            subplotList.forEach(subplotKey => {
-                if (!subplotKey) return;
-                if (!scenesBySubplot[subplotKey]) scenesBySubplot[subplotKey] = [];
-                if (!scenesBySubplot[subplotKey].some(s => s.file.path === scene.file.path)) {
-                    scenesBySubplot[subplotKey].push(scene);
-                }
-            });
-        });
-
-        const subplotNames = Object.keys(scenesBySubplot);
-        if (subplotNames.length === 0) {
-            new Notice(t('sceneAnalysis.pipeline.notices.noSubplotScenes'));
-            notice.hide();
-            return;
-        }
-
-        let totalProcessedCount = 0;
-        let totalTripletsAcrossSubplots = 0;
-        subplotNames.forEach(subplotName => {
-            const scenes = scenesBySubplot[subplotName];
-            scenes.sort(compareScenesByOrder);
-            const validScenes = scenes.filter(scene => {
-                const pulseUpdate = getPulseUpdateFlag(scene.frontmatter);
-                if (normalizeBooleanValue(pulseUpdate) && !hasProcessableContent(scene.frontmatter)) {
-                    const msg = t('sceneAnalysis.pipeline.notices.sceneStatusSkip', { sceneRef: scene.sceneNumber ?? scene.file.basename, subplot: subplotName });
-                    new Notice(msg, 6000);
-                }
-                return hasProcessableContent(scene.frontmatter) && normalizeBooleanValue(pulseUpdate);
-            });
-            totalTripletsAcrossSubplots += validScenes.length;
-        });
-
-        notice.setMessage(t('sceneAnalysis.pipeline.notices.analyzingSubplot', { count: totalTripletsAcrossSubplots }));
-
-        for (const subplotName of subplotNames) {
-            const scenes = scenesBySubplot[subplotName];
-            scenes.sort(compareScenesByOrder);
-
-            const orderedScenes = scenes.slice().sort(compareScenesByOrder);
-            const processableContentScenes = orderedScenes.filter(scene => hasProcessableContent(scene.frontmatter));
-            const flaggedInOrder = orderedScenes.filter(s =>
-                hasProcessableContent(s.frontmatter) &&
-                normalizeBooleanValue(getPulseUpdateFlag(s.frontmatter))
-            );
-            const triplets = buildTripletsByIndex(processableContentScenes, flaggedInOrder, (s) => s.file.path);
-
-            for (const triplet of triplets) {
-                const pulseUpdateFlag = getPulseUpdateFlag(triplet.current.frontmatter);
-                if (!normalizeBooleanValue(pulseUpdateFlag)) {
-                    continue;
-                }
-
-                notice.setMessage(t('sceneAnalysis.pipeline.notices.processingScene', { num: triplet.current.sceneNumber ?? 'N/A', current: totalProcessedCount + 1, total: totalTripletsAcrossSubplots, name: subplotName })); // SAFE: sceneNumber is null for unnumbered scene files — 'N/A' is a display placeholder
-
-                const { prevNum, currentNum, nextNum } = tripletSceneNumbers(triplet);
-
-                const userPrompt = buildTripletPrompt(plugin, triplet);
-
-                const sceneNameForLog = triplet.current.file.basename;
-                const tripletForLog = buildPulseTriplet(prevNum, currentNum, nextNum).scenes;
-                const runAi = createAiRunner(plugin, vault, callAiProvider);
-
-                try {
-                    const aiResult = await runAi(userPrompt, subplotName, 'processBySubplotOrder', sceneNameForLog, {
-                        prev: tripletForLog.previous,
-                        current: tripletForLog.current,
-                        next: tripletForLog.next
-                    });
-
-                    if (aiResult.result) {
-                        const parsedAnalysis = normalizeParsedAnalysisForTriplet(aiResult.parsedAnalysis, triplet);
-                        const safeWrite = await applyTripletAnalysisResult({
-                            plugin,
-                            vault,
-                            triplet,
-                            parsedAnalysis,
-                            provider: aiResult.providerUsed,
-                            attribution: aiResult.attribution
-                        });
-                        if (safeWrite.success) {
-                            await plugin.saveSettings();
-                        } else if (safeWrite.route !== 'skip') {
-                            new Notice(getLocalReviewErrorMessage(triplet.current), 6000);
-                        } else {
-                            new Notice(t('sceneAnalysis.pipeline.errors.failedUpdate', { num: triplet.current.sceneNumber ?? 'N/A', path: triplet.current.file.path }), 6000); // SAFE: sceneNumber is null for unnumbered scene files — 'N/A' is a display placeholder
-                        }
-                    } else {
-                        new Notice(t('sceneAnalysis.pipeline.errors.aiProcessingFailed', { num: triplet.current.sceneNumber ?? 'N/A', path: triplet.current.file.path }), 6000); // SAFE: sceneNumber is null for unnumbered scene files — 'N/A' is a display placeholder
-                    }
-                } catch (sceneError) {
-                    await setLocalReviewWarningIfNeeded(plugin, vault, triplet.current, sceneError);
-                    const detail = sceneError instanceof Error ? sceneError.message : String(sceneError);
-                    new Notice(t('sceneAnalysis.pipeline.errors.fatalScene', { num: triplet.current.sceneNumber ?? 'N/A', path: triplet.current.file.path, detail }), 8000); // SAFE: sceneNumber is null for unnumbered scene files — 'N/A' is a display placeholder
-                }
-
-                totalProcessedCount++;
-                notice.setMessage(t('sceneAnalysis.pipeline.notices.progressUpdate', { current: totalProcessedCount, total: totalTripletsAcrossSubplots }));
-                await sleep(200);
-            }
-        }
-
-        await plugin.saveSettings();
-        notice.hide();
-        new Notice(t('sceneAnalysis.pipeline.notices.subplotComplete', { processed: totalProcessedCount, total: totalTripletsAcrossSubplots }));
-        plugin.refreshTimelineIfNeeded(null);
-    } catch (error) {
-        console.error('[API Beats][processBySubplotOrder] Error during processing:', error);
-        notice.hide();
-        new Notice(t('sceneAnalysis.pipeline.notices.subplotErrorGeneric'));
-    }
-}
-
 export async function processSubplotWithModal(
     plugin: RadialTimelinePlugin,
     vault: Vault,
@@ -649,13 +519,12 @@ export async function processEntireSubplotWithModalInternal(
         await plugin.saveSettings();
     }
 
-    const triplets: { prev: SceneData | null; current: SceneData; next: SceneData | null }[] = [];
-    for (let i = 0; i < filtered.length; i++) {
-        const currentScene = filtered[i];
-        const prevScene = i > 0 ? filtered[i - 1] : null;
-        const nextScene = i < filtered.length - 1 ? filtered[i + 1] : null;
-        triplets.push({ prev: prevScene, current: currentScene, next: nextScene });
-    }
+    // Only scenes with content take part, as in the manuscript and flagged
+    // subplot modes: an empty scene is never a triplet's prev/next, and is
+    // never sent for analysis. This is the set the command's scene count and
+    // pre-check already promise (SceneAnalysisCommands getSceneCount).
+    const contextScenes = filtered.filter(scene => hasProcessableContent(scene.frontmatter));
+    const triplets = buildTripletsByIndex(contextScenes, contextScenes, (s) => s.file.path);
 
     const subplotTasks = triplets.map(triplet => {
         const alreadyProcessed = hasBeenProcessedForBeats(triplet.current.frontmatter, { todayOnly: true });

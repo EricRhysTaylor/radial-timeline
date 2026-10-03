@@ -4,7 +4,12 @@ export const ANTHROPIC_INQUIRY_CACHE_TTL: AnthropicCacheTtl = '1h';
 export const GEMINI_CACHE_TTL_MIN_SECONDS = 60;
 export const GEMINI_CACHE_TTL_DEFAULT_SECONDS = 900;
 export const GEMINI_CACHE_TTL_MAX_SECONDS = 900;
-export const OPENAI_IN_MEMORY_WINDOW_MINUTES_DEFAULT = 60;
+/**
+ * OpenAI GPT-5.6+ prompt-cache lifetime. `prompt_cache_options.ttl` accepts
+ * only '30m' (the default): entries live at least 30 minutes after the last
+ * write or reuse. Every OpenAI model RT ships is GPT-5.6+.
+ */
+export const OPENAI_CACHE_TTL_MINUTES = 30;
 
 export function normalizeGeminiCacheTtlSeconds(value: unknown): number {
     if (typeof value !== 'number' || !Number.isFinite(value)) {
@@ -14,13 +19,6 @@ export function normalizeGeminiCacheTtlSeconds(value: unknown): number {
         GEMINI_CACHE_TTL_MIN_SECONDS,
         Math.min(GEMINI_CACHE_TTL_MAX_SECONDS, Math.round(value))
     );
-}
-
-export function normalizeOpenAiInMemoryWindowMinutes(value: unknown): number {
-    if (typeof value !== 'number' || !Number.isFinite(value)) {
-        return OPENAI_IN_MEMORY_WINDOW_MINUTES_DEFAULT;
-    }
-    return Math.max(5, Math.min(60, Math.round(value)));
 }
 
 function getCacheWindows(aiSettings: AiSettingsV1): AICacheWindowSettings | undefined {
@@ -39,9 +37,7 @@ export function resolveProviderCacheWindowMs(provider: AIProviderId, aiSettings:
         return normalizeGeminiCacheTtlSeconds(windows.googleTtlSeconds) * 1000;
     }
     if (provider === 'openai') {
-        return windows.openaiRetention === '24h'
-            ? 24 * 60 * 60 * 1000
-            : normalizeOpenAiInMemoryWindowMinutes(windows.openaiInMemoryWindowMinutes) * 60 * 1000;
+        return OPENAI_CACHE_TTL_MINUTES * 60 * 1000;
     }
     return null;
 }
@@ -50,11 +46,7 @@ export function formatProviderCacheTtlLabel(provider: AIProviderId, aiSettings: 
     const windows = getCacheWindows(aiSettings);
     if (!windows) return '';
     if (provider === 'anthropic') return ANTHROPIC_INQUIRY_CACHE_TTL;
-    if (provider === 'openai') {
-        return windows.openaiRetention === '24h'
-            ? '24h'
-            : `${normalizeOpenAiInMemoryWindowMinutes(windows.openaiInMemoryWindowMinutes)}m`;
-    }
+    if (provider === 'openai') return `${OPENAI_CACHE_TTL_MINUTES}m`;
     if (provider === 'google') {
         const cacheSeconds = normalizeGeminiCacheTtlSeconds(windows.googleTtlSeconds);
         return cacheSeconds % 60 === 0

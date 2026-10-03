@@ -5,7 +5,7 @@ Scope: provider prompt caching for Pulse (manuscript and subplot order),
 Gossamer, and Inquiry single-question and Omnibus runs, on Anthropic, OpenAI
 and Gemini. Context: building the Odyssey, Sherlock Holmes and Faerie Queene
 demo vaults.
-Status: evaluation only. No code changed.
+Status: evaluated, then fixed the same day. See Resolution at the end.
 
 ## Question
 
@@ -233,3 +233,86 @@ it changes the Pulse output schema.
 - Gemini caching API: https://ai.google.dev/api/caching
 - Gemini pricing: https://ai.google.dev/gemini-api/docs/pricing
 - Prior investigation: `docs/engineering/audits/openai-cache-miss-rootcause.md`
+
+## Resolution (2026-10-03)
+
+### OpenAI probe (gpt-6.1-sol)
+
+Defect 1 confirmed live. Two questions sent against the same ~6K-token
+corpus:
+
+| Request shape | Q2 cached tokens | Q2 cache write (1.25×) |
+|---|---|---|
+| RT before the fix: one user block, literal delimiter, `prompt_cache_retention` | 0 | 6,092 |
+| Explicit mode, breakpoint on the stable block, question in its own block | 6,069 | 0 |
+| Explicit mode, no breakpoint | 0 | 0 |
+
+The default implicit mode writes a cache on every request and bills it at
+1.25× input, so every one-off OpenAI call (Pulse, onboarding) was overpaying
+too.
+
+A live re-run through the plugin's own code path (`composeEnvelope` →
+`callOpenAiResponsesApi` → usage → cost → Omnibus health) after the fix:
+
+| | Cache write | Cache read | Cost | Omnibus health |
+|---|---|---|---|---|
+| Question 1 | 5,474 | 0 | $0.0140 | `armed` |
+| Question 2 | 0 | 5,474 | $0.0015 | `reused` |
+
+The delimiter is no longer sent to the model.
+
+### Fixed
+
+- **OpenAI** (defects 1 and 2):
+  - Every request sends `prompt_cache_options: {mode:'explicit'}`. A cache
+    break becomes a breakpointed stable block plus a volatile block.
+  - `cache_write_tokens` is parsed as cache-creation usage and priced at a new
+    single-lifetime `cacheWritePer1M` rate (1.25× input; also in
+    `pricing.json`).
+  - Provenance now comes from usage instead of "a key was sent".
+  - The pre-5.6 retention settings are removed and migrated away. The window
+    is a fixed 30m.
+- **Delimiter handling:** one `splitAtCacheBreak` replaces three inline copies.
+  Gemini no longer leaks the delimiter to the model when it skips caching.
+- **Omnibus** (defects 3–5):
+  - Cache windows are recorded for sequential passes.
+  - The Anthropic write double-count is gone.
+  - Gemini create vs hit is priced by provider status.
+  - The combined-call cost band is one call.
+  - The combined call skips the provider cache, since nothing reuses its
+    prefix.
+- **Speculative countdowns** (defect 7, and Inquiry's OpenAI branch): a window
+  opens only on a provider-reported write or read. A reused in-memory Gossamer
+  result no longer restarts the window or re-reports its cost. The Gossamer
+  pill tooltip refreshes per run.
+- **Pulse diagnostics** (defect 6): `requestedCacheTtl` reports the TTL on the
+  block actually sent, or 'none'.
+- **Gemini** (part of defect 8): the minimum is 4,096 tokens (3.x), with 2×
+  headroom on the estimate. The warm-cache check now hashes the same trimmed
+  prefix the provider caches.
+- **Determinism** (defects 9 and 10):
+  - Inquiry outline/reference blocks and manifest lines sort by path.
+  - The role template is in the reuse fingerprint.
+  - Gossamer always assembles narrative order, so switching to Chronologue no
+    longer changes the prompt or discards Gossamer AI-job answers.
+- **Pulse** (triplet design unchanged by owner decision):
+  - Entire-subplot mode analyzes and neighbors only scenes with content,
+    matching its own scene count and the other modes.
+  - The dead `processBySubplotOrder` and its i18n keys are deleted.
+
+### Still open (not fixed here)
+
+- Gemini: the cache registry lives only in memory, so a plugin reload orphans
+  a live cache until its TTL (15m max). The 15m TTL cap is kept deliberately
+  (storage cost).
+- `ai/forecast/estimateTokensFromVault.ts` computes its own reuse fingerprint
+  (without the role template). It isn't used to match sessions.
+- Reordering books in Book Manager changes the saga prefix but not the
+  fingerprint.
+- Gossamer: a re-score within 2 minutes returns the in-memory result (product
+  decision).
+- Pulse still sends the role template twice and the schema three ways. Left
+  as-is by owner decision.
+- The fallback gate's `or-chain-3` ratchet (58 > 52) was already failing at
+  HEAD before this work, from unrelated files.
+

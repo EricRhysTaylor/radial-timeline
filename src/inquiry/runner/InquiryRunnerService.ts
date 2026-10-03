@@ -43,6 +43,17 @@ const BOOK_FOLDER_REGEX = /^Book\s+(\d+)/i;
 /** Where multi-pass splits a prompt: its evidence starts on the line after this. */
 const EVIDENCE_MARKER = `\n${INQUIRY_EVIDENCE_HEADING}\n`;
 
+/**
+ * Corpus entries in path order (UTF-16 code units, as the default sort
+ * compares) — the order the corpus fingerprints sort their entries by. The
+ * manifest arrives in vault iteration order, which can change between
+ * sessions; the cacheable prefix must not, or an unchanged fingerprint would
+ * claim a cache the provider never wrote.
+ */
+function sortEntriesByPath(entries: CorpusManifestEntry[]): CorpusManifestEntry[] {
+    return [...entries].sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+}
+
 function isSinglePassPlanningBudgetError(message: string): boolean {
     const normalized = message.toLowerCase();
     return normalized.includes('single-pass planning budget')
@@ -395,7 +406,10 @@ export class InquiryRunnerService implements InquiryRunner {
                     input.targetSceneIds
                 ),
                 evidenceBlocks,
-                undefined,
+                // The combined call carries every question at once: no later call
+                // shares its prefix (its schema and system prompt are its own),
+                // so a provider cache write would never be read.
+                { skipProviderCache: true },
                 instructionPrompt,
                 cacheableUserInput,
                 input.corpus.cacheReuseFingerprint
@@ -622,7 +636,9 @@ export class InquiryRunnerService implements InquiryRunner {
 
     private async buildEvidenceBlocks(input: InquiryRunSubject): Promise<EvidenceBlock[]> {
         const blocks: EvidenceBlock[] = [];
-        const allEntries = input.corpus.entries;
+        // Outlines and references are emitted in path order; scenes are
+        // re-sorted below by scene number, then path.
+        const allEntries = sortEntriesByPath(input.corpus.entries);
         const sceneEntries = allEntries
             .filter(entry => entry.class === 'scene')
             .filter(entry => this.isModeActive(entry.mode));
@@ -880,8 +896,15 @@ export class InquiryRunnerService implements InquiryRunner {
     }
 
     private buildCorpusManifestLines(entries: CorpusManifestEntry[]): string[] {
+        // Files in path order (see sortEntriesByPath). Saga book anchors keep
+        // their Book Manager order: it is already deterministic, and it numbers
+        // unnumbered book folders here exactly as buildCanonicalBookRefIndex does.
+        const ordered = [
+            ...sortEntriesByPath(entries.filter(entry => entry.class !== 'book')),
+            ...entries.filter(entry => entry.class === 'book')
+        ];
         let bookAnchorIndex = 0;
-        return entries.map(entry => {
+        return ordered.map(entry => {
             const mode = this.normalizeEntryMode(entry.mode);
             const subject = this.buildManifestSubjectLabel(entry);
             if (entry.class === 'book') {
@@ -1194,6 +1217,7 @@ export class InquiryRunnerService implements InquiryRunner {
             cacheableUserInput,
             providerReuseKey,
             forceFreshRun: executionOptions?.forceFreshRun,
+            skipProviderCache: executionOptions?.skipProviderCache,
             // Request the full output ceiling on the first pass (the precheck
             // estimate above was prepared the same way). Avoids a wasted
             // truncated call followed by a ceiling retry.
@@ -1259,6 +1283,7 @@ export class InquiryRunnerService implements InquiryRunner {
             cacheableUserInput?: string;
             providerReuseKey?: string;
             forceFreshRun?: boolean;
+            skipProviderCache?: boolean;
             forceMaxOutputCeiling?: boolean;
         }
     ): Promise<AIRunResult> {
@@ -1301,7 +1326,8 @@ export class InquiryRunnerService implements InquiryRunner {
             // kept — its output is never reused, so a rerun stays cheap and the
             // cache window/countdown survives. (Was tied to forceFreshRun, which
             // needlessly paid full input cost and disarmed the cache on rerun.)
-            bypassProviderReuse: false,
+            // Only a one-shot call nothing reuses skips the provider cache.
+            bypassProviderReuse: options.skipProviderCache === true,
             preparedEstimate: preparedEstimate ?? undefined,
             providerReuseKey: options.providerReuseKey,
             evidenceDocuments: options.evidenceBlocks?.length

@@ -8,24 +8,6 @@ vi.mock('../credentials/credentials', () => ({
     getCredential: vi.fn().mockResolvedValue('test-key')
 }));
 
-vi.mock('../settings/aiSettings', () => ({
-    buildDefaultAiSettings: vi.fn(() => ({
-        cacheWindows: {
-            openaiRetention: '24h'
-        }
-    }))
-}));
-
-vi.mock('../settings/validateAiSettings', () => ({
-    validateAiSettings: vi.fn(() => ({
-        value: {
-            cacheWindows: {
-                openaiRetention: 'in_memory'
-            }
-        }
-    }))
-}));
-
 import { callOpenAiResponsesApi } from '../../api/openaiApi';
 import { OpenAIProvider } from './openaiProvider';
 
@@ -34,7 +16,7 @@ describe('OpenAIProvider', () => {
         vi.mocked(callOpenAiResponsesApi).mockReset();
     });
 
-    it('passes the configured OpenAI prompt cache retention through to Responses', async () => {
+    it('asks the Responses adapter for a cache breakpoint unless provider reuse is bypassed', async () => {
         vi.mocked(callOpenAiResponsesApi).mockResolvedValue({
             success: true,
             content: 'ok',
@@ -43,23 +25,31 @@ describe('OpenAIProvider', () => {
 
         const provider = new OpenAIProvider({ settings: {} } as never);
         await provider.generateText({
-            modelId: 'gpt-5.6-sol',
+            modelId: 'gpt-6.1-sol',
             systemPrompt: 'You are precise.',
             userPrompt: 'Return a short answer.'
         });
+        await provider.generateText({
+            modelId: 'gpt-6.1-sol',
+            systemPrompt: 'You are precise.',
+            userPrompt: 'Return a short answer.',
+            bypassProviderReuse: true
+        });
 
-        expect(callOpenAiResponsesApi).toHaveBeenCalledWith(
+        expect(callOpenAiResponsesApi).toHaveBeenNthCalledWith(
+            1,
             'test-key',
-            'gpt-5.6-sol',
+            'gpt-6.1-sol',
             'You are precise.',
             'Return a short answer.',
             undefined,
             undefined,
             undefined,
             undefined,
-            'in_memory',
+            true,
             undefined
         );
+        expect(vi.mocked(callOpenAiResponsesApi).mock.calls[1][8]).toBe(false);
     });
 
     it('passes prompt cache keys through to the OpenAI Responses adapter', async () => {
@@ -71,24 +61,13 @@ describe('OpenAIProvider', () => {
 
         const provider = new OpenAIProvider({ settings: {} } as never);
         await provider.generateText({
-            modelId: 'gpt-5.6-sol',
+            modelId: 'gpt-6.1-sol',
             systemPrompt: 'You are precise.',
             userPrompt: 'Return a short answer.',
             promptCacheKey: 'rt:inquiry:book-b1'
         });
 
-        expect(callOpenAiResponsesApi).toHaveBeenCalledWith(
-            'test-key',
-            'gpt-5.6-sol',
-            'You are precise.',
-            'Return a short answer.',
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            'in_memory',
-            'rt:inquiry:book-b1'
-        );
+        expect(vi.mocked(callOpenAiResponsesApi).mock.calls[0][9]).toBe('rt:inquiry:book-b1');
     });
 
     it('marks OpenAI cache hits only when cached token usage is present', async () => {
@@ -100,7 +79,8 @@ describe('OpenAIProvider', () => {
                     input_tokens: 1200,
                     output_tokens: 300,
                     input_tokens_details: {
-                        cached_tokens: 900
+                        cached_tokens: 900,
+                        cache_write_tokens: 0
                     }
                 }
             }
@@ -108,7 +88,7 @@ describe('OpenAIProvider', () => {
 
         const provider = new OpenAIProvider({ settings: {} } as never);
         const result = await provider.generateJson({
-            modelId: 'gpt-5.6-sol',
+            modelId: 'gpt-6.1-sol',
             systemPrompt: 'You are precise.',
             userPrompt: 'Return JSON.',
             jsonSchema: {
@@ -126,56 +106,56 @@ describe('OpenAIProvider', () => {
         expect(result.cacheStatus).toBe('hit');
     });
 
-    // ── Cache provenance: 'created' when key supplied + no read ──
-    //
-    // Mirrors the Gemini fix. OpenAI's API does not give a "creation"
-    // signal in the response (caching is implicit), but if we supplied
-    // a promptCacheKey and the run succeeded with no cached reads,
-    // the prefix is now armed for the next call.
-
-    it('REGRESSION: OpenAI first call (cache key supplied, no cached_tokens) reports cacheStatus="created"', async () => {
+    it('reports cacheStatus="created" when the provider reports cache_write_tokens', async () => {
+        // Live shape from gpt-6.1-sol (2026-10-03 probe): question 1 writes the
+        // corpus prefix; nothing is read yet.
         vi.mocked(callOpenAiResponsesApi).mockResolvedValue({
             success: true,
             content: '{"ok":true}',
             responseData: {
                 usage: {
-                    input_tokens: 1200,
-                    output_tokens: 300
-                    // No input_tokens_details — cached_tokens is 0 / absent
+                    input_tokens: 6090,
+                    output_tokens: 40,
+                    input_tokens_details: { cache_write_tokens: 6069, cached_tokens: 0 }
                 }
             }
         });
 
         const provider = new OpenAIProvider({ settings: {} } as never);
         const result = await provider.generateText({
-            modelId: 'gpt-5.6-sol',
+            modelId: 'gpt-6.1-sol',
             systemPrompt: 'You are precise.',
-            userPrompt: 'Return a short answer.',
-            promptCacheKey: 'rt:inquiry:book-b1'
+            userPrompt: 'Stable\n<<<CACHE_BREAK>>>\nQuestion'
         });
 
         expect(result.success).toBe(true);
         expect(result.cacheStatus).toBe('created');
-        // cacheUsed=false keeps reuseState='eligible' downstream
-        // (Settings preview shows "Cache armed", NOT "Warm cache
-        // confirmed" which requires payload-proven reuse).
+        // cacheUsed=false keeps reuseState='eligible' downstream: armed, not
+        // a confirmed warm read.
         expect(result.cacheUsed).toBe(false);
     });
 
-    it('OpenAI call without a prompt cache key reports no cache status (no caching attempted)', async () => {
+    it('claims no cache status when the provider reports neither a read nor a write', async () => {
+        // A cache key alone proves nothing: below the 1,024-token minimum, or
+        // with no breakpoint, nothing is written.
         vi.mocked(callOpenAiResponsesApi).mockResolvedValue({
             success: true,
             content: 'ok',
             responseData: {
-                usage: { input_tokens: 500, output_tokens: 100 }
+                usage: {
+                    input_tokens: 500,
+                    output_tokens: 100,
+                    input_tokens_details: { cache_write_tokens: 0, cached_tokens: 0 }
+                }
             }
         });
 
         const provider = new OpenAIProvider({ settings: {} } as never);
         const result = await provider.generateText({
-            modelId: 'gpt-5.6-sol',
+            modelId: 'gpt-6.1-sol',
             systemPrompt: 'You are precise.',
-            userPrompt: 'Hi.'
+            userPrompt: 'Hi.',
+            promptCacheKey: 'rt:inquiry:book-b1'
         });
 
         expect(result.success).toBe(true);
@@ -183,7 +163,7 @@ describe('OpenAIProvider', () => {
         expect(result.cacheUsed).toBeUndefined();
     });
 
-    it('OpenAI failed run with a cache key does NOT claim "created" (a failure didn\'t prime anything)', async () => {
+    it('OpenAI failed run does NOT claim "created" (a failure didn\'t prime anything)', async () => {
         vi.mocked(callOpenAiResponsesApi).mockResolvedValue({
             success: false,
             content: null,
@@ -193,34 +173,13 @@ describe('OpenAIProvider', () => {
 
         const provider = new OpenAIProvider({ settings: {} } as never);
         const result = await provider.generateText({
-            modelId: 'gpt-5.6-sol',
+            modelId: 'gpt-6.1-sol',
             systemPrompt: 'You are precise.',
             userPrompt: 'Hi.',
             promptCacheKey: 'rt:inquiry:book-b1'
         });
 
         expect(result.success).toBe(false);
-        expect(result.cacheStatus).toBeUndefined();
-        expect(result.cacheUsed).toBeUndefined();
-    });
-
-    it('OpenAI with bypassProviderReuse skips the "created" claim even when a key is set', async () => {
-        vi.mocked(callOpenAiResponsesApi).mockResolvedValue({
-            success: true,
-            content: 'ok',
-            responseData: { usage: { input_tokens: 1200, output_tokens: 100 } }
-        });
-
-        const provider = new OpenAIProvider({ settings: {} } as never);
-        const result = await provider.generateText({
-            modelId: 'gpt-5.6-sol',
-            systemPrompt: 'You are precise.',
-            userPrompt: 'Hi.',
-            promptCacheKey: 'rt:inquiry:book-b1',
-            bypassProviderReuse: true
-        });
-
-        expect(result.success).toBe(true);
         expect(result.cacheStatus).toBeUndefined();
         expect(result.cacheUsed).toBeUndefined();
     });

@@ -6,11 +6,13 @@ import {
     setTooltip
 } from 'obsidian';
 import type { AIRunAdvancedContext } from '../../ai/types';
-import type { TokenUsage } from '../../ai/usage/providerUsage';
 import { formatExactUsdCost } from '../../ai/cost/estimateCorpusCost';
-import { type OmnibusCacheHealth, type OmnibusCostAccumulator } from '../runner/omnibusCacheHealth';
-import { estimateOmnibusCostRange } from '../../ai/cost/estimateCorpusCost';
-import { ANTHROPIC_REQUESTED_CACHE_TTL } from '../../ai/settings/aiSettings';
+import {
+    estimateOmnibusRunCost,
+    type OmnibusCacheHealth,
+    type OmnibusCacheProbe,
+    type OmnibusCostAccumulator
+} from '../runner/omnibusCacheHealth';
 import { formatOmnibusResultAge, shouldSuggestOmnibusSkip } from '../runner/omnibusRecentResults';
 import { redactSensitiveValue } from '../../ai/credentials/redactSensitive';
 import { SIGMA_CHAR } from '../constants/inquiryUi';
@@ -201,8 +203,6 @@ export class InquiryOmnibusModal extends Modal {
     private costPillEl?: HTMLSpanElement;
     private costPillDetailEl?: HTMLSpanElement;
     private cacheReadCumulative = 0;
-    private cacheCreatedCumulative = 0;
-    private cacheMissCount = 0;
     /** Question ids the author has set to skip (seeded from recent-result suggestions). */
     private excludedIds = new Set<string>();
     /**
@@ -586,27 +586,36 @@ export class InquiryOmnibusModal extends Modal {
         }
         // Recompute the band for the effective question count through the same
         // estimator that produced the pre-run band (single computation path).
-        const range = estimateOmnibusCostRange({
+        const range = estimateOmnibusRunCost({
             provider: costRange.provider,
             modelId: costRange.modelId,
             corpusInputTokens: costRange.corpusInputTokens,
             expectedOutputTokensPerQuestion: costRange.expectedOutputTokensPerQuestion,
             questionCount: effectiveQuestions,
-            cacheAlreadyWarm: costRange.cacheAlreadyWarm,
-            cacheWriteTtl: ANTHROPIC_REQUESTED_CACHE_TTL
+            combined: costRange.combined,
+            maxOutputTokensPerCall: costRange.maxOutputTokensPerCall,
+            cacheAlreadyWarm: costRange.cacheAlreadyWarm
         });
         const corpusTokens = Math.max(0, Math.round(costRange.corpusInputTokens)).toLocaleString();
+        const questionsLabel = `${effectiveQuestions} question${effectiveQuestions === 1 ? '' : 's'}`;
+        if (costRange.combined) {
+            this.costLineEl.setText(
+                `Estimated cost: ~${formatExactUsdCost(range.uncachedUSD)} for one combined call answering ${questionsLabel}, `
+                + `which sends the ~${corpusTokens}-token corpus once.`
+            );
+            return;
+        }
         const reuseLabel = costRange.cacheAlreadyWarm ? 'warm — piggybacking on your recent run' : 'healthy';
         if (typeof range.cachedUSD === 'number') {
             this.costLineEl.setText(
                 `Estimated cost: ~${formatExactUsdCost(range.cachedUSD)} with cache reuse (${reuseLabel}) vs ~${formatExactUsdCost(range.uncachedUSD)} uncached, `
-                + `over ${effectiveQuestions} question${effectiveQuestions === 1 ? '' : 's'} against ~${corpusTokens} corpus input tokens. `
+                + `over ${questionsLabel} against ~${corpusTokens} corpus input tokens. `
                 + `The run aborts automatically if the cache is not reused after question 1.`
             );
         } else {
             this.costLineEl.setText(
                 `Estimated cost: ~${formatExactUsdCost(range.uncachedUSD)} (this model has no cache-read price to model reuse), `
-                + `over ${effectiveQuestions} question${effectiveQuestions === 1 ? '' : 's'} against ~${corpusTokens} corpus input tokens.`
+                + `over ${questionsLabel} against ~${corpusTokens} corpus input tokens.`
             );
         }
     }
@@ -725,33 +734,20 @@ export class InquiryOmnibusModal extends Modal {
     }
 
     /**
-     * Update the cache pill for a completed pass. When `health` is provided
-     * (sequential Omnibus) it is authoritative — it comes from the same pure
-     * decision that drives the kill-switch, so the pill and the abort logic
-     * can never disagree. Without `health` (the single-call combined path) the
-     * pill falls back to deriving state from the usage payload alone.
+     * Update the cache pill for a completed pass. `probe` and `health` come
+     * from readOmnibusCacheProbe and evaluateOmnibusCachePass — the same pure
+     * decision that drives the sequential kill-switch — so the pill, the
+     * running cost and the abort logic can never disagree.
      */
     notePassResult(
         passIndex: number,
         total: number,
-        usage: TokenUsage | null | undefined,
-        health?: OmnibusCacheHealth
+        probe: OmnibusCacheProbe,
+        health: OmnibusCacheHealth
     ): void {
         if (!this.cachePillEl || !this.cachePillDetailEl) return;
 
-        const cacheRead = usage?.cacheReadInputTokens ?? 0;
-        const cacheCreated = (usage?.cacheCreationInputTokens ?? 0)
-            + (usage?.cacheCreation5mInputTokens ?? 0)
-            + (usage?.cacheCreation1hInputTokens ?? 0);
-        const hasAnyCacheField = !!usage && (
-            typeof usage.cacheReadInputTokens === 'number'
-            || typeof usage.cacheCreationInputTokens === 'number'
-            || typeof usage.cacheCreation5mInputTokens === 'number'
-            || typeof usage.cacheCreation1hInputTokens === 'number'
-        );
-
-        this.cacheReadCumulative += cacheRead;
-        this.cacheCreatedCumulative += cacheCreated;
+        this.cacheReadCumulative += probe.cacheReadTokens;
 
         const setState = (state: 'pending' | 'primed' | 'confirmed' | 'miss' | 'none', detail: string): void => {
             if (!this.cachePillEl || !this.cachePillDetailEl) return;
@@ -760,49 +756,23 @@ export class InquiryOmnibusModal extends Modal {
             this.cachePillDetailEl.setText(detail);
         };
 
-        if (health) {
-            switch (health) {
-                case 'reused':
-                    setState('confirmed', `confirmed · read ${formatCacheTokens(this.cacheReadCumulative)} tok (pass ${passIndex}/${total})`);
-                    return;
-                case 'armed':
-                    setState('primed', `primed · wrote ${formatCacheTokens(cacheCreated)} tok (pass ${passIndex})`);
-                    return;
-                case 'miss':
-                    this.cacheMissCount += 1;
-                    setState('miss', `miss on pass ${passIndex} · terminating run`);
-                    return;
-                case 'below_minimum':
-                    setState('none', 'corpus below minimum cacheable size');
-                    return;
-                case 'unknown':
-                    setState('none', 'cache status unknown (no provider signal)');
-                    return;
-            }
+        switch (health) {
+            case 'reused':
+                setState('confirmed', `confirmed · read ${formatCacheTokens(this.cacheReadCumulative)} tok (pass ${passIndex}/${total})`);
+                return;
+            case 'armed':
+                setState('primed', `primed · wrote ${formatCacheTokens(probe.cacheCreatedTokens)} tok (pass ${passIndex})`);
+                return;
+            case 'miss':
+                setState('miss', `miss on pass ${passIndex} · terminating run`);
+                return;
+            case 'below_minimum':
+                setState('none', 'corpus below minimum cacheable size');
+                return;
+            case 'unknown':
+                setState('none', 'cache status unknown (no provider signal)');
+                return;
         }
-
-        if (!usage) {
-            setState('pending', `pass ${passIndex}/${total} · usage unknown`);
-            return;
-        }
-        if (!hasAnyCacheField) {
-            setState('none', 'not used by provider');
-            return;
-        }
-        if (cacheRead > 0) {
-            setState('confirmed', `confirmed · read ${formatCacheTokens(this.cacheReadCumulative)} tok (pass ${passIndex}/${total})`);
-            return;
-        }
-        if (passIndex <= 1 && cacheCreated > 0) {
-            setState('primed', `primed · wrote ${formatCacheTokens(cacheCreated)} tok (pass 1)`);
-            return;
-        }
-        if (passIndex >= 2) {
-            this.cacheMissCount += 1;
-            setState('miss', `miss on pass ${passIndex} · ${this.cacheMissCount} miss${this.cacheMissCount === 1 ? '' : 'es'} so far`);
-            return;
-        }
-        setState('pending', `pass ${passIndex}/${total} · no cache activity`);
     }
 
     noteRunningCost(acc: OmnibusCostAccumulator): void {

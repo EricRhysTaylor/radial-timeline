@@ -18,8 +18,6 @@ function settings(overrides: Partial<NonNullable<AiSettingsV1['cacheWindows']>> 
         cacheWindows: {
             anthropicTtl: '1h',
             googleTtlSeconds: 900,
-            openaiRetention: '24h',
-            openaiInMemoryWindowMinutes: 60,
             ...overrides
         }
     } as unknown as AiSettingsV1;
@@ -35,8 +33,9 @@ describe('cache window settings helpers', () => {
     it('uses the same provider window policy for labels and expiry math', () => {
         expect(formatProviderCacheTtlLabel('anthropic', settings())).toBe('1h');
         expect(resolveProviderCacheWindowMs('anthropic', settings())).toBe(60 * 60 * 1000);
-        expect(formatProviderCacheTtlLabel('openai', settings())).toBe('24h');
-        expect(resolveProviderCacheWindowMs('openai', settings())).toBe(24 * 60 * 60 * 1000);
+        // GPT-5.6+: one fixed 30m prompt-cache lifetime.
+        expect(formatProviderCacheTtlLabel('openai', settings())).toBe('30m');
+        expect(resolveProviderCacheWindowMs('openai', settings())).toBe(30 * 60 * 1000);
         expect(formatProviderCacheTtlLabel('google', settings())).toBe('15m');
         expect(resolveProviderCacheWindowMs('google', settings())).toBe(15 * 60 * 1000);
     });

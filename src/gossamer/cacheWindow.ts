@@ -10,10 +10,18 @@
  * preview pill, settings AI table).
  *
  * Doctrine (truth-over-optimism): a window is only built when the provider
- * actually engaged the cache on the run that armed it — never speculatively.
- * Gemini reports the real cachedContent expiry; Anthropic/OpenAI don't, so the
- * window is derived from the configured provider TTL bound to creation time
- * (NOT extended on a later hit).
+ * proved it wrote or read the cache on the run that armed it
+ * (`cacheStatus` 'created' | 'hit', which aiClient derives from the
+ * provider's own response) — never speculatively. `reuseState` is NOT proof:
+ * aiClient marks it 'eligible' before the call whenever the cache delimiter
+ * is present, including when the prefix is below the provider minimum and
+ * nothing is cached. Gemini reports the real cachedContent expiry;
+ * Anthropic/OpenAI don't, so the window is derived from the configured
+ * provider TTL counted from the run's return.
+ *
+ * An RT in-memory repeat (`servedFromCache`) never reaches the provider. It
+ * must not re-arm or extend the window, and must not re-report the earlier
+ * run's charge — see markGossamerCacheWindowReused.
  *
  * Refusal interaction (empirical, claude-fable-5 smoke probe 2026-07-19):
  * a refused request (stop_reason 'refusal') does NOT persist a usable cache
@@ -43,18 +51,26 @@ export interface GossamerCacheWindow {
   /** Whether the arming run created the cache or reused an existing one. */
   cacheStatus?: 'hit' | 'created';
   /**
-   * Actual billed cost (USD) of the run that armed/refreshed this window,
-   * derived from the provider's usage payload — a fact, not a projection.
+   * Actual billed cost (USD) of the most recent Gossamer run against this
+   * window, derived from the provider's usage payload — a fact, not a
+   * projection. 0 after an RT in-memory repeat (nothing was billed).
    */
   lastRunCostUSD?: number;
+  /**
+   * True when the most recent run was an RT in-memory repeat: the previous
+   * result was reused with no provider call. The window's expiry still comes
+   * from the provider-backed run that armed it.
+   */
+  lastRunReused?: boolean;
 }
 
 const CACHE_PROVIDERS: readonly AIProviderId[] = ['anthropic', 'openai', 'google'];
 
 /**
- * Build a cache window from a completed run's advanced context, or null when
- * the run did not engage a cacheable provider. `returnedAtMs` is the run's
- * return timestamp (creation time for the derived-TTL providers).
+ * Build a cache window from a completed provider run's advanced context, or
+ * null when the provider did not prove a cache write or read this run.
+ * `returnedAtMs` is the run's return timestamp (the start of the derived-TTL
+ * window). Never call this for an RT in-memory repeat.
  */
 export function buildGossamerCacheWindow(
   context: AIRunAdvancedContext | null | undefined,
@@ -62,8 +78,8 @@ export function buildGossamerCacheWindow(
   aiSettings: AiSettingsV1
 ): GossamerCacheWindow | null {
   if (!context) return null;
-  // Armed only when the provider genuinely engaged the cache this run.
-  if (!context.reuseState || context.reuseState === 'idle') return null;
+  // Armed only on provider proof that the cache was written or read this run.
+  if (context.cacheStatus !== 'created' && context.cacheStatus !== 'hit') return null;
   if (!CACHE_PROVIDERS.includes(context.provider)) return null;
   const provider = context.provider as GossamerCacheProvider;
 
@@ -92,6 +108,20 @@ export function buildGossamerCacheWindow(
     cachedStableTokens,
     cacheStatus: context.cacheStatus
   };
+}
+
+/**
+ * The window after an RT in-memory repeat (`servedFromCache`). No provider
+ * call happened, so the provider cache was neither written nor read and
+ * nothing was billed: the expiry stays where the provider-backed run set it,
+ * and the last run is reported as a $0 reuse — never the earlier run's charge
+ * again. No window (none was proven) stays no window.
+ */
+export function markGossamerCacheWindowReused(
+  window: GossamerCacheWindow | null
+): GossamerCacheWindow | null {
+  if (!window) return null;
+  return { ...window, lastRunCostUSD: 0, lastRunReused: true };
 }
 
 export function isGossamerCacheWindowOpen(
@@ -131,10 +161,11 @@ export function formatGossamerCachePillLabel(
 }
 
 /**
- * Factual cost report for the run that armed this window, e.g.
- * `"last run $0.157 · cache hit"`. Reports only the observed billed cost from
- * the usage payload — no projection of future runs. Null when no cost was
- * captured.
+ * Factual cost report for the most recent run against this window, e.g.
+ * `"last run $0.157 · cache hit"`, or `"last run $0.00 · reused previous
+ * result"` after an RT in-memory repeat. Reports only the observed billed cost
+ * from the usage payload — no projection of future runs. Null when no cost
+ * was captured.
  */
 export function formatGossamerCacheCostHint(
   window: GossamerCacheWindow | null | undefined
@@ -143,6 +174,7 @@ export function formatGossamerCacheCostHint(
     return null;
   }
   const cost = formatExactUsdCost(window.lastRunCostUSD);
+  if (window.lastRunReused) return `last run ${cost} · reused previous result`;
   const status = window.cacheStatus ? ` · cache ${window.cacheStatus}` : '';
   return `last run ${cost}${status}`;
 }

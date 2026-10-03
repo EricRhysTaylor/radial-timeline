@@ -1165,14 +1165,6 @@ export const de: DeepPartial<TranslationKeys> = {
         },
         pipeline: {
             notices: {
-                processingSubplotInit: 'Nebenhandlung wird verarbeitet: Szenendaten werden geholt...',
-                analyzingSubplot: '{{count}} Szenen werden für die Nebenhandlungs-Reihenfolge analysiert...',
-                sceneStatusSkip: 'Szene {{sceneRef}} (Nebenhandlung {{subplot}}) hat Pulse Update gesetzt, aber Status ist nicht working/complete. Wird übersprungen.',
-                processingScene: "Szene {{num}} wird verarbeitet ({{current}}/{{total}}) - Nebenhandlung: '{{name}}'...",
-                progressUpdate: 'Fortschritt: {{current}}/{{total}} Szenen verarbeitet...',
-                subplotComplete: 'Nebenhandlungs-Reihenfolge-Verarbeitung abgeschlossen: {{processed}}/{{total}} Triplets verarbeitet.',
-                subplotErrorGeneric: 'Fehler bei der Verarbeitung der Nebenhandlungen. Details in der Konsole.',
-                noSubplotScenes: 'Keine Szenen mit Nebenhandlungen gefunden.',
                 noScenesValid: 'Keine gültigen Szenen im aktiven Buchordner gefunden.',
                 noFlaggedSubplotScenes: 'Keine markierten Szenen (Pulse Update: Yes/True/1) mit Inhalt für "{{name}}" gefunden.',
                 noScenesForSubplot: 'Keine Szenen für Nebenhandlung "{{name}}" gefunden.',

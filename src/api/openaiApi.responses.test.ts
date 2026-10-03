@@ -6,6 +6,7 @@ vi.mock('obsidian', () => ({
 
 import * as obsidian from 'obsidian';
 import {
+    buildOpenAiResponsesInput,
     callOpenAiApi,
     callOpenAiResponsesApi,
     extractOpenAiAnnotationCitations,
@@ -173,13 +174,14 @@ describe('openai responses normalization', () => {
             },
             0.1,
             0.9,
-            '24h',
+            true,
             'rt:inquiry:book-b1'
         );
 
         expect(response.success).toBe(true);
         expect(response.requestPayload).toEqual({
             model: 'gpt-6.1-sol',
+            prompt_cache_options: { mode: 'explicit' },
             input: [
                 {
                     role: 'system',
@@ -205,7 +207,6 @@ describe('openai responses normalization', () => {
                     }
                 }
             },
-            prompt_cache_retention: '24h',
             prompt_cache_key: 'rt:inquiry:book-b1'
         });
         expect(response.adapterNotes).toContain('Stripped temperature for OpenAI Responses request: model does not support sampling controls.');
@@ -304,5 +305,68 @@ describe('openai responses normalization', () => {
             top_p: 0.9
         });
         expect(mockedRequestUrl).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('openai responses prompt caching (GPT-5.6+ explicit breakpoints)', () => {
+    it('splits the cache break into a breakpointed stable block and a volatile block', () => {
+        const input = buildOpenAiResponsesInput(
+            'gpt-6.1-sol',
+            'Role template',
+            'Instructions\n\nEVIDENCE:\ncorpus text\n\n<<<CACHE_BREAK>>>\n\nUser Question:\nWhat changes?',
+            true
+        );
+        expect(input).toEqual([
+            { role: 'system', content: [{ type: 'input_text', text: 'Role template' }] },
+            {
+                role: 'user',
+                content: [
+                    {
+                        type: 'input_text',
+                        text: 'Instructions\n\nEVIDENCE:\ncorpus text',
+                        prompt_cache_breakpoint: { mode: 'explicit' }
+                    },
+                    { type: 'input_text', text: 'User Question:\nWhat changes?' }
+                ]
+            }
+        ]);
+        expect(JSON.stringify(input)).not.toContain('<<<CACHE_BREAK>>>');
+    });
+
+    it('keeps the stable block byte-identical across different questions', () => {
+        const prompt = (question: string) => `Stable corpus\n<<<CACHE_BREAK>>>\n${question}`;
+        const first = buildOpenAiResponsesInput('gpt-6.1-sol', 'Role', prompt('Q1'), true);
+        const second = buildOpenAiResponsesInput('gpt-6.1-sol', 'Role', prompt('A different Q2'), true);
+        expect(first[1].content[0]).toEqual(second[1].content[0]);
+        expect(first[1].content[1]).not.toEqual(second[1].content[1]);
+    });
+
+    it('omits the breakpoint when provider reuse is bypassed, and still strips the delimiter', () => {
+        const input = buildOpenAiResponsesInput('gpt-6.1-sol', null, 'Stable\n<<<CACHE_BREAK>>>\nQuestion', false);
+        expect(input).toEqual([{
+            role: 'user',
+            content: [
+                { type: 'input_text', text: 'Stable' },
+                { type: 'input_text', text: 'Question' }
+            ]
+        }]);
+    });
+
+    it('sends one plain block with no breakpoint for prompts without a cache break (Pulse)', () => {
+        const input = buildOpenAiResponsesInput('gpt-6.1-sol', 'Role', 'Triplet prompt', true);
+        expect(input[1]).toEqual({ role: 'user', content: [{ type: 'input_text', text: 'Triplet prompt' }] });
+    });
+
+    it('sends explicit cache mode on every request so one-off calls write no cache', async () => {
+        vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
+            status: 200,
+            text: '',
+            json: { id: 'resp_1', status: 'completed', output_text: 'ok' }
+        } as never);
+        const response = await callOpenAiResponsesApi('test-key', 'gpt-6.1-sol', null, 'Triplet prompt', 256);
+        const payload = response.requestPayload as Record<string, unknown>;
+        expect(payload.prompt_cache_options).toEqual({ mode: 'explicit' });
+        expect(JSON.stringify(payload.input)).not.toContain('prompt_cache_breakpoint');
+        expect(payload).not.toHaveProperty('prompt_cache_retention');
     });
 });

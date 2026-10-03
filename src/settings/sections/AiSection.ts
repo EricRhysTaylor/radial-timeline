@@ -1271,9 +1271,10 @@ export function renderAiSection(params: {
         // countdown is only honest once the provider payload PROVES a cache
         // resource exists (cache_read or cache_creation tokens > 0). The
         // cacheWindowExpiresAt timestamp alone is setting-derived optimism —
-        // OpenAI never reports cache-creation tokens, so a "primed/created"
-        // run with cached_tokens=0 has no proof its cache exists and must NOT
-        // show "23h 51m remaining". Such runs still show the armed state, just
+        // a run whose usage shows neither a cache read nor a cache write has
+        // no proof its cache exists and must NOT show a countdown. (All three
+        // providers now report both sides; OpenAI GPT-5.6+ via
+        // cache_write_tokens.) Such runs still show the armed state, just
         // without a fabricated countdown.
         const cacheUsage = cacheSession?.result.tokenUsage;
         const cacheProven = !!cacheUsage
@@ -1352,9 +1353,8 @@ export function renderAiSection(params: {
             && cacheSession.cacheWindowExpiresAt > Date.now()
         ) {
             // Countdown only when the cache is payload-proven. An unproven
-            // "primed" run (e.g. OpenAI, which never reports cache-creation
-            // tokens, so cached_tokens=0) shows the armed state WITHOUT a
-            // fabricated remaining-time — the provider manages the real expiry.
+            // "primed" run (usage shows no cache read or write) shows the
+            // armed state WITHOUT a fabricated remaining-time.
             const armedTimeSuffix = provenCacheRemainingLabel ? ` • ${provenCacheRemainingLabel}` : '';
             return {
                 tone: 'success',

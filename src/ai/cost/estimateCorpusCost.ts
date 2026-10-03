@@ -65,12 +65,13 @@ function clampCacheReuseRatio(value: number | undefined): number | undefined {
 }
 
 /**
- * Providers that bill cache writes at their own rate (Anthropic). Providers
- * without an explicit write rate (OpenAI, Gemini) bill the priming pass at
- * the ordinary input rate — that is their pricing, not a substitution.
+ * Providers that bill cache writes at their own rate (Anthropic per TTL,
+ * OpenAI GPT-5.6+ at one rate). Providers without an explicit write rate
+ * (Gemini) bill the priming pass at the ordinary input rate — that is their
+ * pricing, not a substitution.
  */
 function hasExplicitCacheWritePricing(pricing: ResolvedProviderModelPricing): boolean {
-    return isRate(pricing.cacheWrite5mPer1M) || isRate(pricing.cacheWrite1hPer1M);
+    return isRate(pricing.cacheWrite5mPer1M) || isRate(pricing.cacheWrite1hPer1M) || isRate(pricing.cacheWritePer1M);
 }
 
 /**
@@ -81,8 +82,11 @@ function hasExplicitCacheWritePricing(pricing: ResolvedProviderModelPricing): bo
  */
 function resolveCacheWriteRatePer1M(
     pricing: ResolvedProviderModelPricing,
-    cacheWriteTtl: AnthropicCacheTtl
+    cacheWriteTtl: AnthropicCacheTtl | undefined
 ): number | undefined {
+    // A single-lifetime write rate (OpenAI) applies whatever TTL the caller names.
+    if (isRate(pricing.cacheWritePer1M)) return pricing.cacheWritePer1M;
+    if (!cacheWriteTtl) return undefined;
     const rate = cacheWriteTtl === '1h' ? pricing.cacheWrite1hPer1M : pricing.cacheWrite5mPer1M;
     return isRate(rate) ? rate : undefined;
 }
@@ -264,9 +268,7 @@ export function estimateUsageCost(
     // Each creation bucket is priced only at its own TTL's rate. Creation
     // tokens the provider did not attribute to a TTL are priced at the TTL
     // the run requested, and left unpriced when that is unknown too.
-    const unattributedRate = requestedCacheWriteTtl
-        ? resolveCacheWriteRatePer1M(pricing, requestedCacheWriteTtl)
-        : undefined;
+    const unattributedRate = resolveCacheWriteRatePer1M(pricing, requestedCacheWriteTtl);
     const canPriceCacheCreation = hasExplicitCacheWrite
         && (cacheCreation5mInputTokenCount === 0 || isRate(pricing.cacheWrite5mPer1M))
         && (cacheCreation1hInputTokenCount === 0 || isRate(pricing.cacheWrite1hPer1M))

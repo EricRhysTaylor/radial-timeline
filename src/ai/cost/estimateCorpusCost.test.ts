@@ -358,11 +358,36 @@ describe('estimateOmnibusCostRange', () => {
     });
 
     it('prices the priming question at the input rate for providers without an explicit write rate', () => {
-        const pricing = getActivePricingTable().openai['gpt-6.1-sol'];
-        const range = estimateOmnibusCostRange({ provider: 'openai', modelId: 'gpt-6.1-sol', corpusInputTokens: 50_000, expectedOutputTokensPerQuestion: 1_000, questionCount: 4, cacheWriteTtl: '1h' });
+        const pricing = getActivePricingTable().google['gemini-3.8-flash'];
+        const range = estimateOmnibusCostRange({ provider: 'google', modelId: 'gemini-3.8-flash', corpusInputTokens: 50_000, expectedOutputTokensPerQuestion: 1_000, questionCount: 4, cacheWriteTtl: '1h' });
         const output = 4 * (1_000 / 1e6) * pricing.outputPer1M;
         expect(range.cachedUSD).toBeCloseTo(0.05 * pricing.inputPer1M + 3 * 0.05 * (pricing.cacheReadPer1M as number) + output, 10);
         expect(range.cachedUSD as number).toBeLessThan(range.uncachedUSD);
+    });
+
+    it('prices the OpenAI priming question at its single cache-write rate (1.25× input), whatever TTL is named', () => {
+        const pricing = getActivePricingTable().openai['gpt-6.1-sol'];
+        expect(pricing.cacheWritePer1M).toBe(pricing.inputPer1M * 1.25);
+        const range = estimateOmnibusCostRange({ provider: 'openai', modelId: 'gpt-6.1-sol', corpusInputTokens: 50_000, expectedOutputTokensPerQuestion: 1_000, questionCount: 4, cacheWriteTtl: '1h' });
+        const output = 4 * (1_000 / 1e6) * pricing.outputPer1M;
+        expect(range.cachedUSD).toBeCloseTo(0.05 * (pricing.cacheWritePer1M as number) + 3 * 0.05 * (pricing.cacheReadPer1M as number) + output, 10);
+    });
+
+    it('prices OpenAI cache_write_tokens at the write rate in actual usage', () => {
+        // gpt-6.1-sol live probe shape: 6,090 input, 6,069 written, 0 read.
+        const pricing = getActivePricingTable().openai['gpt-6.1-sol'];
+        const cost = estimateUsageCost('openai', 'gpt-6.1-sol', {
+            inputTokens: 6_090,
+            outputTokens: 40,
+            cacheReadInputTokens: 0,
+            cacheCreationInputTokens: 6_069
+        });
+        expect(cost?.cacheCreationCostUSD).toBeCloseTo((6_069 / 1e6) * (pricing.cacheWritePer1M as number), 12);
+        expect(cost?.rawInputCostUSD).toBeCloseTo((21 / 1e6) * pricing.inputPer1M, 12);
+        expect(cost?.totalCostUSD).toBeCloseTo(
+            (6_069 / 1e6) * (pricing.cacheWritePer1M as number) + (21 / 1e6) * pricing.inputPer1M + (40 / 1e6) * pricing.outputPer1M,
+            12
+        );
     });
 
     it('omits the cached band for a model with no cache-read rate at all', () => {

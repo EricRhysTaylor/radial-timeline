@@ -319,6 +319,10 @@ function applyDrifts(pricing, drifts) {
             if (isFiniteNonNeg(entry.cacheWrite5mPer1M)) entry.cacheWrite5mPer1M = round4(drift.to * 1.25);
             if (isFiniteNonNeg(entry.cacheWrite1hPer1M)) entry.cacheWrite1hPer1M = round4(drift.to * 2);
         }
+        // OpenAI GPT-5.6+ bills cache writes at 1.25× input (one lifetime).
+        if (drift.provider === 'openai' && drift.field === 'inputPer1M' && isFiniteNonNeg(entry.cacheWritePer1M)) {
+            entry.cacheWritePer1M = round4(drift.to * 1.25);
+        }
     }
     return applied;
 }

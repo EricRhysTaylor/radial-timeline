@@ -3,7 +3,6 @@ import type { AiStatus } from '../api/providerErrors';
 export type AIProviderId = 'openai' | 'anthropic' | 'google' | 'ollama' | 'none';
 export type AccessTier = 1 | 2 | 3 | 4;
 export type AnthropicCacheTtl = '5m' | '1h';
-export type OpenAiPromptCacheRetention = 'in_memory' | '24h';
 
 export type Capability =
     | 'longContext'
@@ -201,8 +200,6 @@ export interface AICacheWindowSettings {
     /** @deprecated Anthropic Inquiry requests use a fixed 1h TTL; persisted values are ignored. */
     anthropicTtl: AnthropicCacheTtl;
     googleTtlSeconds: number;
-    openaiRetention: OpenAiPromptCacheRetention;
-    openaiInMemoryWindowMinutes: number;
 }
 
 export type LocalLlmBackendId = 'ollama' | 'lmStudio' | 'openaiCompatible';

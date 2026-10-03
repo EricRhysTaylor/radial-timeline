@@ -1165,14 +1165,6 @@ export const ko: DeepPartial<TranslationKeys> = {
         },
         pipeline: {
             notices: {
-                processingSubplotInit: '서브플롯 처리: 장면 데이터 가져오는 중...',
-                analyzingSubplot: '서브플롯 순서를 위해 {{count}} 장면 분석 중...',
-                sceneStatusSkip: '장면 {{sceneRef}} (서브플롯 {{subplot}})에 Pulse Update가 설정되었지만 Status가 working/complete가 아닙니다. 건너뜁니다.',
-                processingScene: "장면 {{num}} 처리 중 ({{current}}/{{total}}) - 서브플롯: '{{name}}'...",
-                progressUpdate: '진행: {{current}}/{{total}} 장면 처리됨...',
-                subplotComplete: '서브플롯 순서 처리 완료: {{processed}}/{{total}} 트리플렛 처리됨.',
-                subplotErrorGeneric: '서브플롯 처리 오류. 자세한 내용은 콘솔을 확인하세요.',
-                noSubplotScenes: '서브플롯이 있는 장면을 찾을 수 없습니다.',
                 noScenesValid: '활성 책 폴더에서 유효한 장면을 찾을 수 없습니다.',
                 noFlaggedSubplotScenes: '"{{name}}"에 대해 콘텐츠가 있는 표시된 장면 (Pulse Update: Yes/True/1)을 찾을 수 없습니다.',
                 noScenesForSubplot: '서브플롯 "{{name}}"에 대한 장면을 찾을 수 없습니다.',

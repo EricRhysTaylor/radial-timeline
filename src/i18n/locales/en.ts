@@ -1665,14 +1665,6 @@ export interface TranslationKeys {
         };
         pipeline: {
             notices: {
-                processingSubplotInit: string;
-                analyzingSubplot: string;
-                sceneStatusSkip: string;
-                processingScene: string;
-                progressUpdate: string;
-                subplotComplete: string;
-                subplotErrorGeneric: string;
-                noSubplotScenes: string;
                 noScenesValid: string;
                 noFlaggedSubplotScenes: string;
                 noScenesForSubplot: string;
@@ -4115,14 +4107,6 @@ export const en: TranslationKeys = {
         },
         pipeline: {
             notices: {
-                processingSubplotInit: 'Processing Subplot: Getting scene data...',
-                analyzingSubplot: 'Analyzing {{count}} scenes for subplot order...',
-                sceneStatusSkip: 'Scene {{sceneRef}} (subplot {{subplot}}) has Pulse Update set but Status is not working/complete. Skipping.',
-                processingScene: "Processing scene {{num}} ({{current}}/{{total}}) - Subplot: '{{name}}'...",
-                progressUpdate: 'Progress: {{current}}/{{total}} scenes processed...',
-                subplotComplete: 'Subplot order processing complete: {{processed}}/{{total}} triplets processed.',
-                subplotErrorGeneric: 'Error processing subplots. Check console for details.',
-                noSubplotScenes: 'No scenes with subplots found.',
                 noScenesValid: 'No valid scenes found in the active book folder.',
                 noFlaggedSubplotScenes: 'No flagged scenes (Pulse Update: Yes/True/1) with content found for "{{name}}".',
                 noScenesForSubplot: 'No scenes found for subplot "{{name}}".',

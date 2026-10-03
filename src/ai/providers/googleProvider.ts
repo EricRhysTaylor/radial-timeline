@@ -4,7 +4,7 @@ import { getOrCreateGeminiCache } from '../../api/geminiCacheManager';
 import { classifyProviderError } from '../../api/providerErrors';
 import { extractTokenUsage } from '../usage/providerUsage';
 import { getCredential } from '../credentials/credentials';
-import { CACHE_BREAK_DELIMITER } from '../prompts/composeEnvelope';
+import { splitAtCacheBreak } from '../prompts/composeEnvelope';
 import { buildDefaultAiSettings } from '../settings/aiSettings';
 import { normalizeGeminiCacheTtlSeconds } from '../settings/cacheWindows';
 import { validateAiSettings } from '../settings/validateAiSettings';
@@ -101,40 +101,53 @@ export class GoogleProvider implements AIProvider {
         };
     }
 
+    /**
+     * Split the composed prompt at the cache break and, when caching applies,
+     * get or create the Gemini cached-content resource for the stable prefix.
+     * The delimiter never reaches the model: an uncached call (citations on,
+     * prefix below the model's cache minimum) sends stable + volatile joined.
+     */
+    private async prepareCachedPrompt(
+        req: GenerateTextRequest,
+        apiKey: string,
+        ttlSetting: number | undefined
+    ): Promise<
+        | { userPrompt: string; cachedContentName?: string; cacheStatus?: ProviderExecutionResult['cacheStatus']; cacheExpiresAt?: number }
+        | { failure: ProviderExecutionResult }
+    > {
+        const split = splitAtCacheBreak(req.userPrompt);
+        if (!split) return { userPrompt: req.userPrompt };
+        const uncachedPrompt = split.volatile ? `${split.stable}\n\n${split.volatile}` : split.stable;
+        if (req.citationsEnabled || req.bypassProviderReuse || !split.stable) {
+            return { userPrompt: uncachedPrompt };
+        }
+        const ttlSeconds = normalizeGeminiCacheTtlSeconds(ttlSetting);
+        try {
+            const cache = await getOrCreateGeminiCache(
+                apiKey,
+                req.modelId,
+                split.stable,
+                req.systemPrompt ?? undefined,
+                ttlSeconds
+            );
+            if (!cache) return { userPrompt: uncachedPrompt };
+            return {
+                userPrompt: split.volatile,
+                cachedContentName: cache.cacheName,
+                cacheStatus: cache.status,
+                cacheExpiresAt: cache.expiresAt
+            };
+        } catch (error) {
+            return { failure: this.buildCacheSetupFailure(req, ttlSeconds, split.stable, error) };
+        }
+    }
+
     async generateText(req: GenerateTextRequest): Promise<ProviderExecutionResult> {
         const apiKey = await getCredential(this.plugin, 'google');
         const aiSettings = validateAiSettings(this.plugin.settings.aiSettings ?? buildDefaultAiSettings()).value;
-        const ttlSeconds = normalizeGeminiCacheTtlSeconds(aiSettings.cacheWindows?.googleTtlSeconds);
-        let userPrompt = req.userPrompt;
-        let cachedContentName: string | undefined;
-        let cacheStatus: ProviderExecutionResult['cacheStatus'];
-        let cacheExpiresAt: number | undefined;
-        if (!req.citationsEnabled && !req.bypassProviderReuse) {
-            const delimIndex = userPrompt.indexOf(CACHE_BREAK_DELIMITER);
-            if (delimIndex > 0) {
-                const stableText = userPrompt.slice(0, delimIndex).trimEnd();
-                const volatileText = userPrompt.slice(delimIndex + CACHE_BREAK_DELIMITER.length).trimStart();
-                if (stableText) {
-                    try {
-                        const cache = await getOrCreateGeminiCache(
-                            apiKey,
-                            req.modelId,
-                            stableText,
-                            req.systemPrompt ?? undefined,
-                            ttlSeconds
-                        );
-                        if (cache) {
-                            cachedContentName = cache.cacheName;
-                            cacheStatus = cache.status;
-                            cacheExpiresAt = cache.expiresAt;
-                            userPrompt = volatileText;
-                        }
-                    } catch (error) {
-                        return this.buildCacheSetupFailure(req, ttlSeconds, stableText, error);
-                    }
-                }
-            }
-        }
+        const prepared = await this.prepareCachedPrompt(req, apiKey, aiSettings.cacheWindows?.googleTtlSeconds);
+        if ('failure' in prepared) return prepared.failure;
+        const { userPrompt, cachedContentName, cacheStatus, cacheExpiresAt } = prepared;
         const result = await callGeminiApi(
             apiKey,
             req.modelId,
@@ -170,37 +183,9 @@ export class GoogleProvider implements AIProvider {
     async generateJson(req: GenerateJsonRequest): Promise<ProviderExecutionResult> {
         const apiKey = await getCredential(this.plugin, 'google');
         const aiSettings = validateAiSettings(this.plugin.settings.aiSettings ?? buildDefaultAiSettings()).value;
-        const ttlSeconds = normalizeGeminiCacheTtlSeconds(aiSettings.cacheWindows?.googleTtlSeconds);
-        let userPrompt = req.userPrompt;
-        let cachedContentName: string | undefined;
-        let cacheStatus: ProviderExecutionResult['cacheStatus'];
-        let cacheExpiresAt: number | undefined;
-        if (!req.citationsEnabled && !req.bypassProviderReuse) {
-            const delimIndex = userPrompt.indexOf(CACHE_BREAK_DELIMITER);
-            if (delimIndex > 0) {
-                const stableText = userPrompt.slice(0, delimIndex).trimEnd();
-                const volatileText = userPrompt.slice(delimIndex + CACHE_BREAK_DELIMITER.length).trimStart();
-                if (stableText) {
-                    try {
-                        const cache = await getOrCreateGeminiCache(
-                            apiKey,
-                            req.modelId,
-                            stableText,
-                            req.systemPrompt ?? undefined,
-                            ttlSeconds
-                        );
-                        if (cache) {
-                            cachedContentName = cache.cacheName;
-                            cacheStatus = cache.status;
-                            cacheExpiresAt = cache.expiresAt;
-                            userPrompt = volatileText;
-                        }
-                    } catch (error) {
-                        return this.buildCacheSetupFailure(req, ttlSeconds, stableText, error);
-                    }
-                }
-            }
-        }
+        const prepared = await this.prepareCachedPrompt(req, apiKey, aiSettings.cacheWindows?.googleTtlSeconds);
+        if ('failure' in prepared) return prepared.failure;
+        const { userPrompt, cachedContentName, cacheStatus, cacheExpiresAt } = prepared;
         const result = await callGeminiApi(
             apiKey,
             req.modelId,

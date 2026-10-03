@@ -85,6 +85,29 @@ describe('extractTokenUsage', () => {
         });
     });
 
+    it('extracts GPT-5.6+ cache_write_tokens as cache-creation usage', () => {
+        // Live gpt-6.1-sol shape (2026-10-03 probe, question 1 of a shared corpus).
+        const usage = extractTokenUsage('openai', {
+            usage: {
+                input_tokens: 6090,
+                output_tokens: 40,
+                total_tokens: 6130,
+                input_tokens_details: {
+                    cache_write_tokens: 6069,
+                    cached_tokens: 0
+                }
+            }
+        });
+
+        expect(usage).toEqual({
+            inputTokens: 6090,
+            outputTokens: 40,
+            totalTokens: 6130,
+            cacheReadInputTokens: 0,
+            cacheCreationInputTokens: 6069
+        });
+    });
+
     it('includes Gemini thinking tokens in billed output usage', () => {
         const usage = extractTokenUsage('google', {
             usageMetadata: {

@@ -517,13 +517,22 @@ export function estimateTokens(wordCount: number): number {
 }
 
 /**
- * Get sorted scene files ready for manuscript assembly
- * This is the single source of truth for preparing scenes for manuscript generation
- * Uses the same sorting logic as the timeline view
- * @param plugin - The RadialTimelinePlugin instance
- * @returns Object with array of TFile objects and sort order description
+ * Gossamer's manuscript: the active book's scene files in narrative
+ * (manuscript) order — always, whatever view the timeline is showing.
+ *
+ * Gossamer scores beats that sit at narrative positions, and its signals are
+ * what the reader experiences in reading order; the beat list it is paired
+ * with is sorted by narrative placement. Following the current view
+ * (Chronologue, or the When-ordering setting) sent the manuscript in story-time
+ * order, changed the request bytes when the author switched views between
+ * signals (losing the provider cache), and made a written Gossamer AI job look
+ * stale so its answer was discarded.
+ *
+ * Every caller is a Gossamer path — the API run, Copy AI prompt, AI jobs and
+ * the Gossamer token forecasts — and all must assemble the identical text.
+ * Manuscript export orders explicitly through getSceneFilesByOrder.
  */
-export async function getSortedSceneFiles(plugin: RadialTimelinePlugin): Promise<{ files: TFile[], sortOrder: string }> {
+export async function getSortedSceneFiles(plugin: RadialTimelinePlugin): Promise<{ files: TFile[] }> {
   const exportContext = getActiveBookExportContext(plugin);
   const allScenes = await plugin.getSceneData({ sourcePath: exportContext.sourceFolder });
 
@@ -537,31 +546,16 @@ export async function getSortedSceneFiles(plugin: RadialTimelinePlugin): Promise
     return false;
   });
 
-  // Sort scenes using the same logic as the timeline view
-  // Check current mode and sorting settings
-  const currentMode = plugin.settings.currentMode || 'narrative';
-  const isChronologueMode = currentMode === 'chronologue';
-  const forceChronological = isChronologueMode;
-
-  // Import and use the same sortScenes function that the timeline uses
-  const { sortScenes, usesWhenOrdering } = await import('./sceneHelpers');
-  const sortByWhen = usesWhenOrdering(plugin.settings);
-  const sortedScenes = sortScenes(uniqueScenes, sortByWhen, forceChronological);
+  // Narrative order — the same sort manuscript export uses for 'narrative'.
+  const { sortScenes } = await import('./sceneHelpers');
+  const sortedScenes = sortScenes(uniqueScenes, false, false);
 
   // Convert to TFile objects
   const sceneFiles = sortedScenes
     .map(s => plugin.app.vault.getAbstractFileByPath(s.path!))
     .filter((f): f is TFile => f instanceof TFile);
 
-  // Determine sort order description
-  let sortOrder: string;
-  if (isChronologueMode) {
-    sortOrder = 'Chronological (by When date/time)';
-  } else {
-    sortOrder = 'Narrative (by scene title/number)';
-  }
-
-  return { files: sceneFiles, sortOrder };
+  return { files: sceneFiles };
 }
 
 import { parseRuntimeField } from './runtimeEstimator';

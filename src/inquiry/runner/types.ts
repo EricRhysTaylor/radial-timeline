@@ -134,6 +134,12 @@ export interface InquiryRunExecutionOptions {
     onProgress?: (event: InquiryRunProgressEvent) => void;
     shouldAbort?: () => boolean;
     forceFreshRun?: boolean;
+    /**
+     * Send the call without provider prompt caching. For a one-shot call whose
+     * prefix nothing else reuses (the combined Omnibus call): a cache write
+     * there is pure cost — Anthropic/OpenAI write premiums, Gemini storage.
+     */
+    skipProviderCache?: boolean;
 }
 
 export interface InquiryRunTrace {

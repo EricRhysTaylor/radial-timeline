@@ -1,5 +1,26 @@
-/** Delimiter injected before volatile question section for provider prompt caching (Anthropic, Gemini). */
+/** Delimiter injected before volatile question section for provider prompt caching (Anthropic, Gemini, OpenAI). */
 export const CACHE_BREAK_DELIMITER = '<<<CACHE_BREAK>>>';
+
+export interface CacheBreakSplit {
+    /** Everything before the delimiter: the reusable prefix the provider caches. */
+    stable: string;
+    /** Everything after the delimiter: the per-call text sent after the cache point. */
+    volatile: string;
+}
+
+/**
+ * The one place a provider adapter splits a composed user prompt at the cache
+ * break. Returns null when the prompt carries no delimiter (or nothing precedes
+ * it). The delimiter itself is internal: it never reaches a model.
+ */
+export function splitAtCacheBreak(userPrompt: string): CacheBreakSplit | null {
+    const delimIndex = userPrompt.indexOf(CACHE_BREAK_DELIMITER);
+    if (delimIndex <= 0) return null;
+    return {
+        stable: userPrompt.slice(0, delimIndex).trimEnd(),
+        volatile: userPrompt.slice(delimIndex + CACHE_BREAK_DELIMITER.length).trimStart()
+    };
+}
 
 export interface EnvelopeInput {
     roleTemplateName: string;

@@ -196,17 +196,19 @@ import {
 import {
     estimateCorpusCost,
     formatExactUsdCost,
-    formatApproxUsdCost,
-    estimateOmnibusCostRange
+    formatApproxUsdCost
 } from '../ai/cost/estimateCorpusCost';
 import {
     accumulateOmnibusPassCost,
     buildOmnibusCacheMissMessage,
     createOmnibusCostAccumulator,
+    estimateOmnibusRunCost,
     evaluateOmnibusCachePass,
+    readCacheWriteTokens,
     readOmnibusCacheProbe,
     type OmnibusCostAccumulator
 } from './runner/omnibusCacheHealth';
+import { resolveActiveRoleTemplate } from '../ai/roleTemplate';
 import type { OmnibusRecentQuestionResult } from './runner/omnibusRecentResults';
 import { tokenEstimateFromMethod } from '../ai/estimates';
 import { resolveInquirySourceRoots } from './utils/sourceRoots';
@@ -5729,30 +5731,7 @@ export class InquiryView extends ItemView {
                 questionZone: question.zone
             };
             session.cacheReuseFingerprint = manifest.cacheReuseFingerprint;
-            const cacheWindowExpiresAt = this.resolveCacheWindowExpiry(result, runTrace);
-            if (cacheWindowExpiresAt) {
-                session.cacheWindowExpiresAt = cacheWindowExpiresAt;
-            }
-            session.cacheReuseState = runTrace?.cacheReuseState;
-            session.providerCacheStatus = runTrace?.cacheStatus;
-            const observedCacheMetrics = this.getObservedCacheMetrics(runTrace);
-            session.cachedStableRatio = observedCacheMetrics
-                ? observedCacheMetrics.cachedStableRatio
-                : (typeof runTrace?.cachedStableRatio === 'number' && Number.isFinite(runTrace.cachedStableRatio)
-                    ? Math.min(1, Math.max(0, runTrace.cachedStableRatio))
-                    : undefined);
-            session.cachedStableTokens = observedCacheMetrics
-                ? observedCacheMetrics.cachedStableTokens
-                : (typeof runTrace?.cachedStableTokens === 'number' && Number.isFinite(runTrace.cachedStableTokens)
-                    ? Math.max(0, Math.floor(runTrace.cachedStableTokens))
-                    : undefined);
-            session.totalInputTokens = observedCacheMetrics
-                ? observedCacheMetrics.totalInputTokens
-                : (typeof runTrace?.usage?.inputTokens === 'number' && Number.isFinite(runTrace.usage.inputTokens)
-                    ? Math.max(0, Math.floor(runTrace.usage.inputTokens))
-                    : (typeof result.tokenEstimateInput === 'number' && Number.isFinite(result.tokenEstimateInput)
-                        ? Math.max(0, Math.floor(result.tokenEstimateInput))
-                        : undefined));
+            this.applyProviderCacheState(session, result, runTrace, { opensReuseWindow: true });
             session.pendingEditsEmpty = this.resolvePendingEditsEmpty(result, activeBookId);
             this.sessionStore.setSession(session);
             const traceForLog = runTrace
@@ -5858,8 +5837,12 @@ export class InquiryView extends ItemView {
         // Piggyback signals for the plan modal: a still-open provider cache
         // window from a recent run (manual or omnibus) of the same engine +
         // corpus, and any questions that engine already answered on the
-        // byte-identical corpus (suggested skips).
-        const warmCacheExpiresAt = this.getActiveCacheWindowExpiry() ?? undefined;
+        // byte-identical corpus (suggested skips). That window covers the
+        // single-question prefix, which a sequential pass shares and the
+        // combined call (own system prompt and schema) does not.
+        const warmCacheExpiresAt = providerPlan.choice && !providerPlan.choice.useOmnibus
+            ? this.getActiveCacheWindowExpiry() ?? undefined
+            : undefined;
         const recentResults = providerPlan.choice
             ? this.buildOmnibusRecentResults(questions, providerPlan.choice)
             : undefined;
@@ -6062,15 +6045,23 @@ export class InquiryView extends ItemView {
             traceForLogs = runOutput.trace;
             if (modal) {
                 modal.setAiAdvancedContext(this.getEffectiveReuseAdvancedContext());
-                // Combined path is a single provider call; report cache once for the whole run.
-                modal.notePassResult(1, 1, traceForLogs?.usage ?? null);
-                const combinedProbe = readOmnibusCacheProbe(traceForLogs?.usage);
+                // Combined path is a single provider call; report cache once for
+                // the whole run. The provider's create/hit verdict decides
+                // whether reported cache tokens were written or reused (Gemini
+                // reports its freshly created cache as cached content).
+                const combinedProbe = readOmnibusCacheProbe(traceForLogs?.usage, traceForLogs?.cacheStatus);
+                const combinedDecision = evaluateOmnibusCachePass({
+                    passIndex: 1,
+                    probe: combinedProbe,
+                    cacheArmedBefore: false
+                });
+                modal.notePassResult(1, 1, combinedProbe, combinedDecision.health);
                 const combinedCost = accumulateOmnibusPassCost(
                     createOmnibusCostAccumulator(),
                     providerChoice.provider,
                     providerChoice.modelId,
                     traceForLogs?.usage ?? null,
-                    combinedProbe.cacheReadTokens
+                    traceForLogs?.cacheStatus
                 );
                 modal.noteRunningCost(combinedCost);
             }
@@ -6117,7 +6108,13 @@ export class InquiryView extends ItemView {
                     activeBookId,
                     targetSceneIds,
                     submittedAt,
-                    completedAt
+                    completedAt,
+                    // The combined call's cacheable prefix (its own system
+                    // prompt and omnibus schema) is not the single-question
+                    // prefix, yet these sessions carry the single-question
+                    // reuse fingerprint. A window here would tell the next
+                    // single-question run its cache is warm when it is not.
+                    opensReuseWindow: false
                 });
                 if (persisted.briefPath) {
                     briefPaths.push(persisted.briefPath);
@@ -6271,7 +6268,7 @@ export class InquiryView extends ItemView {
                 // against the pure decision that also drives the UI pill. A
                 // question >=2 that re-sent the corpus at full price (armed
                 // cache, zero cache read) terminates the remaining run.
-                const probe = readOmnibusCacheProbe(trace?.usage);
+                const probe = readOmnibusCacheProbe(trace?.usage, trace?.cacheStatus);
                 const cacheDecision = evaluateOmnibusCachePass({
                     passIndex: questionIndex,
                     probe,
@@ -6283,11 +6280,11 @@ export class InquiryView extends ItemView {
                     providerChoice.provider,
                     providerChoice.modelId,
                     trace?.usage ?? null,
-                    probe.cacheReadTokens
+                    trace?.cacheStatus
                 );
 
                 if (modal) {
-                    modal.notePassResult(questionIndex, total, trace?.usage ?? null, cacheDecision.health);
+                    modal.notePassResult(questionIndex, total, probe, cacheDecision.health);
                     modal.noteRunningCost(costAcc);
                     modal.updateProgress(questionIndex, total, zoneLabel, question.label, 'Writing brief/log...');
                 }
@@ -6302,7 +6299,12 @@ export class InquiryView extends ItemView {
                     activeBookId,
                     targetSceneIds,
                     submittedAt,
-                    completedAt
+                    completedAt,
+                    // Each sequential pass IS a single-question run (same
+                    // prompt builder, same prefix), so its window is one the
+                    // next question can read. The newest pass's session is
+                    // the one the window lookups find.
+                    opensReuseWindow: true
                 });
                 if (persisted.briefPath) {
                     briefPaths.push(persisted.briefPath);
@@ -6366,6 +6368,8 @@ export class InquiryView extends ItemView {
         targetSceneIds: string[];
         submittedAt: Date;
         completedAt: Date;
+        /** Whether this answer's cacheable prefix is the single-question one (see applyProviderCacheState). */
+        opensReuseWindow: boolean;
     }): Promise<{ session: InquirySession; briefPath?: string; normalized: InquiryResult }> {
         const timedResult: InquiryResult = {
             ...options.result,
@@ -6413,6 +6417,7 @@ export class InquiryView extends ItemView {
             questionZone: options.question.zone
         };
         session.cacheReuseFingerprint = options.manifest.cacheReuseFingerprint;
+        this.applyProviderCacheState(session, normalized, options.trace, { opensReuseWindow: options.opensReuseWindow });
         session.pendingEditsEmpty = this.resolvePendingEditsEmpty(normalized, options.activeBookId);
         this.sessionStore.setSession(session);
 
@@ -6571,7 +6576,9 @@ export class InquiryView extends ItemView {
             activeBookId: jobRun.run.subject.activeBookId,
             targetSceneIds: jobRun.run.subject.targetSceneIds,
             submittedAt,
-            completedAt: new Date()
+            completedAt: new Date(),
+            // An AI client the author runs touches no provider cache of ours.
+            opensReuseWindow: false
         });
         this.finishOmnibusRun(persisted.session, persisted.normalized);
         return { ok: true };
@@ -6747,37 +6754,37 @@ export class InquiryView extends ItemView {
     private buildOmnibusCostRangePlan(
         questionCount: number,
         providerPlan: OmnibusProviderPlan,
-        cacheAlreadyWarm = false
+        cacheAlreadyWarm: boolean
     ): OmnibusCostRangePlan | undefined {
         const choice = providerPlan.choice;
         if (!choice) return undefined;
         const snapshot = this.plugin.getInquiryEstimateService().getSnapshot();
-        const corpusInputTokens = snapshot?.estimate?.estimatedInputTokens;
+        if (!snapshot) return undefined;
+        const corpusInputTokens = snapshot.estimate.estimatedInputTokens;
         if (typeof corpusInputTokens !== 'number' || !Number.isFinite(corpusInputTokens) || corpusInputTokens <= 0) {
             return undefined;
         }
         // Each question returns a bounded findings JSON; the input corpus,
-        // not the output, dominates the band, so a conservative fixed
-        // per-question output estimate is sufficient for a range.
+        // not the output, dominates the sequential band, so a conservative
+        // fixed per-question output estimate is sufficient for a range.
         const expectedOutputTokensPerQuestion = Math.min(INQUIRY_MAX_OUTPUT_TOKENS, 4000);
-        const range = estimateOmnibusCostRange({
+        const combined = choice.useOmnibus;
+        const estimateInputs = {
             provider: choice.provider,
             modelId: choice.modelId,
             corpusInputTokens,
             expectedOutputTokensPerQuestion,
-            questionCount,
-            cacheAlreadyWarm,
-            cacheWriteTtl: ANTHROPIC_REQUESTED_CACHE_TTL
-        });
+            combined,
+            maxOutputTokensPerCall: snapshot.estimate.maxOutputTokens,
+            // A combined call's prefix is not the one a recent run cached.
+            cacheAlreadyWarm: cacheAlreadyWarm && !combined
+        };
+        const range = estimateOmnibusRunCost({ ...estimateInputs, questionCount });
         return {
+            ...estimateInputs,
             uncachedUSD: range.uncachedUSD,
             cachedUSD: range.cachedUSD,
-            corpusInputTokens,
-            estimateMethod: snapshot?.estimate?.estimationMethod,
-            provider: choice.provider,
-            modelId: choice.modelId,
-            expectedOutputTokensPerQuestion,
-            cacheAlreadyWarm
+            estimateMethod: snapshot.estimate.estimationMethod
         };
     }
 
@@ -7862,7 +7869,12 @@ export class InquiryView extends ItemView {
         const fingerprintRaw = `${INQUIRY_SCHEMA_VERSION}|${questionId}|${modelId}|${fingerprintSource}`;
         const fingerprint = hashString(fingerprintRaw);
         const corpusOnlyFingerprint = hashString(`${INQUIRY_SCHEMA_VERSION}|${questionId}|${fingerprintSource}`);
-        const cacheReuseFingerprint = hashString(`${INQUIRY_SCHEMA_VERSION}|${modelId}|${reuseFingerprintSource}`);
+        // The active role template opens the system prompt, ahead of the
+        // cached corpus: a different template is a different prefix, so it
+        // must be a different reuse key or the cache would read as warm.
+        const roleTemplate = resolveActiveRoleTemplate(this.plugin, this.getCanonicalAiSettings());
+        const roleTemplateKey = `${roleTemplate.name}:${hashString(roleTemplate.prompt)}`;
+        const cacheReuseFingerprint = hashString(`${INQUIRY_SCHEMA_VERSION}|${modelId}|${roleTemplateKey}|${reuseFingerprintSource}`);
 
         const snapshot = entries.map(entry => ({
             path: entry.path,
@@ -9028,6 +9040,52 @@ export class InquiryView extends ItemView {
         return resolveProviderCacheWindowMs(provider, aiSettings);
     }
 
+    /**
+     * Record on a session what the provider reported about its prompt cache.
+     * `providerCacheStatus` (create vs hit) is a billing fact and is always
+     * kept: actual-cost lookups price reported cache reads by it. The reuse
+     * window and cached-prefix metrics claim that the NEXT single-question run
+     * can read this cache, so they are recorded only for a run whose cacheable
+     * prefix is the single-question prefix (`opensReuseWindow`).
+     */
+    private applyProviderCacheState(
+        session: InquirySession,
+        result: InquiryResult,
+        trace: InquiryRunTrace | null | undefined,
+        options: { opensReuseWindow: boolean }
+    ): void {
+        session.providerCacheStatus = trace?.cacheStatus;
+        if (!options.opensReuseWindow) return;
+        const cacheWindowExpiresAt = this.resolveCacheWindowExpiry(result, trace);
+        if (cacheWindowExpiresAt) {
+            session.cacheWindowExpiresAt = cacheWindowExpiresAt;
+        }
+        session.cacheReuseState = trace?.cacheReuseState;
+        const observedCacheMetrics = this.getObservedCacheMetrics(trace);
+        session.cachedStableRatio = observedCacheMetrics
+            ? observedCacheMetrics.cachedStableRatio
+            : (typeof trace?.cachedStableRatio === 'number' && Number.isFinite(trace.cachedStableRatio)
+                ? Math.min(1, Math.max(0, trace.cachedStableRatio))
+                : undefined);
+        session.cachedStableTokens = observedCacheMetrics
+            ? observedCacheMetrics.cachedStableTokens
+            : (typeof trace?.cachedStableTokens === 'number' && Number.isFinite(trace.cachedStableTokens)
+                ? Math.max(0, Math.floor(trace.cachedStableTokens))
+                : undefined);
+        session.totalInputTokens = observedCacheMetrics
+            ? observedCacheMetrics.totalInputTokens
+            : (typeof trace?.usage?.inputTokens === 'number' && Number.isFinite(trace.usage.inputTokens)
+                ? Math.max(0, Math.floor(trace.usage.inputTokens))
+                : (typeof result.tokenEstimateInput === 'number' && Number.isFinite(result.tokenEstimateInput)
+                    ? Math.max(0, Math.floor(result.tokenEstimateInput))
+                    : undefined));
+    }
+
+    /**
+     * When the provider cache this run touched expires, or null. A window
+     * opens only on provider proof that a cache entry exists — never because
+     * the request was merely eligible to cache.
+     */
     private resolveCacheWindowExpiry(result: InquiryResult, trace?: InquiryRunTrace | null): number | null {
         if (this.isErrorResult(result)) return null;
         const provider = (result.aiProvider ?? '').trim().toLowerCase() as AIProviderId; // SAFE: absent provider normalizes to empty — guarded as no cache window below
@@ -9037,15 +9095,13 @@ export class InquiryView extends ItemView {
         if (!ttlMs) return null;
 
         const usage = trace?.usage;
-        const hasAnthropicCacheUsage = !!(
-            (usage?.cacheReadInputTokens && usage.cacheReadInputTokens > 0)
-            || (usage?.cacheCreationInputTokens && usage.cacheCreationInputTokens > 0)
-            || (usage?.cacheCreation5mInputTokens && usage.cacheCreation5mInputTokens > 0)
-            || (usage?.cacheCreation1hInputTokens && usage.cacheCreation1hInputTokens > 0)
-        );
+        const cacheTokensReported = (usage?.cacheReadInputTokens ?? 0) > 0 // SAFE: an absent cache-read counter means nothing was read from cache
+            || readCacheWriteTokens(usage) > 0;
+        // 'warm' is set only on a provider-confirmed hit (aiClient post-execute).
+        const confirmedHit = trace?.cacheReuseState === 'warm';
 
         if (provider === 'anthropic') {
-            if (!hasAnthropicCacheUsage && trace?.cacheReuseState !== 'warm') return null;
+            if (!cacheTokensReported && !confirmedHit) return null;
             const acceptedCacheTtl = getAnthropicAcceptedCacheTtl(trace);
             if (acceptedCacheTtl === '1h') {
                 return Date.now() + (60 * 60 * 1000);
@@ -9054,7 +9110,9 @@ export class InquiryView extends ItemView {
                 return Date.now() + (5 * 60 * 1000);
             }
         } else if (provider === 'google') {
-            if (!trace?.cacheStatus && trace?.cacheReuseState !== 'warm') return null;
+            // The explicit-cache manager's create/hit verdict. Implicit-cache
+            // reads carry no lifetime to count down.
+            if (!trace?.cacheStatus && !confirmedHit) return null;
             // Gemini cache TTL is fixed at creation and does NOT extend on hits.
             // Use the provider-reported expiry so the countdown reflects the
             // actual resource lifetime instead of resetting on every reuse.
@@ -9062,7 +9120,9 @@ export class InquiryView extends ItemView {
                 return trace.cacheExpiresAt;
             }
         } else if (provider === 'openai') {
-            if (trace?.cacheReuseState !== 'eligible' && trace?.cacheReuseState !== 'warm') return null;
+            // GPT-5.6+ reports cached_tokens (hit) and cache_write_tokens
+            // (created); a request that only carried a breakpoint proves nothing.
+            if (!trace?.cacheStatus && !cacheTokensReported) return null;
         }
 
         return Date.now() + ttlMs;
@@ -9083,11 +9143,7 @@ export class InquiryView extends ItemView {
             && Number.isFinite(usage.cacheReadInputTokens) && usage.cacheReadInputTokens > 0
             ? usage.cacheReadInputTokens
             : 0;
-        const creationTokens = typeof usage.cacheCreationInputTokens === 'number'
-            && Number.isFinite(usage.cacheCreationInputTokens) && usage.cacheCreationInputTokens > 0
-            ? usage.cacheCreationInputTokens
-            : ((usage.cacheCreation5mInputTokens ?? 0) + (usage.cacheCreation1hInputTokens ?? 0)); // SAFE: providers without TTL-split cache counters contribute 0 creation tokens
-        const cachedTokens = Math.max(readTokens, creationTokens);
+        const cachedTokens = Math.max(readTokens, readCacheWriteTokens(usage));
         const totalInputTokens = typeof usage.inputTokens === 'number' && Number.isFinite(usage.inputTokens)
             ? Math.max(0, Math.floor(usage.inputTokens))
             : 0;

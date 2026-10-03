@@ -6,7 +6,7 @@
 // DEPRECATED: Legacy provider adapter; prefer aiClient entrypoints.
 import { requestUrl } from 'obsidian';
 import { warnLegacyAccess } from './legacyAccessGuard';
-import { CACHE_BREAK_DELIMITER } from '../ai/prompts/composeEnvelope';
+import { splitAtCacheBreak } from '../ai/prompts/composeEnvelope';
 import { modelSupportsAdaptiveThinking, modelThinkingDefaultsOn, modelUsesAlwaysOnThinking } from '../ai/registry/modelRequestProfiles';
 import type { AnthropicCacheTtl, EvidenceDocument, TokenCountResult } from '../ai/types';
 import { fnv1a32Hex } from '../utils/hash';
@@ -188,14 +188,10 @@ export function sanitizeAnthropicOutputSchema(schema: Record<string, unknown>): 
 }
 
 export function buildAnthropicUserContent(input: BuildAnthropicUserContentInput): AnthropicContentBlock[] {
-  const delimIndex = input.userPrompt.indexOf(CACHE_BREAK_DELIMITER);
-  const hasDelimiter = delimIndex > 0;
-  const stableText = hasDelimiter
-    ? input.userPrompt.slice(0, delimIndex).trimEnd()
-    : input.userPrompt;
-  const volatileText = hasDelimiter
-    ? input.userPrompt.slice(delimIndex + CACHE_BREAK_DELIMITER.length).trimStart()
-    : '';
+  const split = splitAtCacheBreak(input.userPrompt);
+  const hasDelimiter = split !== null;
+  const stableText = split ? split.stable : input.userPrompt;
+  const volatileText = split ? split.volatile : '';
   if (input.evidenceDocuments?.length) {
     const docs = input.evidenceDocuments;
     const lastIndex = docs.length - 1;
@@ -253,9 +249,15 @@ function fingerprintAnthropicText(value: string): string {
     return fnv1a32Hex(value);
 }
 
+/**
+ * Dispatch diagnostics describe the payload as sent. `requestedCacheTtl` is
+ * the TTL on the cache_control block actually in the request ('5m' when the
+ * block omits ttl, which is Anthropic's default), and 'none' when no block
+ * carries cache_control — a TTL the adapter was handed but never emitted
+ * (Pulse: no cache break, so nothing to cache) is not a cache request.
+ */
 export function buildAnthropicDispatchDiagnostics(
-  content: AnthropicContentBlock[],
-  requestedCacheTtl?: AnthropicCacheTtl
+  content: AnthropicContentBlock[]
 ): AnthropicDispatchDiagnostics {
   let cacheBoundaryIndex = -1;
   for (let index = content.length - 1; index >= 0; index--) {
@@ -264,6 +266,10 @@ export function buildAnthropicDispatchDiagnostics(
       break;
     }
   }
+  const boundaryCacheControl = cacheBoundaryIndex >= 0 ? content[cacheBoundaryIndex]?.cache_control : undefined;
+  const requestedCacheTtl: AnthropicCacheTtl | 'none' = boundaryCacheControl
+    ? (boundaryCacheControl.ttl ?? '5m')
+    : 'none';
   const cacheableBlocks = cacheBoundaryIndex >= 0
     ? content.slice(0, cacheBoundaryIndex + 1)
     : [];
@@ -281,7 +287,7 @@ export function buildAnthropicDispatchDiagnostics(
     .map(block => block.text)
     .join('\n');
   return {
-    requestedCacheTtl: requestedCacheTtl ?? 'none',
+    requestedCacheTtl,
     hasCacheablePrefix: cacheableBlocks.length > 0,
     cachePrefixFingerprint: cacheableBlocks.length > 0
       ? fingerprintAnthropicText(JSON.stringify(cacheableBlocks))
@@ -592,7 +598,7 @@ export async function callAnthropicApi(
     jsonSchema,
     cacheTtl
   });
-  const dispatchDiagnostics = buildAnthropicDispatchDiagnostics(requestBody.messages[0]?.content ?? [], cacheTtl);
+  const dispatchDiagnostics = buildAnthropicDispatchDiagnostics(requestBody.messages[0]?.content ?? []);
 
   let responseData: unknown;
   try {

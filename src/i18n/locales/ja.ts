@@ -1166,14 +1166,6 @@ export const ja: DeepPartial<TranslationKeys> = {
         },
         pipeline: {
             notices: {
-                processingSubplotInit: 'サブプロット処理：シーンデータを取得中...',
-                analyzingSubplot: 'サブプロット順について {{count}} シーンを分析中...',
-                sceneStatusSkip: 'シーン {{sceneRef}}（サブプロット {{subplot}}）に Pulse Update が設定されていますが Status が working/complete ではありません。スキップします。',
-                processingScene: 'シーン {{num}} を処理中 ({{current}}/{{total}}) - サブプロット：「{{name}}」...',
-                progressUpdate: '進捗：{{current}}/{{total}} シーン処理済み...',
-                subplotComplete: 'サブプロット順処理完了：{{processed}}/{{total}} 三連処理済み。',
-                subplotErrorGeneric: 'サブプロット処理エラー。詳細はコンソールを確認してください。',
-                noSubplotScenes: 'サブプロット付きのシーンが見つかりません。',
                 noScenesValid: 'アクティブな本フォルダに有効なシーンが見つかりません。',
                 noFlaggedSubplotScenes: '「{{name}}」に対してフラグ付き（Pulse Update：Yes/True/1）でコンテンツのあるシーンが見つかりません。',
                 noScenesForSubplot: 'サブプロット「{{name}}」のシーンが見つかりません。',

@@ -5,9 +5,11 @@ import {
     formatGossamerCacheCostHint,
     formatGossamerCachePillLabel,
     isGossamerCacheWindowOpen,
+    markGossamerCacheWindowReused,
     type GossamerCacheWindow
 } from './cacheWindow';
 import { buildDefaultAiSettings } from '../ai/settings/aiSettings';
+import { resolveProviderCacheWindowMs } from '../ai/settings/cacheWindows';
 import type { AIRunAdvancedContext } from '../ai/types';
 
 const AI_SETTINGS = buildDefaultAiSettings();
@@ -30,21 +32,33 @@ const ctx = (over: Partial<AIRunAdvancedContext>): AIRunAdvancedContext => ({
 describe('buildGossamerCacheWindow', () => {
     const RETURNED = 1_000_000;
 
-    it('returns null when the cache was not engaged (idle / missing reuseState)', () => {
+    it('returns null without provider proof of a cache write or read', () => {
+        // aiClient marks reuseState 'eligible' before the call whenever the
+        // cache delimiter is present — e.g. an Anthropic prefix below the
+        // minimum, or an OpenAI call that wrote nothing. That is not proof.
+        expect(buildGossamerCacheWindow(ctx({ reuseState: 'eligible' }), RETURNED, AI_SETTINGS)).toBeNull();
+        expect(buildGossamerCacheWindow(ctx({ provider: 'openai', reuseState: 'eligible' }), RETURNED, AI_SETTINGS)).toBeNull();
         expect(buildGossamerCacheWindow(ctx({ reuseState: 'idle' }), RETURNED, AI_SETTINGS)).toBeNull();
         expect(buildGossamerCacheWindow(ctx({ reuseState: undefined }), RETURNED, AI_SETTINGS)).toBeNull();
         expect(buildGossamerCacheWindow(null, RETURNED, AI_SETTINGS)).toBeNull();
     });
 
+    it('opens on a reported cache write or read', () => {
+        const created = buildGossamerCacheWindow(ctx({ cacheStatus: 'created' }), RETURNED, AI_SETTINGS);
+        expect(created?.cacheStatus).toBe('created');
+        const hit = buildGossamerCacheWindow(ctx({ reuseState: 'warm', cacheStatus: 'hit' }), RETURNED, AI_SETTINGS);
+        expect(hit?.cacheStatus).toBe('hit');
+    });
+
     it('returns null for non-caching providers', () => {
-        expect(buildGossamerCacheWindow(ctx({ provider: 'ollama' }), RETURNED, AI_SETTINGS)).toBeNull();
-        expect(buildGossamerCacheWindow(ctx({ provider: 'none' }), RETURNED, AI_SETTINGS)).toBeNull();
+        expect(buildGossamerCacheWindow(ctx({ provider: 'ollama', cacheStatus: 'created' }), RETURNED, AI_SETTINGS)).toBeNull();
+        expect(buildGossamerCacheWindow(ctx({ provider: 'none', cacheStatus: 'created' }), RETURNED, AI_SETTINGS)).toBeNull();
     });
 
     it('trusts the provider-reported expiry (Gemini cachedContent) when present', () => {
         const expiresAt = RETURNED + 12 * 60_000;
         const win = buildGossamerCacheWindow(
-            ctx({ provider: 'google', cacheExpiresAt: expiresAt, reuseState: 'warm' }),
+            ctx({ provider: 'google', cacheExpiresAt: expiresAt, reuseState: 'warm', cacheStatus: 'hit' }),
             RETURNED,
             AI_SETTINGS
         );
@@ -53,21 +67,52 @@ describe('buildGossamerCacheWindow', () => {
     });
 
     it('derives expiry from the provider TTL when none is reported (Anthropic)', () => {
-        const win = buildGossamerCacheWindow(ctx({ provider: 'anthropic' }), RETURNED, AI_SETTINGS);
+        const win = buildGossamerCacheWindow(ctx({ provider: 'anthropic', cacheStatus: 'created' }), RETURNED, AI_SETTINGS);
         expect(win).not.toBeNull();
         // Anthropic window is fixed at 1h.
         expect(win!.expiresAt).toBe(RETURNED + 60 * 60_000);
     });
 
+    it('derives expiry from the provider TTL for an OpenAI cache write', () => {
+        const win = buildGossamerCacheWindow(ctx({ provider: 'openai', cacheStatus: 'created' }), RETURNED, AI_SETTINGS);
+        expect(win).not.toBeNull();
+        expect(win!.expiresAt).toBe(RETURNED + resolveProviderCacheWindowMs('openai', AI_SETTINGS)!);
+    });
+
     it('ignores a stale provider expiry that is already in the past', () => {
         const win = buildGossamerCacheWindow(
-            ctx({ provider: 'google', cacheExpiresAt: RETURNED - 5_000 }),
+            ctx({ provider: 'google', cacheExpiresAt: RETURNED - 5_000, cacheStatus: 'created' }),
             RETURNED,
             AI_SETTINGS
         );
         // Falls back to the derived Gemini TTL rather than the stale expiry.
         expect(win).not.toBeNull();
         expect(win!.expiresAt).toBeGreaterThan(RETURNED);
+    });
+});
+
+describe('markGossamerCacheWindowReused', () => {
+    const armed: GossamerCacheWindow = {
+        provider: 'anthropic',
+        modelLabel: 'Claude',
+        armedAt: 1_000,
+        expiresAt: 1_000 + 60 * 60_000,
+        cacheStatus: 'created',
+        lastRunCostUSD: 2.43
+    };
+
+    it('keeps the provider-armed expiry and reports the repeat as a $0 reuse', () => {
+        const reused = markGossamerCacheWindowReused(armed);
+        expect(reused).not.toBe(armed);
+        expect(reused?.armedAt).toBe(armed.armedAt);
+        expect(reused?.expiresAt).toBe(armed.expiresAt);
+        expect(reused?.lastRunCostUSD).toBe(0);
+        expect(formatGossamerCacheCostHint(reused)).toBe('last run $0.00 · reused previous result');
+        expect(formatGossamerCacheCostHint(reused)).not.toContain('2.43');
+    });
+
+    it('never opens a window that the provider never proved', () => {
+        expect(markGossamerCacheWindowReused(null)).toBeNull();
     });
 });
 

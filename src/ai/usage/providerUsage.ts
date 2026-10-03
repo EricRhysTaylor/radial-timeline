@@ -80,12 +80,22 @@ function readOpenAiUsage(responseData: Record<string, unknown>): TokenUsage | nu
         : undefined;
     const cacheReadInputTokens = readUsageNumber(promptTokenDetails?.cached_tokens)
         ?? readUsageNumber(inputTokenDetails?.cached_tokens);
+    // GPT-5.6+ reports the tokens written to the prompt cache this call
+    // (billed at the cache-write rate). `input_tokens` includes them, as it
+    // includes cached reads.
+    const cacheCreationInputTokens = readUsageNumber(inputTokenDetails?.cache_write_tokens);
     const totalTokens = readUsageNumber(usageData.total_tokens)
         ?? (typeof inputTokens === 'number' && typeof outputTokens === 'number'
             ? inputTokens + outputTokens
             : undefined);
     if (inputTokens === undefined && outputTokens === undefined && totalTokens === undefined && cacheReadInputTokens === undefined) return null;
-    return { inputTokens, outputTokens, totalTokens, cacheReadInputTokens };
+    return {
+        inputTokens,
+        outputTokens,
+        totalTokens,
+        cacheReadInputTokens,
+        ...(cacheCreationInputTokens !== undefined ? { cacheCreationInputTokens } : {})
+    };
 }
 
 function readGeminiUsage(responseData: Record<string, unknown>): TokenUsage | null {

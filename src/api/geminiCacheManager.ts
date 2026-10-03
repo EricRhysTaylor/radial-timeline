@@ -33,8 +33,19 @@ export interface GeminiCacheResult {
 /** In-memory store: content fingerprint → cache resource */
 const cacheStore = new Map<string, GeminiCacheEntry>();
 
-/** Gemini context caching requires a minimum input token count (~32K). */
-const GEMINI_MIN_CACHE_TOKENS = 32_768;
+/**
+ * Gemini explicit caching minimum: 4,096 tokens on 3.x Flash and 3.1 Pro —
+ * every Gemini model RT ships (ai.google.dev/gemini-api/docs/generate-content/caching,
+ * checked 2026-10-03; the old 32,768 floor was the Gemini 1.5 limit).
+ */
+const GEMINI_MIN_CACHE_TOKENS = 4_096;
+/**
+ * A create call below the provider minimum is rejected, and a rejected cache
+ * setup fails the run (no silent uncached retry). The size check runs on a
+ * chars/token ESTIMATE, so it must clear the minimum with headroom.
+ */
+const GEMINI_CACHE_SIZE_SAFETY_FACTOR = 2;
+const GEMINI_MIN_ESTIMATED_CACHE_TOKENS = GEMINI_MIN_CACHE_TOKENS * GEMINI_CACHE_SIZE_SAFETY_FACTOR;
 /** Rough chars-per-token estimate (same formula used by aiClient.estimateTokens). */
 // Alias of the canonical DEFAULT_CHARS_PER_TOKEN (ai/estimates). Kept as a
 // named re-export so existing call sites read naturally; it is NOT a second
@@ -84,7 +95,7 @@ export function peekGeminiCache(
     stableContent: string
 ): boolean {
     const estimatedTokens = estimateTokensFromChars(stableContent.length, CHARS_PER_TOKEN);
-    if (estimatedTokens < GEMINI_MIN_CACHE_TOKENS) return false;
+    if (estimatedTokens < GEMINI_MIN_ESTIMATED_CACHE_TOKENS) return false;
     const fp = hashCacheKey(modelId, systemPrompt, stableContent);
     const hit = cacheStore.get(fp);
     return !!hit && isEntryValid(hit);
@@ -111,7 +122,7 @@ export async function getOrCreateGeminiCache(
 
     // Guard: skip cache for small stable prefixes (below Gemini min threshold)
     const estimatedTokens = estimateTokensFromChars(stableContent.length, CHARS_PER_TOKEN);
-    if (estimatedTokens < GEMINI_MIN_CACHE_TOKENS) return null;
+    if (estimatedTokens < GEMINI_MIN_ESTIMATED_CACHE_TOKENS) return null;
 
     const fp = hashCacheKey(modelId, systemPrompt ?? '', stableContent);
     const hit = cacheStore.get(fp);

@@ -426,7 +426,7 @@ export class GossamerProcessingModal extends ErtModal {
     /**
      * Mark API call as successful
      */
-    public apiCallSuccess(): void {
+    public apiCallSuccess(options: { servedFromCache: boolean }): void {
         // Clear timer
         if (this.timerInterval) {
             window.clearInterval(this.timerInterval);
@@ -437,8 +437,9 @@ export class GossamerProcessingModal extends ErtModal {
         this.lastElapsedSeconds = elapsedMs !== undefined ? (elapsedMs / 1000).toFixed(1) : undefined;
 
         // Persist elapsed per-signal so the next run can use the observed
-        // normal runtime as its progress baseline.
-        if (elapsedMs !== undefined && elapsedMs > 0) {
+        // normal runtime as its progress baseline. An RT in-memory repeat made
+        // no provider call; its near-zero time is not a runtime to learn from.
+        if (!options.servedFromCache && elapsedMs !== undefined && elapsedMs > 0) {
             void this.persistLastRunDuration(elapsedMs);
         }
 

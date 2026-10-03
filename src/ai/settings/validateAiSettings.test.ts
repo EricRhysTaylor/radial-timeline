@@ -169,7 +169,7 @@ describe('validateAiSettings', () => {
         expect(result.warnings.some(warning => warning.includes('Anthropic cache TTL is fixed at'))).toBe(true);
     });
 
-    it('upgrades persisted OpenAI in-memory retention to the canonical 24h window', () => {
+    it('drops the pre-GPT-5.6 OpenAI retention settings', () => {
         const result = validateAiSettings({
             schemaVersion: 1,
             provider: 'openai',
@@ -185,8 +185,9 @@ describe('validateAiSettings', () => {
             }
         } as unknown as AiSettingsV1);
 
-        expect(result.value.cacheWindows?.openaiRetention).toBe('24h');
-        expect(result.warnings.some(warning => warning.includes('OpenAI cache retention now defaults to 24h'))).toBe(true);
+        expect(result.value.cacheWindows).not.toHaveProperty('openaiRetention');
+        expect(result.value.cacheWindows).not.toHaveProperty('openaiInMemoryWindowMinutes');
+        expect(result.value.cacheWindows?.googleTtlSeconds).toBe(900);
     });
 
     it('caps persisted Gemini explicit cache windows to the short session default', () => {

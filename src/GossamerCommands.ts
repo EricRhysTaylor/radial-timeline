@@ -26,7 +26,7 @@ import { buildUnifiedBeatAnalysisCacheParts, getUnifiedBeatAnalysisJsonSchema, t
 import { DEFAULT_GOSSAMER_SIGNAL, GOSSAMER_SIGNAL_METADATA, type GossamerSignalType } from './types/gossamerSignals';
 import { validateGossamerResponse, type SubmittedBeat, type ValidatedBeat, type ValidationResult } from './ai/gossamer/responseValidation';
 import { describeAiRunModel } from './utils/modelResolver';
-import { buildGossamerCacheWindow } from './gossamer/cacheWindow';
+import { buildGossamerCacheWindow, markGossamerCacheWindowReused } from './gossamer/cacheWindow';
 import { estimateUsageCost } from './ai/cost/estimateCorpusCost';
 import { validateAiSettings } from './ai/settings/validateAiSettings';
 import { buildDefaultAiSettings } from './ai/settings/aiSettings';
@@ -95,6 +95,12 @@ type GossamerLogPayload = {
   returnedAt?: Date | null;
   derivedSummary?: string;
   schemaWarnings?: string[];
+  /**
+   * The result came from RT's in-memory cache: no provider call, nothing
+   * billed. The response's usage belongs to the earlier run, so the log must
+   * not report it as this run's tokens or cost.
+   */
+  servedFromCache?: boolean;
 };
 
 function sanitizeSegment(value: string | null | undefined): string {
@@ -106,6 +112,9 @@ function sanitizeSegment(value: string | null | undefined): string {
     .trim()
     .replace(/^-+|-+$/g, '');
 }
+
+const GOSSAMER_LOCAL_REUSE_LOG_NOTE =
+  'Reused the previous result from RT\'s in-memory cache: no provider call, no new charge. Token usage and cost are omitted because they belong to the earlier run.';
 
 async function writeGossamerLog(
   plugin: RadialTimelinePlugin,
@@ -122,8 +131,9 @@ async function writeGossamerLog(
   const sanitizationNotes = hadRedactions
     ? ['Redacted sensitive credential values from request payload.']
     : [];
-  const tokenUsage = extractTokenUsage(payload.provider, payload.responseData);
-  const schemaWarnings = payload.schemaWarnings ?? [];
+  const tokenUsage = payload.servedFromCache ? null : extractTokenUsage(payload.provider, payload.responseData);
+  const runWarnings = payload.schemaWarnings ?? [];
+  const schemaWarnings = payload.servedFromCache ? [...runWarnings, GOSSAMER_LOCAL_REUSE_LOG_NOTE] : runWarnings;
   const durationMs = payload.submittedAt && payload.returnedAt
     ? payload.returnedAt.getTime() - payload.submittedAt.getTime()
     : null;
@@ -917,34 +927,43 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
       throw new Error(result.error || t('gossamer.notices.aiResponseError'));
     }
 
-    modal.apiCallSuccess();
+    const servedFromCache = result.servedFromCache === true;
+    modal.apiCallSuccess({ servedFromCache });
     modal.setStatus('Parsing AI response...');
 
-    // Arm the provider-cache window. The provider cached the manuscript prefix
-    // the moment it accepted this run, independent of whether our downstream
-    // validation passes — so the remaining signals can reuse it from here. A
-    // null window (non-caching provider / cache not engaged) simply clears any
-    // stale window. See gossamer/cacheWindow.ts.
-    plugin.gossamerCacheWindow = buildGossamerCacheWindow(
-      result.advancedContext ?? null,
-      returnedAt.getTime(),
-      validateAiSettings(plugin.settings.aiSettings ?? buildDefaultAiSettings()).value
-    );
-    // Record the FACTUAL billed cost of this run on the window from the
-    // provider's usage payload (no projection of future runs). Best-effort:
-    // the countdown still shows if pricing is unavailable for the model.
-    if (plugin.gossamerCacheWindow && result.provider !== 'none') {
-      try {
-        const usage = extractTokenUsage(result.provider, result.responseData);
-        const modelId = result.modelResolved || result.modelRequested;
-        if (usage && modelId) {
-          const cost = estimateUsageCost(result.provider, modelId, usage, result.advancedContext?.cacheStatus, ANTHROPIC_REQUESTED_CACHE_TTL);
-          if (typeof cost?.totalCostUSD === 'number' && Number.isFinite(cost.totalCostUSD)) {
-            plugin.gossamerCacheWindow.lastRunCostUSD = cost.totalCostUSD;
+    if (servedFromCache) {
+      // RT in-memory repeat: no provider call, so the provider cache was
+      // neither written nor read and nothing was billed. Keep the window's
+      // provider-set expiry and report this run as a $0 reuse rather than
+      // re-arming from now with the earlier run's usage.
+      plugin.gossamerCacheWindow = markGossamerCacheWindowReused(plugin.gossamerCacheWindow);
+    } else {
+      // Arm the provider-cache window when the provider proved a cache write
+      // or read on this run, independent of whether our downstream validation
+      // passes — so the remaining signals can reuse it from here. A null
+      // window (non-caching provider / no proven cache) clears any stale
+      // window. See gossamer/cacheWindow.ts.
+      plugin.gossamerCacheWindow = buildGossamerCacheWindow(
+        result.advancedContext ?? null,
+        returnedAt.getTime(),
+        validateAiSettings(plugin.settings.aiSettings ?? buildDefaultAiSettings()).value
+      );
+      // Record the FACTUAL billed cost of this run on the window from the
+      // provider's usage payload (no projection of future runs). Best-effort:
+      // the countdown still shows if pricing is unavailable for the model.
+      if (plugin.gossamerCacheWindow && result.provider !== 'none') {
+        try {
+          const usage = extractTokenUsage(result.provider, result.responseData);
+          const modelId = result.modelResolved || result.modelRequested;
+          if (usage && modelId) {
+            const cost = estimateUsageCost(result.provider, modelId, usage, result.advancedContext?.cacheStatus, ANTHROPIC_REQUESTED_CACHE_TTL);
+            if (typeof cost?.totalCostUSD === 'number' && Number.isFinite(cost.totalCostUSD)) {
+              plugin.gossamerCacheWindow.lastRunCostUSD = cost.totalCostUSD;
+            }
           }
+        } catch (e) {
+          console.warn('[Gossamer] Cache-cost capture unavailable:', sanitizeLogPayload(e).sanitized);
         }
-      } catch (e) {
-        console.warn('[Gossamer] Cache-cost capture unavailable:', sanitizeLogPayload(e).sanitized);
       }
     }
     modal.setCacheWindow(plugin.gossamerCacheWindow);
@@ -1007,7 +1026,8 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
         parsedOutput: null,
         submittedAt,
         returnedAt,
-        schemaWarnings: [...providerNormalizationWarnings, `JSON parse error: ${detail}`]
+        schemaWarnings: [...providerNormalizationWarnings, `JSON parse error: ${detail}`],
+        servedFromCache
       });
       modal.apiCallError(t('gossamer.notices.validationFailed', { count: 1 }));
       modal.addError(`JSON parse error: ${detail}`);
@@ -1051,7 +1071,8 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
         parsedOutput: responseForValidation,
         submittedAt,
         returnedAt,
-        schemaWarnings: [...providerNormalizationWarnings, ...envelopeWarnings, ...failureDetails]
+        schemaWarnings: [...providerNormalizationWarnings, ...envelopeWarnings, ...failureDetails],
+        servedFromCache
       });
       modal.apiCallError(t('gossamer.notices.validationFailed', { count: validation.failures.length }));
       for (const detail of failureDetails) modal.addError(detail);
@@ -1160,7 +1181,8 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
       // Envelope warnings are not failures — they record that the response
       // arrived wrapped and we recovered it. Surfacing them in the log gives
       // us the audit trail for tracking how often each provider/model wraps.
-      schemaWarnings: schemaWarnings.length > 0 ? schemaWarnings : undefined
+      schemaWarnings: schemaWarnings.length > 0 ? schemaWarnings : undefined,
+      servedFromCache
     });
 
     const successMessage = t('gossamer.notices.successUpdated', { count: updateCount, signal: signalMeta.label.toLowerCase() });

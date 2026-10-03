@@ -1167,14 +1167,6 @@ export const zh: DeepPartial<TranslationKeys> = {
         },
         pipeline: {
             notices: {
-                processingSubplotInit: '正在处理副情节：获取场景数据...',
-                analyzingSubplot: '正在分析 {{count}} 个场景的副情节顺序...',
-                sceneStatusSkip: '场景 {{sceneRef}}（副情节 {{subplot}}）已设置 Pulse Update 但 Status 不是 working/complete。跳过。',
-                processingScene: '正在处理场景 {{num}} ({{current}}/{{total}}) - 副情节："{{name}}"...',
-                progressUpdate: '进度：已处理 {{current}}/{{total}} 个场景...',
-                subplotComplete: '副情节顺序处理完成：已处理 {{processed}}/{{total}} 个三联组。',
-                subplotErrorGeneric: '处理副情节出错。详情请查看控制台。',
-                noSubplotScenes: '未找到带副情节的场景。',
                 noScenesValid: '在激活的书籍文件夹中未找到有效的场景。',
                 noFlaggedSubplotScenes: '在 "{{name}}" 中未找到带内容的标记场景（Pulse Update：Yes/True/1）。',
                 noScenesForSubplot: '副情节 "{{name}}" 未找到场景。',

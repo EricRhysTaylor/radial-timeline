@@ -4,9 +4,7 @@ import { BUILTIN_MODELS } from '../registry/builtinModels';
 import { buildLocalLlmModelIdentity } from '../localLlm/identity';
 import {
     GEMINI_CACHE_TTL_DEFAULT_SECONDS,
-    normalizeGeminiCacheTtlSeconds,
-    normalizeOpenAiInMemoryWindowMinutes,
-    OPENAI_IN_MEMORY_WINDOW_MINUTES_DEFAULT
+    normalizeGeminiCacheTtlSeconds
 } from './cacheWindows';
 
 export interface AiSettingsValidationResult {
@@ -63,9 +61,7 @@ export function validateAiSettings(input?: AiSettingsV1 | null): AiSettingsValid
 
     const defaultCacheWindows = defaults.cacheWindows ?? {
         anthropicTtl: ANTHROPIC_REQUESTED_CACHE_TTL,
-        googleTtlSeconds: GEMINI_CACHE_TTL_DEFAULT_SECONDS,
-        openaiRetention: '24h',
-        openaiInMemoryWindowMinutes: OPENAI_IN_MEMORY_WINDOW_MINUTES_DEFAULT
+        googleTtlSeconds: GEMINI_CACHE_TTL_DEFAULT_SECONDS
     };
 
     const value: AiSettingsV1 = {
@@ -305,7 +301,11 @@ export function validateAiSettings(input?: AiSettingsV1 | null): AiSettingsValid
     if (value.cacheWindows) {
         // anthropicTtl is a legacy persisted field (fixed 1h TTL now); read/normalize
         // it through a non-deprecated view so this boundary does not trip no-deprecated.
-        const legacyCache: { anthropicTtl?: AnthropicCacheTtl } = value.cacheWindows;
+        const legacyCache: {
+            anthropicTtl?: AnthropicCacheTtl;
+            openaiRetention?: unknown;
+            openaiInMemoryWindowMinutes?: unknown;
+        } = value.cacheWindows;
         if (legacyCache.anthropicTtl !== ANTHROPIC_REQUESTED_CACHE_TTL) {
             warnings.push(`Anthropic cache TTL is fixed at ${ANTHROPIC_REQUESTED_CACHE_TTL}; ignoring persisted value.`);
             legacyCache.anthropicTtl = ANTHROPIC_REQUESTED_CACHE_TTL;
@@ -315,18 +315,10 @@ export function validateAiSettings(input?: AiSettingsV1 | null): AiSettingsValid
         } else {
             value.cacheWindows.googleTtlSeconds = normalizeGeminiCacheTtlSeconds(value.cacheWindows.googleTtlSeconds);
         }
-        if (value.cacheWindows.openaiRetention === 'in_memory') {
-            warnings.push('OpenAI cache retention now defaults to 24h; upgrading persisted in-memory retention.');
-            value.cacheWindows.openaiRetention = '24h';
-        } else if (value.cacheWindows.openaiRetention !== '24h') {
-            value.cacheWindows.openaiRetention = defaults.cacheWindows?.openaiRetention ?? '24h';
-        }
-        if (typeof value.cacheWindows.openaiInMemoryWindowMinutes !== 'number'
-            || !Number.isFinite(value.cacheWindows.openaiInMemoryWindowMinutes)) {
-            value.cacheWindows.openaiInMemoryWindowMinutes = defaults.cacheWindows?.openaiInMemoryWindowMinutes ?? OPENAI_IN_MEMORY_WINDOW_MINUTES_DEFAULT;
-        } else {
-            value.cacheWindows.openaiInMemoryWindowMinutes = normalizeOpenAiInMemoryWindowMinutes(value.cacheWindows.openaiInMemoryWindowMinutes);
-        }
+        // OpenAI GPT-5.6+ has one fixed 30m cache lifetime; the pre-5.6
+        // retention settings no longer describe anything. Drop them.
+        delete legacyCache.openaiRetention;
+        delete legacyCache.openaiInMemoryWindowMinutes;
     }
 
     if (value.citationsEnabled !== false) {

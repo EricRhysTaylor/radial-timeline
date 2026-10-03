@@ -530,9 +530,24 @@ describe('buildAnthropicUserContent', () => {
             cacheTtl: '1h'
         });
 
-        const diagnostics = buildAnthropicDispatchDiagnostics(content, '1h');
+        const diagnostics = buildAnthropicDispatchDiagnostics(content);
 
         expect(diagnostics.requestedCacheTtl).toBe('1h');
+    });
+
+    it('reports no cache request when a TTL was supplied but no block carries cache_control', () => {
+        // Pulse shape: no cache break and no evidence documents, so the adapter
+        // emits a single plain block even though the provider handed it a TTL.
+        const content = buildAnthropicUserContent({
+            userPrompt: 'Triplet instructions and three scene bodies',
+            cacheTtl: '1h'
+        });
+
+        const diagnostics = buildAnthropicDispatchDiagnostics(content);
+
+        expect(diagnostics.requestedCacheTtl).toBe('none');
+        expect(diagnostics.hasCacheablePrefix).toBe(false);
+        expect(diagnostics.blockShape).toBe('text');
     });
 
     it('emits evidence as plain text blocks when citations are disabled', () => {

@@ -49,6 +49,7 @@ interface RawPricingEntry {
     outputPer1M: number;
     cacheWrite5mPer1M?: number;
     cacheWrite1hPer1M?: number;
+    cacheWritePer1M?: number;
     cacheReadPer1M?: number;
     longContext?: {
         thresholdInputTokens: number;
@@ -56,6 +57,7 @@ interface RawPricingEntry {
         outputPer1M: number;
         cacheWrite5mPer1M?: number;
         cacheWrite1hPer1M?: number;
+        cacheWritePer1M?: number;
         cacheReadPer1M?: number;
     };
     promo?: unknown;
@@ -88,6 +90,7 @@ function toModelPricing(entry: RawPricingEntry): ProviderModelPricing {
     };
     if (isFinitePositiveOrZero(entry.cacheWrite5mPer1M)) pricing.cacheWrite5mPer1M = entry.cacheWrite5mPer1M;
     if (isFinitePositiveOrZero(entry.cacheWrite1hPer1M)) pricing.cacheWrite1hPer1M = entry.cacheWrite1hPer1M;
+    if (isFinitePositiveOrZero(entry.cacheWritePer1M)) pricing.cacheWritePer1M = entry.cacheWritePer1M;
     if (isFinitePositiveOrZero(entry.cacheReadPer1M)) pricing.cacheReadPer1M = entry.cacheReadPer1M;
     const lc = entry.longContext;
     if (isValidLongContext(lc)) {
@@ -97,6 +100,7 @@ function toModelPricing(entry: RawPricingEntry): ProviderModelPricing {
             outputPer1M: lc.outputPer1M,
             ...(isFinitePositiveOrZero(lc.cacheWrite5mPer1M) ? { cacheWrite5mPer1M: lc.cacheWrite5mPer1M } : {}),
             ...(isFinitePositiveOrZero(lc.cacheWrite1hPer1M) ? { cacheWrite1hPer1M: lc.cacheWrite1hPer1M } : {}),
+            ...(isFinitePositiveOrZero(lc.cacheWritePer1M) ? { cacheWritePer1M: lc.cacheWritePer1M } : {}),
             ...(isFinitePositiveOrZero(lc.cacheReadPer1M) ? { cacheReadPer1M: lc.cacheReadPer1M } : {})
         };
     }

@@ -17,8 +17,11 @@
  */
 import type { TokenUsage } from '../../ai/usage/providerUsage';
 import type { AIProviderId } from '../../ai/types';
-import { estimateUsageCost } from '../../ai/cost/estimateCorpusCost';
+import { estimateOmnibusCostRange, estimateUsageCost, type OmnibusCostRange } from '../../ai/cost/estimateCorpusCost';
 import { ANTHROPIC_REQUESTED_CACHE_TTL } from '../../ai/settings/aiSettings';
+
+/** The provider's own create/hit verdict for one call (`InquiryRunTrace.cacheStatus`). */
+export type ProviderCacheStatus = 'hit' | 'created';
 
 export type OmnibusCacheHealth =
     /** cache_read tokens > 0 — healthy reuse (or a warm cache from a prior run). */
@@ -47,23 +50,45 @@ export interface OmnibusCacheProbe {
 }
 
 /**
- * Read the cache-relevant token counts out of a provider usage payload. Mirrors
- * the fields the Anthropic adapter surfaces (cache_read_input_tokens and the
- * cache_creation ephemeral 5m/1h buckets). Absence of every field means the
- * provider gives us no cache signal to enforce on.
+ * Tokens one call wrote to the provider's prompt cache. Anthropic reports the
+ * total (`cache_creation_input_tokens`) AND its 5m/1h split, so the split is
+ * read only when the total is absent — adding both counts every write twice.
  */
-export function readOmnibusCacheProbe(usage: TokenUsage | null | undefined): OmnibusCacheProbe {
-    const cacheReadTokens = usage?.cacheReadInputTokens ?? 0; // SAFE: an absent cache-read counter means nothing was served from cache
-    const cacheCreatedTokens = (usage?.cacheCreationInputTokens ?? 0) // SAFE: providers omit cache counters when nothing was cached, so 0 is the true count
-        + (usage?.cacheCreation5mInputTokens ?? 0) // SAFE: a usage block without the 5m tier means zero 5m-cached tokens
+export function readCacheWriteTokens(usage: TokenUsage | null | undefined): number {
+    if (typeof usage?.cacheCreationInputTokens === 'number') return usage.cacheCreationInputTokens;
+    return (usage?.cacheCreation5mInputTokens ?? 0) // SAFE: a usage block without the 5m tier means zero 5m-cached tokens
         + (usage?.cacheCreation1hInputTokens ?? 0); // SAFE: a usage block without the 1h tier means zero 1h-cached tokens
+}
+
+/**
+ * Read the cache-relevant token counts out of a provider usage payload.
+ * Absence of every field means the provider gives us no cache signal to
+ * enforce on.
+ *
+ * `cacheStatus` is the provider's verdict for the call. Gemini reports
+ * `cachedContentTokenCount` on the call that CREATED its explicit cache, so on
+ * a 'created' call those "read" tokens were written, not reused. (Anthropic
+ * and OpenAI say 'created' only when nothing was read, so for them this
+ * changes nothing.)
+ */
+export function readOmnibusCacheProbe(
+    usage: TokenUsage | null | undefined,
+    cacheStatus?: ProviderCacheStatus
+): OmnibusCacheProbe {
+    const reportedReadTokens = usage?.cacheReadInputTokens ?? 0; // SAFE: an absent cache-read counter means nothing was served from cache
+    const writtenTokens = readCacheWriteTokens(usage);
+    const readsWereWritten = cacheStatus === 'created';
     const hasCacheSignals = !!usage && (
         typeof usage.cacheReadInputTokens === 'number'
         || typeof usage.cacheCreationInputTokens === 'number'
         || typeof usage.cacheCreation5mInputTokens === 'number'
         || typeof usage.cacheCreation1hInputTokens === 'number'
     );
-    return { cacheReadTokens, cacheCreatedTokens, hasCacheSignals };
+    return {
+        cacheReadTokens: readsWereWritten ? 0 : reportedReadTokens,
+        cacheCreatedTokens: readsWereWritten ? writtenTokens + reportedReadTokens : writtenTokens,
+        hasCacheSignals
+    };
 }
 
 export interface OmnibusCacheDecision {
@@ -127,25 +152,26 @@ export function createOmnibusCostAccumulator(): OmnibusCostAccumulator {
 
 /**
  * Add one completed pass's actual cost to the running total, priced from its
- * real token-usage payload. `cacheReadTokens` selects the cost provenance so
- * reused tokens bill at the cache-read rate and freshly-processed tokens at the
- * input rate. Passes whose cost cannot be resolved (unknown model, unpriced
- * provider, missing usage) are counted as unpriced rather than silently zeroed.
+ * real token-usage payload. `cacheStatus` is the provider's create/hit verdict
+ * for the call, handed to estimateUsageCost as the cost provenance: on a
+ * 'created' call the reported cache-read tokens (Gemini's freshly created
+ * cache) bill at the input rate; otherwise at the cache-read rate. Passes
+ * whose cost cannot be resolved (unknown model, unpriced provider, missing
+ * usage) are counted as unpriced rather than silently zeroed.
  */
 export function accumulateOmnibusPassCost(
     acc: OmnibusCostAccumulator,
     provider: AIProviderId,
     modelId: string | undefined,
     usage: TokenUsage | null | undefined,
-    cacheReadTokens: number
+    cacheStatus: ProviderCacheStatus | undefined
 ): OmnibusCostAccumulator {
     if (!modelId || !usage) {
         return { ...acc, unpricedPasses: acc.unpricedPasses + 1 };
     }
-    const provenance: 'hit' | 'created' = cacheReadTokens > 0 ? 'hit' : 'created';
     let cost: number | undefined;
     try {
-        cost = estimateUsageCost(provider, modelId, usage, provenance, ANTHROPIC_REQUESTED_CACHE_TTL)?.totalCostUSD;
+        cost = estimateUsageCost(provider, modelId, usage, cacheStatus, ANTHROPIC_REQUESTED_CACHE_TTL)?.totalCostUSD;
     } catch {
         cost = undefined;
     }
@@ -157,6 +183,58 @@ export function accumulateOmnibusPassCost(
         pricedPasses: acc.pricedPasses + 1,
         unpricedPasses: acc.unpricedPasses
     };
+}
+
+/**
+ * Pre-run cost band for an Omnibus run of `questionCount` questions — the one
+ * computation behind both the plan the view builds and the modal's recompute
+ * when rows are skipped.
+ *
+ * Sequential: every question sends the corpus; question 1 writes the cache and
+ * 2..N read it (all N read it when `cacheAlreadyWarm`).
+ *
+ * Combined (Gemini): ONE call carries every question, so the corpus is sent
+ * once and the call's output, capped at what one call may return, carries all
+ * N answers. Nothing inside the run can reuse a cache, so there is no cached
+ * band, and `cacheAlreadyWarm` does not apply: the combined prompt's prefix
+ * (its own system prompt and schema) is not the single-question prefix a
+ * recent run cached.
+ */
+export function estimateOmnibusRunCost(params: {
+    provider: AIProviderId;
+    modelId: string;
+    corpusInputTokens: number;
+    expectedOutputTokensPerQuestion: number;
+    questionCount: number;
+    combined: boolean;
+    /** Output ceiling of one provider call; bounds the combined call's output. */
+    maxOutputTokensPerCall: number;
+    cacheAlreadyWarm: boolean;
+}): OmnibusCostRange {
+    const questionCount = Math.max(1, Math.floor(params.questionCount));
+    if (params.combined) {
+        const { uncachedUSD } = estimateOmnibusCostRange({
+            provider: params.provider,
+            modelId: params.modelId,
+            corpusInputTokens: params.corpusInputTokens,
+            expectedOutputTokensPerQuestion: Math.min(
+                params.expectedOutputTokensPerQuestion * questionCount,
+                params.maxOutputTokensPerCall
+            ),
+            questionCount: 1,
+            cacheWriteTtl: ANTHROPIC_REQUESTED_CACHE_TTL
+        });
+        return { uncachedUSD };
+    }
+    return estimateOmnibusCostRange({
+        provider: params.provider,
+        modelId: params.modelId,
+        corpusInputTokens: params.corpusInputTokens,
+        expectedOutputTokensPerQuestion: params.expectedOutputTokensPerQuestion,
+        questionCount,
+        cacheAlreadyWarm: params.cacheAlreadyWarm,
+        cacheWriteTtl: ANTHROPIC_REQUESTED_CACHE_TTL
+    });
 }
 
 /**

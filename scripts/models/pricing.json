@@ -51,11 +51,13 @@
       "modelId": "gpt-6.1-sol",
       "inputPer1M": 2,
       "outputPer1M": 10,
+      "cacheWritePer1M": 2.5,
       "cacheReadPer1M": 0.1,
       "longContext": {
         "thresholdInputTokens": 272000,
         "inputPer1M": 4,
         "outputPer1M": 15,
+        "cacheWritePer1M": 5.0,
         "cacheReadPer1M": 0.2
       }
     },
@@ -64,11 +66,13 @@
       "modelId": "gpt-6-astra",
       "inputPer1M": 10,
       "outputPer1M": 50,
+      "cacheWritePer1M": 12.5,
       "cacheReadPer1M": 1,
       "longContext": {
         "thresholdInputTokens": 272000,
         "inputPer1M": 20,
         "outputPer1M": 75,
+        "cacheWritePer1M": 25.0,
         "cacheReadPer1M": 2
       }
     },
@@ -77,11 +81,13 @@
       "modelId": "gpt-6-luna",
       "inputPer1M": 0.1,
       "outputPer1M": 0.5,
+      "cacheWritePer1M": 0.125,
       "cacheReadPer1M": 0.01,
       "longContext": {
         "thresholdInputTokens": 272000,
         "inputPer1M": 0.2,
         "outputPer1M": 0.75,
+        "cacheWritePer1M": 0.25,
         "cacheReadPer1M": 0.02
       }
     },

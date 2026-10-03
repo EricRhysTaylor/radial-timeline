@@ -186,7 +186,8 @@ export type InquiryOmnibusModalOptions = {
     /**
      * Epoch ms when the provider cache window primed by a recent run (same
      * engine + corpus reuse fingerprint + scope) expires. Undefined when no
-     * window is open — presence means this pass can piggyback on that cache.
+     * window is open, or when the run is combined (its prefix is not the one
+     * that window covers) — presence means this pass can piggyback on that cache.
      */
     warmCacheExpiresAt?: number;
 };
@@ -199,13 +200,20 @@ export type OmnibusCostRangePlan = {
     /**
      * Estimator inputs, carried so the modal can recompute the band when the
      * author toggles questions in or out of the pass — single computation path
-     * (estimateOmnibusCostRange) for both the initial and recomputed bands.
+     * (estimateOmnibusRunCost) for both the initial and recomputed bands.
      */
     provider: Exclude<AIProviderId, 'none'>;
     modelId: string;
     expectedOutputTokensPerQuestion: number;
-    /** True when the pre-run band was priced against an already-warm cache. */
-    cacheAlreadyWarm?: boolean;
+    /** One call answers every question (Gemini): the corpus is sent once. */
+    combined: boolean;
+    /** Output ceiling of one provider call; bounds the combined call's output. */
+    maxOutputTokensPerCall: number;
+    /**
+     * True when the pre-run band was priced against an already-warm cache.
+     * Never true for a combined run, whose prefix no single-question run shares.
+     */
+    cacheAlreadyWarm: boolean;
 };
 
 export type CorpusCcEntry = {

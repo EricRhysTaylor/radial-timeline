@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import type { AIRunResult } from '../../ai/types';
 
 vi.mock('../../ai/runtime/aiClient', () => ({
@@ -207,6 +209,30 @@ describe('InquiryRunnerService execution policy', () => {
                 forceFreshRun: true
             })
         );
+    });
+
+    it('propagates skipProviderCache into one-pass dispatches (combined Omnibus call)', async () => {
+        const service = createService();
+        const getExecutionPrecheck = vi.fn().mockResolvedValue(buildPrecheck({ onePassFit: 'fits' }));
+        const runInquiryRequest = vi.fn().mockResolvedValue(buildRunResult());
+        Object.assign(service, { getExecutionPrecheck, runInquiryRequest, runChunkedInquiry: vi.fn() });
+
+        await (service.callProvider as (...args: unknown[]) => Promise<Record<string, unknown>>) (
+            'system', 'user', TEST_AI, { type: 'object' }, 0.2, 4000, 'question', undefined,
+            { skipProviderCache: true }
+        );
+
+        expect(runInquiryRequest).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.objectContaining({ skipProviderCache: true })
+        );
+    });
+
+    it('the combined Omnibus call skips the provider cache; nothing reuses its prefix', () => {
+        const source = readFileSync(resolve(__dirname, 'InquiryRunnerService.ts'), 'utf8');
+        const omnibus = source.slice(source.indexOf('async runOmnibusWithTrace('), source.indexOf('this.applyResponseExecutionReporting(trace, response);', source.indexOf('async runOmnibusWithTrace(')));
+        expect(omnibus).toContain('{ skipProviderCache: true }');
+        expect(source).toContain('bypassProviderReuse: options.skipProviderCache === true,');
     });
 
     it('records OpenAI transport lane in trace notes for logging', () => {

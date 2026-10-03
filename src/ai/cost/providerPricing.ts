@@ -16,6 +16,13 @@ export interface ProviderModelPricing {
     outputPer1M: number;
     cacheWrite5mPer1M?: number;
     cacheWrite1hPer1M?: number;
+    /**
+     * Cache-write rate for providers with ONE cache lifetime (OpenAI GPT-5.6+:
+     * 30m, 1.25× input). Anthropic prices writes per TTL instead
+     * (`cacheWrite5mPer1M` / `cacheWrite1hPer1M`); a model carries one scheme,
+     * never both.
+     */
+    cacheWritePer1M?: number;
     cacheReadPer1M?: number;
     /**
      * Per-1M-token, per-hour charge for holding content in the provider's
@@ -30,6 +37,7 @@ export interface ProviderModelPricing {
         outputPer1M: number;
         cacheWrite5mPer1M?: number;
         cacheWrite1hPer1M?: number;
+        cacheWritePer1M?: number;
         cacheReadPer1M?: number;
         cacheStoragePer1MPerHour?: number;
     };
@@ -48,6 +56,7 @@ export interface ResolvedProviderModelPricing {
     outputPer1M: number;
     cacheWrite5mPer1M?: number;
     cacheWrite1hPer1M?: number;
+    cacheWritePer1M?: number;
     cacheReadPer1M?: number;
     cacheStoragePer1MPerHour?: number;
     pricingPhase: 'standard' | 'longContext';
@@ -112,33 +121,36 @@ export const BUILTIN_PRICING: ProviderPricingTable = {
     openai: {
         // Verified against developers.openai.com/api/docs/models on 2026-10-01.
         // GPT-6.1 Sol/GPT-6 Luna prices are permanent (not promotional).
-        // OpenAI lists cache writes ($2.50 Sol, $0.125 Luna — 1.25× input);
-        // RT's OpenAI path has no write rate and prices the priming pass at
-        // the input rate, so the first pass is quoted ~20% under the
-        // provider's write charge, as for Astra. Long context is 2× input and
-        // cache-read, 1.5× output above 272K. 6.1 Sol halves cache reads to
-        // $0.10 (GPT-6 Sol: $0.20).
+        // GPT-5.6+ bills prompt-cache writes at 1.25× the uncached input rate
+        // (developers.openai.com/api/docs/guides/prompt-caching): $2.50 Sol,
+        // $12.50 Astra, $0.125 Luna. Long context is 2× input and cache-read,
+        // 1.5× output above 272K; the long-context write rate is 1.25× the
+        // long-context input rate. 6.1 Sol halves cache reads to $0.10
+        // (GPT-6 Sol: $0.20).
         'gpt-6.1-sol': {
             inputPer1M: 2.0,
             outputPer1M: 10.0,
+            cacheWritePer1M: 2.5,
             cacheReadPer1M: 0.1,
             longContext: {
                 thresholdInputTokens: 272_000,
                 inputPer1M: 4.0,
                 outputPer1M: 15.0,
+                cacheWritePer1M: 5.0,
                 cacheReadPer1M: 0.2
             }
         },
-        // GPT-6 Astra, 'pro' channel. OpenAI lists cache writes at $12.50
-        // (1.25× input); priced at the input rate as above.
+        // GPT-6 Astra, 'pro' channel.
         'gpt-6-astra': {
             inputPer1M: 10.0,
             outputPer1M: 50.0,
+            cacheWritePer1M: 12.5,
             cacheReadPer1M: 1.0,
             longContext: {
                 thresholdInputTokens: 272_000,
                 inputPer1M: 20.0,
                 outputPer1M: 75.0,
+                cacheWritePer1M: 25.0,
                 cacheReadPer1M: 2.0
             }
         },
@@ -146,11 +158,13 @@ export const BUILTIN_PRICING: ProviderPricingTable = {
         'gpt-6-luna': {
             inputPer1M: 0.1,
             outputPer1M: 0.5,
+            cacheWritePer1M: 0.125,
             cacheReadPer1M: 0.01,
             longContext: {
                 thresholdInputTokens: 272_000,
                 inputPer1M: 0.2,
                 outputPer1M: 0.75,
+                cacheWritePer1M: 0.25,
                 cacheReadPer1M: 0.02
             }
         }
@@ -343,6 +357,7 @@ export function resolveProviderModelPricing(
             outputPer1M: longContext.outputPer1M,
             cacheWrite5mPer1M: longContext.cacheWrite5mPer1M,
             cacheWrite1hPer1M: longContext.cacheWrite1hPer1M,
+            cacheWritePer1M: longContext.cacheWritePer1M,
             cacheReadPer1M: longContext.cacheReadPer1M,
             cacheStoragePer1MPerHour: longContext.cacheStoragePer1MPerHour ?? pricing.cacheStoragePer1MPerHour,
             pricingPhase: 'longContext',
@@ -356,6 +371,7 @@ export function resolveProviderModelPricing(
         outputPer1M: effectiveRates.outputPer1M,
         cacheWrite5mPer1M: pricing.cacheWrite5mPer1M,
         cacheWrite1hPer1M: pricing.cacheWrite1hPer1M,
+        cacheWritePer1M: pricing.cacheWritePer1M,
         cacheReadPer1M: effectiveRates.cacheReadPer1M,
         cacheStoragePer1MPerHour: effectiveRates.cacheStoragePer1MPerHour,
         pricingPhase: 'standard',

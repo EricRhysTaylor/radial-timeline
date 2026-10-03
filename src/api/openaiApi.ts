@@ -9,7 +9,8 @@ import { requestUrl } from 'obsidian'; // Use requestUrl for consistency
 import { warnLegacyAccess } from './legacyAccessGuard';
 import { modelSupportsSystemRole } from './providerCapabilities';
 import { modelSupportsRequestTemperature, modelSupportsRequestTopP } from '../ai/registry/modelRequestProfiles';
-import type { OpenAiPromptCacheRetention, SourceAttributionType, SourceCitation } from '../ai/types';
+import type { SourceAttributionType, SourceCitation } from '../ai/types';
+import { splitAtCacheBreak } from '../ai/prompts/composeEnvelope';
 
 // Interface for the expected successful OpenAI Chat Completion response
 interface OpenAiChatSuccessResponse {
@@ -128,20 +129,54 @@ function buildOpenAiChatMessages(
     return [{ role: 'user', content: fullPrompt }];
 }
 
-function buildOpenAiResponsesInput(
+interface OpenAiResponsesInputText {
+    type: 'input_text';
+    text: string;
+    prompt_cache_breakpoint?: { mode: 'explicit' };
+}
+
+type OpenAiResponsesInputMessage = { role: 'system' | 'user'; content: OpenAiResponsesInputText[] };
+
+/**
+ * Build the Responses `input` for GPT-5.6+ prompt caching.
+ *
+ * GPT-5.6+ (every OpenAI model RT ships) caches only at breakpoints. In the
+ * default implicit mode the one breakpoint is the END of the latest message,
+ * so a single user block holding corpus + question writes a fresh cache every
+ * call and never reads the shared corpus back (probed on gpt-6.1-sol
+ * 2026-10-03: question 2 read 0, re-wrote 6,092 tokens at 1.25×).
+ *
+ * The composed prompt's cache break therefore becomes two content blocks: the
+ * stable prefix carries an explicit breakpoint, the volatile question follows
+ * it. With the same probe, question 2 read 6,069 of 6,090 input tokens. The
+ * delimiter itself never reaches the model.
+ */
+export function buildOpenAiResponsesInput(
     modelId: string,
     systemPrompt: string | null,
-    userPrompt: string
-): { role: 'system' | 'user'; content: { type: 'input_text'; text: string }[] }[] {
+    userPrompt: string,
+    cacheBreakpoint: boolean
+): OpenAiResponsesInputMessage[] {
     const supportsSystem = modelSupportsSystemRole('openai', modelId);
+    const leadingSystem = systemPrompt && !supportsSystem ? `${systemPrompt}\n\n` : '';
+    const split = splitAtCacheBreak(userPrompt);
+    const userContent: OpenAiResponsesInputText[] = split
+        ? [
+            {
+                type: 'input_text',
+                text: `${leadingSystem}${split.stable}`,
+                ...(cacheBreakpoint ? { prompt_cache_breakpoint: { mode: 'explicit' as const } } : {})
+            },
+            ...(split.volatile ? [{ type: 'input_text' as const, text: split.volatile }] : [])
+        ]
+        : [{ type: 'input_text', text: `${leadingSystem}${userPrompt}` }];
     if (systemPrompt && supportsSystem) {
         return [
             { role: 'system', content: [{ type: 'input_text', text: systemPrompt }] },
-            { role: 'user', content: [{ type: 'input_text', text: userPrompt }] }
+            { role: 'user', content: userContent }
         ];
     }
-    const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${userPrompt}` : userPrompt;
-    return [{ role: 'user', content: [{ type: 'input_text', text: fullPrompt }] }];
+    return [{ role: 'user', content: userContent }];
 }
 
 function toResponsesTextFormat(responseFormat: OpenAiResponseFormat): OpenAiResponsesTextFormat {
@@ -615,7 +650,8 @@ export async function callOpenAiResponsesApi(
     responseFormat?: OpenAiResponseFormat,
     temperature?: number,
     topP?: number,
-    promptCacheRetention?: OpenAiPromptCacheRetention,
+    /** Place an explicit cache breakpoint after the prompt's cache break (when it has one). */
+    cacheBreakpoint?: boolean,
     promptCacheKey?: string,
     internalAdapterAccess?: boolean
 ): Promise<OpenAiApiResponse> {
@@ -641,18 +677,23 @@ export async function callOpenAiResponsesApi(
 
     const requestBody: {
         model: string;
-        input: { role: 'system' | 'user'; content: { type: 'input_text'; text: string }[] }[];
+        input: OpenAiResponsesInputMessage[];
+        // Explicit mode on every request: caches are written only at RT's
+        // breakpoints. Implicit mode (the default) would write — and bill at
+        // 1.25× input — the whole prompt of every one-off call (Pulse,
+        // onboarding), a cache nothing ever reads.
+        prompt_cache_options: { mode: 'explicit' };
         max_output_tokens?: number;
         text?: { format: OpenAiResponsesTextFormat };
         temperature?: number;
         top_p?: number;
-        prompt_cache_retention?: OpenAiPromptCacheRetention;
         prompt_cache_key?: string;
         background?: boolean;
         store?: boolean;
     } = {
         model: modelId,
-        input: buildOpenAiResponsesInput(modelId, systemPrompt, userPrompt)
+        input: buildOpenAiResponsesInput(modelId, systemPrompt, userPrompt, cacheBreakpoint === true),
+        prompt_cache_options: { mode: 'explicit' }
     };
     const adapterNotes: string[] = [];
     const useBackgroundMode = shouldUseOpenAiBackgroundMode(modelId);
@@ -672,9 +713,6 @@ export async function callOpenAiResponsesApi(
         requestBody.top_p = topP;
     } else if (typeof topP === 'number') {
         adapterNotes.push('Stripped top_p for OpenAI Responses request: model does not support sampling controls.');
-    }
-    if (promptCacheRetention) {
-        requestBody.prompt_cache_retention = promptCacheRetention;
     }
     if (promptCacheKey) {
         requestBody.prompt_cache_key = promptCacheKey;

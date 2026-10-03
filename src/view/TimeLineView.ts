@@ -3342,16 +3342,19 @@ export class RadialTimelineView extends ItemView {
         if (!clock || !window_) {
             pill.setAttribute('data-state', 'idle');
             pill.textContent = '';
-            pill.removeAttribute('data-tooltip-bound');
+            pill.removeAttribute('data-tooltip-text');
             return;
         }
         pill.setAttribute('data-state', 'open');
         pill.textContent = `Cache ${clock}`;
-        if (pill.getAttribute('data-tooltip-bound') !== 'true') {
-            const costHint = formatGossamerCacheCostHint(window_);
-            const tip = `Manuscript cached on ${window_.provider} — score the other signals now to reuse it`;
-            applyTooltip(pill, costHint ? `${tip} (${costHint})` : tip, 'bottom');
-            pill.setAttribute('data-tooltip-bound', 'true');
+        // Re-bind whenever the text changes: each signal run (or reused
+        // result) replaces the window and its last-run cost.
+        const costHint = formatGossamerCacheCostHint(window_);
+        const baseTip = `Manuscript cached on ${window_.provider} — score the other signals now to reuse it`;
+        const tip = costHint ? `${baseTip} (${costHint})` : baseTip;
+        if (pill.getAttribute('data-tooltip-text') !== tip) {
+            applyTooltip(pill, tip, 'bottom');
+            pill.setAttribute('data-tooltip-text', tip);
         }
     }
 

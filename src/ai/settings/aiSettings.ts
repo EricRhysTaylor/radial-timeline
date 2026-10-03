@@ -8,8 +8,7 @@ import type {
 } from '../types';
 import {
     ANTHROPIC_INQUIRY_CACHE_TTL,
-    GEMINI_CACHE_TTL_DEFAULT_SECONDS,
-    OPENAI_IN_MEMORY_WINDOW_MINUTES_DEFAULT
+    GEMINI_CACHE_TTL_DEFAULT_SECONDS
 } from './cacheWindows';
 
 export const AI_SETTINGS_SCHEMA_VERSION = 1;
@@ -30,9 +29,7 @@ export const DEFAULT_MODEL_POLICY: ModelPolicy = { type: 'latestStable' };
 export const ANTHROPIC_REQUESTED_CACHE_TTL = ANTHROPIC_INQUIRY_CACHE_TTL;
 export const DEFAULT_CACHE_WINDOWS = {
     anthropicTtl: ANTHROPIC_REQUESTED_CACHE_TTL,
-    googleTtlSeconds: GEMINI_CACHE_TTL_DEFAULT_SECONDS,
-    openaiRetention: '24h',
-    openaiInMemoryWindowMinutes: OPENAI_IN_MEMORY_WINDOW_MINUTES_DEFAULT
+    googleTtlSeconds: GEMINI_CACHE_TTL_DEFAULT_SECONDS
 } as const;
 /**
  * The capabilities an operator may declare for their local model, in the order

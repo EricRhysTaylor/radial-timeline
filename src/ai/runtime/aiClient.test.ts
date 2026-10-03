@@ -25,7 +25,7 @@ describe('AI client resolved-model caching', () => {
         expect(source.includes("(provider === 'openai' && advancedContext.reuseState !== 'idle')")).toBe(true);
         expect(source.includes("if (provider === 'google' && typeof cachedStableRatio === 'number') {")).toBe(true);
         expect(source.includes("if (provider === 'google' && typeof cachedStableTokens === 'number') {")).toBe(true);
-        expect(source.includes("if (!bypassProviderReuse && provider === 'openai') {")).toBe(true);
+        expect(source.includes("if (!bypassProviderReuse && (provider === 'anthropic' || provider === 'openai')) {")).toBe(true);
     });
 
     it('builds the shared result cache key from the full prepared request contract', () => {

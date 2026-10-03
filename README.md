@@ -28,7 +28,7 @@
 ## Try It
 
 - **[Website](https://community.radialtimeline.com/go/readme-site)** — Radial Timeline and its companion plugin, Editorialist, feature by feature.
-- **[Demo vault](https://community.radialtimeline.com/go/readme-demo)** — *Pride & Prejudice*, a finished novel fully mapped in the timeline with AI analysis included; the download link arrives by email.
+- **[Demo vault](https://community.radialtimeline.com/go/readme-demo)** — *Pride & Prejudice*, a finished novel fully mapped in the timeline with AI analysis included.
 - **[Newsletter](https://community.radialtimeline.com/go/readme-newsletter)** — release news and notes from the workshop.
 - **[Community](https://community.radialtimeline.com/go/readme-community)** — writers sharing books in progress and answering each other's questions.
 

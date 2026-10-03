@@ -4,14 +4,20 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 /**
- * In-memory cache store for Gemini context caching.
+ * Registry for Gemini context caching.
  *
  * Maps SHA-256 content fingerprints to Gemini cached content resource names.
- * Enables cross-question reuse within a session: same corpus + same model
- * + same system prompt → same cache resource → no re-upload.
+ * Enables cross-question reuse: same corpus + same model + same system
+ * prompt → same cache resource → no re-upload.
+ *
+ * The registry lives in memory, but every resource RT creates carries its
+ * fingerprint in `displayName`. The first lookup that misses after a plugin
+ * reload (or an API key change) lists the key's caches once and adopts the
+ * live RT ones, so a reload reuses the still-billing cache instead of
+ * orphaning it and paying to create a duplicate.
  */
 import { createHash } from 'crypto';
-import { createGeminiCache } from './geminiApi';
+import { createGeminiCache, listGeminiCaches } from './geminiApi';
 import { estimateTokensFromChars, DEFAULT_CHARS_PER_TOKEN } from '../ai/estimates';
 
 interface GeminiCacheEntry {
@@ -32,6 +38,16 @@ export interface GeminiCacheResult {
 
 /** In-memory store: content fingerprint → cache resource */
 const cacheStore = new Map<string, GeminiCacheEntry>();
+
+/** displayName prefix marking a cache RT created; the fingerprint follows it. */
+const RT_CACHE_DISPLAY_PREFIX = 'rt-cache-';
+
+/**
+ * Identity (hash, never the key itself) of the API key whose caches the store
+ * holds and has adopted from the provider. Caches belong to the key's
+ * project: a different key starts an empty store and adopts afresh.
+ */
+let adoptedForKeyId: string | null = null;
 
 /**
  * Gemini explicit caching minimum: 4,096 tokens on 3.x Flash and 3.1 Pro —
@@ -70,6 +86,33 @@ function hashCacheKey(modelId: string, systemPrompt: string, stableContent: stri
         .digest('hex').slice(0, 16);
 }
 
+function hashApiKeyId(apiKey: string): string {
+    return createHash('sha256').update(apiKey).digest('hex').slice(0, 16);
+}
+
+/**
+ * Once per API key per plugin session: list the key's caches and register the
+ * live ones RT created. Throws if the listing fails; the caller fails the run
+ * the same way a failed create does, and the next call tries again.
+ */
+async function adoptProviderCaches(apiKey: string): Promise<void> {
+    const keyId = hashApiKeyId(apiKey);
+    if (adoptedForKeyId === keyId) return;
+    if (adoptedForKeyId !== null) cacheStore.clear();
+    const listings = await listGeminiCaches(apiKey);
+    for (const listing of listings) {
+        if (!listing.displayName?.startsWith(RT_CACHE_DISPLAY_PREFIX)) continue;
+        const expiresAt = listing.expireTime ? Date.parse(listing.expireTime) : NaN;
+        if (!Number.isFinite(expiresAt)) continue;
+        const entry: GeminiCacheEntry = { cacheName: listing.name, expiresAt };
+        if (!isEntryValid(entry)) continue;
+        const fp = listing.displayName.slice(RT_CACHE_DISPLAY_PREFIX.length);
+        const known = cacheStore.get(fp);
+        if (!known || known.expiresAt < expiresAt) cacheStore.set(fp, entry);
+    }
+    adoptedForKeyId = keyId;
+}
+
 /** Check whether a cache entry is still valid (with safety margin). */
 function isEntryValid(entry: GeminiCacheEntry): boolean {
     return entry.expiresAt - EXPIRY_SAFETY_MARGIN_MS > Date.now();
@@ -106,9 +149,11 @@ export function peekGeminiCache(
  *
  * Returns `{ cacheName, status }` if caching is viable and successful,
  * or `null` if the stable prefix is too small for Gemini's minimum
- * token threshold.
+ * token threshold. A live resource adopted from the provider (created before
+ * a plugin reload) is a 'hit': this call reuses it.
  *
- * @throws if cache creation fails (caller should catch and fall back to uncached).
+ * @throws if listing or creating the cache fails (the provider adapter fails
+ * the run with a cache-setup error).
  */
 export async function getOrCreateGeminiCache(
     apiKey: string,
@@ -125,14 +170,23 @@ export async function getOrCreateGeminiCache(
     if (estimatedTokens < GEMINI_MIN_ESTIMATED_CACHE_TOKENS) return null;
 
     const fp = hashCacheKey(modelId, systemPrompt ?? '', stableContent);
-    const hit = cacheStore.get(fp);
+    const keyId = hashApiKeyId(apiKey);
+    const hit = adoptedForKeyId === keyId ? cacheStore.get(fp) : undefined;
     if (hit && isEntryValid(hit)) {
         return { cacheName: hit.cacheName, status: 'hit', expiresAt: hit.expiresAt };
+    }
+
+    // Miss: before creating, adopt live RT caches the provider still holds
+    // (lost from memory by a plugin reload).
+    await adoptProviderCaches(apiKey);
+    const adopted = cacheStore.get(fp);
+    if (adopted && isEntryValid(adopted)) {
+        return { cacheName: adopted.cacheName, status: 'hit', expiresAt: adopted.expiresAt };
     }
     cacheStore.delete(fp);      // expired or missing
 
     const cacheName = await createGeminiCache(
-        apiKey, modelId, stableContent, ttlSeconds, systemPrompt
+        apiKey, modelId, stableContent, ttlSeconds, systemPrompt, `${RT_CACHE_DISPLAY_PREFIX}${fp}`
     );
     const expiresAt = Date.now() + (ttlSeconds * 1000);
     cacheStore.set(fp, { cacheName, expiresAt });

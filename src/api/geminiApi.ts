@@ -367,6 +367,9 @@ export async function callGeminiApi(
  * @param systemInstruction Optional system instruction to include in the cached content.
  *   When provided, the generate request must NOT also set systemInstruction
  *   (Gemini rejects the combination).
+ * @param displayName Optional label stored on the resource (max 128 chars),
+ *   listed back by listGeminiCaches — how a cache is found again after the
+ *   in-memory registry is lost (plugin reload).
  * @returns Name of the cached content resource (e.g. "cachedContents/123...")
  */
 export async function createGeminiCache(
@@ -374,7 +377,8 @@ export async function createGeminiCache(
   modelId: string,
   content: string,
   ttlSeconds: number = 3600,
-  systemInstruction?: string
+  systemInstruction?: string,
+  displayName?: string
 ): Promise<string> {
   if (!apiKey) throw new Error('Gemini API key is required to create cache.');
 
@@ -393,6 +397,9 @@ export async function createGeminiCache(
   };
   if (systemInstruction) {
     body.systemInstruction = { parts: [{ text: systemInstruction }] };
+  }
+  if (displayName) {
+    body.displayName = displayName;
   }
 
   const resp = await requestUrl({
@@ -414,6 +421,51 @@ export async function createGeminiCache(
   }
   
   return data.name;
+}
+
+export interface GeminiCacheListing {
+  /** Resource name, e.g. "cachedContents/abc123". */
+  name: string;
+  displayName?: string;
+  /** "models/{model}" */
+  model?: string;
+  /** RFC 3339 expiry timestamp. */
+  expireTime?: string;
+}
+
+/**
+ * List the API key's live cached-content resources (every page).
+ * GET v1beta/cachedContents — metadata only, never the cached text.
+ * Throws on any HTTP or response-shape error.
+ */
+export async function listGeminiCaches(apiKey: string): Promise<GeminiCacheListing[]> {
+  if (!apiKey) throw new Error('Gemini API key is required to list caches.');
+  const listings: GeminiCacheListing[] = [];
+  let pageToken: string | undefined;
+  do {
+    const url = `https://generativelanguage.googleapis.com/v1beta/cachedContents?key=${encodeURIComponent(apiKey)}&pageSize=1000`
+      + (pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : '');
+    const resp = await requestUrl({ url, method: 'GET', throw: false });
+    if (resp.status >= 400) {
+      const err = resp.json as GeminiErrorResponse;
+      throw new Error(err?.error?.message ?? `Failed to list caches (${resp.status})`);
+    }
+    const data = resp.json as { cachedContents?: unknown; nextPageToken?: unknown };
+    if (data.cachedContents !== undefined && !Array.isArray(data.cachedContents)) {
+      throw new Error('Cache list response has a malformed cachedContents field');
+    }
+    for (const entry of (data.cachedContents ?? []) as Record<string, unknown>[]) { // SAFE: an absent cachedContents field is Gemini's empty page
+      if (typeof entry?.name !== 'string') continue;
+      listings.push({
+        name: entry.name,
+        displayName: typeof entry.displayName === 'string' ? entry.displayName : undefined,
+        model: typeof entry.model === 'string' ? entry.model : undefined,
+        expireTime: typeof entry.expireTime === 'string' ? entry.expireTime : undefined
+      });
+    }
+    pageToken = typeof data.nextPageToken === 'string' && data.nextPageToken ? data.nextPageToken : undefined;
+  } while (pageToken);
+  return listings;
 }
 
 /**

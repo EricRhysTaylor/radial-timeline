@@ -302,17 +302,37 @@ The delimiter is no longer sent to the model.
 
 ### Still open (not fixed here)
 
-- Gemini: the cache registry lives only in memory, so a plugin reload orphans
-  a live cache until its TTL (15m max). The 15m TTL cap is kept deliberately
-  (storage cost).
+- The Gemini 15m TTL cap is kept deliberately (storage cost).
 - `ai/forecast/estimateTokensFromVault.ts` computes its own reuse fingerprint
   (without the role template). It isn't used to match sessions.
 - Reordering books in Book Manager changes the saga prefix but not the
   fingerprint.
-- Gossamer: a re-score within 2 minutes returns the in-memory result (product
-  decision).
 - Pulse still sends the role template twice and the schema three ways. Left
   as-is by owner decision.
 - The fallback gate's `or-chain-3` ratchet (58 > 52) was already failing at
   HEAD before this work, from unrelated files.
+
+### Follow-up fixes (2026-10-03)
+
+- **Gemini caches survive a plugin reload.** Each cache RT creates carries
+  `rt-cache-<fingerprint>` as its `displayName`. The first registry miss per
+  API key per session lists the key's caches and adopts the live RT ones as
+  hits, so nothing is orphaned or duplicated. A failed listing fails the run
+  like a failed create.
+  - Live check (gemini-3.8-flash): session 1 created
+    `cachedContents/i87x…`. After a simulated reload, session 2 got a `hit`
+    on the same resource, with the provider's real expiry. The probe cache was
+    deleted afterwards.
+- **A Gossamer re-score is a new reading.** Every run appends Gossamer<N> to
+  the beat notes, so RT's 2-minute in-memory answer cache was handing a
+  re-score the previous answer verbatim. That made a duplicate run that
+  flattened the history and could prune a real one.
+  - Gossamer requests now skip only the in-memory OUTPUT cache. The provider
+    manuscript-prefix cache still makes a re-score cheap.
+  - The in-memory reuse handling added earlier the same day was unreachable
+    after this, so it is deleted.
+  - The run confirmation shows a non-blocking note when the selected signal
+    was already scored on the same unchanged input this session ("…adds
+    another reading; it does not replace the earlier one"), so the author can
+    cancel an accidental repeat.
 

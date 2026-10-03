@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { buildGossamerRunRequest, parsePastedGossamerResponse, scrubAiCitationArtifacts } from './GossamerCommands';
+import { buildGossamerRunRequest, findPriorGossamerReading, parsePastedGossamerResponse, recordGossamerReading, scrubAiCitationArtifacts } from './GossamerCommands';
 import { compileRequestPrompt } from './ai/runtime/aiClient';
 import { buildAttachedManuscriptReference, getUnifiedBeatAnalysisJsonSchema } from './ai/prompts/unifiedBeatAnalysis';
 import { CACHE_BREAK_DELIMITER } from './ai/prompts/composeEnvelope';
@@ -280,3 +280,40 @@ describe('Gossamer runtime-normalization audit trail', () => {
         expect(source).toContain('schemaWarnings: [...providerNormalizationWarnings, `JSON parse error: ${detail}`]');
     });
 });
+
+describe('Gossamer re-scores are new readings', () => {
+    const plugin = {
+        settings: { aiSettings: buildDefaultAiSettings() },
+        getActiveBookTitle: () => 'Book Two'
+    } as never;
+    const beats = [
+        { beatName: 'Opening Image', beatNumber: 1, idealRange: '0-20', placement: '1.01' },
+        { beatName: 'Catalyst', beatNumber: 2, idealRange: '20-40', placement: '3.01' }
+    ];
+    const request = (manuscriptText: string, signal: 'momentum' | 'tension' = 'momentum') =>
+        buildGossamerRunRequest(plugin, { beats, beatSystem: 'Save The Cat', signal, manuscriptText });
+
+    it('skips the in-memory answer cache but keeps the provider prefix cache', () => {
+        const run = request('Chapter one prose.');
+        expect(run.bypassInMemoryCache).toBe(true);
+        expect(run.bypassProviderReuse).toBeUndefined();
+    });
+
+    it('recognizes a re-score of the same signal on unchanged input, and nothing else', () => {
+        const scoredAt = Date.parse('2026-10-03T15:42:00Z');
+        recordGossamerReading(plugin, 'momentum', request('Chapter one prose.'), scoredAt);
+
+        expect(findPriorGossamerReading(plugin, 'momentum', request('Chapter one prose.'))).toBe(scoredAt);
+        // Revised manuscript: a different input, not a repeat.
+        expect(findPriorGossamerReading(plugin, 'momentum', request('Chapter one prose, revised.'))).toBeNull();
+        // Another signal on the same manuscript is the normal next step, not a repeat.
+        expect(findPriorGossamerReading(plugin, 'tension', request('Chapter one prose.', 'tension'))).toBeNull();
+    });
+
+    it('the confirmation checks for a prior reading and records one after each API run', () => {
+        const source = readFileSync(resolve(process.cwd(), 'src/GossamerCommands.ts'), 'utf8');
+        expect(source).toContain('modal.setPriorReading(priorReadingAt);');
+        expect(source).toContain('recordGossamerReading(plugin, selectedSignal, runRequest, returnedAt.getTime());');
+    });
+});
+

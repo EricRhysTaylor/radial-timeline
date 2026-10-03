@@ -59,6 +59,7 @@ export class GossamerProcessingModal extends ErtModal {
     private processingView?: HTMLElement;
     private subtitleEl?: HTMLElement;
     private manuscriptInfoEl?: HTMLElement;
+    private priorReadingEl?: HTMLElement;
     private statusTextEl?: HTMLElement;
     private apiStatusEl?: HTMLElement;
     private progressBarEl?: HTMLElement;
@@ -175,6 +176,10 @@ export class GossamerProcessingModal extends ErtModal {
         infoSection.createEl('h3', { text: t('gossamer.processingModal.manuscriptInfoHeading'), cls: 'ert-section-title' });
         this.manuscriptInfoEl = infoSection.createDiv({ cls: 'ert-gossamer-proc-manuscript-info' });
         this.manuscriptInfoEl.setText(t('gossamer.processingModal.gatheringDetails'));
+
+        // Repeat-reading note (filled by setPriorReading): this signal was
+        // already scored on the same unchanged input this session.
+        this.priorReadingEl = card.createDiv({ cls: 'ert-gossamer-proc-repeat-note ert-hidden' });
 
         // Cache-window alert: persists across modal close/reopen and signal
         // switches as long as the prior run's window is still open.
@@ -368,6 +373,27 @@ export class GossamerProcessingModal extends ErtModal {
     }
 
     /**
+     * Tell the author this signal was already scored on the same unchanged
+     * input this session (`scoredAt`), so running it again adds another
+     * reading rather than replacing one. Null hides the note.
+     */
+    public setPriorReading(scoredAt: number | null): void {
+        const el = this.priorReadingEl;
+        if (!el) return;
+        el.empty();
+        if (scoredAt === null) {
+            el.addClass('ert-hidden');
+            return;
+        }
+        const signal = this.plugin.gossamerSelectedSignal ?? DEFAULT_GOSSAMER_SIGNAL;
+        el.setText(t('gossamer.processingModal.repeatReading', {
+            signal: GOSSAMER_SIGNAL_METADATA[signal].label,
+            time: new Date(scoredAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+        }));
+        el.removeClass('ert-hidden');
+    }
+
+    /**
      * Update current status message
      */
     public setStatus(status: string): void {
@@ -426,7 +452,7 @@ export class GossamerProcessingModal extends ErtModal {
     /**
      * Mark API call as successful
      */
-    public apiCallSuccess(options: { servedFromCache: boolean }): void {
+    public apiCallSuccess(): void {
         // Clear timer
         if (this.timerInterval) {
             window.clearInterval(this.timerInterval);
@@ -437,9 +463,8 @@ export class GossamerProcessingModal extends ErtModal {
         this.lastElapsedSeconds = elapsedMs !== undefined ? (elapsedMs / 1000).toFixed(1) : undefined;
 
         // Persist elapsed per-signal so the next run can use the observed
-        // normal runtime as its progress baseline. An RT in-memory repeat made
-        // no provider call; its near-zero time is not a runtime to learn from.
-        if (!options.servedFromCache && elapsedMs !== undefined && elapsedMs > 0) {
+        // normal runtime as its progress baseline.
+        if (elapsedMs !== undefined && elapsedMs > 0) {
             void this.persistLastRunDuration(elapsedMs);
         }
 

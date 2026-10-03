@@ -983,6 +983,14 @@
   align-items: center;
 }
 
+/* Repeat-reading note on the run confirmation: this signal was already scored
+   on the same unchanged manuscript this session. */
+.ert-gossamer-proc-repeat-note {
+  margin-top: var(--ert-pad-xs);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
 /* Cache-window countdown shown after a successful run — nudges the author to
    score the remaining signals while the manuscript prefix is still cached. */
 .ert-gossamer-proc-cache-timer {

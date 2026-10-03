@@ -5,7 +5,6 @@ import {
     formatGossamerCacheCostHint,
     formatGossamerCachePillLabel,
     isGossamerCacheWindowOpen,
-    markGossamerCacheWindowReused,
     type GossamerCacheWindow
 } from './cacheWindow';
 import { buildDefaultAiSettings } from '../ai/settings/aiSettings';
@@ -88,31 +87,6 @@ describe('buildGossamerCacheWindow', () => {
         // Falls back to the derived Gemini TTL rather than the stale expiry.
         expect(win).not.toBeNull();
         expect(win!.expiresAt).toBeGreaterThan(RETURNED);
-    });
-});
-
-describe('markGossamerCacheWindowReused', () => {
-    const armed: GossamerCacheWindow = {
-        provider: 'anthropic',
-        modelLabel: 'Claude',
-        armedAt: 1_000,
-        expiresAt: 1_000 + 60 * 60_000,
-        cacheStatus: 'created',
-        lastRunCostUSD: 2.43
-    };
-
-    it('keeps the provider-armed expiry and reports the repeat as a $0 reuse', () => {
-        const reused = markGossamerCacheWindowReused(armed);
-        expect(reused).not.toBe(armed);
-        expect(reused?.armedAt).toBe(armed.armedAt);
-        expect(reused?.expiresAt).toBe(armed.expiresAt);
-        expect(reused?.lastRunCostUSD).toBe(0);
-        expect(formatGossamerCacheCostHint(reused)).toBe('last run $0.00 · reused previous result');
-        expect(formatGossamerCacheCostHint(reused)).not.toContain('2.43');
-    });
-
-    it('never opens a window that the provider never proved', () => {
-        expect(markGossamerCacheWindowReused(null)).toBeNull();
     });
 });
 

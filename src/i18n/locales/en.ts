@@ -1275,6 +1275,7 @@ export interface TranslationKeys {
             confirmSubtitle: string;
             gatheringDetails: string;
             manuscriptInfoHeading: string;
+            repeatReading: string;
             keyMissing: string;
             beginButton: string;
             cancelButton: string;
@@ -3717,6 +3718,7 @@ export const en: TranslationKeys = {
             confirmSubtitle: 'Evaluate narrative {{signal}} at each story beat. This will pass the selected manuscript evidence to the AI for analysis. The AI does not reference previous scores or justifications, to avoid anchoring bias. The AI will return a score and justification for each beat.',
             gatheringDetails: 'Gathering manuscript details...',
             manuscriptInfoHeading: 'Manuscript Information',
+            repeatReading: '{{signal}} was already scored on this unchanged manuscript at {{time}}. Scoring again adds another reading to the run history; it does not replace the earlier one.',
             keyMissing: '⚠️ {{provider}} saved key not configured. Please set your key in Settings → AI.',
             beginButton: 'Begin Analysis',
             cancelButton: 'Cancel',

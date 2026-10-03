@@ -26,7 +26,7 @@ import { buildUnifiedBeatAnalysisCacheParts, getUnifiedBeatAnalysisJsonSchema, t
 import { DEFAULT_GOSSAMER_SIGNAL, GOSSAMER_SIGNAL_METADATA, type GossamerSignalType } from './types/gossamerSignals';
 import { validateGossamerResponse, type SubmittedBeat, type ValidatedBeat, type ValidationResult } from './ai/gossamer/responseValidation';
 import { describeAiRunModel } from './utils/modelResolver';
-import { buildGossamerCacheWindow, markGossamerCacheWindowReused } from './gossamer/cacheWindow';
+import { buildGossamerCacheWindow } from './gossamer/cacheWindow';
 import { estimateUsageCost } from './ai/cost/estimateCorpusCost';
 import { validateAiSettings } from './ai/settings/validateAiSettings';
 import { buildDefaultAiSettings } from './ai/settings/aiSettings';
@@ -56,6 +56,7 @@ import { logCountingForensics } from './ai/diagnostics/countingForensics';
 import { toBeatModelMatchKey } from './utils/beatsInputNormalize';
 import { getActiveFrontmatterMappings, asBeatFrontmatter, readBeatPurpose } from './utils/frontmatter';
 import { estimateTokensFromChars } from './ai/estimates';
+import { fnv1a32Hex } from './utils/hash';
 
 interface ResolvedGossamerEvidence {
   evidenceDocument: Awaited<ReturnType<typeof buildGossamerEvidenceDocument>>;
@@ -95,12 +96,6 @@ type GossamerLogPayload = {
   returnedAt?: Date | null;
   derivedSummary?: string;
   schemaWarnings?: string[];
-  /**
-   * The result came from RT's in-memory cache: no provider call, nothing
-   * billed. The response's usage belongs to the earlier run, so the log must
-   * not report it as this run's tokens or cost.
-   */
-  servedFromCache?: boolean;
 };
 
 function sanitizeSegment(value: string | null | undefined): string {
@@ -112,9 +107,6 @@ function sanitizeSegment(value: string | null | undefined): string {
     .trim()
     .replace(/^-+|-+$/g, '');
 }
-
-const GOSSAMER_LOCAL_REUSE_LOG_NOTE =
-  'Reused the previous result from RT\'s in-memory cache: no provider call, no new charge. Token usage and cost are omitted because they belong to the earlier run.';
 
 async function writeGossamerLog(
   plugin: RadialTimelinePlugin,
@@ -131,9 +123,8 @@ async function writeGossamerLog(
   const sanitizationNotes = hadRedactions
     ? ['Redacted sensitive credential values from request payload.']
     : [];
-  const tokenUsage = payload.servedFromCache ? null : extractTokenUsage(payload.provider, payload.responseData);
-  const runWarnings = payload.schemaWarnings ?? [];
-  const schemaWarnings = payload.servedFromCache ? [...runWarnings, GOSSAMER_LOCAL_REUSE_LOG_NOTE] : runWarnings;
+  const tokenUsage = extractTokenUsage(payload.provider, payload.responseData);
+  const schemaWarnings = payload.schemaWarnings ?? [];
   const durationMs = payload.submittedAt && payload.returnedAt
     ? payload.returnedAt.getTime() - payload.submittedAt.getTime()
     : null;
@@ -392,6 +383,13 @@ export function buildGossamerRunRequest(
     // aiClient swaps in a neutral "Gossamer Neutral Scoring" role; logs still
     // record the bypass plainly via the role template name.
     bypassRoleTemplate: true,
+    // Every score is a new reading: each run appends Gossamer<N> to the beat
+    // notes, and repeat readings of an unchanged manuscript are compared
+    // across runs. RT's in-memory answer cache would hand a re-score the
+    // previous answer verbatim — a duplicate run that flattens the history
+    // and can prune a real one. Only the OUTPUT cache is skipped: the
+    // provider's manuscript-prefix cache still makes the re-score cheap.
+    bypassInMemoryCache: true,
     overrides: {
       // 0.3 stabilizes score histories run-to-run (less random drift between
       // re-scores of an unchanged manuscript) while keeping justifications
@@ -403,6 +401,49 @@ export function buildGossamerRunRequest(
       jsonStrict: true
     }
   };
+}
+
+interface GossamerReading {
+  inputFingerprint: string;
+  scoredAt: number;
+}
+
+/**
+ * This plugin session's last API reading per signal: a fingerprint of the
+ * input sent (beat list + manuscript, everything before the signal rubric)
+ * and when it returned. The run confirmation uses it to tell the author they
+ * are about to re-score unchanged input. Session memory only.
+ */
+const lastReadingByPlugin = new WeakMap<RadialTimelinePlugin, Map<GossamerSignalType, GossamerReading>>();
+
+function gossamerInputFingerprint(request: AIRunRequest): string {
+  return fnv1a32Hex(request.userInput ?? '');
+}
+
+export function recordGossamerReading(
+  plugin: RadialTimelinePlugin,
+  signal: GossamerSignalType,
+  request: AIRunRequest,
+  scoredAt: number
+): void {
+  let readings = lastReadingByPlugin.get(plugin);
+  if (!readings) {
+    readings = new Map();
+    lastReadingByPlugin.set(plugin, readings);
+  }
+  readings.set(signal, { inputFingerprint: gossamerInputFingerprint(request), scoredAt });
+}
+
+/** When this signal was last scored on exactly this input this session, or null. */
+export function findPriorGossamerReading(
+  plugin: RadialTimelinePlugin,
+  signal: GossamerSignalType,
+  request: AIRunRequest
+): number | null {
+  const reading = lastReadingByPlugin.get(plugin)?.get(signal);
+  return reading && reading.inputFingerprint === gossamerInputFingerprint(request)
+    ? reading.scoredAt
+    : null;
 }
 
 /**
@@ -927,43 +968,34 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
       throw new Error(result.error || t('gossamer.notices.aiResponseError'));
     }
 
-    const servedFromCache = result.servedFromCache === true;
-    modal.apiCallSuccess({ servedFromCache });
+    modal.apiCallSuccess();
     modal.setStatus('Parsing AI response...');
 
-    if (servedFromCache) {
-      // RT in-memory repeat: no provider call, so the provider cache was
-      // neither written nor read and nothing was billed. Keep the window's
-      // provider-set expiry and report this run as a $0 reuse rather than
-      // re-arming from now with the earlier run's usage.
-      plugin.gossamerCacheWindow = markGossamerCacheWindowReused(plugin.gossamerCacheWindow);
-    } else {
-      // Arm the provider-cache window when the provider proved a cache write
-      // or read on this run, independent of whether our downstream validation
-      // passes — so the remaining signals can reuse it from here. A null
-      // window (non-caching provider / no proven cache) clears any stale
-      // window. See gossamer/cacheWindow.ts.
-      plugin.gossamerCacheWindow = buildGossamerCacheWindow(
-        result.advancedContext ?? null,
-        returnedAt.getTime(),
-        validateAiSettings(plugin.settings.aiSettings ?? buildDefaultAiSettings()).value
-      );
-      // Record the FACTUAL billed cost of this run on the window from the
-      // provider's usage payload (no projection of future runs). Best-effort:
-      // the countdown still shows if pricing is unavailable for the model.
-      if (plugin.gossamerCacheWindow && result.provider !== 'none') {
-        try {
-          const usage = extractTokenUsage(result.provider, result.responseData);
-          const modelId = result.modelResolved || result.modelRequested;
-          if (usage && modelId) {
-            const cost = estimateUsageCost(result.provider, modelId, usage, result.advancedContext?.cacheStatus, ANTHROPIC_REQUESTED_CACHE_TTL);
-            if (typeof cost?.totalCostUSD === 'number' && Number.isFinite(cost.totalCostUSD)) {
-              plugin.gossamerCacheWindow.lastRunCostUSD = cost.totalCostUSD;
-            }
+    // Arm the provider-cache window when the provider proved a cache write or
+    // read on this run, independent of whether our downstream validation
+    // passes — so the remaining signals can reuse it from here. A null window
+    // (non-caching provider / no proven cache) clears any stale window. See
+    // gossamer/cacheWindow.ts.
+    plugin.gossamerCacheWindow = buildGossamerCacheWindow(
+      result.advancedContext ?? null,
+      returnedAt.getTime(),
+      validateAiSettings(plugin.settings.aiSettings ?? buildDefaultAiSettings()).value
+    );
+    // Record the FACTUAL billed cost of this run on the window from the
+    // provider's usage payload (no projection of future runs). Best-effort:
+    // the countdown still shows if pricing is unavailable for the model.
+    if (plugin.gossamerCacheWindow && result.provider !== 'none') {
+      try {
+        const usage = extractTokenUsage(result.provider, result.responseData);
+        const modelId = result.modelResolved || result.modelRequested;
+        if (usage && modelId) {
+          const cost = estimateUsageCost(result.provider, modelId, usage, result.advancedContext?.cacheStatus, ANTHROPIC_REQUESTED_CACHE_TTL);
+          if (typeof cost?.totalCostUSD === 'number' && Number.isFinite(cost.totalCostUSD)) {
+            plugin.gossamerCacheWindow.lastRunCostUSD = cost.totalCostUSD;
           }
-        } catch (e) {
-          console.warn('[Gossamer] Cache-cost capture unavailable:', sanitizeLogPayload(e).sanitized);
         }
+      } catch (e) {
+        console.warn('[Gossamer] Cache-cost capture unavailable:', sanitizeLogPayload(e).sanitized);
       }
     }
     modal.setCacheWindow(plugin.gossamerCacheWindow);
@@ -1026,8 +1058,7 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
         parsedOutput: null,
         submittedAt,
         returnedAt,
-        schemaWarnings: [...providerNormalizationWarnings, `JSON parse error: ${detail}`],
-        servedFromCache
+        schemaWarnings: [...providerNormalizationWarnings, `JSON parse error: ${detail}`]
       });
       modal.apiCallError(t('gossamer.notices.validationFailed', { count: 1 }));
       modal.addError(`JSON parse error: ${detail}`);
@@ -1071,8 +1102,7 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
         parsedOutput: responseForValidation,
         submittedAt,
         returnedAt,
-        schemaWarnings: [...providerNormalizationWarnings, ...envelopeWarnings, ...failureDetails],
-        servedFromCache
+        schemaWarnings: [...providerNormalizationWarnings, ...envelopeWarnings, ...failureDetails]
       });
       modal.apiCallError(t('gossamer.notices.validationFailed', { count: validation.failures.length }));
       for (const detail of failureDetails) modal.addError(detail);
@@ -1123,6 +1153,7 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
       model: runModel,
       attribution: describeAiRunModel(runProvider, runModel)
     });
+    recordGossamerReading(plugin, selectedSignal, runRequest, returnedAt.getTime());
 
     // Log unmatched beats
     if (unmatchedBeats.length > 0) {
@@ -1181,8 +1212,7 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
       // Envelope warnings are not failures — they record that the response
       // arrived wrapped and we recovered it. Surfacing them in the log gives
       // us the audit trail for tracking how often each provider/model wraps.
-      schemaWarnings: schemaWarnings.length > 0 ? schemaWarnings : undefined,
-      servedFromCache
+      schemaWarnings: schemaWarnings.length > 0 ? schemaWarnings : undefined
     });
 
     const successMessage = t('gossamer.notices.successUpdated', { count: updateCount, signal: signalMeta.label.toLowerCase() });
@@ -1207,7 +1237,7 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
   // Pre-gather manuscript info for confirmation view
   try {
     // Beats to show in confirmation — the same list the run submits.
-    const { plotBeats } = await loadGossamerBeats(plugin, beatSystem);
+    const { plotBeats, beats } = await loadGossamerBeats(plugin, beatSystem);
     
     // Get sorted scene files (single source of truth)
     const { files: sceneFiles } = await getSortedSceneFiles(plugin);
@@ -1261,9 +1291,20 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
       await processAnalysis(options, modal);
     });
     
+    // Re-scoring unchanged input is allowed (it adds a reading); the
+    // confirmation says so before the author spends a run on it.
+    const confirmSignal: GossamerSignalType = plugin.gossamerSelectedSignal ?? DEFAULT_GOSSAMER_SIGNAL;
+    const priorReadingAt = findPriorGossamerReading(plugin, confirmSignal, buildGossamerRunRequest(plugin, {
+      beats,
+      beatSystem,
+      signal: confirmSignal,
+      manuscriptText: evidenceDocument.text
+    }));
+
     // Set manuscript info in confirmation view before opening
     modal.open();
     modal.setManuscriptInfo(manuscriptInfo);
+    modal.setPriorReading(priorReadingAt);
     
   } catch (e) {
     const errorMsg = (e as Error)?.message || 'Unknown error';

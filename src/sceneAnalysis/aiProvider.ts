@@ -26,6 +26,8 @@ import {
 import { ensurePulseContentLogFolder, resolvePulseContentLogFolder } from '../inquiry/utils/logs';
 import { normalizePath } from 'obsidian';
 import { t } from '../i18n';
+import { buildPulseUsageReport } from './usage';
+import type { PulseUsageObserver } from './RequestRunner';
 import { describeAiRunModel } from '../utils/modelResolver';
 
 type PulseLogPayload = {
@@ -229,7 +231,8 @@ export async function callAiProvider(
     subplotName: string | null,
     commandContext: string,
     sceneName?: string,
-    tripletInfo?: { prev: string; current: string; next: string }
+    tripletInfo?: { prev: string; current: string; next: string },
+    onUsage?: PulseUsageObserver
 ): Promise<AiProviderResponse> {
     const aiSettings = getCanonicalAiSettings(plugin);
     const selection = resolveConfiguredSelection(aiSettings, {
@@ -360,5 +363,8 @@ export async function callAiProvider(
         }
 
         throw error instanceof Error ? error : new Error(String(error));
+    } finally {
+        // Report once per invocation, including paid responses that failed validation.
+        onUsage?.(buildPulseUsageReport(runResult));
     }
 }

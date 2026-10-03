@@ -1,9 +1,11 @@
 import type RadialTimelinePlugin from '../main';
 import type { Vault } from 'obsidian';
-import type { AIRunAdvancedContext, AIProviderId } from '../ai/types';
-import type { ParsedSceneAnalysis } from './types';
+import type { AIProviderId } from '../ai/types';
+import type { AiProviderResponse } from './types';
+import type { PulseUsageReport } from './usage';
 
 export type Provider = Exclude<AIProviderId, 'none'>;
+export type PulseUsageObserver = (report: PulseUsageReport) => void;
 
 export type AiRunner = (
   userPrompt: string,
@@ -11,14 +13,7 @@ export type AiRunner = (
   commandContext: string,
   sceneName?: string,
   tripletInfo?: { prev: string; current: string; next: string }
-) => Promise<{
-    result: string | null;
-    parsedAnalysis?: ParsedSceneAnalysis | null;
-    /** Who produced the result, for the update stamp ("Claude Opus 5.5 API"). */
-    attribution: string | null;
-    providerUsed?: Provider | null;
-    advancedContext?: AIRunAdvancedContext;
-  }>;
+) => Promise<AiProviderResponse>;
 
 export function createAiRunner(
   plugin: RadialTimelinePlugin,
@@ -30,15 +25,11 @@ export function createAiRunner(
     subplotName: string | null,
     commandContext: string,
     sceneName?: string,
-    tripletInfo?: { prev: string; current: string; next: string }
-  ) => Promise<{
-    result: string | null;
-    parsedAnalysis?: ParsedSceneAnalysis | null;
-    /** Who produced the result, for the update stamp ("Claude Opus 5.5 API"). */
-    attribution: string | null;
-    providerUsed?: Provider | null;
-    advancedContext?: AIRunAdvancedContext;
-  }>
+    tripletInfo?: { prev: string; current: string; next: string },
+    onUsage?: PulseUsageObserver
+  ) => Promise<AiProviderResponse>,
+  onUsage?: PulseUsageObserver
 ): AiRunner {
-  return (userPrompt, subplotName, commandContext, sceneName, tripletInfo) => callAiProvider(plugin, vault, userPrompt, subplotName, commandContext, sceneName, tripletInfo);
+  return (userPrompt, subplotName, commandContext, sceneName, tripletInfo) =>
+    callAiProvider(plugin, vault, userPrompt, subplotName, commandContext, sceneName, tripletInfo, onUsage);
 }

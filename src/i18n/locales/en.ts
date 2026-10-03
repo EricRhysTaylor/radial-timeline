@@ -1497,6 +1497,19 @@ export interface TranslationKeys {
                 schemaJson: string;
                 contextTooLong: string;
             };
+            usage: {
+                totalCost: string;
+                partialCost: string;
+                unavailable: string;
+                cacheSummary: string;
+                scope: string;
+                partialNote: string;
+                details: string;
+                scene: string;
+                localCache: string;
+                cacheHit: string;
+                cacheCreated: string;
+            };
             aiAdvanced: {
                 summary: string;
                 waiting: string;
@@ -3929,6 +3942,19 @@ export const en: TranslationKeys = {
                 connectionRefused: 'The plugin could not contact the local server. Check that it is running and that Obsidian has network permission.',
                 schemaJson: 'The response was not valid JSON. Try switching to a larger or more instruction-following model.',
                 contextTooLong: 'This pass exceeded the model budget for that request. Summary scene refresh sends the full scene text, and optional Synopsis adds a second full-scene pass. Processing continues; only this scene/pass failed.',
+            },
+            usage: {
+                totalCost: 'Batch usage cost: {{cost}}',
+                partialCost: 'Known batch usage cost (partial): {{cost}}',
+                unavailable: 'Unavailable',
+                cacheSummary: 'Provider cache: {{hits}} hits · {{created}} created · {{none}} no reuse · {{unavailable}} unavailable · {{local}} local results',
+                scope: '{{count}} calls in this batch, including failed analyses. Costs use reported token usage and model pricing; separate provider fees are excluded. Resume starts a new batch.',
+                partialNote: 'Incomplete cost data: usage or pricing is missing, or earlier retry/pass usage is unavailable.',
+                details: 'Cost and cache by scene',
+                scene: '{{scene}} · {{provider}} / {{model}} · {{cost}} · Cache: {{cache}}',
+                localCache: 'Local result reused; no new provider request',
+                cacheHit: 'HIT — provider cache reused',
+                cacheCreated: 'CREATED — provider cache created this run',
             },
             aiAdvanced: {
                 summary: 'AI prompt & context',

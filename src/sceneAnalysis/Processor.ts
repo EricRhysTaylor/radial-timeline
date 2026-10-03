@@ -283,7 +283,9 @@ export async function processWithModal(
             }
         };
 
-        const runAi = createAiRunner(plugin, vault, callAiProvider);
+        const runAi = createAiRunner(plugin, vault, callAiProvider, report => {
+            modal.recordPulseUsage(sceneNameForLog, report);
+        });
 
         // Calculate triplet metric and start progress bar animation
         const tripletMetric = getTripletMetric(triplet);
@@ -555,7 +557,9 @@ export async function processSubplotWithModal(
 
         const sceneNameForLog = triplet.current.file.basename;
         const tripletForLog = buildPulseTriplet(prevNum, currentNum, nextNum).scenes;
-        const runAi = createAiRunner(plugin, vault, callAiProvider);
+        const runAi = createAiRunner(plugin, vault, callAiProvider, report => {
+            modal.recordPulseUsage(sceneNameForLog, report);
+        });
 
         // Calculate triplet metric and start progress bar animation
         const tripletMetric = getTripletMetric(triplet);
@@ -693,7 +697,9 @@ export async function processEntireSubplotWithModalInternal(
 
         const sceneNameForLog = triplet.current.file.basename;
         const tripletForLog = buildPulseTriplet(prevNum, currentNum, nextNum).scenes;
-        const runAi = createAiRunner(plugin, vault, callAiProvider);
+        const runAi = createAiRunner(plugin, vault, callAiProvider, report => {
+            modal.recordPulseUsage(sceneNameForLog, report);
+        });
 
         // Calculate triplet metric and start progress bar animation
         const tripletMetric = getTripletMetric(triplet);

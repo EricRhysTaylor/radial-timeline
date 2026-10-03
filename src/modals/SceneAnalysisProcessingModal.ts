@@ -10,6 +10,8 @@ import { executeCommandById } from '../utils/obsidianInternals';
 import { App, Modal, ButtonComponent, Notice, setIcon, TFile } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { resolvePulseContentLogsRoot } from '../ai/log';
+import { formatExactUsdCost } from '../ai/cost/estimateCorpusCost';
+import { summarizePulseUsage, type PulseUsageReport } from '../sceneAnalysis/usage';
 import { getModelDisplayName } from '../utils/modelResolver';
 import type { LlmTimingStats } from '../types/settings';
 import { getSynopsisGenerationWordLimit } from '../utils/synopsisLimits';
@@ -88,6 +90,8 @@ export class SceneAnalysisProcessingModal extends Modal {
     private readonly subplotName?: string; // Optional subplot name for resume (subplot processing only)
     private readonly isEntireSubplot?: boolean; // Track if this is "entire subplot" vs "flagged scenes"
     private readonly taskType: 'pulse' | 'synopsis';
+
+    private readonly pulseUsage: { scene: string; report: PulseUsageReport }[] = [];
 
     private processedResults: Map<string, string> = new Map(); // Staged Summary results for apply/discard flow.
     private processedSynopsisResults: Map<string, string> = new Map(); // Optional staged Synopsis writes (legacy key).
@@ -917,6 +921,7 @@ export class SceneAnalysisProcessingModal extends Modal {
         this.processedSynopsisResults = new Map();
         this.hasPendingSynopsisResults = false;
         this.logAttempts = 0;
+        this.pulseUsage.length = 0;
         this.progressSnapshotText = t('sceneAnalysis.processingModal.progress.initializing');
         this.statusSnapshotText = t('sceneAnalysis.processingModal.progress.initializingPipeline');
 
@@ -1398,6 +1403,47 @@ export class SceneAnalysisProcessingModal extends Modal {
         }
     }
 
+    public recordPulseUsage(scene: string, report: PulseUsageReport): void {
+        this.pulseUsage.push({ scene, report });
+    }
+
+    private renderPulseUsage(): void {
+        this.contentEl.querySelectorAll('.ert-pulse-usage').forEach(el => el.remove());
+        if (this.taskType !== 'pulse' || !this.pulseUsage.length) return;
+        const summary = summarizePulseUsage(this.pulseUsage.map(entry => entry.report));
+        const card = this.contentEl.createDiv({ cls: 'ert-pulse-usage ert-pulse-summary-tip' });
+        const cost = summary.costUSD === null
+            ? t('sceneAnalysis.processingModal.usage.unavailable')
+            : formatExactUsdCost(summary.costUSD);
+        card.createDiv({ text: t(summary.partial
+            ? 'sceneAnalysis.processingModal.usage.partialCost'
+            : 'sceneAnalysis.processingModal.usage.totalCost', { cost }) });
+        card.createDiv({ text: t('sceneAnalysis.processingModal.usage.cacheSummary', {
+            hits: summary.hits, created: summary.created, none: summary.none,
+            unavailable: summary.unavailable, local: summary.local
+        }) });
+        card.createDiv({ text: t('sceneAnalysis.processingModal.usage.scope', { count: summary.count }) });
+        if (summary.partial) card.createDiv({ text: t('sceneAnalysis.processingModal.usage.partialNote') });
+        const details = card.createEl('details');
+        details.createEl('summary', { text: t('sceneAnalysis.processingModal.usage.details') });
+        this.pulseUsage.forEach(({ scene, report }) => {
+            const rowCost = report.costUSD === null
+                ? t('sceneAnalysis.processingModal.usage.unavailable')
+                : formatExactUsdCost(report.costUSD);
+            details.createDiv({ text: t('sceneAnalysis.processingModal.usage.scene', {
+                scene,
+                model: report.model ?? t('sceneAnalysis.processingModal.usage.unavailable'),
+                provider: report.provider ?? t('sceneAnalysis.processingModal.usage.unavailable'),
+                cost: rowCost,
+                cache: report.cacheDetail
+            }) });
+            if (report.partial) details.createDiv({ text: t('sceneAnalysis.processingModal.usage.partialNote') });
+        });
+        if (this.aiAdvancedDetailsEl?.parentElement) {
+            this.aiAdvancedDetailsEl.parentElement.insertBefore(card, this.aiAdvancedDetailsEl);
+        }
+    }
+
     public setAiAdvancedContext(context: AIRunAdvancedContext | null): void {
         this.aiAdvancedContext = context;
         this.renderAiAdvancedContext();
@@ -1589,6 +1635,8 @@ export class SceneAnalysisProcessingModal extends Modal {
                 contentEl.appendChild(logNoteEl);
             }
         }
+
+        this.renderPulseUsage();
 
         if (this.actionButtonContainer) {
             this.actionButtonContainer.empty();

@@ -3956,7 +3956,7 @@ export const en: TranslationKeys = {
                 partialCost: 'Known batch usage cost (partial): {{cost}}',
                 unavailable: 'Unavailable',
                 cacheSummary: 'Provider cache: {{hits}} hits · {{created}} created · {{none}} no reuse · {{unavailable}} unavailable · {{local}} local results',
-                scope: '{{count}} calls in this batch, including failed analyses. Costs use reported token usage and model pricing; separate provider fees are excluded. Resume starts a new batch.',
+                scope: 'AI requests in this batch: {{count}}. Every billed request counts toward the total. Costs use reported token usage and model pricing; separate provider fees are excluded. Resume starts a new batch.',
                 partialNote: 'Incomplete cost data: usage or pricing is missing, or earlier retry/pass usage is unavailable.',
                 details: 'Cost and cache by scene',
                 scene: '{{scene}} · {{provider}} / {{model}} · {{cost}} · Cache: {{cache}}',

@@ -1410,38 +1410,45 @@ export class SceneAnalysisProcessingModal extends Modal {
     private renderPulseUsage(): void {
         this.contentEl.querySelectorAll('.ert-pulse-usage').forEach(el => el.remove());
         if (this.taskType !== 'pulse' || !this.pulseUsage.length) return;
+        const advancedDetails = this.aiAdvancedDetailsEl;
+        const advancedPre = this.aiAdvancedPreEl;
+        if (!advancedDetails?.parentElement || !advancedPre) return;
         const summary = summarizePulseUsage(this.pulseUsage.map(entry => entry.report));
-        const card = this.contentEl.createDiv({ cls: 'ert-pulse-usage ert-pulse-summary-tip' });
         const cost = summary.costUSD === null
             ? t('sceneAnalysis.processingModal.usage.unavailable')
             : formatExactUsdCost(summary.costUSD);
+
+        // Only the batch total stays in view; the provider detail lives under
+        // "AI prompt & context" with the rest of the request internals.
+        const card = this.contentEl.createDiv({ cls: 'ert-pulse-usage ert-pulse-summary-tip' });
         card.createDiv({ text: t(summary.partial
             ? 'sceneAnalysis.processingModal.usage.partialCost'
             : 'sceneAnalysis.processingModal.usage.totalCost', { cost }) });
-        card.createDiv({ text: t('sceneAnalysis.processingModal.usage.cacheSummary', {
+        advancedDetails.parentElement.insertBefore(card, advancedDetails);
+
+        const detail = advancedDetails.createDiv({ cls: 'ert-pulse-usage ert-pulse-usage-detail' });
+        detail.createDiv({ text: t('sceneAnalysis.processingModal.usage.cacheSummary', {
             hits: summary.hits, created: summary.created, none: summary.none,
             unavailable: summary.unavailable, local: summary.local
         }) });
-        card.createDiv({ text: t('sceneAnalysis.processingModal.usage.scope', { count: summary.count }) });
-        if (summary.partial) card.createDiv({ text: t('sceneAnalysis.processingModal.usage.partialNote') });
-        const details = card.createEl('details');
-        details.createEl('summary', { text: t('sceneAnalysis.processingModal.usage.details') });
+        detail.createDiv({ text: t('sceneAnalysis.processingModal.usage.scope', { count: summary.count }) });
+        if (summary.partial) detail.createDiv({ text: t('sceneAnalysis.processingModal.usage.partialNote') });
+        const scenes = detail.createEl('details');
+        scenes.createEl('summary', { text: t('sceneAnalysis.processingModal.usage.details') });
         this.pulseUsage.forEach(({ scene, report }) => {
             const rowCost = report.costUSD === null
                 ? t('sceneAnalysis.processingModal.usage.unavailable')
                 : formatExactUsdCost(report.costUSD);
-            details.createDiv({ text: t('sceneAnalysis.processingModal.usage.scene', {
+            scenes.createDiv({ text: t('sceneAnalysis.processingModal.usage.scene', {
                 scene,
                 model: report.model ?? t('sceneAnalysis.processingModal.usage.unavailable'),
                 provider: report.provider ?? t('sceneAnalysis.processingModal.usage.unavailable'),
                 cost: rowCost,
                 cache: report.cacheDetail
             }) });
-            if (report.partial) details.createDiv({ text: t('sceneAnalysis.processingModal.usage.partialNote') });
+            if (report.partial) scenes.createDiv({ text: t('sceneAnalysis.processingModal.usage.partialNote') });
         });
-        if (this.aiAdvancedDetailsEl?.parentElement) {
-            this.aiAdvancedDetailsEl.parentElement.insertBefore(card, this.aiAdvancedDetailsEl);
-        }
+        advancedDetails.insertBefore(detail, advancedPre);
     }
 
     public setAiAdvancedContext(context: AIRunAdvancedContext | null): void {

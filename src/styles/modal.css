@@ -877,6 +877,14 @@
 
 /* ert-subplot-picker-badge - consolidated at top with ert-modal-badge */
 
+/* Pulse batch usage detail, shown above the prompt inside AI Prompt & Context. */
+.ert-pulse-usage-detail {
+  margin: var(--ert-gap-sm) 0;
+  font-size: 0.9em;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
 /* AI Prompt & Context advanced panel — wrap long lines instead of horizontal scroll. */
 .ert-ai-advanced-pre {
   white-space: pre-wrap;

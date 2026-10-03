@@ -441,8 +441,9 @@ export function renderAprBadges(options: AprBadgeOptions): string {
         </text>
     ` : '';
 
+    // Counted redirect to the website (slug rt-apr-logo in the Community go-links registry).
     const rtAttribution = showRtAttribution ? `
-        <a href="https://radialtimeline.com" target="_blank" rel="noopener" class="apr-rt-attribution">
+        <a href="https://community.radialtimeline.com/go/rt-apr-logo" target="_blank" rel="noopener" class="apr-rt-attribution">
             ${renderRtLogoMark(-half + stageEdgeInset, half - stageEdgeInset, rtFill, rtOpacity, badgeSize)}
         </a>
     ` : '';

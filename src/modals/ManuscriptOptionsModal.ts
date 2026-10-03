@@ -1578,7 +1578,8 @@ export class ManuscriptOptionsModal extends Modal {
             cls: 'ert-link-accent',
             text: 'Editorialist',
         });
-        link.setAttribute('href', 'https://community.obsidian.md/plugins/editorialist');
+        // Counted redirect to the Editorialist listing (slug rt-export-editorialist).
+        link.setAttribute('href', 'https://community.radialtimeline.com/go/rt-export-editorialist');
         link.setAttribute('target', '_blank');
         link.setAttribute('rel', 'noopener');
         text.appendText('.');

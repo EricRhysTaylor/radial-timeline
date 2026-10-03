@@ -12,6 +12,7 @@ Your vault follows the book you choose on your Community page.
 ### Getting help
 
 - **Help lives in one place.** **GET HELP** in the corner of the timeline opens the Community help page, home to how-to answers, the Guide, private requests, and known issues. The Radial Timeline View title bar keeps a calmer, quieter layout.
+- **Welcome screen links lead to the sample vault and the Community.** **Get the sample vault** opens the Pride & Prejudice signup page, and the Welcome screen's link list includes the **Community**, where writers share setups and answer each other's questions.
 - **Bug reports land on the right form.** **Report a bug** opens the new GitHub bug form with your plugin version, Obsidian version, platform, and view already filled in. The email route works as before.
 
 ### Timeline view

@@ -81,13 +81,17 @@ const WELCOME_COPY = {
     updateNote: 'The Community is live — connect from Radial Timeline plugin settings → Community and share your writing journey.'
 } as const;
 
+// Discovery links go through the Community's counted redirector
+// (community.radialtimeline.com/go/<slug>). Each slug must exist in the
+// Community repo's lib/go-links.json registry, which owns the destination.
+// Functional links (wiki, issues, mail) stay direct.
 const WELCOME_URLS = {
-    website: 'https://radialtimeline.com',
-    sampleNewsletter: 'https://radialtimeline.com/resources/newsletter',
+    website: 'https://community.radialtimeline.com/go/rt-welcome-site',
+    sampleVault: 'https://community.radialtimeline.com/go/rt-welcome-demo',
     wiki: 'https://github.com/EricRhysTaylor/radial-timeline/wiki',
-    discussions: 'https://github.com/EricRhysTaylor/radial-timeline/discussions',
+    community: 'https://community.radialtimeline.com/go/rt-welcome-community',
     issues: 'https://github.com/EricRhysTaylor/radial-timeline/issues',
-    youtube: 'https://www.youtube.com/@RadialTimeline',
+    youtube: 'https://community.radialtimeline.com/go/rt-welcome-youtube',
     feedbackEmail: 'feedback@radialtimeline.com'
 } as const;
 
@@ -425,7 +429,7 @@ const hydrateSampleVaultCard = async (
         refs.title.setText(WELCOME_COPY.cards.sampleGet.title);
         refs.desc.setText(WELCOME_COPY.cards.sampleGet.desc);
         refs.cta.setText(WELCOME_COPY.cards.sampleGet.cta);
-        refs.setActivate(() => { window.open(WELCOME_URLS.sampleNewsletter, '_blank'); });
+        refs.setActivate(() => { window.open(WELCOME_URLS.sampleVault, '_blank'); });
         return;
     }
 
@@ -592,7 +596,7 @@ export function renderWelcomeScreen({ container, plugin, refreshTimeline }: Welc
     body.createEl('p', { cls: 'rt-welcome-paragraph rt-welcome-footnote', text: WELCOME_COPY.updateNote });
 
     // Resource links, two columns, ABOVE the backup block.
-    // Left column: YouTube, Wiki. Right column: Discussions, Bug reports.
+    // Left column: YouTube, Wiki. Right column: Community, Bug reports.
     const linksWrapper = body.createDiv({ cls: 'rt-welcome-links-wrapper' });
     const links = linksWrapper.createDiv({ cls: 'rt-welcome-links' });
     const linksColLeft = links.createDiv({ cls: 'ert-welcome-links-col' });
@@ -603,7 +607,7 @@ export function renderWelcomeScreen({ container, plugin, refreshTimeline }: Welc
     };
     makeLinkRow(linksColLeft, 'YouTube videos', WELCOME_URLS.youtube);
     makeLinkRow(linksColLeft, 'Wiki — full documentation', WELCOME_URLS.wiki);
-    makeLinkRow(linksColRight, 'Discussions', WELCOME_URLS.discussions);
+    makeLinkRow(linksColRight, 'Community', WELCOME_URLS.community);
     makeLinkRow(linksColRight, 'Bug reports / feature requests', WELCOME_URLS.issues);
 
     // Backup Notice

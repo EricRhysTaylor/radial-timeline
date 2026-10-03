@@ -4,8 +4,12 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 
-/** Community help hub: every help route (Guide, Requests, bug form, known issues) on one page. */
-const HELP_URL = 'https://community.radialtimeline.com/help';
+/**
+ * Community help hub: every help route (Guide, Requests, bug form, known issues) on one page.
+ * Routed through the counted redirector; the `rt-help` slug in the Community repo's
+ * lib/go-links.json owns the destination (/help).
+ */
+const HELP_URL = 'https://community.radialtimeline.com/go/rt-help';
 
 interface HelpIconView {
     renderScope: {

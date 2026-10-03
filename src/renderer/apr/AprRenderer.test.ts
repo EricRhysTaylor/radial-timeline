@@ -62,4 +62,25 @@ describe('APR renderer', () => {
         expect(center).not.toContain('%');
         expect(svgString).not.toContain('--apr-percent-symbol-color');
     });
+
+    it('links the RT logo attribution through the counted rt-apr-logo redirect', () => {
+        const exportPreset = getExportPreset('large', 'standard');
+        const scenes = [{ title: 'Scene', status: 'Completed', 'Publish Stage': 'Author', act: 1, actNumber: 1, subplot: 'Main Plot' } as TimelineItem];
+        const { svgString } = createAprSVG(scenes, {
+            size: 'large',
+            exportPreset,
+            bookTitle: 'Book',
+            progressPercent: 50,
+            showScenes: false,
+            showProgressPercent: false,
+            showBranding: false,
+            showRtAttribution: true,
+            stageColors: DEFAULT_SETTINGS.publishStageColors,
+            publishStageLabel: 'Author',
+            portableSvg: true,
+        });
+
+        const attribution = svgString.match(/<a href="([^"]+)"[^>]*class="apr-rt-attribution"/);
+        expect(attribution?.[1]).toBe('https://community.radialtimeline.com/go/rt-apr-logo');
+    });
 });

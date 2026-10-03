@@ -25,6 +25,13 @@
 
 *Shell execution and Direct filesystem access are used for Pandoc manuscript publishing. See [Privacy & Security](docs/privacy-and-security.md).*
 
+## Try It
+
+- **[Website](https://community.radialtimeline.com/go/readme-site)** — Radial Timeline and its companion plugin, Editorialist, feature by feature.
+- **[Demo vault](https://community.radialtimeline.com/go/readme-demo)** — *Pride & Prejudice*, a finished novel fully mapped in the timeline with AI analysis included; the download link arrives by email.
+- **[Newsletter](https://community.radialtimeline.com/go/readme-newsletter)** — release news and notes from the workshop.
+- **[Community](https://community.radialtimeline.com/go/readme-community)** — writers sharing books in progress and answering each other's questions.
+
 ## What It Does
 
 Radial Timeline® arranges your scenes by act, subplot, narrative or chronological order in a striking radial layout—revealing the structure, rhythm, and scope of your story. Each ring represents a subplot; hover interactions surface important details like scene synopsis and AI story pulses. Scenes highlight across subplots to show interrelationships. Multiple view modes present your novel like an X-ray.

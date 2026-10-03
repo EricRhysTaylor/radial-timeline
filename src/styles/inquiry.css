@@ -27,6 +27,10 @@
 
 .theme-light .ert-inquiry-svg {
   --ert-inquiry-texture-opacity: 0.10;
+  /* The dark-theme mode colours are near-neon; on a light canvas they wash out. */
+  --ert-inquiry-corpus-mode-excluded: #dc2626;
+  --ert-inquiry-corpus-mode-summary: #2563eb;
+  --ert-inquiry-corpus-mode-full: #16a34a;
 }
 
 .theme-light .ert-inquiry-bg-image {
@@ -663,45 +667,19 @@
 
 .ert-inquiry-cc-cell {
   pointer-events: auto;
-  --ert-inquiry-cc-cell-color: var(--text-muted);
-  --ert-inquiry-cc-cell-fill-color: var(--text-normal);
-  --ert-inquiry-cc-cell-icon-color: var(--text-muted);
-  --ert-inquiry-cc-cell-border-color: color-mix(in srgb, var(--ert-inquiry-cc-cell-color) 45%, transparent);
   cursor: pointer;
 }
 
-.ert-inquiry-cc-cell.is-mode-excluded {
-  --ert-inquiry-cc-cell-border-color: color-mix(in srgb, var(--ert-inquiry-corpus-mode-excluded) 85%, transparent);
-  --ert-inquiry-cc-cell-icon-color: var(--ert-inquiry-corpus-mode-excluded);
-}
-
-.ert-inquiry-cc-cell.is-mode-summary {
-  --ert-inquiry-cc-cell-border-color: color-mix(in srgb, var(--ert-inquiry-corpus-mode-summary) 85%, transparent);
-  --ert-inquiry-cc-cell-icon-color: var(--ert-inquiry-corpus-mode-summary);
-}
-
-.ert-inquiry-cc-cell.is-mode-full {
-  --ert-inquiry-cc-cell-border-color: color-mix(in srgb, var(--ert-inquiry-corpus-mode-full) 85%, transparent);
-  --ert-inquiry-cc-cell-icon-color: var(--ert-inquiry-corpus-mode-full);
+.ert-inquiry-cc-cell-hit {
+  fill: transparent;
 }
 
 .ert-inquiry-cc-cell.is-target {
-  --ert-inquiry-cc-cell-border-color: color-mix(in srgb, var(--ert-inquiry-target-color) 82%, transparent);
-  --ert-inquiry-cc-cell-icon-color: var(--ert-inquiry-target-color);
   filter: drop-shadow(0 0 6px color-mix(in srgb, var(--ert-inquiry-target-color) 45%, transparent));
 }
 
-.ert-inquiry-cc-cell:hover {
-  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--text-normal) 24%, transparent));
-}
-
-.ert-inquiry-cc-cell.is-target:hover {
-  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--ert-inquiry-target-color) 45%, transparent))
-    drop-shadow(0 0 5px color-mix(in srgb, var(--text-normal) 18%, transparent));
-}
-
-.ert-inquiry-cc-cell.is-openable {
-  cursor: pointer;
+.ert-inquiry-cc-cell:hover .ert-inquiry-cc-page-glyph-inner {
+  transform: scale(1.1);
 }
 
 .ert-inquiry-cc-corpus-title {
@@ -837,36 +815,6 @@
   stroke: none;
 }
 
-.ert-inquiry-cc-legend-mode-full {
-  fill: var(--ert-inquiry-corpus-mode-full);
-}
-
-.ert-inquiry-cc-legend-mode-summary-ring {
-  fill: none;
-  stroke: var(--ert-inquiry-corpus-mode-summary);
-  stroke-width: 1.2;
-}
-
-.ert-inquiry-cc-legend-mode-summary-dot {
-  fill: var(--ert-inquiry-corpus-mode-summary);
-}
-
-.ert-inquiry-cc-legend-mode-exclude {
-  fill: none;
-  stroke: var(--ert-inquiry-corpus-mode-excluded);
-  stroke-width: 1.2;
-}
-
-.ert-inquiry-cc-legend-tier-fill {
-  fill: color-mix(in srgb, var(--text-normal) 40%, transparent);
-}
-
-.ert-inquiry-cc-legend-alert-line {
-  stroke: var(--ert-inquiry-corpus-mode-excluded);
-  stroke-width: 2;
-  stroke-linecap: round;
-}
-
 .ert-inquiry-cc-legend-label {
   font-size: 16px;
   font-weight: 500;
@@ -954,107 +902,129 @@
   pointer-events: all;
 }
 
-.ert-inquiry-cc-cell-base {
-  fill: transparent;
-  opacity: 1;
+/* ── Corpus page glyph (cells and legend) ──
+   Lucide's page in parts; state classes sit on the .ert-inquiry-cc-page root.
+   Mode = colour + fill, substance = text lines, status = outline,
+   low substance = file-x-corner, target = accent outline + filled dog-ear. */
+.ert-inquiry-cc-page {
+  --ert-inquiry-cc-page-color: var(--text-muted);
+  --ert-inquiry-cc-page-outline-color: var(--ert-inquiry-cc-page-color);
 }
 
-.ert-inquiry-cc-cell-fill {
-  fill: color-mix(in srgb, var(--ert-inquiry-cc-cell-fill-color) 40%, transparent);
-  opacity: 1;
+.ert-inquiry-cc-page.is-mode-full {
+  --ert-inquiry-cc-page-color: var(--ert-inquiry-corpus-mode-full);
 }
 
-.ert-inquiry-cc-cell-border {
-  fill: none;
-  stroke: var(--ert-inquiry-cc-cell-border-color);
-  stroke-width: 1.2;
-  stroke-linecap: butt;
-  stroke-dasharray: none;
+.ert-inquiry-cc-page.is-mode-summary {
+  --ert-inquiry-cc-page-color: var(--ert-inquiry-corpus-mode-summary);
 }
 
-.ert-inquiry-cc-cell-icon {
+.ert-inquiry-cc-page.is-mode-excluded {
+  --ert-inquiry-cc-page-color: var(--ert-inquiry-corpus-mode-excluded);
+}
+
+.ert-inquiry-cc-page.is-status-overdue {
+  --ert-inquiry-cc-page-outline-color: var(--ert-inquiry-corpus-mode-excluded);
+}
+
+.ert-inquiry-cc-page.is-target {
+  --ert-inquiry-cc-page-outline-color: var(--ert-inquiry-target-color);
+}
+
+.ert-inquiry-cc-page-glyph {
   pointer-events: none;
 }
 
-.ert-inquiry-cc-cell-target-letter {
-  display: none;
-  font-family: '04b03b', 'Monaco', 'Courier New', monospace;
-  font-size: 10px;
-  letter-spacing: 0;
-  fill: var(--ert-inquiry-target-color);
-  opacity: 0.98;
-  pointer-events: none;
+.ert-inquiry-cc-page-glyph-inner {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 160ms ease;
 }
 
-.ert-inquiry-cc-cell.is-target .ert-inquiry-cc-cell-target-letter {
-  display: block;
-}
-
-.ert-inquiry-cc-cell-icon-outer {
+.ert-inquiry-cc-page-fill {
   fill: none;
-  stroke: var(--ert-inquiry-cc-cell-icon-color);
-  stroke-width: 1.2;
-}
-
-.ert-inquiry-cc-cell-icon-inner {
-  fill: var(--ert-inquiry-cc-cell-icon-color);
-}
-
-.ert-inquiry-cc-cell.is-mode-full .ert-inquiry-cc-cell-icon-outer {
-  fill: var(--ert-inquiry-cc-cell-icon-color);
   stroke: none;
 }
 
-.ert-inquiry-cc-cell.is-mode-full .ert-inquiry-cc-cell-icon-inner,
-.ert-inquiry-cc-cell.is-mode-excluded .ert-inquiry-cc-cell-icon-inner {
-  opacity: 0;
+.ert-inquiry-cc-page.is-mode-full .ert-inquiry-cc-page-fill {
+  fill: color-mix(in srgb, var(--ert-inquiry-cc-page-color) 22%, transparent);
 }
 
-.ert-inquiry-cc-cell.is-status-todo .ert-inquiry-cc-cell-border {
-  stroke-dasharray: 7 2.5;
-  stroke-linecap: butt;
-}
-
-.ert-inquiry-cc-cell.is-status-working .ert-inquiry-cc-cell-border {
-  stroke-dasharray: 0 3.2;
-  stroke-linecap: round;
-  stroke-width: 1.8;
-}
-
-.ert-inquiry-cc-cell.is-status-complete .ert-inquiry-cc-cell-border {
-  stroke-dasharray: none;
-  stroke-linecap: butt;
-}
-
-.ert-inquiry-cc-cell.is-status-overdue .ert-inquiry-cc-cell-border {
-  stroke: var(--ert-inquiry-corpus-mode-excluded);
-  stroke-dasharray: none;
-  stroke-linecap: butt;
+.ert-inquiry-cc-page-outline {
+  fill: none;
+  stroke: var(--ert-inquiry-cc-page-outline-color);
   stroke-width: 1.6;
+  stroke-linecap: butt;
+  stroke-linejoin: round;
 }
 
-.ert-inquiry-cc-cell-low-substance-x {
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 140ms ease;
-}
-
-.ert-inquiry-cc-cell.is-low-substance .ert-inquiry-cc-cell-low-substance-x {
-  opacity: 1;
-}
-
-.ert-inquiry-cc-cell-low-substance-x-line {
-  stroke: color-mix(in srgb, var(--ert-inquiry-corpus-mode-excluded) 92%, #fff 8%);
-  stroke-width: 1.8;
+.ert-inquiry-cc-page-fold {
+  fill: none;
+  stroke: var(--ert-inquiry-cc-page-outline-color);
+  stroke-width: 1.6;
   stroke-linecap: round;
-  vector-effect: non-scaling-stroke;
-  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--ert-inquiry-corpus-mode-excluded) 75%, transparent));
+  stroke-linejoin: round;
 }
 
-.ert-inquiry-cc-cell.is-status-overdue .ert-inquiry-cc-cell-low-substance-x-line {
+.ert-inquiry-cc-page-line {
+  fill: none;
+  stroke: var(--ert-inquiry-cc-page-color);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+/* Substance: file-text's lines appear one per tier. */
+.ert-inquiry-cc-page.is-tier-empty .ert-inquiry-cc-page-line,
+.ert-inquiry-cc-page.is-tier-sketchy .ert-inquiry-cc-page-line--2,
+.ert-inquiry-cc-page.is-tier-sketchy .ert-inquiry-cc-page-line--3,
+.ert-inquiry-cc-page.is-tier-medium .ert-inquiry-cc-page-line--3 {
+  display: none;
+}
+
+/* Exclude: a ghosted page — none of it goes to the AI. */
+.ert-inquiry-cc-page.is-mode-excluded .ert-inquiry-cc-page-outline,
+.ert-inquiry-cc-page.is-mode-excluded .ert-inquiry-cc-page-fold {
+  opacity: 0.75;
+}
+
+.ert-inquiry-cc-page.is-mode-excluded .ert-inquiry-cc-page-line {
+  opacity: 0.4;
+}
+
+/* Status: dash lengths are percent of the outline (pathLength="100"). */
+.ert-inquiry-cc-page.is-status-todo .ert-inquiry-cc-page-outline {
+  stroke-dasharray: 5 3.2;
+}
+
+.ert-inquiry-cc-page.is-status-working .ert-inquiry-cc-page-outline {
+  stroke-dasharray: 0.01 3.4;
+  stroke-linecap: round;
+}
+
+.ert-inquiry-cc-page.is-status-overdue .ert-inquiry-cc-page-outline {
+  stroke-width: 2;
+}
+
+.ert-inquiry-cc-page-x {
+  display: none;
+  fill: none;
   stroke: var(--ert-inquiry-corpus-mode-excluded);
   stroke-width: 2;
-  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--ert-inquiry-corpus-mode-excluded) 85%, transparent));
+  stroke-linecap: round;
+}
+
+.ert-inquiry-cc-page.is-low-substance .ert-inquiry-cc-page-x {
+  display: inline;
+}
+
+.ert-inquiry-cc-page-fold-mark {
+  display: none;
+  fill: var(--ert-inquiry-target-color);
+  stroke: none;
+}
+
+.ert-inquiry-cc-page.is-target .ert-inquiry-cc-page-fold-mark {
+  display: inline;
 }
 
 .ert-inquiry-minimap-tick.is-active {

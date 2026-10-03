@@ -3,7 +3,6 @@ import { t } from '../../i18n';
 import { addTooltipData, balanceTooltipText } from '../../utils/tooltip';
 import {
     CC_BOTTOM_MARGIN,
-    CC_CELL_ICON_OFFSET,
     CC_COLUMN_GAP_EXTRA,
     CC_HEADER_ICON_GAP,
     CC_HEADER_ICON_OFFSET,
@@ -24,8 +23,14 @@ import type {
 } from '../types/inquiryViewTypes';
 import { ZONE_LAYOUT } from '../zoneLayout';
 import { ZONE_SEGMENT_HALF_HEIGHT } from '../components/InquiryGlyph';
+import {
+    CORPUS_PAGE_ASPECT,
+    createCorpusPageGlyph,
+    setCorpusPageLowSubstance,
+    sizeCorpusPageGlyph
+} from './inquiryCorpusPageGlyph';
 
-export type InquiryCorpusStripLayout = {
+type InquiryCorpusStripLayout = {
     pageWidth: number;
     pageHeight: number;
     gap: number;
@@ -49,7 +54,6 @@ export type InquiryCorpusStripRefs = {
 
 export type InquiryCorpusStripRenderResult = InquiryCorpusStripRefs & {
     ccEntries: CorpusCcEntry[];
-    ccLayout?: InquiryCorpusStripLayout;
 };
 
 type InquiryCorpusStripModeMeta = {
@@ -87,23 +91,6 @@ type LegendRow = {
     buildIcon: (group: SVGGElement, cx: number, cy: number, size: number) => void;
 };
 
-/** Build a note-shaped rect (taller than wide, like corpus cells). */
-function buildLegendNoteRect(
-    g: SVGGElement, cx: number, cy: number, w: number, h: number,
-    opts: { stroke: string; strokeWidth: string; dasharray?: string; linecap?: string; fill?: string; corner?: number }
-): void {
-    const r = createSvgElement('rect');
-    r.setAttribute('x', String(cx - w / 2)); r.setAttribute('y', String(cy - h / 2));
-    r.setAttribute('width', String(w)); r.setAttribute('height', String(h));
-    const cr = opts.corner ?? 2;
-    r.setAttribute('rx', String(cr)); r.setAttribute('ry', String(cr));
-    r.style.fill = opts.fill ?? 'none';
-    r.style.stroke = opts.stroke; r.style.strokeWidth = opts.strokeWidth;
-    if (opts.dasharray) r.style.strokeDasharray = opts.dasharray;
-    if (opts.linecap) r.style.strokeLinecap = opts.linecap;
-    g.appendChild(r);
-}
-
 function buildCorpusLegendPanel(
     panel: SVGGElement,
     createIconUse: (iconName: string, x: number, y: number, size: number) => SVGUseElement
@@ -113,14 +100,15 @@ function buildCorpusLegendPanel(
     const rowHeight = 32;
     const iconColX = 24;
     const labelColX = 48;
-    // Use canonical corpus cell dimensions (CC_PAGE_BASE_SIZE = 16)
-    const noteW = CC_PAGE_BASE_SIZE;
-    const noteH = Math.round(CC_PAGE_BASE_SIZE * 1.45);
-    const noteCorner = Math.max(2, Math.round(noteW * 0.125));
-    const circleR = Math.round(CC_PAGE_BASE_SIZE * 0.25 * 10) / 10;
-    const innerR = Math.max(1.2, Math.round(circleR * 0.35 * 10) / 10);
-    const xInset = Math.max(2, Math.round(noteW * 0.14));
-    const yInset = Math.max(2, Math.round(noteH * 0.14));
+    // Legend pages are corpus pages at the base cell size, styled by the same state classes.
+    const legendPageW = CC_PAGE_BASE_SIZE;
+    const legendPageH = Math.round(legendPageW * CORPUS_PAGE_ASPECT);
+    const buildLegendPage = (g: SVGGElement, cx: number, cy: number, stateClasses: string, lowSubstance = false): void => {
+        const pageGroup = createSvgGroup(g, `ert-inquiry-cc-page ${stateClasses}`, cx - legendPageW / 2, cy - legendPageH / 2);
+        const page = createCorpusPageGlyph(pageGroup);
+        sizeCorpusPageGlyph(page, legendPageW);
+        setCorpusPageLowSubstance(page, lowSubstance);
+    };
     const padding = 14;
     const questionR = 9;
     const questionProText = 'var(--ert-pro-accent-color)';
@@ -238,38 +226,15 @@ function buildCorpusLegendPanel(
             rows: [
                 {
                     label: t('inquiry.corpus.legendModeFull'),
-                    buildIcon: (g, cx, cy) => {
-                        const c = createSvgElement('circle');
-                        c.setAttribute('cx', String(cx)); c.setAttribute('cy', String(cy));
-                        c.setAttribute('r', String(circleR));
-                        c.classList.add('ert-inquiry-cc-legend-mode-full');
-                        g.appendChild(c);
-                    }
+                    buildIcon: (g, cx, cy) => buildLegendPage(g, cx, cy, 'is-mode-full is-tier-substantive')
                 },
                 {
                     label: t('inquiry.corpus.legendModeSummary'),
-                    buildIcon: (g, cx, cy) => {
-                        const outer = createSvgElement('circle');
-                        outer.setAttribute('cx', String(cx)); outer.setAttribute('cy', String(cy));
-                        outer.setAttribute('r', String(circleR));
-                        outer.classList.add('ert-inquiry-cc-legend-mode-summary-ring');
-                        g.appendChild(outer);
-                        const dot = createSvgElement('circle');
-                        dot.setAttribute('cx', String(cx)); dot.setAttribute('cy', String(cy));
-                        dot.setAttribute('r', String(innerR));
-                        dot.classList.add('ert-inquiry-cc-legend-mode-summary-dot');
-                        g.appendChild(dot);
-                    }
+                    buildIcon: (g, cx, cy) => buildLegendPage(g, cx, cy, 'is-mode-summary is-tier-substantive')
                 },
                 {
                     label: t('inquiry.corpus.legendModeExclude'),
-                    buildIcon: (g, cx, cy) => {
-                        const c = createSvgElement('circle');
-                        c.setAttribute('cx', String(cx)); c.setAttribute('cy', String(cy));
-                        c.setAttribute('r', String(circleR));
-                        c.classList.add('ert-inquiry-cc-legend-mode-exclude');
-                        g.appendChild(c);
-                    }
+                    buildIcon: (g, cx, cy) => buildLegendPage(g, cx, cy, 'is-mode-excluded is-tier-substantive')
                 }
             ]
         },
@@ -278,35 +243,19 @@ function buildCorpusLegendPanel(
             rows: [
                 {
                     label: t('inquiry.corpus.legendStatusComplete'),
-                    buildIcon: (g, cx, cy) => {
-                        buildLegendNoteRect(g, cx, cy, noteW, noteH, { stroke: 'var(--text-muted)', strokeWidth: '1.2', corner: noteCorner });
-                    }
+                    buildIcon: (g, cx, cy) => buildLegendPage(g, cx, cy, 'is-tier-substantive is-status-complete')
                 },
                 {
                     label: t('inquiry.corpus.legendStatusWorking'),
-                    buildIcon: (g, cx, cy) => {
-                        buildLegendNoteRect(g, cx, cy, noteW, noteH, {
-                            stroke: 'var(--text-muted)', strokeWidth: '1.8',
-                            dasharray: '0 3.2', linecap: 'round', corner: noteCorner
-                        });
-                    }
+                    buildIcon: (g, cx, cy) => buildLegendPage(g, cx, cy, 'is-tier-substantive is-status-working')
                 },
                 {
                     label: t('inquiry.corpus.legendStatusTodo'),
-                    buildIcon: (g, cx, cy) => {
-                        buildLegendNoteRect(g, cx, cy, noteW, noteH, {
-                            stroke: 'var(--text-muted)', strokeWidth: '1.2',
-                            dasharray: '7 2.5', corner: noteCorner
-                        });
-                    }
+                    buildIcon: (g, cx, cy) => buildLegendPage(g, cx, cy, 'is-tier-substantive is-status-todo')
                 },
                 {
                     label: t('inquiry.corpus.legendStatusOverdue'),
-                    buildIcon: (g, cx, cy) => {
-                        buildLegendNoteRect(g, cx, cy, noteW, noteH, {
-                            stroke: '#ff4d4f', strokeWidth: '1.6', corner: noteCorner
-                        });
-                    }
+                    buildIcon: (g, cx, cy) => buildLegendPage(g, cx, cy, 'is-tier-substantive is-status-overdue')
                 }
             ]
         },
@@ -315,70 +264,28 @@ function buildCorpusLegendPanel(
             rows: [
                 {
                     label: t('inquiry.corpus.legendTierSubstantive'),
-                    buildIcon: (g, cx, cy) => {
-                        buildLegendNoteRect(g, cx, cy, noteW, noteH, { stroke: 'var(--text-muted)', strokeWidth: '1.2', corner: noteCorner });
-                        const f = createSvgElement('rect');
-                        f.setAttribute('x', String(cx - noteW / 2 + xInset)); f.setAttribute('y', String(cy - noteH / 2 + yInset));
-                        f.setAttribute('width', String(noteW - xInset * 2)); f.setAttribute('height', String(noteH - yInset * 2));
-                        f.setAttribute('rx', '1'); f.setAttribute('ry', '1');
-                        f.classList.add('ert-inquiry-cc-legend-tier-fill');
-                        g.appendChild(f);
-                    }
+                    buildIcon: (g, cx, cy) => buildLegendPage(g, cx, cy, 'is-tier-substantive')
                 },
                 {
                     label: t('inquiry.corpus.legendTierMedium'),
-                    buildIcon: (g, cx, cy) => {
-                        buildLegendNoteRect(g, cx, cy, noteW, noteH, { stroke: 'var(--text-muted)', strokeWidth: '1.2', corner: noteCorner });
-                        const fillH = Math.round((noteH - yInset * 2) * 0.55);
-                        const f = createSvgElement('rect');
-                        f.setAttribute('x', String(cx - noteW / 2 + xInset));
-                        f.setAttribute('y', String(cy + noteH / 2 - yInset - fillH));
-                        f.setAttribute('width', String(noteW - xInset * 2)); f.setAttribute('height', String(fillH));
-                        f.setAttribute('rx', '1'); f.setAttribute('ry', '1');
-                        f.classList.add('ert-inquiry-cc-legend-tier-fill');
-                        g.appendChild(f);
-                    }
+                    buildIcon: (g, cx, cy) => buildLegendPage(g, cx, cy, 'is-tier-medium')
                 },
                 {
-                    label: 'Sketchy — low fill',
-                    buildIcon: (g, cx, cy) => {
-                        buildLegendNoteRect(g, cx, cy, noteW, noteH, { stroke: 'var(--text-muted)', strokeWidth: '1.2', corner: noteCorner });
-                        const fillH = Math.round((noteH - yInset * 2) * 0.2);
-                        const f = createSvgElement('rect');
-                        f.setAttribute('x', String(cx - noteW / 2 + xInset));
-                        f.setAttribute('y', String(cy + noteH / 2 - yInset - fillH));
-                        f.setAttribute('width', String(noteW - xInset * 2)); f.setAttribute('height', String(fillH));
-                        f.setAttribute('rx', '1'); f.setAttribute('ry', '1');
-                        f.classList.add('ert-inquiry-cc-legend-tier-fill');
-                        g.appendChild(f);
-                    }
+                    label: t('inquiry.corpus.legendTierSketchy'),
+                    buildIcon: (g, cx, cy) => buildLegendPage(g, cx, cy, 'is-tier-sketchy')
                 },
                 {
-                    label: 'Empty — no fill',
-                    buildIcon: (g, cx, cy) => {
-                        buildLegendNoteRect(g, cx, cy, noteW, noteH, { stroke: 'var(--text-muted)', strokeWidth: '1.2', corner: noteCorner });
-                    }
+                    label: t('inquiry.corpus.legendTierEmpty'),
+                    buildIcon: (g, cx, cy) => buildLegendPage(g, cx, cy, 'is-tier-empty')
                 }
             ]
         },
         {
-            title: 'ALERTS',
+            title: t('inquiry.corpus.legendAlertsTitle'),
             rows: [
                 {
-                    label: 'Low substance (X)',
-                    buildIcon: (g, cx, cy) => {
-                        buildLegendNoteRect(g, cx, cy, noteW, noteH, { stroke: 'var(--text-muted)', strokeWidth: '1.2', corner: noteCorner });
-                        const l1 = createSvgElement('line');
-                        l1.setAttribute('x1', String(cx - noteW / 2 + xInset)); l1.setAttribute('y1', String(cy - noteH / 2 + yInset));
-                        l1.setAttribute('x2', String(cx + noteW / 2 - xInset)); l1.setAttribute('y2', String(cy + noteH / 2 - yInset));
-                        l1.classList.add('ert-inquiry-cc-legend-alert-line');
-                        g.appendChild(l1);
-                        const l2 = createSvgElement('line');
-                        l2.setAttribute('x1', String(cx + noteW / 2 - xInset)); l2.setAttribute('y1', String(cy - noteH / 2 + yInset));
-                        l2.setAttribute('x2', String(cx - noteW / 2 + xInset)); l2.setAttribute('y2', String(cy + noteH / 2 - yInset));
-                        l2.classList.add('ert-inquiry-cc-legend-alert-line');
-                        g.appendChild(l2);
-                    }
+                    label: t('inquiry.corpus.legendAlertLowSubstance'),
+                    buildIcon: (g, cx, cy) => buildLegendPage(g, cx, cy, 'is-tier-empty is-low-substance', true)
                 }
             ]
         },
@@ -707,38 +614,12 @@ export function renderInquiryCorpusStrip(args: {
         refs.ccEmptyText.classList.add('ert-hidden');
     }
 
-    const corner = Math.max(2, Math.round(layout.pageWidth * 0.125));
     while (refs.ccSlots.length < args.entries.length) {
-        const group = createSvgGroup(refs.ccGroup, 'ert-inquiry-cc-cell');
-        const base = createSvgElement('rect');
-        base.classList.add('ert-inquiry-cc-cell-base');
-        const fill = createSvgElement('rect');
-        fill.classList.add('ert-inquiry-cc-cell-fill');
-        const border = createSvgElement('rect');
-        border.classList.add('ert-inquiry-cc-cell-border');
-        const lowSubstanceX = createSvgGroup(group, 'ert-inquiry-cc-cell-low-substance-x');
-        const lowSubstanceXPrimary = createSvgElement('line');
-        lowSubstanceXPrimary.classList.add('ert-inquiry-cc-cell-low-substance-x-line');
-        const lowSubstanceXSecondary = createSvgElement('line');
-        lowSubstanceXSecondary.classList.add('ert-inquiry-cc-cell-low-substance-x-line');
-        lowSubstanceX.appendChild(lowSubstanceXPrimary);
-        lowSubstanceX.appendChild(lowSubstanceXSecondary);
-        const icon = createSvgGroup(group, 'ert-inquiry-cc-cell-icon');
-        const iconOuter = createSvgElement('circle');
-        iconOuter.classList.add('ert-inquiry-cc-cell-icon-outer');
-        const iconInner = createSvgElement('circle');
-        iconInner.classList.add('ert-inquiry-cc-cell-icon-inner');
-        icon.appendChild(iconOuter);
-        icon.appendChild(iconInner);
-        const targetLetter = createSvgText(group, 'ert-inquiry-cc-cell-target-letter', 'F', 0, 0);
-        targetLetter.setAttribute('text-anchor', 'middle');
-        targetLetter.setAttribute('aria-hidden', 'true');
-        group.appendChild(base);
-        group.appendChild(fill);
-        group.appendChild(border);
-        group.appendChild(icon);
-        group.appendChild(targetLetter);
-        group.appendChild(lowSubstanceX);
+        const group = createSvgGroup(refs.ccGroup, 'ert-inquiry-cc-cell ert-inquiry-cc-page');
+        const hit = createSvgElement('rect');
+        hit.classList.add('ert-inquiry-cc-cell-hit');
+        group.appendChild(hit);
+        const page = createCorpusPageGlyph(group);
         args.registerSvgEvent(group, 'click', (event: MouseEvent) => {
             const entryKey = group.getAttribute('data-entry-key');
             if (!entryKey) return;
@@ -763,19 +644,7 @@ export function renderInquiryCorpusStrip(args: {
         args.registerSvgEvent(group, 'pointerleave', () => {
             args.onItemLeave();
         });
-        refs.ccSlots.push({
-            group,
-            base,
-            fill,
-            border,
-            lowSubstanceX,
-            lowSubstanceXPrimary,
-            lowSubstanceXSecondary,
-            icon,
-            iconOuter,
-            iconInner,
-            targetLetter
-        });
+        refs.ccSlots.push({ group, hit, page });
     }
 
     refs.ccSlots.forEach((slot, index) => {
@@ -798,44 +667,9 @@ export function renderInquiryCorpusStrip(args: {
         }
         slot.group.setAttribute('transform', `translate(${placement.x} ${placement.y})`);
         slot.group.classList.toggle('is-target', placement.entry.isTarget);
-        slot.base.setAttribute('width', String(layout.pageWidth));
-        slot.base.setAttribute('height', String(layout.pageHeight));
-        slot.base.setAttribute('x', '0');
-        slot.base.setAttribute('y', '0');
-        slot.fill.setAttribute('width', String(layout.pageWidth));
-        slot.fill.setAttribute('height', '0');
-        slot.fill.setAttribute('x', '0');
-        slot.fill.setAttribute('y', String(layout.pageHeight));
-        slot.border.setAttribute('width', String(layout.pageWidth));
-        slot.border.setAttribute('height', String(layout.pageHeight));
-        slot.border.setAttribute('x', '0');
-        slot.border.setAttribute('y', '0');
-        slot.border.setAttribute('rx', String(corner));
-        slot.border.setAttribute('ry', String(corner));
-        const xInset = Math.max(2, Math.round(layout.pageWidth * 0.14));
-        const yInset = Math.max(2, Math.round(layout.pageHeight * 0.14));
-        slot.lowSubstanceXPrimary.setAttribute('x1', String(xInset));
-        slot.lowSubstanceXPrimary.setAttribute('y1', String(yInset));
-        slot.lowSubstanceXPrimary.setAttribute('x2', String(layout.pageWidth - xInset));
-        slot.lowSubstanceXPrimary.setAttribute('y2', String(layout.pageHeight - yInset));
-        slot.lowSubstanceXSecondary.setAttribute('x1', String(layout.pageWidth - xInset));
-        slot.lowSubstanceXSecondary.setAttribute('y1', String(yInset));
-        slot.lowSubstanceXSecondary.setAttribute('x2', String(xInset));
-        slot.lowSubstanceXSecondary.setAttribute('y2', String(layout.pageHeight - yInset));
-        const iconCenterX = Math.round(layout.pageWidth / 2);
-        const iconCenterY = Math.round(layout.pageHeight / 2) + CC_CELL_ICON_OFFSET;
-        const maxRadius = Math.max(2, (layout.pageWidth - 2) / 2);
-        const outerRadius = Math.min(maxRadius, Math.max(3, Math.round(layout.pageWidth * 0.25 * 10) / 10));
-        const innerRadius = Math.max(1.2, Math.round(outerRadius * 0.35 * 10) / 10);
-        slot.icon.setAttribute('transform', `translate(${iconCenterX} ${iconCenterY})`);
-        slot.iconOuter.setAttribute('cx', '0');
-        slot.iconOuter.setAttribute('cy', '0');
-        slot.iconOuter.setAttribute('r', String(outerRadius));
-        slot.iconInner.setAttribute('cx', '0');
-        slot.iconInner.setAttribute('cy', '0');
-        slot.iconInner.setAttribute('r', String(innerRadius));
-        slot.targetLetter.setAttribute('x', String(iconCenterX));
-        slot.targetLetter.setAttribute('y', String(iconCenterY + 3));
+        slot.hit.setAttribute('width', String(layout.pageWidth));
+        slot.hit.setAttribute('height', String(layout.pageHeight));
+        sizeCorpusPageGlyph(slot.page, layout.pageWidth);
     });
 
     while (refs.ccClassLabels.length < layout.classLayouts.length) {
@@ -939,12 +773,7 @@ export function renderInquiryCorpusStrip(args: {
 
     return {
         ...refs,
-        ccEntries: layout.layoutEntries,
-        ccLayout: {
-            pageWidth: layout.pageWidth,
-            pageHeight: layout.pageHeight,
-            gap: layout.gap
-        }
+        ccEntries: layout.layoutEntries
     };
 }
 
@@ -965,7 +794,7 @@ function buildCorpusStripLayout(
     const zoneRight = ZONE_LAYOUT.pressure.x;
     const zoneBuffer = 50;
 
-    const pageHeight = Math.round(pageWidth * 1.45);
+    const pageHeight = Math.round(pageWidth * CORPUS_PAGE_ASPECT);
     const gap = pageWidth;
     const columnGap = pageWidth + CC_COLUMN_GAP_EXTRA;
     const titleY = gap;

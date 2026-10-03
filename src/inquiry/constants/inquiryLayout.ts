@@ -93,7 +93,6 @@ export const INQUIRY_CORPUS_CC_LAYOUT = {
     headerIconGap: 2,
     headerIconOffset: 1,
     columnGapExtra: 4,
-    cellIconOffset: -1,
     labelHintSize: 18,
     rightMargin: 50,
     bottomMargin: 50
@@ -181,7 +180,6 @@ export const CC_HEADER_ICON_SIZE = INQUIRY_CORPUS_CC_LAYOUT.headerIconSize;
 export const CC_HEADER_ICON_GAP = INQUIRY_CORPUS_CC_LAYOUT.headerIconGap;
 export const CC_HEADER_ICON_OFFSET = INQUIRY_CORPUS_CC_LAYOUT.headerIconOffset;
 export const CC_COLUMN_GAP_EXTRA = INQUIRY_CORPUS_CC_LAYOUT.columnGapExtra;
-export const CC_CELL_ICON_OFFSET = INQUIRY_CORPUS_CC_LAYOUT.cellIconOffset;
 export const CC_RIGHT_MARGIN = INQUIRY_CORPUS_CC_LAYOUT.rightMargin;
 export const CC_BOTTOM_MARGIN = INQUIRY_CORPUS_CC_LAYOUT.bottomMargin;
 export const GUIDANCE_TEXT_Y = INQUIRY_GUIDANCE_LAYOUT.textY;

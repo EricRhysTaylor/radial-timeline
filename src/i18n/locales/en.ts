@@ -996,6 +996,10 @@ export interface TranslationKeys {
             legendTierTitle: string;
             legendTierSubstantive: string;
             legendTierMedium: string;
+            legendTierSketchy: string;
+            legendTierEmpty: string;
+            legendAlertsTitle: string;
+            legendAlertLowSubstance: string;
             tooltipStatusOverdue: string;
             tooltipStatusComplete: string;
             tooltipStatusTodo: string;
@@ -3423,15 +3427,15 @@ export const en: TranslationKeys = {
             legendClickCycle: 'Click — cycle scope',
             legendShiftClickToggle: 'Shift + Click — toggle targeting',
             legendRightClickMenu: 'Right + Click — open menu',
-            legendModeTitle: 'MODE (icon + color)',
-            legendModeFull: 'Full — solid disc (green)',
-            legendModeSummary: 'Summary — ring + dot (blue)',
-            legendModeExclude: 'Exclude — empty ring (red)',
-            legendStatusTitle: 'STATUS (border)',
-            legendStatusComplete: 'Complete — solid border',
-            legendStatusWorking: 'Working — dotted border',
-            legendStatusTodo: 'Todo — dashed border',
-            legendStatusOverdue: 'Overdue — red border',
+            legendModeTitle: 'MODE (fill + color)',
+            legendModeFull: 'Full — filled page (green)',
+            legendModeSummary: 'Summary — outlined page (blue)',
+            legendModeExclude: 'Exclude — faded page (red)',
+            legendStatusTitle: 'STATUS (outline)',
+            legendStatusComplete: 'Complete — solid outline',
+            legendStatusWorking: 'Working — dotted outline',
+            legendStatusTodo: 'Todo — dashed outline',
+            legendStatusOverdue: 'Overdue — red outline',
             legendQuestionTitle: 'QUESTION STATES',
             legendQuestionReady: 'Ready — can run',
             legendQuestionRun: 'Result exists — prior run',
@@ -3439,12 +3443,16 @@ export const en: TranslationKeys = {
             legendQuestionProFresh: 'Pro fresh — Pro question ready',
             legendQuestionProRun: 'Pro run — Pro result exists',
             legendQuestionError: 'Error — failed run',
-            legendTierTitle: 'TIER (fill level)',
-            legendTierSubstantive: 'Substantive — full fill',
-            legendTierMedium: 'Medium — partial fill',
-            tooltipStatusOverdue: ' (red border)',
-            tooltipStatusComplete: ' (solid border)',
-            tooltipStatusTodo: ' (dashed border)',
+            legendTierTitle: 'SUBSTANCE (text lines)',
+            legendTierSubstantive: 'Substantive — three lines',
+            legendTierMedium: 'Medium — two lines',
+            legendTierSketchy: 'Sketchy — one line',
+            legendTierEmpty: 'Empty — blank page',
+            legendAlertsTitle: 'ALERTS',
+            legendAlertLowSubstance: 'Low substance — corner X',
+            tooltipStatusOverdue: ' (red outline)',
+            tooltipStatusComplete: ' (solid outline)',
+            tooltipStatusTodo: ' (dashed outline)',
             tooltipStatusWorking: '',
             tooltipModeExclude: 'Mode: Exclude',
             tooltipTargetActive: 'Target Scene: Active',

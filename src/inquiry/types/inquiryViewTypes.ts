@@ -14,6 +14,7 @@ import type { InquirySession } from '../sessionTypes';
 import type { CorpusManifest, InquiryClientRun } from '../runner/types';
 import type { OmnibusRecentQuestionResult } from '../runner/omnibusRecentResults';
 import type { SynopsisQuality } from '../../sceneAnalysis/synopsisQuality';
+import type { CorpusPageGlyph } from '../corpus/inquiryCorpusPageGlyph';
 
 export type InquiryQuestion = {
     id: string;
@@ -235,16 +236,8 @@ export type CorpusCcGroup = {
 
 export type CorpusCcSlot = {
     group: SVGGElement;
-    base: SVGRectElement;
-    fill: SVGRectElement;
-    border: SVGRectElement;
-    lowSubstanceX: SVGGElement;
-    lowSubstanceXPrimary: SVGLineElement;
-    lowSubstanceXSecondary: SVGLineElement;
-    icon: SVGGElement;
-    iconOuter: SVGCircleElement;
-    iconInner: SVGCircleElement;
-    targetLetter: SVGTextElement;
+    hit: SVGRectElement;
+    page: CorpusPageGlyph;
 };
 
 export type CorpusCcHeader = {

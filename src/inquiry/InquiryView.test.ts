@@ -80,12 +80,11 @@ describe('InquiryView payload accounting', () => {
         expect(viewSource.includes('const cacheKey = `${text}|${maxWidth}|${maxLines}|${lineHeight}|${preferFrontLoaded ? 1 : 0}|${minNonFinalFillRatio}`;')).toBe(true);
     });
 
-    it('renders the focused-scene F marker above the corpus page icon', () => {
-        const corpusSource = readFileSync(resolve(process.cwd(), 'src/inquiry/corpus/inquiryCorpusStripRenderer.ts'), 'utf8');
+    it('marks the targeted corpus page with an accent dog-ear', () => {
+        const glyphSource = readFileSync(resolve(process.cwd(), 'src/inquiry/corpus/inquiryCorpusPageGlyph.ts'), 'utf8');
         const cssSource = readFileSync(resolve(process.cwd(), 'src/styles/inquiry.css'), 'utf8');
-        expect(corpusSource.includes("createSvgText(group, 'ert-inquiry-cc-cell-target-letter', 'F'")).toBe(true);
-        expect(corpusSource.includes("slot.targetLetter.setAttribute('y'")).toBe(true);
-        expect(cssSource.includes('.ert-inquiry-cc-cell.is-target .ert-inquiry-cc-cell-target-letter')).toBe(true);
+        expect(glyphSource.includes("appendPath('ert-inquiry-cc-page-fold-mark', PAGE_FOLD_MARK)")).toBe(true);
+        expect(cssSource.includes('.ert-inquiry-cc-page.is-target .ert-inquiry-cc-page-fold-mark')).toBe(true);
     });
 
     it('keeps the corpus title block tighter and column headers more readable', () => {

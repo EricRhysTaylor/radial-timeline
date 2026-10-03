@@ -2,6 +2,7 @@ import { addTooltipData } from '../../utils/tooltip';
 import { t } from '../../i18n';
 import type { CorpusCcEntry, CorpusCcSlot, CorpusCcStats } from '../types/inquiryViewTypes';
 import type { SynopsisQuality } from '../../sceneAnalysis/synopsisQuality';
+import { setCorpusPageLowSubstance } from './inquiryCorpusPageGlyph';
 import {
     isLowSubstanceTier,
     resolveCorpusSceneStatus,
@@ -17,8 +18,6 @@ export type InquiryCorpusThresholds = {
 };
 
 export type InquiryCorpusCcSlotViewModel = {
-    fillHeight: number;
-    fillY: number;
     tier: CorpusSubstanceTier;
     mode: string;
     sceneStatus?: CorpusSceneStatus;
@@ -31,7 +30,6 @@ export function buildInquiryCorpusCcSlotViewModel(args: {
     entry: CorpusCcEntry;
     stats: CorpusCcStats;
     thresholds: InquiryCorpusThresholds;
-    pageHeight: number;
 }): InquiryCorpusCcSlotViewModel {
     const mode = args.entry.mode ?? 'excluded';
     const isSynopsis = mode === 'summary';
@@ -39,17 +37,12 @@ export function buildInquiryCorpusCcSlotViewModel(args: {
     const tier = isSynopsis
         ? getInquiryCorpusSynopsisTier(args.stats.synopsisQuality, wordCount, args.thresholds)
         : getInquiryCorpusTier(wordCount, args.thresholds);
-    const ratioBase = args.thresholds.substantiveMin > 0 ? (wordCount / args.thresholds.substantiveMin) : 0;
-    const ratio = Math.min(Math.max(ratioBase, 0), 1);
-    const fillHeight = Math.round(args.pageHeight * ratio);
     const sceneStatus = args.entry.className === 'scene'
         ? resolveCorpusSceneStatus({ status: args.stats.statusRaw, due: args.stats.due })
         : undefined;
     const lowSubstance = args.entry.className === 'scene' && isLowSubstanceTier(tier);
 
     return {
-        fillHeight,
-        fillY: args.pageHeight - fillHeight,
         tier,
         mode,
         sceneStatus,
@@ -70,9 +63,6 @@ export function applyInquiryCorpusCcSlotViewModel(
     slot: CorpusCcSlot,
     viewModel: InquiryCorpusCcSlotViewModel
 ): void {
-    slot.fill.setAttribute('height', String(viewModel.fillHeight));
-    slot.fill.setAttribute('y', String(viewModel.fillY));
-
     slot.group.classList.remove(
         'is-tier-empty',
         'is-tier-sketchy',
@@ -102,14 +92,13 @@ export function applyInquiryCorpusCcSlotViewModel(
     if (viewModel.lowSubstance) {
         slot.group.classList.add('is-low-substance');
     }
+    setCorpusPageLowSubstance(slot.page, viewModel.lowSubstance);
 
     addTooltipData(slot.group, viewModel.tooltip, 'left');
     slot.group.setAttribute('data-rt-tip-offset-x', '-3');
     if (viewModel.filePath) {
-        slot.group.classList.add('is-openable');
         slot.group.setAttribute('data-file-path', viewModel.filePath);
     } else {
-        slot.group.classList.remove('is-openable');
         slot.group.removeAttribute('data-file-path');
     }
 }

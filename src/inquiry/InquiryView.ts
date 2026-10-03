@@ -237,7 +237,6 @@ import {
 } from './render/inquiryHudRenderer';
 import { buildInquiryContentLogContent, buildInquiryLogContent } from './render/inquiryLogBuilders';
 import {
-    CC_PAGE_BASE_SIZE,
     GLYPH_EMPTY_STATE_STUB,
     GLYPH_PLACEHOLDER_DEPTH,
     GLYPH_PLACEHOLDER_FLOW,
@@ -555,7 +554,6 @@ export class InquiryView extends ItemView {
     private ccEntries: CorpusCcEntry[] = [];
     private ccSlots: CorpusCcSlot[] = [];
     private ccUpdateId = 0;
-    private ccLayout?: { pageWidth: number; pageHeight: number; gap: number };
     private ccWordCache = new Map<string, {
         mtime: number;
         bodyWords: number;
@@ -3711,7 +3709,6 @@ export class InquiryView extends ItemView {
         this.ccClassLabels = rendered.ccClassLabels;
         this.ccSlots = rendered.ccSlots;
         this.ccEntries = rendered.ccEntries;
-        this.ccLayout = rendered.ccLayout;
         if (rendered.ccEntries.length) {
             void this.updateCorpusCcData(rendered.ccEntries);
         }
@@ -4511,7 +4508,6 @@ export class InquiryView extends ItemView {
         const stats = await Promise.all(entries.map(entry => this.loadCorpusCcStats(entry)));
         if (updateId !== this.ccUpdateId) return;
         const thresholds = this.getCorpusThresholds();
-        const pageHeight = this.ccLayout?.pageHeight ?? Math.round(CC_PAGE_BASE_SIZE * 1.45);
         stats.forEach((entryStats, idx) => {
             const slot = this.ccSlots[idx];
             const entry = entries[idx];
@@ -4519,8 +4515,7 @@ export class InquiryView extends ItemView {
             const viewModel = buildInquiryCorpusCcSlotViewModel({
                 entry,
                 stats: entryStats,
-                thresholds,
-                pageHeight
+                thresholds
             });
             applyInquiryCorpusCcSlotViewModel(slot, viewModel);
         });

@@ -21,6 +21,7 @@ import type { InquiryRunProgressEvent } from '../runner/types';
 import type { InquiryRoleValidation, InquiryScope, InquirySelectionMode } from '../state';
 import type { AIRunAdvancedContext } from '../../ai/types';
 import { createSvgElement, createSvgGroup, createSvgText, clearSvgChildren } from './svgUtils';
+import { LUCIDE_PAGE_TEXT_LINES } from '../components/lucidePage';
 import { addTooltipData, balanceTooltipText } from '../../utils/tooltip';
 import { buildPassIndicator } from '../services/readiness';
 import { buildMinimapSubsetResult } from '../services/minimapSubset';
@@ -52,14 +53,6 @@ export const MINIMAP_EXTRA_WIDTH = 200;
 export const SWEEP_RANDOM_CYCLE_MS = 1800;
 export const MIN_PROCESSING_MS = 5000;
 
-// Sweep "scan line" geometry, in the file-text icon's 0..24 viewBox space, so
-// the animated lines land exactly on the glyph's own text lines: a short stub
-// on top followed by two wider lines. Pulsed top→bottom during a run.
-const SWEEP_LINE_GEOMETRY: ReadonlyArray<{ x1: number; x2: number; y: number }> = [
-    { x1: 8, x2: 10.5, y: 9 },
-    { x1: 8, x2: 16, y: 13 },
-    { x1: 8, x2: 16, y: 17 }
-];
 const SWEEP_LINE_STAGGER = 0.18; // top→bottom delay between the 3 lines (cycle fraction)
 export const BACKBONE_FADE_OUT_MS = 800;
 
@@ -631,7 +624,7 @@ export class InquiryMinimapRenderer {
         // top→bottom during a run in place of the old single square.
         tickLayouts.forEach(layout => {
             const scale = layout.width / 24;
-            const lines = SWEEP_LINE_GEOMETRY.map(geom => {
+            const lines = LUCIDE_PAGE_TEXT_LINES.map(geom => {
                 const line = createSvgElement('line');
                 line.classList.add('ert-inquiry-minimap-sweep-line');
                 line.setAttribute('x1', String(layout.x + geom.x1 * scale));

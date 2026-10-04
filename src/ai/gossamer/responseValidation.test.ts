@@ -52,6 +52,15 @@ describe('normalizeBeatLabelForMatch', () => {
 });
 
 describe('validateGossamerResponse — golden path', () => {
+    it.each(["Mary's Commission", 'Mary‘s Commission', 'Mary’s Commission'])(
+        'accepts typographic apostrophe variants: %s', (beatName) => {
+            const result = validateGossamerResponse({ beats: [
+                { beatName, signal: 'tension', score: 45, justification: 'An uncertain summons.' }
+            ] }, [{ beatName: 'Mary’s Commission' }], 'tension');
+            expect(result.ok).toBe(true);
+        }
+    );
+
     it('returns ok and strongly-typed beats when every field matches', () => {
         const result = validateGossamerResponse(goldenResponse(), SUBMITTED, 'activity');
         expect(result.ok).toBe(true);
@@ -114,6 +123,16 @@ describe('validateGossamerResponse — structural failures', () => {
 });
 
 describe('validateGossamerResponse — per-row failures', () => {
+    it.each(['Marys Commission', 'Mary’s Confession', 'Mary’s-Commission'])(
+        'still rejects genuinely different names: %s', (beatName) => {
+            const result = validateGossamerResponse({ beats: [
+                { beatName, signal: 'tension', score: 45, justification: 'An uncertain summons.' }
+            ] }, [{ beatName: 'Mary’s Commission' }], 'tension');
+            expect(result.ok).toBe(false);
+            if (!result.ok) expect(result.failures.map(f => f.code)).toEqual(['beatName']);
+        }
+    );
+
     it('catches a reordered response (beatName at wrong index)', () => {
         const response = goldenResponse();
         // Swap positions 0 and 1 — the original 2026-04-21-class failure mode

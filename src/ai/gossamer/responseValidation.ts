@@ -53,13 +53,16 @@ export type ValidationResult =
  * like `[0.01] Opening Image — Purpose text` and the AI may echo any of:
  * the bare name, the bracketed-prefix form, the prefix + em-dash purpose,
  * or a leading ordinal like `1. Opening Image`. We strip the placement
- * prefix and everything after the em-dash, then lowercase + trim.
+ * prefix and everything after the em-dash, fold typographic apostrophes
+ * to straight apostrophes, then lowercase + trim. Preserve punctuation
+ * otherwise so different beat names cannot collapse into the same label.
  */
 export function normalizeBeatLabelForMatch(label: unknown): string {
     if (typeof label !== 'string') return '';
     return label
         .replace(/^\s*\[?\d+(?:\.\d+)?\]?[.\s]+/, '')
         .replace(/\s*—.*$/, '')
+        .replace(/[\u2018\u2019]/g, "'")
         .trim()
         .toLowerCase();
 }

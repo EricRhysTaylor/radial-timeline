@@ -16,7 +16,7 @@ Desk Lamps are managed on the Community website.
 
 On a vault connected to the Community, a lamp sits right of the **Mailbox** in the Radial Timeline title bar once you have at least one Desk Lamp or an invite waiting. Its number counts the friends at their desks right now. A friend lighting a lamp changes the count and nothing else: no notice, no sound.
 
-Click the lamp to see the list. Each row shows a friend's name, their city from their Community profile (if they've set one), the kind of writing (drafting, revising, editing, or planning), and how long they've been at it, or **on a break**. The freshest change is on top, so someone who just started rises to the top. When a friend turns their lamp off, a short-lived row says so, such as "lamp off after 2 h 10 min", and disappears after half an hour. **Manage Desk Lamps…** opens My Share.
+Click the lamp to see the list. Each row shows a friend's name, their city from their Community profile (if they've set one), the kind of writing (drafting, revising, editing, or planning), and how long they've been at it, or **on a break**. The freshest change is on top, so someone who just started rises to the top. When a friend turns their lamp off, a short-lived row says so, such as "lamp off after 2 h 10 min", and disappears after half an hour. Below the friends, the menu shows whether your own lamp is on, any invites waiting for you (such as "1 Desk Lamp invite waiting", which opens My Share to accept it), and **Manage Desk Lamps…**, which opens My Share.
 
 Looking at the list never lights your own lamp.
 

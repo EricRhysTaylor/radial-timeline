@@ -127,6 +127,16 @@ describe('CommunityMailbox', () => {
         expect(fetchMock).not.toHaveBeenCalled();
     });
 
+    it('shows and checks at the Private level too: it only reads', async () => {
+        fetchMock.mockResolvedValue(answer({ support_unread: 1 }));
+        const plugin = connectedPlugin();
+        plugin.settings.communityShare.enabled = false; // the author chose Private
+        const mailbox = new CommunityMailbox(plugin as never);
+        mailbox.subscribe(() => {});
+        await vi.waitFor(() => expect(mailbox.view().visible).toBe(true));
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
     it('checks when the first view subscribes, then hourly while one stays open', async () => {
         fetchMock.mockResolvedValue(answer({ support_unread: 1 }));
         const mailbox = new CommunityMailbox(connectedPlugin() as never);

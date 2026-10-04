@@ -28,6 +28,7 @@ import {
     revokeCommunityShareReport,
     syncCommunityDailyIfEligible,
     syncCommunityProjects,
+    syncCommunityProjectsIfConnected,
     syncCommunityShareIfDue,
     syncDeskLamps,
     uploadAprToCommunity
@@ -1129,6 +1130,23 @@ describe('Community mailbox client', () => {
         expect(JSON.parse(request.body)).toEqual({ connection_id: 'conn-1', current_secret: 'rtcs_current-secret' });
         expect(result).toEqual(mailboxBody);
         expect(plugin.saveSettings).not.toHaveBeenCalled();
+    });
+
+    it('sends no book shells once the author chooses Private (Eric, 2026-10-03)', async () => {
+        const { plugin } = connectedHarness();
+        plugin.settings.communityShare.enabled = false; // the author chose Private
+        const request = vi.spyOn(obsidian, 'requestUrl');
+        request.mockClear();
+        await expect(syncCommunityProjects(plugin as never)).rejects.toMatchObject({ code: 'connection_required' });
+        await syncCommunityProjectsIfConnected(plugin as never);
+        expect(request).not.toHaveBeenCalled();
+    });
+
+    it('reads at the Private level too: choosing Private stops sharing, not reading your replies', async () => {
+        const { plugin } = connectedHarness();
+        plugin.settings.communityShare.enabled = false;
+        vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({ status: 200, text: JSON.stringify(mailboxBody) } as never);
+        await expect(fetchCommunityMailbox(plugin as never)).resolves.toEqual(mailboxBody);
     });
 
     it('never calls the server for a vault that is not connected', async () => {

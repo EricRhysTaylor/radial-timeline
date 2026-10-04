@@ -46,10 +46,17 @@ that a session is open right now, and nothing about it survives the session.
 Everything below is gated on the vault being **connected** to a Community
 profile. Nothing leaves before that.
 
-### On connection, at every level including Private: project shells
+### While connected, until the author chooses Private: project shells
 
 Per the contract's share-surfaces amendment, every book in Book Manager syncs
-to the website as a **project shell** with `visibility='private'`:
+to the website as a **project shell** with `visibility='private'`, from the
+moment the vault connects (a fresh connection reads as Private in settings
+but has not been set to it, and does sync shells) and at Levels 2 and 3.
+Shells stop when the author **chooses Private** in Settings, pauses sharing,
+or disconnects (Eric, 2026-10-03: choosing Private means nothing about the
+books leaves). The gate is `hasActiveCommunityConnection` (Community on);
+choosing Private turns Community off. Shells already on the website stay
+there as they were; the plugin never deletes them (below).
 
 - the book's public label, or its **working title** when no public label is set
 - the public description (logline), if set
@@ -69,6 +76,12 @@ device-side per-book opt-in, and no code may describe it as one.
 Exit point: `communityShareClient.syncCommunityProjects` (from plugin load
 and from target-date edits, throttled). Never carries scene data, paths,
 notes, or session records.
+
+Two calls work at every level, Private included, because neither sends
+anything about the books or the writing record: the title-bar Mailbox, which
+only reads (counts of the author's own unread replies and invites), and the
+Desk Lamp below, which the author turns on per session. Both use
+`hasCommunityConnection` (connected, at any level).
 
 ### Level 2 and above: the standing report
 

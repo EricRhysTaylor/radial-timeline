@@ -513,9 +513,10 @@ function isCommunityShareContext(value: unknown): value is CommunityShareContext
  * before it must not be usable after it. Checked immediately before each
  * `requestUrl`; `allowPaused` is for author actions that must work while
  * paused (revoke) and for read-only lookups. `anyLevel` (assertStillSendable)
- * is for Desk Lamps only, which works at every sharing level, Private
- * included (plan D12). The captured connection identity must still match: a
- * replacement connection cannot authorize an old secret.
+ * is for the two calls that work at every sharing level, Private included:
+ * Desk Lamps (plan D12) and the Mailbox read. The captured connection
+ * identity must still match: a replacement connection cannot authorize an
+ * old secret.
  */
 function isStillSendable(live: CommunityShareSettings, expected: CommunityShareConnectionSettings, allowPaused = false): boolean {
     if (!live.enabled || live.connection.status !== 'connected' || !live.connection.connectionId) return false;
@@ -549,8 +550,8 @@ function assertStillSendable(plugin: RadialTimelinePlugin, expected: CommunitySh
  * here: a connection activated without a book carries `projectId: null` until
  * the first project sync binds one, and context + sync must run in that state.
  * Callers that need a bound project check it themselves via
- * `requireBoundProject`. `anyLevel` (Desk Lamps only) accepts a connection at
- * every sharing level, Private included.
+ * `requireBoundProject`. `anyLevel` (Desk Lamps and the Mailbox read) accepts
+ * a connection at every sharing level, Private included.
  */
 async function requireActiveConnection(plugin: RadialTimelinePlugin, anyLevel = false): Promise<{
     connectionId: string;
@@ -704,13 +705,14 @@ export function isCommunityMailboxAnswer(value: unknown): value is CommunityMail
 
 /**
  * Read the connected member's Community mailbox for the timeline title bar.
- * READ-only: nothing is marked seen (reading happens on the website). Allowed
- * while sharing is paused, since pausing stops progress leaving, not reading
- * your own replies.
+ * READ-only: nothing is marked seen (reading happens on the website), and
+ * nothing about the author's writing is sent. So it is allowed while sharing
+ * is paused and at the Private level: pausing or choosing Private stops your
+ * writing leaving, not reading your own replies (Eric, 2026-10-03).
  */
 export async function fetchCommunityMailbox(plugin: RadialTimelinePlugin): Promise<CommunityMailboxAnswer> {
-    const { connectionId, currentSecret, connection } = await requireActiveConnection(plugin);
-    assertStillSendable(plugin, connection, true);
+    const { connectionId, currentSecret, connection } = await requireActiveConnection(plugin, true);
+    assertStillSendable(plugin, connection, true, true);
     return postCommunityFunction(
         plugin,
         'community-mailbox',

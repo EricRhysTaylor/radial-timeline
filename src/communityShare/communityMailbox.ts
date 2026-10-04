@@ -20,8 +20,9 @@
  * never marks anything read. The menu opens the website, and reading there
  * clears the badge on the next check.
  *
- * Shown only on a vault connected to the Community, with the Advanced toggle
- * on (the default). It checks only while a timeline view shows it: when the
+ * Shown on a vault connected to the Community at any sharing level, Private
+ * included (it only reads; Eric, 2026-10-03), with the Advanced toggle on
+ * (the default). It checks only while a timeline view shows it: when the
  * first view opens, hourly after that, and when a timeline window regains
  * focus (the "I just read it on the website" return). A failed check keeps
  * the pill, drops the badge and says why in the tooltip; it never raises a
@@ -32,7 +33,7 @@ import { Menu } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { tooltip as applyTooltip } from '../utils/tooltip';
 import { fetchCommunityMailbox, type CommunityMailboxAnswer } from './communityShareClient';
-import { hasActiveCommunityConnection, normalizeCommunityShareSettings } from './communityShareSettings';
+import { hasCommunityConnection, normalizeCommunityShareSettings } from './communityShareSettings';
 
 export const COMMUNITY_SITE_URL = 'https://community.radialtimeline.com';
 /** My Share: where a member manages what they share, blocks, and Desk Lamps. */
@@ -250,7 +251,7 @@ export class CommunityMailbox {
     private currentKey(): string | null {
         if (this.plugin.settings.showCommunityMailbox === false) return null;
         const share = normalizeCommunityShareSettings(this.plugin.settings.communityShare);
-        if (!hasActiveCommunityConnection(share)) return null;
+        if (!hasCommunityConnection(share)) return null;
         return `${share.connection.connectionId}|${share.connection.secretId}`;
     }
 

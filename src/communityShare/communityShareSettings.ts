@@ -112,9 +112,10 @@ export type ActiveCommunityShareSettings = CommunityShareSettings & {
 
 /**
  * A live connection with a stored secret, at ANY sharing level, Private
- * included. Only Desk Lamps uses it on its own (plan D12: a Desk Lamp needs a
- * connected vault, not a sharing level); everything else goes through
- * hasActiveCommunityConnection.
+ * included. Used on its own only where nothing about the author's books or
+ * progress is sent: Desk Lamps (plan D12: a Desk Lamp needs a connected vault,
+ * not a sharing level) and the title-bar Mailbox, which only reads. Every
+ * sharing call goes through hasActiveCommunityConnection.
  */
 export function hasCommunityConnection(settings: CommunityShareSettings): settings is ActiveCommunityShareSettings {
     return settings.connection.status === 'connected'
@@ -123,10 +124,10 @@ export function hasCommunityConnection(settings: CommunityShareSettings): settin
 }
 
 /**
- * The one "this vault is connected" check: Community on, connected, with a
- * connection id and a stored secret id. Every secret-authenticated call
- * (requireActiveConnection, report publish) and the title-bar mailbox's
- * show/hide use it, so the mailbox is visible exactly when its check can run.
+ * The "this vault shares" check: Community on (any level but an explicitly
+ * chosen Private), connected, with a connection id and a stored secret id.
+ * Every sharing call (requireActiveConnection, report publish, project shell
+ * sync) uses it, so choosing Private stops them all.
  */
 export function hasActiveCommunityConnection(settings: CommunityShareSettings): settings is ActiveCommunityShareSettings {
     return settings.enabled && hasCommunityConnection(settings);

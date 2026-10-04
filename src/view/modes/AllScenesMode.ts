@@ -7,6 +7,7 @@ import { SceneInteractionManager } from '../interactions/SceneInteractionManager
 import { OuterRingDragController, isDragInProgress, isDragInteractionActive, wasRecentlyHandledByDrag } from '../interactions/OuterRingDragController';
 import { maybeHandleZeroDraftClick } from '../interactions/ZeroDraftHandler';
 import { setupSceneContextMenu } from '../interactions/SceneContextMenu';
+import { showBeatLabels } from '../../renderer/dom/BeatLabelAdjuster';
 import type { RadialTimelineView } from '../TimeLineView';
 
 export function setupSceneInteractions(view: RadialTimelineView, group: Element, svgElement: SVGSVGElement, scenes: TimelineItem[]): void {
@@ -84,10 +85,16 @@ export function setupAllScenesDelegatedHover(view: RadialTimelineView, container
     let currentGroup: Element | null = null;
     let rafId: number | null = null;
     let suspendHoverUntilPointerMove = false;
+    // While a beat is hovered, every ring label shows its In This Book name.
+    let inBookBeatLabelsShown = false;
 
     const clearSelection = () => {
         manager.onSceneLeave();
         currentGroup = null;
+        if (inBookBeatLabelsShown) {
+            inBookBeatLabelsShown = false;
+            showBeatLabels(container, 'canonical');
+        }
     };
 
     // Custom event name isn't part of HTMLElementEventMap, so register directly.
@@ -130,6 +137,10 @@ export function setupAllScenesDelegatedHover(view: RadialTimelineView, container
         
         // Use manager for hover interactions - pass mouse event to position synopsis immediately
         manager.onSceneHover(g, sid, e);
+        if (g.getAttribute('data-item-type') === 'Beat') {
+            inBookBeatLabelsShown = true;
+            showBeatLabels(container, 'in-book');
+        }
     });
 
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', (e: PointerEvent) => {

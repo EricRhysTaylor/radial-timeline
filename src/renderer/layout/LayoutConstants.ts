@@ -248,6 +248,13 @@ export const PADDING_RENDER_PX = 24;
 /** Extra breathing room between beat labels when they stack (px) */
 export const BEAT_LABEL_BREATHING_ROOM_PX = 10;
 
+/**
+ * Longest In This Book name shown on the ring while a beat is hovered. Fifteen
+ * Save the Cat names at this length still fit once around the ring; the full
+ * line stays in the hover card.
+ */
+export const BEAT_IN_BOOK_LABEL_MAX_CHARS = 28;
+
 // =============================================================================
 // READABILITY SCALING
 // =============================================================================

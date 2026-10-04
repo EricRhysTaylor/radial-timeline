@@ -10,6 +10,104 @@ import { BEAT_LABEL_BREATHING_ROOM_PX } from '../layout/LayoutConstants';
 type BeatLabelAdjustState = { retryId?: number; signature?: string; success?: boolean; lastAbortSignature?: string };
 const beatLabelAdjustState = new WeakMap<HTMLElement, BeatLabelAdjustState>();
 
+/** Beat labels proper — the "—" separators this module adds share the class but carry no text path. */
+const BEAT_LABEL_SELECTOR = '.rt-storybeat-title:not(.rt-plot-dash-separator)';
+
+/**
+ * A label's start angle as the renderer placed it, before any overlap shift.
+ * Recorded on the first layout so a later re-layout starts from the slice,
+ * not from wherever the previous pass pushed the label.
+ */
+const LABEL_ORIGIN_ATTR = 'data-label-origin';
+
+/** Measuring arc: long enough that no label clips, so its full length is measured. */
+const MEASURE_ARC_SPAN = Math.PI / 2;
+
+function readLabelGeometry(pathElement: SVGPathElement): { originalStartAngle: number; radius: number } | null {
+    const d = pathElement.getAttribute('d');
+    if (!d) return null;
+    const arcMatch = d.match(/M\s+([-\d.]+)\s+([-\d.]+)\s+A\s+([-\d.]+)/);
+    if (!arcMatch) return null;
+    const radius = parseFloat(arcMatch[3]);
+    const recordedOrigin = pathElement.getAttribute(LABEL_ORIGIN_ATTR);
+    if (recordedOrigin !== null) return { originalStartAngle: parseFloat(recordedOrigin), radius };
+    const originalStartAngle = Math.atan2(parseFloat(arcMatch[2]), parseFloat(arcMatch[1]));
+    pathElement.setAttribute(LABEL_ORIGIN_ATTR, String(originalStartAngle));
+    return { originalStartAngle, radius };
+}
+
+const TWO_PI = 2 * Math.PI;
+
+/** An angle folded into [0, 2π). */
+function ringAngle(angle: number): number {
+    return ((angle % TWO_PI) + TWO_PI) % TWO_PI;
+}
+
+/**
+ * Labels in the order the overlap cascade walks them. The cascade only ever
+ * pushes a label forward, so wherever it starts is a seam it cannot resolve:
+ * the last label can run into the first. Start after the widest empty stretch
+ * of ring rather than at a fixed angle — a fixed seam at 9 o'clock sat right
+ * between All Is Lost and Dark Night of the Soul in a Save the Cat book.
+ */
+export function cascadeOrder<T extends { originalStartAngle: number; pathId: string }>(labels: T[]): T[] {
+    const sorted = [...labels].sort((a, b) => {
+        const delta = ringAngle(a.originalStartAngle) - ringAngle(b.originalStartAngle);
+        return delta !== 0 ? delta : a.pathId.localeCompare(b.pathId);
+    });
+    let seam = 0;
+    let widestGap = -1;
+    sorted.forEach((label, i) => {
+        const previous = sorted[(i - 1 + sorted.length) % sorted.length];
+        const gap = sorted.length === 1 ? TWO_PI : ringAngle(label.originalStartAngle - previous.originalStartAngle);
+        if (gap > widestGap) {
+            widestGap = gap;
+            seam = i;
+        }
+    });
+    return [...sorted.slice(seam), ...sorted.slice(0, seam)];
+}
+
+function arcPath(radius: number, startAngle: number, span: number): string {
+    const x1 = radius * Math.cos(startAngle);
+    const y1 = radius * Math.sin(startAngle);
+    const x2 = radius * Math.cos(startAngle + span);
+    const y2 = radius * Math.sin(startAngle + span);
+    const largeArc = span > Math.PI ? 1 : 0;
+    return `M ${formatNumber(x1)} ${formatNumber(y1)} A ${formatNumber(radius)} ${formatNumber(radius)} 0 ${largeArc} 1 ${formatNumber(x2)} ${formatNumber(y2)}`;
+}
+
+/**
+ * Swap every beat label on the ring between its beat-system name and the
+ * author's In This Book name, then lay the ring out again: a longer name
+ * pushes its neighbours along, so every label is re-measured, not just the
+ * swapped ones. No-op when no beat carries an In This Book name.
+ */
+export function showBeatLabels(container: HTMLElement, names: 'in-book' | 'canonical'): void {
+    const swappable = container.querySelectorAll<SVGTextElement>(`${BEAT_LABEL_SELECTOR}[data-beat-label-in-book]`);
+    if (swappable.length === 0) return;
+
+    const nameAttr = names === 'in-book' ? 'data-beat-label-in-book' : 'data-beat-label-canonical';
+    swappable.forEach((label) => {
+        const textPath = label.querySelector('textPath');
+        const name = label.getAttribute(nameAttr);
+        if (!textPath || name === null) return;
+        textPath.textContent = name;
+    });
+
+    container.querySelectorAll<SVGTextElement>(BEAT_LABEL_SELECTOR).forEach((label) => {
+        const pathId = label.querySelector('textPath')?.getAttribute('href')?.substring(1);
+        const pathElement = pathId ? container.querySelector<SVGPathElement>(`#${pathId}`) : null;
+        const geometry = pathElement ? readLabelGeometry(pathElement) : null;
+        if (!pathElement || !geometry) return;
+        pathElement.setAttribute('d', arcPath(geometry.radius, geometry.originalStartAngle, MEASURE_ARC_SPAN));
+    });
+
+    const state = beatLabelAdjustState.get(container);
+    if (state) state.success = false;
+    adjustBeatLabelsAfterRender(container);
+}
+
 function getLabelSignature(container: HTMLElement): string {
     const ids = Array.from(container.querySelectorAll('.rt-storybeat-title textPath'))
         .map((tp) => (tp as SVGTextPathElement).getAttribute('href') || '')
@@ -32,7 +130,7 @@ function bringChapterMarkersToFront(container: HTMLElement): void {
 export function adjustBeatLabelsAfterRender(container: HTMLElement, attempt: number = 0): void {
     const state = beatLabelAdjustState.get(container) || {};
     if (!container.isConnected) return;
-    const labels = container.querySelectorAll('.rt-storybeat-title');
+    const labels = container.querySelectorAll(BEAT_LABEL_SELECTOR);
     if (labels.length === 0) {
         bringChapterMarkersToFront(container);
         return;
@@ -95,24 +193,17 @@ export function adjustBeatLabelsAfterRender(container: HTMLElement, attempt: num
         }
         measurableCount++;
 
-        const d = pathElement.getAttribute('d');
-        if (!d) return;
-        const arcMatch = d.match(/M\s+([-\d.]+)\s+([-\d.]+)\s+A\s+([-\d.]+)/);
-        if (!arcMatch) return;
-
-        const x = parseFloat(arcMatch[1]);
-        const y = parseFloat(arcMatch[2]);
-        const radius = parseFloat(arcMatch[3]);
-        const originalStartAngle = Math.atan2(y, x);
+        const geometry = readLabelGeometry(pathElement);
+        if (!geometry) return;
 
         labelData.push({
             element: textElement,
             textPath,
             pathElement,
             pathId,
-            originalStartAngle,
+            originalStartAngle: geometry.originalStartAngle,
             textLength,
-            radius
+            radius: geometry.radius
         });
     });
 
@@ -130,22 +221,21 @@ export function adjustBeatLabelsAfterRender(container: HTMLElement, attempt: num
         return;
     }
 
-    labelData.sort((a, b) => {
-        if (a.originalStartAngle === b.originalStartAngle) return a.pathId.localeCompare(b.pathId);
-        return a.originalStartAngle - b.originalStartAngle;
-    });
+    const ringOrder = cascadeOrder(labelData);
+    const [seamLabel] = ringOrder;
 
     let lastEnd = Number.NEGATIVE_INFINITY;
     const adjustments: Array<{ data: LabelData; newStartAngle: number; needsDash: boolean; dashAngle?: number; pathAngleSpan: number }> = [];
 
-    labelData.forEach((data) => {
+    ringOrder.forEach((data) => {
         const pathWidth = TEXT_START_OFFSET + data.textLength + EXTRA_BREATHING_ROOM;
         const pathAngleSpan = pathWidth / Math.max(1, data.radius);
 
         const textOnlyWidth = TEXT_START_OFFSET + data.textLength;
         const textAngleSpan = textOnlyWidth / Math.max(1, data.radius);
 
-        let startAngle = data.originalStartAngle;
+        // Unwrapped from the seam, so angles only grow along the cascade.
+        let startAngle = seamLabel.originalStartAngle + ringAngle(data.originalStartAngle - seamLabel.originalStartAngle);
         let needsDash = false;
         let dashAngle: number | undefined;
 
@@ -163,16 +253,7 @@ export function adjustBeatLabelsAfterRender(container: HTMLElement, attempt: num
     adjustments.forEach(({ data, newStartAngle, needsDash, dashAngle, pathAngleSpan }) => {
         const pathElement = data.pathElement;
         const radius = data.radius;
-        const endAngle = newStartAngle + pathAngleSpan;
-
-        const x1 = radius * Math.cos(newStartAngle);
-        const y1 = radius * Math.sin(newStartAngle);
-        const x2 = radius * Math.cos(endAngle);
-        const y2 = radius * Math.sin(endAngle);
-        const largeArc = pathAngleSpan > Math.PI ? 1 : 0;
-
-        const newPath = `M ${formatNumber(x1)} ${formatNumber(y1)} A ${formatNumber(radius)} ${formatNumber(radius)} 0 ${largeArc} 1 ${formatNumber(x2)} ${formatNumber(y2)}`;
-        pathElement.setAttribute('d', newPath);
+        pathElement.setAttribute('d', arcPath(radius, newStartAngle, pathAngleSpan));
 
         if (needsDash && typeof dashAngle === 'number') {
             const dashRadius = radius + 1;

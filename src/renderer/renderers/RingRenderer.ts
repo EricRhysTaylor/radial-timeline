@@ -21,7 +21,7 @@ import {
 import { alignPositionsToOuterRing, computePositions, computeVoidSpans, type PositionInfo } from '../utils/SceneLayout';
 import { buildOuterRingSequence } from '../utils/OuterRingSequence';
 import { getFillForScene } from '../utils/SceneFill';
-import { estimatePixelsFromTitle } from '../utils/LabelMetrics';
+import { estimatePixelsFromTitle, toBeatRingLabel } from '../utils/LabelMetrics';
 import { sceneArcPath, renderVoidCellPath } from '../components/SceneArcs';
 import { renderSceneGroup } from '../components/Scenes';
 import { shouldRenderStoryBeats, shouldShowAllScenesInOuterRing, usesSequenceAlignment } from '../modules/ModeRenderingHelpers';
@@ -232,6 +232,12 @@ export function renderRings(ctx: RingRenderContext): string {
                         ESTIMATE_FUDGE_RENDER,
                         PADDING_RENDER_PX * fontScale
                     );
+                    // Hovering a beat swaps every ring label to its In This Book
+                    // name (BeatLabelAdjuster.showBeatLabels); both names ride here.
+                    const inThisBook = isBeatNote(scene) ? scene['In This Book'] : undefined;
+                    const beatLabelNameAttrs = inThisBook
+                        ? ` data-beat-label-canonical="${escapeXml(rawTitleFull)}" data-beat-label-in-book="${escapeXml(toBeatRingLabel(inThisBook))}"`
+                        : '';
                     const labelStartAngle = sceneStartAngle;
                     const labelEndAngle = sceneStartAngle + (estimatedWidth / beatTextRadius);
                     const desiredAngleArc = labelEndAngle - labelStartAngle;
@@ -290,7 +296,7 @@ export function renderRings(ctx: RingRenderContext): string {
                                   d="M ${formatNumber(beatTextRadius * Math.cos(labelStartAngle))} ${formatNumber(beatTextRadius * Math.sin(labelStartAngle))} 
                                      A ${formatNumber(beatTextRadius)} ${formatNumber(beatTextRadius)} 0 ${largeArcFlag} 1 ${formatNumber(beatTextRadius * Math.cos(labelEndAngle))} ${formatNumber(beatTextRadius * Math.sin(labelEndAngle))}" 
                                   data-slice-start="${formatNumber(sceneStartAngle)}" data-radius="${formatNumber(beatTextRadius)}" fill="none"/>
-                            <text class="rt-storybeat-title" dy="-3">
+                            <text class="rt-storybeat-title" dy="-3"${beatLabelNameAttrs}>
                                 <textPath href="#plot-label-arc-${act}-${ring}-outer-${idx}" startOffset="2">
                                     ${escapeXml(rawTitleFull)}
                                 </textPath>

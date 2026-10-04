@@ -17,6 +17,7 @@ import {
   getActiveLoadedBeatTab,
 } from '../storyBeats/workspaceState';
 import { resolveSelectedBeatModelFromSettings } from './beatSystemState';
+import { BEAT_IN_THIS_BOOK_KEY } from './frontmatter';
 
 // ─── Per-system Beat Config Resolvers ────────────────────────────────
 
@@ -137,6 +138,24 @@ function getRangeValue(beatInfo: PlotBeatInfo): string {
     return beatInfo.range;
   }
   return '';
+}
+
+/**
+ * Add `In This Book:` to a persisted beat base template that predates it.
+ *
+ * The base template has no editor, so a stored copy is always an older
+ * default; without this, existing vaults never seed the field into new beats
+ * and the audit never offers it. Lands right after Purpose — the generic job
+ * of the beat, then what it is in this novel. Idempotent.
+ */
+export function ensureBeatInThisBookTemplateField(base: string): string {
+  const lines = base.split('\n');
+  const fieldPattern = new RegExp(`^${BEAT_IN_THIS_BOOK_KEY}\\s*:`, 'i');
+  if (lines.some((line) => fieldPattern.test(line.trim()))) return base;
+  const purposeIndex = lines.findIndex((line) => /^(Purpose|Description)\s*:/i.test(line.trim()));
+  if (purposeIndex === -1) return base;
+  lines.splice(purposeIndex + 1, 0, `${BEAT_IN_THIS_BOOK_KEY}:`);
+  return lines.join('\n');
 }
 
 /**

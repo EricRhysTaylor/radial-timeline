@@ -139,6 +139,8 @@ export function createSnapshot(
                 // Pending Edits affects number square color (gray)
                 s.pendingEdits || '',
                 s.Purpose || '',
+                // Beat hover lead line; join() writes an absent one as empty
+                s['In This Book'],
                 s.Context || '',
                 (s as LegacyBeatDescription).Description || '', // legacy fallback
                 readSharedChapterTitle(s.rawFrontmatter) || s.Chapter || '',

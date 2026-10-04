@@ -48,6 +48,7 @@ import type { SceneAnalysisProcessingModal } from './modals/SceneAnalysisProcess
 import { TimelineMetricsService } from './services/TimelineMetricsService';
 import { migrateSceneFrontmatterIds } from './migrations/sceneIds';
 import { normalizeTimelineMode } from './migrations/timelineMode';
+import { ensureBeatInThisBookTemplateField } from './utils/beatsTemplates';
 import { SettingsService } from './services/SettingsService';
 import { DEFAULT_SETTINGS } from './settings/defaults';
 import { migrateAiSettings, stripLegacyAiSettings } from './ai/settings/migrateAiSettings';
@@ -1191,6 +1192,17 @@ export default class RadialTimelinePlugin extends Plugin {
             backdropTemplateMigrated = true;
         }
 
+        // ─── Beat base template gains In This Book (author's in-novel line) ─
+        let beatTemplateMigrated = false;
+        const storedBeatBase = this.settings.beatYamlTemplates?.base;
+        if (storedBeatBase) {
+            const withInThisBook = ensureBeatInThisBookTemplateField(storedBeatBase);
+            if (withInThisBook !== storedBeatBase) {
+                this.settings.beatYamlTemplates = { ...this.settings.beatYamlTemplates, base: withInThisBook };
+                beatTemplateMigrated = true;
+            }
+        }
+
         // ─── Migrate legacy pandocTemplates → pandocLayouts ─────────────────
         let pandocLayoutsMigrated = false;
         const legacyTemplates = (this.settings as LegacyPersistedSettings).pandocTemplates;
@@ -1306,7 +1318,7 @@ export default class RadialTimelinePlugin extends Plugin {
             }
         }
 
-        if (freshInstallSeeded || proEntitlementSeeded || gossamerRunFilterMigrated || aiSettingsMigrated || exportFolderMigrated || legacyKeysStripped || backdropTemplateMigrated || pandocLayoutsMigrated || bundledPandocLayoutsRegistered || publishingModelMigrated || pandocLayoutReferenceMigrated || manuscriptExportCleanupMigrated || booksMigrated || timelineScopeMigrated || planetarySelectionMigrated || modeMigrated || stageTargetsMigrated) {
+        if (freshInstallSeeded || proEntitlementSeeded || gossamerRunFilterMigrated || aiSettingsMigrated || exportFolderMigrated || legacyKeysStripped || backdropTemplateMigrated || beatTemplateMigrated || pandocLayoutsMigrated || bundledPandocLayoutsRegistered || publishingModelMigrated || pandocLayoutReferenceMigrated || manuscriptExportCleanupMigrated || booksMigrated || timelineScopeMigrated || planetarySelectionMigrated || modeMigrated || stageTargetsMigrated) {
             await this.saveSettings();
         }
     }

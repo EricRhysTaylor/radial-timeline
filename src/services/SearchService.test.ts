@@ -42,6 +42,25 @@ describe('buildTimelineSearchTextFields', () => {
     });
 });
 
+describe('beat In This Book line', () => {
+    const beat = sceneWith({
+        path: 'Story/75 Break into Three.md',
+        title: '75 Break into Three',
+        itemType: 'Beat',
+        'Beat Model': 'Save The Cat',
+        Purpose: 'The protagonist has an epiphany or receives crucial information.',
+        'In This Book': 'Shail starts the intercontinental tourney; Trisan is coming apart over exam prep.'
+    });
+
+    it('finds the beat by the author\'s own words', () => {
+        expect(timelineSceneMatchesSearch(beat, 'tourney', { settings: bareSettings })).toBe(true);
+    });
+
+    it('does not match the generic Purpose boilerplate', () => {
+        expect(timelineSceneMatchesSearch(beat, 'protagonist', { settings: bareSettings })).toBe(false);
+    });
+});
+
 describe('AI Pulse analysis is not searchable', () => {
     // It is commentary *about* a scene — a grade and editorial notes — not
     // something the scene contains, and not reliably about that scene in

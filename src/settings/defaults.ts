@@ -171,6 +171,7 @@ Class: Beat
 Beat Model: {{BeatModel}}
 Act: {{Act}}
 Purpose: {{Purpose}}
+In This Book:
 Range: {{Range}}
 Chapter:`
     },

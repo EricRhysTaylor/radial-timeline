@@ -27,6 +27,23 @@ export function getPublishStageStyle(stageInput: unknown, publishStageColors: Re
   return { stageClass, titleColor };
 }
 
+/**
+ * Beat hover: once the author has written In This Book, the beat system's
+ * generic Purpose sits beneath it as a quieter line. The builder marks that
+ * line; generateElement strips the mark and styles it.
+ */
+const BEAT_PURPOSE_SECONDARY_PATTERN = /^<beat-purpose-secondary>([\s\S]*)<\/beat-purpose-secondary>$/;
+
+export function markBeatPurposeSecondary(text: string): string {
+  return `<beat-purpose-secondary>${text}</beat-purpose-secondary>`;
+}
+
+/** The purpose text of a marked line, or null when the line is not marked. */
+export function readBeatPurposeSecondary(line: string): string | null {
+  const match = line.match(BEAT_PURPOSE_SECONDARY_PATTERN);
+  return match ? match[1] : null;
+}
+
 export function splitSynopsisLines(contentLines: string[]): { synopsisEndIndex: number; metadataItems: string[] } {
   let synopsisEndIndex = contentLines.findIndex(line => line === '\u00A0' || line === '');
   if (synopsisEndIndex === -1) synopsisEndIndex = Math.max(0, contentLines.length - 2);

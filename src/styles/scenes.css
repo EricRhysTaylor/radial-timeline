@@ -435,6 +435,13 @@
   font-weight: normal;
 }
 
+/* Beat hover: the beat system's generic Purpose, demoted beneath the author's
+   In This Book line. Opacity rather than a new gray keeps it quieter in both themes. */
+.rt-title-text-secondary.ert-beat-purpose-secondary {
+  font-size: calc(15px * var(--rt-synopsis-font-scale, var(--rt-font-scale, 1)));
+  opacity: 0.6;
+}
+
 /* Gossamer justification text - gray, like pulse analysis */
 
 /* Subplot and character text styling - randomized colors in JS file for characters. Subplots follow subplot settings color defined styles*/

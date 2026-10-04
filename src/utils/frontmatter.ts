@@ -299,6 +299,14 @@ export const BEAT_PURPOSE_KEYS = ['Purpose', 'Description', 'description'] as co
 export const BACKDROP_CONTEXT_KEYS = ['Context', 'Synopsis'] as const;
 
 /**
+ * The author's own line for what a canonical beat is in *this* book
+ * ("Break into Three" → "Shail enters the tourney; Trisan cracks before the
+ * exam"). Purpose is the beat system's generic job; this is the novel's.
+ * Never renamed, so there is no legacy ladder — one key.
+ */
+export const BEAT_IN_THIS_BOOK_KEY = 'In This Book';
+
+/**
  * Typed view of the YAML frontmatter on a Beat note. Lists only the fields
  * code reads directly from raw `fm`. Notably does NOT include `Synopsis`
  * (Beats never had that field; reaching for `fm.Synopsis` on a beat is a
@@ -310,6 +318,7 @@ export interface BeatFrontmatter {
   Purpose?: string;
   Description?: string;
   description?: string;
+  'In This Book'?: string;
   Range?: string;
   Act?: number | string;
   ID?: string;
@@ -354,6 +363,11 @@ export function asBackdropFrontmatter(fm: unknown): BackdropFrontmatter | null {
  */
 export function readBeatPurpose(fm: BeatFrontmatter | null | undefined): string | undefined {
   return readFirstNonEmptyString(fm as Record<string, unknown> | null | undefined, BEAT_PURPOSE_KEYS);
+}
+
+/** The author's in-book line for a beat. Same semantics as readBeatPurpose. */
+export function readBeatInThisBook(fm: BeatFrontmatter | null | undefined): string | undefined {
+  return readFirstNonEmptyString(fm as Record<string, unknown> | null | undefined, [BEAT_IN_THIS_BOOK_KEY]);
 }
 
 /** Canonical extraction of the Backdrop context text. Same semantics as readBeatPurpose. */

@@ -13,7 +13,7 @@
 
 import { App, TFile } from 'obsidian';
 import type { TimelineItem, RadialTimelineSettings, BookMeta, MatterMeta } from '../types';
-import { frontmatterValueToText, getActiveFrontmatterMappings, normalizeBeatFrontmatterKeys, normalizeFrontmatterKeys } from '../utils/frontmatter';
+import { frontmatterValueToText, getActiveFrontmatterMappings, normalizeBeatFrontmatterKeys, normalizeFrontmatterKeys, readBeatInThisBook } from '../utils/frontmatter';
 import { parseWhenField } from '../utils/date';
 import { normalizeBooleanValue, isStoryBeat } from '../utils/sceneHelpers';
 import { stripWikiLinks } from '../utils/text';
@@ -446,6 +446,7 @@ export class SceneDataService {
                 actNumber: validActNumber,
                 synopsis: beatSource.Synopsis as string | undefined,
                 Purpose: purpose,
+                "In This Book": readBeatInThisBook(beatSource),
                 Chapter: chapterTitle,
                 "Beat Model": beatModel,
                 missingBeatModel,

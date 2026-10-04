@@ -10,6 +10,7 @@ import {
     normalizeBeatFrontmatterKeys,
     normalizeFrontmatterKeys,
     readBackdropContext,
+    readBeatInThisBook,
     readBeatPurpose,
 } from './frontmatter';
 
@@ -202,5 +203,20 @@ describe('frontmatter narrowing functions', () => {
     it('asBackdropFrontmatter has matching nullish handling', () => {
         expect(asBackdropFrontmatter(null)).toBeNull();
         expect(asBackdropFrontmatter({ Context: 'x' })).toEqual({ Context: 'x' });
+    });
+});
+
+describe('readBeatInThisBook', () => {
+    it('returns the trimmed In This Book line', () => {
+        expect(readBeatInThisBook(asBeatFrontmatter({
+            Purpose: 'The protagonist has an epiphany.',
+            'In This Book': '  Shail enters the tourney; Trisan cracks before the exam.  '
+        }))).toBe('Shail enters the tourney; Trisan cracks before the exam.');
+    });
+
+    it('never borrows Purpose when the author has not written the line', () => {
+        expect(readBeatInThisBook(asBeatFrontmatter({ Purpose: 'Generic job of the beat.' }))).toBeUndefined();
+        expect(readBeatInThisBook(asBeatFrontmatter({ 'In This Book': '   ' }))).toBeUndefined();
+        expect(readBeatInThisBook(null)).toBeUndefined();
     });
 });

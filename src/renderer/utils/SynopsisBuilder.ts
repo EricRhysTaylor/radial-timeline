@@ -4,6 +4,7 @@ import { splitIntoBalancedLinesOptimal, countWords } from '../../utils/text';
 import { resolveScenePov } from '../../utils/pov';
 import { getReadabilityMultiplier } from '../../utils/readability';
 import { getSynopsisGenerationWordLimit, getSynopsisHoverWordLimit, truncateToWordLimit } from '../../utils/synopsisLimits';
+import { markBeatPurposeSecondary } from '../../synopsis/SynopsisData';
 
 function resolveHoverSynopsisText(scene: TimelineItem, synopsisWordLimit: number, hoverWordLimit: number): string | undefined {
     const synopsis = typeof scene.synopsis === 'string' ? scene.synopsis.trim() : '';
@@ -21,6 +22,19 @@ function resolveHoverSynopsisText(scene: TimelineItem, synopsisWordLimit: number
     }
 
     return truncateToWordLimit(synopsis, hoverWordLimit);
+}
+
+/**
+ * A beat's hover leads with what the beat is in this book, when the author
+ * has written it; the beat system's generic Purpose then drops beneath as a
+ * quieter line. Without an in-book line, Purpose leads as before.
+ */
+export function buildBeatHoverLines(scene: TimelineItem): string[] {
+    const purpose = typeof scene.Purpose === 'string' ? scene.Purpose.trim() : '';
+    // Already trimmed and non-empty, or absent (readBeatInThisBook).
+    const inThisBook = scene['In This Book'];
+    if (!inThisBook) return purpose ? [purpose] : [];
+    return purpose ? [inThisBook, markBeatPurposeSecondary(purpose)] : [inThisBook];
 }
 
 export function buildSynopsisElement(
@@ -47,12 +61,12 @@ export function buildSynopsisElement(
         return plugin.synopsisManager.generateElement(scene, lines, sceneId, subplotIndexResolver, alienModeActive);
     }
 
-    const beatPurpose = typeof scene.Purpose === 'string' ? scene.Purpose.trim() : '';
+    const beatLines = isBeatNote(scene) ? buildBeatHoverLines(scene) : [];
     const cappedSynopsis = resolveHoverSynopsisText(scene, synopsisWordLimit, hoverWordLimit);
     const contentLines = [
         scene.title || '',
-        ...(isBeatNote(scene) && beatPurpose
-            ? [beatPurpose]
+        ...(beatLines.length > 0
+            ? beatLines
             : cappedSynopsis
                 ? [cappedSynopsis]
                 : [])

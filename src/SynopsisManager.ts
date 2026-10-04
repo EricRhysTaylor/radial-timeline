@@ -15,7 +15,7 @@ import {
   formatDateForDisplay
 } from './utils/hoverMetadata';
 import { decodeHtmlEntities, parseSceneTitleComponents } from './utils/text';
-import { getPublishStageStyle, splitSynopsisLines, decodeContentLines, isOverdueAndIncomplete } from './synopsis/SynopsisData';
+import { getPublishStageStyle, splitSynopsisLines, decodeContentLines, isOverdueAndIncomplete, readBeatPurposeSecondary } from './synopsis/SynopsisData';
 import { createSynopsisContainer, createTextGroup, createText } from './synopsis/SynopsisView';
 import { convertFromEarth, getActivePlanetaryProfile } from './utils/planetaryTime';
 import { t } from './i18n';
@@ -1205,17 +1205,25 @@ export default class SynopsisManager {
         const contContent = contentLines[i].replace(/<gossamer-pulse-cont>/g, '').replace(/<\/gossamer-pulse-cont>/g, '');
         synopsisLineElement.textContent = contContent;
       } else {
-        // Regular synopsis line styling
-        synopsisLineElement.setAttribute("class", "rt-info-text rt-title-text-secondary");
+        // Regular synopsis line styling. A beat's generic Purpose, demoted
+        // beneath the author's In This Book line, keeps the synopsis class so
+        // row spacing and wrapping treat it as body text, plus a quieter style.
+        // Read the mark from the raw line: entity decoding parses HTML and
+        // would strip the tag, as it would the Gossamer tags above.
+        const beatPurposeSecondary = readBeatPurposeSecondary(contentLines[i]);
+        const lineText = beatPurposeSecondary !== null ? decodeHtmlEntities(beatPurposeSecondary) : lineContent;
+        synopsisLineElement.setAttribute("class", beatPurposeSecondary !== null
+          ? "rt-info-text rt-title-text-secondary ert-beat-purpose-secondary"
+          : "rt-info-text rt-title-text-secondary");
         synopsisLineElement.setAttribute("x", "0");
         synopsisLineElement.setAttribute("y", String(lineY));
 
-        if (lineContent.includes('<tspan')) {
-          this.processContentWithTspans(lineContent, synopsisLineElement);
+        if (lineText.includes('<tspan')) {
+          this.processContentWithTspans(lineText, synopsisLineElement);
         } else {
-          synopsisLineElement.textContent = lineContent;
+          synopsisLineElement.textContent = lineText;
           synopsisLineElement.setAttribute('data-synopsis-line', 'true');
-          synopsisLineElement.setAttribute('data-synopsis-raw', lineContent);
+          synopsisLineElement.setAttribute('data-synopsis-raw', lineText);
           if (scene.itemType === 'Backdrop' || isBeatNote(scene)) {
             synopsisLineElement.setAttribute('data-synopsis-budget-exempt', 'true');
           }

@@ -127,6 +127,8 @@ export interface TimelineItem {
     Purpose?: string;
     /** @deprecated Legacy beat field. Read for compatibility; new writes should use Purpose. */
     Description?: string;
+    /** Beat in this book: the author's line for what this canonical beat is in their novel. Leads the beat hover. */
+    "In This Book"?: string;
     /** Backdrop world-layer context. Preferred key: Context. */
     Context?: string;
     Chapter?: string;

@@ -76,6 +76,11 @@ export function buildTimelineSearchTextFields(scene: TimelineItem, options: Time
 
     appendSearchValue(fields, scene.title);
     appendSearchValue(fields, scene.synopsis);
+    // A beat's In This Book line is the author's own words about the novel,
+    // so "tourney" finds Break into Three. The beat system's generic Purpose
+    // stays out: it is the same boilerplate in every book, and matching it
+    // would light up every beat that mentions "the protagonist".
+    appendSearchValue(fields, scene['In This Book']);
     appendSearchValue(fields, scene.Character);
     appendSearchValue(fields, scene.subplot);
     appendSearchValue(fields, scene.Duration);

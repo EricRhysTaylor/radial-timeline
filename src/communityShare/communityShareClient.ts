@@ -674,6 +674,8 @@ export interface CommunityMailboxAnswer {
     support_unread: number;
     /** The member's questions with unread replies; latest_post_id is the newest (null when count is 0). */
     replies: { count: number; latest_post_id: string | null };
+    /** Desk Lamp invites waiting on the member (answered on My Share). */
+    desk_lamp_invites: number;
     /** Community admins only: unread requests and requests awaiting a reply. */
     admin: { unread: number; awaiting: number } | null;
 }
@@ -691,6 +693,7 @@ export function isCommunityMailboxAnswer(value: unknown): value is CommunityMail
     const admin = answer.admin;
     return answer.ok === true
         && isCount(answer.support_unread)
+        && isCount(answer.desk_lamp_invites)
         && !!replies && isCount(replies.count)
         // The question id becomes part of a link: only a UUID is accepted.
         && (replies.count === 0

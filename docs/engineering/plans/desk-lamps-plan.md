@@ -123,7 +123,15 @@ and nothing else: no Notice, no sound. Lamp off bulletins (D15) live only
 inside the popover and never touch the count. Invites do surface: on My
 Share, and in the plugin's lamp menu ("1 Desk Lamp invite waiting", opening
 My Share), from the `invites_received` count the plugin's Desk Lamps call
-already returns. The Mailbox is unchanged. No email in v1.
+already returns. No email in v1.
+
+*Amended (Eric, 2026-10-03): invites were buried in My Share.* They are now
+a Mailbox item too: "Desk Lamp invites" with a gold count in the website
+account menu and the plugin's Mailbox pill, counted in both badges and
+opening My Share's Desk Lamps section (`/me#desk-lamps`), which wears an
+animated gold ring while an invite waits. One count serves both, from
+`community_mailbox_state_rpc` `desk_lamp_invites` (platform migration
+`20261004030316`), the same definition `community_my_desk_lamps()` gives.
 
 **D11. The server keeps no history.** One live row per vault connection,
 overwritten on each update and deleted when the lamp goes off. A row not

@@ -9,11 +9,11 @@
  * of the writing-session control, where the Discord pill was until 7.3.2. It
  * works like the website account chip, in the same colours: the admin support
  * inbox count (red while a request is unread, blue while requests only await
- * a reply), else a gold count of conversations with new replies (your
- * requests with a team reply plus your questions with new replies; the
- * website shows a gold dot for the same thing). Clicking opens a menu like the
- * website's account menu: Requests, New replies, and the Support inbox for
- * admins, each with its own count.
+ * a reply), else a gold count of what waits on you (your requests with a team
+ * reply, your questions with new replies, and Desk Lamp invites; the website
+ * account chip counts the same). Clicking opens a menu like the website's
+ * account menu: Requests, New replies, Desk Lamp invites, and the Support
+ * inbox for admins, each with its own count.
  *
  * The server is the single source of truth: `community-mailbox` returns the
  * facts the website itself shows. This module never computes a count and
@@ -37,6 +37,8 @@ import { hasActiveCommunityConnection, normalizeCommunityShareSettings } from '.
 export const COMMUNITY_SITE_URL = 'https://community.radialtimeline.com';
 /** My Share: where a member manages what they share, blocks, and Desk Lamps. */
 export const COMMUNITY_MY_SHARE_URL = `${COMMUNITY_SITE_URL}/me`;
+/** My Share's Desk Lamps section, where invites are answered. */
+export const COMMUNITY_DESK_LAMPS_URL = `${COMMUNITY_MY_SHARE_URL}#desk-lamps`;
 
 const POLL_MS = 60 * 60e3;
 const JITTER_MS = 5 * 60e3; // 0–5 min added to every hourly check
@@ -70,12 +72,12 @@ function inboxBadge(answer: CommunityMailboxAnswer | null): MailboxBadge | null 
     return null;
 }
 
-/** The pill's badge: the inbox count when there is one, else the gold count of conversations with new replies. */
+/** The pill's badge: the inbox count when there is one, else the gold count of new replies and Desk Lamp invites. */
 export function mailboxBadge(answer: CommunityMailboxAnswer | null): MailboxBadge | null {
     if (!answer) return null;
     const inbox = inboxBadge(answer);
     if (inbox) return inbox;
-    const fresh = answer.support_unread + answer.replies.count;
+    const fresh = answer.support_unread + answer.replies.count + answer.desk_lamp_invites;
     return fresh > 0 ? { tone: 'new', count: fresh } : null;
 }
 
@@ -89,7 +91,8 @@ export interface MailboxMenuEntry {
 /**
  * The pill's menu, item for item the mailbox part of the website account
  * menu: Requests, New replies (only while there are some; opens the newest
- * question with a reply), and the Support inbox for admins.
+ * question with a reply), Desk Lamp invites (only while some wait; opens My
+ * Share's Desk Lamps section), and the Support inbox for admins.
  */
 export function mailboxMenuEntries(answer: CommunityMailboxAnswer | null): MailboxMenuEntry[] {
     const entries: MailboxMenuEntry[] = [{
@@ -104,6 +107,14 @@ export function mailboxMenuEntries(answer: CommunityMailboxAnswer | null): Mailb
             icon: 'reply',
             url: `${COMMUNITY_SITE_URL}/posts/${answer.replies.latest_post_id}`,
             badge: { tone: 'new', count: answer.replies.count }
+        });
+    }
+    if (answer && answer.desk_lamp_invites > 0) {
+        entries.push({
+            label: 'Desk Lamp invites',
+            icon: 'lamp-desk',
+            url: COMMUNITY_DESK_LAMPS_URL,
+            badge: { tone: 'new', count: answer.desk_lamp_invites }
         });
     }
     if (answer?.admin) {
@@ -124,6 +135,8 @@ export function mailboxTooltip(view: MailboxView): string {
     else if (answer.support_unread > 1) notes.push(`new replies on ${answer.support_unread} requests`);
     if (answer.replies.count === 1) notes.push('new replies to your question');
     else if (answer.replies.count > 1) notes.push(`new replies to ${answer.replies.count} of your questions`);
+    if (answer.desk_lamp_invites === 1) notes.push('a Desk Lamp invite waiting');
+    else if (answer.desk_lamp_invites > 1) notes.push(`${answer.desk_lamp_invites} Desk Lamp invites waiting`);
     return notes.length ? `Mailbox: ${notes.join(' · ')}` : 'Mailbox: nothing new';
 }
 

@@ -7,6 +7,7 @@ vi.mock('./communityShareClient', () => ({
 import { fetchCommunityMailbox, type CommunityMailboxAnswer } from './communityShareClient';
 import { buildDefaultCommunityShareSettings } from './communityShareSettings';
 import {
+    COMMUNITY_DESK_LAMPS_URL,
     COMMUNITY_SITE_URL,
     CommunityMailbox,
     mailboxBadge,
@@ -15,7 +16,7 @@ import {
 } from './communityMailbox';
 
 const QUESTION = '55555555-5555-4555-8555-555555555555';
-const EMPTY: CommunityMailboxAnswer = { ok: true, support_unread: 0, replies: { count: 0, latest_post_id: null }, admin: null };
+const EMPTY: CommunityMailboxAnswer = { ok: true, support_unread: 0, replies: { count: 0, latest_post_id: null }, desk_lamp_invites: 0, admin: null };
 const answer = (patch: Partial<CommunityMailboxAnswer>): CommunityMailboxAnswer => ({ ...EMPTY, ...patch });
 
 const fetchMock = vi.mocked(fetchCommunityMailbox);
@@ -52,6 +53,12 @@ describe('mailboxBadge works like the website account chip', () => {
         expect(mailboxBadge(answer({ support_unread: 2, replies: { count: 3, latest_post_id: QUESTION } }))).toEqual({ tone: 'new', count: 5 });
     });
 
+    it('counts Desk Lamp invites with the new replies, in gold', () => {
+        expect(mailboxBadge(answer({ desk_lamp_invites: 1 }))).toEqual({ tone: 'new', count: 1 });
+        expect(mailboxBadge(answer({ support_unread: 1, desk_lamp_invites: 2 }))).toEqual({ tone: 'new', count: 3 });
+        expect(mailboxBadge(answer({ admin: { unread: 1, awaiting: 0 }, desk_lamp_invites: 2 }))).toEqual({ tone: 'unread', count: 1 });
+    });
+
     it('shows nothing when all is read, and before the first answer', () => {
         expect(mailboxBadge(EMPTY)).toBeNull();
         expect(mailboxBadge(answer({ admin: { unread: 0, awaiting: 0 } }))).toBeNull();
@@ -70,6 +77,15 @@ describe('mailboxMenuEntries mirrors the website account menu', () => {
             { label: 'New replies', icon: 'reply', url: `${COMMUNITY_SITE_URL}/posts/${QUESTION}`, badge: { tone: 'new', count: 1 } },
             { label: 'Support inbox', icon: 'inbox', url: `${COMMUNITY_SITE_URL}/admin/support`, badge: { tone: 'awaiting', count: 4 } }
         ]);
+    });
+
+    it('lists Desk Lamp invites while some wait, opening My Share\'s Desk Lamps section', () => {
+        expect(mailboxMenuEntries(answer({ desk_lamp_invites: 2 }))).toEqual([
+            { label: 'Requests', icon: 'mail', url: `${COMMUNITY_SITE_URL}/requests`, badge: null },
+            { label: 'Desk Lamp invites', icon: 'lamp-desk', url: COMMUNITY_DESK_LAMPS_URL, badge: { tone: 'new', count: 2 } }
+        ]);
+        expect(COMMUNITY_DESK_LAMPS_URL).toBe(`${COMMUNITY_SITE_URL}/me#desk-lamps`);
+        expect(mailboxTooltip({ visible: true, answer: answer({ desk_lamp_invites: 1 }), error: null })).toBe('Mailbox: a Desk Lamp invite waiting');
     });
 
     it('keeps Requests reachable with nothing new, before the first check, and for a member', () => {

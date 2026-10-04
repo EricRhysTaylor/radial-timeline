@@ -42,7 +42,7 @@ import { Menu } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { ActiveWritingSession, WritingSessionMode } from '../types/settings';
 import { tooltip as applyTooltip } from '../utils/tooltip';
-import { COMMUNITY_MY_SHARE_URL, COMMUNITY_SITE_URL } from './communityMailbox';
+import { COMMUNITY_DESK_LAMPS_URL, COMMUNITY_SITE_URL } from './communityMailbox';
 import { syncDeskLamps, type DeskLampFriend, type DeskLampLight, type DeskLampsAnswer, type LitDeskLamp } from './communityShareClient';
 import { deskLampChoices, hasCommunityConnection, normalizeCommunityShareSettings } from './communityShareSettings';
 
@@ -345,9 +345,9 @@ export function openDeskLampsMenu(anchor: HTMLElement, deskLamps: DeskLamps, sho
     menu.addItem(item => item.setTitle(ownDeskLampLine(view.own)).setIcon('lamp-desk').setDisabled(true));
     const invites = view.answer?.invites_received ?? 0; // SAFE: before the first answer no invite is known
     if (invites > 0) {
-        menu.addItem(item => item.setTitle(invitesWaitingLine(invites)).setIcon('mail-plus').onClick(() => openUrl(COMMUNITY_MY_SHARE_URL)));
+        menu.addItem(item => item.setTitle(invitesWaitingLine(invites)).setIcon('mail-plus').onClick(() => openUrl(COMMUNITY_DESK_LAMPS_URL)));
     }
-    menu.addItem(item => item.setTitle('Manage Desk Lamps…').setIcon('users').onClick(() => openUrl(COMMUNITY_MY_SHARE_URL)));
+    menu.addItem(item => item.setTitle('Manage Desk Lamps…').setIcon('users').onClick(() => openUrl(COMMUNITY_DESK_LAMPS_URL)));
     const rect = anchor.getBoundingClientRect();
     menu.showAtPosition({ x: rect.left, y: rect.bottom }, doc);
 }

@@ -308,8 +308,9 @@ by name, and scrolls past 8 rows. First-use line under it:
 and how long, until you save or end the session." The running panel shows
 "Lamp lit for Maya and Priya", with a small control to edit or turn it off.
 
-**Title-bar lamp.** A button right of the Mailbox pill: Lucide `lamp-desk`
-(confirm it is in Obsidian's bundled set) and the count of friends who are
+**Title-bar lamp.** A button right of the Mailbox pill: Lucide
+`lamp-ceiling` (Eric, 2026-10-04; was `lamp-desk`; both are in Obsidian's
+bundled set) and the count of friends who are
 lit. Clicking opens the living list from D15: up to 12 rows, freshest
 change first, breaks dimmed, lamp off bulletins mixed in by time, and the
 "N more at their desks" footer when lamps overflow. Below the list, a line

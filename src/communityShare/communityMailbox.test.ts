@@ -82,7 +82,7 @@ describe('mailboxMenuEntries mirrors the website account menu', () => {
     it('lists Desk Lamp invites while some wait, opening My Share\'s Desk Lamps section', () => {
         expect(mailboxMenuEntries(answer({ desk_lamp_invites: 2 }))).toEqual([
             { label: 'Requests', icon: 'mail', url: `${COMMUNITY_SITE_URL}/requests`, badge: null },
-            { label: 'Desk Lamp invites', icon: 'lamp-desk', url: COMMUNITY_DESK_LAMPS_URL, badge: { tone: 'new', count: 2 } }
+            { label: 'Desk Lamp invites', icon: 'lamp-ceiling', url: COMMUNITY_DESK_LAMPS_URL, badge: { tone: 'new', count: 2 } }
         ]);
         expect(COMMUNITY_DESK_LAMPS_URL).toBe(`${COMMUNITY_SITE_URL}/me#desk-lamps`);
         expect(mailboxTooltip({ visible: true, answer: answer({ desk_lamp_invites: 1 }), error: null })).toBe('Mailbox: a Desk Lamp invite waiting');

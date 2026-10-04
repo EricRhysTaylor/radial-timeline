@@ -113,7 +113,7 @@ export function mailboxMenuEntries(answer: CommunityMailboxAnswer | null): Mailb
     if (answer && answer.desk_lamp_invites > 0) {
         entries.push({
             label: 'Desk Lamp invites',
-            icon: 'lamp-desk',
+            icon: 'lamp-ceiling',
             url: COMMUNITY_DESK_LAMPS_URL,
             badge: { tone: 'new', count: answer.desk_lamp_invites }
         });

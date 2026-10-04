@@ -2614,6 +2614,8 @@
   width: 24px;
   height: 24px;
   margin-inline-start: var(--size-4-1);
+  /* Room before the next icon (and for the corner badge). */
+  margin-inline-end: var(--size-4-2);
   padding: 0;
   display: inline-flex;
   align-items: center;

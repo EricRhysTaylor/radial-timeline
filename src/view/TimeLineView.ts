@@ -617,7 +617,7 @@ export class RadialTimelineView extends ItemView {
             deskLampBtn.type = 'button';
             deskLampBtn.hidden = true;
             deskLampBtn.setAttribute('aria-haspopup', 'menu');
-            setIcon(deskLampBtn, 'lamp-desk');
+            setIcon(deskLampBtn, 'lamp-ceiling');
             const deskLampBadgeEl = doc.win.createSpan();
             deskLampBadgeEl.className = 'ert-mailbox-badge is-new';
             deskLampBtn.appendChild(deskLampBadgeEl);
@@ -1810,7 +1810,7 @@ export class RadialTimelineView extends ItemView {
 
         if (lampFriends.length > 0) {
             const lampSection = form.createDiv({ cls: 'ert-timeline-session-panel__section' });
-            this.createSessionSectionTitle(lampSection, 'lamp-desk', 'Desk Lamps');
+            this.createSessionSectionTitle(lampSection, 'lamp-ceiling', 'Desk Lamps');
             const remembered = new Set(deskLamps.rememberedAudience());
             const allLabel = lampSection.createEl('label', { cls: 'ert-timeline-session-panel__toggle-label' });
             const allBox = allLabel.createEl('input', { cls: 'ert-timeline-session-panel__toggle' });
@@ -2000,7 +2000,7 @@ export class RadialTimelineView extends ItemView {
         if (lampLine) {
             const lampRow = panel.createDiv({ cls: 'ert-timeline-session-panel__lamp-status' });
             const lampIcon = lampRow.createSpan({ cls: 'ert-timeline-session-panel__lamp-icon' });
-            setIcon(lampIcon, 'lamp-desk');
+            setIcon(lampIcon, 'lamp-ceiling');
             lampRow.createSpan({ text: lampLine });
             const lampEdit: HTMLButtonElement = this.createSessionIconButton(lampRow, 'pencil', 'Change who sees your lamp', 'ert-timeline-session-panel__ghost ert-timeline-session-panel__lamp-edit', () => {
                 openSessionDeskLampMenu(lampEdit, this.plugin.deskLamps);

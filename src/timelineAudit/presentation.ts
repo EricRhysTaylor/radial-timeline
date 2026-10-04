@@ -9,7 +9,7 @@
 import type { TimelineAuditFinding, TimelineAuditIssueType, TimelineAuditStatus } from './types';
 
 const ISSUE_LABELS: Record<TimelineAuditIssueType, string> = {
-    missing_when: 'Missing When value',
+    missing_when: 'Undated',
     invalid_when: 'Invalid When value',
     time_of_day_conflict: 'Time-of-day conflict',
     relative_order_conflict: 'Order conflict',
@@ -21,7 +21,7 @@ const ISSUE_LABELS: Record<TimelineAuditIssueType, string> = {
 };
 
 const ISSUE_DESCRIPTIONS: Record<TimelineAuditIssueType, string> = {
-    missing_when: 'YAML has no When value for this scene.',
+    missing_when: 'The date is unset; the scene follows its book’s narrative placement in Chronologue.',
     invalid_when: 'YAML has a When value, but it does not parse as a real date/time.',
     time_of_day_conflict: 'The scene text points to a different time of day than YAML.',
     relative_order_conflict: 'The scene text places this scene earlier or later than its current chronology slot.',
@@ -34,6 +34,7 @@ const ISSUE_DESCRIPTIONS: Record<TimelineAuditIssueType, string> = {
 
 const STATUS_LABELS: Record<TimelineAuditStatus, string> = {
     aligned: 'Aligned',
+    undated: 'Undated',
     warning: 'Warning',
     contradiction: 'Contradiction'
 };

@@ -34,6 +34,21 @@ function makeFinding(path: string, action: TimelineAuditFinding['reviewAction'],
 }
 
 describe('timeline audit apply adapter', () => {
+    it('writes accepted day-only evidence without adding a clock time and leaves an undated keep untouched', async () => {
+        const docs: Record<string, Record<string, unknown>> = { 'day.md': { When: '2026-01-01' }, 'blank.md': { When: '' } };
+        const touched: string[] = [];
+        const app = {
+            fileManager: { processFrontMatter: async (file: TFile, update: (fm: Record<string, unknown>) => void) => { touched.push(file.path); update(docs[file.path]); } },
+            vault: { getAbstractFileByPath: () => null, createFolder: async () => undefined, create: async () => { throw new Error('log write not under test'); } }
+        } as unknown as App;
+        await applyAuditFindings(app, [
+            makeFinding('day.md', 'apply', { suggestedWhen: new Date(2026, 0, 2, 12), suggestedDateOnly: true }),
+            makeFinding('blank.md', 'keep', { currentWhen: null, currentWhenRaw: null, status: 'undated', suggestedWhen: null })
+        ]);
+        expect(docs['day.md'].When).toBe('2026-01-02');
+        expect(docs['blank.md'].When).toBe('');
+        expect(touched).toEqual(['day.md']);
+    });
     it('writes only accepted When changes and never touches plugin bookkeeping in YAML', async () => {
         const docs = new Map<string, Record<string, unknown>>([
             // Legacy field from an earlier plugin version — apply must not manage it.

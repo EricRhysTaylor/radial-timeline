@@ -352,6 +352,8 @@ export type ModalPhase = 'config' | 'analyzing' | 'review';
 export interface FrontmatterUpdate {
     file: TFile;
     when: Date;
+    /** Preserve day-only evidence instead of writing the parser's default clock time. */
+    dateOnly?: boolean;
     /** Provenance for the When change log — never written to frontmatter. */
     whenSource: WhenSource;
 

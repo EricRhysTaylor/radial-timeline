@@ -35,7 +35,7 @@ function makeInput(params: Partial<TimelineAuditSceneInput> & { path: string; ma
 }
 
 describe('timeline audit pipeline', () => {
-    it('flags missing and invalid When values as first-class issues', async () => {
+    it('treats a blank When as undated while still flagging an invalid value', async () => {
         const result = await runTimelineAuditFromInputs([
             makeInput({ path: 'Story/1 Missing.md', manuscriptOrderIndex: 0, rawWhen: null, parsedWhen: null, whenValid: false, whenParseIssue: 'missing_when' }),
             makeInput({ path: 'Story/2 Invalid.md', manuscriptOrderIndex: 1, rawWhen: 'not-a-date', parsedWhen: null, whenValid: false, whenParseIssue: 'invalid_when' })
@@ -45,8 +45,53 @@ describe('timeline audit pipeline', () => {
             runAiInference: false
         });
 
-        expect(result.findings[0].issues.some((issue) => issue.type === 'missing_when')).toBe(true);
-        expect(result.findings[1].issues.some((issue) => issue.type === 'invalid_when')).toBe(true);
+        const undated = result.findings.find(f => f.path.endsWith('Missing.md'))!;
+        const invalid = result.findings.find(f => f.path.endsWith('Invalid.md'))!;
+        expect(undated.status).toBe('undated');
+        expect(undated.issues).toEqual([]);
+        expect(undated.unresolved).toBe(false);
+        expect(undated.expectedChronologyPosition).not.toBeNull();
+        expect(undated.suggestedWhen).toBeNull();
+        expect(invalid.issues.some((issue) => issue.type === 'invalid_when')).toBe(true);
+        expect(result.stats.missingWhen).toBe(1);
+    });
+
+    it('does not invent a noon conflict for an authored date without a clock time', async () => {
+        const result = await runTimelineAuditFromInputs([
+            makeInput({ path: 'Story/1 Evening.md', manuscriptOrderIndex: 0, rawWhen: '2026-01-01', bodyExcerpt: 'By evening the house was silent.' })
+        ], { runDeterministicPass: true, runContinuityPass: false, runAiInference: false });
+        expect(result.findings[0].issues).toEqual([]);
+        expect(result.findings[0].suggestedWhen).toBeNull();
+    });
+
+    it('preserves day-only precision in an explicit calendar correction', async () => {
+        const input = makeInput({ path: 'Story/1 Day.md', manuscriptOrderIndex: 0, rawWhen: '2026-01-01', bodyExcerpt: 'On January 2, 2026 they arrived.' });
+        const result = await runTimelineAuditFromInputs([input], { runDeterministicPass: true, runContinuityPass: false, runAiInference: false });
+        expect(result.findings[0].suggestedDateOnly).toBe(true);
+        const prompt = buildTimelineAuditAiPrompt(input, input, null, [input]);
+        expect(prompt).toContain('provisional When: 2026-01-01');
+        expect(prompt).not.toContain('2026-01-01 12:00');
+    });
+
+    it('does not anchor a relative cue across an intervening undated scene', async () => {
+        const result = await runTimelineAuditFromInputs([
+            makeInput({ path: 'Story/1 Prior.md', manuscriptOrderIndex: 0, rawWhen: '2026-01-01 08:00', bodyExcerpt: 'They leave town.' }),
+            makeInput({ path: 'Story/2 Undated.md', manuscriptOrderIndex: 1, bodyExcerpt: 'Events continue for an unspecified time.' }),
+            makeInput({ path: 'Story/3 Later.md', manuscriptOrderIndex: 2, rawWhen: '2026-01-05 08:00', bodyExcerpt: 'The next morning she returned.' })
+        ], { runDeterministicPass: true, runContinuityPass: true, runAiInference: false });
+        const later = result.findings.find(f => f.path.endsWith('Later.md'))!;
+        expect(later.issues).toEqual([]);
+        expect(later.suggestedWhen).toBeNull();
+        expect(result.stats.warnings).toBe(0);
+        expect(result.unresolvedCount).toBe(0);
+    });
+
+    it('explains in the AI prompt that undated placement does not justify a date or clock time', () => {
+        const input = makeInput({ path: 'Story/1 Undated.md', manuscriptOrderIndex: 0 });
+        const prompt = buildTimelineAuditAiPrompt(input, null, null, [input]);
+        expect(prompt).toContain('An unset When is valid');
+        expect(prompt).toContain('Do not report a missing date alone as an issue');
+        expect(prompt).toContain('do not invent a clock time for day-only evidence');
     });
 
     it('detects direct body vs YAML time-of-day conflict and offers a safe suggestion', async () => {

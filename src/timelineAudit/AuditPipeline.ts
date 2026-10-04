@@ -10,7 +10,7 @@ import type { Vault } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { getAIClient } from '../ai/runtime/aiClient';
 import type { AIProviderId, Capability } from '../ai/types';
-import { parseWhenField } from '../utils/date';
+import { parseWhenField, formatLocalDateKey } from '../utils/date';
 import { buildChronologyEntries, buildChronologyPositionMap } from './chronology';
 import { loadScopedSceneNotes } from '../timeline/sharedSceneNotes';
 import type {
@@ -150,16 +150,6 @@ function adjustDateToBucket(date: Date, bucket: TimelineAuditTimeBucket): Date {
     return adjusted;
 }
 
-function formatWhen(date: Date | null): string {
-    if (!(date instanceof Date) || Number.isNaN(date.getTime())) return 'Missing';
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hour = String(date.getHours()).padStart(2, '0');
-    const minute = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day} ${hour}:${minute}`;
-}
-
 /**
  * Human-readable duration for a gap between two scenes, always positive —
  * direction (before/after) is expressed by the surrounding sentence.
@@ -253,6 +243,7 @@ function setSuggestion(
 ): void {
     if (finding.suggestedWhen && finding.safeApplyEligible && !replaceSafeSuggestion) return;
     finding.suggestedWhen = suggestion.when;
+    finding.suggestedDateOnly = suggestion.dateOnly;
     finding.suggestedConfidence = suggestion.confidence;
     finding.suggestedProvenance = suggestion.provenance;
     finding.safeApplyEligible = suggestion.safeApply;
@@ -269,14 +260,7 @@ function createWorkingFinding(
     const notes: string[] = [];
 
     if (input.whenParseIssue === 'missing_when') {
-        issues.push({
-            type: 'missing_when',
-            severity: 'warning',
-            tier: 'direct',
-            detectionSource: 'deterministic',
-            summary: 'Scene is missing a YAML When value.'
-        });
-        notes.push('Missing When prevents stable chronology placement.');
+        notes.push('Undated. Chronologue preserves narrative placement within the book; no calendar date is assumed. Leaving When blank is valid.');
     } else if (input.whenParseIssue === 'invalid_when') {
         issues.push({
             type: 'invalid_when',
@@ -410,16 +394,20 @@ function compareWhenAgainstCue(
             && cue.absoluteWhen.getMonth() === finding.currentWhen.getMonth()
             && cue.absoluteWhen.getDate() === finding.currentWhen.getDate();
         if (!sameDate) {
+            const hasAuthoredClock = /\d{1,2}:\d{2}|\d\s*(?:am|pm)\b/i.test(finding.currentWhenRaw ?? '');
+            const suggested = new Date(cue.absoluteWhen);
+            if (hasAuthoredClock) suggested.setHours(finding.currentWhen.getHours(), finding.currentWhen.getMinutes(), 0, 0);
             addIssue(
                 finding,
                 'relative_order_conflict',
                 'deterministic',
                 cue.tier,
-                `Body evidence points to ${formatWhen(cue.absoluteWhen)}, but YAML says ${formatWhen(finding.currentWhen)}.`
+                `Body evidence points to ${formatLocalDateKey(cue.absoluteWhen)}, but YAML says ${finding.currentWhenRaw}.`
             );
             addEvidence(finding, cueToEvidence(cue, 'deterministic'));
             setSuggestion(finding, {
-                when: cue.absoluteWhen,
+                when: suggested,
+                dateOnly: !hasAuthoredClock,
                 confidence: 'high',
                 provenance: 'keyword',
                 reason: 'Direct date evidence suggests a different calendar day.',
@@ -430,7 +418,7 @@ function compareWhenAgainstCue(
         return;
     }
 
-    if (cue.kind === 'time_of_day' && cue.bucket) {
+    if (cue.kind === 'time_of_day' && cue.bucket && /\d{1,2}:\d{2}|\d\s*(?:am|pm)\b/i.test(finding.currentWhenRaw ?? '')) {
         const yamlBucket = getBucketForWhen(finding.currentWhen);
         if (yamlBucket !== cue.bucket) {
             addIssue(
@@ -459,6 +447,7 @@ function detectInsufficientEvidence(
     finding: WorkingFinding,
     input: TimelineAuditSceneInput
 ): void {
+    if (finding.whenParseIssue === 'missing_when') return;
     const hasAnyText = Boolean(input.summary || input.synopsis || input.bodyExcerpt);
     if (!hasAnyText) {
         addIssue(
@@ -501,7 +490,7 @@ function detectDeterministicFindings(inputs: TimelineAuditSceneInput[], findingM
         } else {
             const ambiguousCue = strongestCue(finding.cues);
             if (ambiguousCue) {
-                addIssue(
+                if (finding.whenParseIssue !== 'missing_when') addIssue(
                     finding,
                     'ambiguous_time_signal',
                     'deterministic',
@@ -574,6 +563,7 @@ function applyRelativeCueAgainstAnchor(
             suggested.setHours(TIME_BUCKET_HOURS[cue.bucket], 0, 0, 0);
             setSuggestion(finding, {
                 when: suggested,
+                dateOnly: !/\d{1,2}:\d{2}|\d\s*(?:am|pm)\b/i.test(currentInput.rawWhen ?? ''),
                 confidence: cue.tier === 'direct' ? 'high' : 'med',
                 provenance: 'keyword',
                 reason: `Relative cue "${cue.label}" is anchored against ${anchorInput.title}.`,
@@ -619,6 +609,7 @@ function pickRelativeContinuityCue(cues: TimelineAuditCue[]): TimelineAuditCue |
 
 function detectContinuityFindings(inputs: TimelineAuditSceneInput[], findingMap: Map<string, WorkingFinding>, windowSize: number): void {
     const chronologyEntries = buildChronologyEntries(inputs);
+    const displayPositions = buildChronologyPositionMap(inputs);
     if (chronologyEntries.length < 2) return;
 
     const gaps = chronologyEntries
@@ -636,7 +627,8 @@ function detectContinuityFindings(inputs: TimelineAuditSceneInput[], findingMap:
         const currentRelativeCue = pickRelativeContinuityCue(currentFinding.cues);
 
         const previousEntry = chronologyEntries[index - 1];
-        if (previousEntry?.input.parsedWhen) {
+        const adjacentInDisplay = previousEntry && displayPositions.get(currentEntry.input.path)! - displayPositions.get(previousEntry.input.path)! === 1;
+        if (previousEntry?.input.parsedWhen && adjacentInDisplay) {
             const deltaMs = currentEntry.input.parsedWhen.getTime() - previousEntry.input.parsedWhen.getTime();
 
             if (currentRelativeCue?.dayOffset !== undefined) {
@@ -668,6 +660,7 @@ function detectContinuityFindings(inputs: TimelineAuditSceneInput[], findingMap:
                         suggested.setHours(TIME_BUCKET_HOURS[currentRelativeCue.bucket], 0, 0, 0);
                         setSuggestion(currentFinding, {
                             when: suggested,
+                            dateOnly: !/\d{1,2}:\d{2}|\d\s*(?:am|pm)\b/i.test(currentEntry.input.rawWhen ?? ''),
                             confidence: currentRelativeCue.tier === 'direct' ? 'high' : 'med',
                             provenance: 'keyword',
                             reason: `Relative cue "${currentRelativeCue.label}" is anchored against the previous chronological scene.`,
@@ -761,14 +754,14 @@ function compactNeighborEvidence(input: TimelineAuditSceneInput | null): string 
     const evidence = input.synopsis.trim() || input.summary.trim() || 'No synopsis or summary.'; // SAFE: prompt copy explicitly identifies absent neighbor context
     const compact = evidence.replace(/\s+/g, ' ');
     const clipped = compact.length > 900 ? `${compact.slice(0, 899).trimEnd()}…` : compact;
-    return `${input.title} | current When: ${formatWhen(input.parsedWhen)} | ${clipped}`;
+    return `${input.title} | current When: ${input.rawWhen ?? 'Unset'} | ${clipped}`;
 }
 
 function buildManuscriptNarrativeMap(inputs: TimelineAuditSceneInput[]): string {
     return inputs
         .slice()
         .sort((a, b) => a.manuscriptOrderIndex - b.manuscriptOrderIndex)
-        .map(input => `${input.manuscriptOrderIndex + 1}. ${input.title} | provisional When: ${formatWhen(input.parsedWhen)}`)
+        .map(input => `${input.manuscriptOrderIndex + 1}. ${input.title} | provisional When: ${input.rawWhen ?? 'Unset'}`)
         .join('\n');
 }
 
@@ -785,6 +778,8 @@ export function buildTimelineAuditAiPrompt(
     return `You are reconstructing a fiction manuscript chronology scene by scene.
 
 The current YAML When may be a rough scaffold. Treat it as provisional evidence, not truth. Read the manuscript evidence and decide whether this scene is mainline action, a flashback, a flash-forward, parallel action, or unclear. Infer an updated timestamp only when the text and neighboring narrative scenes support one. Preserve uncertainty instead of inventing precision.
+
+An unset When is valid. Chronologue places undated scenes with the preceding dated scene in their book’s narrative order; this is display order only, not evidence that they share a date or elapsed-time interval. Do not report a missing date alone as an issue. Leave suggestedWhen empty unless the manuscript supports a calendar date; do not invent a clock time for day-only evidence.
 
 Manuscript narrative map (all dates are provisional):
 ${buildManuscriptNarrativeMap(manuscriptInputs)}
@@ -814,7 +809,7 @@ Check all of the following:
 - memories, dreams, backstory, flashbacks, flash-forwards, and parallel action;
 - whether the provisional When puts the scene in the wrong era, day, order, or time bucket.
 
-Return JSON only. Use an empty string when no issue, position, or timestamp can be supported. suggestedWhen must be YYYY-MM-DD HH:mm when present.
+Return JSON only. Use an empty string when no issue, position, or timestamp can be supported. suggestedWhen must be YYYY-MM-DD, or YYYY-MM-DD HH:mm when the text also supports a clock time.
 {
   "rationale": string,
   "evidenceQuotes": string[],
@@ -1052,6 +1047,7 @@ async function runAiInference(
                     if (suggestionDiffers) {
                         setSuggestion(finding, {
                             when: suggestedWhen,
+                            dateOnly: /^\d{4}-\d{2}-\d{2}$/.test(parsed.suggestedWhen),
                             confidence: parsed.confidence,
                             provenance: 'ai',
                             reason: parsed.rationale,
@@ -1086,7 +1082,7 @@ function finalizeFinding(finding: WorkingFinding): TimelineAuditFinding {
     delete workingCopy.notes;
     delete workingCopy.detectionSources;
     const baseFinding = workingCopy as Omit<WorkingFinding, 'cues' | 'notes' | 'detectionSources'>;
-    let status: TimelineAuditStatus = 'aligned';
+    let status: TimelineAuditStatus = finding.whenParseIssue === 'missing_when' ? 'undated' : 'aligned';
     if (finding.issues.some((issue) => issue.severity === 'contradiction')) {
         status = 'contradiction';
     } else if (finding.issues.length > 0) {
@@ -1108,11 +1104,11 @@ function finalizeFinding(finding: WorkingFinding): TimelineAuditFinding {
     const hasSuggestion = finding.suggestedWhen instanceof Date && Boolean(finding.suggestedProvenance);
     const allowedActions: TimelineAuditFinding['allowedActions'] = hasSuggestion
         ? ['apply', 'keep', 'mark_review']
-        : status === 'aligned'
+        : status === 'aligned' || status === 'undated'
             ? ['keep']
             : ['keep', 'mark_review'];
 
-    const unresolved = status !== 'aligned';
+    const unresolved = status === 'warning' || status === 'contradiction';
 
     return {
         ...baseFinding,
@@ -1129,7 +1125,8 @@ export function sortAuditFindingsForDisplay(a: TimelineAuditFinding, b: Timeline
     const severityOrder: Record<TimelineAuditStatus, number> = {
         contradiction: 0,
         warning: 1,
-        aligned: 2
+        aligned: 2,
+        undated: 2
     };
     const severityDelta = severityOrder[a.status] - severityOrder[b.status];
     if (severityDelta !== 0) return severityDelta;

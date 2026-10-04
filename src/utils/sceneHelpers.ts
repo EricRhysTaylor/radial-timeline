@@ -141,7 +141,8 @@ export function usesWhenOrdering(settings: { currentMode?: string; sortByWhenDat
 export function sortScenes(
     scenes: TimelineItem[], 
     sortByWhen: boolean, 
-    forceChronological: boolean = false
+    forceChronological: boolean = false,
+    narrativeContext: TimelineItem[] = scenes
 ): TimelineItem[] {
     // When sorting by manuscript order, treat beats and scenes together
     if (!forceChronological && !sortByWhen) {
@@ -150,7 +151,7 @@ export function sortScenes(
     
     // When sorting chronologically (by When date):
     // Both beats and scenes can have When dates and should be sorted together
-    return sortScenesChronologically(scenes);
+    return sortScenesChronologically(scenes, narrativeContext);
 }
 
 /**
@@ -361,36 +362,68 @@ export function shouldDisplayMissingWhenWarning(scene?: TimelineItem): boolean {
     return STATUSES_REQUIRING_WHEN.has(normalizedStatus.toLowerCase());
 }
 
-/**
- * Sort scenes chronologically by their When field.
- *
- * Undated scenes are NOT piled into one block: each inherits the timestamp of
- * the nearest PRECEDING dated scene in manuscript order, so it stays beside its
- * narrative neighbors. With sparse dates (e.g. a freshly onboarded book where
- * only ~15% of scenes carry When), the old all-undated-first rule crammed every
- * dated scene — and thus every date tick/label — into one narrow wedge of the
- * ring. Undated scenes before the first dated scene lead, in manuscript order;
- * a fully dated or fully undated book sorts exactly as before.
- */
-export function sortScenesChronologically(scenes: TimelineItem[]): TimelineItem[] {
-    // Manuscript order is the baseline; dated scenes act as chronological anchors.
-    const manuscript = scenes.slice().sort(sortByManuscriptOrder);
-    let lastTime = Number.NEGATIVE_INFINITY;
-    const keyed = manuscript.map((scene, index) => {
-        const when = scene.when instanceof Date
-            ? scene.when
-            : parseWhenField(typeof scene.when === 'string' ? scene.when : '');
-        const hasWhen = !!(when && !isNaN(when.getTime()));
-        if (hasWhen && when) lastTime = when.getTime();
-        return { scene, time: lastTime, index };
+/** Display placement only. These keys never become a scene's When or elapsed time. */
+export function buildChronologicalPlacements(scenes: TimelineItem[]) {
+    const books = new Map<string, TimelineItem[]>();
+    for (const scene of scenes) {
+        const book = `${scene.bookIndex ?? 0}::${scene.bookId ?? ''}`;
+        const entries = books.get(book) ?? [];
+        entries.push(scene);
+        books.set(book, entries);
+    }
+    const placements = new Map<string, {
+        anchor?: TimelineItem;
+        beforeAnchor: boolean;
+        time: number;
+        bookOrder: number;
+        anchorOrder: number;
+        manuscriptOrder: number;
+    }>();
+    const dated = (scene: TimelineItem): Date | null => {
+        const when = scene.when instanceof Date ? scene.when : parseWhenField(typeof scene.when === 'string' ? scene.when : '');
+        return when && Number.isFinite(when.getTime()) ? when : null;
+    };
+    const orderedBooks = [...books.values()].sort((a, b) =>
+        (a[0].bookIndex ?? 0) - (b[0].bookIndex ?? 0)
+        || (a[0].bookId ?? '').localeCompare(b[0].bookId ?? '')
+    );
+    orderedBooks.forEach((entries, bookOrder) => {
+        const manuscript = entries.slice().sort(sortByManuscriptOrder);
+        const firstAnchor = manuscript.find(scene => isSceneItem(scene) && dated(scene));
+        let anchor: TimelineItem | undefined;
+        let anchorOrder = firstAnchor ? manuscript.indexOf(firstAnchor) : 0;
+        manuscript.forEach((scene, manuscriptOrder) => {
+            const when = dated(scene);
+            if (when && isSceneItem(scene)) {
+                anchor = scene;
+                anchorOrder = manuscriptOrder;
+            }
+            const placementAnchor = when ? scene : anchor ?? firstAnchor;
+            placements.set(sceneKey(scene), {
+                anchor: placementAnchor,
+                beforeAnchor: !when && !anchor && !!firstAnchor,
+                time: when?.getTime() ?? (placementAnchor ? dated(placementAnchor)!.getTime() : Number.NEGATIVE_INFINITY),
+                bookOrder,
+                anchorOrder: when ? manuscriptOrder : anchorOrder,
+                manuscriptOrder
+            });
+        });
     });
-    return keyed
-        .sort((a, b) => {
-            // (-Infinity ties must not subtract — NaN breaks the comparator.)
-            if (a.time !== b.time) return a.time < b.time ? -1 : 1;
-            return a.index - b.index;
-        })
-        .map((entry) => entry.scene);
+    return placements;
+}
+
+/** Sort anchor groups within their own books, using the full manuscript even for a subplot subset. */
+export function sortScenesChronologically(scenes: TimelineItem[], narrativeContext: TimelineItem[] = scenes): TimelineItem[] {
+    const placements = buildChronologicalPlacements(narrativeContext);
+    const keyed = scenes.map(scene => {
+        const placement = placements.get(sceneKey(scene));
+        if (!placement) throw new Error(`Chronology context is missing scene: ${scene.title}`);
+        return { scene, ...placement };
+    });
+    return keyed.sort((a, b) => {
+        if (a.time !== b.time) return a.time < b.time ? -1 : 1;
+        return a.bookOrder - b.bookOrder || a.anchorOrder - b.anchorOrder || a.manuscriptOrder - b.manuscriptOrder;
+    }).map(entry => entry.scene);
 }
 
 /**

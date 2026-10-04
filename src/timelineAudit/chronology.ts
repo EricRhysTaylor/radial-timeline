@@ -7,6 +7,7 @@
  */
 
 import type { TimelineAuditSceneInput } from './types';
+import { sortScenesChronologically } from '../utils/sceneHelpers';
 
 export interface TimelineAuditChronologyEntry {
     input: TimelineAuditSceneInput;
@@ -44,9 +45,13 @@ export function buildChronologyEntries(inputs: TimelineAuditSceneInput[]): Timel
 }
 
 export function buildChronologyPositionMap(inputs: TimelineAuditSceneInput[]): Map<string, number> {
-    const map = new Map<string, number>();
-    for (const entry of buildChronologyEntries(inputs)) {
-        map.set(entry.input.path, entry.chronologyPosition);
-    }
-    return map;
+    // Display positions include undated scenes. Date arithmetic above still uses
+    // only real timestamps; a narrative placement never becomes a calendar date.
+    const scenes = inputs.map(input => ({
+        title: `${input.manuscriptOrderIndex + 1} ${input.title}`,
+        path: input.path,
+        date: input.rawWhen ?? '',
+        when: input.parsedWhen ?? undefined
+    }));
+    return new Map(sortScenesChronologically(scenes).map((scene, index) => [scene.path!, index + 1]));
 }

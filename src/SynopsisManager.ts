@@ -27,7 +27,7 @@ import {
   MAX_TEXT_WIDTH,
   INNER_RADIUS
 } from './renderer/layout/LayoutConstants';
-import { sortScenes, isBeatNote, shouldDisplayMissingWhenWarning } from './utils/sceneHelpers';
+import { isBeatNote, shouldDisplayMissingWhenWarning, buildChronologicalPlacements, sceneKey } from './utils/sceneHelpers';
 import { parseWhenField } from './utils/date';
 import { getReadabilityMultiplier, getReadabilityScale } from './utils/readability';
 import { applySearchTermHighlightsInRoot, clearSearchHighlightsInRoot } from './view/interactions/SearchInteractions';
@@ -2663,65 +2663,12 @@ export default class SynopsisManager {
 
   private buildMissingWhenMessage(scene: TimelineItem): string | null {
     if (!shouldDisplayMissingWhenWarning(scene)) return null;
-
-    const neighbors = this.getNarrativeNeighbors(scene);
-    const previousDate = this.getValidWhen(neighbors?.previous);
-    const nextDate = this.getValidWhen(neighbors?.next);
-
-    const suggestions: string[] = [];
-    if (previousDate) {
-      suggestions.push(`Prev ${formatDateForDisplay(previousDate)}`);
-    }
-    if (nextDate) {
-      suggestions.push(`Next ${formatDateForDisplay(nextDate)}`);
-    }
-
-    if (suggestions.length === 0) {
-      return 'Missing When date';
-    }
-
-    const suggestionText = suggestions.length === 1
-      ? suggestions[0]
-      : `${suggestions[0]} or ${suggestions[1]}`;
-
-    return `Missing When date — Try ${suggestionText}`;
-  }
-
-  private getNarrativeNeighbors(scene: TimelineItem): { previous?: TimelineItem; next?: TimelineItem } | null {
-    const dataset = this.plugin.lastSceneData;
-    if (!Array.isArray(dataset) || dataset.length === 0) return null;
-
-    const sceneEntries = dataset.filter(item => !isBeatNote(item));
-    if (sceneEntries.length === 0) return null;
-
-    const seenKeys = new Set<string>();
-    const deduped: TimelineItem[] = [];
-    sceneEntries.forEach(item => {
-      const key = this.getSceneKey(item);
-      if (!seenKeys.has(key)) {
-        seenKeys.add(key);
-        deduped.push(item);
-      }
+    const rawWhen = typeof scene.rawFrontmatter?.When === 'string' ? scene.rawFrontmatter.When.trim() : '';
+    if (rawWhen && !parseWhenField(rawWhen)) return t('sceneTime.label.invalidWhen');
+    const placement = buildChronologicalPlacements(this.plugin.lastSceneData ?? []).get(sceneKey(scene));
+    if (!placement?.anchor) return t('sceneTime.label.undatedNarrative');
+    return t(placement.beforeAnchor ? 'sceneTime.label.undatedBefore' : 'sceneTime.label.undatedAfter', {
+      scene: placement.anchor.title || ''
     });
-
-    const ordered = sortScenes(deduped, false);
-    const targetKey = this.getSceneKey(scene);
-    const index = ordered.findIndex(item => this.getSceneKey(item) === targetKey);
-    if (index === -1) return null;
-
-    return {
-      previous: index > 0 ? ordered[index - 1] : undefined,
-      next: index < ordered.length - 1 ? ordered[index + 1] : undefined
-    };
-  }
-
-  private getSceneKey(item: TimelineItem): string {
-    return item.path || `${item.title || ''}::${String(item.when ?? '')}`;
-  }
-
-  private getValidWhen(item?: TimelineItem): Date | null {
-    if (!item) return null;
-    if (!(item.when instanceof Date)) return null;
-    return Number.isNaN(item.when.getTime()) ? null : item.when;
   }
 }

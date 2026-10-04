@@ -11,15 +11,25 @@
 Chronologue is one of four modes within the Radial Timeline View. It is essential for constructing and visualizing the chronological backbone of your story — particularly valuable for non-linear narratives, mysteries, thrillers, or any story where **when events happen** differs from **when you reveal them**. The palette matches Narrative mode (subplot colors only) so the timing comparisons stay clean while Progress mode retains the Todo/Working/Overdue and progress-stage overlays.
 
 ### Core Workflow
-1.  **Add chronological metadata**: As you create scenes, fill in the `When` field (YYYY-MM-DD HH:MM) and `Duration` field (e.g., "2 hours", "3 days", "1 week").
+1.  **Add known timing**: Fill in `When` when the story supports a date (YYYY-MM-DD, optionally HH:MM), and `Duration` when useful (e.g., "2 hours", "3 days", "1 week"). Leave uncertain dates blank.
 2.  **Switch to Chronologue mode** (press `3` or use the top-right navigation): Scenes rearrange to show story-world event order across the full 360° circle.
 3.  **Activate the Shift sub-mode** (press `Shift`, use `Caps Lock`, or click the Shift button): See the bones of your story's temporal structure for all scenes and subplots.
 4.  **Compare elapsed time**: In the Shift sub-mode, click two scenes to see the elapsed story-time between them with the duration arc. Keep clicking more scenes as needed.
 5.  **Analyze time gaps**: Also in the Shift sub-mode, discontinuities (large time jumps) appear with an infinity symbol — identify gaps that might need bridging scenes.
 
-> **Minimum metadata**: Chronologue only needs a year in the `When` field to place a scene. Year-only (`When: 2045`), year+month (`When: 2045-07`), or textual month+year (`When: July 2045`) all work — missing pieces default to the 1st of that month at noon. Month-only, day-only, or time-only values are ignored and treated as "no When" until you add at least the year.
+> **Date formats**: A calendar anchor needs at least a year. Year-only (`When: 2045`), year+month (`When: 2045-07`), and textual month+year (`When: July 2045`) work — omitted pieces default internally to the first day at noon. Month-only, day-only, and time-only values cannot establish a calendar anchor. A scene can still appear in Chronologue with `When` blank.
 
-> **Drafting calmly**: Red "Missing When" number squares only appear once a scene's `Status` is `Working` or `Complete`, so Todo scenes can stay quiet while you're still sketching. When a date is missing, the hover synopsis displays the dates of the immediately preceding and following scenes (in narrative order) to help you pinpoint the correct timing.
+### Undated scenes
+
+Dated scenes establish chronological anchors. Each undated scene stays with the nearest preceding dated **scene in its own book’s narrative order**. When the anchors rearrange chronologically, their undated followers travel with them, preserving narrative order within each group. Subplot rings use the same relationships, even when an anchor belongs to another subplot.
+
+Opening undated scenes stay immediately before their book’s first narrative anchor. A book with no dates keeps narrative order. Books keep their own anchors in Saga scope; a scene never borrows another book’s date.
+
+This is display placement only. The plugin leaves `When` blank and does not assume a shared date or elapsed-time interval. An undated return from a flashback may need an authored date if its provisional placement is misleading. Calendar measurements use actual dates; undated scenes do not gain timestamps from their neighbors.
+
+The red number-square indicator remains for undated `Working` or `Complete` scenes; Todo scenes stay quiet. Hover text explains which dated scene the undated scene follows or precedes, without asking you to copy a neighboring date. Invalid date values remain something to correct.
+
+**Timeline Date Scaffold** is optional: use it when you want to assign provisional dates, review them, and apply them. **Timeline Date Audit** can run with dates left blank. It lists undated scenes separately from warnings and checks actual contradictions and manuscript evidence. See [Timeline commands](Commands#timeline-order).
 
 ### Why this matters
 Chronologue orders scenes by story time to help you find:

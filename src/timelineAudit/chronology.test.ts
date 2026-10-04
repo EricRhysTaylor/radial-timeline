@@ -1,7 +1,7 @@
 import { makeFile } from '../../tests/helpers/obsidianFixtures';
 import { describe, expect, it } from 'vitest';
 import { collectChronologueSceneEntries } from '../renderer/components/ChronologueTimeline';
-import { buildChronologyEntries } from './chronology';
+import { buildChronologyEntries, buildChronologyPositionMap } from './chronology';
 import type { TimelineAuditSceneInput } from './types';
 
 function makeInput(path: string, manuscriptOrderIndex: number, rawWhen: string | null): TimelineAuditSceneInput {
@@ -22,6 +22,17 @@ function makeInput(path: string, manuscriptOrderIndex: number, rawWhen: string |
 }
 
 describe('timeline audit chronology helper', () => {
+    it('includes undated followers in display positions without assigning them dates', () => {
+        const inputs = [
+            makeInput('Story/1 Later.md', 0, '2026-01-20 09:00'),
+            makeInput('Story/2 Undated.md', 1, null),
+            makeInput('Story/3 Earlier.md', 2, '2026-01-10 09:00')
+        ];
+        const positions = buildChronologyPositionMap(inputs);
+        expect([...positions]).toEqual([['Story/3 Earlier.md', 1], ['Story/1 Later.md', 2], ['Story/2 Undated.md', 3]]);
+        expect(buildChronologyEntries(inputs)).toHaveLength(2);
+        expect(inputs[1].parsedWhen).toBeNull();
+    });
     it('matches Chronologue ordering for valid When scenes with manuscript-order tie breaks', () => {
         const inputs = [
             makeInput('Story/2 Scene Two.md', 0, '2026-01-02 09:00'),

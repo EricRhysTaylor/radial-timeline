@@ -26,7 +26,7 @@ export type TimelineAuditEvidenceSource = 'summary' | 'synopsis' | 'body' | 'nei
 
 export type TimelineAuditDetectionSource = 'deterministic' | 'continuity' | 'ai';
 
-export type TimelineAuditStatus = 'aligned' | 'warning' | 'contradiction';
+export type TimelineAuditStatus = 'aligned' | 'undated' | 'warning' | 'contradiction';
 
 export type TimelineAuditReviewAction = 'apply' | 'keep' | 'mark_review';
 
@@ -109,6 +109,7 @@ export interface TimelineAuditWrittenPosition {
 
 export interface TimelineAuditSuggestion {
     when: Date;
+    dateOnly?: boolean;
     confidence: WhenConfidence;
     provenance: WhenSource;
     reason: string;
@@ -134,6 +135,7 @@ export interface TimelineAuditFinding {
     evidence: TimelineAuditEvidence[];
     rationale: string;
     suggestedWhen: Date | null;
+    suggestedDateOnly?: boolean;
     suggestedConfidence: WhenConfidence | null;
     suggestedProvenance: WhenSource | null;
     allowedActions: TimelineAuditAction[];

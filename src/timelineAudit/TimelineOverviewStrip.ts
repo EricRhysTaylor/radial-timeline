@@ -26,14 +26,6 @@ export function getTimelineOverviewSeverity(finding: TimelineAuditFinding): Time
         return 'contradiction';
     }
 
-    const hasOnlyMissingWhenIssue = finding.whenParseIssue === 'missing_when'
-        && finding.issues.length > 0
-        && finding.issues.every((issue) => issue.type === 'missing_when');
-
-    if (hasOnlyMissingWhenIssue) {
-        return 'missing_when';
-    }
-
     if (finding.status === 'warning') {
         return 'warning';
     }
@@ -60,7 +52,8 @@ export function sortFindingsForTimelineOverview(a: TimelineAuditFinding, b: Time
 
 export function summarizeTimelineOverviewIssues(finding: TimelineAuditFinding): string {
     const issues = Array.from(new Set(finding.issues.map((issue) => describeAuditIssue(issue.type))));
-    if (issues.length === 0) return 'No issues';
+    if (issues.length === 0) return finding.whenParseIssue === 'missing_when'
+        ? 'Undated; narrative placement only. No date change required.' : 'No issues';
 
     const head = issues.slice(0, 2).join(' ');
     const remainder = issues.length - 2;

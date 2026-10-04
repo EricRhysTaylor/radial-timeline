@@ -87,7 +87,7 @@ Related: [Settings → AI → Local LLM](Settings-AI#local-llm), [Book Designer]
 <a name="timeline-order"></a>
 ## Timeline date scaffold
 
-Opens Timeline Date Scaffold, which fills missing `When` dates in story order. No AI is involved.
+Opens Timeline Date Scaffold, an optional tool for assigning provisional `When` dates in story order. No AI is involved. Chronologue already keeps undated scenes with their narrative neighbors, so scaffolding is not required to use it.
 
 <div style="text-align: center; margin: 20px 0;">
   <img src="images/panel-timeline-order.png" alt="Timeline date scaffold command panel" style="width: 560px; max-width: 100%; border-radius: 8px;" />
@@ -110,7 +110,9 @@ Opens the Timeline Date Audit panel.
   <img src="images/panel-timeline-audit.webp" alt="Timeline date audit panel" style="width: 560px; max-width: 100%; border-radius: 8px;" />
 </div>
 
-Surfaces contradictions, missing `When` values, summary/body disagreement, continuity problems, and unresolved findings. The panel shows overview stats, finding filters, and finding cards with evidence and suggested actions.
+Surfaces contradictions, invalid dates, summary/body disagreement, continuity problems, and unresolved findings. Undated scenes remain visible in their Chronologue display order and have their own **Undated** count and filter; a blank `When` alone is not a warning or an unresolved problem. The panel shows overview stats, finding filters, and finding cards with evidence and suggested actions.
+
+You can audit a partially dated or completely undated book without scaffolding it first. Relative-time checks do not skip across undated scenes to assume a calendar interval, and a date without a clock time is not checked as though noon were authored. Optional AI can examine undated scenes, but should leave their dates unset when the text does not support one. Changes are written only when you accept and apply a suggestion.
 
 The audit includes a deterministic pass and can optionally run a continuity pass. AI findings appear alongside deterministic findings for review. From the panel you can filter findings by issue type, inspect evidence, mark items for review, apply accepted fixes where supported, and rerun the audit after changes.
 

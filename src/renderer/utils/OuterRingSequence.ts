@@ -116,7 +116,7 @@ export function buildOuterRingSequence(params: {
         combined.push(resolution.scene);
     });
 
-    const items = sortScenes(combined, sortByWhen, forceChronological);
+    const items = sortScenes(combined, sortByWhen, forceChronological, scenes);
     const positions = computePositions(innerR, outerR, startAngle, endAngle, items);
 
     const positionByKey = new Map<string, PositionInfo>();

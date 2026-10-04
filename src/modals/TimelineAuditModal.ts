@@ -8,6 +8,7 @@
 
 import { App, ButtonComponent, Modal, Notice, setIcon, setTooltip } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
+import { formatLocalDateKey, formatWhenForYaml } from '../utils/date';
 import { t } from '../i18n';
 import { renderWithYamlTokens } from '../utils/yamlTokenRender';
 import { applyAuditFindings, buildAuditApplyPlan } from '../timelineAudit/apply';
@@ -342,7 +343,7 @@ export class TimelineAuditModal extends Modal {
             const action = this.reviewActionsBeforeAi.get(finding.path);
             if (!action) continue;
             finding.reviewAction = action;
-            finding.unresolved = action === 'apply' ? false : finding.status !== 'aligned' || action === 'mark_review';
+            finding.unresolved = action === 'apply' ? false : (finding.status === 'warning' || finding.status === 'contradiction') || action === 'mark_review';
         }
     }
 
@@ -864,7 +865,7 @@ export class TimelineAuditModal extends Modal {
                 finding.unresolved = false;
             } else if (action === 'keep') {
                 finding.reviewAction = 'keep';
-                finding.unresolved = finding.status !== 'aligned';
+                finding.unresolved = (finding.status === 'warning' || finding.status === 'contradiction');
             } else {
                 finding.reviewAction = 'mark_review';
                 finding.unresolved = true;
@@ -1004,12 +1005,12 @@ export class TimelineAuditModal extends Modal {
         this.createQuestionBlock(qaGrid, t('timelineAuditModal.detail.whatYamlSays'), [
             this.describeCurrentWhen(finding),
             finding.expectedChronologyPosition !== null
-                ? t('timelineAuditModal.detail.chronologyPosition', { position: finding.expectedChronologyPosition, total: totalScenes })
+                ? t(finding.whenParseIssue ? 'timelineAuditModal.detail.undatedPosition' : 'timelineAuditModal.detail.chronologyPosition', { position: finding.expectedChronologyPosition, total: totalScenes })
                 : t('timelineAuditModal.detail.chronologyNotPlaced')
         ]);
         const manuscriptImplications = [
             finding.inferredWrittenTimelinePosition?.label ?? t('timelineAuditModal.detail.noAlternatePosition'),
-            finding.suggestedWhen ? t('timelineAuditModal.detail.suggestedWhen', { when: this.formatWhen(finding.suggestedWhen) }) : t('timelineAuditModal.detail.noSuggestedWhen')
+            finding.suggestedWhen ? t('timelineAuditModal.detail.suggestedWhen', { when: this.formatWhen(finding.suggestedWhen, finding.suggestedDateOnly) }) : t('timelineAuditModal.detail.noSuggestedWhen')
         ];
         if (finding.aiTimelineRole) {
             manuscriptImplications.unshift(t('timelineAuditModal.detail.aiTimelineRole', {
@@ -1061,7 +1062,7 @@ export class TimelineAuditModal extends Modal {
             .setButtonText(t('timelineAuditModal.detail.keepButton'))
             .onClick(() => {
                 finding.reviewAction = 'keep';
-                finding.unresolved = finding.status !== 'aligned';
+                finding.unresolved = (finding.status === 'warning' || finding.status === 'contradiction');
                 this.render();
             });
         if (finding.reviewAction === 'keep') {
@@ -1115,17 +1116,12 @@ export class TimelineAuditModal extends Modal {
     private describeCurrentWhen(finding: TimelineAuditFinding): string {
         if (finding.whenParseIssue === 'missing_when') return t('timelineAuditModal.detail.whenMissing');
         if (finding.whenParseIssue === 'invalid_when') return t('timelineAuditModal.detail.whenInvalid', { raw: finding.currentWhenRaw ?? 'unknown' });
-        return t('timelineAuditModal.detail.whenCurrent', { when: this.formatWhen(finding.currentWhen) });
+        return t('timelineAuditModal.detail.whenCurrent', { when: finding.currentWhenRaw ?? this.formatWhen(finding.currentWhen) });
     }
 
-    private formatWhen(value: Date | null): string {
+    private formatWhen(value: Date | null, dateOnly = false): string {
         if (!(value instanceof Date) || Number.isNaN(value.getTime())) return t('timelineAuditModal.detail.formatWhenMissing');
-        const year = value.getFullYear();
-        const month = String(value.getMonth() + 1).padStart(2, '0');
-        const day = String(value.getDate()).padStart(2, '0');
-        const hour = String(value.getHours()).padStart(2, '0');
-        const minute = String(value.getMinutes()).padStart(2, '0');
-        return `${year}-${month}-${day} ${hour}:${minute}`;
+        return dateOnly ? formatLocalDateKey(value) : formatWhenForYaml(value);
     }
 
     private formatEvidenceSource(source: TimelineAuditEvidenceSource): string {

@@ -27,6 +27,7 @@ export function buildAuditApplyPlan(findings: TimelineAuditFinding[]): TimelineA
             whenUpdates.push({
                 file: finding.file,
                 when: finding.suggestedWhen,
+                dateOnly: finding.suggestedDateOnly,
                 whenSource: finding.suggestedProvenance
             });
         }

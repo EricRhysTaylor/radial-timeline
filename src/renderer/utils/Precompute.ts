@@ -181,7 +181,7 @@ export function computeCacheableValues(
             scenesByActAndSubplot[0][subplot].push(scene);
         });
         Object.keys(scenesByActAndSubplot[0]).forEach(subplot => {
-            scenesByActAndSubplot[0][subplot] = sortScenes(scenesByActAndSubplot[0][subplot], true, forceChronological);
+            scenesByActAndSubplot[0][subplot] = sortScenes(scenesByActAndSubplot[0][subplot], true, forceChronological, scenes);
         });
     } else {
         const numActs = segmentCount;

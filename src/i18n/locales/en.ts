@@ -484,7 +484,7 @@ export interface TranslationKeys {
         aiStatus: { inProgress: string; complete: string; failed: string; notStarted: string; runningBackground: string; failedRetry: string; notStartedHint: string; progressCount: string; progressCountWithScene: string; completedSummary: string; };
         relativeTime: { justNow: string; minutesAgo: string; hoursAgo: string; daysAgo: string; };
         overview: { title: string; legendClean: string; legendMissingWhen: string; legendWarning: string; legendContradiction: string; legendImpossible: string; };
-        detail: { whatYamlSays: string; chronologyNotPlaced: string; whatManuscriptImplies: string; noAlternatePosition: string; noSuggestedWhen: string; whyFlagged: string; whatAuthorCanDo: string; actionEligible: string; actionAiSuggestionAvailable: string; actionIneligible: string; noEvidence: string; applyButton: string; keepButton: string; markReviewButton: string; noRationale: string; whenMissing: string; formatWhenMissing: string; chronologyPosition: string; suggestedWhen: string; aiTimelineRole: string; evidenceLabel: string; whenInvalid: string; whenCurrent: string; adjustRippleButton: string; adjustRippleHelp: string; };
+        detail: { whatYamlSays: string; chronologyNotPlaced: string; whatManuscriptImplies: string; noAlternatePosition: string; noSuggestedWhen: string; whyFlagged: string; whatAuthorCanDo: string; actionEligible: string; actionAiSuggestionAvailable: string; actionIneligible: string; noEvidence: string; applyButton: string; keepButton: string; markReviewButton: string; noRationale: string; whenMissing: string; formatWhenMissing: string; chronologyPosition: string; undatedPosition: string; suggestedWhen: string; aiTimelineRole: string; evidenceLabel: string; whenInvalid: string; whenCurrent: string; adjustRippleButton: string; adjustRippleHelp: string; };
         evidenceSource: { summary: string; synopsis: string; body: string; neighbor: string; ai: string; };
         evidenceTier: { direct: string; strongInference: string; ambiguous: string; };
         detectionSource: { deterministic: string; continuity: string; ai: string; aiChecked: string; aiQueued: string; };
@@ -1857,7 +1857,7 @@ export interface TranslationKeys {
         cue: { conflict: string; excluded: string; manual: string; checkpoint: string; advance: string; backwardCandidate: string; clockCandidate: string; checkpointCandidate: string; uncertainCandidate: string; advanceCandidate: string; notConfirmed: string; };
         ruler: { railTitle: string; clickToReview: string; storyClock: string; estimatedStoryClock: string; durationUsedUp: string; dashedUntilConfirmed: string; durationShortfall: string; durationUnquantified: string; sceneStart: string; sceneEnd: string; };
         header: { elapsed: string; cues: string; description: string; descriptionProvisional: string; reviewTiming: string; checkTiming: string; overDuration: string; };
-        label: { description: string; notSet: string; sunMoon: string; whenNotSet: string; durationNotSet: string; };
+        label: { description: string; notSet: string; sunMoon: string; whenNotSet: string; durationNotSet: string; undatedAfter: string; undatedBefore: string; undatedNarrative: string; invalidWhen: string; };
         errors: {
             loadFailed: string; unsupportedFile: string; invalidDecisions: string; invalidContribution: string; invalidAnchor: string; renameConflict: string;
             notScene: string; selectProse: string; selectOneLine: string; noteChanged: string; notUnique: string; notManual: string;
@@ -2673,10 +2673,10 @@ export const en: TranslationKeys = {
         config: {
             noAiPill: 'No AI · Deterministic',
             title: 'Timeline Date Scaffold',
-            subtitle: 'Fills missing `When` dates in story order so Chronologue can mirror your draft — one date per scene, following the pattern you pick. Dates you have already authored are preserved as anchors. Need to find problems in existing dates instead? Use Timeline Date Audit.',
+            subtitle: 'Optional: assign dates to undated scenes using the pattern you choose. Chronologue already keeps undated scenes with their narrative neighbors. Existing dates are preserved as anchors. Review proposed dates before applying, or use Timeline Date Audit to check the manuscript evidence.',
             statTotalScenes: 'Total Scenes',
             statWithWhen: 'With Date',
-            statMissingWhen: 'Missing Date',
+            statMissingWhen: 'Undated',
             previewButton: 'Preview Scaffold',
             cancelButton: 'Cancel',
             restoreButton: 'Restore Last Snapshot',
@@ -2687,7 +2687,7 @@ export const en: TranslationKeys = {
             title: 'Express scaffold',
             desc: 'Fills every missing `When` date in one click, using the anchor and pattern below — scenes keep manuscript order so Chronologue mirrors your draft. Existing dates are untouched, and a snapshot is saved first.',
             button: 'Scaffold & Apply',
-            successNotice: 'Dated {{count}} scenes in manuscript order — Chronologue is ready. Snapshot saved.',
+            successNotice: 'Applied scaffold dates to {{count}} scenes. Snapshot saved.',
             fullyDated: 'All {{count}} scenes already have dates — there is nothing to fill.',
             fullyDatedHint: 'Use Timeline Date Audit to find problems in existing dates.',
             openAuditButton: 'Open Timeline Date Audit',
@@ -2802,7 +2802,7 @@ export const en: TranslationKeys = {
             badge: 'Beta',
             aiPill: 'AI optional',
             title: 'Timeline Date Audit',
-            subtitle: 'Finds problems in scenes that already have `When` dates. Each scene’s date is checked against its summary, synopsis, and body text to flag contradictions, time-of-day mismatches, and order conflicts — direct text evidence outranks inference. Missing dates entirely? Use Timeline Date Scaffold to fill them first.',
+            subtitle: 'Checks dates and manuscript evidence for contradictions, time-of-day mismatches, and order conflicts. Undated scenes remain in narrative placement within their book and do not require a date. Use Timeline Date Scaffold only if you want to assign dates.',
             aiEnhancedBadge: 'AI-enhanced',
             focusedScope: 'Focused: {{count}} scenes from Timeline Date Scaffold',
             focusedClear: 'Clear focus',
@@ -2828,12 +2828,12 @@ export const en: TranslationKeys = {
             aligned: 'Aligned',
             warnings: 'Warnings',
             contradictions: 'Contradictions',
-            missingWhen: 'Missing When',
+            missingWhen: 'Undated',
         },
         filters: {
             all: 'All',
             contradictions: 'Contradictions',
-            missingWhen: 'Missing When',
+            missingWhen: 'Undated',
             summaryBodyDisagreement: 'Summary/body disagreement',
             continuityProblems: 'Continuity problems',
             aiChecked: 'AI-checked',
@@ -2894,14 +2894,14 @@ export const en: TranslationKeys = {
         overview: {
             title: 'Timeline overview',
             legendClean: 'Aligned',
-            legendMissingWhen: 'Missing When',
+            legendMissingWhen: 'Undated',
             legendWarning: 'Warning',
             legendContradiction: 'Contradiction',
             legendImpossible: 'Impossible order',
         },
         detail: {
             whatYamlSays: 'What YAML currently says',
-            chronologyNotPlaced: 'Not placed in chronological order — the `When` date is missing or invalid.',
+            chronologyNotPlaced: 'No chronology position available.',
             whatManuscriptImplies: 'What the manuscript implies',
             noAlternatePosition: 'No reliable alternate timeline position inferred.',
             noSuggestedWhen: 'No safe replacement When suggested.',
@@ -2909,15 +2909,16 @@ export const en: TranslationKeys = {
             whatAuthorCanDo: 'What the author can do',
             actionEligible: 'Apply the suggested When, keep YAML as-is, or mark for review.',
             actionAiSuggestionAvailable: 'AI suggested a replacement When. Review its evidence, then apply it individually or keep the current date.',
-            actionIneligible: 'No replacement date can be safely inferred — the text evidence is ambiguous. Keep the current date, mark the scene for review, or set the date manually in the scene’s frontmatter.',
+            actionIneligible: 'No replacement date can be safely inferred. You can leave the date unset, keep the current date, or mark the scene for review.',
             noEvidence: 'No evidence snippets captured.',
             applyButton: 'Apply',
             keepButton: 'Keep',
             markReviewButton: 'Mark for AI scan',
             noRationale: 'No rationale recorded.',
-            whenMissing: 'YAML When: missing from frontmatter.',
-            formatWhenMissing: 'Missing',
+            whenMissing: 'Undated — When is unset. Narrative placement does not assign a calendar date.',
+            formatWhenMissing: 'Unset',
             chronologyPosition: 'Chronological order: {{position}} of {{total}}',
+            undatedPosition: 'Display order: {{position}} of {{total}} · narrative placement; no valid calendar date',
             suggestedWhen: 'Suggested When: {{when}}',
             aiTimelineRole: 'AI timeline role: {{role}}',
             evidenceLabel: '{{source}} \u00b7 {{tier}}',
@@ -4380,6 +4381,10 @@ export const en: TranslationKeys = {
             notSet: 'Not set',
             sunMoon: 'Sun/moon indicates clock hours (day: 06:00–18:00), not local sunrise or sunset.',
             whenNotSet: 'When not set',
+            undatedAfter: 'Undated · follows {{scene}} in narrative order. No calendar date assumed.',
+            undatedBefore: 'Undated · precedes {{scene}} in narrative order. No calendar date assumed.',
+            undatedNarrative: 'Undated · shown in narrative order. No calendar date assumed.',
+            invalidWhen: 'Invalid When · shown in narrative order; check the date format.',
             durationNotSet: 'Duration not set',
         },
         errors: {

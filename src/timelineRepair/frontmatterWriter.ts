@@ -4,7 +4,7 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  *
  * Timeline Repair Wizard - Frontmatter Writer
- * Batch updates YAML frontmatter with When dates and provenance metadata.
+ * Updates author-facing dates; provenance is recorded in the change-log sidecar.
  */
 
 import type { App } from 'obsidian';
@@ -15,7 +15,7 @@ import type {
 } from './types';
 import { getEffectiveWhen } from './types';
 import { appendWhenChanges, type WhenChangeRecord } from './whenChangeLog';
-import { formatWhenForYaml } from '../utils/date';
+import { formatWhenForYaml, formatLocalDateKey } from '../utils/date';
 
 // ============================================================================
 // Date Formatting
@@ -123,6 +123,7 @@ export async function writeFrontmatterUpdates(
         
         try {
             let previousWhen: string | null = null;
+            const nextWhen = update.dateOnly ? formatLocalDateKey(update.when) : formatWhenForYaml(update.when);
             await app.fileManager.processFrontMatter(update.file, (fm) => {
                 const fmObj = fm as Record<string, unknown>;
 
@@ -133,7 +134,7 @@ export async function writeFrontmatterUpdates(
                     : (typeof prior === 'number' || typeof prior === 'boolean' ? String(prior) : null);
 
                 // Update When field
-                fmObj['When'] = formatWhenForYaml(update.when);
+                fmObj['When'] = nextWhen;
 
                 // Duration (author-facing field)
                 if (update.duration !== undefined) {
@@ -150,7 +151,7 @@ export async function writeFrontmatterUpdates(
                 path: update.file.path,
                 title: update.file.basename,
                 prev: previousWhen,
-                next: formatWhenForYaml(update.when),
+                next: nextWhen,
                 source: update.whenSource,
                 tool: opts.logTool ?? 'scaffold' // SAFE: the audit modal and Chronologue drag pass their own tool; every other caller is the scaffold path, so the change log records it accurately
             });
@@ -196,4 +197,3 @@ export async function writeSessionChanges(
 export function getChangeSummary(session: SessionDiffModel): { totalChanges: number } {
     return { totalChanges: prepareUpdates(session).length };
 }
-

@@ -85,8 +85,8 @@ describe('timeline overview strip helpers', () => {
                 manuscriptOrderIndex: 1,
                 expectedChronologyPosition: null,
                 whenParseIssue: 'missing_when',
-                status: 'warning',
-                issues: [makeIssue('missing_when')]
+                status: 'undated',
+                issues: []
             })
         )).toBe('missing_when');
 

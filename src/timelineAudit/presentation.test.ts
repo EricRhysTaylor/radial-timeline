@@ -69,8 +69,9 @@ describe('timeline audit presentation helpers', () => {
     it('maps technical issue keys to human-facing labels', () => {
         expect(formatAuditIssueLabel('time_of_day_conflict')).toBe('Time-of-day conflict');
         expect(formatAuditIssueLabel('relative_order_conflict')).toBe('Order conflict');
-        expect(formatAuditIssueLabel('missing_when')).toBe('Missing When value');
-        expect(describeAuditIssue('missing_when')).toBe('YAML has no When value for this scene.');
+        expect(formatAuditIssueLabel('missing_when')).toBe('Undated');
+        expect(describeAuditIssue('missing_when')).toContain('narrative placement');
+        expect(formatAuditStatusLabel('undated')).toBe('Undated');
         expect(formatAuditStatusLabel('contradiction')).toBe('Contradiction');
     });
 

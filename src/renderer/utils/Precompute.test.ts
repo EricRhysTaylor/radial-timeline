@@ -29,6 +29,17 @@ function makePlugin(settingsOverrides: Record<string, unknown> = {}) {
 }
 
 describe('computeCacheableValues', () => {
+    it('uses the full book’s anchors when precomputing a sparse subplot', () => {
+        const plugin = makePlugin({ currentMode: 'chronologue' });
+        const scenes: TimelineItem[] = [
+            { title: '1 Later', date: '', path: 'Book/1.md', when: new Date(2026, 0, 20), subplot: 'Main Plot' },
+            { title: '2 Undated', date: '', path: 'Book/2.md', subplot: 'Thread' },
+            { title: '3 Earlier', date: '', path: 'Book/3.md', when: new Date(2026, 0, 10), subplot: 'Thread' }
+        ];
+        const values = computeCacheableValues(plugin as never, scenes);
+        expect(values.scenesByActAndSubplot[0].Thread.map(s => s.path)).toEqual(['Book/3.md', 'Book/2.md']);
+        expect(scenes[1].when).toBeUndefined();
+    });
     it('uses the project most-advanced publish stage color in Gossamer mode', () => {
         const plugin = makePlugin({ currentMode: 'gossamer' });
         const scenes: TimelineItem[] = [

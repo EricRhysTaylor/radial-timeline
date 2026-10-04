@@ -569,7 +569,8 @@
     color: var(--text-warning);
 }
 
-.ert-timeline-audit-row-status--aligned {
+.ert-timeline-audit-row-status--aligned,
+.ert-timeline-audit-row-status--undated {
     color: var(--text-muted);
 }
 

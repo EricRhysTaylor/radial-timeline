@@ -5,8 +5,7 @@ import { parseSceneTitle } from '../../utils/text';
 import {
     isBeatNote,
     type PluginRendererFacade,
-    sceneKey,
-    sortScenes
+    sceneKey
 } from '../../utils/sceneHelpers';
 import { makeSceneId } from '../../utils/numberSquareHelpers';
 import {
@@ -326,10 +325,8 @@ export function renderRings(ctx: RingRenderContext): string {
             const currentScenes = subplot ? (scenesByActAndSubplot[act][subplot] || []) : [];
 
             if (currentScenes && currentScenes.length > 0) {
-                const sortedCurrentScenes = sortScenes(currentScenes, sortByWhen, forceChronological);
-
                 const isAllScenesMode = shouldShowAllScenesInOuterRing(plugin);
-                const effectiveScenes = sortedCurrentScenes.filter(scene => !isBeatNote(scene));
+                const effectiveScenes = currentScenes.filter(scene => !isBeatNote(scene));
 
                 // Sequence: each scene sits at its outer-ring angle, leaving real
                 // gaps where this subplot is absent. Fill: spread across the segment.

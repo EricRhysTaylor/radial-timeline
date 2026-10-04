@@ -102,6 +102,11 @@ On a vault connected to the Community, a **Mailbox** button (a mail icon and the
 
 The Mailbox does not appear on a vault that is not connected. To hide it on a connected vault, turn off **Show Community mailbox** in **Settings → Advanced**.
 
+<a name="desk-lamps"></a>
+## Desk Lamps
+
+Once you have a Desk Lamp or an invite waiting, a lamp sits just right of the Mailbox. Its number counts the friends at their desks, and clicking it lists each one with their city, the kind of writing, and how long they've been at it. See [Desk Lamps](Desk-Lamps) for adding friends and lighting your own lamp for a session.
+
 ## Timeline Legend
 
 The legend is a quick visual guide for the current mode.

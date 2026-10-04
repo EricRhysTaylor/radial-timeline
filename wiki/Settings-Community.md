@@ -29,6 +29,8 @@ The plugin does **not** publish:
 
 Only the categories included in your selected sharing level are published.
 
+**[Desk Lamps](Desk-Lamps)** is separate from the sharing level and works at every level, Private included. For a session you choose to share, it sends the friends you tick only that your lamp is on, the kind of writing, and how long, in five-minute steps. Nothing is kept after the session ends.
+
 At Level 3, the hourly rollup behind the Community's **Working Clock** (the activity dial on the website) is coarse and undated by design: it reports minutes per local hour-of-day (0–23) and mode, folded across a trailing 28-day window — never a per-session row, never a calendar date, never tied to a specific scene or book.
 
 ## Basic Setup

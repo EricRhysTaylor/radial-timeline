@@ -1,6 +1,15 @@
 ## Radial Timeline 7.3.2
 
-Inquiry's corpus reads at a glance, the Pride & Prejudice demo vault is a free download, and your vault follows the book you choose on your Community page.
+Desk Lamps show when your writing friends are at their desks, Inquiry's corpus reads at a glance, and the Pride & Prejudice demo vault is a free download.
+
+### Desk Lamps
+
+- **See when your writing friends are at their desks.** Desk Lamps are close writing friends you add on the Community. When one of them starts a session in Radial Timeline and shares it with you, their lamp comes on: a lamp beside the **Mailbox** counts the friends at their desks, and its menu lists each one with their city, the kind of writing (drafting, revising, editing, or planning), and how long they've been at it. The freshest change is on top, and a friend who just stopped shows "lamp off after 2 h 10 min" for half an hour.
+- **Your lamp, your choice, every session.** The **Begin Session** panel lists your Desk Lamps with checkboxes; tick who sees this session, and Radial Timeline remembers the choice for next time. While you write, the panel shows who your lamp is lit for, and you can change the list or turn the lamp off. **Pause** shows your friends "on a break"; saving or discarding the session turns the lamp off.
+- **No book, no scenes, no words.** Friends see your name, your city from your Community profile, the kind of writing, and how long, in five-minute steps. Nothing else leaves the vault, and the server keeps no record once the lamp goes off. Desk Lamps works at every sharing level, Private included; pausing sharing turns your lamp off.
+- **Add Desk Lamps on the Community.** On a writer's Community page, click **Add to Desk Lamps**. They accept on your page or under **My Share → Desk Lamps**, and either of you can remove the other at any time without notice. To hide the lamp and keep yours off, turn off **Show Desk Lamps** in **Settings → Advanced**.
+
+See [Desk Lamps](https://github.com/EricRhysTaylor/radial-timeline/wiki/Desk-Lamps) in the wiki.
 
 ### Inquiry
 

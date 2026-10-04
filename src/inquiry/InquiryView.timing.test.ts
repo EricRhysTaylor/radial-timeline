@@ -4,7 +4,8 @@ import type { InquiryResult } from './types';
 import type { InquiryRunProgressEvent, InquiryRunTrace } from './runner/types';
 import type { InquiryTimingHistory } from '../types/settings';
 import { DisposableRegistry } from '../core/disposable';
-import { FIRST_RUN_PASS_MS, PROGRESS_AT_PREDICTION, PROGRESS_CEILING } from './services/inquiryTimingPrediction';
+import { FIRST_RUN_PASS_MS } from './services/inquiryTimingPrediction';
+import { PROGRESS_AT_ESTIMATE, PROGRESS_CEILING } from '../utils/simulatedProgress';
 
 type TimingView = {
     recordInquiryTimingSample(result: Partial<InquiryResult>, trace?: Partial<InquiryRunTrace>): Promise<void>;
@@ -82,8 +83,8 @@ describe('Inquiry timing observation lifecycle', () => {
 
     it('keeps the bar short of full until the response arrives', () => {
         const { view } = timingView();
-        expect(view.getRunningBackboneProgressRatio(50_000)).toBeCloseTo(PROGRESS_AT_PREDICTION / 2, 6);
-        expect(view.getRunningBackboneProgressRatio(100_000)).toBeCloseTo(PROGRESS_AT_PREDICTION, 6);
+        expect(view.getRunningBackboneProgressRatio(50_000)).toBeCloseTo(PROGRESS_AT_ESTIMATE / 2, 6);
+        expect(view.getRunningBackboneProgressRatio(100_000)).toBeCloseTo(PROGRESS_AT_ESTIMATE, 6);
         expect(view.getRunningBackboneProgressRatio(300_000)).toBeLessThan(PROGRESS_CEILING);
         view.currentRunProgress = { phase: 'finalizing', currentPass: 1, totalPasses: 1 };
         expect(view.getRunningBackboneProgressRatio(50_000)).toBe(1);

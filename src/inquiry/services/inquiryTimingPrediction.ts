@@ -14,25 +14,13 @@
  * directions.
  */
 import type { InquiryTimingHistoryEntry } from '../../types/settings';
+import type { RunDurationEstimate } from '../../utils/simulatedProgress';
 
 /** A vault's first question: a typical full-book answer (observed 45-85s). */
 export const FIRST_RUN_PASS_MS = 60_000;
 export const PREDICT_FLOOR_MS = 4000;
 export const RANGE_MIN_MULTIPLIER = 0.8;
 export const RANGE_MAX_MULTIPLIER = 1.2;
-/** Share of the track filled when the predicted time arrives. */
-export const PROGRESS_AT_PREDICTION = 0.9;
-/** The bar never fills past this until the response arrives. */
-export const PROGRESS_CEILING = 0.98;
-/** Overrun easing: the gap to the ceiling shrinks by e^-2 per predicted duration. */
-const OVERRUN_EASE_RATE = 2;
-
-export type RunDurationSource = 'latest_run' | 'first_run_default';
-
-export interface RunDurationPrediction {
-    durationMs: number;
-    source: RunDurationSource;
-}
 
 export interface PredictionRange {
     minSeconds: number;
@@ -65,7 +53,7 @@ export function getLatestTimingEntry(
 export function predictRunDuration(
     entry: InquiryTimingHistoryEntry | null,
     expectedPassCount: number
-): RunDurationPrediction {
+): RunDurationEstimate {
     const passes = Math.max(1, Math.floor(expectedPassCount));
     if (!entry) return { durationMs: FIRST_RUN_PASS_MS * passes, source: 'first_run_default' };
     return { durationMs: Math.max(PREDICT_FLOOR_MS, entry.passDurationMs * passes), source: 'latest_run' };
@@ -78,17 +66,4 @@ export function getRunDurationRange(durationMs: number): PredictionRange {
         minSeconds: centralMs * RANGE_MIN_MULTIPLIER / 1000,
         maxSeconds: centralMs * RANGE_MAX_MULTIPLIER / 1000
     };
-}
-
-/**
- * Track fill for a run in flight: linear to PROGRESS_AT_PREDICTION at the
- * predicted time, then easing toward PROGRESS_CEILING. Answer length varies
- * by question, so the bar must never claim "done" before the response does.
- */
-export function getRunProgressRatio(elapsedMs: number, predictedMs: number): number {
-    if (elapsedMs <= 0) return 0;
-    const t = elapsedMs / Math.max(PREDICT_FLOOR_MS, predictedMs);
-    if (t <= 1) return PROGRESS_AT_PREDICTION * t;
-    return PROGRESS_AT_PREDICTION
-        + (PROGRESS_CEILING - PROGRESS_AT_PREDICTION) * (1 - Math.exp(-OVERRUN_EASE_RATE * (t - 1)));
 }

@@ -14,6 +14,7 @@ import {
 } from './cost/estimateCorpusCost';
 import { getActivePricingTable } from './cost/providerPricing';
 import { type TokenUsage } from './usage/providerUsage';
+import type { RunDurationEstimate } from '../utils/simulatedProgress';
 import { systemFolderPath } from '../utils/systemFolder';
 import { ANTHROPIC_REQUESTED_CACHE_TTL } from './settings/aiSettings';
 
@@ -122,6 +123,8 @@ export type SummaryLogEnvelope = {
     submittedAt?: Date | null;
     returnedAt?: Date | null;
     durationMs?: number | null;
+    /** What the run's progress bar was timed for; omitted by features without one. */
+    progressEstimate?: RunDurationEstimate;
     status: AiLogStatus;
     tokenUsage?: TokenUsage | null;
     resultSummary?: string | null;
@@ -365,6 +368,12 @@ export function formatDuration(ms?: number | null): string {
     return `${rounded.replace(/\.0+$/, '')}s (${Math.round(ms)}ms)`;
 }
 
+/** `45.4s (45370ms) (latest run)` — the log line beside a run's actual duration. */
+export function formatProgressEstimate(estimate: RunDurationEstimate): string {
+    const source = estimate.source === 'latest_run' ? 'latest run' : 'first-run default';
+    return `${formatDuration(estimate.durationMs)} (${source})`;
+}
+
 export function formatAiLogContent(
     envelope: AiLogEnvelope,
     options?: { jsonSpacing?: number; metadataExtras?: string[] }
@@ -531,6 +540,9 @@ export function formatSummaryLogContent(envelope: SummaryLogEnvelope): string {
     lines.push(`- Submitted: ${formatLocalAndIso(envelope.submittedAt)}`);
     lines.push(`- Returned: ${formatLocalAndIso(envelope.returnedAt)}`);
     lines.push(`- Duration: ${formatDuration(envelope.durationMs)}`);
+    if (envelope.progressEstimate) {
+        lines.push(`- Progress bar timed for: ${formatProgressEstimate(envelope.progressEstimate)}`);
+    }
     lines.push(`- Status: ${envelope.status}`);
     lines.push(`- Token usage: ${formatUsage(envelope.tokenUsage)}`);
     lines.push(`- Cache: ${formatCacheStatusLine(envelope.tokenUsage)}`);

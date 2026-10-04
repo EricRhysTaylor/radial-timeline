@@ -292,6 +292,19 @@ describe('buildUsageCostBreakdown', () => {
         });
 
         expect(content).toMatch(/- Actual usage cost: \$\d+(\.\d{1,3})?/);
+        expect(content).not.toContain('- Progress bar timed for:');
+    });
+
+    it('records what the progress bar was timed for beside the actual duration', () => {
+        const content = formatSummaryLogContent({
+            title: 'Gossamer Log',
+            feature: 'Gossamer',
+            durationMs: 14_500,
+            progressEstimate: { durationMs: 13_400, source: 'latest_run' },
+            status: 'success',
+            contentLogWritten: false
+        });
+        expect(content).toContain('- Duration: 14.5s (14500ms)\n- Progress bar timed for: 13.4s (13400ms) (latest run)');
     });
 });
 

@@ -14,7 +14,6 @@ import { DEFAULT_GOSSAMER_SIGNAL, GOSSAMER_SIGNAL_METADATA } from '../types/goss
 import { getCredential } from '../ai/credentials/credentials';
 import { getModelDisplayName } from '../utils/modelResolver';
 import { SimulatedProgress } from '../utils/simulatedProgress';
-import { estimateGossamerRunMs } from '../gossamer/runTiming';
 import type { AIRunAdvancedContext } from '../ai/types';
 import {
     type GossamerCacheWindow,
@@ -74,7 +73,6 @@ export class GossamerProcessingModal extends ErtModal {
     private manuscriptInfo?: ManuscriptInfo;
     private currentStatus: string = t('gossamer.processingModal.statusInitializing');
     private apiCallStartTime?: number;
-    private apiCallManuscriptWords?: number;
     private lastElapsedSeconds?: string;
     private timerInterval?: number;
     private progressSimulator?: SimulatedProgress;
@@ -401,14 +399,13 @@ export class GossamerProcessingModal extends ErtModal {
     }
 
     /**
-     * Mark API call as started
+     * Mark API call as started; the bar is timed for `estimateMs` (see gossamer/runTiming).
      */
-    public apiCallStarted(): void {
+    public apiCallStarted(estimateMs: number): void {
         if (this.timerInterval !== undefined) window.clearInterval(this.timerInterval);
         this.timerInterval = undefined;
         this.lastElapsedSeconds = undefined;
         this.apiCallStartTime = Date.now();
-        this.apiCallManuscriptWords = this.manuscriptInfo?.totalWords;
 
         if (this.apiStatusEl) {
             this.apiStatusEl.empty();
@@ -425,7 +422,7 @@ export class GossamerProcessingModal extends ErtModal {
             this.progressBarEl.addClass('ert-gossamer-progress-active');
         }
 
-        this.startSimulatedProgress();
+        this.getProgressSimulator().start(estimateMs);
     }
 
     /**
@@ -477,13 +474,10 @@ export class GossamerProcessingModal extends ErtModal {
     }
 
     private async persistLastRunDuration(elapsedMs: number): Promise<void> {
-        const words = this.apiCallManuscriptWords;
         if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return;
-        if (words === undefined || !Number.isFinite(words) || words <= 0) return;
         this.plugin.settings.gossamerLastRunTiming = {
-            schemaVersion: 1,
-            durationMs: elapsedMs,
-            manuscriptWords: words
+            schemaVersion: 2,
+            durationMs: elapsedMs
         };
         await this.plugin.saveSettings().catch(error => {
             console.warn('[Gossamer] Could not save the latest timing observation.', error);
@@ -685,25 +679,6 @@ export class GossamerProcessingModal extends ErtModal {
         if (this.apiStatusEl) {
             this.apiStatusEl.setText(t('gossamer.processingModal.rateLimited'));
         }
-    }
-
-    /**
-     * Scale the last request's duration by manuscript size.
-     */
-    private startSimulatedProgress(): void {
-        const durationMs = estimateGossamerRunMs(
-            this.apiCallManuscriptWords ?? 0,
-            this.plugin.settings.gossamerLastRunTiming
-        );
-
-        const simulator = this.getProgressSimulator();
-        simulator.start({
-            durationMs,
-            startPercent: 0,
-            maxPercent: 100,
-            jitter: 0,
-            completeOnDuration: true
-        });
     }
 
     /**

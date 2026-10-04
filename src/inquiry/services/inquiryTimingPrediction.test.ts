@@ -4,11 +4,8 @@ import {
     getInquiryTimingSample,
     getLatestTimingEntry,
     getRunDurationRange,
-    getRunProgressRatio,
     predictRunDuration,
-    PREDICT_FLOOR_MS,
-    PROGRESS_AT_PREDICTION,
-    PROGRESS_CEILING
+    PREDICT_FLOOR_MS
 } from './inquiryTimingPrediction';
 import type { InquiryTimingHistory, InquiryTimingHistoryEntry } from '../../types/settings';
 
@@ -74,30 +71,5 @@ describe('run duration prediction', () => {
 
     it('shows a rough range around the predicted time', () => {
         expect(getRunDurationRange(50_000)).toEqual({ minSeconds: 40, maxSeconds: 60 });
-    });
-});
-
-describe('run progress curve', () => {
-    it('fills linearly to the prediction mark', () => {
-        expect(getRunProgressRatio(0, 60_000)).toBe(0);
-        expect(getRunProgressRatio(30_000, 60_000)).toBeCloseTo(PROGRESS_AT_PREDICTION / 2, 6);
-        expect(getRunProgressRatio(60_000, 60_000)).toBeCloseTo(PROGRESS_AT_PREDICTION, 6);
-    });
-
-    it('never claims the run is done while it overruns', () => {
-        // Sherlock Payoff: timed for 45.4s, answered at 84.9s.
-        const atAnswer = getRunProgressRatio(84_930, 45_370);
-        expect(atAnswer).toBeGreaterThan(PROGRESS_AT_PREDICTION);
-        expect(atAnswer).toBeLessThan(PROGRESS_CEILING);
-        expect(getRunProgressRatio(3_600_000, 45_370)).toBeLessThanOrEqual(PROGRESS_CEILING);
-    });
-
-    it('keeps rising through an overrun', () => {
-        const samples = [45_370, 60_000, 84_930, 120_000].map(ms => getRunProgressRatio(ms, 45_370));
-        samples.slice(1).forEach((value, index) => expect(value).toBeGreaterThan(samples[index]));
-    });
-
-    it('treats a missing budget as the minimum animation time', () => {
-        expect(getRunProgressRatio(PREDICT_FLOOR_MS, 0)).toBeCloseTo(PROGRESS_AT_PREDICTION, 6);
     });
 });

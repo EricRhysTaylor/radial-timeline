@@ -56,6 +56,8 @@ import { logCountingForensics } from './ai/diagnostics/countingForensics';
 import { toBeatModelMatchKey } from './utils/beatsInputNormalize';
 import { getActiveFrontmatterMappings, asBeatFrontmatter, readBeatPurpose } from './utils/frontmatter';
 import { estimateTokensFromChars } from './ai/estimates';
+import { estimateGossamerRunMs } from './gossamer/runTiming';
+import type { RunDurationEstimate } from './utils/simulatedProgress';
 import { fnv1a32Hex } from './utils/hash';
 
 interface ResolvedGossamerEvidence {
@@ -94,6 +96,7 @@ type GossamerLogPayload = {
   parsedOutput?: unknown;
   submittedAt?: Date | null;
   returnedAt?: Date | null;
+  progressEstimate: RunDurationEstimate;
   derivedSummary?: string;
   schemaWarnings?: string[];
 };
@@ -215,6 +218,7 @@ async function writeGossamerLog(
       submittedAt: payload.submittedAt ?? null,
       returnedAt: payload.returnedAt ?? null,
       durationMs,
+      progressEstimate: payload.progressEstimate,
       status: payload.status,
       tokenUsage,
       resultSummary,
@@ -926,7 +930,8 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
 
     // Call unified AI client
     modal.setStatus(t('gossamer.notices.sendingToAi', { signal: signalMeta.label.toLowerCase() }));
-    modal.apiCallStarted();
+    const progressEstimate = estimateGossamerRunMs(plugin.settings.gossamerLastRunTiming);
+    modal.apiCallStarted(progressEstimate.durationMs);
 
     const submittedAt = new Date();
     const result = await aiClient.run({
@@ -962,6 +967,7 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
         parsedOutput: null,
         submittedAt,
         returnedAt,
+        progressEstimate,
         schemaWarnings: [
           ...providerNormalizationWarnings,
           ...(result.error ? [`Error: ${result.error}`] : [])
@@ -1069,6 +1075,7 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
         parsedOutput: null,
         submittedAt,
         returnedAt,
+        progressEstimate,
         schemaWarnings: [...providerNormalizationWarnings, `JSON parse error: ${detail}`]
       });
       modal.apiCallError(t('gossamer.notices.validationFailed', { count: 1 }));
@@ -1113,6 +1120,7 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
         parsedOutput: responseForValidation,
         submittedAt,
         returnedAt,
+        progressEstimate,
         schemaWarnings: [...providerNormalizationWarnings, ...envelopeWarnings, ...failureDetails]
       });
       modal.apiCallError(t('gossamer.notices.validationFailed', { count: validation.failures.length }));
@@ -1219,6 +1227,7 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
       parsedOutput: analysis,
       submittedAt,
       returnedAt,
+      progressEstimate,
       derivedSummary: derivedLines.join('\n'),
       // Envelope warnings are not failures — they record that the response
       // arrived wrapped and we recovered it. Surfacing them in the log gives

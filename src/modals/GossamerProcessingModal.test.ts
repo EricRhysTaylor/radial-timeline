@@ -5,18 +5,15 @@ import { resolve } from 'node:path';
 describe('GossamerProcessingModal progress UX', () => {
     const source = readFileSync(resolve(process.cwd(), 'src/modals/GossamerProcessingModal.ts'), 'utf8');
 
-    it('uses one shared runtime and captures manuscript size when the request starts', () => {
+    it('records one shared duration and is timed by the command, not by manuscript size', () => {
         expect(source).toContain('this.plugin.settings.gossamerLastRunTiming');
-        expect(source).toContain('this.apiCallManuscriptWords = this.manuscriptInfo?.totalWords');
-        expect(source).toContain('estimateGossamerRunMs(');
+        expect(source).toContain('public apiCallStarted(estimateMs: number)');
+        expect(source).toContain('this.getProgressSimulator().start(estimateMs)');
+        expect(source).not.toContain('apiCallManuscriptWords');
         expect(source).not.toContain('gossamerLastRunMsBySignal');
     });
 
-    it('allows the estimated bar to fill before the results are saved', () => {
-        expect(source).toContain('startPercent: 0');
-        expect(source).toContain('maxPercent: 100');
-        expect(source).toContain('jitter: 0');
-        expect(source).toContain('completeOnDuration: true');
+    it('fills to 100% only once the results are saved', () => {
         const received = source.slice(source.indexOf('public apiCallSuccess()'), source.indexOf('private async persistLastRunDuration'));
         expect(received).not.toContain('progressSimulator.complete()');
         expect(received).not.toContain("'100%'");

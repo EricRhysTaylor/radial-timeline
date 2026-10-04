@@ -138,10 +138,9 @@ import {
     getInquiryTimingSample,
     getLatestTimingEntry,
     getRunDurationRange,
-    getRunProgressRatio,
-    predictRunDuration,
-    type RunDurationPrediction
+    predictRunDuration
 } from './services/inquiryTimingPrediction';
+import { getEstimatedProgressRatio, type RunDurationEstimate } from '../utils/simulatedProgress';
 import { buildInquiryBookAnchorId, scopeEntriesToActiveInquiryTarget } from './services/canonicalInquiryCorpus';
 import type {
     TokenTier,
@@ -8850,7 +8849,7 @@ export class InquiryView extends ItemView {
 
 
     /** One question on the current corpus: the latest run's time per pass, times the passes it needs. */
-    private predictNextRunDuration(): RunDurationPrediction {
+    private predictNextRunDuration(): RunDurationEstimate {
         return predictRunDuration(
             getLatestTimingEntry(this.settingsAccessor.getTimingHistory()),
             this.buildReadinessUiState().expectedPassCount
@@ -9153,7 +9152,7 @@ export class InquiryView extends ItemView {
     }
 
     private getRunningBackboneProgressRatio(elapsedMs: number): number {
-        const timeRatio = getRunProgressRatio(elapsedMs, this.currentRunEstimatedMaxMs);
+        const timeRatio = getEstimatedProgressRatio(elapsedMs, this.currentRunEstimatedMaxMs);
         const progress = this.currentRunProgress;
         if (!progress) return timeRatio;
         if (progress.phase === 'finalizing') return 1;

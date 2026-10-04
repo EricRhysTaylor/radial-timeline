@@ -3,7 +3,7 @@ import type { CorpusManifest, CorpusManifestEntry, InquiryRunTrace } from '../ru
 import type { InquiryResult } from '../state';
 import type { SceneInclusion } from '../../types/settings';
 import type { TokenTier } from '../types';
-import { extractTokenUsage, formatActualUsageCost, formatAiLogContent, formatDuration, formatUsageCostBreakdownLines, sanitizeLogPayload, type AiLogStatus } from '../../ai/log';
+import { extractTokenUsage, formatActualUsageCost, formatAiLogContent, formatDuration, formatProgressEstimate, formatUsageCostBreakdownLines, sanitizeLogPayload, type AiLogStatus } from '../../ai/log';
 import { describeTokenEstimateMethod } from '../../ai/tokens/inputTokenEstimate';
 import { buildManifestTocLines, formatManifestClassLabel } from '../utils/inquiryViewText';
 import { buildInquirySourcesViewModel } from '../services/inquirySources';
@@ -299,8 +299,7 @@ export function buildInquiryLogContent(args: {
     lines.push(`- Status: ${statusLabel}${statusDetail}`);
     lines.push(`- Duration: ${formatDuration(durationMs)}`);
     if (trace.durationPrediction) {
-        const source = trace.durationPrediction.source === 'latest_run' ? 'latest run' : 'first-run default';
-        lines.push(`- Progress bar timed for: ${formatDuration(trace.durationPrediction.durationMs)} (${source})`);
+        lines.push(`- Progress bar timed for: ${formatProgressEstimate(trace.durationPrediction)}`);
     }
     lines.push(`- Actual usage cost: ${actualUsageCostLabel}`);
     if (!isSimulated && citationSupportLabel) {

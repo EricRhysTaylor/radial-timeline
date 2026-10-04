@@ -13,7 +13,7 @@ import type { AIProviderId, AIRunRequest } from '../../ai/types';
 import type { TokenEstimateMethod } from '../../ai/tokens/inputTokenEstimate';
 import type { TokenUsage } from '../../ai/usage/providerUsage';
 import type { InquiryQuestionPromptForm } from '../questions/resolveQuestionPrompt';
-import type { RunDurationPrediction } from '../services/inquiryTimingPrediction';
+import type { RunDurationEstimate } from '../../utils/simulatedProgress';
 
 export type EvidenceClass = string;
 export type InquiryExecutionState = 'blocked_before_send' | 'dispatched_to_provider' | 'multi_pass_failed';
@@ -186,7 +186,7 @@ export interface InquiryRunTrace {
     openAiTransportLane?: 'chat_completions' | 'responses';
     usage?: TokenUsage;
     /** What the minimap bar was timed for; set by the view for single-question runs. */
-    durationPrediction?: RunDurationPrediction;
+    durationPrediction?: RunDurationEstimate;
     sanitizationNotes: string[];
     notes: string[];
 }

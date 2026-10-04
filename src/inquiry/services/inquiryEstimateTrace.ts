@@ -1,6 +1,6 @@
 import type { CorpusManifest, InquiryRunTrace, InquiryRunnerInput } from '../runner/types';
 import type { InquiryRunnerService } from '../runner/InquiryRunnerService';
-import { isStableSceneId } from '../../ai/references/sceneRefNormalizer';
+import { normalizeSceneId } from '../../ai/references/sceneRefNormalizer';
 import { fnv1a32Hex } from '../../utils/hash';
 
 function buildDeterministicEstimateSceneId(path: string): string {
@@ -12,7 +12,7 @@ function buildEstimateManifest(manifest: CorpusManifest): CorpusManifest {
         ...manifest,
         entries: manifest.entries.map(entry => {
             if (entry.class !== 'scene') return entry;
-            if (isStableSceneId(entry.sceneId)) return entry;
+            if (normalizeSceneId(entry.sceneId)) return entry;
             return {
                 ...entry,
                 sceneId: buildDeterministicEstimateSceneId(entry.path)

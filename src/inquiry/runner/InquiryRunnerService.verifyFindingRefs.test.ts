@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { TFile } from 'obsidian';
 
 vi.mock('../../ai/runtime/aiClient', () => ({
     getAIClient: vi.fn(() => ({}))
@@ -80,6 +81,32 @@ function twoBookIndex() {
 }
 
 describe('verifyFindingRefs', () => {
+    it('uses author IDs consistently in snapshots, the corpus index, and verified findings', async () => {
+        const service = new InquiryRunnerService(
+            { settings: {} } as never,
+            { getAbstractFileByPath: () => new TFile('Odyssey/1 Opening.md') } as never,
+            { getFileCache: () => ({ frontmatter: { ID: 'ody_scn_001', Summary: 'Opening' } }) } as never
+        ) as unknown as {
+            buildSceneSnapshots: (entries: unknown[]) => Promise<Array<{ sceneId: string }>>;
+            buildCanonicalSceneRefIndex: (input: unknown) => ReturnType<typeof buildSceneRefIndex>;
+            verifyFindingRefs: Verifier;
+            buildSceneRefLedger: (blocks: unknown[]) => { allowedSceneIds: Set<string>; synthesisBlock: string };
+        };
+        const entries = [{ path: 'Odyssey/1 Opening.md', sceneId: 'ody_scn_001', class: 'scene', mode: 'full' }];
+        expect((await service.buildSceneSnapshots(entries))[0].sceneId).toBe('ody_scn_001');
+        const index = service.buildCanonicalSceneRefIndex({ corpus: { entries } });
+        const result = service.verifyFindingRefs([{
+            ref_id: 'ody_scn_001', ref_path: entries[0].path, headline: 'Saved finding', bullets: ['Original observation']
+        }], index);
+        expect(result.verified[0].refId).toBe('ody_scn_001');
+        expect(result.unverified).toEqual([]);
+        expect(result.warnings).toEqual([]);
+        expect(result.repairs).toEqual([]);
+        const ledger = service.buildSceneRefLedger([{ meta: { sceneId: 'Odyssey_Scene_001', evidenceClass: 'scene', path: entries[0].path } }]);
+        expect(ledger.allowedSceneIds.has('odyssey_scene_001')).toBe(true);
+        expect(ledger.synthesisBlock).toContain('Odyssey_Scene_001');
+    });
+
     it('passes clean findings straight through with no warnings', () => {
         const verify = getVerifier();
         const out = verify(

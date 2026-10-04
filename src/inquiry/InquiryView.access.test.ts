@@ -47,6 +47,15 @@ function browsingView(enabled: boolean, credential: boolean, blocked: boolean, s
 }
 
 describe('Inquiry viewing is independent of AI permission', () => {
+    it('reopens saved scene references using the author IDs in the active corpus', () => {
+        const view = Object.assign(Object.create(InquiryView.prototype), {
+            state: { scope: 'book' },
+            corpus: { scenes: [{ sceneId: 'ody_scn_001', id: 'Odyssey/1 Opening.md', filePath: 'Odyssey/1 Opening.md', displayLabel: 'S1', sceneNumber: 1 }] }
+        }) as { normalizeResultRefId(id: string): { refId: string; wasNormalized: boolean } }; // SAFE: real reference normalization with a corpus-only fixture.
+        expect(view.normalizeResultRefId('ody_scn_001')).toEqual({ refId: 'ody_scn_001', wasNormalized: false });
+        expect(view.normalizeResultRefId('ody_scn_999').refId).toBe('');
+    });
+
     it.each([false, true])('opens the view with AI enabled=%s', async enabled => {
         const leaf = { setViewState: vi.fn(), detach: vi.fn() };
         const workspace = { getLeavesOfType: () => [], getLeaf: () => leaf, revealLeaf: vi.fn() };

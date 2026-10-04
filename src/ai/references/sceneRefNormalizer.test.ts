@@ -26,6 +26,24 @@ describe('sceneRefNormalizer', () => {
         expect(isStableSceneId('Book 1/01.md')).toBe(false);
     });
 
+    it('binds existing author IDs without replacing them with generated hashes', () => {
+        const custom = buildSceneRefIndex([{ sceneId: 'Odyssey_Scene_001', path: 'Odyssey/1 Opening.md' }]);
+        expect(normalizeSceneRef({ ref_id: 'Odyssey_Scene_001' }, custom)).toMatchObject({
+            ref: { ref_id: 'Odyssey_Scene_001' }, unresolved: false, normalizedFromLegacy: false
+        });
+        expect(normalizeSceneRef({ ref_path: 'Odyssey/1 Opening.md' }, custom).ref.ref_id).toBe('Odyssey_Scene_001');
+        expect(normalizeSceneRef({ ref_id: 'ody_scn_999' }, custom).unresolved).toBe(true);
+    });
+
+    it('quarantines duplicate author IDs even when the path is supplied', () => {
+        const custom = buildSceneRefIndex([
+            { sceneId: 'ody_scn_001', path: 'Original/1 Opening.md' },
+            { sceneId: 'ody_scn_001', path: 'Copy/1 Opening.md' }
+        ]);
+        expect(normalizeSceneRef({ ref_id: 'ody_scn_001' }, custom).unresolved).toBe(true);
+        expect(normalizeSceneRef({ ref_path: 'Original/1 Opening.md' }, custom).unresolved).toBe(true);
+    });
+
     it('normalizes legacy path references to sceneId', () => {
         const normalized = normalizeSceneRef({ ref_id: 'Book 1/38 Jump.md' }, index);
         expect(normalized.ref.ref_id).toBe('scn_a1b2c3d4');

@@ -184,7 +184,7 @@ import { addTooltipData, balanceTooltipText, setupTooltipsFromDataAttributes } f
 import { classifySynopsis, type SynopsisQuality } from '../sceneAnalysis/synopsisQuality';
 import { readSceneId } from '../utils/sceneIds';
 import { migrateSceneFrontmatterIds } from '../migrations/sceneIds';
-import { buildSceneRefIndex, isStableSceneId, normalizeSceneRef } from '../ai/references/sceneRefNormalizer';
+import { buildSceneRefIndex, isStableSceneId, normalizeSceneId, normalizeSceneRef } from '../ai/references/sceneRefNormalizer';
 import {
     DEFAULT_CHARS_PER_TOKEN,
     estimateTokensFromChars as estimateTokensFromCharsHeuristic
@@ -7056,9 +7056,9 @@ export class InquiryView extends ItemView {
         }
 
         const index = buildSceneRefIndex(this.corpus.scenes
-            .filter(scene => isStableSceneId(scene.sceneId))
+            .filter(scene => !!normalizeSceneId(scene.sceneId))
             .map(scene => ({
-                sceneId: String(scene.sceneId).trim().toLowerCase(),
+                sceneId: normalizeSceneId(scene.sceneId)!,
                 path: scene.filePath,
                 label: scene.displayLabel,
                 sceneNumber: scene.sceneNumber,

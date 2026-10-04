@@ -94,10 +94,11 @@ export function normalizeSceneRef(
     });
     if (rawRefId && index.ambiguousSceneIds.has(rawRefId.toLowerCase())) return ambiguous(rawRefId);
 
-    if (rawRefId && isStableSceneId(rawRefId) && index.bySceneId.has(rawRefId.toLowerCase())) {
+    const exactEntry = rawRefId ? index.bySceneId.get(rawRefId.toLowerCase()) : undefined;
+    if (exactEntry) {
         return {
             ref: {
-                ref_id: normalizeSceneId(rawRefId)!,
+                ref_id: exactEntry.sceneId,
                 ref_label: rawRefLabel,
                 ref_path: rawRefPath
             },
@@ -152,10 +153,11 @@ export function normalizeSceneRef(
     };
 }
 
-function normalizeSceneId(value: string | null | undefined): string | undefined {
+/** Preserve author-supplied YAML IDs; hash format applies only to generated IDs. */
+export function normalizeSceneId(value: string | null | undefined): string | undefined {
     const normalized = normalizeText(value);
-    if (!normalized || !isStableSceneId(normalized)) return undefined;
-    return normalized.toLowerCase();
+    if (!normalized) return undefined;
+    return isStableSceneId(normalized) ? normalized.toLowerCase() : normalized;
 }
 
 function normalizeText(value: string | null | undefined): string | undefined {

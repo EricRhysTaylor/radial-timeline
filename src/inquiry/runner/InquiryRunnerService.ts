@@ -26,7 +26,7 @@ import { validateJsonResponse } from '../../ai/runtime/jsonValidator';
 import type { AIRunPreparedEstimate, AIRunRequest, AIRunResult, AIProviderId } from '../../ai/types';
 import { extractTokenUsage } from '../../ai/usage/providerUsage';
 import { readSceneId } from '../../utils/sceneIds';
-import { buildSceneRefIndex, isStableSceneId, normalizeSceneRef } from '../../ai/references/sceneRefNormalizer';
+import { buildSceneRefIndex, isStableSceneId, normalizeSceneId, normalizeSceneRef } from '../../ai/references/sceneRefNormalizer';
 import { cleanEvidenceBody } from '../utils/evidenceCleaning';
 import { estimateHeuristicInputTokens, estimateTokensFromChars, estimateUncertaintyTokens, type TokenEstimateMethod } from '../../ai/tokens/inputTokenEstimate';
 import { logCountingForensics } from '../../ai/diagnostics/countingForensics';
@@ -739,7 +739,7 @@ export class InquiryRunnerService implements InquiryRunner {
             let sceneId = this.resolveCanonicalSceneId(entry.sceneId ?? readSceneId(frontmatter) ?? undefined);
             if (!sceneId) {
                 sceneId = this.buildPathFallbackSceneId(normalizedPath);
-                console.warn(`[Inquiry] Scene "${file.path}" is missing canonical YAML id (scn_<hash>); using fallback id "${sceneId}".`);
+                console.warn(`[Inquiry] Scene "${file.path}" is missing a YAML id; using fallback id "${sceneId}".`);
             }
             scenes.push({
                 path: file.path,
@@ -2120,10 +2120,10 @@ export class InquiryRunnerService implements InquiryRunner {
         const ledgerLines: string[] = [];
         (evidenceBlocks || []).forEach(block => {
             const meta = block.meta;
-            if (!meta || meta.evidenceClass !== 'scene' || !isStableSceneId(meta.sceneId)) return;
-            const sceneId = String(meta.sceneId).trim().toLowerCase();
-            if (allowedSceneIds.has(sceneId)) return;
-            allowedSceneIds.add(sceneId);
+            if (!meta || meta.evidenceClass !== 'scene' || !normalizeSceneId(meta.sceneId)) return;
+            const sceneId = normalizeSceneId(meta.sceneId)!;
+            if (allowedSceneIds.has(sceneId.toLowerCase())) return;
+            allowedSceneIds.add(sceneId.toLowerCase());
             const title = (meta.title || '').replace(/\s+/g, ' ').trim() || sceneId;
             const path = (meta.path || '').trim();
             ledgerLines.push(path ? `- ${sceneId} | ${title} | ${path}` : `- ${sceneId} | ${title}`);
@@ -2810,8 +2810,7 @@ export class InquiryRunnerService implements InquiryRunner {
 
 
     private resolveCanonicalSceneId(value: string | undefined): string | undefined {
-        if (!isStableSceneId(value)) return undefined;
-        return String(value).trim().toLowerCase();
+        return normalizeSceneId(value);
     }
 
     /** Deterministic fallback scn_ ID derived from file path (FNV-1a). */

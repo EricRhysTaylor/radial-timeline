@@ -76,5 +76,10 @@ describe('buildInquiryEstimateTrace', () => {
         const secondId = seenInputs[1]?.corpus.entries[0]?.sceneId;
         expect(firstId).toMatch(/^scn_[a-f0-9]{8}$/);
         expect(secondId).toBe(firstId);
+
+        input.corpus.entries[0].sceneId = 'ody_scn_001';
+        await buildInquiryEstimateTrace(runner, input);
+        expect(seenInputs[2].corpus.entries[0].sceneId).toBe('ody_scn_001');
+        expect(input.corpus.entries[0].sceneId).toBe('ody_scn_001');
     });
 });

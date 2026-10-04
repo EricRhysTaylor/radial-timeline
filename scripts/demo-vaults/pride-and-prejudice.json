@@ -34,6 +34,7 @@
     "Characters/Mrs. Bennet.md",
     "Characters/Mrs. Gardiner.md",
     "Characters/Mrs. Hurst.md",
+    "Characters/Mrs. Jenkinson.md",
     "Characters/Mrs. Philips.md",
     "Characters/Mrs. Reynolds.md",
     "Characters/Sir William Lucas.md",
@@ -128,5 +129,31 @@
     "Source Manuscript/Synopsis.md",
     "Story Structure.md",
     "Welcome.md"
-  ]
+  ],
+  "require_quoted_inquiry": true,
+  "inquiry_questions": [
+    "setup-core",
+    "pressure-core",
+    "payoff-core"
+  ],
+  "beat_positions": {
+    "scn_56bf07c6": "41.01",
+    "scn_310bae67": "7.01",
+    "scn_77d6c480": "34.01",
+    "scn_8a178ee1": "5.01",
+    "scn_bd9afece": "17.01",
+    "scn_94e6a6d5": "30.01",
+    "scn_9cc52149": "1.01",
+    "scn_897434c0": "6.01",
+    "scn_e90d572f": "22.01",
+    "scn_4719cd28": "58.01",
+    "scn_4dcddf6d": "46.01",
+    "scn_1b1c7d2d": "48.01",
+    "scn_02b7e163": "61.01",
+    "scn_9e7ec7ab": "52.01",
+    "scn_e8fea8b9": "18.01"
+  },
+  "source_hashes": {
+    "Source Manuscript/Official Manuscript Pride & Prejudice.md": "d87252990ba00003c81a8244b350939893d04e01ec6fe3fae720eed1afb6247e"
+  }
 }

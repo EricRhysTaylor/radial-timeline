@@ -806,8 +806,8 @@ export interface InquirySourcesSettings {
 }
 
 export interface InquiryTimingHistoryEntry {
-    samples: number;
-    avgMsPerInputToken: number;
+    /** Optional only for observations saved before shared timing was introduced. */
+    schemaVersion?: 1;
     lastDurationMs: number;
     lastInputTokens: number;
     updatedAt: string;

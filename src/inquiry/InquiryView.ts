@@ -44,7 +44,6 @@ import type {
     InquiryPromptConfig,
     InquiryPromptSlot,
     SceneInclusion,
-    InquiryTimingHistoryEntry,
     OmnibusProgressState
 } from '../types/settings';
 import {
@@ -137,12 +136,9 @@ import {
 import { resolveInquiryEngine, type ResolvedInquiryEngine } from './services/inquiryModelResolver';
 import { computeInquiryAdvisoryContext, type InquiryAdvisoryContext } from './services/inquiryAdvisory';
 import {
-    blendSampleRate,
     computeSampleRate,
-    computeTimingHistoryKey,
-    normalizeEvidenceModeKey,
-    predictTimingFromEntry,
-    type EvidenceModeKey
+    getLatestTimingEntry,
+    predictTimingFromEntry
 } from './services/inquiryTimingPrediction';
 import { buildInquiryBookAnchorId, scopeEntriesToActiveInquiryTarget } from './services/canonicalInquiryCorpus';
 import type {
@@ -8783,67 +8779,10 @@ export class InquiryView extends ItemView {
         this.previewShimmerGroup.setAttribute('display', 'none');
     }
 
-    /**
-     * Build the deterministic timing-history key for the current run.
-     * Keyed by (provider, model, evidenceMode) — see inquiryTimingPrediction
-     * for the rationale on why mode must be in the key.
-     */
-    private getInquiryTimingHistoryKey(
-        provider?: string,
-        model?: string,
-        evidenceMode?: EvidenceModeKey
-    ): string | null {
-        const mode = evidenceMode ?? this.getCurrentEvidenceModeKey();
-        return computeTimingHistoryKey(provider, model, mode);
-    }
-
-    /** Normalized evidence-mode key for the current corpus configuration. */
-    private getCurrentEvidenceModeKey(): EvidenceModeKey {
-        return normalizeEvidenceModeKey(this.describeRunEvidenceMode());
-    }
-
-    private getInquiryTimingHistoryEntry(
-        provider?: string,
-        model?: string,
-        evidenceMode?: EvidenceModeKey
-    ): InquiryTimingHistoryEntry | null {
-        const key = this.getInquiryTimingHistoryKey(provider, model, evidenceMode);
-        if (!key) return null;
-        return this.settingsAccessor.getTimingHistory()?.[key] ?? null;
-    }
-
-    /**
-     * Predict a duration range from stored history. Pure computation lives
-     * in `predictTimingFromEntry`; this wrapper just routes the lookup.
-     */
-    private buildTimingEstimateFromHistory(
-        estimatedInputTokens: number,
-        provider?: string,
-        model?: string,
-        evidenceMode?: EvidenceModeKey
-    ): { minSeconds: number; maxSeconds: number } | null {
-        const entry = this.getInquiryTimingHistoryEntry(provider, model, evidenceMode);
-        return predictTimingFromEntry(entry, estimatedInputTokens);
-    }
-
-    /**
-     * Record one (durationMs, provider-input-tokens) sample for the current
-     * (provider, model, evidenceMode) bucket.
-     *
-     * Two rules keep the history honest:
-     *   1. Tokens used in the rate denominator come from actual provider
-     *      usage, including cache reads. We do not learn from pre-run
-     *      estimates.
-     *   2. Bucket key includes evidence mode, so summary-mode samples
-     *      cannot poison full-corpus rates.
-     */
+    /** Record the latest real duration and input size for every subsequent Inquiry question. */
     private async recordInquiryTimingSample(result: InquiryResult, trace: InquiryRunTrace | null | undefined): Promise<void> {
         if (!result || result.aiReason === 'simulated' || result.aiReason === 'stub') return;
         const provider = result.aiProvider?.trim();
-        const model = (result.aiModelResolved || result.aiModelRequested || '').trim(); // SAFE: absent model normalizes to empty and yields no history key below
-        const evidenceMode = this.getCurrentEvidenceModeKey();
-        const key = this.getInquiryTimingHistoryKey(provider, model, evidenceMode);
-        if (!key) return;
         const durationMs = typeof result.roundTripMs === 'number' && Number.isFinite(result.roundTripMs)
             ? result.roundTripMs
             : null;
@@ -8859,22 +8798,14 @@ export class InquiryView extends ItemView {
         });
         if (!sampleRate) return;
 
-        const history = this.settingsAccessor.getTimingHistory() ?? {}; // SAFE: no timing history recorded yet — start from an empty map
-        const previous = history[key];
-        const blended = blendSampleRate({
-            previousAvg: previous?.avgMsPerInputToken,
-            previousSampleCount: previous?.samples,
-            newRate: sampleRate.msPerInputToken
-        });
-
-        history[key] = {
-            samples: blended.samples,
-            avgMsPerInputToken: blended.avgMsPerInputToken,
-            lastDurationMs: durationMs!,
-            lastInputTokens: sampleRate.inputTokens,
-            updatedAt: new Date().toISOString()
+        this.plugin.settings.inquiryTimingHistory = {
+            latest: {
+                schemaVersion: 1,
+                lastDurationMs: durationMs!,
+                lastInputTokens: sampleRate.inputTokens,
+                updatedAt: new Date().toISOString()
+            }
         };
-        this.plugin.settings.inquiryTimingHistory = history;
         this.refreshEstimateDisplays();
         await this.plugin.saveSettings();
     }
@@ -8923,14 +8854,8 @@ export class InquiryView extends ItemView {
         const readinessUi = this.buildReadinessUiState();
         const estimatedTokens = Math.max(0, readinessUi.estimateInputTokens || 0); // SAFE: estimate unavailable — 0 tokens skips duration prediction
 
-        // If we have history for this (provider, model, evidenceMode) bucket,
-        // trust it. The blended prediction guards against single-sample
-        // outliers; see predictTimingFromEntry in inquiryTimingPrediction.ts.
-        const timingEstimate = this.buildTimingEstimateFromHistory(
-            estimatedTokens,
-            readinessUi.provider,
-            readinessUi.model?.id
-        );
+        const entry = getLatestTimingEntry(this.settingsAccessor.getTimingHistory());
+        const timingEstimate = predictTimingFromEntry(entry, estimatedTokens);
         if (timingEstimate) {
             return timingEstimate;
         }

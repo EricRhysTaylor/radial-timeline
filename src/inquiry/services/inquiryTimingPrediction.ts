@@ -4,74 +4,13 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 
-/**
- * Pure helpers for the Inquiry duration estimator.
- *
- * Three rules baked in to keep timing history grounded in observed runs:
- *
- *   1. Timing samples use provider-reported input tokens only. Cache-read
- *      tokens still count because observed Gemini runs spend roughly the same
- *      wall-clock time thinking over cached corpus context.
- *
- *   2. History is keyed by (provider, model, evidenceMode). A summary-mode
- *      run with a 6k payload no longer overwrites the rate for a 300k
- *      full-scene run on the same model.
- *
- *   3. Predictions blend the EWMA average and the latest sample 50/50.
- *      No flag exists to "prefer the latest sample wholesale" — one
- *      anomaly should not hijack future predictions.
- */
-
+/** Shared Inquiry timing: the latest completed run, scaled by input size. */
 import type { TokenUsage } from '../../ai/usage/providerUsage';
+import type { InquiryTimingHistoryEntry } from '../../types/settings';
 
-// ── Tunables ───────────────────────────────────────────────────────────
-
-/** EWMA blend weight on every new sample (0.25 = old, 0.75 = new). */
-export const EWMA_NEW_WEIGHT = 0.75;
-
-/** Floor on predicted run time — anything faster is unrealistic for a real API roundtrip. */
 export const PREDICT_FLOOR_MS = 4000;
-
-/** Floor and ceiling multipliers around the central prediction for the min/max range. */
 export const RANGE_MIN_MULTIPLIER = 0.8;
 export const RANGE_MAX_MULTIPLIER = 1.2;
-
-// ── Evidence mode normalization ────────────────────────────────────────
-
-export type EvidenceModeKey = 'full' | 'summary' | 'mixed' | 'corpus' | 'unknown';
-
-/**
- * Normalize a free-form evidence mode label (e.g. "Full Scene evidence",
- * "Summary evidence") into a stable short key for use in the history map.
- */
-export function normalizeEvidenceModeKey(label: string | undefined | null): EvidenceModeKey {
-    const lower = (label ?? '').trim().toLowerCase();
-    if (lower.includes('summary')) return 'summary';
-    if (lower.includes('full')) return 'full';
-    if (lower.includes('mixed')) return 'mixed';
-    if (lower.includes('corpus')) return 'corpus';
-    return 'unknown';
-}
-
-// ── History key ────────────────────────────────────────────────────────
-
-/**
- * Build the deterministic history key for a (provider, model, evidenceMode)
- * triple. Returns null if any required piece is missing — the caller should
- * skip both reads and writes in that case.
- */
-export function computeTimingHistoryKey(
-    provider: string | undefined | null,
-    model: string | undefined | null,
-    evidenceMode: EvidenceModeKey
-): string | null {
-    const providerKey = (provider ?? '').trim().toLowerCase();
-    const modelKey = (model ?? '').trim().toLowerCase();
-    if (!providerKey || !modelKey) return null;
-    return `${providerKey}::${modelKey}::${evidenceMode}`;
-}
-
-// ── Sample recording ──────────────────────────────────────────────────
 
 export interface ComputeSampleRateInput {
     /** Provider's actual usage report from the response. May be null/undefined. */
@@ -138,42 +77,18 @@ export function computeSampleRate(input: ComputeSampleRateInput): SampleRateResu
     return null;
 }
 
-// ── Sample blending (EWMA) ────────────────────────────────────────────
-
-export interface BlendSampleInput {
-    previousAvg?: number;
-    previousSampleCount?: number;
-    newRate: number;
-    /** Cap on stored sample count (older blend influence saturates). */
-    sampleCountCap?: number;
-}
-
-export interface BlendSampleResult {
-    avgMsPerInputToken: number;
-    samples: number;
-}
-
-export function blendSampleRate(input: BlendSampleInput): BlendSampleResult {
-    const { previousAvg, previousSampleCount, newRate } = input;
-    const cap = input.sampleCountCap ?? 19;
-    const previousValid = typeof previousAvg === 'number' && Number.isFinite(previousAvg) && previousAvg > 0;
-    const blended = previousValid
-        ? (previousAvg * (1 - EWMA_NEW_WEIGHT)) + (newRate * EWMA_NEW_WEIGHT)
-        : newRate;
-    const previousSamples = Math.min(Math.max(0, previousSampleCount ?? 0), cap);
-    return {
-        avgMsPerInputToken: blended,
-        samples: previousSamples + 1
-    };
-}
-
-// ── Prediction ────────────────────────────────────────────────────────
-
-export interface PredictionEntry {
-    samples: number;
-    avgMsPerInputToken: number;
-    lastDurationMs: number;
-    lastInputTokens: number;
+/** Also reads existing bucketed observations without discarding their latest duration. */
+export function getLatestTimingEntry(
+    history: Record<string, InquiryTimingHistoryEntry> | undefined
+): InquiryTimingHistoryEntry | null {
+    let latest: InquiryTimingHistoryEntry | null = null;
+    for (const entry of Object.values(history ?? {})) {
+        if (!Number.isFinite(entry.lastDurationMs) || entry.lastDurationMs <= 0
+            || !Number.isFinite(entry.lastInputTokens) || entry.lastInputTokens <= 0
+            || !Number.isFinite(Date.parse(entry.updatedAt))) continue;
+        if (!latest || Date.parse(entry.updatedAt) > Date.parse(latest.updatedAt)) latest = entry;
+    }
+    return latest;
 }
 
 export interface PredictionRange {
@@ -181,41 +96,17 @@ export interface PredictionRange {
     maxSeconds: number;
 }
 
-/**
- * Predict a duration range for a run of `estimatedTokens` fresh input
- * tokens, based on stored history.
- *
- * Returns null when the entry is empty or has an invalid rate. The caller
- * should fall back to a cold-start estimate.
- *
- * Strategy: blend the EWMA average rate and the latest-sample rate 50/50.
- * Neither source dominates. This keeps a single anomaly from hijacking
- * predictions while still giving recent runs meaningful weight.
- *
- * The min/max range is RANGE_MIN_MULTIPLIER..RANGE_MAX_MULTIPLIER × the
- * central prediction, floored at PREDICT_FLOOR_MS for both ends.
- */
 export function predictTimingFromEntry(
-    entry: PredictionEntry | null | undefined,
+    entry: InquiryTimingHistoryEntry | null | undefined,
     estimatedTokens: number
 ): PredictionRange | null {
-    if (!entry) return null;
-    if (!Number.isFinite(entry.avgMsPerInputToken) || entry.avgMsPerInputToken <= 0) return null;
-    const tokens = Math.max(0, estimatedTokens);
-    if (tokens <= 0) return null;
+    if (!entry || !Number.isFinite(entry.lastDurationMs) || entry.lastDurationMs <= 0
+        || !Number.isFinite(entry.lastInputTokens) || entry.lastInputTokens <= 0
+        || !Number.isFinite(estimatedTokens) || estimatedTokens <= 0) return null;
 
-    const avgPredictedMs = Math.max(PREDICT_FLOOR_MS, tokens * entry.avgMsPerInputToken);
-    const lastDuration = entry.lastDurationMs;
-    const lastTokens = entry.lastInputTokens;
-    const lastIsValid = Number.isFinite(lastDuration) && lastDuration > 0
-        && Number.isFinite(lastTokens) && lastTokens > 0;
-
-    const centralMs = lastIsValid
-        ? Math.max(PREDICT_FLOOR_MS, ((avgPredictedMs * 0.5) + ((tokens * (lastDuration / lastTokens)) * 0.5)))
-        : avgPredictedMs;
-
+    const centralMs = Math.max(PREDICT_FLOOR_MS, entry.lastDurationMs * estimatedTokens / entry.lastInputTokens);
     return {
-        minSeconds: Math.max(PREDICT_FLOOR_MS / 1000, (centralMs * RANGE_MIN_MULTIPLIER) / 1000),
-        maxSeconds: Math.max(PREDICT_FLOOR_MS / 1000, (centralMs * RANGE_MAX_MULTIPLIER) / 1000)
+        minSeconds: Math.max(PREDICT_FLOOR_MS / 1000, centralMs * RANGE_MIN_MULTIPLIER / 1000),
+        maxSeconds: Math.max(PREDICT_FLOOR_MS / 1000, centralMs * RANGE_MAX_MULTIPLIER / 1000)
     };
 }

@@ -518,23 +518,20 @@ describe('InquiryView payload accounting', () => {
         expect(viewSource.includes("this.sessionStore.updateSession(session.key, { pendingEditsApplied: false });")).toBe(true);
     });
 
-    it('routes timing prediction through inquiryTimingPrediction (provider usage, mode-keyed history, blended prediction)', () => {
+    it('routes timing prediction through the shared latest observation and input size', () => {
         const viewSource = readFileSync(resolve(process.cwd(), 'src/inquiry/InquiryView.ts'), 'utf8');
         const timingSource = readFileSync(resolve(process.cwd(), 'src/inquiry/services/inquiryTimingPrediction.ts'), 'utf8');
-        // Pure module is imported and used — no more inline EWMA math in InquiryView.
+        // The view records and reads one observation; pure timing math stays in the service.
         expect(viewSource.includes("from './services/inquiryTimingPrediction'")).toBe(true);
         expect(viewSource.includes('computeSampleRate({')).toBe(true);
         expect(viewSource.includes('fallbackEstimate: result.tokenEstimateInput')).toBe(false);
         expect(timingSource.includes('fallbackEstimate')).toBe(false);
         expect(timingSource.includes('CACHE_POISON_THRESHOLD')).toBe(false);
-        expect(viewSource.includes('blendSampleRate({')).toBe(true);
-        expect(viewSource.includes('predictTimingFromEntry(entry, estimatedInputTokens)')).toBe(true);
-        // Mode is part of the history key.
-        expect(viewSource.includes('this.getCurrentEvidenceModeKey()')).toBe(true);
-        expect(viewSource.includes('computeTimingHistoryKey(provider, model, mode)')).toBe(true);
-        // The discredited preferLatestSample shortcut is gone for good.
-        expect(viewSource.includes('const preferLatestSample = true;')).toBe(false);
-        expect(viewSource.includes('options?: { preferLatestSample?: boolean }')).toBe(false);
+        expect(viewSource.includes('getLatestTimingEntry(this.settingsAccessor.getTimingHistory())')).toBe(true);
+        expect(viewSource.includes('predictTimingFromEntry(entry, estimatedTokens)')).toBe(true);
+        expect(viewSource.includes('this.plugin.settings.inquiryTimingHistory = {\n            latest: {')).toBe(true);
+        expect(viewSource.includes('computeTimingHistoryKey')).toBe(false);
+        expect(viewSource.includes('blendSampleRate')).toBe(false);
         // The HUD still refreshes after a sample is recorded.
         expect(viewSource.includes('this.refreshEstimateDisplays();')).toBe(true);
         // Unrelated assertions from the original guardian — kept since they

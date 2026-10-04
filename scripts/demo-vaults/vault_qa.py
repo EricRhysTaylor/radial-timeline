@@ -82,6 +82,11 @@ def validate_inquiry(vault, config, scenes):
     refs = 0
     for session in sidecar['sessions']:
         result = session['result']
+        brief = session.get('briefPath', '')
+        relative = Path(brief)
+        require(bool(brief) and not relative.is_absolute() and '..' not in relative.parts
+                and brief.startswith('Radial Timeline/Inquiry/Briefing/')
+                and (vault / relative).is_file(), 'Saved Inquiry briefing is missing from the public files')
         require(result.get('scope') == 'book' and session.get('activeBookId') == config['book_folder'], 'Inquiry scope differs from the released book')
         require(result.get('aiStatus') == 'success' and result.get('findings'), 'Inquiry answer is not complete')
         require(not result.get('unverifiedFindings') and not result.get('citationIntegrityWarnings'), 'Inquiry citations need review')

@@ -44,8 +44,10 @@ class PackagingBoundaries(unittest.TestCase):
             root = Path(temp); scene = root / 'Odyssey/1 Scene.md'
             sidecar = root / 'Radial Timeline/Inquiry/Sessions/sessions.json'
             sidecar.parent.mkdir(parents=True)
+            brief_path = 'Radial Timeline/Inquiry/Briefing/IB-260101-1000.md'
+            brief = root / brief_path; brief.parent.mkdir(parents=True); brief.write_text('Saved briefing')
             result = {'aiStatus': 'success', 'scope': 'book', 'findings': [{'refId': 'ody_scn_001'}], 'evidenceDocumentMeta': [{'sceneId': 'ody_scn_001', 'path': 'Odyssey/1 Scene.md', 'title': '1 Scene'}]}
-            artifact = {'schemaVersion': 1, 'vault': {'bookFolder': 'Odyssey'}, 'sessions': [{'activeBookId': 'Odyssey', 'result': result}]}
+            artifact = {'schemaVersion': 1, 'vault': {'bookFolder': 'Odyssey'}, 'sessions': [{'activeBookId': 'Odyssey', 'briefPath': brief_path, 'result': result}]}
             config = {'book_folder': 'Odyssey', 'inquiry_session_count': 1, 'require_quoted_inquiry': True}
             rows = [(scene, {'ID': 'ody_scn_001'}, 'Original prose')]
             def check():
@@ -63,6 +65,8 @@ class PackagingBoundaries(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'questions'): check()
             result['questionId'] = 'setup-core'
             self.assertEqual(check(), (1, 1))
+            artifact['sessions'][0]['briefPath'] = '../missing.md'
+            with self.assertRaisesRegex(ValueError, 'briefing is missing'): check()
 
     def test_unsafe_paths(self):
         for path in ['../secret.md', '/secret.md', '.obsidian/data.json', 'a/../b.md', 'a\\b.md', 'a//b.md']:

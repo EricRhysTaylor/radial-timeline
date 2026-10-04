@@ -53,7 +53,7 @@ See [Reading the corpus](https://github.com/EricRhysTaylor/radial-timeline/wiki/
 ### Timeline view
 
 - **The title bar fits narrow panes.** The book selector and the small icons beside it no longer overlap. When the right side needs room, the mode buttons slide left to make it. In a narrower pane the command, print, bug, and settings icons fold into one menu button, then the search field and book selector get shorter, and only in the narrowest panes do inactive modes shrink to their number, such as **1 2 Narrative 3 4**.
-- **In This Book leads the beat hover.** Beat notes gain an **In This Book** field for what the beat is in your novel. When it's filled, the beat hover opens with it and the beat system's generic Purpose drops beneath as a smaller line, and timeline search finds the beat by its words. Unfilled beats hover as before. To add the field to existing beat notes, run **Insert missing fields** from the beat audit in **Settings → Core → Story beats system**.
+- **In This Book leads the beat hover.** Beat notes gain an **In This Book** field for what the beat is in your novel. When it's filled, the beat hover opens with it and the beat system's generic Purpose drops beneath as a smaller line, and timeline search finds the beat by its words. Unfilled beats hover as before. Hold **Shift** in Narrative mode to read the ring in your book's own terms: beat labels switch to their In This Book names until you let go. To add the field to existing beat notes, run **Insert missing fields** from the beat audit in **Settings → Core → Story beats system**.
 
 ### AI
 

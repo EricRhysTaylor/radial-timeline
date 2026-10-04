@@ -41,7 +41,7 @@ import {
 import { WritingSessionCompletionModal } from '../modals/WritingSessionCompletionModal';
 import { canPostSessionsToFeed, postSessionToCommunityFeed } from '../communityShare/communityShareClient';
 import { openMailboxMenu, paintMailboxButton } from '../communityShare/communityMailbox';
-import { DESK_LAMP_PANEL_NOTE, openDeskLampsMenu, openSessionDeskLampMenu, paintDeskLampButton, sessionDeskLampLine } from '../communityShare/deskLamps';
+import { DESK_LAMP_PANEL_NOTE, openDeskLampsMenu, openSessionDeskLampMenu, paintDeskLampButton } from '../communityShare/deskLamps';
 import { projectSessionFeedPost } from '../services/WritingSessionLog';
 import { isRenderedOnTimeline } from '../utils/sceneHelpers';
 import { SearchPanelController } from './interactions/SearchPanelController';
@@ -608,12 +608,6 @@ export class RadialTimelineView extends ItemView {
                 evt.stopPropagation();
                 openMailboxMenu(mailboxBtn, mailbox.view().answer);
             });
-            // Coming back from the website is when a mark may have cleared.
-            this.registerDomEvent(doc.win, 'focus', () => mailbox.onWake());
-            this.registerDomEvent(doc, 'visibilitychange', () => {
-                if (doc.visibilityState === 'visible') mailbox.onWake();
-            });
-
             // Desk Lamps — right of the mailbox: a lamp and the count of
             // friends at their desks. Shown once connected with a Desk Lamp or
             // an invite; state and checking live on the plugin-wide DeskLamps.
@@ -636,9 +630,15 @@ export class RadialTimelineView extends ItemView {
                 evt.stopPropagation();
                 openDeskLampsMenu(deskLampBtn, deskLamps);
             });
-            this.registerDomEvent(doc.win, 'focus', () => deskLamps.onWake());
+            // Coming back from the website is when a mail mark may have
+            // cleared or a Desk Lamp invite been answered.
+            const wake = () => {
+                mailbox.onWake();
+                deskLamps.onWake();
+            };
+            this.registerDomEvent(doc.win, 'focus', wake);
             this.registerDomEvent(doc, 'visibilitychange', () => {
-                if (doc.visibilityState === 'visible') deskLamps.onWake();
+                if (doc.visibilityState === 'visible') wake();
             });
 
             // Subplot ring key trigger — action icon slot right of the
@@ -1996,7 +1996,7 @@ export class RadialTimelineView extends ItemView {
 
         // Desk Lamps: who sees this session, with a way to change it or turn
         // the lamp off mid-session.
-        const lampLine = this.getSessionDeskLampLine();
+        const lampLine = this.plugin.deskLamps.sessionLine();
         if (lampLine) {
             const lampRow = panel.createDiv({ cls: 'ert-timeline-session-panel__lamp-status' });
             const lampIcon = lampRow.createSpan({ cls: 'ert-timeline-session-panel__lamp-icon' });
@@ -2006,13 +2006,6 @@ export class RadialTimelineView extends ItemView {
                 openSessionDeskLampMenu(lampEdit, this.plugin.deskLamps);
             });
         }
-    }
-
-    /** The running panel's Desk Lamps line; null when there is no friend to share with. */
-    private getSessionDeskLampLine(): string | null {
-        const deskLamps = this.plugin.deskLamps;
-        if (deskLamps.panelFriends().length === 0) return null;
-        return sessionDeskLampLine(deskLamps.view().own);
     }
 
     private getActiveWritingSessionPanelRenderKey(active: ActiveWritingSession, elapsedMs: number): string {
@@ -2028,7 +2021,7 @@ export class RadialTimelineView extends ItemView {
             active.mode,
             active.stage,
             active.bookTitle,
-            this.getSessionDeskLampLine() ?? '',
+            this.plugin.deskLamps.sessionLine() ?? '', // SAFE: no Desk Lamps line is part of the render key as empty
         ].join('|');
     }
 

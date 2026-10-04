@@ -143,8 +143,8 @@ describe('DeskLamps', () => {
         };
     }
 
-    function harness(options: { connected?: boolean; toggle?: boolean; enabled?: boolean } = {}) {
-        let active: ActiveWritingSession | undefined;
+    function harness(options: { connected?: boolean; toggle?: boolean; enabled?: boolean; shared?: ActiveWritingSession } = {}) {
+        let active: ActiveWritingSession | undefined = options.shared;
         const communityShare = buildDefaultCommunityShareSettings();
         // Private level by default: Desk Lamps needs a connection, not a level.
         communityShare.enabled = options.enabled === true;
@@ -157,6 +157,8 @@ describe('DeskLamps', () => {
                 secretId: 'rt.community-share.connection-secret'
             };
         }
+        // A session shared before this load (a plugin reload mid-session).
+        if (options.shared) communityShare.deskLamps = { profileId: 'profile-1', audience: [MAYA], activeSessionId: options.shared.id };
         const plugin = {
             settings: { showDeskLamps: options.toggle, communityShare },
             getWritingSessionService: () => ({ getActiveSession: () => active }),
@@ -211,7 +213,7 @@ describe('DeskLamps', () => {
         await deskLamps.shareSession('session-1', [MAYA, PRIYA]);
         await vi.waitFor(() => expect(syncMock).toHaveBeenCalledTimes(2));
         expect(sentLights()[1]).toEqual({ state: 'lit', mode: 'drafting', lit_at: '2026-10-04T11:45:00.000Z', audience: [MAYA, PRIYA] });
-        expect(deskLamps.view().own).toEqual({ kind: 'on', state: 'lit', names: ['Maya Chen', 'Priya Nair'], count: 2 });
+        await vi.waitFor(() => expect(deskLamps.view().own).toEqual({ kind: 'on', state: 'lit', names: ['Maya Chen', 'Priya Nair'], count: 2 }));
 
         // The idle auto-pause changes nothing a friend sees: no call.
         setSession(session({ pausedAt: '2026-10-04T11:58:00.000Z', idleAuto: true }));
@@ -326,6 +328,41 @@ describe('DeskLamps', () => {
         await vi.waitFor(() => expect(deskLamps.view().answer?.lit).toHaveLength(1));
         await vi.advanceTimersByTimeAsync(61e3);
         expect(deskLamps.view().bulletins).toMatchObject([{ profile_id: MAYA, display_name: 'Maya Chen' }]);
+    });
+
+    it('says the lamp is lit only once the server accepted it, and says why when it refused', async () => {
+        const { deskLamps, setSession } = harness();
+        deskLamps.subscribe(() => {});
+        await vi.waitFor(() => expect(deskLamps.panelFriends()).toHaveLength(3));
+        let accept!: (value: DeskLampsAnswer) => void;
+        syncMock.mockReturnValueOnce(new Promise<DeskLampsAnswer>(resolve => { accept = resolve; }));
+        setSession(session());
+        await deskLamps.shareSession('session-1', [MAYA]);
+        expect(deskLamps.sessionLine()).toBe('Lighting lamp for Maya…');
+        accept(answer({ lamps: FRIENDS }));
+        await vi.waitFor(() => expect(deskLamps.sessionLine()).toBe('Lamp lit for Maya'));
+
+        syncMock.mockRejectedValueOnce(new Error("Sharing is paused, so your lamp can't be lit."));
+        setSession(session({ pausedAt: '2026-10-04T11:58:00.000Z', idleAuto: false }));
+        await vi.waitFor(() => expect(deskLamps.view().own).toEqual({ kind: 'refused', reason: "Sharing is paused, so your lamp can't be lit." }));
+        expect(deskLamps.sessionLine()).toBe("Lamp not lit: Sharing is paused, so your lamp can't be lit.");
+    });
+
+    it('sends no lamp, and says it is off, when the session start cannot be read', async () => {
+        const { deskLamps, setSession } = harness();
+        deskLamps.subscribe(() => {});
+        await vi.waitFor(() => expect(syncMock).toHaveBeenCalledTimes(1));
+        setSession(session({ startedAt: 'garbled' }));
+        await deskLamps.shareSession('session-1', [MAYA]);
+        await vi.advanceTimersByTimeAsync(5e3);
+        expect(sentLights().every(light => light === undefined)).toBe(true);
+        expect(deskLamps.view().own).toEqual({ kind: 'not_shared' });
+    });
+
+    it('relights a session shared before a reload at once, without a view', async () => {
+        harness({ shared: session() });
+        await vi.waitFor(() => expect(syncMock).toHaveBeenCalledTimes(1));
+        expect(sentLights()[0]).toMatchObject({ state: 'lit', audience: [MAYA] });
     });
 
     it('turns a lit lamp off on unload, best effort', async () => {

@@ -35,6 +35,8 @@ import { fetchCommunityMailbox, type CommunityMailboxAnswer } from './communityS
 import { hasActiveCommunityConnection, normalizeCommunityShareSettings } from './communityShareSettings';
 
 export const COMMUNITY_SITE_URL = 'https://community.radialtimeline.com';
+/** My Share: where a member manages what they share, blocks, and Desk Lamps. */
+export const COMMUNITY_MY_SHARE_URL = `${COMMUNITY_SITE_URL}/me`;
 
 const POLL_MS = 60 * 60e3;
 const JITTER_MS = 5 * 60e3; // 0–5 min added to every hourly check

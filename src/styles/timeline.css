@@ -2543,8 +2543,10 @@
   background: var(--background-modifier-hover);
 }
 
-/* The last check failed: the icon stays, dimmed; the tooltip says why. */
-.ert-timeline-mailbox.clickable-icon.is-stale svg {
+/* The last check failed: the icon stays, dimmed; the tooltip says why.
+   Shared with the Desk Lamps button below. */
+.ert-timeline-mailbox.clickable-icon.is-stale svg,
+.ert-timeline-desk-lamps.clickable-icon.is-stale svg {
   opacity: 0.45;
 }
 
@@ -2587,9 +2589,10 @@
   background: var(--ert-community-account-blue);
 }
 
-/* On the pill: its top-right corner, ringed in the title bar's background
-   the way the website chip rings its badge. */
-.ert-timeline-mailbox > .ert-mailbox-badge {
+/* On the pill (and the Desk Lamps button): its top-right corner, ringed in
+   the title bar's background the way the website chip rings its badge. */
+.ert-timeline-mailbox > .ert-mailbox-badge,
+.ert-timeline-desk-lamps > .ert-mailbox-badge {
   position: absolute;
   top: -5px;
   right: -6px;
@@ -2629,21 +2632,11 @@
   background: var(--background-modifier-hover);
 }
 
-.ert-timeline-desk-lamps.clickable-icon.is-stale svg {
-  opacity: 0.45;
-}
-
+/* After the display rule above: equal specificity, so order decides. */
 .ert-timeline-desk-lamps[hidden] {
   display: none;
 }
 
-.ert-timeline-desk-lamps > .ert-mailbox-badge {
-  position: absolute;
-  top: -5px;
-  right: -6px;
-  pointer-events: none;
-  box-shadow: 0 0 0 2px var(--background-primary);
-}
 
 /* The living list: a friend on a break is dimmed; a lamp-off bulletin is
    quieter still. */

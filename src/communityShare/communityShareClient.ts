@@ -1,7 +1,7 @@
 import { apiVersion, Platform, requestUrl } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { deleteSecret, getSecret, isSecretStorageAvailable, setSecret } from '../ai/credentials/secretStorage';
-import { DESK_LAMP_MAX_AUDIENCE, canShareAprToCommunity, deriveCommunityShareMode, hasActiveCommunityConnection, hasCommunityConnection, normalizeCommunityShareSettings } from './communityShareSettings';
+import { canShareAprToCommunity, deriveCommunityShareMode, hasActiveCommunityConnection, hasCommunityConnection, normalizeCommunityShareSettings } from './communityShareSettings';
 import {
     COMMUNITY_DAILY_BACKFILL_DAYS,
     COMMUNITY_DAILY_BACKFILL_VERSION,
@@ -678,11 +678,11 @@ export interface CommunityMailboxAnswer {
     admin: { unread: number; awaiting: number } | null;
 }
 
-function isMailboxCount(value: unknown): value is number {
+function isCount(value: unknown): value is number {
     return typeof value === 'number' && Number.isInteger(value) && value >= 0;
 }
 
-const MAILBOX_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const COMMUNITY_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function isCommunityMailboxAnswer(value: unknown): value is CommunityMailboxAnswer {
     if (!value || typeof value !== 'object') return false;
@@ -690,13 +690,13 @@ export function isCommunityMailboxAnswer(value: unknown): value is CommunityMail
     const replies = answer.replies;
     const admin = answer.admin;
     return answer.ok === true
-        && isMailboxCount(answer.support_unread)
-        && !!replies && isMailboxCount(replies.count)
+        && isCount(answer.support_unread)
+        && !!replies && isCount(replies.count)
         // The question id becomes part of a link: only a UUID is accepted.
         && (replies.count === 0
             ? replies.latest_post_id === null
-            : typeof replies.latest_post_id === 'string' && MAILBOX_UUID_RE.test(replies.latest_post_id))
-        && (admin === null || (!!admin && isMailboxCount(admin.unread) && isMailboxCount(admin.awaiting)));
+            : typeof replies.latest_post_id === 'string' && COMMUNITY_UUID_RE.test(replies.latest_post_id))
+        && (admin === null || (!!admin && isCount(admin.unread) && isCount(admin.awaiting)));
 }
 
 /**
@@ -765,7 +765,7 @@ const DESK_LAMP_LIT_AT_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
 function isDeskLampFriend(value: unknown): value is DeskLampFriend {
     if (!value || typeof value !== 'object') return false;
     const friend = value as Partial<DeskLampFriend>;
-    return typeof friend.profile_id === 'string' && MAILBOX_UUID_RE.test(friend.profile_id)
+    return typeof friend.profile_id === 'string' && COMMUNITY_UUID_RE.test(friend.profile_id)
         // The handle becomes a profile link; deskLamps encodes it there.
         && typeof friend.handle === 'string' && friend.handle.length > 0
         && typeof friend.display_name === 'string';
@@ -785,11 +785,11 @@ export function isDeskLampsAnswer(value: unknown): value is DeskLampsAnswer {
     const answer = value as Partial<DeskLampsAnswer>;
     const light = answer.light;
     return answer.ok === true
-        && isMailboxCount(answer.invites_received)
+        && isCount(answer.invites_received)
         && (light === null || (!!light
             && DESK_LAMP_STATES.has(light.state)
             && Array.isArray(light.audience)
-            && light.audience.every(id => typeof id === 'string' && MAILBOX_UUID_RE.test(id))))
+            && light.audience.every(id => typeof id === 'string' && COMMUNITY_UUID_RE.test(id))))
         && Array.isArray(answer.lamps) && answer.lamps.every(isDeskLampFriend)
         && Array.isArray(answer.lit) && answer.lit.every(isLitDeskLamp);
 }
@@ -804,9 +804,6 @@ export function isDeskLampsAnswer(value: unknown): value is DeskLampsAnswer {
  * lamp off are allowed while paused.
  */
 export async function syncDeskLamps(plugin: RadialTimelinePlugin, light?: DeskLampLight | null): Promise<DeskLampsAnswer> {
-    if (light && light.audience.length > DESK_LAMP_MAX_AUDIENCE) {
-        throw new CommunityShareError('invalid_light', `A lamp can be shared with at most ${DESK_LAMP_MAX_AUDIENCE} Desk Lamps.`);
-    }
     const { connectionId, currentSecret, connection } = await requireActiveConnection(plugin, true);
     assertStillSendable(plugin, connection, !light, true);
     const body: Record<string, unknown> = {

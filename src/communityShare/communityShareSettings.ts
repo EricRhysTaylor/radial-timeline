@@ -208,8 +208,6 @@ function normalizeDailyBackfill(value: unknown): CommunityDailyBackfillRecord | 
 }
 
 const DESK_LAMP_PROFILE_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-/** The server's audience ceiling (community_desk_lamp_lights.audience). */
-export const DESK_LAMP_MAX_AUDIENCE = 50;
 
 function normalizeDeskLamps(value: unknown): CommunityDeskLampsRecord | undefined {
     if (!value || typeof value !== 'object') return undefined;
@@ -223,7 +221,7 @@ function normalizeDeskLamps(value: unknown): CommunityDeskLampsRecord | undefine
     }
     return {
         profileId: record.profileId,
-        audience: audience.slice(0, DESK_LAMP_MAX_AUDIENCE),
+        audience,
         ...(typeof record.activeSessionId === 'string' && record.activeSessionId ? { activeSessionId: record.activeSessionId } : {})
     };
 }

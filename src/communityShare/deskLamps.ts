@@ -42,13 +42,12 @@ import { Menu } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { ActiveWritingSession, WritingSessionMode } from '../types/settings';
 import { tooltip as applyTooltip } from '../utils/tooltip';
-import { COMMUNITY_SITE_URL } from './communityMailbox';
+import { COMMUNITY_MY_SHARE_URL, COMMUNITY_SITE_URL } from './communityMailbox';
 import { syncDeskLamps, type DeskLampFriend, type DeskLampLight, type DeskLampsAnswer, type LitDeskLamp } from './communityShareClient';
 import { deskLampChoices, hasCommunityConnection, normalizeCommunityShareSettings } from './communityShareSettings';
 
-export const DESK_LAMPS_MY_SHARE_URL = `${COMMUNITY_SITE_URL}/me`;
 /** The popover's row limit (D15). */
-export const DESK_LAMP_MAX_ROWS = 12;
+const DESK_LAMP_MAX_ROWS = 12;
 /** Session panel first-use line (plan "Session panel"). */
 export const DESK_LAMP_PANEL_NOTE = 'Ticked friends see that you\'re writing, your city, the kind of writing, and how long, until you save or end the session.';
 
@@ -75,7 +74,7 @@ const MODE_LABELS: Record<WritingSessionMode, string> = {
 // ---------------------------------------------------------------------------
 
 /** The session start floored to 5 minutes (D7), ISO UTC; null when unparseable. */
-export function floorToFiveMinutes(iso: string): string | null {
+function floorToFiveMinutes(iso: string): string | null {
     const ms = Date.parse(iso);
     if (!Number.isFinite(ms)) return null;
     return new Date(Math.floor(ms / FIVE_MINUTES_MS) * FIVE_MINUTES_MS).toISOString();
@@ -191,17 +190,17 @@ function dotJoin(parts: Array<string | null>): string {
 export function deskLampRowLabel(row: DeskLampRow, now: number): string {
     if (row.kind === 'bulletin') {
         const { bulletin } = row;
-        return dotJoin([bulletin.display_name, bulletin.place, `lamp off after ${formatLampDuration(bulletin.on_for_ms) ?? 'a few minutes'}`]);
+        return dotJoin([bulletin.display_name, bulletin.place, `lamp off after ${formatLampDuration(bulletin.on_for_ms) ?? 'a few minutes'}`]); // SAFE: D7 — under 5 minutes has no 5-minute figure
     }
     const { lamp } = row;
     const status = lamp.state === 'break'
         ? 'on a break'
-        : formatLampDuration(now - Date.parse(lamp.lit_at)) ?? 'just started';
+        : formatLampDuration(now - Date.parse(lamp.lit_at)) ?? 'just started'; // SAFE: D7 — a lamp under 5 minutes old reads "just started"
     return dotJoin([lamp.display_name, lamp.place, MODE_LABELS[lamp.mode], status]);
 }
 
 /** The badge: friends whose lamp is lit. Breaks and bulletins never count. */
-export function litDeskLampCount(answer: DeskLampsAnswer | null): number {
+function litDeskLampCount(answer: DeskLampsAnswer | null): number {
     return answer ? answer.lit.filter(lamp => lamp.state === 'lit').length : 0;
 }
 
@@ -214,14 +213,20 @@ export function joinFirstNames(names: readonly string[]): string {
     return `${first[0]}, ${first[1]} and ${first.length - 2} others`;
 }
 
-/** Your own lamp, as your friends see it. */
+/**
+ * Your own lamp, as your friends see it. `on` only once the server has
+ * accepted exactly this lamp; until then `lighting`, and `refused` when the
+ * server said no (the panel never claims a lamp that isn't lit).
+ */
 export type OwnDeskLamp =
     | { kind: 'no_session' }
     | { kind: 'not_shared' }
     | { kind: 'sharing_paused' }
+    | { kind: 'lighting'; names: string[]; count: number }
+    | { kind: 'refused'; reason: string }
     | { kind: 'on'; state: 'lit' | 'break'; names: string[]; count: number };
 
-function sharedWith(own: Extract<OwnDeskLamp, { kind: 'on' }>): string {
+function sharedWith(own: { names: string[]; count: number }): string {
     return own.names.length === own.count
         ? joinFirstNames(own.names)
         : `${own.count} Desk Lamp${own.count === 1 ? '' : 's'}`;
@@ -232,6 +237,8 @@ export function ownDeskLampLine(own: OwnDeskLamp): string {
         case 'no_session': return 'Your lamp is off. Start a session to light it.';
         case 'not_shared': return 'Your lamp is off for this session.';
         case 'sharing_paused': return 'Your lamp is off while sharing is paused.';
+        case 'lighting': return `Lighting your lamp for ${sharedWith(own)}…`;
+        case 'refused': return `Your lamp isn't lit: ${own.reason}`;
         case 'on': return own.state === 'break'
             ? `${sharedWith(own)} ${own.count === 1 ? 'sees' : 'see'} you on a break.`
             : `Your lamp is lit for ${sharedWith(own)}.`;
@@ -244,11 +251,13 @@ export function sessionDeskLampLine(own: OwnDeskLamp): string | null {
         case 'no_session': return null;
         case 'not_shared': return 'Lamp off';
         case 'sharing_paused': return 'Lamp off while sharing is paused';
+        case 'lighting': return `Lighting lamp for ${sharedWith(own)}…`;
+        case 'refused': return `Lamp not lit: ${own.reason}`;
         case 'on': return `Lamp lit for ${sharedWith(own)}`;
     }
 }
 
-export function invitesWaitingLine(count: number): string {
+function invitesWaitingLine(count: number): string {
     return count === 1 ? '1 Desk Lamp invite waiting' : `${count} Desk Lamp invites waiting`;
 }
 
@@ -267,7 +276,7 @@ export function deskLampsTooltip(view: DeskLampsView): string {
     if (view.error) return `Desk Lamps: couldn't check (${view.error}).`;
     const lit = litDeskLampCount(view.answer);
     const notes = [lit === 0 ? 'nobody at their desk' : lit === 1 ? '1 friend at their desk' : `${lit} friends at their desks`];
-    const invites = view.answer?.invites_received ?? 0;
+    const invites = view.answer?.invites_received ?? 0; // SAFE: before the first answer no invite is known
     if (invites > 0) notes.push(invitesWaitingLine(invites));
     return `Desk Lamps: ${notes.join(' · ')}`;
 }
@@ -306,7 +315,7 @@ export function openDeskLampsMenu(anchor: HTMLElement, deskLamps: DeskLamps, sho
     if (view.error) {
         menu.addItem(item => item.setTitle(`Couldn't check Desk Lamps: ${view.error}`).setIcon('circle-alert').setDisabled(true));
     } else {
-        const list = deskLampList(view.answer?.lit ?? [], view.bulletins, now, showAll ? Number.POSITIVE_INFINITY : DESK_LAMP_MAX_ROWS);
+        const list = deskLampList(view.answer?.lit ?? [], view.bulletins, now, showAll ? Number.POSITIVE_INFINITY : DESK_LAMP_MAX_ROWS); // SAFE: before the first answer no lamp is known
         if (list.rows.length === 0) {
             menu.addItem(item => item.setTitle('No Desk Lamps lit right now').setIcon('lamp').setDisabled(true));
         }
@@ -334,11 +343,11 @@ export function openDeskLampsMenu(anchor: HTMLElement, deskLamps: DeskLamps, sho
     }
     menu.addSeparator();
     menu.addItem(item => item.setTitle(ownDeskLampLine(view.own)).setIcon('lamp-desk').setDisabled(true));
-    const invites = view.answer?.invites_received ?? 0;
+    const invites = view.answer?.invites_received ?? 0; // SAFE: before the first answer no invite is known
     if (invites > 0) {
-        menu.addItem(item => item.setTitle(invitesWaitingLine(invites)).setIcon('mail-plus').onClick(() => openUrl(DESK_LAMPS_MY_SHARE_URL)));
+        menu.addItem(item => item.setTitle(invitesWaitingLine(invites)).setIcon('mail-plus').onClick(() => openUrl(COMMUNITY_MY_SHARE_URL)));
     }
-    menu.addItem(item => item.setTitle('Manage Desk Lamps…').setIcon('users').onClick(() => openUrl(DESK_LAMPS_MY_SHARE_URL)));
+    menu.addItem(item => item.setTitle('Manage Desk Lamps…').setIcon('users').onClick(() => openUrl(COMMUNITY_MY_SHARE_URL)));
     const rect = anchor.getBoundingClientRect();
     menu.showAtPosition({ x: rect.left, y: rect.bottom }, doc);
 }
@@ -375,6 +384,11 @@ export function openSessionDeskLampMenu(anchor: HTMLElement, deskLamps: DeskLamp
 // 3. The one plugin-wide DeskLamps
 // ---------------------------------------------------------------------------
 
+/** What this vault's lamp should be right now: the lamp to send, or off and why. */
+type LampState =
+    | { on: true; light: DeskLampLight; signature: string; audience: string[] }
+    | { on: false; reason: 'disabled' | 'no_session' | 'not_shared' | 'sharing_paused' };
+
 export class DeskLamps {
     private answer: DeskLampsAnswer | null = null;
     private error: string | null = null;
@@ -401,9 +415,9 @@ export class DeskLamps {
     constructor(private readonly plugin: RadialTimelinePlugin) {
         this.connectionKey = this.currentKey();
         this.enabled = this.plugin.settings.showDeskLamps !== false;
-        // A session shared before a reload is still open: relight it within a
-        // minute, without waiting for a timeline view.
-        if (this.desired().signature !== OFF) this.armTimer();
+        // A session shared before a reload is still open: relight it at once
+        // (unload turned it off), without waiting for a timeline view.
+        if (this.lampState().on) void this.check();
     }
 
     view(): DeskLampsView {
@@ -424,12 +438,18 @@ export class DeskLamps {
      * when not connected or turned off here.
      */
     panelFriends(): DeskLampFriend[] {
-        if (this.connectionKey === null || !this.enabled) return [];
+        if (!this.canRead()) return [];
         const rank = new Map(this.choices().audience.map((id, index) => [id, index]));
         const last = Number.MAX_SAFE_INTEGER;
-        return [...(this.answer?.lamps ?? [])].sort((a, b) =>
+        return [...this.friends()].sort((a, b) =>
             (rank.get(a.profile_id) ?? last) - (rank.get(b.profile_id) ?? last)
             || a.display_name.localeCompare(b.display_name));
+    }
+
+    /** The running session panel's line ("Lamp lit for Maya and Priya"); null with no Desk Lamp to share with. */
+    sessionLine(): string | null {
+        if (!this.canRead() || this.friends().length === 0) return null;
+        return sessionDeskLampLine(this.ownLamp());
     }
 
     /** The last choice, to pre-tick the Begin Session panel (D5). */
@@ -489,7 +509,7 @@ export class DeskLamps {
             this.sentSignature = OFF;
             this.clearTimer();
             this.emit();
-            if (this.listeners.size > 0 || this.desired().signature !== OFF) void this.check();
+            if (this.listeners.size > 0 || this.lampState().on) void this.check();
             return;
         }
         const enabled = this.plugin.settings.showDeskLamps !== false;
@@ -502,7 +522,7 @@ export class DeskLamps {
             return;
         }
         const expected = this.inFlightSignature ?? this.sentSignature;
-        if (this.desired().signature !== expected) void this.check();
+        if (this.desiredSignature() !== expected) void this.check();
     }
 
     /** A timeline window regained focus or became visible. */
@@ -533,6 +553,11 @@ export class DeskLamps {
         return this.connectionKey !== null && this.enabled;
     }
 
+    /** The accepted Desk Lamps from the last answer; none are known before the first. */
+    private friends(): DeskLampFriend[] {
+        return this.answer ? this.answer.lamps : [];
+    }
+
     private choices(): { audience: string[]; activeSessionId?: string } {
         return deskLampChoices(normalizeCommunityShareSettings(this.plugin.settings.communityShare));
     }
@@ -548,37 +573,43 @@ export class DeskLamps {
         await this.plugin.saveSettings();
     }
 
-    /** The lamp the server should hold right now, and its signature ('off' when none). */
-    private desired(): { light: DeskLampLight | null; signature: string } {
-        const off = { light: null, signature: OFF };
-        if (this.connectionKey === null || !this.enabled) return off;
-        const share = normalizeCommunityShareSettings(this.plugin.settings.communityShare);
-        if (share.sharingPaused) return off;
+    /** The one derivation of this vault's lamp: what is sent, and what the panel and popover say. */
+    private lampState(): LampState {
+        if (!this.canRead()) return { on: false, reason: 'disabled' };
         const session = this.plugin.getWritingSessionService().getActiveSession();
+        if (!session) return { on: false, reason: 'no_session' };
+        const share = normalizeCommunityShareSettings(this.plugin.settings.communityShare);
         const choices = deskLampChoices(share);
-        if (!session || choices.activeSessionId !== session.id || choices.audience.length === 0) return off;
+        if (choices.activeSessionId !== session.id || choices.audience.length === 0) return { on: false, reason: 'not_shared' };
+        if (share.sharingPaused) return { on: false, reason: 'sharing_paused' };
+        // An unreadable session start sends no lamp (projectDeskLampLight).
         const light = projectDeskLampLight(session, choices.audience);
-        return light ? { light, signature: JSON.stringify(light) } : off;
+        if (!light) return { on: false, reason: 'not_shared' };
+        return { on: true, light, signature: JSON.stringify(light), audience: choices.audience };
+    }
+
+    private desiredSignature(): string {
+        const state = this.lampState();
+        return state.on ? state.signature : OFF;
+    }
+
+    /** The server holds a lamp, or should: refresh every minute, whatever view shows. */
+    private lampOn(): boolean {
+        return this.desiredSignature() !== OFF || this.sentSignature !== OFF;
     }
 
     private ownLamp(): OwnDeskLamp {
-        const session = this.plugin.getWritingSessionService().getActiveSession();
-        if (!session) return { kind: 'no_session' };
-        const share = normalizeCommunityShareSettings(this.plugin.settings.communityShare);
-        const choices = deskLampChoices(share);
-        if (choices.activeSessionId !== session.id || choices.audience.length === 0) return { kind: 'not_shared' };
-        if (share.sharingPaused) return { kind: 'sharing_paused' };
-        const names = new Map((this.answer?.lamps ?? []).map(friend => [friend.profile_id, friend.display_name]));
-        // Before the first answer the names are unknown; after it, a friend
-        // removed since is no longer in the audience (the server trims it).
-        const shared = choices.audience.filter(id => names.has(id) || !this.answer);
-        if (shared.length === 0) return { kind: 'not_shared' };
-        return {
-            kind: 'on',
-            state: projectDeskLampLight(session, choices.audience)?.state ?? 'lit',
-            names: shared.flatMap(id => names.get(id) ?? []),
-            count: shared.length
-        };
+        const state = this.lampState();
+        if (!state.on) return { kind: state.reason === 'disabled' ? 'not_shared' : state.reason };
+        // Before the first answer the names are unknown; after it, only accepted
+        // Desk Lamps count (the server trims the audience to them).
+        const chosen = new Set(state.audience);
+        const names = this.friends().filter(friend => chosen.has(friend.profile_id)).map(friend => friend.display_name);
+        const count = this.answer ? names.length : state.audience.length;
+        if (count === 0) return { kind: 'not_shared' };
+        if (this.sentSignature === state.signature) return { kind: 'on', state: state.light.state, names, count };
+        if (!this.busy && this.error) return { kind: 'refused', reason: this.error };
+        return { kind: 'lighting', names, count };
     }
 
     private async check(): Promise<void> {
@@ -587,10 +618,11 @@ export class DeskLamps {
             this.pending = true;
             return;
         }
-        const { light, signature } = this.desired();
+        const state = this.lampState();
+        const signature = state.on ? state.signature : OFF;
         // Send when the lamp should be on, or to turn off one the server holds;
         // otherwise only read, and not at all while turned off here.
-        const send = signature !== OFF || this.sentSignature !== OFF;
+        const send = state.on || this.sentSignature !== OFF;
         if (!send && !this.enabled) return;
         const generation = this.generation;
         this.busy = true;
@@ -600,7 +632,7 @@ export class DeskLamps {
         let answer: DeskLampsAnswer | null = null;
         let error: string | null = null;
         try {
-            answer = await syncDeskLamps(this.plugin, send ? light : undefined);
+            answer = await syncDeskLamps(this.plugin, send ? (state.on ? state.light : null) : undefined);
         } catch (e) {
             error = e instanceof Error ? e.message : String(e);
         }
@@ -632,11 +664,10 @@ export class DeskLamps {
     private armTimer(): void {
         this.clearTimer();
         if (this.destroyed || this.connectionKey === null) return;
-        const lampOn = this.desired().signature !== OFF || this.sentSignature !== OFF;
         let delay: number;
-        if (lampOn) delay = LAMP_REFRESH_MS;
+        if (this.lampOn()) delay = LAMP_REFRESH_MS;
         else if (!this.enabled || this.listeners.size === 0) return;
-        else if ((this.answer?.lamps.length ?? 0) > 0) delay = LAMP_REFRESH_MS;
+        else if (this.friends().length > 0) delay = LAMP_REFRESH_MS;
         else delay = IDLE_POLL_MS + Math.random() * JITTER_MS;
         this.timer = window.setTimeout(() => {
             this.timer = null;
@@ -645,9 +676,8 @@ export class DeskLamps {
     }
 
     private tick(): void {
-        const lampOn = this.desired().signature !== OFF || this.sentSignature !== OFF;
         // With the lamp off, the minute reads run only while you're looking.
-        if (!lampOn && (this.answer?.lamps.length ?? 0) > 0 && !activeDocument.hasFocus()) {
+        if (!this.lampOn() && this.friends().length > 0 && !activeDocument.hasFocus()) {
             this.armTimer();
             return;
         }

@@ -23,6 +23,7 @@ import {
     type CommunityShareContextProject
 } from '../../communityShare/communityShareClient';
 import { buildCommunitySharePreview } from '../../communityShare/communitySharePreview';
+import { COMMUNITY_MY_SHARE_URL } from '../../communityShare/communityMailbox';
 import type { CommunityShareFieldKey, CommunityShareSettings } from '../../types/settings';
 import { ERT_CLASSES } from '../../ui/classes';
 import { confirmWithErtModal } from '../../modals/ErtConfirmModal';
@@ -71,7 +72,6 @@ const MODE_NOTES: Record<CommunityShareMode, string> = {
     progress: 'Includes your profile, books, and APR, plus rounded writing activity: writing days, words, minutes, streak, and mode mix.'
 };
 
-const MY_SHARE_URL = 'https://community.radialtimeline.com/me';
 
 // Canonical website context for the Complete Preview. Profile and project
 // shell fields (title, status, genre, description) are managed on the
@@ -367,7 +367,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         .setDesc('Pick one sharing level. The complete preview always shows exactly what a level includes before anything publishes. Desk Lamps is separate: it shares live sessions only with the friends you choose, at any level, Private included.');
     addHeadingIcon(sharingHeading, 'share-2');
     const profileLink = sharingHeading.nameEl.createEl('a', {
-        href: MY_SHARE_URL,
+        href: COMMUNITY_MY_SHARE_URL,
         cls: 'ert-wiki-link',
         attr: {
             'aria-label': 'Open your community profile',
@@ -496,7 +496,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         editOnWebsiteNote.appendText('Edit these on the website — ');
         editOnWebsiteNote.createEl('a', {
             text: 'My Share',
-            href: MY_SHARE_URL,
+            href: COMMUNITY_MY_SHARE_URL,
             attr: { target: '_blank', rel: 'noopener' }
         });
 

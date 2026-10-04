@@ -95,8 +95,8 @@ The title bar also includes the compact count/session button used for Sessions.
 
 On a vault connected to the Community, a **Mailbox** button (a mail icon and the word Mailbox) sits just right of the writing-session control. It works like your account menu on the Community website, in the same colours:
 
-*   **A gold number** counts conversations with new replies: your requests the team has answered, plus your questions someone has replied to.
-*   **Click it** to open a menu like the website's: **Requests**, **New replies** (while there are some; it opens your newest question with a reply), each with its own count. Pick one to read it on the Community; reading it there clears the number the next time the plugin checks.
+*   **A gold number** counts conversations with new replies (your requests the team has answered, plus your questions someone has replied to) and [Desk Lamp](Desk-Lamps) invites waiting for you.
+*   **Click it** to open a menu like the website's: **Requests**, **New replies** (while there are some; it opens your newest question with a reply), and **Desk Lamp invites** (while some wait; it opens My Share's Desk Lamps section), each with its own count. Pick one to read or answer it on the Community; that clears its number the next time the plugin checks.
 *   The plugin checks about once an hour while a timeline is open, and again when you come back to Obsidian. It never marks anything as read.
 *   If a check fails, its icon dims and its tooltip says why.
 

@@ -6,11 +6,11 @@ It's deliberately small. Both of you agree before anything is visible, every ses
 
 Desk Lamps are managed on the Community website.
 
-1.  Open a writer's page on the Community and click **Add to Desk Lamps**. They receive an invite.
-2.  They accept it on your page or under **My Share → Desk Lamps**. Before accepting, they see exactly what a Desk Lamp can see.
+1.  Open a writer's page on the Community and click the lamp icon beside **Follow** (its tooltip reads **Add to Desk Lamps**). They receive an invite.
+2.  The invite counts in their **Mailbox**, in the plugin and on the website, under **Desk Lamp invites**. They accept it under **My Share → Desk Lamps** or on your page. Before accepting, they see exactly what a Desk Lamp can see.
 3.  Once accepted, the relationship works both ways, and each of you still decides per session whether to share.
 
-**My Share → Desk Lamps** lists invites you've received, your Desk Lamps, and invites you've sent. Declining, withdrawing, and removing are silent: nobody is notified.
+**My Share → Desk Lamps** lists invites you've received, your Desk Lamps, and invites you've sent. Removing a Desk Lamp with the lamp icon on their page asks you to confirm first. Declining, withdrawing, and removing are silent: nobody is notified.
 
 ## The lamp in your title bar
 

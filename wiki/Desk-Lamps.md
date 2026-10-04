@@ -23,7 +23,7 @@ Looking at the list never lights your own lamp.
 ## Light your lamp for a session
 
 1.  Open the session panel and press **Begin Session**. Under **Desk Lamps**, tick the friends who should see this session, or tick **All**. Radial Timeline remembers your choice for the next session.
-2.  While you write, the panel shows who your lamp is lit for, such as "Lamp lit for Maya and Priya". Change the list or turn the lamp off from there at any time.
+2.  While you write, the panel shows who your lamp is lit for, such as "Lamp lit for Maya and Priya". It reads "Lighting lamp for…" until the Community confirms, and "Lamp not lit" with the reason if it can't be lit. Change the list or turn the lamp off from there at any time.
 3.  **Pause** shows your friends **on a break**. Saving or discarding the session turns the lamp off.
 
 Your lamp follows the session, not your keystrokes: switching to an outline or research note doesn't turn it off.

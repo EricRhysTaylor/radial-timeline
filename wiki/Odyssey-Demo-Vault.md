@@ -1,9 +1,15 @@
-*The Odyssey* is the next book in the demo library: the epic traditionally attributed to Homer, in Samuel Butler's public-domain prose translation, mapped as 89 scenes across all 24 books. Its card in **Settings → PRO → Demo vaults** reads **Coming soon** until the download is published. The free [Pride & Prejudice demo vault](Sample-Vault) is available now.
+*The Odyssey* is the second free demo vault: the epic traditionally attributed to Homer, in Samuel Butler's public-domain prose translation, mapped as 89 scenes across all 24 books with its analysis already saved. Like the [Pride & Prejudice demo vault](Sample-Vault), it's a direct download with no signup or API key needed.
 
 <div style="text-align: center; margin: 20px 0;">
   <img src="images/odyssey-narrative.webp" alt="The Odyssey in Narrative mode: 89 scenes on the outer ring, four motif rings inside it, three act labels and the Hero's Journey beats around the edge" style="width: 600px; max-width: 100%; border-radius: 8px;" />
   <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Narrative mode: the outer ring carries every scene; four motif rings read the poem along other paths</div>
 </div>
+
+## How to get it
+
+1.  In **Settings → PRO → Demo vaults**, click **View demo & download** on The Odyssey's card. It opens the download page on [radialtimeline.com](https://www.radialtimeline.com/resources/free).
+2.  Unzip the download and, in Obsidian, choose **Open another vault → Open folder as vault**.
+3.  Turn on community plugins when Obsidian asks, then install **Radial Timeline** from **Settings → Community plugins → Browse**. The download holds the book and its notes only, with no Obsidian settings or plugin files.
 
 ## Why The Odyssey
 
@@ -15,6 +21,7 @@ The poem doesn't run in a straight line, which makes it a good test of a radial 
 *   **Three acts.** *Search and exile* (Books 1–9), *Wanderings and return in disguise* (Books 10–16), and *Reckoning and restoration* (Books 17–24).
 *   **Five rings in Narrative mode.** The Main Plot follows Ulysses's homecoming. Four motif rings offer other reading paths: *Telemachus Comes of Age*, *Hospitality and Loyalty*, *Penelope and the Suitors*, and *Recognition and Restoration*.
 *   **51 characters and 27 places.** Selected for the scenes that need them, with Butler's names first and familiar Greek names as aliases (Ulysses is also Odysseus).
+*   **Saved analysis.** Every scene has a reviewed summary and synopsis and a saved [Pulse](AI-Pulse-Analysis) analysis. The 12 beats carry all four [Gossamer](Gossamer-Mode) signals. Three saved [Inquiry](Inquiry) answers explore setup, pressure, and payoff, with 79 quoted observations linked to their scenes, and you can read them with AI turned off.
 *   **The source text.** The unmodified Project Gutenberg edition (eBook #1727).
 
 ## A story told out of order
@@ -35,7 +42,7 @@ Books 9–12 are Ulysses's own account of his wanderings, told at the Phaeacian 
   <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Hover a scene for its synopsis, Pulse analysis, subplots, and characters</div>
 </div>
 
-Every scene carries a reviewed summary and synopsis and a saved [Pulse](AI-Pulse-Analysis) analysis. Hover any scene to read them.
+Hover any scene to read its synopsis and Pulse analysis. The AI readings are curated interpretations; compare their judgments with the complete source text in the vault.
 
 ## Editorial choices
 

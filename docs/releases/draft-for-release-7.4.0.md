@@ -1,6 +1,19 @@
-## Radial Timeline 7.3.2
+## Radial Timeline 7.4.0
 
-Desk Lamps show when your writing friends are at their desks, Inquiry's corpus reads at a glance, and the Pride & Prejudice demo vault is a free download.
+The Odyssey joins Pride & Prejudice as a second free demo vault, Desk Lamps show when your writing friends are at their desks, and Inquiry's corpus reads at a glance.
+
+### Demo vaults
+
+- **The Odyssey joins the library.** A second free demo vault maps Homer's epic, in Samuel Butler's prose translation, as 89 scenes across all 24 books. Every scene has a reviewed summary and a saved Pulse analysis, the 12 Hero's Journey beats carry all four Gossamer signals, and three saved Inquiry answers explore setup, pressure, and payoff with 79 quotes linked to their scenes. Four motif rings sit beside the main plot, and in Chronologue, Ulysses's own account of his wanderings moves back years, ahead of scene 1.
+
+<img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/5a04ecad/wiki/images/odyssey-narrative.webp" alt="The Odyssey in Narrative mode: 89 scenes on the outer ring and four motif rings inside it" width="600">
+
+<img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/5a04ecad/wiki/images/odyssey-chronologue.webp" alt="The Odyssey in Chronologue mode: the scenes of Ulysses's wanderings, numbered 28 to 45, sit at the start of the timeline" width="600">
+
+- **Pride & Prejudice is a direct download.** The Welcome screen now opens with **Explore Pride & Prejudice**: all 61 chapters with saved Pulse analysis, four Gossamer signals, and three Inquiry sessions. **Get the free demo vault** opens the download page.
+- **Demo vaults in Settings → PRO.** The section formerly called Bonus vaults is now the demo library. **View demo & download** on Pride & Prejudice and The Odyssey opens the download page on the website; *Sherlock Holmes* and *The Faerie Queene* are marked **Coming soon**. Both downloads hold the book and its notes only. No signup or API key needed.
+
+See [Demo Vault: The Odyssey](https://github.com/EricRhysTaylor/radial-timeline/wiki/Odyssey-Demo-Vault) and [Demo Vault: Pride & Prejudice](https://github.com/EricRhysTaylor/radial-timeline/wiki/Sample-Vault) in the wiki.
 
 ### Desk Lamps
 
@@ -17,30 +30,16 @@ See [Desk Lamps](https://github.com/EricRhysTaylor/radial-timeline/wiki/Desk-Lam
 
 <img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/5a04ecad/wiki/images/inquiry-corpus-pages.webp" alt="The corpus strip for The Odyssey beside its legend: green filled pages for full scenes, faded red pages for excluded scenes, and blue outlined pages with a corner X for summary scenes with thin summaries" width="440">
 
-- **Inquiry opens with AI off.** The Inquiry view and its ribbon icon are there whether or not AI is turned on, so you can read saved sessions, including the demo vault's, without an API key. Running a new question needs AI turned on and a provider.
+- **Inquiry opens with AI off.** The Inquiry view and its ribbon icon are there whether or not AI is turned on, so you can read saved sessions, including the demo vaults', without an API key. Running a new question needs AI turned on and a provider.
 - **Saved questions read clearly in demo vaults.** Each saved question sits on a solid disc, so its number stays legible against the zone colors.
 
 See [Reading the corpus](https://github.com/EricRhysTaylor/radial-timeline/wiki/Inquiry#corpus-pages) in the wiki.
 
-### Demo vaults
-
-- **The Pride & Prejudice demo vault is a free download.** The Welcome screen now opens with **Explore Pride & Prejudice**: all 61 chapters with saved Pulse analysis, four Gossamer signals, and three Inquiry sessions. **Get the free demo vault** opens the download page. No signup or API key needed.
-- **Demo vaults in Settings → PRO.** The section formerly called Bonus vaults is now the demo library. **View demo & download** opens the Pride & Prejudice page on the website. *The Odyssey*, *Sherlock Holmes*, and *The Faerie Queene* are marked **Coming soon**.
-
-<img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/5a04ecad/wiki/images/demo-vaults-shelf.webp" alt="Settings → PRO → Demo vaults: the Pride & Prejudice card with View demo & download, and The Odyssey card marked Coming soon" width="600">
-
-- **A first look at The Odyssey.** The next demo vault maps Homer's epic, in Samuel Butler's prose translation, as 89 scenes across all 24 books, with 12 Hero's Journey beats and four motif rings beside the main plot. In Chronologue, Ulysses's own account of his wanderings moves back years, ahead of scene 1.
-
-<img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/5a04ecad/wiki/images/odyssey-narrative.webp" alt="The Odyssey in Narrative mode: 89 scenes on the outer ring and four motif rings inside it" width="600">
-
-<img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/5a04ecad/wiki/images/odyssey-chronologue.webp" alt="The Odyssey in Chronologue mode: the scenes of Ulysses's wanderings, numbered 28 to 45, sit at the start of the timeline" width="600">
-
-See [Demo Vault: Pride & Prejudice](https://github.com/EricRhysTaylor/radial-timeline/wiki/Sample-Vault) and [Demo Vault: The Odyssey](https://github.com/EricRhysTaylor/radial-timeline/wiki/Odyssey-Demo-Vault) in the wiki.
-
 ### Community
 
 - **Your book follows My Share.** Choose a different book with **Change book** on My Share and the next book sync picks it up: the Community Share preview and the connected book in settings both show the book you chose.
-- **A mailbox in the title bar.** On a vault connected to the Community, a **Mailbox** button beside the writing-session control works like your account menu on the Community website. A gold number counts your requests the team has answered, your questions with new replies, and Desk Lamp invites waiting for you. Clicking it opens a menu of Requests, New replies, and Desk Lamp invites to answer them on the Community. To hide it, turn off **Show Community mailbox** in **Settings → Advanced**.
+- **Private means private.** Choosing **Private** under **What you share** now also stops your book list from syncing to My Share. The Mailbox and Desk Lamps keep working at every level, Private included.
+- **A mailbox in the title bar.** On a vault connected to the Community, at any sharing level, a **Mailbox** button beside the writing-session control works like your account menu on the Community website. A gold number counts your requests the team has answered, your questions with new replies, and Desk Lamp invites waiting for you. Clicking it opens a menu of Requests, New replies, and Desk Lamp invites to answer them on the Community. To hide it, turn off **Show Community mailbox** in **Settings → Advanced**.
 - **Export your timeline for sharing.** The **Timeline share export** command writes the file you upload on My Share to build your Interactive Timeline. Before anything is written, a dialog lists what the file contains, and nothing is shared until you upload it and activate the share.
 - **Bug reports that carry the details.** Bug reports from the Community include your plugin version, Obsidian version, and platform, so fixes land faster. My Share shows the same line for the vault you connected.
 

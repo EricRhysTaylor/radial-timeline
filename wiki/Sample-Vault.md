@@ -1,10 +1,5 @@
 A free, fully analyzed demo vault built around Jane Austen's *Pride & Prejudice*. All 61 chapters are scene notes with full properties, alongside 15 Save the Cat beat notes, 28 character notes, and saved AI analysis you can read without an API key: Pulse analysis on every chapter, four Gossamer signals, and three Inquiry sessions. It's the fastest way to see what Radial Timeline produces from a full-length novel.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/demo-vaults-shelf.webp" alt="Settings → PRO → Demo vaults: the Pride & Prejudice card with a View demo & download button, and The Odyssey card marked Coming soon" style="width: 600px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Settings → PRO → Demo vaults</div>
-</div>
-
 ## How to get it
 
 The demo vault is a direct download. No signup or API key needed.
@@ -37,6 +32,6 @@ The download holds the book and its notes only, with no Obsidian settings or plu
 
 ## More demo vaults
 
-**Settings → PRO → Demo vaults** also lists [The Odyssey](Odyssey-Demo-Vault), *Sherlock Holmes*, and *The Faerie Queene*. Each card reads **Coming soon** until its download is published.
+[The Odyssey](Odyssey-Demo-Vault) is a second free demo vault, downloaded the same way from **Settings → PRO → Demo vaults**. *Sherlock Holmes* and *The Faerie Queene* are listed there too, marked **Coming soon**.
 
 You're welcome to fork it, edit it, write in it, or strip it for parts. The source text and all included analysis are free to read, copy, and reuse.

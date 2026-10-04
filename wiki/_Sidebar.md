@@ -2,7 +2,7 @@
 *   [Getting Started](Getting-Started)
     *   [Manuscript Onboarding (in testing)](Onboard-Existing-Manuscript)
     *   [Demo Vault: Pride & Prejudice](Sample-Vault)
-    *   [Demo Vault: The Odyssey (coming soon)](Odyssey-Demo-Vault)
+    *   [Demo Vault: The Odyssey](Odyssey-Demo-Vault)
 *   [How to](How-to)
 *   [FAQ](FAQ)
 *   [Settings](Settings)

@@ -32,6 +32,6 @@ The download holds the book and its notes only, with no Obsidian settings or plu
 
 ## More demo vaults
 
-[The Odyssey](Odyssey-Demo-Vault) is a second free demo vault, downloaded the same way from **Settings → PRO → Demo vaults**. *Sherlock Holmes* and *The Faerie Queene* are listed there too, marked **Coming soon**.
+[The Odyssey](Odyssey-Demo-Vault) and *Sherlock Holmes* (four novels) are free demo vaults too, downloaded the same way from **Settings → PRO → Demo vaults**. *The Faerie Queene* is listed there as **Coming soon**.
 
 You're welcome to fork it, edit it, write in it, or strip it for parts. The source text and all included analysis are free to read, copy, and reuse.

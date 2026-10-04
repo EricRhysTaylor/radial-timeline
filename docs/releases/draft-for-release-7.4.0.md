@@ -1,17 +1,18 @@
 ## Radial Timeline 7.4.0
 
-The Odyssey joins Pride & Prejudice as a second free demo vault, Desk Lamps show when your writing friends are at their desks, and Inquiry's corpus reads at a glance.
+The Odyssey and Sherlock Holmes join Pride & Prejudice as free demo vaults, Desk Lamps show when your writing friends are at their desks, and Inquiry's corpus reads at a glance.
 
 ### Demo vaults
 
-- **The Odyssey joins the library.** A second free demo vault maps Homer's epic, in Samuel Butler's prose translation, as 89 scenes across all 24 books. Every scene has a reviewed summary and a saved Pulse analysis, the 12 Hero's Journey beats carry all four Gossamer signals, and three saved Inquiry answers explore setup, pressure, and payoff with 79 quotes linked to their scenes. Four motif rings sit beside the main plot, and in Chronologue, Ulysses's own account of his wanderings moves back years, ahead of scene 1.
+- **The Odyssey joins the library.** A new free demo vault maps Homer's epic, in Samuel Butler's prose translation, as 89 scenes across all 24 books. Every scene has a reviewed summary and a saved Pulse analysis, the 12 Hero's Journey beats carry all four Gossamer signals, and three saved Inquiry answers explore setup, pressure, and payoff with 79 quotes linked to their scenes. Four motif rings sit beside the main plot, and in Chronologue, Ulysses's own account of his wanderings moves back years, ahead of scene 1.
 
 <img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/5a04ecad/wiki/images/odyssey-narrative.webp" alt="The Odyssey in Narrative mode: 89 scenes on the outer ring and four motif rings inside it" width="600">
 
 <img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/5a04ecad/wiki/images/odyssey-chronologue.webp" alt="The Odyssey in Chronologue mode: the scenes of Ulysses's wanderings, numbered 28 to 45, sit at the start of the timeline" width="600">
 
+- **Sherlock Holmes: four novels.** *A Study in Scarlet*, *The Sign of the Four*, *The Hound of the Baskervilles*, and *The Valley of Fear*, 56 chapters in all, each novel in its own manuscript folder. Every novel has three acts and its own **Mystery and Revelation** beats, 41 across the four, following the investigative turn, the concealed history, the confrontation, and the explanation.
 - **Pride & Prejudice is a direct download.** The Welcome screen now opens with **Explore Pride & Prejudice**: all 61 chapters with saved Pulse analysis, four Gossamer signals, and three Inquiry sessions. **Get the free demo vault** opens the download page.
-- **Demo vaults in Settings → PRO.** The section formerly called Bonus vaults is now the demo library. **View demo & download** on Pride & Prejudice and The Odyssey opens the download page on the website; *Sherlock Holmes* and *The Faerie Queene* are marked **Coming soon**. Both downloads hold the book and its notes only. No signup or API key needed.
+- **Demo vaults in Settings → PRO.** The section formerly called Bonus vaults is now the demo library. **View demo & download** on Pride & Prejudice, The Odyssey, and Sherlock Holmes opens the download page on the website; *The Faerie Queene* is marked **Coming soon**. Each download holds the books and their notes only. No signup or API key needed.
 
 See [Demo Vault: The Odyssey](https://github.com/EricRhysTaylor/radial-timeline/wiki/Odyssey-Demo-Vault) and [Demo Vault: Pride & Prejudice](https://github.com/EricRhysTaylor/radial-timeline/wiki/Sample-Vault) in the wiki.
 

@@ -1688,6 +1688,55 @@
   font-size: var(--font-ui-small);
 }
 
+/* Desk Lamps in the Begin Session panel: one checkbox per friend,
+   scrolling past eight rows (plan "Session panel"). */
+.ert-timeline-session-panel__lamp-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-2);
+  max-height: calc(8 * 1.75em);
+  overflow-y: auto;
+  padding-inline-start: var(--size-4-4);
+}
+
+.ert-timeline-session-panel__lamp-note {
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+  line-height: var(--line-height-tight);
+}
+
+/* The running session's line: "Lamp lit for Maya and Priya" + edit. */
+.ert-timeline-session-panel__lamp-status {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-3);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.ert-timeline-session-panel__lamp-icon {
+  display: inline-flex;
+  color: var(--text-faint);
+}
+
+.ert-timeline-session-panel__lamp-icon svg {
+  width: var(--font-ui-small);
+  height: var(--font-ui-small);
+}
+
+.ert-timeline-session-panel__lamp-edit {
+  height: auto;
+  margin-inline-start: auto;
+  padding: var(--size-2-1);
+  display: inline-flex;
+  align-items: center;
+}
+
+.ert-timeline-session-panel__lamp-edit svg {
+  width: var(--font-ui-small);
+  height: var(--font-ui-small);
+}
+
 .ert-timeline-session-panel__goal-controls {
   min-width: 0;
   display: flex;
@@ -2551,6 +2600,59 @@
 /* In the pill's menu: after the item label. */
 .ert-mailbox-badge--menu {
   margin-inline-start: var(--size-4-2);
+}
+
+/* Desk Lamps: an icon button right of the Mailbox, with the gold count of
+   friends at their desks on its corner (.ert-mailbox-badge.is-new). Static
+   like the Mailbox: no transitions or animation near the scene-hover path. */
+.ert-timeline-desk-lamps.clickable-icon {
+  position: relative;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  margin-inline-start: var(--size-4-1);
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-m);
+  color: var(--text-muted);
+}
+
+.ert-timeline-desk-lamps.clickable-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.ert-timeline-desk-lamps.clickable-icon:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+.ert-timeline-desk-lamps.clickable-icon.is-stale svg {
+  opacity: 0.45;
+}
+
+.ert-timeline-desk-lamps[hidden] {
+  display: none;
+}
+
+.ert-timeline-desk-lamps > .ert-mailbox-badge {
+  position: absolute;
+  top: -5px;
+  right: -6px;
+  pointer-events: none;
+  box-shadow: 0 0 0 2px var(--background-primary);
+}
+
+/* The living list: a friend on a break is dimmed; a lamp-off bulletin is
+   quieter still. */
+.ert-desk-lamps-row.is-break {
+  color: var(--text-muted);
+}
+
+.ert-desk-lamps-row.is-off {
+  color: var(--text-faint);
 }
 
 .ert-timeline-subplot-key {

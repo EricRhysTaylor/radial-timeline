@@ -158,7 +158,11 @@ countdown):
 
 Sent by `communityShareClient.syncDeskLamps` to `community-desk-lamps`, on
 start, manual pause, resume, save, discard, audience change, and once a
-minute while the lamp is on; `null` turns it off. The server refuses a lamp
+minute while the lamp is on; `null` turns it off. The plugin-wide
+`DeskLamps` re-projects the lamp on every settings save and sends only when
+the projection changes, so an idle auto-pause (which projects as `lit`)
+never causes a send. Settings → "Show Desk Lamps" off turns a lit lamp off
+and stops every Desk Lamps call. The server refuses a lamp
 with any other key, keeps one live row per connection, deletes it when the
 lamp goes off or after 5 minutes without a refresh, and keeps no history.
 Friends see the author's display name and the short label of the broad
@@ -251,11 +255,13 @@ The project-shell sync is asserted in `communityShareClient.test.ts`: it
 **does** carry the working title (that is the contract), and it never
 carries paths, notes, or session data.
 
-The Desk Lamp projection gets its own tracer test alongside it
-(`src/communityShare/deskLamps.privacy.test.ts`, written with the plugin
-code): an `ActiveWritingSession` carrying the `bookTitle` tracer, a stage,
-goals and a countdown must project to exactly `state`, `mode`, `lit_at` and
-`audience`, with no tracer and an idle auto-pause reading as `lit`.
+The Desk Lamp projection has its own tracer test
+(`src/communityShare/deskLamps.privacy.test.ts`): an `ActiveWritingSession`
+carrying the `bookTitle`, book id, scene path and session id tracers, a
+stage, goals, word counts and a countdown must project to exactly `state`,
+`mode`, `lit_at` and `audience`, with no tracer, no exact start time, and an
+idle auto-pause reading as `lit`; and what `syncDeskLamps` posts must be
+that lamp plus `connection_id` and `current_secret`, nothing else.
 
 A future field on `WritingSessionRecord` that quietly passes through to a
 community exit fails these tests. **Adding the tracer for a new field is

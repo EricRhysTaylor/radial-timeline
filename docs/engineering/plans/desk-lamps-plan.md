@@ -2,13 +2,30 @@
 
 ## Status
 
-**Approved, 2026-10-04.** Nothing is built. Eric answered the open
+**Approved, 2026-10-04. Built 2026-10-03/04.** Eric answered the open
 questions on 2026-10-04 (see "Decisions taken"); that round replaced the
-12-lamp cap with a 12-row living list (D2, D15). The product contract still
-needs the amendment in "Contract amendment" before any code is written. It
-spans three codebases:
+12-lamp cap with a 12-row living list (D2, D15). It spans three codebases:
 this plugin, the Community website (`radial-timeline-community`), and the
 Platform database and edge functions (not in this repo).
+
+- Contract: the amendment is in `Platform/COMMUNITY-SHARE-PRODUCT-CONTRACT.md`
+  under Sharing Modes.
+- Platform: migration `20261004020402_community_desk_lamps` applied live;
+  `community-desk-lamps`, `community-desk-lamp` and the account export
+  deployed (its `HANDOFF.md` entry is the record).
+- Website: `DeskLampButton` on profiles, `DeskLampsManager` on My Share, the
+  sharing-level copy.
+- Plugin: `src/communityShare/deskLamps.ts`, `syncDeskLamps`, the session
+  panel, the title-bar lamp, Settings → "Show Desk Lamps".
+
+As built, two details differ from the text below. The session "hooks" are
+one mechanism, not five calls: `DeskLamps.settingsChanged` (run on every
+settings save, as the Mailbox's is) re-projects the lamp and sends only when
+the projection changes, so start, manual pause, resume, save and discard
+send at once and the idle auto-pause never does. And because a vault at the
+Private level has Community `enabled` off, Desk Lamps uses its own
+"connected at any level" check (`hasCommunityConnection`) rather than the
+one every sharing call uses.
 
 ## The idea
 

@@ -61,6 +61,7 @@ import type { AIProviderId } from './ai/types';
 import { migrateAuthorProgressSettings } from './authorProgress/authorProgressConfig';
 import { scheduleCommunityProjectSync, cancelPendingCommunityProjectSync } from './communityShare/communityShareClient';
 import { CommunityMailbox } from './communityShare/communityMailbox';
+import { DeskLamps } from './communityShare/deskLamps';
 import { DEFAULT_BOOK_TITLE, createBookId, deriveBookTitleFromSourcePath, getActiveBook, getSagaBooks, getTimelineScope, isSagaScopeAvailable, normalizeBookProfile, shouldSeedBookProfileFromLegacySettings } from './utils/books';
 import { adaptPandocLayoutsToPublishingModel } from './utils/publishingModel';
 import { convertExportProfileToLegacyManuscriptExportTemplate, migratePublishingModelState } from './utils/publishingMigration';
@@ -252,6 +253,8 @@ export default class RadialTimelinePlugin extends Plugin {
     private writingSessionService!: WritingSessionService;
     /** Title-bar Community mailbox; timeline views subscribe to paint their button. */
     public communityMailbox!: CommunityMailbox;
+    /** Desk Lamps: the title-bar lamp, the session's lamp, and friends' lamps (communityShare/deskLamps.ts). */
+    public deskLamps!: DeskLamps;
     private lastWritingActivitySignalMs = 0;
     private settingsService!: SettingsService;
     private publishingValidationService!: PublishingValidationService;
@@ -684,6 +687,9 @@ export default class RadialTimelinePlugin extends Plugin {
 
         this.communityMailbox = new CommunityMailbox(this);
         this.register(() => this.communityMailbox.destroy());
+        // After the writing-session service: the lamp projects the open session.
+        this.deskLamps = new DeskLamps(this);
+        this.register(() => this.deskLamps.destroy());
 
         // Register the view
         this.registerView(
@@ -1331,6 +1337,7 @@ export default class RadialTimelinePlugin extends Plugin {
     async saveSettings(): Promise<void> {
         this.sceneTimeHeader?.settingsChanged();
         this.communityMailbox?.settingsChanged();
+        this.deskLamps?.settingsChanged();
         // Single chokepoint for the blocked state. Every save path in the
         // plugin — including the fire-and-forget `void plugin.saveSettings()`
         // sites — funnels through here, so latching it off here is what makes

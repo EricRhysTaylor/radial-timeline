@@ -29,6 +29,7 @@ import {
     syncCommunityDailyIfEligible,
     syncCommunityProjects,
     syncCommunityShareIfDue,
+    syncDeskLamps,
     uploadAprToCommunity
 } from './communityShareClient';
 
@@ -1160,6 +1161,96 @@ describe('Community mailbox client', () => {
         await expect(fetchCommunityMailbox(plugin as never))
             .rejects
             .toMatchObject({ code: 'connection_disconnected', message: 'This connection has been disconnected.' });
+    });
+});
+
+describe('syncDeskLamps', () => {
+    const FRIEND = '11111111-1111-4111-8111-111111111111';
+    const LIGHT = { state: 'lit' as const, mode: 'drafting' as const, lit_at: '2026-10-04T09:10:00.000Z', audience: [FRIEND] };
+    const deskLampsBody = {
+        ok: true,
+        light: { state: 'lit', audience: [FRIEND] },
+        lamps: [{ profile_id: FRIEND, handle: 'maya', display_name: 'Maya Chen' }],
+        lit: [{ profile_id: FRIEND, handle: 'maya', display_name: 'Maya Chen', place: 'Portland', state: 'lit', mode: 'drafting', lit_at: '2026-10-04T09:10:00Z' }],
+        invites_received: 1
+    };
+
+    // A connected vault at the Private level (Community off): Desk Lamps works there (D12).
+    function privateLevelHarness() {
+        const harness = createPluginHarness();
+        vi.clearAllMocks();
+        harness.plugin.settings.communityShare.connection = {
+            status: 'connected',
+            connectionId: 'conn-1',
+            profileId: 'profile-1',
+            projectId: null,
+            secretId: 'rt.community-share.connection-secret'
+        };
+        harness.secrets.set('rt-community-share-connection-secret', 'rtcs_current-secret');
+        return harness;
+    }
+
+    const ok = () => vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({ status: 200, text: JSON.stringify(deskLampsBody) } as never);
+    const sentBody = (mock: ReturnType<typeof ok>) => JSON.parse((mock.mock.calls[0]?.[0] as { body: string }).body) as Record<string, unknown>;
+
+    it('reads with only the connection id and secret, at the Private level', async () => {
+        const { plugin } = privateLevelHarness();
+        const request = ok();
+        const result = await syncDeskLamps(plugin as never);
+        expect((request.mock.calls[0]?.[0] as { url: string }).url).toContain('/community-desk-lamps');
+        expect(sentBody(request)).toEqual({ connection_id: 'conn-1', current_secret: 'rtcs_current-secret' });
+        expect(result).toEqual(deskLampsBody);
+        expect(plugin.saveSettings).not.toHaveBeenCalled();
+    });
+
+    it('sends the lamp as given, and null to turn it off', async () => {
+        const { plugin } = privateLevelHarness();
+        let request = ok();
+        await syncDeskLamps(plugin as never, LIGHT);
+        expect(sentBody(request)).toEqual({ connection_id: 'conn-1', current_secret: 'rtcs_current-secret', light: LIGHT });
+        request.mockClear();
+        request = ok();
+        await syncDeskLamps(plugin as never, null);
+        expect(sentBody(request)).toEqual({ connection_id: 'conn-1', current_secret: 'rtcs_current-secret', light: null });
+    });
+
+    it('while sharing is paused, reads and turns off but never lights', async () => {
+        const { plugin } = privateLevelHarness();
+        plugin.settings.communityShare.sharingPaused = true;
+        const request = ok();
+        await expect(syncDeskLamps(plugin as never, LIGHT)).rejects.toMatchObject({ code: 'sharing_paused' });
+        expect(request).not.toHaveBeenCalled();
+        await syncDeskLamps(plugin as never, null);
+        await syncDeskLamps(plugin as never);
+        expect(request).toHaveBeenCalledTimes(2);
+    });
+
+    it('never calls the server for a vault that is not connected', async () => {
+        const { plugin } = createPluginHarness();
+        const request = vi.spyOn(obsidian, 'requestUrl');
+        request.mockClear();
+        await expect(syncDeskLamps(plugin as never)).rejects.toMatchObject({ code: 'connection_required' });
+        expect(request).not.toHaveBeenCalled();
+    });
+
+    it.each([
+        ['a lit lamp with an exact-millisecond start', { lit: [{ ...deskLampsBody.lit[0], lit_at: '2026-10-04T09:10:00.123Z' }] }],
+        ['a lit lamp in an unknown state', { lit: [{ ...deskLampsBody.lit[0], state: 'idle' }] }],
+        ['a friend whose id is not a UUID', { lamps: [{ profile_id: '../admin', handle: 'x', display_name: 'X' }] }],
+        ['an invite count that is not a count', { invites_received: -1 }],
+    ])('rejects a malformed answer: %s', async (_name, patch) => {
+        const { plugin } = privateLevelHarness();
+        vi.spyOn(obsidian, 'requestUrl').mockResolvedValueOnce({ status: 200, text: JSON.stringify({ ...deskLampsBody, ...patch }) } as never);
+        await expect(syncDeskLamps(plugin as never)).rejects.toMatchObject({ code: 'invalid_response' });
+    });
+
+    it('passes server refusals through', async () => {
+        const { plugin } = privateLevelHarness();
+        vi.spyOn(obsidian, 'requestUrl').mockResolvedValueOnce({
+            status: 409,
+            text: JSON.stringify({ error: { code: 'sharing_paused', message: "Sharing is paused, so your lamp can't be lit." } })
+        } as never);
+        await expect(syncDeskLamps(plugin as never, LIGHT)).rejects.toMatchObject({ code: 'sharing_paused' });
     });
 });
 

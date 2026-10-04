@@ -41,6 +41,8 @@ const RT_BRANDS = [
   'Brief + Log',
   'Clear chapter',
   'My Share',
+  'Desk Lamps',
+  'Desk Lamp',
 ];
 
 const RT_ACRONYMS = [...DEFAULT_ACRONYMS, 'RT', 'APR', 'POV', 'BETA'];
@@ -54,6 +56,8 @@ const RT_IGNORE_WORDS = [
   'Zero', 'Status', 'Complete', 'Due', 'When', 'Matter', 'Working',
   'StoryLine', 'PDFs', 'IDs',
   'Community',
+  // The sharing level's name ("at any level, Private included").
+  'Private',
 ];
 
 // Whole strings the rule should skip: URL/model-id/date/color placeholders,

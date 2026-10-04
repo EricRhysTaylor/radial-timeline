@@ -1,7 +1,7 @@
 import { apiVersion, Platform, requestUrl } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { deleteSecret, getSecret, isSecretStorageAvailable, setSecret } from '../ai/credentials/secretStorage';
-import { canShareAprToCommunity, deriveCommunityShareMode, hasActiveCommunityConnection, normalizeCommunityShareSettings } from './communityShareSettings';
+import { DESK_LAMP_MAX_AUDIENCE, canShareAprToCommunity, deriveCommunityShareMode, hasActiveCommunityConnection, hasCommunityConnection, normalizeCommunityShareSettings } from './communityShareSettings';
 import {
     COMMUNITY_DAILY_BACKFILL_DAYS,
     COMMUNITY_DAILY_BACKFILL_VERSION,
@@ -12,7 +12,7 @@ import {
     buildCommunitySharePreview,
     communityDailyIncludesWords
 } from './communitySharePreview';
-import type { CommunityShareConnectionSettings, CommunityShareFieldKey, CommunitySharePublishHistoryEntry, CommunityShareSettings } from '../types/settings';
+import type { CommunityShareConnectionSettings, CommunityShareFieldKey, CommunitySharePublishHistoryEntry, CommunityShareSettings, WritingSessionMode } from '../types/settings';
 import type { SessionFeedPost } from '../services/WritingSessionLog';
 
 const FUNCTIONS_BASE_URL = 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/functions/v1';
@@ -512,8 +512,10 @@ function isCommunityShareContext(value: unknown): value is CommunityShareContext
  * clears local state even when the server call fails, so a secret fetched
  * before it must not be usable after it. Checked immediately before each
  * `requestUrl`; `allowPaused` is for author actions that must work while
- * paused (revoke) and for read-only lookups. The captured connection identity
- * must still match: a replacement connection cannot authorize an old secret.
+ * paused (revoke) and for read-only lookups. `anyLevel` (assertStillSendable)
+ * is for Desk Lamps only, which works at every sharing level, Private
+ * included (plan D12). The captured connection identity must still match: a
+ * replacement connection cannot authorize an old secret.
  */
 function isStillSendable(live: CommunityShareSettings, expected: CommunityShareConnectionSettings, allowPaused = false): boolean {
     if (!live.enabled || live.connection.status !== 'connected' || !live.connection.connectionId) return false;
@@ -528,9 +530,9 @@ function isSameConnection(live: CommunityShareConnectionSettings, expected: Comm
         && live.profileId === expected.profileId;
 }
 
-function assertStillSendable(plugin: RadialTimelinePlugin, expected: CommunityShareConnectionSettings, allowPaused = false): CommunityShareSettings {
+function assertStillSendable(plugin: RadialTimelinePlugin, expected: CommunityShareConnectionSettings, allowPaused = false, anyLevel = false): CommunityShareSettings {
     const live = normalizeCommunityShareSettings(plugin.settings.communityShare);
-    if (!live.enabled || live.connection.status !== 'connected' || !live.connection.connectionId) {
+    if ((!live.enabled && !anyLevel) || live.connection.status !== 'connected' || !live.connection.connectionId) {
         throw new CommunityShareError('connection_required', 'Community Share was disconnected before the request could be sent.');
     }
     if (!allowPaused && live.sharingPaused) {
@@ -547,15 +549,17 @@ function assertStillSendable(plugin: RadialTimelinePlugin, expected: CommunitySh
  * here: a connection activated without a book carries `projectId: null` until
  * the first project sync binds one, and context + sync must run in that state.
  * Callers that need a bound project check it themselves via
- * `requireBoundProject`.
+ * `requireBoundProject`. `anyLevel` (Desk Lamps only) accepts a connection at
+ * every sharing level, Private included.
  */
-async function requireActiveConnection(plugin: RadialTimelinePlugin): Promise<{
+async function requireActiveConnection(plugin: RadialTimelinePlugin, anyLevel = false): Promise<{
     connectionId: string;
     currentSecret: string;
     connection: CommunityShareConnectionSettings;
 }> {
     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
-    if (!hasActiveCommunityConnection(current)) {
+    // hasActiveCommunityConnection is hasCommunityConnection plus Community on.
+    if (!hasCommunityConnection(current) || (!anyLevel && !current.enabled)) {
         throw new CommunityShareError('connection_required', 'Connect Community Share before syncing with the website.');
     }
     const currentSecret = await getSecret(plugin.app, current.connection.secretId);
@@ -714,6 +718,109 @@ export async function fetchCommunityMailbox(plugin: RadialTimelinePlugin): Promi
         isCommunityMailboxAnswer,
         { code: 'mailbox_failed', message: 'Could not check your Community mailbox.' },
         'The Community mailbox returned an unexpected response.'
+    );
+}
+
+/**
+ * A Desk Lamp as it leaves the device: exactly these four keys, built only by
+ * deskLamps.projectDeskLampLight (docs/engineering/standards/writing-session-privacy.md).
+ */
+export interface DeskLampLight {
+    state: 'lit' | 'break';
+    mode: WritingSessionMode;
+    /** The session start floored to 5 minutes, ISO UTC. */
+    lit_at: string;
+    /** The Desk Lamp profile ids ticked for this session. */
+    audience: string[];
+}
+
+export interface DeskLampFriend {
+    profile_id: string;
+    handle: string;
+    display_name: string;
+}
+
+export interface LitDeskLamp extends DeskLampFriend {
+    /** Short label of the friend's broad public place ("Portland"), or null. */
+    place: string | null;
+    state: 'lit' | 'break';
+    mode: WritingSessionMode;
+    /** The friend's session start floored to 5 minutes, ISO UTC to the second. */
+    lit_at: string;
+}
+
+/** community-desk-lamps: this connection's lamp, the member's Desk Lamps, the lamps lit for them, invites waiting. */
+export interface DeskLampsAnswer {
+    ok: true;
+    light: { state: 'lit' | 'break'; audience: string[] } | null;
+    lamps: DeskLampFriend[];
+    lit: LitDeskLamp[];
+    invites_received: number;
+}
+
+const DESK_LAMP_STATES: ReadonlySet<unknown> = new Set(['lit', 'break']);
+const DESK_LAMP_MODES: ReadonlySet<unknown> = new Set(['drafting', 'revising', 'editing', 'planning']);
+const DESK_LAMP_LIT_AT_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
+
+function isDeskLampFriend(value: unknown): value is DeskLampFriend {
+    if (!value || typeof value !== 'object') return false;
+    const friend = value as Partial<DeskLampFriend>;
+    return typeof friend.profile_id === 'string' && MAILBOX_UUID_RE.test(friend.profile_id)
+        // The handle becomes a profile link; deskLamps encodes it there.
+        && typeof friend.handle === 'string' && friend.handle.length > 0
+        && typeof friend.display_name === 'string';
+}
+
+function isLitDeskLamp(value: unknown): value is LitDeskLamp {
+    if (!isDeskLampFriend(value)) return false;
+    const lamp = value as Partial<LitDeskLamp>;
+    return (lamp.place === null || typeof lamp.place === 'string')
+        && DESK_LAMP_STATES.has(lamp.state)
+        && DESK_LAMP_MODES.has(lamp.mode)
+        && typeof lamp.lit_at === 'string' && DESK_LAMP_LIT_AT_RE.test(lamp.lit_at);
+}
+
+export function isDeskLampsAnswer(value: unknown): value is DeskLampsAnswer {
+    if (!value || typeof value !== 'object') return false;
+    const answer = value as Partial<DeskLampsAnswer>;
+    const light = answer.light;
+    return answer.ok === true
+        && isMailboxCount(answer.invites_received)
+        && (light === null || (!!light
+            && DESK_LAMP_STATES.has(light.state)
+            && Array.isArray(light.audience)
+            && light.audience.every(id => typeof id === 'string' && MAILBOX_UUID_RE.test(id))))
+        && Array.isArray(answer.lamps) && answer.lamps.every(isDeskLampFriend)
+        && Array.isArray(answer.lit) && answer.lit.every(isLitDeskLamp);
+}
+
+/**
+ * The plugin's one Desk Lamps call (community-desk-lamps). `light` omitted
+ * only reads; `null` turns this vault's lamp off; a DeskLampLight lights it.
+ * Every call answers the member's Desk Lamps and the lamps lit for them.
+ *
+ * Works at every sharing level, Private included (plan D12). Lighting needs
+ * sharing unpaused (a paused share sends no lamp); reading and turning the
+ * lamp off are allowed while paused.
+ */
+export async function syncDeskLamps(plugin: RadialTimelinePlugin, light?: DeskLampLight | null): Promise<DeskLampsAnswer> {
+    if (light && light.audience.length > DESK_LAMP_MAX_AUDIENCE) {
+        throw new CommunityShareError('invalid_light', `A lamp can be shared with at most ${DESK_LAMP_MAX_AUDIENCE} Desk Lamps.`);
+    }
+    const { connectionId, currentSecret, connection } = await requireActiveConnection(plugin, true);
+    assertStillSendable(plugin, connection, !light, true);
+    const body: Record<string, unknown> = {
+        connection_id: connectionId,
+        current_secret: currentSecret
+    };
+    if (light !== undefined) body.light = light;
+    return postCommunityFunction(
+        plugin,
+        'community-desk-lamps',
+        body,
+        isDeskLampsAnswer,
+        { code: 'desk_lamps_failed', message: 'Could not check Desk Lamps.' },
+        'Desk Lamps returned an unexpected response.'
     );
 }
 

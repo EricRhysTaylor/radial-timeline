@@ -41,6 +41,7 @@ import {
 import { WritingSessionCompletionModal } from '../modals/WritingSessionCompletionModal';
 import { canPostSessionsToFeed, postSessionToCommunityFeed } from '../communityShare/communityShareClient';
 import { openMailboxMenu, paintMailboxButton } from '../communityShare/communityMailbox';
+import { DESK_LAMP_PANEL_NOTE, openDeskLampsMenu, openSessionDeskLampMenu, paintDeskLampButton, sessionDeskLampLine } from '../communityShare/deskLamps';
 import { projectSessionFeedPost } from '../services/WritingSessionLog';
 import { isRenderedOnTimeline } from '../utils/sceneHelpers';
 import { SearchPanelController } from './interactions/SearchPanelController';
@@ -613,15 +614,42 @@ export class RadialTimelineView extends ItemView {
                 if (doc.visibilityState === 'visible') mailbox.onWake();
             });
 
+            // Desk Lamps — right of the mailbox: a lamp and the count of
+            // friends at their desks. Shown once connected with a Desk Lamp or
+            // an invite; state and checking live on the plugin-wide DeskLamps.
+            const deskLamps = this.plugin.deskLamps;
+            const deskLampBtn = doc.win.createEl('button');
+            deskLampBtn.className = 'ert-timeline-desk-lamps clickable-icon';
+            deskLampBtn.type = 'button';
+            deskLampBtn.hidden = true;
+            deskLampBtn.setAttribute('aria-haspopup', 'menu');
+            setIcon(deskLampBtn, 'lamp-desk');
+            const deskLampBadgeEl = doc.win.createSpan();
+            deskLampBadgeEl.className = 'ert-mailbox-badge is-new';
+            deskLampBtn.appendChild(deskLampBadgeEl);
+            mailboxBtn.parentElement?.insertBefore(deskLampBtn, mailboxBtn.nextSibling);
+            const paintDeskLamps = () => paintDeskLampButton(deskLampBtn, deskLampBadgeEl, deskLamps.view());
+            this.register(deskLamps.subscribe(paintDeskLamps));
+            paintDeskLamps();
+            this.registerDomEvent(deskLampBtn, 'click', (evt: MouseEvent) => {
+                evt.preventDefault();
+                evt.stopPropagation();
+                openDeskLampsMenu(deskLampBtn, deskLamps);
+            });
+            this.registerDomEvent(doc.win, 'focus', () => deskLamps.onWake());
+            this.registerDomEvent(doc, 'visibilitychange', () => {
+                if (doc.visibilityState === 'visible') deskLamps.onWake();
+            });
+
             // Subplot ring key trigger — action icon slot right of the
-            // mailbox. Hidden until SubplotKeyController wires it to a rendered
-            // timeline with 2+ subplot rings; no tooltip by design.
+            // Desk Lamps. Hidden until SubplotKeyController wires it to a
+            // rendered timeline with 2+ subplot rings; no tooltip by design.
             const subplotKeyBtn = doc.win.createEl('button');
             subplotKeyBtn.className = 'ert-timeline-subplot-key__trigger clickable-icon';
             subplotKeyBtn.type = 'button';
             subplotKeyBtn.hidden = true;
             setIcon(subplotKeyBtn, 'layers');
-            mailboxBtn.parentElement?.insertBefore(subplotKeyBtn, mailboxBtn.nextSibling);
+            deskLampBtn.parentElement?.insertBefore(subplotKeyBtn, deskLampBtn.nextSibling);
             this.subplotKeyTriggerEl = subplotKeyBtn;
 
             // Center mode navigation — compact text buttons that replace the
@@ -1629,6 +1657,10 @@ export class RadialTimelineView extends ItemView {
         let goalInput: HTMLInputElement;
         let wordGoalInput: HTMLInputElement;
         let updateIdleMeta = () => undefined;
+        // Desk Lamps ticked for this session; empty when the section isn't shown.
+        const deskLamps = this.plugin.deskLamps;
+        const lampFriends = deskLamps.panelFriends();
+        const lampBoxes: Array<{ profileId: string; box: HTMLInputElement }> = [];
 
         const startSession = async () => {
             const mode = (modeSelect.value as WritingSessionMode) || 'drafting';
@@ -1647,6 +1679,11 @@ export class RadialTimelineView extends ItemView {
                 await service.setDefaultStage(stage);
                 await service.setDefaultTargetMode(targetMode);
                 const session = await service.start({ mode, stage, targetMode, goalMinutes, goalWords });
+                // Every session is shared by choice: only the boxes ticked
+                // here light the lamp, and they become next session's default.
+                if (lampBoxes.length > 0) {
+                    await deskLamps.shareSession(session.id, lampBoxes.filter(entry => entry.box.checked).map(entry => entry.profileId));
+                }
                 const targets = [
                     session.goalWords ? this.formatWordCount(session.goalWords) : undefined,
                     session.goalMinutes ? `${session.goalMinutes} min` : undefined,
@@ -1770,6 +1807,39 @@ export class RadialTimelineView extends ItemView {
                 new Notice(error instanceof Error ? error.message : 'Could not save writing session stage.');
             });
         });
+
+        if (lampFriends.length > 0) {
+            const lampSection = form.createDiv({ cls: 'ert-timeline-session-panel__section' });
+            this.createSessionSectionTitle(lampSection, 'lamp-desk', 'Desk Lamps');
+            const remembered = new Set(deskLamps.rememberedAudience());
+            const allLabel = lampSection.createEl('label', { cls: 'ert-timeline-session-panel__toggle-label' });
+            const allBox = allLabel.createEl('input', { cls: 'ert-timeline-session-panel__toggle' });
+            allBox.type = 'checkbox';
+            allLabel.createSpan({ text: 'All' });
+            this.isolateSessionPanelControl(allBox);
+            const lampList = lampSection.createDiv({ cls: 'ert-timeline-session-panel__lamp-list' });
+            for (const friend of lampFriends) {
+                const label = lampList.createEl('label', { cls: 'ert-timeline-session-panel__toggle-label' });
+                const box = label.createEl('input', { cls: 'ert-timeline-session-panel__toggle' });
+                box.type = 'checkbox';
+                box.checked = remembered.has(friend.profile_id);
+                label.createSpan({ text: friend.display_name });
+                this.isolateSessionPanelControl(box);
+                lampBoxes.push({ profileId: friend.profile_id, box });
+            }
+            const syncAllBox = () => {
+                const ticked = lampBoxes.filter(entry => entry.box.checked).length;
+                allBox.checked = ticked === lampBoxes.length;
+                allBox.indeterminate = ticked > 0 && ticked < lampBoxes.length;
+            };
+            this.sessionPanelScope.registerDomEvent(allBox, 'change', () => {
+                lampBoxes.forEach(entry => { entry.box.checked = allBox.checked; });
+                syncAllBox();
+            });
+            lampBoxes.forEach(entry => this.sessionPanelScope.registerDomEvent(entry.box, 'change', syncAllBox));
+            syncAllBox();
+            lampSection.createDiv({ cls: 'ert-timeline-session-panel__lamp-note', text: DESK_LAMP_PANEL_NOTE });
+        }
 
         updateIdleMeta = () => {
             const parsedMinutes = Number(goalInput.value);
@@ -1923,6 +1993,26 @@ export class RadialTimelineView extends ItemView {
                 new Notice(error instanceof Error ? error.message : 'Could not cancel writing session.');
             }
         });
+
+        // Desk Lamps: who sees this session, with a way to change it or turn
+        // the lamp off mid-session.
+        const lampLine = this.getSessionDeskLampLine();
+        if (lampLine) {
+            const lampRow = panel.createDiv({ cls: 'ert-timeline-session-panel__lamp-status' });
+            const lampIcon = lampRow.createSpan({ cls: 'ert-timeline-session-panel__lamp-icon' });
+            setIcon(lampIcon, 'lamp-desk');
+            lampRow.createSpan({ text: lampLine });
+            const lampEdit: HTMLButtonElement = this.createSessionIconButton(lampRow, 'pencil', 'Change who sees your lamp', 'ert-timeline-session-panel__ghost ert-timeline-session-panel__lamp-edit', () => {
+                openSessionDeskLampMenu(lampEdit, this.plugin.deskLamps);
+            });
+        }
+    }
+
+    /** The running panel's Desk Lamps line; null when there is no friend to share with. */
+    private getSessionDeskLampLine(): string | null {
+        const deskLamps = this.plugin.deskLamps;
+        if (deskLamps.panelFriends().length === 0) return null;
+        return sessionDeskLampLine(deskLamps.view().own);
     }
 
     private getActiveWritingSessionPanelRenderKey(active: ActiveWritingSession, elapsedMs: number): string {
@@ -1938,6 +2028,7 @@ export class RadialTimelineView extends ItemView {
             active.mode,
             active.stage,
             active.bookTitle,
+            this.getSessionDeskLampLine() ?? '',
         ].join('|');
     }
 

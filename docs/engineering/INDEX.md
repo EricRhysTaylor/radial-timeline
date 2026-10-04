@@ -52,8 +52,9 @@ Location: `docs/engineering/standards/`
   Authoritative contract for projecting writing-session data to the private,
   community, and Desk Lamps audiences. Read before touching any code that
   reads, renders, or transmits `WritingSessionRecord` or the active session.
-  Enforced by the tracer tests in `src/services/WritingSessionLog.privacy.test.ts`
-  and `src/communityShare/communitySharePreview.test.ts`.
+  Enforced by the tracer tests in `src/services/WritingSessionLog.privacy.test.ts`,
+  `src/communityShare/communitySharePreview.test.ts` and
+  `src/communityShare/deskLamps.privacy.test.ts`.
 
 - **[fallback-policy.md](standards/fallback-policy.md)**
   Authoritative no-fallback policy. Hard-fail at boundaries, surface real errors, never silently substitute. Enforced by `scripts/fallback-gate.mjs` and wired into `npm run gates`.
@@ -84,7 +85,7 @@ These describe design direction but are not always authoritative rules.
 
 - **[v7-removals.md](plans/v7-removals.md)** — Migration shims and deprecated fallbacks to delete when cutting v7. Grep `TODO(v7)` for in-code touch points.
 - **[parts-first-class-markers-implementation.md](plans/parts-first-class-markers-implementation.md)** — Decouple publishing Parts from narrative Acts: `Part:` becomes an explicit scene marker like `Chapter`. Executable plan; decisions D1–D4 and the migration-journal contract are settled. Origin: issue #30.
-- **[desk-lamps-plan.md](plans/desk-lamps-plan.md)** — Desk Lamps: mutual close-friend lists on the Community, and a live "who's at the desk" lamp in the plugin for writing sessions the author chooses to share; a 12-row living list keeps the freshest lamps on top. Approved 2026-10-04; the product-contract amendment (new audience) and a `writing-session-privacy.md` exit point come before any code.
+- **[desk-lamps-plan.md](plans/desk-lamps-plan.md)** — Desk Lamps: mutual close-friend lists on the Community, and a live "who's at the desk" lamp in the plugin for writing sessions the author chooses to share; a 12-row living list keeps the freshest lamps on top. Approved 2026-10-04; built 2026-10-03/04 (contract amended, backend live, website and plugin shipped).
 - **[local-agent-handoff-plan.md](plans/local-agent-handoff-plan.md)** — Let subscription AI clients (Codex, Claude Code) run Summary, Pulse, Gossamer and Inquiry through a job mailbox in the vault, with every prompt compiled from the API run's own request and every reply applied by the API run's own code. Phase 0 (Gossamer Copy/Paste on the shared contract) shipped; Phases 1–4 (all four features, plus one-step "Prepare AI jobs…" and a request link the client can open) built behind the beta gate.
 
 ---

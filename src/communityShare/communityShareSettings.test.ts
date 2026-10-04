@@ -5,7 +5,9 @@ import {
     buildDefaultCommunityShareSettings,
     canShareAprToCommunity,
     deriveCommunityShareMode,
+    deskLampChoices,
     hasActiveCommunityConnection,
+    hasCommunityConnection,
     normalizeCommunityShareSettings
 } from './communityShareSettings';
 
@@ -164,5 +166,40 @@ describe('hasActiveCommunityConnection', () => {
 
     it('ignores a paused share: pausing stops sharing, not the connection', () => {
         expect(hasActiveCommunityConnection({ ...connected(), sharingPaused: true })).toBe(true);
+    });
+});
+
+describe('Desk Lamps settings', () => {
+    const MAYA = '11111111-1111-4111-8111-111111111111';
+    const connection = {
+        status: 'connected' as const,
+        connectionId: 'conn-1',
+        profileId: 'profile-1',
+        projectId: null,
+        secretId: 'rt.community-share.connection-secret'
+    };
+
+    it('counts a connection at the Private level as connected for Desk Lamps only', () => {
+        const settings = normalizeCommunityShareSettings({ enabled: false, connection });
+        expect(hasCommunityConnection(settings)).toBe(true);
+        expect(hasActiveCommunityConnection(settings)).toBe(false);
+        expect(hasActiveCommunityConnection({ ...settings, enabled: true })).toBe(true);
+        expect(hasCommunityConnection(normalizeCommunityShareSettings({ connection: { ...connection, secretId: undefined } }))).toBe(false);
+    });
+
+    it('keeps only profile ids in the audience, lowercased and de-duplicated', () => {
+        const settings = normalizeCommunityShareSettings({
+            connection,
+            deskLamps: { profileId: 'profile-1', audience: [MAYA.toUpperCase(), MAYA, 'not-an-id', 7 as never], activeSessionId: 'session-1' }
+        });
+        expect(settings.deskLamps).toEqual({ profileId: 'profile-1', audience: [MAYA], activeSessionId: 'session-1' });
+        expect(normalizeCommunityShareSettings({ deskLamps: { audience: [MAYA] } as never }).deskLamps).toBeUndefined();
+    });
+
+    it('ignores choices made for another profile', () => {
+        const mine = normalizeCommunityShareSettings({ connection, deskLamps: { profileId: 'profile-1', audience: [MAYA], activeSessionId: 's' } });
+        expect(deskLampChoices(mine)).toEqual({ audience: [MAYA], activeSessionId: 's' });
+        const theirs = normalizeCommunityShareSettings({ connection, deskLamps: { profileId: 'profile-2', audience: [MAYA], activeSessionId: 's' } });
+        expect(deskLampChoices(theirs)).toEqual({ audience: [] });
     });
 });

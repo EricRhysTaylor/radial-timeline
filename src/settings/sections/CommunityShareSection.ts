@@ -364,7 +364,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     const sharingHeading = new Setting(sharingSection)
         .setName('What you share')
         .setHeading()
-        .setDesc('Pick one sharing level. The complete preview always shows exactly what a level includes before anything publishes.');
+        .setDesc('Pick one sharing level. The complete preview always shows exactly what a level includes before anything publishes. Desk Lamps is separate: it shares live sessions only with the friends you choose, at any level, Private included.');
     addHeadingIcon(sharingHeading, 'share-2');
     const profileLink = sharingHeading.nameEl.createEl('a', {
         href: MY_SHARE_URL,

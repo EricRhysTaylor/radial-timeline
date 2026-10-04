@@ -173,6 +173,18 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
                 }));
         }
     });
+    createDenseRow(displayContainer, {
+        title: 'Show Desk Lamps',
+        description: 'When this vault is connected to the Community, a lamp beside the Mailbox shows which of your Desk Lamps are at their desks, and the session panel lets you share a session with them. Turn off to hide both and keep your own lamp off.',
+        control: (setting) => {
+            setting.addToggle(toggle => toggle
+                .setValue(plugin.settings.showDeskLamps !== false)
+                .onChange(async (value) => {
+                    plugin.settings.showDeskLamps = value;
+                    await plugin.saveSettings();
+                }));
+        }
+    });
     const buildChapterMarkerDescription = (status?: string): string => {
         const base = t('settings.configuration.chapterMarkers.desc');
         return status ? `${base} ${status}` : base;

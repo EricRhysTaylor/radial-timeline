@@ -1027,6 +1027,22 @@ export interface CommunityShareSettings {
      * communityShareClient.ts for when it is due.
      */
     dailyBackfill?: CommunityDailyBackfillRecord;
+    /**
+     * Desk Lamps choices for the connected profile (plan
+     * docs/engineering/plans/desk-lamps-plan.md). Scoped like dailyBackfill:
+     * a record made for another profile is ignored. See deskLampChoices.
+     */
+    deskLamps?: CommunityDeskLampsRecord;
+}
+
+/** Desk Lamps choices for one Community profile (plugin data, never frontmatter). */
+export interface CommunityDeskLampsRecord {
+    /** Website profile these choices were made for. */
+    profileId: string;
+    /** Desk Lamp profile ids ticked for the latest session; pre-ticks the next Begin Session panel. */
+    audience: string[];
+    /** The open writing session the author chose to share; absent means the lamp stays off. */
+    activeSessionId?: string;
 }
 
 /** Record of a confirmed daily-activity season backfill (plugin data, never frontmatter). */
@@ -1143,6 +1159,8 @@ export interface RadialTimelineSettings {
     showSceneTimeCueBar?: boolean;
     /** Title-bar Community mailbox (connected vaults only). Default on. */
     showCommunityMailbox?: boolean;
+    /** Desk Lamps: the title-bar lamp and the session panel's sharing choice (connected vaults only). Default on. */
+    showDeskLamps?: boolean;
     showChapterMarkers?: boolean;
     showRecentMovesOverlay?: boolean;
     enableManuscriptRippleRename?: boolean;

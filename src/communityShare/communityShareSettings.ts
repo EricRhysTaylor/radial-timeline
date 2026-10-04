@@ -1,5 +1,6 @@
 import type {
     CommunityDailyBackfillRecord,
+    CommunityDeskLampsRecord,
     CommunityShareAudience,
     CommunityShareConnectionSettings,
     CommunityShareFieldKey,
@@ -110,16 +111,25 @@ export type ActiveCommunityShareSettings = CommunityShareSettings & {
 };
 
 /**
+ * A live connection with a stored secret, at ANY sharing level, Private
+ * included. Only Desk Lamps uses it on its own (plan D12: a Desk Lamp needs a
+ * connected vault, not a sharing level); everything else goes through
+ * hasActiveCommunityConnection.
+ */
+export function hasCommunityConnection(settings: CommunityShareSettings): settings is ActiveCommunityShareSettings {
+    return settings.connection.status === 'connected'
+        && Boolean(settings.connection.connectionId)
+        && Boolean(settings.connection.secretId);
+}
+
+/**
  * The one "this vault is connected" check: Community on, connected, with a
  * connection id and a stored secret id. Every secret-authenticated call
  * (requireActiveConnection, report publish) and the title-bar mailbox's
  * show/hide use it, so the mailbox is visible exactly when its check can run.
  */
 export function hasActiveCommunityConnection(settings: CommunityShareSettings): settings is ActiveCommunityShareSettings {
-    return settings.enabled
-        && settings.connection.status === 'connected'
-        && Boolean(settings.connection.connectionId)
-        && Boolean(settings.connection.secretId);
+    return settings.enabled && hasCommunityConnection(settings);
 }
 
 /** APR is a curated project artifact available from Level 2 upward. */
@@ -197,6 +207,38 @@ function normalizeDailyBackfill(value: unknown): CommunityDailyBackfillRecord | 
     };
 }
 
+const DESK_LAMP_PROFILE_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** The server's audience ceiling (community_desk_lamp_lights.audience). */
+export const DESK_LAMP_MAX_AUDIENCE = 50;
+
+function normalizeDeskLamps(value: unknown): CommunityDeskLampsRecord | undefined {
+    if (!value || typeof value !== 'object') return undefined;
+    const record = value as Partial<CommunityDeskLampsRecord>;
+    if (typeof record.profileId !== 'string' || !record.profileId) return undefined;
+    const audience: string[] = [];
+    for (const id of Array.isArray(record.audience) ? record.audience : []) {
+        if (typeof id !== 'string' || !DESK_LAMP_PROFILE_RE.test(id)) continue;
+        const lower = id.toLowerCase();
+        if (!audience.includes(lower)) audience.push(lower);
+    }
+    return {
+        profileId: record.profileId,
+        audience: audience.slice(0, DESK_LAMP_MAX_AUDIENCE),
+        ...(typeof record.activeSessionId === 'string' && record.activeSessionId ? { activeSessionId: record.activeSessionId } : {})
+    };
+}
+
+/**
+ * The Desk Lamps choices for the connected profile. A record made for another
+ * profile (a different account connected since) is ignored, so its friends are
+ * never pre-ticked and its session never lit for the new profile.
+ */
+export function deskLampChoices(settings: CommunityShareSettings): { audience: string[]; activeSessionId?: string } {
+    const record = settings.deskLamps;
+    if (!record || !settings.connection.profileId || record.profileId !== settings.connection.profileId) return { audience: [] };
+    return { audience: record.audience, activeSessionId: record.activeSessionId };
+}
+
 export function normalizeCommunityShareSettings(raw?: Partial<CommunityShareSettings>): CommunityShareSettings {
     // Legacy `dailyBackfillVersion` (unreleased, PR #44) was one scalar per
     // vault: it cannot say which profile/connection received the backfill or
@@ -266,6 +308,7 @@ export function normalizeCommunityShareSettings(raw?: Partial<CommunityShareSett
         },
         publishHistory,
         lastError: input?.lastError,
-        dailyBackfill: normalizeDailyBackfill(input?.dailyBackfill)
+        dailyBackfill: normalizeDailyBackfill(input?.dailyBackfill),
+        deskLamps: normalizeDeskLamps(input?.deskLamps)
     };
 }

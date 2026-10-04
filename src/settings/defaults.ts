@@ -106,6 +106,7 @@ export const DEFAULT_SETTINGS: RadialTimelineSettings = {
     discontinuityThreshold: undefined, // Default to auto-calculated (3x median gap or 30 days)
     showSceneTimeCueBar: true,
     showCommunityMailbox: true,
+    showDeskLamps: true,
     enableSceneTitleAutoExpand: true, // Default: enabled to maintain current behavior
     showChapterMarkers: false,
     showRecentMovesOverlay: true,

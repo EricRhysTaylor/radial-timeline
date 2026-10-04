@@ -471,7 +471,7 @@ export class GossamerProcessingModal extends ErtModal {
             this.apiStatusEl.empty();
         }
 
-        // Keep the bar below completion until validation and saving finish.
+        // Completion status is set after validation and saving.
     }
 
     private async persistLastRunDuration(elapsedMs: number): Promise<void> {
@@ -704,9 +704,9 @@ export class GossamerProcessingModal extends ErtModal {
         simulator.start({
             durationMs,
             startPercent: 0,
-            maxPercent: 95,
+            maxPercent: 100,
             jitter: 0,
-            completeOnDuration: false
+            completeOnDuration: true
         });
     }
 

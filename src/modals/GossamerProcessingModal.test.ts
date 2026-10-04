@@ -12,11 +12,11 @@ describe('GossamerProcessingModal progress UX', () => {
         expect(source).not.toContain('gossamerLastRunMsBySignal');
     });
 
-    it('keeps estimated progress below completion until the results are saved', () => {
+    it('allows the estimated bar to fill before the results are saved', () => {
         expect(source).toContain('startPercent: 0');
-        expect(source).toContain('maxPercent: 95');
+        expect(source).toContain('maxPercent: 100');
         expect(source).toContain('jitter: 0');
-        expect(source).toContain('completeOnDuration: false');
+        expect(source).toContain('completeOnDuration: true');
         const received = source.slice(source.indexOf('public apiCallSuccess()'), source.indexOf('private async persistLastRunDuration'));
         expect(received).not.toContain('progressSimulator.complete()');
         expect(received).not.toContain("'100%'");

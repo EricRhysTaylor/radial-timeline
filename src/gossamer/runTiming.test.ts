@@ -44,14 +44,14 @@ describe('shared Gossamer timing', () => {
 describe('Gossamer estimated progress overrun', () => {
     afterEach(() => vi.useRealTimers());
 
-    it('holds below 100% past the estimate and completes only when explicitly finished', () => {
+    it('fills to 100% when the estimate expires without waiting for a response', () => {
         vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] });
         const update = vi.fn();
         const progress = new SimulatedProgress(update);
-        progress.start({ durationMs: 1000, startPercent: 0, maxPercent: 95, jitter: 0, completeOnDuration: false });
+        progress.start({ durationMs: 1000, startPercent: 0, maxPercent: 100, jitter: 0, completeOnDuration: true });
         vi.advanceTimersByTime(3000);
-        expect(update.mock.calls.every(([percent]) => percent < 100)).toBe(true);
-        expect(update).toHaveBeenLastCalledWith(95);
+        expect(update).toHaveBeenLastCalledWith(100);
+        expect(vi.getTimerCount()).toBe(0);
         progress.complete();
         expect(update).toHaveBeenLastCalledWith(100);
         expect(vi.getTimerCount()).toBe(0);
@@ -61,8 +61,8 @@ describe('Gossamer estimated progress overrun', () => {
         vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] });
         const update = vi.fn();
         const progress = new SimulatedProgress(update);
-        progress.start({ durationMs: 1000, maxPercent: 95, jitter: 0, completeOnDuration: false });
-        vi.advanceTimersByTime(2000);
+        progress.start({ durationMs: 1000, maxPercent: 100, jitter: 0, completeOnDuration: true });
+        vi.advanceTimersByTime(500);
         progress.fail();
         expect(update.mock.calls.every(([percent]) => percent < 100)).toBe(true);
         expect(update).toHaveBeenLastCalledWith(0);

@@ -1,12 +1,36 @@
 # Sample vaults — implemented contract
 
-Updated October 2, 2026. This replaces the earlier unimplemented `Sample Vault Config.md` / import-marker proposal. Do not emit that proposed manifest or add another demo-state switch.
+Updated October 4, 2026. The Inquiry sidecar remains the demo-detection and saved-results contract. Multi-book collections additionally carry the explicit book list below; no hidden import marker or demo-state switch is used.
 
 ## Portable content
 
 A public ZIP contains manuscript notes, author-facing scene/beat metadata, character notes, source text, guides, saved Inquiry briefings, and `Radial Timeline/Inquiry/Sessions/sessions.json`. It excludes `.obsidian`, plugin binaries, private settings, provider credentials, logs, recovery archives, old exports, and unfinished publishing templates. Install the plugin separately.
 
-The Inquiry sessions sidecar carries saved results and the book identity. `InquiryArtifactStore` reads it; `WelcomeScreen` detects the sample, and the explicit **Open the sample vault** action configures the book. Existing user settings are not silently replaced on plugin load. No `Sample Vault Config.md`, hidden import marker, or sample schema migration framework is implemented or required.
+The Inquiry sessions sidecar carries saved results and the active book identity. `InquiryArtifactStore` reads it; `WelcomeScreen` detects the sample, and the explicit **Open the sample vault** action configures the book. Existing user settings are not silently replaced on plugin load. Single-book samples need no additional manifest.
+
+## Multi-book collections
+
+Sherlock's four novels use a reader-visible `Sample Vault Config.md` with this frontmatter:
+
+```yaml
+rt_sample_vault: true
+schema_version: 1
+display_name: Sherlock Holmes
+book_folder: 01 A Study in Scarlet
+books:
+  - title: A Study in Scarlet
+    source_folder: 01 A Study in Scarlet
+  - title: The Sign of the Four
+    source_folder: 02 The Sign of the Four
+  - title: The Hound of the Baskervilles
+    source_folder: 03 The Hound of the Baskervilles
+  - title: The Valley of Fear
+    source_folder: 04 The Valley of Fear
+```
+
+The list defines collection order and the opening book. The welcome action validates every folder before adding missing Book Manager profiles. Reopening reuses profiles by folder and preserves author titles, IDs, order and Saga choices. Missing folders, unsupported schemas, overlapping folders and malformed lists surface an error instead of registering part of the collection. The collection name takes precedence over the Inquiry sidecar's active-book name.
+
+Inquiry's saved-question lookup matches both question and book scope key; a later answer from another novel cannot replace the selected novel's answer. Saga answers remain separate. This requires the updated plugin; it is not a claim that Sherlock's summaries and AI results have passed acceptance or that its public download is available.
 
 Scene IDs and literary prose are preserved. Preparation changes belong in the designated canonical vault; ZIPs are regenerated from that source. Operational state never belongs in scene YAML.
 
@@ -20,7 +44,7 @@ Public plugin **7.3.1** predates that change: its Inquiry view requires the AI t
 
 Use [the maintained packager](../../scripts/demo-vaults/README.md). It has required YAML parsing, explicit inclusion lists, full source-chapter comparison, boundary-aware Pulse checks, latest Gossamer-run consistency, Inquiry evidence validation, wiki-link validation, deterministic ZIPs, and SHA-256 inventory output. Existing output directories are refused.
 
-The current checked-in contract is for the prepared P&P chapter layout. Other source layouts require explicit preparation and their own validation before publication. Automated checks do not replace literary review, verify AI opinions, or authorize provider calls.
+The checked-in contracts cover P&P's chapter layout and Odyssey's Gutenberg HTML layout. Sherlock still requires its four-book release validation and accepted per-book results before packaging. Automated checks do not replace literary review, verify AI opinions, or authorize provider calls.
 
 Test the exact extracted ZIP in a fresh profile: sample detection, book initialization, four timeline modes, all saved Inquiry examples, scene navigation, and reopening. Keep provider calls user-operated. Back up the previous public ZIP and verify actual downloaded bytes after upload, including the website and email redirect paths.
 

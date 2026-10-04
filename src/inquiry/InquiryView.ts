@@ -5481,11 +5481,14 @@ export class InquiryView extends ItemView {
      */
     private findSavedSessionForQuestion(question: InquiryQuestion): InquirySession | undefined {
         const scope = this.state.scope;
+        const scopeKey = this.getScopeKey();
+        if (scope === 'book' && scopeKey === 'unresolved') return undefined;
         return this.sessionStore
             .getRecentSessions(this.sessionStore.getSessionCount())
             .find(s => !this.isErrorResult(s.result)
                 && s.result.questionId === question.id
-                && (s.scope ?? s.result.scope) === scope);
+                && (s.scope ?? s.result.scope) === scope
+                && (scope === 'saga' || this.getSessionScopeKey(s) === scopeKey));
     }
 
     private async runInquiry(

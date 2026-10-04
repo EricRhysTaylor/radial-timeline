@@ -6,7 +6,7 @@
 /* global __RT_RELEASE__ -- build-time flag injected by esbuild define; see esbuild.config.mjs */
 import { DEMO_LIBRARY_URL } from '../settings/bonusVaults';
 import { openSettingsTab } from '../utils/obsidianInternals';
-import { normalizePath, setIcon, TFolder } from 'obsidian';
+import { normalizePath, Notice, setIcon, TFolder } from 'obsidian';
 import RadialTimelinePlugin from '../main';
 import { BookDesignerModal } from '../modals/BookDesignerModal';
 import { OnboardingModal } from '../modals/OnboardingModal';
@@ -21,11 +21,10 @@ import { markBookManagerAutoloadHighlight } from '../settings/bookManagerAutoloa
 import type { InquiryClassConfig, InquirySourcesSettings } from '../types/settings';
 import {
     DEFAULT_BOOK_TITLE,
-    createBookId,
     deriveBookTitleFromSourcePath,
-    getActiveBook,
-    normalizeBookProfile
+    getActiveBook
 } from '../utils/books';
+import { readSampleVaultManifest, registerSampleBookProfiles, type SampleVaultConfig } from '../utils/sampleVault';
 
 interface WelcomeScreenParams {
     container: HTMLElement;
@@ -225,11 +224,6 @@ const buildCard = (parent: HTMLElement, plugin: RadialTimelinePlugin, spec: Card
     return { root, title, desc, cta, setActivate: (fn) => { activate = fn; } };
 };
 
-interface SampleVaultConfig {
-    displayName?: string;
-    bookFolder?: string;
-}
-
 const SAMPLE_INQUIRY_CORE_CLASSES: InquiryClassConfig[] = [
     normalizeClassContribution({
         className: 'scene',
@@ -264,10 +258,7 @@ const findSampleVaultConfig = (plugin: RadialTimelinePlugin): SampleVaultConfig 
     for (const file of files) {
         const fm = plugin.app.metadataCache.getFileCache(file)?.frontmatter;
         if (fm && fm.rt_sample_vault === true) {
-            return {
-                displayName: typeof fm.display_name === 'string' ? fm.display_name : undefined,
-                bookFolder: typeof fm.book_folder === 'string' ? fm.book_folder : undefined
-            };
+            return readSampleVaultManifest(fm);
         }
     }
     return null;
@@ -315,19 +306,21 @@ const ensureSampleBookProject = async (
     if (!bookFolder) return (getActiveBook(plugin.settings) ?? books[0])?.id ?? null;
 
     const normalizedBookFolder = normalizePath(bookFolder);
-    const existing = books.find(b => normalizePath((b.sourceFolder || '').trim()) === normalizedBookFolder);
-    if (existing) {
-        return existing.id;
-    }
-
-    const profile = normalizeBookProfile({
-        id: createBookId(),
+    const definitions = config?.books ?? [{
         title: displayNameToBookTitle(config?.displayName, normalizedBookFolder),
         sourceFolder: normalizedBookFolder
-    });
-    plugin.settings.books = [...books, profile];
-    await plugin.saveSettings();
-    return profile.id;
+    }];
+    for (const book of definitions) {
+        if (!(plugin.app.vault.getAbstractFileByPath(book.sourceFolder) instanceof TFolder)) {
+            throw new Error(`Sample manuscript folder missing: ${book.sourceFolder}`);
+        }
+    }
+    const registration = registerSampleBookProfiles(books, definitions, normalizedBookFolder);
+    if (registration.books.length !== books.length) {
+        plugin.settings.books = registration.books;
+        await plugin.saveSettings();
+    }
+    return registration.targetId;
 };
 
 const mergeSampleInquirySources = (raw?: InquirySourcesSettings): InquirySourcesSettings => {
@@ -370,18 +363,22 @@ const ensureSampleInquirySources = async (plugin: RadialTimelinePlugin): Promise
 
 /**
  * Opens the detected sample vault: select the book whose source folder matches
- * the manifest, registering it first if the vault shipped content but no book
- * is registered yet (fresh unzip + plugin install). If we can't determine a
- * target, deep-link the recipient into Book Manager. The full first-run import
- * state machine (markers, banners, Demo Mode) is documented in sample-vaults.md
- * and remains a separate effort.
+ * the manifest, registering all explicitly listed collection books on a fresh
+ * install. Existing author profiles remain intact. If no target can be
+ * determined, open Book Manager.
  */
 const openSampleVault = async (
     plugin: RadialTimelinePlugin,
     config: SampleVaultConfig | null,
     refreshTimeline: () => void
 ): Promise<void> => {
-    const targetId = await ensureSampleBookProject(plugin, config);
+    let targetId: string | null;
+    try {
+        targetId = await ensureSampleBookProject(plugin, config);
+    } catch (error) {
+        new Notice(error instanceof Error ? error.message : 'Unable to open the sample vault.');
+        return;
+    }
 
     if (targetId) {
         await ensureSampleInquirySources(plugin);
@@ -395,12 +392,16 @@ const openSampleVault = async (
 
 const openBookManagerFromWelcome = async (plugin: RadialTimelinePlugin): Promise<void> => {
     if (await hasInquirySessionSidecarInVault(plugin.app)) {
-        const config = resolveSampleVaultConfig(plugin);
-        const targetId = await ensureSampleBookProject(plugin, config);
-        if (targetId) {
-            await ensureSampleInquirySources(plugin);
-            markBookManagerAutoloadHighlight(targetId);
-            await plugin.setActiveBookId(targetId);
+        try {
+            const config = resolveSampleVaultConfig(plugin);
+            const targetId = await ensureSampleBookProject(plugin, config);
+            if (targetId) {
+                await ensureSampleInquirySources(plugin);
+                markBookManagerAutoloadHighlight(targetId);
+                await plugin.setActiveBookId(targetId);
+            }
+        } catch (error) {
+            new Notice(error instanceof Error ? error.message : 'Unable to open the sample vault.');
         }
     }
     openRadialTimelineSettings(plugin, 'core');
@@ -434,13 +435,23 @@ const hydrateSampleVaultCard = async (
         return;
     }
 
-    // The sidecar's stamped Book-Profile identity is the primary name source —
-    // it travels with the vault (no data.json, no manifest needed). Fall back to
-    // the manifest / scene-folder inference only for fields it doesn't carry.
+    // Single-book identity travels in the sidecar. Collections explicitly list
+    // their books in a manifest; neither requires private plugin settings.
     const sidecarIdentity = await readInquirySidecarVaultIdentity(plugin.app);
-    const fallback = resolveSampleVaultConfig(plugin);
+    let fallback: SampleVaultConfig | null;
+    try {
+        fallback = resolveSampleVaultConfig(plugin);
+    } catch (error) {
+        refs.root.removeClass('rt-welcome-card-pending');
+        refs.title.setText('Sample vault needs attention');
+        refs.desc.setText(error instanceof Error ? error.message : 'Invalid sample vault configuration.');
+        refs.cta.setText('Open Book Manager');
+        refs.setActivate(() => openRadialTimelineSettings(plugin, 'core'));
+        return;
+    }
+    // An explicit collection manifest owns its name/order; a session records only its active book.
     const config: SampleVaultConfig | null = (sidecarIdentity || fallback)
-        ? {
+        ? fallback?.books ? fallback : {
             displayName: sidecarIdentity?.displayName ?? fallback?.displayName,
             bookFolder: sidecarIdentity?.bookFolder ?? fallback?.bookFolder
         }
@@ -455,7 +466,9 @@ const hydrateSampleVaultCard = async (
     // capitalized for the generic fallback ("Sample vault detected").
     const titleName = name.charAt(0).toUpperCase() + name.slice(1);
     refs.title.setText(WELCOME_COPY.cards.sampleOpen.title(titleName));
-    refs.desc.setText(WELCOME_COPY.cards.sampleOpen.desc(name));
+    refs.desc.setText(config?.books && config.books.length > 1
+        ? `Explore all ${config.books.length} books in ${name}. Choose a novel with the book selector, or explore them together in Saga view.`
+        : WELCOME_COPY.cards.sampleOpen.desc(name));
     refs.cta.setText(WELCOME_COPY.cards.sampleOpen.cta);
     refs.setActivate(() => { void openSampleVault(plugin, config, refreshTimeline); });
     onDetected();

@@ -14,13 +14,13 @@ function browsingView(enabled: boolean, credential: boolean, blocked: boolean, s
             settings: { enableAiSceneAnalysis: enabled },
             getInquiryEstimateService: () => ({ invalidate, requestSnapshot })
         },
-        state: { scope: 'book', isRunning: false },
+        state: { scope: 'book', activeBookId: 'book-1', isRunning: false },
         guidanceState: 'results',
         getResolvedEngine: () => ({ hasCredential: credential, blocked }),
         sessionStore: {
             getSessionCount: () => saved ? 1 : 0,
             getRecentSessions: () => saved
-                ? [{ key: 'saved', scope: 'book', result: { questionId: 'setup-1' } }]
+                ? [{ key: 'saved', activeBookId: 'book-1', scope: 'book', result: { questionId: 'setup-1' } }]
                 : []
         },
         isErrorResult: () => false,
@@ -47,6 +47,29 @@ function browsingView(enabled: boolean, credential: boolean, blocked: boolean, s
 }
 
 describe('Inquiry viewing is independent of AI permission', () => {
+    it('keeps saved questions within their novel and separates saga answers', () => {
+        const sessions = [
+            { key: 'hound', activeBookId: '03 The Hound', scope: 'book', result: { questionId: 'setup-1' } },
+            { key: 'saga', scope: 'saga', result: { questionId: 'setup-1' } },
+            { key: 'scarlet', activeBookId: '01 Scarlet', scope: 'book', result: { questionId: 'setup-1' } }
+        ];
+        const view = Object.assign(Object.create(InquiryView.prototype), {
+            state: { scope: 'book', activeBookId: '01 Scarlet' },
+            sessionStore: { getSessionCount: () => sessions.length, getRecentSessions: () => sessions },
+            isErrorResult: () => false
+        }) as { // SAFE: real saved-question lookup with deterministic session/selection seams.
+            state: { scope: string; activeBookId?: string };
+            findSavedSessionForQuestion(question: { id: string }): { key: string } | undefined;
+        };
+        expect(view.findSavedSessionForQuestion({ id: 'setup-1' })?.key).toBe('scarlet');
+        view.state.activeBookId = '02 Sign';
+        expect(view.findSavedSessionForQuestion({ id: 'setup-1' })).toBeUndefined();
+        view.state.activeBookId = undefined;
+        expect(view.findSavedSessionForQuestion({ id: 'setup-1' })).toBeUndefined();
+        view.state.scope = 'saga';
+        expect(view.findSavedSessionForQuestion({ id: 'setup-1' })?.key).toBe('saga');
+    });
+
     it('reopens saved scene references using the author IDs in the active corpus', () => {
         const view = Object.assign(Object.create(InquiryView.prototype), {
             state: { scope: 'book' },

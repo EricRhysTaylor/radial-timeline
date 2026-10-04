@@ -112,6 +112,7 @@ Class: Beat                   # Formerly Plot, Deprecated
 Beat Model: Save The Cat
 Act: 1
 Purpose: Why this beat exists in the structure (1-2 sentences, avoid retelling scene events).
+In This Book:                 # What this beat is in your novel; leads the beat hover when filled
 Range: 0-20
 Chapter:
 Gossamer1: 12                 # First trace (oldest) - Up to 30 saved traces
@@ -121,6 +122,8 @@ Gossamer2 Justification:
 ```
 
 > **Beat order** follows `Act` and the filename prefix (`sceneInteger.minor`, for example `7.01`).
+
+**In This Book** says what a beat is in your novel, where `Purpose` says what the beat does in any story. When it's filled, the beat hover opens with your line and shows the generic `Purpose` beneath it in smaller, dimmer text, and timeline search finds the beat by its words. Unfilled beats hover as before. New beat notes include the field; to add it to existing beat notes, run **Insert missing fields** from the beat properties audit in **Settings → Core → Story beats system**.
 
 Beat notes have their own **Beat properties editor** in **Settings → Core → Story beats system**. Use it to add custom keys and choose which fields appear in beat hovers. Beat properties are stored per beat system.
 

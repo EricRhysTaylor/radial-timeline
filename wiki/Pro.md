@@ -22,9 +22,9 @@ Pro workflows appear throughout Radial Timeline in magenta.
 
 ---
 
-## Website Exclusives
+## Demo vaults
 
-Template vaults such as *Pride & Prejudice* and *Sherlock Holmes*, Omnibus Inquiry briefings, and guided workflow demonstrations. See [radialtimeline.com](https://radialtimeline.com).
+The **Demo vaults** section at the bottom of the PRO tab lists complete worked examples with saved analysis. The [Pride & Prejudice demo vault](Sample-Vault) is a free download: **View demo & download** opens its page on radialtimeline.com. [The Odyssey](Odyssey-Demo-Vault), *Sherlock Holmes*, and *The Faerie Queene* are marked **Coming soon**.
 
 ---
 

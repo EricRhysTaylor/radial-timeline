@@ -1,8 +1,8 @@
 Inquiry analyzes manuscript and worldbuilding material across a book or saga. Ask structured questions, review evidence and scene citations, and save findings as briefings.
 
 <div style="text-align: center; margin: 20px 0;">
-  <img src="images/view-inquiry.png" alt="The Inquiry visual interface with Flow and Depth rings" style="width: 500px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Inquiry view — visual glyph with Flow and Depth analysis rings</div>
+  <img src="images/inquiry-odyssey.webp" alt="The Inquiry view on The Odyssey: the glyph with its three zones, the minimap of scene pages across the top, and the corpus strip of page icons on the right" style="width: 600px; max-width: 100%; border-radius: 8px;" />
+  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Inquiry view — the glyph, the minimap of scene pages, and the corpus strip (The Odyssey demo vault)</div>
 </div>
 
 <a name="overview"></a>
@@ -14,6 +14,8 @@ Inquiry sends your selected manuscript material to your configured cloud provide
 *   `Open inquiry` — Opens the Inquiry view
 
 **Settings**: [Inquiry settings](Settings-Inquiry)
+
+Inquiry opens whether or not AI is turned on. With AI off you can still read every saved session and briefing, including the ones in the [demo vault](Sample-Vault). To run a new question, turn on **Settings → AI → Enable AI LLM features** and set up a provider.
 
 ---
 
@@ -60,7 +62,7 @@ Click zone segments or findings to drill into specific analysis results.
 <a name="minimap"></a>
 ### Minimap
 
-The Minimap gives you a compact view of where findings land in the scanned corpus. It helps you see clustering, sparse coverage, and the relationship between current findings and the underlying manuscript.
+The Minimap gives you a compact view of where findings land in the scanned corpus. It draws each scene as a small page, the same page icon the [corpus strip](#corpus-pages) uses, and helps you see clustering, sparse coverage, and the relationship between current findings and the underlying manuscript.
 
 Use the Minimap to:
 
@@ -82,6 +84,32 @@ Use Corpus Manager to:
 *   narrow the active material before a single question or Omnibus run
 
 Any Corpus Manager overrides applied in the view affect the current Inquiry session and are respected by Omnibus runs.
+
+<a name="corpus-pages"></a>
+### Reading the corpus
+
+The corpus strip at the right of the view draws every note in the corpus as a page. One look tells you how each scene is sent, how far along it is, and how much material it holds.
+
+<div style="text-align: center; margin: 20px 0;">
+  <img src="images/inquiry-corpus-pages.webp" alt="The Odyssey's corpus strip beside its legend: green filled pages for full scenes, three faded red pages for excluded scenes, and six blue outlined pages with a red corner X for summary scenes with thin summaries" style="width: 440px; max-width: 100%; border-radius: 8px;" />
+  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">The corpus strip and its legend. Hover the asterisk (*) above the strip to open the legend.</div>
+</div>
+
+| What you see | What it means |
+| :--- | :--- |
+| **Fill and color** | The material mode. **Full** is a filled green page, **Summary** an outlined blue page, **Exclude** a faded red page. |
+| **Outline** | The scene's status. **Complete** is solid, **Working** dotted, **Todo** dashed, **Overdue** red. |
+| **Text lines** | How much material the note holds: three lines for **Substantive**, two for **Medium**, one for **Sketchy**, a blank page for **Empty**. The tiers follow your [CC thresholds](#corpus-content-cc-thresholds). |
+| **Corner X** | Low substance: the scene's material is Sketchy or Empty. In Summary mode it measures the `Summary`, so a scene with a short summary shows the X even when its prose is long. |
+| **Accent outline and filled corner fold** | A target scene. Inquiry treats target scenes as the main subject of the question. |
+
+**Click keys**
+
+*   **Click** a page to cycle its mode for this session: Full → Exclude → Summary.
+*   **Shift + Click** toggles targeting.
+*   **Right-click** opens the page's menu.
+
+The legend also explains the question states on the glyph: ready to run, a saved result, stale (the corpus changed since that run), Pro questions, and a failed run.
 
 ---
 
@@ -250,9 +278,9 @@ Configure sources in [Inquiry sources](Settings-Inquiry#sources).
 
 If the Inquiry view looks disabled or won't run, work down this list:
 
-*   **No book selected yet.** Inquiry scopes to the active book, so opening it in a fresh vault — before the plugin knows where your manuscript lives — leaves it with nothing to scan. Step 1 is always: point the plugin at your book in **Settings → Core → Books** (Book Manager). In the [sample vault](Sample-Vault), skip the settings trip entirely: open the **Welcome screen** and click **Open the sample vault** — it detects the packaged book and drops you straight into the timeline.
-*   **AI toggle.** Enable **Settings → AI → Enable AI LLM features** to open Inquiry.
-*   **Provider setup.** Add a cloud provider key or configure and validate a **Local LLM** under **Settings → AI** to run new inquiries. Saved briefings and session history remain browsable while you set up a provider, including in the [sample vault](Sample-Vault).
+*   **No book selected yet.** Inquiry scopes to the active book, so opening it in a fresh vault — before the plugin knows where your manuscript lives — leaves it with nothing to scan. Step 1 is always: point the plugin at your book in **Settings → Core → Books** (Book Manager). In the [demo vault](Sample-Vault), skip the settings trip entirely: open the **Welcome screen** and click **Open the sample vault** — it detects the packaged book and drops you straight into the timeline.
+*   **AI toggle.** Inquiry opens with AI off, and saved sessions stay readable. To run a new question, turn on **Settings → AI → Enable AI LLM features**.
+*   **Provider setup.** Add a cloud provider key or configure and validate a **Local LLM** under **Settings → AI** to run new inquiries. Saved briefings and session history remain browsable while you set up a provider, including in the [demo vault](Sample-Vault).
 *   **The selected model isn't Inquiry-eligible.** Not every provider/model can run Inquiry — it needs structured output and a large context. Open the [AI Engine popover](#ai-engine-popover) and check the readiness strip; if it shows blocked, it names the reason. Local models can qualify (the validation card in Settings → AI shows an "Inquiry eligible" badge), but smaller local models may not.
 *   **Empty corpus.** If the scanned corpus finds no scenes, check [Scan Folders & Class Scope](#scan-folders-and-class-scope) and the Corpus Manager — the scan folder must contain your scene notes, and the class scope must include them.
 *   **Costs look wrong mid-run.** The Omnibus panel shows live cost and includes a cache-health kill-switch; if cached-input pricing misbehaves, disable caching there and re-run.

@@ -47,7 +47,7 @@ const WELCOME_COPY = {
         },
         sampleGet: {
             title: 'Explore Pride & Prejudice',
-            desc: 'Explore all 61 chapters with saved Pulse analysis, four Gossamer signals, and three Inquiry sessions. Download the complete free demo vault. No signup or API key needed.',
+            desc: 'Explore all 61 chapters with saved Pulse analysis, four Gossamer signals, and three Inquiry sessions, no API key needed. Get the complete free demo vault from the website.',
             cta: 'Get the free demo vault'
         },
         sampleOpen: {

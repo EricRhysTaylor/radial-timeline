@@ -74,7 +74,7 @@ export function renderBonusVaultsSection({
         cls: ERT_CLASSES.SECTION_DESC,
         text:
             'Explore complete worked examples with saved analysis. Start with the free ' +
-            'Pride & Prejudice vault; no API key or signup is needed to browse its results. ' +
+            'Pride & Prejudice vault; no API key is needed to browse its results. ' +
             'Downloads and opening instructions are on the website.'
     });
 

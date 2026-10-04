@@ -1,4 +1,4 @@
-*The Odyssey* is the second free demo vault: the epic traditionally attributed to Homer, in Samuel Butler's public-domain prose translation, mapped as 89 scenes across all 24 books with its analysis already saved. Like the [Pride & Prejudice demo vault](Sample-Vault), it's a direct download with no signup or API key needed.
+*The Odyssey* is the second free demo vault: the epic traditionally attributed to Homer, in Samuel Butler's public-domain prose translation, mapped as 89 scenes across all 24 books with its analysis already saved. Like the [Pride & Prejudice demo vault](Sample-Vault), it's free, and you can explore its saved analysis without an API key.
 
 <div style="text-align: center; margin: 20px 0;">
   <img src="images/odyssey-narrative.webp" alt="The Odyssey in Narrative mode: 89 scenes on the outer ring, four motif rings inside it, three act labels and the Hero's Journey beats around the edge" style="width: 600px; max-width: 100%; border-radius: 8px;" />

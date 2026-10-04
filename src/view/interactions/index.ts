@@ -6,6 +6,7 @@ export { setupVersionIndicatorController } from './VersionIndicatorController';
 export { setupHelpIconController } from './HelpIconController';
 export { setupTooltips } from './TooltipController';
 export { setupSubplotKeyController } from './SubplotKeyController';
+export { setupBeatNameKeyController } from './BeatNameKeyController';
 export { setupTitleBarFit } from './TitleBarFit';
 
 

@@ -15,7 +15,8 @@
  *   render).
  * - Click the trigger to pin the key open (survives re-renders).
  * - Hold Shift to show the key while held (not in Chronologue mode, which
- *   owns Shift for elapsed-time comparison).
+ *   owns Shift for elapsed-time comparison). The same Shift also swaps beat
+ *   labels to their In This Book names — see BeatNameKeyController.
  *
  * Hovering a key row spotlights that ring by dimming every other ring's
  * scenes, number squares, and titles with the existing rt-non-selected
@@ -27,6 +28,7 @@
  */
 
 import { RadialTimelineView } from '../TimeLineView';
+import { isTypingInField } from '../../utils/domFocus';
 
 interface SubplotKeyEntry {
     ring: number;
@@ -223,16 +225,10 @@ export function setupSubplotKeyController(
     // Hold Shift to peek at the key. Chronologue owns Shift (elapsed-time
     // comparison), so the shortcut is disabled there.
     const shiftEligible = view.currentMode !== 'chronologue';
-    const isTypingContext = (): boolean => {
-        const active = doc.activeElement as HTMLElement | null;
-        if (!active) return false;
-        const tag = active.tagName.toUpperCase();
-        return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || active.isContentEditable; // SAFE: "is the user typing in a field" disjunction over element kinds, not a value fallback
-    };
     const handleKeyDown = (e: KeyboardEvent) => {
         if (!shiftEligible || e.key !== 'Shift' || e.repeat) return;
         if (view.app.workspace.getActiveViewOfType(RadialTimelineView) !== view) return;
-        if (isTypingContext()) return;
+        if (isTypingInField(doc)) return;
         show();
         panel.classList.add('is-key-held');
     };

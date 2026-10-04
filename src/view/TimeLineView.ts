@@ -13,7 +13,7 @@ import { t } from '../i18n';
 import type { SubplotAlignment, TimelineItem } from '../types';
 import { renderSvgFromString } from '../utils/svgDom';
 import { openOrRevealFileByPath } from '../utils/fileUtils';
-import { setupRotationController, setupSearchControls as setupSearchControlsExt, setupModeToggleController, setupVersionIndicatorController, setupHelpIconController, setupTooltips, setupSubplotKeyController, setupTitleBarFit } from './interactions';
+import { setupRotationController, setupSearchControls as setupSearchControlsExt, setupModeToggleController, setupVersionIndicatorController, setupHelpIconController, setupTooltips, setupSubplotKeyController, setupBeatNameKeyController, setupTitleBarFit } from './interactions';
 import { RendererService } from '../services/RendererService';
 import { ModeManager, createModeManager } from '../modes/ModeManager';
 import { getModeDefinition, getToggleableModes } from '../modes/ModeRegistry';
@@ -2481,7 +2481,7 @@ export class RadialTimelineView extends ItemView {
                 title: 'Narrative Only',
                 rows: [
                     { icon: 'move-horizontal', label: 'Drag outer ring', detail: 'move scene or beat in manuscript order' },
-                    { icon: 'layers', label: 'Hold Shift', detail: 'show subplot ring key' },
+                    { icon: 'layers', label: 'Hold Shift', detail: 'show subplot ring key and In This Book beat names' },
                 ],
             });
         }
@@ -3161,6 +3161,9 @@ export class RadialTimelineView extends ItemView {
 
                 // Attach subplot ring key overlay (hover trigger / pin / hold Shift)
                 setupSubplotKeyController(this, svgElement, timelineContainer);
+
+                // Hold Shift (Narrative): beat labels show their In This Book names
+                setupBeatNameKeyController(this, timelineContainer);
 
                 // Attach Author Progress Indicator click behavior - opens Settings Social tab
                 const aprIndicator = svgElement.querySelector('.rt-apr-indicator');

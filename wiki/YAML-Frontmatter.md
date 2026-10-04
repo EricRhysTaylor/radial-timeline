@@ -123,7 +123,7 @@ Gossamer2 Justification:
 
 > **Beat order** follows `Act` and the filename prefix (`sceneInteger.minor`, for example `7.01`).
 
-**In This Book** says what a beat is in your novel, where `Purpose` says what the beat does in any story. When it's filled, the beat hover opens with your line and shows the generic `Purpose` beneath it in smaller, dimmer text, and timeline search finds the beat by its words. Unfilled beats hover as before. New beat notes include the field; to add it to existing beat notes, run **Insert missing fields** from the beat properties audit in **Settings → Core → Story beats system**.
+**In This Book** says what a beat is in your novel, where `Purpose` says what the beat does in any story. When it's filled, the beat hover opens with your line and shows the generic `Purpose` beneath it in smaller, dimmer text, and timeline search finds the beat by its words. Unfilled beats hover as before. In Narrative mode, hold **Shift** to swap the beat labels around the outer ring to their In This Book names (a long line is cut short on the ring; the hover keeps all of it). New beat notes include the field; to add it to existing beat notes, run **Insert missing fields** from the beat properties audit in **Settings → Core → Story beats system**.
 
 Beat notes have their own **Beat properties editor** in **Settings → Core → Story beats system**. Use it to add custom keys and choose which fields appear in beat hovers. Beat properties are stored per beat system.
 

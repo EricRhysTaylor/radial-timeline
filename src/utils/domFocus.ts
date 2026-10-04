@@ -55,3 +55,11 @@ export function scheduleFocusAfterPaint(
 
     state.rafId = window.requestAnimationFrame(tick);
 }
+
+/** True when keystrokes belong to a field the author is typing in, not to a view shortcut. */
+export function isTypingInField(doc: Document): boolean {
+    const active = doc.activeElement as HTMLElement | null;
+    if (!active) return false;
+    const tag = active.tagName.toUpperCase();
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || active.isContentEditable; // SAFE: "is the user typing in a field" disjunction over element kinds, not a value fallback
+}

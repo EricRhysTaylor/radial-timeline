@@ -232,8 +232,8 @@ export function renderRings(ctx: RingRenderContext): string {
                         ESTIMATE_FUDGE_RENDER,
                         PADDING_RENDER_PX * fontScale
                     );
-                    // Hovering a beat swaps every ring label to its In This Book
-                    // name (BeatLabelAdjuster.showBeatLabels); both names ride here.
+                    // Holding Shift swaps every ring label to its In This Book name
+                    // (BeatNameKeyController → showBeatLabels); both names ride here.
                     const inThisBook = isBeatNote(scene) ? scene['In This Book'] : undefined;
                     const beatLabelNameAttrs = inThisBook
                         ? ` data-beat-label-canonical="${escapeXml(rawTitleFull)}" data-beat-label-in-book="${escapeXml(toBeatRingLabel(inThisBook))}"`

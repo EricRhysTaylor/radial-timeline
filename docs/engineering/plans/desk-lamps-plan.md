@@ -103,10 +103,10 @@ nothing if they haven't set one. The plugin never reads device location.
 
 **D10. A badge, not alerts.** A friend lighting their lamp changes the count
 and nothing else: no Notice, no sound. Lamp off bulletins (D15) live only
-inside the popover and never touch the count. Invites do surface: they count
-in the
-existing Mailbox (website chip and plugin pill), with a "Desk Lamp invites"
-row in the plugin's Mailbox menu. No email in v1.
+inside the popover and never touch the count. Invites do surface: on My
+Share, and in the plugin's lamp menu ("1 Desk Lamp invite waiting", opening
+My Share), from the `invites_received` count the plugin's Desk Lamps call
+already returns. The Mailbox is unchanged. No email in v1.
 
 **D11. The server keeps no history.** One live row per vault connection,
 overwritten on each update and deleted when the lamp goes off. A row not
@@ -125,8 +125,8 @@ likes today). Deleting an account deletes its lamps, invites, and live rows.
 Disconnecting a vault deletes that connection's live row.
 
 **D14. The lamp menu is always there.** The title-bar lamp shows whenever
-the vault is connected and has at least one accepted Desk Lamp, whether or
-not you are writing. Looking never lights your own lamp.
+the vault is connected and has at least one accepted Desk Lamp or an invite
+waiting, whether or not you are writing. Looking never lights your own lamp.
 
 **D15. A living list, freshest on top.** The popover reads like a bulletin
 board, not a roster. Every row is sorted by its most recent change, newest
@@ -184,34 +184,42 @@ Lamps is separate from them (Eric, 2026-10-04): the "Sharing level" section
 on `app/me/page.tsx`, and a short paragraph after the levels in
 `app/components/SharingBoundary.tsx`. Exact copy under "Disclosure copy".
 
-**Mailbox.** `community-mailbox` adds pending Desk Lamp invites to the
-counts the website chip and plugin pill already show.
+**Reads.** The website reads the list through `community_my_desk_lamps()`
+(signed-in members only): each row's relation (`lamp`, `invite_sent`,
+`invite_received`) and the other member's handle, name and avatar. Writes go
+through `callEdge("community-desk-lamp", { action, profile_id })`.
 
 **Not in v1:** a website view of lit lamps. The plugin is where writing
 happens; the website manages the list.
 
 ## Server (Platform)
 
-Two tables, neither readable through public REST (unlike
-`community_follows`, whose SELECT is public).
+Built 2026-10-04 in `radial-timeline-platform`: migration
+`*_community_desk_lamps`, functions `community-desk-lamp` and
+`community-desk-lamps`, and `desk_lamps` in the account export. Its
+`HANDOFF.md` entry is the record of what is live.
+
+Two tables, neither readable by any client (unlike `community_follows`,
+whose SELECT is public): RLS on, no policies, service role only. Members read
+through `community_my_desk_lamps()`, which can show a declined invite as
+still sent to its inviter; a row-level policy could not hide that column.
 
 **`community_desk_lamps`** — the relationship. Inviter, invitee, status
-(pending or accepted), created, accepted, and expiry for pending rows. One
-row per unordered pair. RLS lets only the two members read their row;
-writes happen only through edge functions.
+(pending, declined or accepted), created, declined, accepted. One row per
+unordered pair. Unaccepted rows expire 30 days after they were sent.
 
 **`community_desk_lamp_lights`** — the live state. Keyed by vault
 connection, with profile, state (lit or break), mode, lit-at (5-minute
-floor), last-seen, and audience (profile ids). No direct reads for anyone.
-Rows are deleted on "off", disconnect, and account deletion, and swept
-when last-seen is older than 5 minutes.
+floor), last-seen, and audience (profile ids). Rows are deleted on "off" and
+swept when last-seen is older than 5 minutes or the connection is no longer
+active; a profile or connection delete cascades.
 
 **Edge functions**
 
-- `community-desk-lamp-invite` — create or withdraw an invite (cap, rate
-  limit, block and AI checks).
-- `community-desk-lamp-respond` — accept or decline.
-- `community-desk-lamp-remove` — end an accepted relationship.
+- `community-desk-lamp` (website, JWT) — `{action, profile_id}` with action
+  invite, withdraw, accept, decline or remove. Inviting someone who already
+  invited you accepts. Cap, rate limit, block, AI, archive and pending
+  deletion checks all live in the RPC.
 - `community-desk-lamps` — the plugin's one call, authenticated with
   `connection_id` and `current_secret` like `community-mailbox`. The body
   may carry a `light`: absent means read only; `null` means "my lamp is
@@ -249,8 +257,11 @@ can't light a lamp; reads allow paused.
 - While your lamp is on: one call every 60 seconds from the plugin's
   existing 1-second tick, whatever view is showing and whether or not the
   window has focus. The same call returns your friends' lamps.
-- While your lamp is off: a read every 60 seconds while a timeline view is
-  visible and the window has focus, plus one when the window regains focus.
+- While your lamp is off and you have at least one Desk Lamp: a read every
+  60 seconds while a timeline view is visible and the window has focus, plus
+  one when the window regains focus.
+- With no Desk Lamps yet: a read on the Mailbox's schedule (first view,
+  hourly, window focus), only to notice a first accepted lamp or invite.
 - Transitions send at once: start, manual pause, resume, save, discard,
   turning the lamp off, changing the audience. Plugin unload sends a
   best-effort "off"; if it never arrives, the 5-minute rule ends the lamp.

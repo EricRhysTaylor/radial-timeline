@@ -16,20 +16,28 @@ Reconciled 2026-09-04. The earlier revision described a `friends` audience
 and a device-side per-book toggle for book titles. Neither shipped and
 neither exists in the contract; both are gone.
 
+Amended 2026-10-04: the **Desk Lamps** audience (Eric's decisions of
+2026-10-03/04; plan `docs/engineering/plans/desk-lamps-plan.md`; contract
+amendment "Desk Lamps", 2026-10). It is not the old `friends` audience: it
+carries no session rows and no aggregates, only a live state, and only while
+a session the author chose to share is open.
+
 ---
 
 ## Audiences
 
-There are two audiences. They take different shapes. Do not collapse them.
+There are three audiences. They take different shapes. Do not collapse them.
 
 | Audience | Who | Shape | When |
 |---|---|---|---|
 | `private` | The author, on their own device | Full session row | always |
 | `community` | The public website | Aggregates, an undated rollup, and author-composed posts | standing share at Level 3, or an explicit per-save post |
+| `desk lamps` | The accepted Desk Lamps the author ticked for this session | A live state: lit or on a break, mode, session start floored to 5 minutes | only while that session is open, at any sharing level |
 
 Community **never** sees per-session rows. Forcing community to aggregates
 removes the spoiler surface entirely; it is the privacy lever, not a
-presentation choice.
+presentation choice. Desk Lamps never see a session row either: they see
+that a session is open right now, and nothing about it survives the session.
 
 ---
 
@@ -128,6 +136,39 @@ saving, and the remembered default only pre-arms it. It is never a passive
 flag applied after the fact. Sent by
 `communityShareClient.postSessionToCommunityFeed`.
 
+### Any level, per session: the Desk Lamp
+
+The Desk Lamp is independent of the sharing level: it works at Private too.
+It needs a connected vault, an **active** connection (a paused share sends
+no lamp; turning a lamp off is always allowed), an open writing session, and
+at least one accepted Desk Lamp ticked in the Begin Session panel for that
+session. A new setup ticks nobody; the remembered choice only pre-ticks.
+
+One pure projection in `src/communityShare/deskLamps.ts` turns the active
+session into the lamp. It emits exactly four keys and nothing else from
+`ActiveWritingSession` (which carries `bookTitle`, `stage`, goals and the
+countdown):
+
+- `state`: `lit`, or `break` only when the author pressed Pause
+  (`pausedAt` set and `idleAuto` not true). The auto-track idle pause is
+  never sent.
+- `mode`: the session's mode.
+- `lit_at`: `startedAt` floored to 5 minutes, ISO UTC.
+- `audience`: the ticked Desk Lamp profile ids.
+
+Sent by `communityShareClient.syncDeskLamps` to `community-desk-lamps`, on
+start, manual pause, resume, save, discard, audience change, and once a
+minute while the lamp is on; `null` turns it off. The server refuses a lamp
+with any other key, keeps one live row per connection, deletes it when the
+lamp goes off or after 5 minutes without a refresh, and keeps no history.
+Friends see the author's display name and the short label of the broad
+public place on their Community profile, both already public; the plugin
+never reads device location.
+
+Lamp off bulletins (a friend's lamp that went off since the last check) are
+made on the viewer's device from data it already received, held in memory
+only, and never stored or sent. They add no exit.
+
 ---
 
 ## Field sensitivity
@@ -143,6 +184,11 @@ flag applied after the fact. Sent by
 - the local vault name, device names, plugin logs, API or license keys
 
 Adding a field to this list is a one-way door.
+
+The Desk Lamp does not breach it (Eric, 2026-10-04): it is a live state, not
+a session row; its start time is floored to 5 minutes, not exact; it goes
+only to friends the author ticked; and it is deleted when the session ends.
+No end time is ever sent.
 
 ### Crosses the wire only as a private shell
 
@@ -171,6 +217,8 @@ points are pure of identity concerns and one less thing can leak.
   chooses a level and presses **Begin sharing**.
 - The `note` field never leaves the device passively; its only exit is the
   per-save feed post.
+- No Desk Lamp is lit unless the author ticks at least one friend for that
+  session.
 - Rounding and precision are not user-configurable; they are fixed by the
   contract per level.
 
@@ -202,6 +250,12 @@ bookTitle:            'PRIVACY_TRACER_TITLE_DO_NOT_LEAK'
 The project-shell sync is asserted in `communityShareClient.test.ts`: it
 **does** carry the working title (that is the contract), and it never
 carries paths, notes, or session data.
+
+The Desk Lamp projection gets its own tracer test alongside it
+(`src/communityShare/deskLamps.privacy.test.ts`, written with the plugin
+code): an `ActiveWritingSession` carrying the `bookTitle` tracer, a stage,
+goals and a countdown must project to exactly `state`, `mode`, `lit_at` and
+`audience`, with no tracer and an idle auto-pause reading as `lit`.
 
 A future field on `WritingSessionRecord` that quietly passes through to a
 community exit fails these tests. **Adding the tracer for a new field is

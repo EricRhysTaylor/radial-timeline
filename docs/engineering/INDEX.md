@@ -49,10 +49,11 @@ Location: `docs/engineering/standards/`
   Release assets are never built or uploaded locally.
 
 - **[writing-session-privacy.md](standards/writing-session-privacy.md)**
-  Authoritative contract for projecting writing-session data to private,
-  friends, and community audiences. Read before touching any code that
-  reads, renders, or transmits `WritingSessionRecord`. Enforced by the
-  tracer test in `projections.privacy.test.ts`.
+  Authoritative contract for projecting writing-session data to the private,
+  community, and Desk Lamps audiences. Read before touching any code that
+  reads, renders, or transmits `WritingSessionRecord` or the active session.
+  Enforced by the tracer tests in `src/services/WritingSessionLog.privacy.test.ts`
+  and `src/communityShare/communitySharePreview.test.ts`.
 
 - **[fallback-policy.md](standards/fallback-policy.md)**
   Authoritative no-fallback policy. Hard-fail at boundaries, surface real errors, never silently substitute. Enforced by `scripts/fallback-gate.mjs` and wired into `npm run gates`.

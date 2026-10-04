@@ -15,7 +15,7 @@ export class SimulatedProgress {
     private timeoutId: number | null = null;
     private startTime = 0;
     private resolved = false;
-    private config: (Required<SimulatedProgressConfig> & { completeOnDuration: boolean }) | null = null;
+    private config: Required<SimulatedProgressConfig> | null = null;
     private readonly onUpdate: (percent: number) => void;
 
     constructor(onUpdate: (percent: number) => void) {

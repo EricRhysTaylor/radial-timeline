@@ -1,92 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import {
-    computeSampleRate,
+    getInquiryTimingSample,
     getLatestTimingEntry,
     predictTimingFromEntry,
     PREDICT_FLOOR_MS
 } from './inquiryTimingPrediction';
 import type { InquiryTimingHistoryEntry } from '../../types/settings';
 
-describe('computeSampleRate', () => {
-    it('returns null when duration is missing or non-positive', () => {
-        const usage = { inputTokens: 10_000 };
-        expect(computeSampleRate({ usage, durationMs: 0 })).toBeNull();
-        expect(computeSampleRate({ usage, durationMs: -1 })).toBeNull();
-        expect(computeSampleRate({ usage, durationMs: undefined })).toBeNull();
+describe('latest Inquiry timing sample', () => {
+    it('uses the canonical provider total without adding cached tokens twice', () => {
+        const usage = { inputTokens: 135_657, cacheReadInputTokens: 135_634 };
+        expect(getInquiryTimingSample(usage, 42_795)).toEqual({ durationMs: 42_795, inputTokens: 135_657 });
     });
 
-    it('uses provider-reported input total when inputTokens is the canonical total', () => {
-        // Real Anthropic/OpenAI/Gemini extract: inputTokens already includes
-        // cached portions. Don't double-count.
-        const result = computeSampleRate({
-            usage: { inputTokens: 100_000, cacheCreationInputTokens: 99_950, cacheReadInputTokens: 0 },
-            durationMs: 10_000
-        });
-        expect(result?.source).toBe('provider_usage');
-        expect(result?.inputTokens).toBe(100_000);
-        expect(result?.msPerInputToken).toBe(10_000 / 100_000);
-    });
-
-    it('records cache-heavy samples because observed wall time still reflects corpus reasoning', () => {
-        // Real Gemini cache-hit shape: promptTokenCount=135_657 (total),
-        // cachedContentTokenCount=135_634 (subset of that total).
-        const result = computeSampleRate({
-            usage: { inputTokens: 135_657, cacheReadInputTokens: 135_634, cacheCreationInputTokens: 0 },
-            durationMs: 42_795
-        });
-        expect(result?.source).toBe('provider_usage');
-        expect(result?.inputTokens).toBe(135_657);
-        expect(result?.msPerInputToken).toBeCloseTo(42_795 / 135_657, 8);
-    });
-
-    it('reconstructs the total when inputTokens is missing/zero but cache fields are present', () => {
-        // Defensive path: a legacy or partial usage payload with only cache fields.
-        const result = computeSampleRate({
-            usage: { inputTokens: 0, cacheReadInputTokens: 40, cacheCreationInputTokens: 60 },
-            durationMs: 1_000
-        });
-        expect(result).not.toBeNull();
-        expect(result?.source).toBe('provider_usage');
-        expect(result?.inputTokens).toBe(100);
-    });
-
-    it('returns null when provider usage exists but every input field is zero', () => {
-        const result = computeSampleRate({
-            usage: { inputTokens: 0, cacheReadInputTokens: 0, cacheCreationInputTokens: 0 },
-            durationMs: 25_000
-        });
-        expect(result).toBeNull();
-    });
-
-    it('returns null when no provider usage is supplied at all', () => {
-        const result = computeSampleRate({
-            usage: undefined,
-            durationMs: 25_000
-        });
-        expect(result).toBeNull();
-    });
-
-    it('returns null when provider usage yields no input tokens', () => {
-        expect(computeSampleRate({
-            usage: undefined,
-            durationMs: 10_000
-        })).toBeNull();
-        expect(computeSampleRate({
-            usage: { inputTokens: 0 },
-            durationMs: 10_000
-        })).toBeNull();
-    });
-
-    it('counts cache_creation as fresh work — priming a cache costs full input price and is processed', () => {
-        // Anthropic cache-create shape: inputTokens (helper-aggregated) = 100_000,
-        // cacheCreationInputTokens = 100_000 (the create payload portion).
-        const result = computeSampleRate({
-            usage: { inputTokens: 100_000, cacheCreationInputTokens: 100_000, cacheReadInputTokens: 0 },
-            durationMs: 60_000
-        });
-        expect(result?.source).toBe('provider_usage');
-        expect(result?.inputTokens).toBe(100_000);
-        expect(result?.msPerInputToken).toBe(60_000 / 100_000);
+    it('skips missing usage, cache-only reports, and invalid observations', () => {
+        expect(getInquiryTimingSample(undefined, 10_000)).toBeNull();
+        expect(getInquiryTimingSample({ inputTokens: undefined }, 10_000)).toBeNull();
+        for (const invalid of [0, -1, NaN, Infinity, undefined]) {
+            expect(getInquiryTimingSample({ inputTokens: 1000 }, invalid)).toBeNull();
+            expect(getInquiryTimingSample({ inputTokens: invalid }, 1000)).toBeNull();
+        }
     });
 });
 
@@ -130,6 +63,19 @@ describe('shared latest Inquiry observation', () => {
         })).toBe(usable);
         expect(getLatestTimingEntry({})).toBeNull();
         expect(getLatestTimingEntry(undefined)).toBeNull();
+    });
+});
+
+describe('persisted timing boundary', () => {
+    it('ignores malformed or unsupported observations without losing valid legacy history', () => {
+        const usable = { lastDurationMs: 10000, lastInputTokens: 1000, updatedAt: '2026-10-04T01:30:00Z' };
+        // SAFE: persisted JSON can violate the TypeScript settings shape.
+        const history = { usable, broken: null, future: { ...usable, schemaVersion: 2 } } as unknown as Record<string, InquiryTimingHistoryEntry>;
+        expect(getLatestTimingEntry(history)).toBe(usable);
+    });
+
+    it('rejects overflowing predictions rather than scheduling an infinite estimate', () => {
+        expect(predictTimingFromEntry({ lastDurationMs: Number.MAX_VALUE, lastInputTokens: 1, updatedAt: '2026-10-04T01:30:00Z' }, 1000)).toBeNull();
     });
 });
 

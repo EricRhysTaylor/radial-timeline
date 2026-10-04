@@ -523,7 +523,7 @@ describe('InquiryView payload accounting', () => {
         const timingSource = readFileSync(resolve(process.cwd(), 'src/inquiry/services/inquiryTimingPrediction.ts'), 'utf8');
         // The view records and reads one observation; pure timing math stays in the service.
         expect(viewSource.includes("from './services/inquiryTimingPrediction'")).toBe(true);
-        expect(viewSource.includes('computeSampleRate({')).toBe(true);
+        expect(viewSource.includes('getInquiryTimingSample(usage, durationMs)')).toBe(true);
         expect(viewSource.includes('fallbackEstimate: result.tokenEstimateInput')).toBe(false);
         expect(timingSource.includes('fallbackEstimate')).toBe(false);
         expect(timingSource.includes('CACHE_POISON_THRESHOLD')).toBe(false);

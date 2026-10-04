@@ -136,7 +136,7 @@ import {
 import { resolveInquiryEngine, type ResolvedInquiryEngine } from './services/inquiryModelResolver';
 import { computeInquiryAdvisoryContext, type InquiryAdvisoryContext } from './services/inquiryAdvisory';
 import {
-    computeSampleRate,
+    getInquiryTimingSample,
     getLatestTimingEntry,
     predictTimingFromEntry
 } from './services/inquiryTimingPrediction';
@@ -833,6 +833,8 @@ export class InquiryView extends ItemView {
         track('apiSimulationTimer');
         track('payloadStatsRefreshTimer');
         track('sourcesRefreshTimer');
+        this.viewDisposables.add(() => this.minimap.stopRunningAnimations());
+        this.viewDisposables.add(() => this.minimap.cancelFadeOut());
     }
 
     // Shell Composition
@@ -8781,7 +8783,7 @@ export class InquiryView extends ItemView {
 
     /** Record the latest real duration and input size for every subsequent Inquiry question. */
     private async recordInquiryTimingSample(result: InquiryResult, trace: InquiryRunTrace | null | undefined): Promise<void> {
-        if (!result || result.aiReason === 'simulated' || result.aiReason === 'stub') return;
+        if (!result || result.aiStatus !== 'success' || result.aiReason === 'simulated' || result.aiReason === 'stub') return;
         const provider = result.aiProvider?.trim();
         const durationMs = typeof result.roundTripMs === 'number' && Number.isFinite(result.roundTripMs)
             ? result.roundTripMs
@@ -8792,22 +8794,21 @@ export class InquiryView extends ItemView {
                 ? extractTokenUsage(provider, trace.response.responseData)
                 : null);
 
-        const sampleRate = computeSampleRate({
-            usage: usage ?? undefined,
-            durationMs
-        });
-        if (!sampleRate) return;
+        const sample = getInquiryTimingSample(usage, durationMs);
+        if (!sample) return;
 
         this.plugin.settings.inquiryTimingHistory = {
             latest: {
                 schemaVersion: 1,
-                lastDurationMs: durationMs!,
-                lastInputTokens: sampleRate.inputTokens,
+                lastDurationMs: sample.durationMs,
+                lastInputTokens: sample.inputTokens,
                 updatedAt: new Date().toISOString()
             }
         };
         this.refreshEstimateDisplays();
-        await this.plugin.saveSettings();
+        await this.plugin.saveSettings().catch(error => {
+            console.warn('[Inquiry] Could not save the latest timing observation.', error);
+        });
     }
 
     private setPreviewFooterText(text: string): void {

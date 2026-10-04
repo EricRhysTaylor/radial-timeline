@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { extractTokenUsage } from '../../src/ai/usage/providerUsage';
-import { computeSampleRate, predictTimingFromEntry } from '../../src/inquiry/services/inquiryTimingPrediction';
+import { getInquiryTimingSample, predictTimingFromEntry } from '../../src/inquiry/services/inquiryTimingPrediction';
 
 describe('Gemini provider → timing pipeline (real shapes)', () => {
     /**
@@ -33,17 +33,16 @@ describe('Gemini provider → timing pipeline (real shapes)', () => {
         expect(usage?.cacheReadInputTokens).toBe(264_584);
     });
 
-    it('computeSampleRate uses the provider total (no double-count) for Gemini', () => {
+    it('getInquiryTimingSample uses the provider total (no double-count) for Gemini', () => {
         const usage = extractTokenUsage('google', geminiCacheHitResponse);
         const durationMs = 30_000;
-        const rate = computeSampleRate({ usage, durationMs });
+        const rate = getInquiryTimingSample(usage, durationMs);
         expect(rate).not.toBeNull();
         // True provider total — NOT 264_606 + 264_584.
         expect(rate?.inputTokens).toBe(264_606);
-        expect(rate?.msPerInputToken).toBeCloseTo(durationMs / 264_606, 8);
     });
 
-    it('computeSampleRate uses provider total (no double-count) for OpenAI', () => {
+    it('getInquiryTimingSample uses provider total (no double-count) for OpenAI', () => {
         const usage = extractTokenUsage('openai', {
             usage: {
                 input_tokens: 1200,
@@ -51,11 +50,11 @@ describe('Gemini provider → timing pipeline (real shapes)', () => {
                 input_tokens_details: { cached_tokens: 900 }
             }
         });
-        const rate = computeSampleRate({ usage, durationMs: 10_000 });
+        const rate = getInquiryTimingSample(usage, 10_000);
         expect(rate?.inputTokens).toBe(1200);
     });
 
-    it('computeSampleRate uses provider total (no double-count) for Anthropic', () => {
+    it('getInquiryTimingSample uses provider total (no double-count) for Anthropic', () => {
         const usage = extractTokenUsage('anthropic', {
             usage: {
                 input_tokens: 196,
@@ -66,8 +65,8 @@ describe('Gemini provider → timing pipeline (real shapes)', () => {
         });
         // readAnthropicUsage pre-sums raw+cacheRead+cacheCreation into inputTokens.
         expect(usage?.inputTokens).toBe(188_196);
-        const rate = computeSampleRate({ usage, durationMs: 60_000 });
-        // computeSampleRate uses the pre-summed total directly, no double-count.
+        const rate = getInquiryTimingSample(usage, 60_000);
+        // getInquiryTimingSample uses the pre-summed total directly, no double-count.
         expect(rate?.inputTokens).toBe(188_196);
     });
 

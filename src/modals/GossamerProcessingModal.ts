@@ -125,7 +125,7 @@ export class GossamerProcessingModal extends ErtModal {
 
     onClose(): void {
         // Clear timer if active
-        if (this.timerInterval) {
+        if (this.timerInterval !== undefined) {
             window.clearInterval(this.timerInterval);
             this.timerInterval = undefined;
         }
@@ -405,6 +405,9 @@ export class GossamerProcessingModal extends ErtModal {
      * Mark API call as started
      */
     public apiCallStarted(): void {
+        if (this.timerInterval !== undefined) window.clearInterval(this.timerInterval);
+        this.timerInterval = undefined;
+        this.lastElapsedSeconds = undefined;
         this.apiCallStartTime = Date.now();
         this.apiCallManuscriptWords = this.manuscriptInfo?.totalWords;
 
@@ -452,7 +455,7 @@ export class GossamerProcessingModal extends ErtModal {
      */
     public apiCallSuccess(): void {
         // Clear timer
-        if (this.timerInterval) {
+        if (this.timerInterval !== undefined) {
             window.clearInterval(this.timerInterval);
             this.timerInterval = undefined;
         }
@@ -476,13 +479,16 @@ export class GossamerProcessingModal extends ErtModal {
 
     private async persistLastRunDuration(elapsedMs: number): Promise<void> {
         const words = this.apiCallManuscriptWords;
+        if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return;
         if (words === undefined || !Number.isFinite(words) || words <= 0) return;
         this.plugin.settings.gossamerLastRunTiming = {
             schemaVersion: 1,
             durationMs: elapsedMs,
             manuscriptWords: words
         };
-        await this.plugin.saveSettings();
+        await this.plugin.saveSettings().catch(error => {
+            console.warn('[Gossamer] Could not save the latest timing observation.', error);
+        });
     }
 
     /**
@@ -554,7 +560,7 @@ export class GossamerProcessingModal extends ErtModal {
      */
     public apiCallError(error: string): void {
         // Clear timer
-        if (this.timerInterval) {
+        if (this.timerInterval !== undefined) {
             window.clearInterval(this.timerInterval);
             this.timerInterval = undefined;
         }
@@ -640,6 +646,8 @@ export class GossamerProcessingModal extends ErtModal {
      * Mark processing as complete
      */
     public completeProcessing(success: boolean, message: string): void {
+        if (this.timerInterval !== undefined) window.clearInterval(this.timerInterval);
+        this.timerInterval = undefined;
         this.isProcessing = false;
 
         if (this.statusTextEl) {

@@ -16,7 +16,7 @@ import { ERT_CLASSES } from '../../ui/classes';
 import { IMPACT_FULL } from '../SettingImpact';
 import { ANTHROPIC_REQUESTED_CACHE_TTL, buildDefaultAiSettings, DECLARABLE_LOCAL_CAPABILITIES } from '../../ai/settings/aiSettings';
 import { formatProviderCacheWindowLabel } from '../../ai/settings/cacheWindows';
-import { formatGossamerCacheClock, formatGossamerCacheCostHint } from '../../gossamer/cacheWindow';
+import { formatGossamerCacheClock, formatGossamerCacheCostHint, getGossamerCacheContext, resolveGossamerCacheWindow } from '../../gossamer/cacheWindow';
 import { validateAiSettings } from '../../ai/settings/validateAiSettings';
 import { BUILTIN_MODELS } from '../../ai/registry/builtinModels';
 import { getPickerModelsForProvider, PROVIDER_DISPLAY_LABELS, selectLatestModelByReleaseChannel } from '../../ai/registry/releaseChannels';
@@ -1476,7 +1476,7 @@ export function renderAiSection(params: {
     // capacity-table line from the plugin's live window. Hidden when no window
     // is open. Reuses the preview's existing 1s tick (no extra interval).
     const updateGossamerCacheSettingsUi = (): void => {
-        const win = plugin.gossamerCacheWindow;
+        const win = resolveGossamerCacheWindow(plugin.gossamerCacheWindows, getGossamerCacheContext(plugin.settings), Date.now());
         const clock = formatGossamerCacheClock(win, Date.now());
         if (!clock || !win) {
             resolvedPreviewGossamerCacheEl.toggleClass('ert-settings-hidden', true);
@@ -1487,12 +1487,12 @@ export function renderAiSection(params: {
         }
         const costHint = formatGossamerCacheCostHint(win);
         resolvedPreviewGossamerCacheEl.toggleClass('ert-settings-hidden', false);
-        resolvedPreviewGossamerCacheEl.setText(costHint ? `Gossamer cache ${clock} · ${costHint}` : `Gossamer cache ${clock}`);
+        resolvedPreviewGossamerCacheEl.setText(costHint ? `Recent Gossamer cache ${clock} · ${costHint}` : `Recent Gossamer cache ${clock}`);
         capacityGossamerCache.toggleClass('ert-settings-hidden', false);
         capacityGossamerCache.setText(
             costHint
-                ? `Cache window ${clock} (${win.provider}) — ${costHint}`
-                : `Cache window ${clock} (${win.provider}) — reused by remaining signals`
+                ? `Last confirmed cache window ${clock} (${win.provider}) — ${costHint}`
+                : `Last confirmed cache window ${clock} (${win.provider}) — reuse requires unchanged input`
         );
     };
     updateGossamerCacheSettingsUi();

@@ -59,7 +59,7 @@ import type {
 } from '../types/settings';
 import type { GossamerRunRecord } from '../utils/gossamer';
 import { GOSSAMER_SIGNAL_METADATA, GOSSAMER_SIGNAL_TYPES, type GossamerSignalType } from '../types/gossamerSignals';
-import { formatGossamerCacheClock, formatGossamerCacheCostHint } from '../gossamer/cacheWindow';
+import { formatGossamerCacheClock, formatGossamerCacheCostHint, getGossamerCacheContext, resolveGossamerCacheWindow } from '../gossamer/cacheWindow';
 import { tooltip as applyTooltip } from '../utils/tooltip';
 
 // Duplicate of constants defined in main for now. We can consolidate later.
@@ -3424,7 +3424,7 @@ export class RadialTimelineView extends ItemView {
             }
             return;
         }
-        const window_ = this.plugin.gossamerCacheWindow;
+        const window_ = resolveGossamerCacheWindow(this.plugin.gossamerCacheWindows, getGossamerCacheContext(this.plugin.settings), Date.now());
         const clock = formatGossamerCacheClock(window_, Date.now());
         if (!clock || !window_) {
             pill.setAttribute('data-state', 'idle');
@@ -3433,11 +3433,11 @@ export class RadialTimelineView extends ItemView {
             return;
         }
         pill.setAttribute('data-state', 'open');
-        pill.textContent = `Cache ${clock}`;
+        pill.textContent = `Recent cache ${clock}`;
         // Re-bind whenever the text changes: each signal run (or reused
         // result) replaces the window and its last-run cost.
         const costHint = formatGossamerCacheCostHint(window_);
-        const baseTip = `Manuscript cached on ${window_.provider} — score the other signals now to reuse it`;
+        const baseTip = `Cache last confirmed for this book on ${window_.provider}. Reuse requires unchanged manuscript, beats, and model.`;
         const tip = costHint ? `${baseTip} (${costHint})` : baseTip;
         if (pill.getAttribute('data-tooltip-text') !== tip) {
             applyTooltip(pill, tip, 'bottom');

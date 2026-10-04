@@ -26,7 +26,7 @@ import { buildUnifiedBeatAnalysisCacheParts, getUnifiedBeatAnalysisJsonSchema, t
 import { DEFAULT_GOSSAMER_SIGNAL, GOSSAMER_SIGNAL_METADATA, type GossamerSignalType } from './types/gossamerSignals';
 import { validateGossamerResponse, type SubmittedBeat, type ValidatedBeat, type ValidationResult } from './ai/gossamer/responseValidation';
 import { describeAiRunModel } from './utils/modelResolver';
-import { buildGossamerCacheWindow } from './gossamer/cacheWindow';
+import { buildGossamerCacheWindow, getGossamerCacheContext, recordGossamerCacheWindow, resolveGossamerCacheWindow } from './gossamer/cacheWindow';
 import { estimateUsageCost } from './ai/cost/estimateCorpusCost';
 import { validateAiSettings } from './ai/settings/validateAiSettings';
 import { buildDefaultAiSettings } from './ai/settings/aiSettings';
@@ -880,6 +880,10 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
       signal: selectedSignal,
       manuscriptText: evidenceDocument.text
     });
+    // Capture ownership before the asynchronous request: switching books mid-run
+    // must never assign the returned cache to the newly active book.
+    const cacheContext = getGossamerCacheContext(plugin.settings);
+    modal.setCacheWindow(resolveGossamerCacheWindow(plugin.gossamerCacheWindows, cacheContext, Date.now(), runRequest));
     // Full prompt string for the log envelope (stable corpus first, volatile rubric last).
     const prompt = `${runRequest.userInput}\n\n${runRequest.userQuestion}`;
     const aiClient = getAIClient(plugin);
@@ -976,7 +980,7 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
     // passes — so the remaining signals can reuse it from here. A null window
     // (non-caching provider / no proven cache) clears any stale window. See
     // gossamer/cacheWindow.ts.
-    plugin.gossamerCacheWindow = buildGossamerCacheWindow(
+    const cacheWindow = buildGossamerCacheWindow(
       result.advancedContext ?? null,
       returnedAt.getTime(),
       validateAiSettings(plugin.settings.aiSettings ?? buildDefaultAiSettings()).value
@@ -984,21 +988,28 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
     // Record the FACTUAL billed cost of this run on the window from the
     // provider's usage payload (no projection of future runs). Best-effort:
     // the countdown still shows if pricing is unavailable for the model.
-    if (plugin.gossamerCacheWindow && result.provider !== 'none') {
+    if (cacheWindow && result.provider !== 'none') {
       try {
         const usage = extractTokenUsage(result.provider, result.responseData);
         const modelId = result.modelResolved || result.modelRequested;
         if (usage && modelId) {
           const cost = estimateUsageCost(result.provider, modelId, usage, result.advancedContext?.cacheStatus, ANTHROPIC_REQUESTED_CACHE_TTL);
           if (typeof cost?.totalCostUSD === 'number' && Number.isFinite(cost.totalCostUSD)) {
-            plugin.gossamerCacheWindow.lastRunCostUSD = cost.totalCostUSD;
+            cacheWindow.lastRunCostUSD = cost.totalCostUSD;
           }
         }
       } catch (e) {
         console.warn('[Gossamer] Cache-cost capture unavailable:', sanitizeLogPayload(e).sanitized);
       }
     }
-    modal.setCacheWindow(plugin.gossamerCacheWindow);
+    if (cacheContext && result.provider !== 'none') {
+      recordGossamerCacheWindow(plugin.gossamerCacheWindows, {
+        ...cacheContext,
+        provider: result.provider,
+        modelId: result.modelResolved || result.modelRequested
+      }, runRequest, cacheWindow);
+    }
+    modal.setCacheWindow(cacheWindow);
 
     // Parse response - AI returns raw scores without range info (to avoid anchoring bias)
     interface AiBeatAnalysis {
@@ -1294,12 +1305,16 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
     // Re-scoring unchanged input is allowed (it adds a reading); the
     // confirmation says so before the author spends a run on it.
     const confirmSignal: GossamerSignalType = plugin.gossamerSelectedSignal ?? DEFAULT_GOSSAMER_SIGNAL;
-    const priorReadingAt = findPriorGossamerReading(plugin, confirmSignal, buildGossamerRunRequest(plugin, {
+    const confirmRequest = buildGossamerRunRequest(plugin, {
       beats,
       beatSystem,
       signal: confirmSignal,
       manuscriptText: evidenceDocument.text
-    }));
+    });
+    const priorReadingAt = findPriorGossamerReading(plugin, confirmSignal, confirmRequest);
+    modal.setCacheWindow(resolveGossamerCacheWindow(
+      plugin.gossamerCacheWindows, getGossamerCacheContext(plugin.settings), Date.now(), confirmRequest
+    ));
 
     // Set manuscript info in confirmation view before opening
     modal.open();

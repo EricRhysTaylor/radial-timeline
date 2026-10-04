@@ -141,3 +141,105 @@ describe('formatGossamerCacheCostHint', () => {
         expect(hint).not.toContain('~');
     });
 });
+
+// Multi-book cache proof must never inherit the last book's request or cost.
+import {
+    getGossamerCacheContext,
+    recordGossamerCacheWindow, resolveGossamerCacheWindow,
+    type GossamerCacheContext, type GossamerCacheEntry
+} from './cacheWindow';
+import type { AIRunRequest } from '../ai/types';
+import { DEFAULT_SETTINGS } from '../settings/defaults';
+
+const scarlet: GossamerCacheContext = {
+    bookKey: 'scarlet', provider: 'anthropic', modelId: 'claude-opus-5-5'
+};
+const sign: GossamerCacheContext = { ...scarlet, bookKey: 'sign' };
+const request: AIRunRequest = {
+    feature: 'Gossamer', task: 'BeatMomentumAnalysis', requiredCapabilities: [], userInput: 'Beat list\nManuscript A',
+    projectContext: 'Book A', featureModeInstructions: 'Score requested signal',
+    userQuestion: 'Score momentum', returnType: 'json'
+};
+const windowA: GossamerCacheWindow = {
+    provider: 'anthropic', modelLabel: 'Opus', armedAt: 100, expiresAt: 10_000,
+    cacheStatus: 'created', lastRunCostUSD: 0.676
+};
+
+describe('book-scoped Gossamer cache windows', () => {
+    it('never borrows a warm window from another book, and restores it when switching back', () => {
+        const windows = new Map<string, GossamerCacheEntry>();
+        recordGossamerCacheWindow(windows, scarlet, request, windowA, 100);
+        expect(resolveGossamerCacheWindow(windows, sign, 200, request)).toBeNull();
+        const signWindow = { ...windowA, lastRunCostUSD: 0.662 };
+        recordGossamerCacheWindow(windows, sign, request, signWindow, 200);
+        expect(resolveGossamerCacheWindow(windows, scarlet, 300, request)).toBe(windowA);
+        expect(resolveGossamerCacheWindow(windows, sign, 300, request)).toBe(signWindow);
+    });
+
+    it('shares the stable request across signals but rejects changed manuscript, beats, or envelope', () => {
+        const windows = new Map<string, GossamerCacheEntry>();
+        recordGossamerCacheWindow(windows, scarlet, request, windowA, 100);
+        expect(resolveGossamerCacheWindow(windows, scarlet, 200, {
+            ...request, task: 'BeatTensionAnalysis', userQuestion: 'Score tension'
+        })).toBe(windowA);
+        for (const edited of [
+            { ...request, userInput: 'Beat list\nManuscript B' },
+            { ...request, userInput: 'Edited beats\nManuscript A' },
+            { ...request, projectContext: 'Renamed book' },
+            { ...request, featureModeInstructions: 'Changed instructions' }
+        ]) expect(resolveGossamerCacheWindow(windows, scarlet, 200, edited)).toBeNull();
+    });
+
+    it('does not share proof across providers or models', () => {
+        const windows = new Map<string, GossamerCacheEntry>();
+        recordGossamerCacheWindow(windows, scarlet, request, windowA, 100);
+        expect(resolveGossamerCacheWindow(windows, { ...scarlet, modelId: 'another-model' }, 200)).toBeNull();
+        expect(resolveGossamerCacheWindow(windows, { ...scarlet, provider: 'google' }, 200)).toBeNull();
+    });
+
+    it('expires windows and clears only the selected context when cache proof is absent', () => {
+        const windows = new Map<string, GossamerCacheEntry>();
+        recordGossamerCacheWindow(windows, scarlet, request, windowA, 100);
+        recordGossamerCacheWindow(windows, sign, request, windowA, 100);
+        recordGossamerCacheWindow(windows, sign, request, null, 200);
+        expect(resolveGossamerCacheWindow(windows, sign, 200)).toBeNull();
+        expect(resolveGossamerCacheWindow(windows, scarlet, 200)).toBe(windowA);
+        expect(resolveGossamerCacheWindow(windows, scarlet, 10_000)).toBeNull();
+        recordGossamerCacheWindow(windows, sign, request, null, 10_000);
+        expect(windows.size).toBe(0);
+    });
+
+    it('attributes a late response to the captured book, not the newly selected one', () => {
+        const windows = new Map<string, GossamerCacheEntry>();
+        let active = scarlet;
+        const submittedContext = active;
+        active = sign;
+        recordGossamerCacheWindow(windows, submittedContext, request, windowA, 100);
+        expect(resolveGossamerCacheWindow(windows, active, 200)).toBeNull();
+        expect(resolveGossamerCacheWindow(windows, scarlet, 200)).toBe(windowA);
+    });
+
+    it('has no cache ownership without a book and configured model', () => {
+        expect(getGossamerCacheContext({ ...DEFAULT_SETTINGS, books: [] })).toBeNull();
+    });
+
+    it('resolves the active book and model from actual settings', () => {
+        const settings = {
+            ...DEFAULT_SETTINGS,
+            aiSettings: { ...buildDefaultAiSettings(), provider: 'anthropic' as const },
+            books: [
+                { id: 'a', title: 'Scarlet', sourceFolder: '01 Scarlet' },
+                { id: 'b', title: 'Sign', sourceFolder: '02 Sign' }
+            ],
+            activeBookId: 'a'
+        };
+        const first = getGossamerCacheContext(settings);
+        expect(JSON.parse(first!.bookKey)).toEqual(['a', '01 Scarlet', 'Scarlet']);
+        expect(first?.provider).toBe('anthropic');
+        expect(first?.modelId).toBeTruthy();
+        settings.activeBookId = 'b';
+        const second = getGossamerCacheContext(settings);
+        expect(JSON.parse(second!.bookKey)).toEqual(['b', '02 Sign', 'Sign']);
+        expect(second?.bookKey).not.toBe(first?.bookKey);
+    });
+});

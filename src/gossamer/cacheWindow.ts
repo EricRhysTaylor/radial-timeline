@@ -29,9 +29,80 @@
  * degenerate/repetitive input; real manuscript prose cached cleanly (11.7k
  * stable-prefix tokens, full reuse on call 2).
  */
-import type { AIProviderId, AIRunAdvancedContext, AiSettingsV1 } from '../ai/types';
+import type { AIProviderId, AIRunAdvancedContext, AIRunRequest, AiSettingsV1 } from '../ai/types';
 import { resolveProviderCacheWindowMs } from '../ai/settings/cacheWindows';
 import { formatExactUsdCost } from '../ai/cost/estimateCorpusCost';
+import type { RadialTimelineSettings } from '../types';
+import { getActiveBook } from '../utils/books';
+import { resolveConfiguredSelection } from '../ai/runtime/runtimeSelection';
+import { fnv1a32Hex } from '../utils/hash';
+
+export interface GossamerCacheContext {
+  bookKey: string;
+  provider: AIProviderId;
+  modelId: string;
+}
+
+export interface GossamerCacheEntry {
+  requestFingerprint: string;
+  window: GossamerCacheWindow;
+}
+
+/** The author-selected book and model, never a vault-wide last-run identity. */
+export function getGossamerCacheContext(settings: RadialTimelineSettings): GossamerCacheContext | null {
+  const book = getActiveBook(settings);
+  const selection = settings.aiSettings
+    ? resolveConfiguredSelection(settings.aiSettings, { feature: 'Gossamer' })
+    : null;
+  if (!book || !selection) return null;
+  return {
+    bookKey: JSON.stringify([book.id, book.sourceFolder, book.title]),
+    provider: selection.model.provider,
+    modelId: selection.model.id
+  };
+}
+
+function cacheContextKey(context: GossamerCacheContext): string {
+  return JSON.stringify([context.bookKey, context.provider, context.modelId]);
+}
+
+/** Signal rubric/task deliberately excluded: the four signals share this prefix. */
+export function fingerprintGossamerCacheRequest(request: AIRunRequest): string {
+  return fnv1a32Hex(JSON.stringify([
+    request.projectContext, request.featureModeInstructions, request.userInput,
+    request.responseSchema, request.returnType
+  ]));
+}
+
+export function recordGossamerCacheWindow(
+  windows: Map<string, GossamerCacheEntry>,
+  context: GossamerCacheContext,
+  request: AIRunRequest,
+  window: GossamerCacheWindow | null,
+  nowMs = Date.now()
+): void {
+  for (const [key, entry] of windows) {
+    if (!isGossamerCacheWindowOpen(entry.window, nowMs)) windows.delete(key);
+  }
+  const key = cacheContextKey(context);
+  if (!window) windows.delete(key);
+  else windows.set(key, { requestFingerprint: fingerprintGossamerCacheRequest(request), window });
+}
+
+/** With a request, verify the current corpus; without one, return historical proof only. */
+export function resolveGossamerCacheWindow(
+  windows: ReadonlyMap<string, GossamerCacheEntry>,
+  context: GossamerCacheContext | null,
+  nowMs: number,
+  request?: AIRunRequest
+): GossamerCacheWindow | null {
+  if (!context) return null;
+  const entry = windows.get(cacheContextKey(context));
+  if (!entry || !isGossamerCacheWindowOpen(entry.window, nowMs)) return null;
+  if (request && entry.requestFingerprint !== fingerprintGossamerCacheRequest(request)) return null;
+  return entry.window;
+}
+
 
 export type GossamerCacheProvider = 'anthropic' | 'openai' | 'google';
 

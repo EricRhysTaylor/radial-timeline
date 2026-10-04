@@ -82,3 +82,26 @@ describe('Gossamer timing lifecycle', () => {
         }
     });
 });
+
+describe('Gossamer modal cache display', () => {
+    afterEach(() => vi.useRealTimers());
+
+    it('clears a nonmatching window instead of inheriting another book cache', () => {
+        vi.useFakeTimers();
+        vi.setSystemTime(100);
+        const element = { empty: vi.fn(), addClass: vi.fn(), removeClass: vi.fn(), setText: vi.fn() };
+        const warm = { provider: 'anthropic' as const, modelLabel: 'Opus', armedAt: 100, expiresAt: 10_000 };
+        // SAFE: exercise the real modal cache lifecycle with a minimal DOM seam.
+        const modal = Object.assign(Object.create(GossamerProcessingModal.prototype), {
+            plugin: { gossamerCacheWindows: new Map([['another-book', { window: warm }]]) },
+            cacheTimerEl: element,
+            cacheWindow: null
+        }) as GossamerProcessingModal;
+        modal.setCacheWindow(warm);
+        expect(element.setText).toHaveBeenCalledWith(expect.stringContaining('unchanged input may reuse it'));
+        expect(vi.getTimerCount()).toBe(1);
+        modal.setCacheWindow(null);
+        expect(element.addClass).toHaveBeenCalledWith('ert-hidden');
+        expect(vi.getTimerCount()).toBe(0);
+    });
+});

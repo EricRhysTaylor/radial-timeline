@@ -22,7 +22,6 @@ import {
     formatGossamerCacheCostHint,
     isGossamerCacheWindowOpen
 } from '../gossamer/cacheWindow';
-import { GOSSAMER_SIGNAL_TYPES } from '../types/gossamerSignals';
 import { describeTokenEstimateMethod } from '../ai/tokens/inputTokenEstimate';
 import { redactSensitiveValue } from '../ai/credentials/redactSensitive';
 import { CANONICAL_PROVIDER_LABELS, getCanonicalAiSettings, resolveConfiguredSelection } from '../ai/runtime/runtimeSelection';
@@ -80,7 +79,7 @@ export class GossamerProcessingModal extends ErtModal {
     private timerInterval?: number;
     private progressSimulator?: SimulatedProgress;
 
-    // Provider-cache window (armed after a successful run)
+    // Exact-request cache proof supplied by the command; never inherited vault-wide.
     private cacheWindow: GossamerCacheWindow | null = null;
     private cacheTimerEl?: HTMLElement;
     private cacheTimerInterval?: number;
@@ -503,16 +502,6 @@ export class GossamerProcessingModal extends ErtModal {
     }
 
     /**
-     * Effective window for display: the one armed by this modal's own run if
-     * present, otherwise the plugin's live window from a prior run. The latter
-     * is why the alert survives closing + reopening the modal (or switching
-     * signals) while the cache is still warm.
-     */
-    private resolveCacheWindow(): GossamerCacheWindow | null {
-        return this.cacheWindow ?? this.plugin.gossamerCacheWindow;
-    }
-
-    /**
      * Create (or re-bind) the cache-timer element under `parent` and paint it
      * from the current window. Called by both the confirmation and processing
      * views so the alert is present whenever a window is open.
@@ -525,7 +514,7 @@ export class GossamerProcessingModal extends ErtModal {
 
     private ensureCacheTimerTick(): void {
         if (this.cacheTimerInterval) return;
-        if (!isGossamerCacheWindowOpen(this.resolveCacheWindow(), Date.now())) return;
+        if (!isGossamerCacheWindowOpen(this.cacheWindow, Date.now())) return;
         // SAFE: Modal has no registerInterval; cleared in onClose() and on expiry.
         this.cacheTimerInterval = window.setInterval(() => this.renderCacheTimer(), 1000);
     }
@@ -540,7 +529,7 @@ export class GossamerProcessingModal extends ErtModal {
     private renderCacheTimer(): void {
         const el = this.cacheTimerEl;
         if (!el) return;
-        const window_ = this.resolveCacheWindow();
+        const window_ = this.cacheWindow;
         const clock = formatGossamerCacheClock(window_, Date.now());
         if (!clock) {
             el.empty();
@@ -548,9 +537,8 @@ export class GossamerProcessingModal extends ErtModal {
             this.clearCacheTimerInterval();
             return;
         }
-        const remaining = GOSSAMER_SIGNAL_TYPES.length - 1;
         const costHint = formatGossamerCacheCostHint(window_);
-        const base = `Manuscript cached · ${clock} — score the other ${remaining} signals now to reuse it`;
+        const base = `Cache confirmed for this manuscript · ${clock} — unchanged input may reuse it`;
         el.removeClass('ert-hidden');
         el.setText(costHint ? `${base} (${costHint})` : base);
     }

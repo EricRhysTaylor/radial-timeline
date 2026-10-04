@@ -298,6 +298,10 @@ export function buildInquiryLogContent(args: {
     lines.push(`- Overrides: ${overrideLabel}`);
     lines.push(`- Status: ${statusLabel}${statusDetail}`);
     lines.push(`- Duration: ${formatDuration(durationMs)}`);
+    if (trace.durationPrediction) {
+        const source = trace.durationPrediction.source === 'latest_run' ? 'latest run' : 'first-run default';
+        lines.push(`- Progress bar timed for: ${formatDuration(trace.durationPrediction.durationMs)} (${source})`);
+    }
     lines.push(`- Actual usage cost: ${actualUsageCostLabel}`);
     if (!isSimulated && citationSupportLabel) {
         lines.push(`- Citation support: ${citationSupportLabel}`);

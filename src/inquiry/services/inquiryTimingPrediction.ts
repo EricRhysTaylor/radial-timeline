@@ -4,39 +4,34 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 
-/** Shared Inquiry timing: the latest completed run, scaled by input size. */
-import type { TokenUsage } from '../../ai/usage/providerUsage';
+/**
+ * Inquiry run timing: the latest completed question's time per provider pass.
+ *
+ * Manuscript size is deliberately not a factor. Observed runs on one 85k-token
+ * book took 68s, 45s and 85s; each divided by its output tokens gives
+ * 9.2-9.5 ms/token whether the cache was written or read. Wall time follows
+ * answer length, not input size, so scaling by input misleads in both
+ * directions.
+ */
 import type { InquiryTimingHistoryEntry } from '../../types/settings';
 
+/** A vault's first question: a typical full-book answer (observed 45-85s). */
+export const FIRST_RUN_PASS_MS = 60_000;
 export const PREDICT_FLOOR_MS = 4000;
 export const RANGE_MIN_MULTIPLIER = 0.8;
 export const RANGE_MAX_MULTIPLIER = 1.2;
+/** Share of the track filled when the predicted time arrives. */
+export const PROGRESS_AT_PREDICTION = 0.9;
+/** The bar never fills past this until the response arrives. */
+export const PROGRESS_CEILING = 0.98;
+/** Overrun easing: the gap to the ceiling shrinks by e^-2 per predicted duration. */
+const OVERRUN_EASE_RATE = 2;
 
-/** Keep the observed duration and canonical total; cached tokens are already included. */
-export function getInquiryTimingSample(
-    usage: Pick<TokenUsage, 'inputTokens'> | null | undefined,
-    durationMs: number | null | undefined
-): { durationMs: number; inputTokens: number } | null {
-    const inputTokens = usage?.inputTokens;
-    if (typeof durationMs !== 'number' || !Number.isFinite(durationMs) || durationMs <= 0
-        || typeof inputTokens !== 'number' || !Number.isFinite(inputTokens) || inputTokens <= 0) return null;
-    return { durationMs, inputTokens };
-}
+export type RunDurationSource = 'latest_run' | 'first_run_default';
 
-/** Also reads existing bucketed observations without discarding their latest duration. */
-export function getLatestTimingEntry(
-    history: Record<string, InquiryTimingHistoryEntry> | undefined
-): InquiryTimingHistoryEntry | null {
-    let latest: InquiryTimingHistoryEntry | null = null;
-    for (const entry of Object.values(history ?? {})) {
-        if (!entry || typeof entry !== 'object'
-            || (entry.schemaVersion !== undefined && entry.schemaVersion !== 1)
-            || !Number.isFinite(entry.lastDurationMs) || entry.lastDurationMs <= 0
-            || !Number.isFinite(entry.lastInputTokens) || entry.lastInputTokens <= 0
-            || !Number.isFinite(Date.parse(entry.updatedAt))) continue;
-        if (!latest || Date.parse(entry.updatedAt) > Date.parse(latest.updatedAt)) latest = entry;
-    }
-    return latest;
+export interface RunDurationPrediction {
+    durationMs: number;
+    source: RunDurationSource;
 }
 
 export interface PredictionRange {
@@ -44,18 +39,56 @@ export interface PredictionRange {
     maxSeconds: number;
 }
 
-export function predictTimingFromEntry(
-    entry: InquiryTimingHistoryEntry | null | undefined,
-    estimatedTokens: number
-): PredictionRange | null {
-    if (!entry || !Number.isFinite(entry.lastDurationMs) || entry.lastDurationMs <= 0
-        || !Number.isFinite(entry.lastInputTokens) || entry.lastInputTokens <= 0
-        || !Number.isFinite(estimatedTokens) || estimatedTokens <= 0) return null;
+/** One provider pass of a completed question, or null when the duration is unusable. */
+export function getInquiryTimingSample(
+    durationMs: number | null | undefined,
+    passCount: number
+): { passDurationMs: number } | null {
+    if (typeof durationMs !== 'number' || !Number.isFinite(durationMs) || durationMs <= 0
+        || !Number.isInteger(passCount) || passCount < 1) return null;
+    return { passDurationMs: durationMs / passCount };
+}
 
-    const centralMs = Math.max(PREDICT_FLOOR_MS, entry.lastDurationMs * estimatedTokens / entry.lastInputTokens);
-    if (!Number.isFinite(centralMs * RANGE_MAX_MULTIPLIER)) return null;
+/** The saved observation; anything written before schema 2 scaled by input size and is ignored. */
+export function getLatestTimingEntry(
+    history: { latest?: InquiryTimingHistoryEntry } | undefined
+): InquiryTimingHistoryEntry | null {
+    const entry: unknown = history?.latest;
+    if (!entry || typeof entry !== 'object') return null;
+    const candidate = entry as Partial<InquiryTimingHistoryEntry>;
+    if (candidate.schemaVersion !== 2
+        || typeof candidate.passDurationMs !== 'number'
+        || !Number.isFinite(candidate.passDurationMs) || candidate.passDurationMs <= 0) return null;
+    return entry as InquiryTimingHistoryEntry;
+}
+
+export function predictRunDuration(
+    entry: InquiryTimingHistoryEntry | null,
+    expectedPassCount: number
+): RunDurationPrediction {
+    const passes = Math.max(1, Math.floor(expectedPassCount));
+    if (!entry) return { durationMs: FIRST_RUN_PASS_MS * passes, source: 'first_run_default' };
+    return { durationMs: Math.max(PREDICT_FLOOR_MS, entry.passDurationMs * passes), source: 'latest_run' };
+}
+
+/** Rough ETA shown while a run is in flight. */
+export function getRunDurationRange(durationMs: number): PredictionRange {
+    const centralMs = Math.max(PREDICT_FLOOR_MS, durationMs);
     return {
-        minSeconds: Math.max(PREDICT_FLOOR_MS / 1000, centralMs * RANGE_MIN_MULTIPLIER / 1000),
-        maxSeconds: Math.max(PREDICT_FLOOR_MS / 1000, centralMs * RANGE_MAX_MULTIPLIER / 1000)
+        minSeconds: centralMs * RANGE_MIN_MULTIPLIER / 1000,
+        maxSeconds: centralMs * RANGE_MAX_MULTIPLIER / 1000
     };
+}
+
+/**
+ * Track fill for a run in flight: linear to PROGRESS_AT_PREDICTION at the
+ * predicted time, then easing toward PROGRESS_CEILING. Answer length varies
+ * by question, so the bar must never claim "done" before the response does.
+ */
+export function getRunProgressRatio(elapsedMs: number, predictedMs: number): number {
+    if (elapsedMs <= 0) return 0;
+    const t = elapsedMs / Math.max(PREDICT_FLOOR_MS, predictedMs);
+    if (t <= 1) return PROGRESS_AT_PREDICTION * t;
+    return PROGRESS_AT_PREDICTION
+        + (PROGRESS_CEILING - PROGRESS_AT_PREDICTION) * (1 - Math.exp(-OVERRUN_EASE_RATE * (t - 1)));
 }

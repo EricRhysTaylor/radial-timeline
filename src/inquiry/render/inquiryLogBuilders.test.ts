@@ -94,6 +94,19 @@ describe('buildInquiryLogContent', () => {
         expect(content.indexOf('## Corpus TOC')).toBeLessThan(content.indexOf('Content Log: written'));
         expect(content).toContain('- Reference classes: none');
         expect(content).not.toContain('- Context:');
+        expect(content).not.toContain('- Progress bar timed for:');
+    });
+
+    it('records what the progress bar was timed for beside the actual duration', () => {
+        const build = (source: 'latest_run' | 'first_run_default') => buildInquiryLogContent({
+            result: { scope: 'book', scopeLabel: 'B1', aiProvider: 'anthropic', roundTripMs: 84_930, verdict: { flow: 78, depth: 76 } } as never,
+            trace: { durationPrediction: { durationMs: 45_370, source } } as never,
+            manifest: null,
+            deps
+        });
+        const content = build('latest_run');
+        expect(content).toContain('- Duration: 84.9s (84930ms)\n- Progress bar timed for: 45.4s (45370ms) (latest run)');
+        expect(build('first_run_default')).toContain('(first-run default)');
     });
 
     it('separates reference-class corpus entries from saga book anchors', () => {

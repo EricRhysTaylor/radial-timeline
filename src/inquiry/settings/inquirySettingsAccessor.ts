@@ -9,7 +9,7 @@ import type {
     InquiryPromptConfig,
     InquirySourcesSettings,
     InquiryTargetCache,
-    InquiryTimingHistoryEntry,
+    InquiryTimingHistory,
     OmnibusProgressState,
 } from '../../types/settings';
 
@@ -45,7 +45,7 @@ export interface InquirySettingsShape {
     readonly inquiryPromptConfig?: InquiryPromptConfig;
     readonly inquiryTargetCache?: InquiryTargetCache;
     readonly inquiryOmnibusProgress?: OmnibusProgressState;
-    readonly inquiryTimingHistory?: Record<string, InquiryTimingHistoryEntry>;
+    readonly inquiryTimingHistory?: InquiryTimingHistory;
     readonly inquiryCorpusThresholds?: InquiryCorpusThresholds;
 }
 
@@ -78,7 +78,7 @@ export class InquirySettingsAccessor {
         return this.readSettings().inquiryOmnibusProgress;
     }
 
-    getTimingHistory(): Record<string, InquiryTimingHistoryEntry> | undefined {
+    getTimingHistory(): InquiryTimingHistory | undefined {
         return this.readSettings().inquiryTimingHistory;
     }
 

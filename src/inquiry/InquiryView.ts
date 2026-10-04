@@ -98,7 +98,6 @@ import { cleanEvidenceBody } from './utils/evidenceCleaning';
 import { countWords as countManuscriptWords } from '../utils/text';
 import { ensureInquiryContentLogFolder, ensureInquiryLogFolder, resolveInquiryLogFolder } from './utils/logs';
 import { openOrRevealFile, openOrRevealFileAtSubpath } from '../utils/fileUtils';
-import { extractTokenUsage } from '../ai/log';
 import {
     InquiryGlyph,
 } from './components/InquiryGlyph';
@@ -138,7 +137,10 @@ import { computeInquiryAdvisoryContext, type InquiryAdvisoryContext } from './se
 import {
     getInquiryTimingSample,
     getLatestTimingEntry,
-    predictTimingFromEntry
+    getRunDurationRange,
+    getRunProgressRatio,
+    predictRunDuration,
+    type RunDurationPrediction
 } from './services/inquiryTimingPrediction';
 import { buildInquiryBookAnchorId, scopeEntriesToActiveInquiryTarget } from './services/canonicalInquiryCorpus';
 import type {
@@ -5614,13 +5616,8 @@ export class InquiryView extends ItemView {
         }
 
         this.clearActiveResultState();
-        this.currentRunProgress = null;
-        this.currentRunElapsedMs = 0;
-        const durationRange = this.estimateRunDurationRange();
-        // Use midpoint of the range so the bar is optimistic — better to finish than stall.
-        this.currentRunEstimatedMaxMs = durationRange
-            ? ((durationRange.minSeconds + durationRange.maxSeconds) / 2) * 1000
-            : 0;
+        const durationPrediction = this.predictNextRunDuration();
+        this.beginRunTiming(durationPrediction.durationMs);
         this.activeSession.setActiveQuestionId(question.id);
         this.activeSession.setActiveZone(question.zone);
         this.lockPromptPreview(question, questionText);
@@ -5674,8 +5671,7 @@ export class InquiryView extends ItemView {
                 });
                 result = runOutput.result;
                 runTrace = runOutput.trace;
-                const progressState = this.currentRunProgress as InquiryRunProgressEvent | null;
-                const progressPassCount = progressState?.totalPasses;
+                const progressPassCount = this.currentRunProgress?.totalPasses;
                 const finalPassCount = Math.max(1, runOutput.trace.executionPassCount ?? progressPassCount ?? 1); // SAFE: trace and progress may omit pass counts — a run has at least one pass
                 this.updateRunProgress({
                     phase: 'finalizing',
@@ -5737,6 +5733,7 @@ export class InquiryView extends ItemView {
             this.sessionStore.setSession(session);
             const traceForLog = runTrace
                 ?? await this.buildFallbackTrace(runnerInput, 'Trace unavailable; log created without prompt capture.');
+            traceForLog.durationPrediction = durationPrediction;
             await this.saveInquiryLog(result, traceForLog, manifest, {
                 sessionKey: session.key,
                 normalizationNotes,
@@ -6028,6 +6025,8 @@ export class InquiryView extends ItemView {
             citationsEnabled: this.areInquiryProviderCitationsEnabled(providerChoice.provider)
         };
 
+        // One call writes every answer, so it takes about as long as asking each in turn.
+        this.beginRunTiming(this.predictNextRunDuration().durationMs * questions.length);
         this.state.isRunning = true;
         this.setApiStatus('running');
         this.refreshUI({ skipCorpus: true });
@@ -6184,6 +6183,7 @@ export class InquiryView extends ItemView {
 
         const modal = this.activeOmnibusModal;
 
+        this.beginRunTiming(this.predictNextRunDuration().durationMs * questions.length);
         this.state.isRunning = true;
         this.setApiStatus('running');
         this.refreshUI({ skipCorpus: true });
@@ -6391,7 +6391,6 @@ export class InquiryView extends ItemView {
         }
         const tracedResult = this.applyExecutionObservabilityFromTrace(timedResult, options.trace);
         this.appendAnthropicDispatchTraceNote(tracedResult, options.trace);
-        void this.recordInquiryTimingSample(tracedResult, options.trace);
 
         const normalized = this.normalizeLegacyResult(tracedResult);
         const normalizationNotes = this.collectNormalizationNotes(tracedResult, normalized);
@@ -7503,6 +7502,7 @@ export class InquiryView extends ItemView {
             citationsEnabled: this.areInquiryProviderCitationsEnabled(simulationProvider)
         };
         const submittedAt = new Date();
+        this.beginRunTiming(SIMULATION_DURATION_MS);
         this.state.isRunning = true;
         this.setApiStatus('running');
         this.refreshUI({ skipCorpus: true });
@@ -8784,31 +8784,26 @@ export class InquiryView extends ItemView {
         this.previewShimmerGroup.setAttribute('display', 'none');
     }
 
-    /** Record the latest real duration and input size for every subsequent Inquiry question. */
+    /**
+     * Record the latest answered question's time per provider pass; the next
+     * question's bar is timed from it. Only single-question runs record: an
+     * Omnibus combined call answers every question at once, and an AI job's
+     * submit time is when the author started their own client.
+     */
     private async recordInquiryTimingSample(result: InquiryResult, trace: InquiryRunTrace | null | undefined): Promise<void> {
-        if (!result || result.aiStatus !== 'success' || result.aiReason === 'simulated' || result.aiReason === 'stub') return;
-        const provider = result.aiProvider?.trim();
-        const durationMs = typeof result.roundTripMs === 'number' && Number.isFinite(result.roundTripMs)
-            ? result.roundTripMs
-            : null;
-
-        const usage = trace?.usage
-            ?? (trace?.response?.responseData && provider
-                ? extractTokenUsage(provider, trace.response.responseData)
-                : null);
-
-        const sample = getInquiryTimingSample(usage, durationMs);
+        if (result.aiStatus !== 'success' && result.aiStatus !== 'degraded') return;
+        if (result.aiReason === 'simulated' || result.aiReason === 'stub') return;
+        const passCount = Math.max(1, trace?.executionPassCount ?? 1); // SAFE: a trace without a pass count ran one pass
+        const sample = getInquiryTimingSample(result.roundTripMs, passCount);
         if (!sample) return;
 
         this.plugin.settings.inquiryTimingHistory = {
             latest: {
-                schemaVersion: 1,
-                lastDurationMs: sample.durationMs,
-                lastInputTokens: sample.inputTokens,
+                schemaVersion: 2,
+                passDurationMs: sample.passDurationMs,
                 updatedAt: new Date().toISOString()
             }
         };
-        this.refreshEstimateDisplays();
         await this.plugin.saveSettings().catch(error => {
             console.warn('[Inquiry] Could not save the latest timing observation.', error);
         });
@@ -8854,26 +8849,24 @@ export class InquiryView extends ItemView {
     }
 
 
-    private estimateRunDurationRange(): { minSeconds: number; maxSeconds: number } | null {
-        const readinessUi = this.buildReadinessUiState();
-        const estimatedTokens = Math.max(0, readinessUi.estimateInputTokens || 0); // SAFE: estimate unavailable — 0 tokens skips duration prediction
+    /** One question on the current corpus: the latest run's time per pass, times the passes it needs. */
+    private predictNextRunDuration(): RunDurationPrediction {
+        return predictRunDuration(
+            getLatestTimingEntry(this.settingsAccessor.getTimingHistory()),
+            this.buildReadinessUiState().expectedPassCount
+        );
+    }
 
-        const entry = getLatestTimingEntry(this.settingsAccessor.getTimingHistory());
-        const timingEstimate = predictTimingFromEntry(entry, estimatedTokens);
-        if (timingEstimate) {
-            return timingEstimate;
-        }
+    /** Start the minimap run clock; every path that sets `isRunning` calls this first. */
+    private beginRunTiming(budgetMs: number): void {
+        this.currentRunProgress = null;
+        this.currentRunElapsedMs = 0;
+        this.currentRunEstimatedMaxMs = budgetMs;
+    }
 
-        if (estimatedTokens <= 0) {
-            return null;
-        }
-
-        // Cold-start fallback: optimistic rate (~3000 tokens/sec input throughput).
-        const coldStartMs = Math.max(6000, estimatedTokens / 3);
-        return {
-            minSeconds: Math.max(4, (coldStartMs * 0.7) / 1000),
-            maxSeconds: Math.max(6, coldStartMs / 1000)
-        };
+    private formatCurrentRunEstimateLabel(): string {
+        const range = getRunDurationRange(this.currentRunEstimatedMaxMs);
+        return formatRunDurationEstimate(range.minSeconds, range.maxSeconds);
     }
 
     private buildRunningProgressLabel(progress: InquiryRunProgressEvent | null): string {
@@ -8893,10 +8886,7 @@ export class InquiryView extends ItemView {
 
     private buildRunningStatusNote(questionText: string): string {
         if (!this.cachedRunningStatusStatic || this.cachedRunningStatusQuestion !== questionText) {
-            const estimate = this.estimateRunDurationRange();
-            const estimateLabel = estimate
-                ? formatRunDurationEstimate(estimate.minSeconds, estimate.maxSeconds)
-                : 'unavailable';
+            const estimateLabel = this.formatCurrentRunEstimateLabel();
             const evidenceMode = this.describeRunEvidenceMode();
             this.cachedRunningStatusStatic = t('inquiry.runner.running', { evidenceMode, estimateLabel });
             this.cachedRunningStatusQuestion = questionText;
@@ -9163,8 +9153,7 @@ export class InquiryView extends ItemView {
     }
 
     private getRunningBackboneProgressRatio(elapsedMs: number): number {
-        const estimateMaxMs = Math.max(1000, this.currentRunEstimatedMaxMs || 0); // SAFE: no estimate yet — clamps to the 1s minimum
-        const timeRatio = estimateMaxMs > 0 ? Math.min(1, Math.max(0, elapsedMs / estimateMaxMs)) : 0;
+        const timeRatio = getRunProgressRatio(elapsedMs, this.currentRunEstimatedMaxMs);
         const progress = this.currentRunProgress;
         if (!progress) return timeRatio;
         if (progress.phase === 'finalizing') return 1;
@@ -9226,10 +9215,7 @@ export class InquiryView extends ItemView {
     }
 
     private async promptCancelInquiryRun(): Promise<boolean> {
-        const estimate = this.estimateRunDurationRange();
-        const estimateLabel = estimate
-            ? formatRunDurationEstimate(estimate.minSeconds, estimate.maxSeconds)
-            : 'unavailable';
+        const estimateLabel = this.formatCurrentRunEstimateLabel();
         return await new Promise<boolean>(resolve => {
             const modal = new InquiryCancelRunModal(
                 this.app,

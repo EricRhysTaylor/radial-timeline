@@ -286,7 +286,7 @@ describe('InquiryView payload accounting', () => {
         // the UI can surface "unavailable" honestly when the count fails.
         expect(viewSource.includes('const requestMatches = snapshotFresh && snapshot.estimate.estimatedInputTokens > 0')).toBe(true);
         expect(viewSource.includes('requestTokenFallback')).toBe(false);
-        expect(viewSource.includes("estimateLabel = estimate\n                ? formatRunDurationEstimate(estimate.minSeconds, estimate.maxSeconds)\n                : 'unavailable'")).toBe(true);
+        expect(viewSource.includes('const range = getRunDurationRange(this.currentRunEstimatedMaxMs);')).toBe(true);
     });
 
     it('keeps context reuse HUD tied to the current engine instead of hydrated result state', () => {
@@ -518,22 +518,24 @@ describe('InquiryView payload accounting', () => {
         expect(viewSource.includes("this.sessionStore.updateSession(session.key, { pendingEditsApplied: false });")).toBe(true);
     });
 
-    it('routes timing prediction through the shared latest observation and input size', () => {
+    it('times runs from the latest question only, never from manuscript size', () => {
         const viewSource = readFileSync(resolve(process.cwd(), 'src/inquiry/InquiryView.ts'), 'utf8');
         const timingSource = readFileSync(resolve(process.cwd(), 'src/inquiry/services/inquiryTimingPrediction.ts'), 'utf8');
         // The view records and reads one observation; pure timing math stays in the service.
         expect(viewSource.includes("from './services/inquiryTimingPrediction'")).toBe(true);
-        expect(viewSource.includes('getInquiryTimingSample(usage, durationMs)')).toBe(true);
-        expect(viewSource.includes('fallbackEstimate: result.tokenEstimateInput')).toBe(false);
-        expect(timingSource.includes('fallbackEstimate')).toBe(false);
-        expect(timingSource.includes('CACHE_POISON_THRESHOLD')).toBe(false);
+        expect(viewSource.includes('getInquiryTimingSample(result.roundTripMs, passCount)')).toBe(true);
         expect(viewSource.includes('getLatestTimingEntry(this.settingsAccessor.getTimingHistory())')).toBe(true);
-        expect(viewSource.includes('predictTimingFromEntry(entry, estimatedTokens)')).toBe(true);
+        expect(viewSource.includes('this.buildReadinessUiState().expectedPassCount')).toBe(true);
         expect(viewSource.includes('this.plugin.settings.inquiryTimingHistory = {\n            latest: {')).toBe(true);
+        // Input size no longer scales the prediction.
+        expect(viewSource.includes('estimateInputTokens || 0')).toBe(false);
+        expect(timingSource.includes('lastInputTokens')).toBe(false);
+        expect(timingSource.includes('fallbackEstimate')).toBe(false);
         expect(viewSource.includes('computeTimingHistoryKey')).toBe(false);
         expect(viewSource.includes('blendSampleRate')).toBe(false);
-        // The HUD still refreshes after a sample is recorded.
-        expect(viewSource.includes('this.refreshEstimateDisplays();')).toBe(true);
+        // Only single-question runs record; every run path starts the bar's clock.
+        expect(viewSource.match(/void this\.recordInquiryTimingSample\(/g)?.length).toBe(1);
+        expect(viewSource.match(/this\.beginRunTiming\(/g)?.length).toBe(4);
         // Unrelated assertions from the original guardian — kept since they
         // still apply to the cached-cost label path. Estimate strings now
         // carry the canonical provenance suffix.

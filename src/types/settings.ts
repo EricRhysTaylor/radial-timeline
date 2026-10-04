@@ -806,11 +806,16 @@ export interface InquirySourcesSettings {
 }
 
 export interface InquiryTimingHistoryEntry {
-    /** Optional only for observations saved before shared timing was introduced. */
-    schemaVersion?: 1;
-    lastDurationMs: number;
-    lastInputTokens: number;
+    /** 2: time per provider pass, not scaled by input size. Earlier observations are ignored. */
+    schemaVersion: 2;
+    /** Wall time of one provider pass in the latest completed Inquiry question. */
+    passDurationMs: number;
     updatedAt: string;
+}
+
+/** Only `latest` is read; older vaults may still hold obsolete keyed entries beside it. */
+export interface InquiryTimingHistory {
+    latest?: InquiryTimingHistoryEntry;
 }
 
 export type InquiryCanonicalQuestionTier = 'core' | 'signature';
@@ -1091,7 +1096,7 @@ export interface RadialTimelineSettings {
     inquiryActionNotesAutoPopulate?: boolean;
     briefingTheme?: BriefingThemePreference;
     inquiryOmnibusProgress?: OmnibusProgressState;
-    inquiryTimingHistory?: Record<string, InquiryTimingHistoryEntry>;
+    inquiryTimingHistory?: InquiryTimingHistory;
     actCount?: number;
     actLabelsRaw?: string;
     gossamerRunFilter?: GossamerRunFilterSettings;

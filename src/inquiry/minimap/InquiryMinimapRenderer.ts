@@ -536,8 +536,9 @@ export class InquiryMinimapRenderer {
         }
     }
 
+    /** Never moves backward within a run, even when a multi-pass run re-projects its total. */
     setRunningBackboneProgress(progress: number): void {
-        this.backboneProgressRatio = Math.min(Math.max(progress, 0), 1);
+        this.backboneProgressRatio = Math.max(this.backboneProgressRatio, Math.min(Math.max(progress, 0), 1));
         this.applyRunningBackboneColor();
         this.setFillProgress(this.backboneProgressRatio);
     }

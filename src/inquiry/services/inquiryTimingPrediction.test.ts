@@ -1,110 +1,103 @@
 import { describe, expect, it } from 'vitest';
 import {
+    FIRST_RUN_PASS_MS,
     getInquiryTimingSample,
     getLatestTimingEntry,
-    predictTimingFromEntry,
-    PREDICT_FLOOR_MS
+    getRunDurationRange,
+    getRunProgressRatio,
+    predictRunDuration,
+    PREDICT_FLOOR_MS,
+    PROGRESS_AT_PREDICTION,
+    PROGRESS_CEILING
 } from './inquiryTimingPrediction';
-import type { InquiryTimingHistoryEntry } from '../../types/settings';
+import type { InquiryTimingHistory, InquiryTimingHistoryEntry } from '../../types/settings';
 
-describe('latest Inquiry timing sample', () => {
-    it('uses the canonical provider total without adding cached tokens twice', () => {
-        const usage = { inputTokens: 135_657, cacheReadInputTokens: 135_634 };
-        expect(getInquiryTimingSample(usage, 42_795)).toEqual({ durationMs: 42_795, inputTokens: 135_657 });
+const observation = (passDurationMs: number): InquiryTimingHistoryEntry => ({
+    schemaVersion: 2,
+    passDurationMs,
+    updatedAt: '2026-10-04T19:46:43Z'
+});
+
+describe('Inquiry timing sample', () => {
+    it('keeps the time of one provider pass', () => {
+        expect(getInquiryTimingSample(45_370, 1)).toEqual({ passDurationMs: 45_370 });
+        expect(getInquiryTimingSample(180_000, 3)).toEqual({ passDurationMs: 60_000 });
     });
 
-    it('skips missing usage, cache-only reports, and invalid observations', () => {
-        expect(getInquiryTimingSample(undefined, 10_000)).toBeNull();
-        expect(getInquiryTimingSample({ inputTokens: undefined }, 10_000)).toBeNull();
-        for (const invalid of [0, -1, NaN, Infinity, undefined]) {
-            expect(getInquiryTimingSample({ inputTokens: 1000 }, invalid)).toBeNull();
-            expect(getInquiryTimingSample({ inputTokens: invalid }, 1000)).toBeNull();
+    it('rejects unusable durations and pass counts', () => {
+        for (const invalid of [0, -1, NaN, Infinity, undefined, null]) {
+            expect(getInquiryTimingSample(invalid, 1)).toBeNull();
+        }
+        for (const invalid of [0, -1, 1.5, NaN]) {
+            expect(getInquiryTimingSample(45_000, invalid)).toBeNull();
         }
     });
 });
 
-describe('shared latest Inquiry observation', () => {
-    const observation = (duration: number, updatedAt: string): InquiryTimingHistoryEntry => ({
-        lastDurationMs: duration,
-        lastInputTokens: 220000,
-        updatedAt
+describe('saved observation', () => {
+    it('reads the latest schema-2 observation', () => {
+        const latest = observation(45_370);
+        expect(getLatestTimingEntry({ latest })).toBe(latest);
     });
 
-    it('immediately updates the next prediction after each completed Odyssey question', () => {
-        let history: Record<string, InquiryTimingHistoryEntry> = {};
-        for (const [index, duration] of [159564, 72671, 160206].entries()) {
-            history = { latest: observation(duration, `2026-10-04T01:${24 + index * 3}:00Z`) };
-            const range = predictTimingFromEntry(getLatestTimingEntry(history), 220000)!;
-            expect((range.minSeconds + range.maxSeconds) / 2).toBeCloseTo(duration / 1000, 6);
-        }
-    });
-
-    it('uses the newest existing bucket immediately regardless of model or evidence mode', () => {
-        const earlier = observation(50000, '2026-10-04T01:24:00Z');
-        const newest = observation(160206, '2026-10-04T01:30:00Z');
-        expect(getLatestTimingEntry({
-            'openai::earlier::summary': earlier,
-            'anthropic::current::full': newest
-        })).toBe(newest);
-    });
-
-    it('ignores obsolete weighted averages in an existing saved observation', () => {
-        const legacy = { ...observation(160206, '2026-10-04T01:30:00Z'), samples: 3, avgMsPerInputToken: 0.01 };
-        const range = predictTimingFromEntry(legacy, 220000)!;
-        expect((range.minSeconds + range.maxSeconds) / 2).toBeCloseTo(160.206, 6);
-    });
-
-    it('skips invalid observations instead of letting them displace usable history', () => {
-        const usable = observation(160206, '2026-10-04T01:30:00Z');
-        expect(getLatestTimingEntry({
-            usable,
-            empty: { ...observation(0, '2026-10-04T01:31:00Z') },
-            badDate: observation(50000, 'invalid')
-        })).toBe(usable);
+    it('ignores input-scaled observations and malformed JSON', () => {
+        // SAFE: persisted JSON can violate the TypeScript settings shape.
+        const legacy = (value: unknown) => ({ latest: value }) as unknown as InquiryTimingHistory;
+        expect(getLatestTimingEntry(legacy({ schemaVersion: 1, lastDurationMs: 84_930, lastInputTokens: 85_216, updatedAt: '2026-10-04T19:48:33Z' }))).toBeNull();
+        expect(getLatestTimingEntry(legacy({ lastDurationMs: 74_719, lastInputTokens: 301_652, updatedAt: '2026-04-28T00:41:40Z' }))).toBeNull();
+        expect(getLatestTimingEntry(legacy(null))).toBeNull();
+        expect(getLatestTimingEntry(legacy({ schemaVersion: 2, passDurationMs: 0, updatedAt: 'x' }))).toBeNull();
+        expect(getLatestTimingEntry(legacy({ schemaVersion: 2, passDurationMs: NaN, updatedAt: 'x' }))).toBeNull();
         expect(getLatestTimingEntry({})).toBeNull();
         expect(getLatestTimingEntry(undefined)).toBeNull();
     });
 });
 
-describe('persisted timing boundary', () => {
-    it('ignores malformed or unsupported observations without losing valid legacy history', () => {
-        const usable = { lastDurationMs: 10000, lastInputTokens: 1000, updatedAt: '2026-10-04T01:30:00Z' };
-        // SAFE: persisted JSON can violate the TypeScript settings shape.
-        const history = { usable, broken: null, future: { ...usable, schemaVersion: 2 } } as unknown as Record<string, InquiryTimingHistoryEntry>;
-        expect(getLatestTimingEntry(history)).toBe(usable);
+describe('run duration prediction', () => {
+    it('times the next question from the latest question, whatever the manuscript size', () => {
+        // Sherlock Book 1: Pressure took 45.4s, so Payoff is timed for 45.4s.
+        expect(predictRunDuration(observation(45_370), 1)).toEqual({ durationMs: 45_370, source: 'latest_run' });
     });
 
-    it('rejects overflowing predictions rather than scheduling an infinite estimate', () => {
-        expect(predictTimingFromEntry({ lastDurationMs: Number.MAX_VALUE, lastInputTokens: 1, updatedAt: '2026-10-04T01:30:00Z' }, 1000)).toBeNull();
+    it('budgets every expected pass of a multi-pass request', () => {
+        expect(predictRunDuration(observation(60_000), 3).durationMs).toBe(180_000);
+    });
+
+    it('uses a typical full-book answer when the vault has no observation yet', () => {
+        expect(predictRunDuration(null, 1)).toEqual({ durationMs: FIRST_RUN_PASS_MS, source: 'first_run_default' });
+        expect(predictRunDuration(null, 2).durationMs).toBe(FIRST_RUN_PASS_MS * 2);
+    });
+
+    it('keeps the minimum animation time for implausibly fast observations', () => {
+        expect(predictRunDuration(observation(500), 1).durationMs).toBe(PREDICT_FLOOR_MS);
+    });
+
+    it('shows a rough range around the predicted time', () => {
+        expect(getRunDurationRange(50_000)).toEqual({ minSeconds: 40, maxSeconds: 60 });
     });
 });
 
-describe('latest-run size scaling', () => {
-    const entry: InquiryTimingHistoryEntry = {
-        lastDurationMs: 160000,
-        lastInputTokens: 220000,
-        updatedAt: '2026-10-04T01:30:00Z'
-    };
-
-    it('scales the latest duration for larger and smaller inputs', () => {
-        const twice = predictTimingFromEntry(entry, 440000)!;
-        const half = predictTimingFromEntry(entry, 110000)!;
-        expect((twice.minSeconds + twice.maxSeconds) / 2).toBe(320);
-        expect((half.minSeconds + half.maxSeconds) / 2).toBe(80);
+describe('run progress curve', () => {
+    it('fills linearly to the prediction mark', () => {
+        expect(getRunProgressRatio(0, 60_000)).toBe(0);
+        expect(getRunProgressRatio(30_000, 60_000)).toBeCloseTo(PROGRESS_AT_PREDICTION / 2, 6);
+        expect(getRunProgressRatio(60_000, 60_000)).toBeCloseTo(PROGRESS_AT_PREDICTION, 6);
     });
 
-    it('returns no prediction without a valid duration and input size', () => {
-        expect(predictTimingFromEntry(null, 100000)).toBeNull();
-        expect(predictTimingFromEntry(undefined, 100000)).toBeNull();
-        for (const invalid of [0, -1, NaN, Infinity]) {
-            expect(predictTimingFromEntry(entry, invalid)).toBeNull();
-            expect(predictTimingFromEntry({ ...entry, lastDurationMs: invalid }, 100000)).toBeNull();
-            expect(predictTimingFromEntry({ ...entry, lastInputTokens: invalid }, 100000)).toBeNull();
-        }
+    it('never claims the run is done while it overruns', () => {
+        // Sherlock Payoff: timed for 45.4s, answered at 84.9s.
+        const atAnswer = getRunProgressRatio(84_930, 45_370);
+        expect(atAnswer).toBeGreaterThan(PROGRESS_AT_PREDICTION);
+        expect(atAnswer).toBeLessThan(PROGRESS_CEILING);
+        expect(getRunProgressRatio(3_600_000, 45_370)).toBeLessThanOrEqual(PROGRESS_CEILING);
     });
 
-    it('retains the existing minimum animation time for tiny inputs', () => {
-        const range = predictTimingFromEntry(entry, 1)!;
-        expect(range.minSeconds).toBeGreaterThanOrEqual(PREDICT_FLOOR_MS / 1000);
+    it('keeps rising through an overrun', () => {
+        const samples = [45_370, 60_000, 84_930, 120_000].map(ms => getRunProgressRatio(ms, 45_370));
+        samples.slice(1).forEach((value, index) => expect(value).toBeGreaterThan(samples[index]));
+    });
+
+    it('treats a missing budget as the minimum animation time', () => {
+        expect(getRunProgressRatio(PREDICT_FLOOR_MS, 0)).toBeCloseTo(PROGRESS_AT_PREDICTION, 6);
     });
 });

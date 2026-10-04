@@ -4,7 +4,6 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 /* global __RT_RELEASE__ -- build-time flag injected by esbuild define; see esbuild.config.mjs */
-import { DEMO_LIBRARY_URL } from '../settings/bonusVaults';
 import { openSettingsTab } from '../utils/obsidianInternals';
 import { normalizePath, Notice, setIcon, TFolder } from 'obsidian';
 import RadialTimelinePlugin from '../main';
@@ -47,8 +46,8 @@ const WELCOME_COPY = {
         },
         sampleGet: {
             title: 'Explore Pride & Prejudice',
-            desc: 'Explore all 61 chapters with saved Pulse analysis, four Gossamer signals, and three Inquiry sessions, no API key needed. Get the complete free demo vault from the website.',
-            cta: 'Get the free demo vault'
+            desc: 'Explore all 61 chapters with saved Pulse analysis, four Gossamer signals, and three Inquiry sessions, no API key needed. Download the complete free demo vault.',
+            cta: 'Download the free demo vault'
         },
         sampleOpen: {
             title: (name: string) => `${name} detected`,
@@ -87,7 +86,8 @@ const WELCOME_COPY = {
 // Functional links (wiki, issues, mail) stay direct.
 const WELCOME_URLS = {
     website: 'https://community.radialtimeline.com/go/rt-welcome-site',
-    sampleVault: DEMO_LIBRARY_URL,
+    // Downloads the Pride & Prejudice ZIP directly; the website is not required.
+    sampleVault: 'https://community.radialtimeline.com/go/rt-welcome-demo-download',
     wiki: 'https://github.com/EricRhysTaylor/radial-timeline/wiki',
     community: 'https://community.radialtimeline.com/go/rt-welcome-community',
     issues: 'https://github.com/EricRhysTaylor/radial-timeline/issues',

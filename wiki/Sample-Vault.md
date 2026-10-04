@@ -2,8 +2,8 @@ A free, fully analyzed demo vault built around Jane Austen's *Pride & Prejudice*
 
 ## How to get it
 
-1.  Click **Get the free demo vault** on the plugin's Welcome screen, or **View demo & download** under **Settings → PRO → Demo vaults**. Both open the [demo vault page](https://www.radialtimeline.com/resources/free) on radialtimeline.com.
-2.  Follow the steps there to get the download.
+*   On the plugin's Welcome screen, click **Download the free demo vault**. The download starts right away.
+*   Or open the [demo vault page](https://www.radialtimeline.com/resources/free) on radialtimeline.com, also linked from **View demo & download** under **Settings → PRO → Demo vaults**, and follow the steps there.
 
 ## How to install it
 

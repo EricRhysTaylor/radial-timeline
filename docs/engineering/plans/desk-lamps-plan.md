@@ -2,9 +2,11 @@
 
 ## Status
 
-**Proposal, 2026-10-03.** Nothing is built. This plan needs Eric's sign-off
-on the decisions below, and the product contract needs the amendment in
-"Contract amendment" before any code is written. It spans three codebases:
+**Approved, 2026-10-04.** Nothing is built. Eric answered the open
+questions on 2026-10-04 (see "Decisions taken"); that round replaced the
+12-lamp cap with a 12-row living list (D2, D15). The product contract still
+needs the amendment in "Contract amendment" before any code is written. It
+spans three codebases:
 this plugin, the Community website (`radial-timeline-community`), and the
 Platform database and edge functions (not in this repo).
 
@@ -17,7 +19,7 @@ in which city, doing what kind of writing, and for how long. It is the
 "two friends are writing right now" feeling of a shared writing room,
 without anyone having to post anything.
 
-It is deliberately small. Close friends only, both people agree, every
+It is deliberately small. Trusted friends only, both people agree, every
 session is shared by choice, and nothing about a lamp outlives the session.
 
 ## Words
@@ -26,6 +28,8 @@ session is shared by choice, and nothing about a lamp outlives the session.
 - **Lit** — the friend's session is open and they're at it.
 - **On a break** — they pressed Pause.
 - **Off** — no session, the session ended, or their computer went quiet.
+- **Lamp off bulletin** — a short-lived row saying a friend just turned
+  their lamp off, and after how long (D15).
 - **Your lamp** — your own state, as your friends see it.
 
 ## What people see
@@ -56,9 +60,13 @@ visible either way until they accept. Once accepted, it is one relationship
 that works both ways, and each person still decides per session whether to
 share. Accepting never means being watched without a say.
 
-**D2. Small.** At most 12 Desk Lamps per member, counting accepted lamps
-and invites you've sent. A Desk Lamp list is close friends, not a second
-follower list.
+**D2. Many lamps, twelve rows.** A member may have up to 50 Desk Lamps,
+counting accepted lamps and invites they've sent. Someone with 30 writing
+friends will usually see four or five lit at once, so the limit that shapes
+the experience is the popover, which shows at most 12 rows and keeps them
+fresh (D15). The 50 ceiling is a safety rail against invite spam and keeps
+the Begin Session list usable; it is not a product feature, and raising it
+later is a one-line server change.
 
 **D3. Who can be invited.** Any signed-in member except yourself, a member
 blocked in either direction, and AI or archive authors (the archive rule
@@ -94,7 +102,9 @@ friend's broad public place from their Community profile ("Portland"), or
 nothing if they haven't set one. The plugin never reads device location.
 
 **D10. A badge, not alerts.** A friend lighting their lamp changes the count
-and nothing else: no Notice, no sound. Invites do surface: they count in the
+and nothing else: no Notice, no sound. Lamp off bulletins (D15) live only
+inside the popover and never touch the count. Invites do surface: they count
+in the
 existing Mailbox (website chip and plugin pill), with a "Desk Lamp invites"
 row in the plugin's Mailbox menu. No email in v1.
 
@@ -118,6 +128,39 @@ Disconnecting a vault deletes that connection's live row.
 the vault is connected and has at least one accepted Desk Lamp, whether or
 not you are writing. Looking never lights your own lamp.
 
+**D15. A living list, freshest on top.** The popover reads like a bulletin
+board, not a roster. Every row is sorted by its most recent change, newest
+first:
+
+- a lamp that is on (lit or on a break) sorts by its lit-at, so someone who
+  just started rises to the top and someone four hours in drifts down;
+- a **lamp off bulletin** sorts by the moment the plugin saw the lamp go
+  off: "Maya Chen · Portland · lamp off after 2 h 10 min".
+
+At most 12 rows show. When more lamps are on than fit, the longest-running
+ones fall below the fold and a footer says so: "5 more at their desks"
+(click to show everyone). Bulletins may push long-running lamps below the
+fold; that is the point.
+
+Bulletins are made by the plugin, not the server. On each check, a friend
+whose lamp was on at the previous check and is gone now becomes a bulletin,
+but only when that previous check was under 10 minutes ago, so a bulletin
+always means "just now", never "sometime while you were away". A bulletin
+lasts 30 minutes, then disappears. Bulletins are held in memory only, never
+written to settings, so the server stays history-free (D11) and the plugin
+keeps no log either. Reopening Obsidian starts with none.
+
+The badge counts lit lamps only. Breaks show in the list, dimmed, and are
+not counted; bulletins are never counted.
+
+Example, with 17 friends on and Maya having just finished:
+
+- Maya Chen · Portland · lamp off after 2 h 10 min
+- Jun Park · Seoul · Drafting · just started
+- Ada Osei · Accra · Planning · 15 min
+- … nine more rows, newest first …
+- 5 more at their desks
+
 ## Website (`radial-timeline-community`)
 
 **Profile button.** On `app/authors/[handle]/page.tsx`, beside
@@ -129,16 +172,17 @@ not you are writing. Looking never lights your own lamp.
 - accepted: lamp icon + "Desk Lamp" (hover: "Remove")
 
 Hidden for yourself, signed-out viewers, blocked members either way, and AI
-or archive authors. Disabled with "You have 12 Desk Lamps" at the cap.
+or archive authors. Disabled with "You have 50 Desk Lamps" at the cap.
 Writes go through `callEdge`, like `BlockedMembersManager`.
 
 **My Share section.** A "Desk Lamps" `Section` on `app/me/page.tsx`, after
 "Blocked members", rendered by a new `DeskLampsManager`: accepted lamps
 (Remove), invites received (Accept / Decline), invites sent (Withdraw).
 
-**Sharing boundary.** `app/components/SharingBoundary.tsx` gains a short
-paragraph after the levels: Desk Lamps is separate from your sharing level,
-and what it shows and to whom (copy below).
+**Sharing level copy.** Every place that explains sharing levels says Desk
+Lamps is separate from them (Eric, 2026-10-04): the "Sharing level" section
+on `app/me/page.tsx`, and a short paragraph after the levels in
+`app/components/SharingBoundary.tsx`. Exact copy under "Disclosure copy".
 
 **Mailbox.** `community-mailbox` adds pending Desk Lamp invites to the
 counts the website chip and plugin pill already show.
@@ -220,16 +264,21 @@ discard call into `deskLamps.ts`. The idle auto-pause path does not.
 
 **Session panel** (`TimeLineView.ts`, the Begin Session panel). A "Desk
 Lamps" section with an All checkbox and one checkbox per accepted lamp,
-shown only when connected with at least one. First-use line under it:
+shown only when connected with at least one. With up to 50 lamps, the
+list puts the friends you shared with most recently first, then the rest
+by name, and scrolls past 8 rows. First-use line under it:
 "Ticked friends see that you're writing, your city, the kind of writing,
 and how long, until you save or end the session." The running panel shows
 "Lamp lit for Maya and Priya", with a small control to edit or turn it off.
 
 **Title-bar lamp.** A button right of the Mailbox pill: Lucide `lamp-desk`
 (confirm it is in Obsidian's bundled set) and the count of friends who are
-lit (breaks are listed but not counted). Clicking opens a menu: one row per
-lamp that's on, breaks dimmed; a line for your own lamp; and "Manage Desk
-Lamps…" opening My Share. A row opens that friend's Community profile.
+lit. Clicking opens the living list from D15: up to 12 rows, freshest
+change first, breaks dimmed, lamp off bulletins mixed in by time, and the
+"N more at their desks" footer when lamps overflow. Below the list, a line
+for your own lamp and "Manage Desk Lamps…" opening My Share. A row opens
+that friend's Community profile. The previous check's lamps and the live
+bulletins are module state in `deskLamps.ts`, in memory only.
 Shown under a "Desk Lamps" toggle next to `showCommunityMailbox`, default
 on. A failed check keeps the button, drops the count, and says why in the
 tooltip, never a Notice, matching the Mailbox.
@@ -249,7 +298,7 @@ audience alongside "Sharing Modes":
 > **Desk Lamps (amendment 2026-10).** A third audience, separate from the
 > sharing levels and available at every level, Private included. A Desk
 > Lamp is a mutual relationship between two members, made by invite and
-> acceptance, at most 12 per member, never public. While an author has a
+> acceptance, at most 50 per member, never public. While an author has a
 > writing session open and has chosen to share that session with some of
 > their Desk Lamps, those members, and only those, see that the author is
 > writing or on a break, the author's broad public place from their
@@ -272,7 +321,10 @@ plugin code:
 - The **never emitted** list is untouched. The doc should say plainly why
   Desk Lamps doesn't breach it: it sends a live state, not a session row;
   its start time is floored to 5 minutes, not exact; and it never persists.
-  This is the one real judgement call in the plan (see Open questions).
+  This was the one real judgement call in the plan; Eric agreed on
+  2026-10-04.
+- Lamp off bulletins add no exit: they are made on the viewer's device from
+  data it already received, and are never stored or sent.
 - **Tracer coverage**: a test feeding the projection an
   `ActiveWritingSession` with the tracer `bookTitle` (and a stage, goals,
   and countdown) and asserting the payload has exactly the four allowed
@@ -293,39 +345,57 @@ writing, and how long you've been at it. No book, no scenes, no words.
 Nobody else sees it: not followers, not the public. You can remove a Desk
 Lamp any time, and they aren't told."
 
-**My Share section description:** "Close writing friends, up to 12. For
-each writing session, you choose which of them see that you're at your
-desk. They see your city, the kind of writing, and how long, only while
-the session is open. Nothing is kept afterwards."
+**My Share section description:** "Writing friends you trust. For each
+writing session, you choose which of them see that you're at your desk.
+They see your city, the kind of writing, and how long, only while the
+session is open. Nothing is kept afterwards."
 
-**Sharing boundary paragraph:** "Desk Lamps is separate from your sharing
-level and works even at Private. Only the friends you add, and who accept,
-can see your lamp, and only for sessions you choose to share."
+**Sharing level copy.** Lands with the feature, never before it: copy must
+not name something members can't find yet.
+
+- Website, My Share "Sharing level" section description, today "Set from
+  the plugin. My Share controls which books and APR graphics are publicly
+  visible." Append: "Desk Lamps is separate from your sharing level; see
+  Desk Lamps below."
+- Website, `SharingBoundary.tsx`, a paragraph after the three levels:
+  "Desk Lamps is separate from your sharing level and works even at
+  Private. Only the friends you add, and who accept, can see your lamp, and
+  only for sessions you choose to share."
+- Plugin, Settings → Community → "What you share"
+  (`CommunityShareSection.ts`), today "Pick one sharing level. The complete
+  preview always shows exactly what a level includes before anything
+  publishes." Append: "Desk Lamps is separate: it shares live sessions only
+  with the friends you choose, at any level, Private included."
 
 **Plugin panel line:** as in "Session panel" above.
 
 ## Build order
 
-1. Eric approves the decisions and the contract amendment; amend
-   `writing-session-privacy.md`.
+1. Eric pastes the contract amendment into the product contract; amend
+   `writing-session-privacy.md` to match.
 2. Platform: both tables, RLS, the four functions, cascades for block,
    account deletion and disconnect, and the Mailbox count.
-3. Website: `DeskLampButton`, `DeskLampsManager`, disclosure copy.
-4. Plugin, part 1: the title-bar lamp, read only. Useful as soon as
-   friends have accepted each other.
-5. Plugin, part 2: the session panel, lighting, hooks, tracer test.
+3. Website: `DeskLampButton`, `DeskLampsManager`, disclosure and sharing
+   level copy.
+4. Plugin, part 1: the title-bar lamp and living list, read only. Useful as
+   soon as friends have accepted each other.
+5. Plugin, part 2: the session panel, lighting, hooks, tracer test, and the
+   "What you share" line.
 6. `/feature-audit` across both sides.
 
-## Open questions for Eric
+## Decisions taken (Eric, 2026-10-04)
 
-1. **The "never exact timestamps" line.** A lit lamp reveals, to chosen
-   friends and to 5 minutes, when a session started. This plan reads that
-   as consistent with the rule (live, rounded, not kept). Agree?
-2. **Private level.** Desk Lamps works at the Private sharing level. Agree,
-   or should it need a level?
-3. **Cap of 12.**
-4. **Pause sharing turns your lamp off.**
-5. **Website view of lit lamps** — left out of v1. Agree?
+1. **Start times:** a lit lamp may show chosen friends when a session
+   started, to 5 minutes. Agreed as consistent with "never exact
+   timestamps" (live, rounded, not kept).
+2. **Private level:** Desk Lamps works at every sharing level, Private
+   included, and the sharing-level copy on both sides must say it is
+   separate.
+3. **Cap:** the visible list is what's capped at 12, not friendships. A
+   writer may have many Desk Lamps (50 ceiling, D2); the popover shows 12
+   rows and rotates them by freshness, with lamp off bulletins (D15).
+4. **Pause sharing** turns your lamp off; you still see friends' lamps.
+5. **Website:** no view of lit lamps in v1; the plugin only.
 
 ## Later, not v1
 

@@ -5,18 +5,23 @@ import { resolve } from 'node:path';
 describe('GossamerProcessingModal progress UX', () => {
     const source = readFileSync(resolve(process.cwd(), 'src/modals/GossamerProcessingModal.ts'), 'utf8');
 
-    it('uses the last observed Gossamer runtime as the API progress baseline', () => {
-        expect(source).toContain('this.plugin.settings.gossamerLastRunMsBySignal?.[signal]');
-        expect(source).toContain('Math.min(300000, Math.max(5000, observed))');
-        expect(source).toContain('return 60000');
+    it('uses one shared runtime and captures manuscript size when the request starts', () => {
+        expect(source).toContain('this.plugin.settings.gossamerLastRunTiming');
+        expect(source).toContain('this.apiCallManuscriptWords = this.manuscriptInfo?.totalWords');
+        expect(source).toContain('estimateGossamerRunMs(');
+        expect(source).not.toContain('gossamerLastRunMsBySignal');
     });
 
-    it('keeps the API progress animation linear and full-width', () => {
-        expect(source).toContain('return 60000');
+    it('keeps estimated progress below completion until the results are saved', () => {
         expect(source).toContain('startPercent: 0');
-        expect(source).toContain('maxPercent: 100');
+        expect(source).toContain('maxPercent: 95');
         expect(source).toContain('jitter: 0');
-        expect(source).toContain('completeOnDuration: true');
+        expect(source).toContain('completeOnDuration: false');
+        const received = source.slice(source.indexOf('public apiCallSuccess()'), source.indexOf('private async persistLastRunDuration'));
+        expect(received).not.toContain('progressSimulator.complete()');
+        expect(received).not.toContain("'100%'");
+        const saved = source.slice(source.indexOf('public completeProcessing('), source.indexOf('public showRateLimitWarning('));
+        expect(saved).toContain('progressSimulator.complete()');
     });
 
     it('does not use manuscript-size heuristics for the progress bar', () => {

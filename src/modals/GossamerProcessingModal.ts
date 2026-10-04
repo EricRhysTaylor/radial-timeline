@@ -14,6 +14,7 @@ import { DEFAULT_GOSSAMER_SIGNAL, GOSSAMER_SIGNAL_METADATA } from '../types/goss
 import { getCredential } from '../ai/credentials/credentials';
 import { getModelDisplayName } from '../utils/modelResolver';
 import { SimulatedProgress } from '../utils/simulatedProgress';
+import { estimateGossamerRunMs } from '../gossamer/runTiming';
 import type { AIRunAdvancedContext } from '../ai/types';
 import {
     type GossamerCacheWindow,
@@ -74,10 +75,10 @@ export class GossamerProcessingModal extends ErtModal {
     private manuscriptInfo?: ManuscriptInfo;
     private currentStatus: string = t('gossamer.processingModal.statusInitializing');
     private apiCallStartTime?: number;
+    private apiCallManuscriptWords?: number;
     private lastElapsedSeconds?: string;
     private timerInterval?: number;
     private progressSimulator?: SimulatedProgress;
-    private estimatedProcessingMs: number = 60000;
 
     // Provider-cache window (armed after a successful run)
     private cacheWindow: GossamerCacheWindow | null = null;
@@ -360,10 +361,6 @@ export class GossamerProcessingModal extends ErtModal {
             // Each analysis is fresh based on manuscript content only.
         }
 
-        // Seed the API phase from the last observed normal runtime when
-        // available; otherwise use the one-minute default baseline.
-        this.estimatedProcessingMs = this.estimateProcessingMs(info);
-
         // Update the beat system info in confirmation view if it exists
         const beatSystemInfoEl = this.confirmationView?.querySelector('.ert-gossamer-proc-beat-system-info');
         if (beatSystemInfoEl) {
@@ -409,6 +406,7 @@ export class GossamerProcessingModal extends ErtModal {
      */
     public apiCallStarted(): void {
         this.apiCallStartTime = Date.now();
+        this.apiCallManuscriptWords = this.manuscriptInfo?.totalWords;
 
         if (this.apiStatusEl) {
             this.apiStatusEl.empty();
@@ -462,8 +460,7 @@ export class GossamerProcessingModal extends ErtModal {
         const elapsedMs = this.apiCallStartTime ? Date.now() - this.apiCallStartTime : undefined;
         this.lastElapsedSeconds = elapsedMs !== undefined ? (elapsedMs / 1000).toFixed(1) : undefined;
 
-        // Persist elapsed per-signal so the next run can use the observed
-        // normal runtime as its progress baseline.
+        // Every response updates the shared estimate for the next signal.
         if (elapsedMs !== undefined && elapsedMs > 0) {
             void this.persistLastRunDuration(elapsedMs);
         }
@@ -474,23 +471,17 @@ export class GossamerProcessingModal extends ErtModal {
             this.apiStatusEl.empty();
         }
 
-        // Complete the progress bar and pause animation
-        if (this.progressSimulator) {
-            this.progressSimulator.complete();
-        }
-        if (this.progressBarEl) {
-            this.progressBarEl.removeClass('ert-gossamer-progress-active');
-            this.progressBarEl.addClass('ert-progress-complete');
-            // SAFE: inline style used for CSS custom property (--progress-width) to enable smooth progress animation
-            this.progressBarEl.setCssProps({ '--progress-width': '100%' });
-        }
+        // Keep the bar below completion until validation and saving finish.
     }
 
     private async persistLastRunDuration(elapsedMs: number): Promise<void> {
-        const signal = this.plugin.gossamerSelectedSignal ?? DEFAULT_GOSSAMER_SIGNAL;
-        const bucket = this.plugin.settings.gossamerLastRunMsBySignal ?? {};
-        bucket[signal] = elapsedMs;
-        this.plugin.settings.gossamerLastRunMsBySignal = bucket;
+        const words = this.apiCallManuscriptWords;
+        if (words === undefined || !Number.isFinite(words) || words <= 0) return;
+        this.plugin.settings.gossamerLastRunTiming = {
+            schemaVersion: 1,
+            durationMs: elapsedMs,
+            manuscriptWords: words
+        };
         await this.plugin.saveSettings();
     }
 
@@ -701,19 +692,21 @@ export class GossamerProcessingModal extends ErtModal {
     }
 
     /**
-     * Start a simulated progress animation using manuscript-derived estimate.
+     * Scale the last request's duration by manuscript size.
      */
     private startSimulatedProgress(): void {
-        const durationMs = this.estimateProcessingMs(this.manuscriptInfo);
-        this.estimatedProcessingMs = durationMs;
+        const durationMs = estimateGossamerRunMs(
+            this.apiCallManuscriptWords ?? 0,
+            this.plugin.settings.gossamerLastRunTiming
+        );
 
         const simulator = this.getProgressSimulator();
         simulator.start({
             durationMs,
             startPercent: 0,
-            maxPercent: 100,
+            maxPercent: 95,
             jitter: 0,
-            completeOnDuration: true
+            completeOnDuration: false
         });
     }
 
@@ -736,20 +729,6 @@ export class GossamerProcessingModal extends ErtModal {
         }
     }
 
-    /**
-     * Gossamer AI requests use the last successful runtime for the active
-     * signal as the next progress baseline. The one-minute value is only the
-     * cold-start default when no observed runtime exists yet.
-     */
-    private estimateProcessingMs(_info?: ManuscriptInfo): number {
-        const signal = this.plugin.gossamerSelectedSignal ?? DEFAULT_GOSSAMER_SIGNAL;
-        const observed = this.plugin.settings.gossamerLastRunMsBySignal?.[signal];
-        if (typeof observed === 'number' && Number.isFinite(observed) && observed > 0) {
-            return Math.min(300000, Math.max(5000, observed));
-        }
-
-        return 60000;
-    }
 }
 
 export default GossamerProcessingModal;

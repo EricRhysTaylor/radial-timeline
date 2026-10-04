@@ -1,6 +1,7 @@
 import type { InquiryScope, InquiryZone } from '../inquiry/state';
 import type { AiSettingsV1, AIRoleTemplate } from '../ai/types';
 import type { DesignedStyleSpec } from '../publishing/designedStyle';
+import type { GossamerRunTiming } from '../gossamer/runTiming';
 
 export type AiContextTemplate = AIRoleTemplate;
 
@@ -1078,8 +1079,8 @@ export interface RadialTimelineSettings {
     actCount?: number;
     actLabelsRaw?: string;
     gossamerRunFilter?: GossamerRunFilterSettings;
-    /** Last observed API round-trip duration per signal, used to seed the next run's ETA. */
-    gossamerLastRunMsBySignal?: Record<string, number>;
+    /** Last observed Gossamer request duration and manuscript size, shared across all signals. */
+    gossamerLastRunTiming?: GossamerRunTiming;
     publishStageColors: {
         Zero: string;
         Author: string;

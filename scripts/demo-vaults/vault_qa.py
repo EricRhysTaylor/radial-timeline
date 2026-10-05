@@ -7,6 +7,7 @@ Literary/editorial review is separate; these checks do not judge AI opinions.
 import json
 import hashlib
 import re
+import unicodedata
 from datetime import datetime
 from html.parser import HTMLParser
 from pathlib import Path
@@ -44,6 +45,25 @@ class SourceText(HTMLParser):
 
 def validate_source(scenes, source, config):
     layout = config.get('source_layout', 'chapter-markdown')
+    if layout == 'gutenberg-holmes-html':
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(source, 'html.parser')
+        chapters = []
+        for div in soup.select('div.chapter'):
+            heading = div.find(re.compile(r'^h[1-6]$'))
+            if heading and re.match(r'^(CHAPTER|EPILOGUE)\b', heading.get_text(' ', strip=True), re.I):
+                heading.decompose()
+                for caption in div.select('.caption'):
+                    caption.decompose()
+                chapters.append(div.get_text())
+        require(len(chapters) == len(scenes) == config['scene_count'], 'Holmes source chapter coverage is incomplete')
+        for (path, fm, body), original in zip(scenes, chapters):
+            require('## Chapter Body\n' in body, f'Missing chapter body: {path.name}')
+            manuscript = body.split('## Chapter Body\n', 1)[1]
+            # Retain source spelling, punctuation and case; inline HTML spacing can differ.
+            require(re.sub(r'\s', '', manuscript) == re.sub(r'\s', '', original), f'Chapter text differs from source: {path.name}')
+            require(fm.get('Act') == config['scene_acts'][fm['ID']], f'Incorrect Holmes act: {path.name}')
+        return len(chapters)
     if layout == 'gutenberg-odyssey-html':
         chapters = re.findall(r'<h2><a id="chap(\d{2})"></a>\s*BOOK [IVXLCDM]+</h2>(.*?)</div><!--end chapter-->', source, re.S)
         require([int(n) for n, _ in chapters] == list(range(1, 25)), 'Odyssey source must contain all 24 books')
@@ -76,33 +96,58 @@ def validate_inquiry(vault, config, scenes):
     require(sidecar.get('schemaVersion') == 1, 'Unknown Inquiry sidecar schema')
     require(len(sidecar['sessions']) == config['inquiry_session_count'], 'Inquiry sessions missing')
     require(sidecar.get('vault', {}).get('bookFolder') == config['book_folder'], 'Inquiry book identity mismatch')
-    if 'inquiry_questions' in config:
+    collection = config.get('source_layout') == 'gutenberg-holmes-html'
+    if collection:
+        expected = sorted((b['book_folder'], q) for b in config['books'] for q in config['inquiry_questions'])
+        require(sorted((s.get('activeBookId'), s['result'].get('questionId', '')) for s in sidecar['sessions']) == expected, 'Required per-book Inquiry questions are missing or duplicated')
+    elif 'inquiry_questions' in config:
         require(sorted(session['result'].get('questionId', '') for session in sidecar['sessions']) == sorted(config['inquiry_questions']), 'Required Inquiry questions are missing or duplicated')
     scene_by_id = {fm['ID']: path for path, fm, _ in scenes}
     refs = 0
     for session in sidecar['sessions']:
         result = session['result']
+        book_folder = session.get('activeBookId') if collection else config['book_folder']
+        book_scenes = {sid: p for sid, p in scene_by_id.items() if p.parent == vault / book_folder}
         brief = session.get('briefPath', '')
         relative = Path(brief)
         require(bool(brief) and not relative.is_absolute() and '..' not in relative.parts
                 and brief.startswith('Radial Timeline/Inquiry/Briefing/')
                 and (vault / relative).is_file(), 'Saved Inquiry briefing is missing from the public files')
-        require(result.get('scope') == 'book' and session.get('activeBookId') == config['book_folder'], 'Inquiry scope differs from the released book')
+        require(result.get('scope') == 'book' and session.get('activeBookId') == book_folder and book_scenes, 'Inquiry scope differs from the released book')
         require(result.get('aiStatus') == 'success' and result.get('findings'), 'Inquiry answer is not complete')
         require(not result.get('unverifiedFindings') and not result.get('citationIntegrityWarnings'), 'Inquiry citations need review')
         for ref in result['evidenceDocumentMeta']:
-            require(ref['sceneId'] in scene_by_id, 'Unknown Inquiry scene ID')
-            path = scene_by_id[ref['sceneId']]
+            require(ref['sceneId'] in book_scenes, 'Unknown Inquiry scene ID for selected book')
+            path = book_scenes[ref['sceneId']]
             require(path == vault / ref['path'] and path.stem == ref['title'], 'Stale Inquiry scene reference')
             refs += 1
         for finding in result['findings']:
-            require(finding.get('refId') in scene_by_id, 'Unknown Inquiry finding scene ID')
+            require(finding.get('refId') in book_scenes, 'Unknown Inquiry finding scene ID for selected book')
         if config.get('require_quoted_inquiry'):
             require(any(f.get('evidenceQuote', '').strip() for f in result['findings']), 'Inquiry quoted evidence is missing; replacement run required')
+        if collection:
+            require(session.get('status') == 'saved', 'Inquiry session did not finish saving')
+            require(len(result['evidenceDocumentMeta']) == len(book_scenes) and {x['sceneId'] for x in result['evidenceDocumentMeta']} == set(book_scenes), 'Inquiry evidence coverage is incomplete')
+            corpus = result['corpusManifestSnapshot']
+            require(len(corpus) == len(book_scenes) and {x['sceneId'] for x in corpus} == set(book_scenes), 'Inquiry manuscript coverage is incomplete')
+            require(all(x['mode'] == 'full' and x['path'] == str(book_scenes[x['sceneId']].relative_to(vault)) for x in corpus), 'Inquiry manuscript evidence is not full or belongs to another book')
+            bodies = {fm['ID']: body.split('## Chapter Body\n', 1)[1] for _, fm, body in scenes if fm['ID'] in book_scenes}
+            for finding in result['findings']:
+                quotes = [{'refId': finding['refId'], 'quote': finding.get('evidenceQuote', '')}, *finding.get('supportingRefs', [])]
+                for ref in quotes:
+                    require(ref['refId'] in book_scenes, 'Inquiry supporting reference belongs to another book')
+                    if 'refPath' in ref:
+                        require(ref['refPath'] == str(book_scenes[ref['refId']].relative_to(vault)), 'Stale Inquiry supporting path')
+                    require(ref['quote'].strip() and quoted_text(ref['quote']) in quoted_text(bodies[ref['refId']]), 'Inquiry quote differs from source')
+                require(all(ref in book_scenes for ref in finding.get('related', [])), 'Inquiry related reference belongs to another book')
     return len(sidecar['sessions']), refs
 
 
-def validate(vault, config):
+def quoted_text(text):
+    return re.sub(r'\s+', ' ', unicodedata.normalize('NFKC', text).translate(str.maketrans({'’': "'", '‘': "'", '“': '"', '”': '"', '–': '-', '—': '-'}))).strip()
+
+
+def validate_book(vault, config):
     book = vault / config['book_folder']
     notes = [(p, *read_note(p)) for p in book.glob('*.md')]
     scenes = sorted((row for row in notes if row[1].get('Class') == 'Scene'),
@@ -122,7 +167,10 @@ def validate(vault, config):
     dates = []
     for i, (path, fm, body) in enumerate(scenes):
         require(fm.get('Summary') and fm.get('Synopsis'), f'Missing summary/synopsis: {path.name}')
-        dates.append(datetime.fromisoformat(str(fm['When'])))
+        if not config.get('allow_undated') or fm.get('When'):
+            dates.append(datetime.fromisoformat(str(fm['When'])))
+        if 'scene_dates' in config:
+            require(str(fm.get('When') or '') == config['scene_dates'][fm['ID']], f'Reviewed date changed: {path.name}')
         require(str(fm.get('Pulse Update', '')).lower() not in ('yes', 'true'), f'Pending Pulse update: {path.name}')
         for key, expected in [('previousSceneAnalysis', i > 0), ('currentSceneAnalysis', True), ('nextSceneAnalysis', i < count - 1)]:
             rows = fm.get(key)
@@ -146,7 +194,26 @@ def validate(vault, config):
             require(signal not in runs or runs[signal] == run, f'Mixed latest {signal} run')
             runs[signal] = run
             require(fm[f'GossamerModel{slot}'] and fm[f'GossamerProvider{slot}'], f'Missing provenance: {path.name}')
+    if 'gossamer_runs' in config:
+        require(runs == config['gossamer_runs'], 'Reviewed Gossamer runs changed')
 
+    return scenes, beats, {'scenes': count, 'beats': len(beats), 'source_full_chapters_matched': source_books, 'latest_gossamer_runs': runs}
+
+
+def validate(vault, config):
+    collection = config.get('source_layout') == 'gutenberg-holmes-html'
+    contracts = config['books'] if collection else [config]
+    require(contracts and len({b['book_folder'] for b in contracts}) == len(contracts), 'Missing or duplicate released books')
+    scenes = []; beats = []; books = {}
+    for contract in contracts:
+        book_scenes, book_beats, summary = validate_book(vault, contract)
+        scenes.extend(book_scenes); beats.extend(book_beats); books[contract['book_folder']] = summary
+    ids = [fm['ID'] for _, fm, _ in scenes + beats]
+    require(len(set(ids)) == len(ids), 'Duplicate IDs across released books')
+    if collection:
+        manifest, _ = read_note(vault / 'Sample Vault Config.md')
+        require(manifest.get('rt_sample_vault') is True and manifest.get('schema_version') == 1, 'Sample detection manifest is invalid')
+        require(manifest.get('book_folder') == config['book_folder'] and manifest.get('books') == [{'title': b['title'], 'source_folder': b['book_folder']} for b in contracts], 'Sample book profiles differ from release contract')
     session_count, refs = validate_inquiry(vault, config, scenes)
     links = 0
     md_paths = list(vault.rglob('*.md'))
@@ -160,6 +227,10 @@ def validate(vault, config):
             matches = [p for p in md_paths if p == vault / relative or ('/' not in target and p.name == relative.name)]
             require(len(matches) == 1, f'Broken/ambiguous link in {path.relative_to(vault)}: {target}')
             links += 1
-    return {'scenes': count, 'beats': len(beats), 'source_full_chapters_matched': source_books,
-            'inquiry_sessions': session_count, 'evidence_references': refs,
-            'wiki_links': links, 'latest_gossamer_runs': runs}
+    qa = {'scenes': len(scenes), 'beats': len(beats), 'source_full_chapters_matched': sum(b['source_full_chapters_matched'] for b in books.values()),
+          'inquiry_sessions': session_count, 'evidence_references': refs, 'wiki_links': links}
+    if collection:
+        qa['books'] = books
+    else:
+        qa['latest_gossamer_runs'] = books[config['book_folder']]['latest_gossamer_runs']
+    return qa

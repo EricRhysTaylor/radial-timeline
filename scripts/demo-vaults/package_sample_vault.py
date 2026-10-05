@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["pyyaml==6.0.2"]
+# dependencies = ["pyyaml==6.0.2", "beautifulsoup4==4.13.4"]
 # ///
 """Build a verified content-only ZIP from a canonical demo vault.
 
@@ -43,6 +43,8 @@ def select_files(source, config):
         allowed = {'.md', '.json'}
         if config.get('source_layout') == 'gutenberg-odyssey-html':
             allowed.update(('.html', '.jpg'))
+        elif config.get('source_layout') == 'gutenberg-holmes-html':
+            allowed.update(('.html', '.jpg'))
         require(path.suffix in allowed, f'Unsupported public content type: {rel}')
         data = path.read_bytes()
         require(not re.search(rb'(?:sk-ant-api\w*-|sk-proj-|sb_secret_)[A-Za-z0-9_-]{16,}', data), f'Credential-shaped content: {rel}')
@@ -59,13 +61,18 @@ def write_zip(path, name, files):
             archive.writestr(entry, data, compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
 
 
-def public_inquiry_files(files):
-    """Remove links to excluded working logs without changing AI findings."""
+def public_inquiry_files(files, config=None):
+    """Export reviewed sessions and remove working-log links; preserve results."""
     public = dict(files)
     sidecar_path = 'Radial Timeline/Inquiry/Sessions/sessions.json'
     if sidecar_path not in public:
         return public
     artifact = json.loads(public[sidecar_path])
+    if config and 'inquiry_run_ids' in config:
+        accepted = config['inquiry_run_ids']
+        artifact['sessions'] = [s for s in artifact['sessions'] if s['result'].get('runId') in accepted]
+        require(sorted(s['result']['runId'] for s in artifact['sessions']) == sorted(accepted), 'Reviewed Inquiry runs missing or duplicated')
+        artifact['vault'] = config['inquiry_vault']
     for session in artifact['sessions']:
         session.pop('logPath', None)
         brief_path = session.get('briefPath')
@@ -85,7 +92,7 @@ def build(source, dist, config):
     require(len(safe_relative(name).parts) == 1, 'Output name must be one path component')
     require(re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', config['sample_id']) is not None, 'Sample ID must be a lowercase slug')
     original = select_files(source, config)
-    included = public_inquiry_files(original)
+    included = public_inquiry_files(original, config)
     # The helper import is mandatory. Any failed check aborts before publication.
     with tempfile.TemporaryDirectory(prefix='rt-demo-build-') as temp:
         stage = Path(temp) / name

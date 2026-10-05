@@ -3,9 +3,9 @@
 ## Status
 
 - **Phase 0** (Gossamer Copy/Paste on the API contract) shipped in `8f0b362`.
-- **Phases 1–4** are built behind the beta gate (`areBetaCommandsVisible`):
-  visible in development and testing builds, including `npm run deploy`, and
-  hidden in public release builds until tried end to end in a real vault.
+- **Phases 1–4** are built behind the beta gate (`plugin.betaFeatures`):
+  visible in development vaults, which local builds including `npm run deploy`
+  mark, and hidden in installed releases until tried end to end in a real vault.
   They cover Summary and Synopsis, Pulse triplets, Gossamer scoring, Inquiry,
   and one-step preparation for a whole book: the "Prepare AI jobs…" command
   and a request link the AI client can open itself.

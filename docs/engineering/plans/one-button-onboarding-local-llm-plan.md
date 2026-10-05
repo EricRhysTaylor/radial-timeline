@@ -446,8 +446,8 @@ Doctrine fit: no new abstraction layer beyond the adapters, no fallback chains
 
 ## Gating & Rollout
 
-1. **Slice 1 (beta):** command + modal behind `areBetaCommandsVisible`
-   (`src/settings/featureGate.ts:9-16`); prompt constants + the `.md` adapter +
+1. **Slice 1 (beta):** command + modal behind `plugin.betaFeatures`
+   (`detectBetaFeatures` in `src/settings/featureGate.ts`); prompt constants + the `.md` adapter +
    the shared spine + Materialize-to-new-folder + report. Existing-vault path
    end to end.
 2. **Slice 2:** Scrivener adapter + metadata mapping table.

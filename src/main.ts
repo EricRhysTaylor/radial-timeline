@@ -77,7 +77,7 @@ import type { GossamerHistoricalRunOverlay, GossamerMinMaxBand, GossamerRun, Gos
 import { coerceGossamerSignal, DEFAULT_GOSSAMER_SIGNAL, type GossamerSignalType } from './types/gossamerSignals';
 import type { GossamerCacheEntry } from './gossamer/cacheWindow';
 import { seedProEntitlement } from './settings/proEntitlementSeed';
-import { areBetaCommandsVisible, hasProFeatureAccess } from './settings/featureGate';
+import { detectBetaFeatures, hasProFeatureAccess } from './settings/featureGate';
 import { DisposableRegistry } from './core/disposable';
 import { systemFolderPath } from './utils/systemFolder';
 
@@ -169,6 +169,8 @@ export default class RadialTimelinePlugin extends Plugin {
     openScenePaths: Set<string> = new Set<string>();
     // Ensure settings tab is only added once per load
     private _settingsTabAdded: boolean = false;
+    /** Set once on load from the development-build marker; see detectBetaFeatures. */
+    public betaFeatures = false;
     // Reference to settings tab for programmatic tab switching
     public settingsTab?: RadialTimelineSettingsTab;
 
@@ -556,6 +558,7 @@ export default class RadialTimelinePlugin extends Plugin {
         ensureButtonComponentCompatibility();
         this.settingsService = new SettingsService(this);
         await this.loadSettings();
+        this.betaFeatures = await detectBetaFeatures(this);
 
         // Restore the author's search scope. Validated on read, so a malformed
         // or future-schema value yields known-good defaults rather than a
@@ -703,8 +706,8 @@ export default class RadialTimelinePlugin extends Plugin {
         // Register ribbon + commands (single orchestration point)
         this.commandRegistrar.registerAll(this.sceneAnalysisService);
         // AI jobs: work handed to an AI client the author runs themselves.
-        // Beta (development/testing builds) until tried end to end in a real vault.
-        if (areBetaCommandsVisible()) {
+        // Beta (development vaults) until tried end to end in a real vault.
+        if (this.betaFeatures) {
             new AiJobsService(this).register();
         }
 

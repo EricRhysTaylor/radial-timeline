@@ -19,6 +19,8 @@ if you want to view the source, please visit the github repository of this plugi
 
 const prod = process.argv[2] === "production";
 const isCI = process.env.CI === 'true';
+// Selects output folders only. Every mode compiles identical code, so a plain
+// `npm run build` reproduces the released main.js byte for byte.
 const isReleaseBuild = process.env.RT_RELEASE_BUILD === '1';
 
 // --- Read release notes content REMOVED: Managed via direct import in code ---
@@ -68,20 +70,21 @@ if (isReleaseBuild) {
 } else if (isCI) {
 	destDirs = [{ path: "./build", name: "build" }];
 } else {
-	// Local development paths
+	// Local development paths. `beta: true` vaults get the beta-features
+	// marker (see src/settings/featureGate.ts); ./release and ./build never do.
 	destDirs = [
-		{ path: "/Users/ericrhystaylor/Obsidian Vault Author/.obsidian/plugins/radial-timeline", name: "Author" },
-		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/Test Vaults/Obsidian Vault New/.obsidian/plugins/radial-timeline", name: "New" },
-		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/Test Vaults/Obsidian Vault Fresh/.obsidian/plugins/radial-timeline", name: "Fresh" },
-		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/Test Vaults/Obsidian Vault Sherlock Holmes/.obsidian/plugins/radial-timeline", name: "Sherlock Holmes" },
-		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/Test Vaults/Obsidian Vault Pride & Prejudice Demo/.obsidian/plugins/radial-timeline", name: "P&P" },
-		{ path: "/Users/ericrhystaylor/Documents/Author Eric Rhys Taylor/Obsidian Vault Author timelapse/.obsidian/plugins/radial-timeline", name: "Timelapse" },
-		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Obsidian Vault Pride & Prejudice Demo/.obsidian/plugins/radial-timeline", name: "P&P Demo" },
-		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Obsidian Vault Sherlock Holmes Demo/.obsidian/plugins/radial-timeline", name: "Sherlock Demo" },
-		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Obsidian Vault The Faerie Queene Demo/.obsidian/plugins/radial-timeline", name: "Faerie Queene Demo" },
-		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Obsidian Vault Odyssey Demo/.obsidian/plugins/radial-timeline", name: "Odyssey Demo" },
-		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Obsidian Vault Miki Projects/.obsidian/plugins/radial-timeline", name: "Miki Projects" },
-		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Scrivener Onboarding Test/.obsidian/plugins/radial-timeline", name: "Scrivener" },
+		{ path: "/Users/ericrhystaylor/Obsidian Vault Author/.obsidian/plugins/radial-timeline", name: "Author", beta: true },
+		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/Test Vaults/Obsidian Vault New/.obsidian/plugins/radial-timeline", name: "New", beta: true },
+		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/Test Vaults/Obsidian Vault Fresh/.obsidian/plugins/radial-timeline", name: "Fresh", beta: true },
+		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/Test Vaults/Obsidian Vault Sherlock Holmes/.obsidian/plugins/radial-timeline", name: "Sherlock Holmes", beta: true },
+		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/Test Vaults/Obsidian Vault Pride & Prejudice Demo/.obsidian/plugins/radial-timeline", name: "P&P", beta: true },
+		{ path: "/Users/ericrhystaylor/Documents/Author Eric Rhys Taylor/Obsidian Vault Author timelapse/.obsidian/plugins/radial-timeline", name: "Timelapse", beta: true },
+		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Obsidian Vault Pride & Prejudice Demo/.obsidian/plugins/radial-timeline", name: "P&P Demo", beta: true },
+		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Obsidian Vault Sherlock Holmes Demo/.obsidian/plugins/radial-timeline", name: "Sherlock Demo", beta: true },
+		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Obsidian Vault The Faerie Queene Demo/.obsidian/plugins/radial-timeline", name: "Faerie Queene Demo", beta: true },
+		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Obsidian Vault Odyssey Demo/.obsidian/plugins/radial-timeline", name: "Odyssey Demo", beta: true },
+		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Obsidian Vault Miki Projects/.obsidian/plugins/radial-timeline", name: "Miki Projects", beta: true },
+		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Scrivener Onboarding Test/.obsidian/plugins/radial-timeline", name: "Scrivener", beta: true },
 		{ path: "./release", name: "release" },
 		// Obsidian's plugin review runs a plain `npm run build` (no CI /
 		// RT_RELEASE_BUILD env) and looks for main.js in ./build, ./dist,
@@ -166,6 +169,15 @@ const filesToCopy = [
 		}
 	}
 
+	// --- Beta-features marker (development vaults only) ---
+	if (dest.beta) {
+		try {
+			fs.writeFileSync(path.join(destDir, "beta-features"), "Written by local development builds. Shows beta features in this vault.\n");
+		} catch (err) {
+			logErrorDetails(`Error writing beta-features marker to ${dest.name}:`, err);
+		}
+	}
+
 	// --- Copy main.js ---
 	if (destDirs.length > 1) {
 		const mainJsPath = path.join(destDirs[0].path, "main.js");
@@ -238,8 +250,7 @@ const context = await esbuild.context({
 		// Test/CI seam only — compiled out of production so shipped code never
 		// reads this env var (vitest runs on source and keeps the live read).
 		...(prod ? { 'process.env.RT_FONT_CATALOG': 'undefined' } : {}),
-		'__RT_DEV__': String(!prod),  // false for production, true for dev
-		'__RT_RELEASE__': String(isReleaseBuild)
+		'__RT_DEV__': String(!prod)  // false for production, true for dev
 	}
 });
 

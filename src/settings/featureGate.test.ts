@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { areBetaCommandsVisible, hasProFeatureAccess } from './featureGate';
+import { BETA_FEATURES_MARKER, detectBetaFeatures, hasProFeatureAccess } from './featureGate';
 
 describe('hasProFeatureAccess', () => {
     it('uses Pro entitlement as the single feature access source', () => {
@@ -29,12 +29,19 @@ describe('hasProFeatureAccess', () => {
     });
 });
 
-describe('areBetaCommandsVisible', () => {
-    it('keeps beta commands visible outside release builds', () => {
-        expect(areBetaCommandsVisible({ releaseBuild: false })).toBe(true);
+describe('detectBetaFeatures', () => {
+    const plugin = (dir: string | undefined, files: string[]) => ({
+        manifest: { dir },
+        app: { vault: { adapter: { exists: async (path: string) => files.includes(path) } } }
+    }) as never;
+
+    it('shows beta features in a vault a development build was deployed to', async () => {
+        const dir = '.obsidian/plugins/radial-timeline';
+        expect(await detectBetaFeatures(plugin(dir, [`${dir}/${BETA_FEATURES_MARKER}`]))).toBe(true);
     });
 
-    it('hides beta commands in release builds', () => {
-        expect(areBetaCommandsVisible({ releaseBuild: true })).toBe(false);
+    it('hides beta features in an installed release', async () => {
+        expect(await detectBetaFeatures(plugin('.obsidian/plugins/radial-timeline', []))).toBe(false);
+        expect(await detectBetaFeatures(plugin(undefined, []))).toBe(false);
     });
 });

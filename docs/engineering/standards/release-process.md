@@ -41,7 +41,12 @@ still runs in two phases:
    - checks out the version tag,
    - `npm ci`, then `RT_RELEASE_BUILD=1 node esbuild.config.mjs production`
      (release builds always output to `./release`, even in CI; embedded
-     fonts ship as data URIs in `src/styles/font.css`),
+     fonts ship as data URIs in `src/styles/font.css`). The variable picks
+     the output folder only: every build compiles the same code, so a plain
+     `npm run build` reproduces the released `main.js` byte for byte, which
+     is what Obsidian's review checks. Beta features key off the
+     `beta-features` marker that local builds write into each development
+     vault's plugin folder (`src/settings/featureGate.ts`),
    - signs a build-provenance attestation for `main.js`, `manifest.json`,
      and `styles.css`,
    - runs `scripts/check-shipped-assets.mjs` and spot-checks that the

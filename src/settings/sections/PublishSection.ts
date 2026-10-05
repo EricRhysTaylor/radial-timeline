@@ -1,6 +1,5 @@
 import { compactLayoutOptions, readLayoutOptions } from './publish/layoutOptions';
 import { renderImportedLayoutSummary } from './publish/ImportedLayoutSummary';
-/* global __RT_RELEASE__ -- build-time flags injected by esbuild define; see esbuild.config.mjs */
 /*
  * Radial Timeline Plugin for Obsidian
  * Copyright (c) 2025 Eric Rhys Taylor
@@ -1399,7 +1398,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         button.setButtonText('Design your own…');
         button.setTooltip('Design a new PDF style from scratch with a live preview.');
         button.buttonEl.addClass(ERT_CLASSES.PILL_BTN, ERT_CLASSES.PILL_BTN_PRO);
-        if (__RT_RELEASE__) {
+        if (!plugin.betaFeatures) {
             button.setDisabled(true);
             button.setTooltip('BETA release pending—design a new PDF style from scratch with a live preview.');
             button.onClick(() => { /* no-op: BETA release pending */ });
@@ -1432,7 +1431,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         button.setButtonText('Import template…');
         button.setTooltip('Bring an existing .tex template into Publishing. For from-scratch design with a live preview, use "Design your own…" instead.');
         button.buttonEl.addClass(ERT_CLASSES.PILL_BTN, ERT_CLASSES.PILL_BTN_PRO);
-        if (__RT_RELEASE__) {
+        if (!plugin.betaFeatures) {
             button.setDisabled(true);
             button.setTooltip('BETA release pending—Bring an existing .tex template into Publishing.');
             button.onClick(() => { /* no-op: BETA release pending */ });

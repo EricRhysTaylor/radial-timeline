@@ -1,11 +1,11 @@
 {
-  "totalErrors": 101,
+  "totalErrors": 102,
   "errorCountById": {
-    "adapter": 5,
+    "adapter": 6,
     "fetch": 1,
     "raw-addEventListener": 80,
     "node-core-import": 9,
     "node-core-require": 6
   },
-  "updatedAt": "2026-07-25T20:02:26.407Z"
+  "updatedAt": "2026-10-05T23:22:02.930Z"
 }

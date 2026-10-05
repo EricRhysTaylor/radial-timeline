@@ -41,7 +41,7 @@ import { chunkScenesIntoParts } from '../utils/splitOutput';
 import { resolveBookPages, type MatterNoteSummary } from '../utils/bookPagesResolver';
 import { ensureBundledLayoutInstalledForExport } from '../utils/pandocBundledLayouts';
 import { getLayoutAbbreviation, resolveTemplateAccess, TEMPLATE_ACCESS_FALLBACK_MESSAGE } from '../publishing/templateTiering';
-import { areBetaCommandsVisible, hasProFeatureAccess } from '../settings/featureGate';
+import { hasProFeatureAccess } from '../settings/featureGate';
 import { cleanupFormatForOutputFormat, getDefaultManuscriptCleanupOptions, normalizeManuscriptCleanupOptions, sanitizeCompiledManuscript, sanitizeCompiledManuscriptForPdf } from '../utils/manuscriptSanitize';
 import { getManuscriptLayoutExportBehavior } from '../utils/manuscriptLayoutExport';
 import { ExportFailure, categorizeExportError } from '../utils/exportErrors';
@@ -91,7 +91,7 @@ export class CommandRegistrar {
                 void this.plugin.getInquiryService().activateView();
             },
         });
-        if (areBetaCommandsVisible()) {
+        if (this.plugin.betaFeatures) {
             this.plugin.addCommand({
                 id: 'inquiry-omnibus-pass',
                 name: t('commands.inquiryOmnibusPass'),
@@ -112,7 +112,7 @@ export class CommandRegistrar {
         // Dev-only diagnostics: dump hover/render timings + a DOM census so
         // performance work starts from evidence, not guesses. Never ships in
         // release builds.
-        if (areBetaCommandsVisible()) {
+        if (this.plugin.betaFeatures) {
             this.plugin.addCommand({
                 id: 'copy-performance-report',
                 name: t('commands.copyPerformanceReport'),
@@ -176,7 +176,7 @@ export class CommandRegistrar {
         });
 
         // Beta (development/testing builds): structure-only or Local LLM-assisted import.
-        if (areBetaCommandsVisible()) {
+        if (this.plugin.betaFeatures) {
             this.plugin.addCommand({
                 id: 'onboard-manuscript',
                 name: t('commands.onboardManuscript'),
@@ -268,7 +268,7 @@ export class CommandRegistrar {
         // corpus and has no use for authors, so it stays behind the same
         // beta-command gate as the other internal-testing commands above.
         // Never ships in release builds.
-        if (areBetaCommandsVisible()) {
+        if (this.plugin.betaFeatures) {
             // Export the currently rendered timeline as a self-contained image.
             this.plugin.addCommand({
                 id: 'export-timeline-image',

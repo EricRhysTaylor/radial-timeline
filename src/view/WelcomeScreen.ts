@@ -3,7 +3,6 @@
  * Copyright (c) 2025 Eric Rhys Taylor
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
-/* global __RT_RELEASE__ -- build-time flag injected by esbuild define; see esbuild.config.mjs */
 import { openSettingsTab } from '../utils/obsidianInternals';
 import { normalizePath, Notice, setIcon, TFolder } from 'obsidian';
 import RadialTimelinePlugin from '../main';
@@ -471,8 +470,8 @@ export function renderWelcomeScreen({ container, plugin, refreshTimeline }: Welc
 
     // Hero cards: Sample Vault · Book Project · [Onboard] · Website. The onboard
     // card follows "Set Book Project" (onboarding needs a book folder) and, like
-    // its command, is dev-build only until the feature ships.
-    const showOnboard = !__RT_RELEASE__;
+    // its command, shows only in development vaults until the feature ships.
+    const showOnboard = plugin.betaFeatures;
     const cards = body.createDiv({ cls: 'rt-welcome-cards' });
     cards.style.setProperty('--rt-welcome-card-count', String(showOnboard ? 4 : 3));
 

@@ -1,6 +1,6 @@
 # Design Wizard — Completion Plan
 
-**Goal:** un-gate "Design your own…" (`__RT_RELEASE__` flag, PublishSection)
+**Goal:** un-gate "Design your own…" (`plugin.betaFeatures` gate, PublishSection)
 so from-scratch PDF style creation ships in release builds, without taking on
 a combinatorial QA burden or a font-download subsystem.
 
@@ -27,9 +27,10 @@ Shipping today, in release builds:
   `origin:'designed'`.
 
 Gated / unfinished:
-1. **"Design your own…" button** is disabled when `__RT_RELEASE__` is true
-   (esbuild `define`, set by release builds) with tooltip "BETA release
-   pending…". This is the flag this plan exists to flip.
+1. **"Design your own…" button** is disabled unless `plugin.betaFeatures`
+   is true (development vaults only; see `src/settings/featureGate.ts`) with
+   tooltip "BETA release pending…". This is the gate this plan exists to
+   remove.
 2. **Font install is a Phase-1 stub** — the wizard's font row "Install"
    affordance opens a Notice; the planned Phase-2 download was never built.
 3. **No QA harness** covers wizard-reachable spec space; only the four
@@ -112,7 +113,7 @@ Extend the `RT_PUBLISH_PDF_ASSEMBLY=1`-gated suite with a wizard matrix:
 
 ### D — Un-gate + UX truth-telling
 
-- Flip the `__RT_RELEASE__` guard on "Design your own…" once A–C land.
+- Remove the `plugin.betaFeatures` guard on "Design your own…" once A–C land.
 - First wizard screen copy should say what the feature now is: "Start from
   a professional layout and make it yours" (fork-first framing), not
   blank-canvas language.
@@ -166,5 +167,5 @@ npm run build-only                                 # never npm run build (auto-c
 Line references (drift-prone, verified 2026-07-09): scratch-create gate
 `PublishSection.ts:~2845`; archetype clone `DesignedStyleWizardModal.ts:~260`;
 Phase-1 font stub `DesignedStyleWizardModal.ts:~1326-1340`; persist
-`DesignedStyleWizardModal.ts:~2305-2370`; `__RT_RELEASE__` define
-`esbuild.config.mjs:~256`.
+`DesignedStyleWizardModal.ts:~2305-2370`; beta gate
+`src/settings/featureGate.ts` (`detectBetaFeatures`).

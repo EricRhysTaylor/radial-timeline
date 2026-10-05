@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-04T17:55:00.455Z",
+  "generatedAt": "2026-10-03T15:47:50.110Z",
   "scoringModel": "rt-impact-v1",
   "scoringAxes": [
     "authorTrust",
@@ -78,7 +78,7 @@
     },
     {
       "file": "geminiApi.ts",
-      "finding": "createGeminiCache() has 1 callers in src/",
+      "finding": "createGeminiCache() has 2 callers in src/",
       "relatedFeatures": [
         "gemini-context-caching"
       ]

@@ -11,6 +11,7 @@ The Odyssey and Sherlock Holmes join Pride & Prejudice as free demo vaults, Desk
 <img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/5a04ecad/wiki/images/odyssey-chronologue.webp" alt="The Odyssey in Chronologue mode: the scenes of Ulysses's wanderings, numbered 28 to 45, sit at the start of the timeline" width="600">
 
 - **Sherlock Holmes: four novels.** *A Study in Scarlet*, *The Sign of the Four*, *The Hound of the Baskervilles*, and *The Valley of Fear*, 56 chapters in all, each novel in its own manuscript folder. Every novel has three acts and its own **Mystery and Revelation** beats, 41 across the four, following the investigative turn, the concealed history, the confrontation, and the explanation.
+- **Multi-book demos open as a collection.** Opening a demo vault with several books, such as the four Sherlock Holmes novels, adds each one to Book Manager without changing the books you already have, and each saved Inquiry answer stays with its own book.
 - **Pride & Prejudice from the Welcome screen.** The Welcome screen now opens with **Explore Pride & Prejudice**: all 61 chapters with saved Pulse analysis, four Gossamer signals, and three Inquiry sessions. **Download the free demo vault** downloads it straight from the Welcome screen.
 - **Demo vaults in Settings → PRO.** The section formerly called Bonus vaults is now the demo library. **View demo & download** on Pride & Prejudice, The Odyssey, and Sherlock Holmes opens the download page on the website; *The Faerie Queene* is marked **Coming soon**. Each download holds the books and their notes only, and you can explore the saved analysis without an API key.
 
@@ -32,6 +33,7 @@ See [Desk Lamps](https://github.com/EricRhysTaylor/radial-timeline/wiki/Desk-Lam
 <img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/5a04ecad/wiki/images/inquiry-corpus-pages.webp" alt="The corpus strip for The Odyssey beside its legend: green filled pages for full scenes, faded red pages for excluded scenes, and blue outlined pages with a corner X for summary scenes with thin summaries" width="440">
 
 - **Inquiry opens with AI off.** The Inquiry view and its ribbon icon are there whether or not AI is turned on, so you can read saved sessions, including the demo vaults', without an API key. Running a new question needs AI turned on and a provider.
+- **Inquiry follows your book.** Switching books on the timeline switches Inquiry to the same book. A question that is already running keeps its material until it finishes.
 - **Saved questions read clearly in demo vaults.** Each saved question sits on a solid disc, so its number stays legible against the zone colors.
 
 See [Reading the corpus](https://github.com/EricRhysTaylor/radial-timeline/wiki/Inquiry#corpus-pages) in the wiki.
@@ -87,3 +89,5 @@ See [Reading the corpus](https://github.com/EricRhysTaylor/radial-timeline/wiki/
 - **Inquiry citations keep your scene IDs.** Scenes with an `ID` you wrote yourself, rather than one Radial Timeline generated, keep their citations in Inquiry findings and saved results.
 - **Gossamer reads in narrative order in every mode.** Switching to Chronologue no longer changes the Gossamer prompt or its cache.
 - **Progress bars follow real runs.** Inquiry's estimate calibrates from your most recent run, and Gossamer's scales your last run's time to the length of the manuscript.
+- **Gossamer's cache note matches your selection.** The "Recent Gossamer cache" countdown appears only for the book and model you have selected.
+- **Curly apostrophes match.** Gossamer pairs scores with beat names whether the names use straight or curly apostrophes.

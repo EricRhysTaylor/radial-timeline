@@ -73,9 +73,17 @@ The tab title bar includes a book selector. Choose an individual Book Manager pr
 
 See [Narrative Mode](Narrative-Mode#book-and-saga-scope) for Saga behavior and limits.
 
+### In a narrow pane
+
+The title bar fits the pane you give it. When the right side needs room, the mode buttons slide left to make it. In a narrower pane the command, print, bug, and settings icons fold into one menu button, then the search field and book selector get shorter. Only in the narrowest panes do the inactive modes shrink to their number, such as **1 2 Narrative 3 4**.
+
+## Getting Help
+
+**GET HELP** in the corner of the timeline opens the Community help page: how-to answers, the Guide, private requests to the Radial Timeline team, and known issues, all in one place.
+
 ## Bug Reports
 
-The title bar bug icon opens the built-in bug report workflow. You can describe the issue, capture or attach a screenshot, paste an image from the clipboard, and send the report to GitHub. If you do not have a GitHub account, use the email fallback from the same modal.
+The title bar bug icon opens the built-in bug report workflow. You can describe the issue, capture or attach a screenshot, and paste an image from the clipboard. **Report a bug** opens the GitHub bug form with your plugin version, Obsidian version, platform, and current view already filled in. If you do not have a GitHub account, use the email option in the same dialog.
 
 ## Writing Session Control
 
@@ -84,6 +92,7 @@ The title bar also includes the compact count/session button used for Sessions.
 *   Click it to open the **Writing Session** panel.
 *   Start an open-ended session or a countdown sprint.
 *   Pause, resume, save, stop, or discard the current session from the panel.
+*   If you have [Desk Lamps](Desk-Lamps), tick the friends who should see this session under **Desk Lamps** before you press **Begin Session**. While you write, the panel shows who your lamp is lit for.
 *   Use the settings icon in that panel to jump straight to **Settings → Core → Sessions**.
 
 <div style="text-align: center; margin: 20px 0;">
@@ -93,7 +102,7 @@ The title bar also includes the compact count/session button used for Sessions.
 
 ## Community Mailbox
 
-On a vault connected to the Community, a **Mailbox** button (a mail icon and the word Mailbox) sits just right of the writing-session control. It works like your account menu on the Community website, in the same colours:
+On a vault connected to the Community, at any sharing level (Private included), a **Mailbox** button (a mail icon and the word Mailbox) sits just right of the writing-session control. It works like your account menu on the Community website, in the same colours:
 
 *   **A gold number** counts conversations with new replies (your requests the team has answered, plus your questions someone has replied to) and [Desk Lamp](Desk-Lamps) invites waiting for you.
 *   **Click it** to open a menu like the website's: **Requests**, **New replies** (while there are some; it opens your newest question with a reply), and **Desk Lamp invites** (while some wait; it opens My Share's Desk Lamps section), each with its own count. Pick one to read or answer it on the Community; that clears its number the next time the plugin checks.
@@ -105,7 +114,7 @@ The Mailbox does not appear on a vault that is not connected. To hide it on a co
 <a name="desk-lamps"></a>
 ## Desk Lamps
 
-Once you have a Desk Lamp or an invite waiting, a lamp sits just right of the Mailbox. Its number counts the friends at their desks, and clicking it lists each one with their city, the kind of writing, and how long they've been at it. See [Desk Lamps](Desk-Lamps) for adding friends and lighting your own lamp for a session.
+Once you have a Desk Lamp or an invite waiting, a ceiling-lamp icon sits just right of the Mailbox. Its number counts the friends at their desks, and clicking it lists each one with their city, the kind of writing, and how long they've been at it. See [Desk Lamps](Desk-Lamps) for adding friends and lighting your own lamp for a session.
 
 ## Timeline Legend
 

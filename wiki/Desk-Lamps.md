@@ -6,17 +6,17 @@ It's deliberately small. Both of you agree before anything is visible, every ses
 
 Desk Lamps are managed on the Community website.
 
-1.  Open a writer's page on the Community and click the lamp icon beside **Follow** (its tooltip reads **Add to Desk Lamps**). They receive an invite.
+1.  Open a writer's page on the Community and click the lamp icon to the right of **Follow** (its tooltip reads **Add to Desk Lamps**; each state's tooltip says what a click does). They receive an invite.
 2.  The invite counts in their **Mailbox**, in the plugin and on the website, under **Desk Lamp invites**. They accept it under **My Share → Desk Lamps** or on your page. Before accepting, they see exactly what a Desk Lamp can see.
 3.  Once accepted, the relationship works both ways, and each of you still decides per session whether to share.
 
-**My Share → Desk Lamps** lists invites you've received, your Desk Lamps, and invites you've sent. Removing a Desk Lamp with the lamp icon on their page asks you to confirm first. Declining, withdrawing, and removing are silent: nobody is notified.
+**My Share → Desk Lamps** lists invites you've received, your Desk Lamps, and invites you've sent. While an invite waits for you, the section's border glows gold, and **Desk Lamp invites** in the Mailbox opens straight to it. Removing a Desk Lamp with the lamp icon on their page asks you to confirm first. Declining, withdrawing, and removing are silent: nobody is notified.
 
 ## The lamp in your title bar
 
-On a vault connected to the Community, a lamp sits right of the **Mailbox** in the Radial Timeline title bar once you have at least one Desk Lamp or an invite waiting. Its number counts the friends at their desks right now. A friend lighting a lamp changes the count and nothing else: no notice, no sound.
+On a vault connected to the Community, a ceiling-lamp icon sits right of the **Mailbox** in the Radial Timeline title bar once you have at least one Desk Lamp or an invite waiting. Its number counts the friends at their desks right now. A friend lighting a lamp changes the count and nothing else: no notice, no sound.
 
-Click the lamp to see the list. Each row shows a friend's name, their city from their Community profile (if they've set one), the kind of writing (drafting, revising, editing, or planning), and how long they've been at it, or **on a break**. The freshest change is on top, so someone who just started rises to the top. When a friend turns their lamp off, a short-lived row says so, such as "lamp off after 2 h 10 min", and disappears after half an hour. Below the friends, the menu shows whether your own lamp is on, any invites waiting for you (such as "1 Desk Lamp invite waiting", which opens My Share to accept it), and **Manage Desk Lamps…**, which opens My Share.
+Click the lamp to see the list. Each row shows a friend's name, their city from their Community profile (if they've set one), the kind of writing (drafting, revising, editing, or planning), and how long they've been at it, or **on a break**. The freshest change is on top, so someone who just started rises to the top. When a friend turns their lamp off, a short-lived row says so, such as "lamp off after 2 h 10 min", and disappears after half an hour. Below the friends, the menu shows whether your own lamp is on, any invites waiting for you (such as "1 Desk Lamp invite waiting"), and **Manage Desk Lamps…**. Both open My Share's Desk Lamps section.
 
 Looking at the list never lights your own lamp.
 

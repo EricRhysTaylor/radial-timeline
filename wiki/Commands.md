@@ -36,14 +36,17 @@ These are the main command-palette entries.
 19. **[Scene pulse analysis (manuscript order)](#scene-pulse-analysis-manuscript-order)**
 20. **[Timeline share export](#timeline-share-export)**
 
+> **Reassign two hotkeys.** In release 7.4.0, **Open** and **Timeline date scaffold** got new command IDs. If you had assigned a hotkey to either, assign it again in **Settings → Hotkeys**.
+
 ## Conditional Visibility
 
 Some commands are hidden until their required feature is enabled. Others remain visible but stop with a setup message if prerequisites are missing:
 
 *   **Scene pulse analysis**, **Summary scene refresh**, and **Gossamer analysis** appear only when **AI LLM features** are enabled in [Settings → AI](Settings-AI).
-*   **Open inquiry** stays listed either way, but the same AI-enabled gate applies: enable AI in Settings → AI to open the view and show its ribbon icon.
+*   **Open inquiry** stays listed and opens with AI off, so you can read saved sessions, including the demo vaults', without an API key. Running a new question needs AI turned on and a provider. See [Inquiry](Inquiry).
 *   **Gossamer analysis** also needs an active beat system, story beats, and scene content. To score by hand without AI, use **[Gossamer score manager](#gossamer-score-manager)**.
 *   **Runtime estimator** is a **Pro** workflow. Runtime configuration lives in [Settings → Core](Settings-Core#runtime-estimation).
+*   With AI off, the **Timeline date audit** AI scan and the runtime estimator's AI mode tell you AI is off instead of running.
 *   **Planetary time calculator** is visible, but it needs at least one configured planetary profile before it can produce a conversion.
 *   **Inquiry omnibus** and **Manuscript onboarding** are undergoing testing and are not released yet. They do not appear in release builds.
 

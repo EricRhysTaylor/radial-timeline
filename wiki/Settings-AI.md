@@ -25,6 +25,12 @@ This is the main routing section for cloud and local AI.
 
 *   **AI prompt role & context template**: Controls the shared editorial framing used across AI features.
 *   **Manage context templates**: Use the gear button to edit templates and switch the active one.
+*   **Summary scene refresh** ignores the role template, so an editor persona never colors a scene's summary; summaries stay factual.
+
+## Prompt Caching And Re-runs
+
+*   **Caching.** Inquiry sends your manuscript once per session; the second and later questions read it from the provider's prompt cache, which costs less, on Anthropic, OpenAI, and Google models. One-off calls such as Pulse don't pay to write a cache. Google (Gemini) caches survive a plugin reload instead of being created again.
+*   **Re-runs ask again.** Running Summary scene refresh, Pulse, or a Gossamer score again, even within two minutes, sends a new request instead of returning the previous answer. The Gossamer confirmation notes when that signal was already scored on the same unchanged manuscript in this session, so you can cancel an accidental repeat.
 
 ## API Keys
 

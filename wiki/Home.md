@@ -87,5 +87,7 @@ Radial Timeline™ captures and visualizes all 4 critical timelines:
 
 *   **[Getting Started](Getting-Started)** — fresh vault setup, existing vault setup, migrating from Scrivener, and the core workflow.
 *   **[Book Designer](Book-Designer)** — instantly generate a manuscript set with acts, subplots, and beats.
+*   **[Demo vaults](Sample-Vault)** — explore *Pride & Prejudice*, [*The Odyssey*](Odyssey-Demo-Vault), and *Sherlock Holmes*, fully analyzed, with no API key needed.
 *   **[Radial Timeline View](Radial-Timeline-View)** — the four modes at a glance: Progress, Narrative, Chronologue, Gossamer.
+*   **[Community](Settings-Community)** and **[Desk Lamps](Desk-Lamps)** — share your progress with other writers, and see when your writing friends are at their desks.
 *   **[How to](How-to)** — task recipes for reordering scenes, managing subplots, search, and rotation.

@@ -29,6 +29,8 @@ Pulse works with all supported AI providers:
 
 Local LLM setup is documented under [Settings → AI → Local LLM](Settings-AI#local-llm). Local runs are validated before analysis starts and results are written with the same safeguards as hosted providers.
 
+When a Pulse batch finishes, its card shows the batch's total cost. Cache use and per-scene costs are under **AI prompt & context**.
+
 For the command-specific batch workflows, see:
 
 *   [Scene pulse analysis (manuscript order)](Commands#scene-pulse-analysis-manuscript-order)

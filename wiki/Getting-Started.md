@@ -33,7 +33,7 @@ Choose a vault layout and stick with it: a single-book vault, a single vault wit
 
 **3. Choose a beat system (optional).** Pick from the built-in systems (**Save the Cat**, **Hero's Journey**, **Classic Dramatic Structure**, plus podcast, video, documentary, romance, and thriller arcs) or build a **Custom** system in [Settings → Core → Story beats system](Settings-Core#story-beats-system). Use **Create** to generate beat notes; **Merge** to realign existing files after changes.
 
-**4. Enable AI (optional).** New installs ship with AI off. Turn it on under **Settings → AI → Enable AI LLM features** — this is required for [Inquiry](Inquiry), [AI Pulse Triplet Analysis](AI-Pulse-Analysis), Gossamer AI analysis, and Summary scene refresh. Configure a cloud provider key or a [Local LLM](Settings-AI#local-llm), then check model readiness before running analysis.
+**4. Enable AI (optional).** New installs ship with AI off. Turn it on under **Settings → AI → Enable AI LLM features** — this is required to run new [Inquiry](Inquiry) questions, [AI Pulse Triplet Analysis](AI-Pulse-Analysis), Gossamer AI analysis, and Summary scene refresh. Inquiry itself opens with AI off, so you can read saved sessions without an API key. Configure a cloud provider key or a [Local LLM](Settings-AI#local-llm), then check model readiness before running analysis.
 
 ---
 

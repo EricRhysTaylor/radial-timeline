@@ -76,3 +76,7 @@ Go to **Settings → Advanced → Timeline Display** and turn off **Show scene t
 Scene Time only affects the cue bar and the elapsed total in the title bar. It does not change Timeline Date Audit, Timeline Date Scaffold, or your writing-session timer.
 
 Your decisions are saved per scene in the `Radial Timeline/Scene Time` folder of your vault. Your notes and their properties are never edited. If you rewrite a paragraph, review its time phrase again.
+
+## Languages
+
+The Scene Time dialogs, notices, tooltips, and title-bar badge follow your Obsidian language in German, Japanese, Korean, and Chinese, as well as English. Durations are still typed in English, such as `10 hours` or `30 min`.

@@ -46,6 +46,8 @@ At Level 3, the hourly rollup behind the Community's **Working Clock** (the acti
 
 Connecting alone does not publish anything. It links this vault to your Community profile and sends each of your Book Manager books to your **private** My Share list as a project shell: the book's public label (or its working title if you have not set one), logline, stage target dates, and order. Shells stay private until you switch a project on from My Share; the plugin never changes that. Choosing **Private** under **What you share** stops this sync.
 
+The connected book follows My Share: choose a different book with **Change book** on My Share, and the next book sync picks it up. The Community Share preview and the connected book in settings both show the book you chose.
+
 ## What You Share
 
 Sharing is controlled by a single **What you share** level:

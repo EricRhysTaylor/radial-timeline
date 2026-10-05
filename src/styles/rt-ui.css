@@ -10689,3 +10689,19 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Finished demo chooser: token scope is provided by ErtModal. */
+.ert-ui.ert-scope--modal .ert-demo-library__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  gap: var(--ert-gap-md);
+}
+
+.ert-ui.ert-scope--modal .ert-demo-library__card h3,
+.ert-ui.ert-scope--modal .ert-demo-library__card p {
+  margin: 0;
+}
+
+.ert-ui.ert-scope--modal .ert-demo-library__icon {
+  color: var(--text-accent);
+}

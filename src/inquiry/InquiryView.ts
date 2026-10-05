@@ -3080,6 +3080,12 @@ export class InquiryView extends ItemView {
         this.refreshUI({ reason: 'book settings changed' });
     }
 
+    /** Refresh saved project briefings after a demo is added; does not invoke AI. */
+    async onDemoProjectsChanged(): Promise<void> {
+        await this.sessionStore.hydrate();
+        this.refreshUI({ reason: 'demo projects changed' });
+    }
+
     /** Called externally when material source/class settings change. Debounced to avoid flicker. */
     onSourcesSettingsChanged(): void {
         if (this.sourcesRefreshTimer !== undefined) {

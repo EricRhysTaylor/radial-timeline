@@ -35,7 +35,7 @@ function makeFakeAdapter(initialSessions: InquirySession[] | null) {
     return {
         writes,
         adapter: {
-            exists: async (p: string) => raw !== null || p.endsWith('inquiry'),
+            exists: async (p: string) => p !== 'Demo Projects' && (raw !== null || p.endsWith('inquiry')),
             read: async () => raw ?? '',
             write: async (_p: string, data: string) => {
                 writes.push(JSON.parse(data).sessions as InquirySession[]);

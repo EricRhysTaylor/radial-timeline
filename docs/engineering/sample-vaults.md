@@ -8,6 +8,27 @@ A public ZIP contains manuscript notes, author-facing scene/beat metadata, chara
 
 The Inquiry sessions sidecar carries saved results and the active book identity. `InquiryArtifactStore` reads it; `WelcomeScreen` detects the sample, and the explicit **Open the sample vault** action configures the book. Existing user settings are not silently replaced on plugin load. Single-book samples need no additional manifest.
 
+## In-vault demo library
+
+The welcome hero **Explore a finished book** opens the demo chooser directly. A detected sample retains its open action and a secondary **Browse demo projects** action. Settings → Demo vaults opens the same chooser for nonempty vaults. Manual ZIP downloads remain direct links; the website is optional.
+
+The shared catalog in `src/settings/bonusVaults.ts` owns availability, manuscript folders, counted download URLs, archive roots, exact byte sizes and SHA-256 digests. Only reviewed public editions are importable. P&P and Odyssey are available; Sherlock stays disabled until its reviewed candidate has a verified public download. Publishing a revised ZIP requires updating the pinned catalog digest and size.
+
+**Add demo to this vault** validates and unpacks the complete archive before writes. It rejects unsafe paths, unsupported files, oversized archives, duplicate manuscript IDs, missing books and invalid saved evidence. Files are written into a uniquely owned staging folder under `Radial Timeline/Demo Imports/`, then the complete folder is moved to:
+
+```text
+Demo Projects/
+  Pride & Prejudice/
+  The Odyssey/
+  Sherlock Holmes/
+```
+
+The importer preserves manuscript IDs, analyses, quotes and binary assets while rebasing internal wiki links, saved evidence paths, brief paths and Inquiry book keys. Each imported project carries a versioned `Sample Vault Config.md` listing its rebased book folders. Existing destinations are never overwritten: a valid installed project opens again; an unrelated or incomplete folder shows an explanation. Failed staging writes are removed; a completed project with interrupted setup remains available for **Open demo** to retry. No credentials, plugin binaries or packaged `.obsidian` settings are imported.
+
+Book registration appends missing profiles without replacing existing profiles or choices. Added demo books are excluded from an existing author's saga. The opening action selects the first demo book and waits for Obsidian metadata before opening the timeline. AI permission, provider configuration and existing Inquiry source choices remain unchanged. An unconfigured Inquiry source setup receives the normal scene/outline defaults.
+
+Each project's curated Inquiry artifact stays inside its project. `InquiryArtifactStore` reads those artifacts alongside the author's root store and marks their runtime origin. Root persistence excludes demo sessions, and the author's 30-session cap does not evict curated demo answers. Reloading reads the project files again, so a removed project does not remain as cached demo history. New AI results remain authored sessions in the root store. Imported provider-cache windows are cleared: saved analysis is not evidence of a reusable cache in the recipient's account.
+
 ## Multi-book collections
 
 Sherlock's four novels use a reader-visible `Sample Vault Config.md` with this frontmatter:
@@ -52,7 +73,8 @@ Test the exact extracted ZIP in a fresh profile: sample detection, book initiali
 
 | Sample | Included analysis | Release |
 |---|---|---|
-| Pride & Prejudice | 61 chapters with Pulse, 15 beats with four reviewed October Gossamer signals, 3 saved Inquiry sessions | October 2, 2026 content refresh; direct free download |
+| Pride & Prejudice | 61 chapters with Pulse, 15 beats with four reviewed October Gossamer signals, 3 saved Inquiry sessions | Published direct download; catalog pins the live ZIP |
+| The Odyssey | 89 scenes with Pulse, 12 beats with four Gossamer signals, 3 saved Inquiry sessions | October 3, 2026; published direct download |
 
 Older Gossamer runs remain explicitly identified as history in the guide. The updated readings are the October 2 Claude Opus 5.5 runs. No blanket claim is made that every historical analysis used that model.
 

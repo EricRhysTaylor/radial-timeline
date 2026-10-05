@@ -1,10 +1,10 @@
 import { setIcon } from 'obsidian';
 import type { App } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
+import { DemoLibraryModal } from '../../modals/DemoLibraryModal';
 import { ERT_CLASSES } from '../../ui/classes';
 import {
     BONUS_VAULTS,
-    DEMO_LIBRARY_URL,
     type BonusVaultDef
 } from '../bonusVaults';
 
@@ -74,8 +74,8 @@ export function renderBonusVaultsSection({
         cls: ERT_CLASSES.SECTION_DESC,
         text:
             'Explore complete worked examples with saved analysis. Start with the free ' +
-            'Pride & Prejudice vault; no API key is needed to browse its results. ' +
-            'Downloads and opening instructions are on the website.'
+            'Pride & Prejudice or Odyssey project; no API key is needed to browse saved results. ' +
+            'Add a demo directly to this vault, or download a separate vault as a ZIP.'
     });
 
     // ── Card grid ────────────────────────────────────────────
@@ -129,11 +129,11 @@ function renderCard(
             attr: { type: 'button' }
         });
         const btnIcon = btn.createSpan({ cls: 'ert-bonus-card__btn-icon' });
-        setIcon(btnIcon, 'external-link');
-        btn.createSpan({ text: 'View demo & download' });
-        btn.setAttr('aria-label', `View ${vault.title} demo and download instructions`);
+        setIcon(btnIcon, 'folder-plus');
+        btn.createSpan({ text: 'Explore demo' });
+        btn.setAttr('aria-label', `Explore ${vault.title} demo`);
         plugin.registerDomEvent(btn, 'click', () => {
-            window.open(DEMO_LIBRARY_URL, '_blank', 'noopener,noreferrer');
+            new DemoLibraryModal(plugin.app, plugin).open();
         });
     }
 }

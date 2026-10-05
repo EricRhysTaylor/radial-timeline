@@ -17,7 +17,7 @@ export const INQUIRY_ARTIFACT_SCHEMA_VERSION = 1 as const;
 /**
  * Durable subset of an InquirySession that is persisted.
  *
- * Only `lastAccessed` is transient — it is recomputed in memory and re-seeded
+ * `lastAccessed` and the runtime demo origin are transient — it is recomputed in memory and re-seeded
  * from `createdAt` on hydration. The provider-cache fields (window expiry,
  * reuse state, provider cache status, reuse fingerprint, observed ratios) ARE
  * persisted so the armed/warm cache state survives an Obsidian restart.
@@ -29,7 +29,7 @@ export const INQUIRY_ARTIFACT_SCHEMA_VERSION = 1 as const;
  * discards it once it is in the past, so a stale window loaded after a long
  * downtime is harmless.
  */
-export type PersistedInquirySession = Omit<InquirySession, 'lastAccessed'>;
+export type PersistedInquirySession = Omit<InquirySession, 'lastAccessed' | 'demoSourcePath'>;
 
 /**
  * Identity of the book this vault ships, stamped into the sidecar on save from
@@ -63,11 +63,12 @@ export function cleanVaultIdentity(vault?: InquiryVaultIdentity): InquiryVaultId
 }
 
 function stripTransient(session: InquirySession): PersistedInquirySession {
-    // Only `lastAccessed` is transient; the provider-cache fields are durable
+    // `lastAccessed` and the runtime demo origin are transient; the provider-cache fields are durable
     // so the armed/warm state is restored after a restart (stale windows are
     // filtered by the `> now` checks at every read site).
-    const durable: PersistedInquirySession & { lastAccessed?: number } = { ...session };
+    const durable: PersistedInquirySession & { lastAccessed?: number; demoSourcePath?: string } = { ...session };
     delete durable.lastAccessed;
+    delete durable.demoSourcePath;
     return durable;
 }
 

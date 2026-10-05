@@ -39,6 +39,7 @@ export class InquirySessionStore {
      * couldn't read is never overwritten with an empty set.
      */
     async hydrate(): Promise<void> {
+        this.hydrated = false;
         let sidecarSessions: InquirySession[];
         try {
             sidecarSessions = await readInquirySessionsFromVault(this.plugin.app);
@@ -55,6 +56,7 @@ export class InquirySessionStore {
         }
         // In-memory (potentially newer, unsaved) work wins on conflict.
         for (const session of this.cache.sessions) {
+            if (session.demoSourcePath) continue;
             byKey.set(session.key, session);
         }
         this.cache.sessions = Array.from(byKey.values());
@@ -281,9 +283,10 @@ export class InquirySessionStore {
     private prune(): void {
         const max = DEFAULT_INQUIRY_HISTORY_LIMIT;
         this.cache.max = max;
-        if (this.cache.sessions.length <= max) return;
-        this.cache.sessions.sort((a, b) => b.lastAccessed - a.lastAccessed);
-        this.cache.sessions = this.cache.sessions.slice(0, max);
+        const authored = this.cache.sessions.filter(session => !session.demoSourcePath);
+        const demos = this.cache.sessions.filter(session => session.demoSourcePath);
+        authored.sort((a, b) => b.lastAccessed - a.lastAccessed);
+        this.cache.sessions = [...authored.slice(0, max), ...demos];
     }
 
     private persist(): void {

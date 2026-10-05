@@ -29,6 +29,15 @@ function vaultIo(app: App): DataAdapter {
     return app.vault.adapter; // SAFE: frequently-rewritten .json artifact; adapter avoids index races
 }
 
+/** Curated demo briefings stay with their project, outside the author's history cap. */
+async function importedDemoSessionPaths(app: App): Promise<string[]> {
+    if (!(await vaultIo(app).exists('Demo Projects'))) return [];
+    return app.vault.getFiles()
+        .map(file => file.path)
+        .filter(path => /^Demo Projects\/[^/]+\/Radial Timeline\/Inquiry\/Sessions\/sessions\.json$/.test(path))
+        .sort();
+}
+
 export async function readInquirySessionsFromVault(app: App): Promise<InquirySession[]> {
     const io = vaultIo(app);
     const newPath = normalizePath(INQUIRY_SIDECAR_PATH);
@@ -39,22 +48,24 @@ export async function readInquirySessionsFromVault(app: App): Promise<InquirySes
     const path = (await io.exists(newPath))
         ? newPath
         : (await io.exists(legacyPath)) ? legacyPath : null;
-    if (!path) return [];
-    const raw = await io.read(path);
-    const sessions = parseSessionArtifact(raw);
+    const sessions = path ? parseSessionArtifact(await io.read(path)) : [];
     if (sessions === null) {
-        console.error(
-            `[RadialTimeline] Inquiry sidecar at ${path} is corrupt or an unknown schema version; ignoring it.`
-        );
-        return [];
+        throw new Error(`Inquiry sidecar at ${path} is corrupt or an unknown schema version.`);
     }
-    return sessions;
+    const combined: InquirySession[] = sessions.map(session => ({ ...session, demoSourcePath: undefined }));
+    for (const demoPath of await importedDemoSessionPaths(app)) {
+        const demoSessions = parseSessionArtifact(await io.read(demoPath));
+        if (!demoSessions) throw new Error(`Invalid demo Inquiry artifact: ${demoPath}`);
+        combined.push(...demoSessions.map(session => ({ ...session, demoSourcePath: demoPath })));
+    }
+    return combined;
 }
 
 export async function hasInquirySessionSidecarInVault(app: App): Promise<boolean> {
     const io = vaultIo(app);
     return (await io.exists(normalizePath(INQUIRY_SIDECAR_PATH)))
-        || io.exists(normalizePath(LEGACY_INQUIRY_SIDECAR_PATH));
+        || (await io.exists(normalizePath(LEGACY_INQUIRY_SIDECAR_PATH)))
+        || (await importedDemoSessionPaths(app)).length > 0;
 }
 
 export async function writeInquirySessionsToVault(
@@ -67,7 +78,7 @@ export async function writeInquirySessionsToVault(
     if (!(await io.exists(dir))) {
         await io.mkdir(dir);
     }
-    const artifact = serializeSessionsToArtifact(sessions, Date.now(), vault);
+    const artifact = serializeSessionsToArtifact(sessions.filter(session => !session.demoSourcePath), Date.now(), vault);
     await io.write(normalizePath(INQUIRY_SIDECAR_PATH), JSON.stringify(artifact, null, 2));
 }
 

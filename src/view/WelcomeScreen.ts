@@ -12,12 +12,9 @@ import { OnboardingModal } from '../modals/OnboardingModal';
 import { RT_LOGO_PATHS, RT_LOGO_VIEWBOX } from '../branding/rtLogo';
 import { WELCOME_AUTHOR_IMAGE } from '../branding/welcomeAuthorImage';
 import { hasInquirySessionSidecarInVault, readInquirySidecarVaultIdentity } from '../inquiry/InquiryArtifactStore';
-import {
-    normalizeClassContribution,
-    normalizeInquirySources
-} from '../inquiry/services/InquiryCorpusService';
+import { mergeSampleInquirySources } from '../inquiry/sampleInquirySources';
+import { DemoLibraryModal } from '../modals/DemoLibraryModal';
 import { markBookManagerAutoloadHighlight } from '../settings/bookManagerAutoloadHighlight';
-import type { InquiryClassConfig, InquirySourcesSettings } from '../types/settings';
 import {
     DEFAULT_BOOK_TITLE,
     deriveBookTitleFromSourcePath,
@@ -45,9 +42,9 @@ const WELCOME_COPY = {
             cta: 'Checking vault...'
         },
         sampleGet: {
-            title: 'Explore Pride & Prejudice',
-            desc: 'Explore all 61 chapters with saved Pulse analysis, four Gossamer signals, and three Inquiry sessions, no API key needed. Download the complete free demo vault.',
-            cta: 'Download the free demo vault'
+            title: 'Explore a finished book',
+            desc: 'Add a complete demo project to this vault. Explore the scenes, beats, Pulse, Gossamer, and saved Inquiry briefings. No API key needed.',
+            cta: 'Choose a demo project'
         },
         sampleOpen: {
             title: (name: string) => `${name} detected`,
@@ -86,8 +83,6 @@ const WELCOME_COPY = {
 // Functional links (wiki, issues, mail) stay direct.
 const WELCOME_URLS = {
     website: 'https://community.radialtimeline.com/go/rt-welcome-site',
-    // Downloads the Pride & Prejudice ZIP directly; the website is not required.
-    sampleVault: 'https://community.radialtimeline.com/go/rt-welcome-demo-download',
     wiki: 'https://github.com/EricRhysTaylor/radial-timeline/wiki',
     community: 'https://community.radialtimeline.com/go/rt-welcome-community',
     issues: 'https://github.com/EricRhysTaylor/radial-timeline/issues',
@@ -215,7 +210,7 @@ const buildCard = (parent: HTMLElement, plugin: RadialTimelinePlugin, spec: Card
     let activate = spec.onActivate;
     plugin.registerDomEvent(root, 'click', () => activate());
     plugin.registerDomEvent(root, 'keydown', (evt: KeyboardEvent) => {
-        if (evt.key === 'Enter' || evt.key === ' ') {
+        if (evt.target === root && (evt.key === 'Enter' || evt.key === ' ')) {
             evt.preventDefault();
             activate();
         }
@@ -223,23 +218,6 @@ const buildCard = (parent: HTMLElement, plugin: RadialTimelinePlugin, spec: Card
 
     return { root, title, desc, cta, setActivate: (fn) => { activate = fn; } };
 };
-
-const SAMPLE_INQUIRY_CORE_CLASSES: InquiryClassConfig[] = [
-    normalizeClassContribution({
-        className: 'scene',
-        enabled: true,
-        bookScope: 'full',
-        sagaScope: 'summary',
-        referenceScope: 'excluded'
-    }),
-    normalizeClassContribution({
-        className: 'outline',
-        enabled: true,
-        bookScope: 'full',
-        sagaScope: 'full',
-        referenceScope: 'excluded'
-    })
-];
 
 const displayNameToBookTitle = (displayName: string | undefined, bookFolder: string | undefined): string => {
     const cleaned = (displayName || '').replace(/\s+Sample\s+Vault\s*$/i, '').trim();
@@ -323,37 +301,6 @@ const ensureSampleBookProject = async (
     return registration.targetId;
 };
 
-const mergeSampleInquirySources = (raw?: InquirySourcesSettings): InquirySourcesSettings => {
-    const current = normalizeInquirySources(raw);
-    const classScope = new Set(current.classScope || []);
-    classScope.add('/');
-
-    const classesByName = new Map((current.classes || []).map(config => [config.className, config]));
-    for (const coreConfig of SAMPLE_INQUIRY_CORE_CLASSES) {
-        const existing = classesByName.get(coreConfig.className);
-        classesByName.set(
-            coreConfig.className,
-            existing
-                ? normalizeClassContribution({
-                    ...existing,
-                    enabled: true,
-                    bookScope: existing.bookScope === 'excluded' ? coreConfig.bookScope : existing.bookScope,
-                    sagaScope: existing.sagaScope === 'excluded' ? coreConfig.sagaScope : existing.sagaScope,
-                    referenceScope: 'excluded'
-                })
-                : coreConfig
-        );
-    }
-
-    return {
-        ...current,
-        preset: current.preset || 'default',
-        classScope: Array.from(classScope),
-        classes: Array.from(classesByName.values()),
-        lastScanAt: current.lastScanAt || new Date().toISOString()
-    };
-};
-
 const ensureSampleInquirySources = async (plugin: RadialTimelinePlugin): Promise<void> => {
     const nextSources = mergeSampleInquirySources(plugin.settings.inquirySources);
     plugin.settings.inquirySources = nextSources;
@@ -431,7 +378,7 @@ const hydrateSampleVaultCard = async (
         refs.title.setText(WELCOME_COPY.cards.sampleGet.title);
         refs.desc.setText(WELCOME_COPY.cards.sampleGet.desc);
         refs.cta.setText(WELCOME_COPY.cards.sampleGet.cta);
-        refs.setActivate(() => { window.open(WELCOME_URLS.sampleVault, '_blank'); });
+        refs.setActivate(() => { new DemoLibraryModal(plugin.app, plugin).open(); });
         return;
     }
 
@@ -529,7 +476,9 @@ export function renderWelcomeScreen({ container, plugin, refreshTimeline }: Welc
         title: WELCOME_COPY.cards.sampleChecking.title,
         desc: WELCOME_COPY.cards.sampleChecking.desc,
         ctaLabel: WELCOME_COPY.cards.sampleChecking.cta,
-        onActivate: () => undefined
+        onActivate: () => undefined,
+        secondaryLabel: 'Browse demo projects',
+        onSecondaryActivate: () => new DemoLibraryModal(plugin.app, plugin).open()
     });
     sampleRefs.root.addClass('rt-welcome-card-pending');
 

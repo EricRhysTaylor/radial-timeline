@@ -263,14 +263,7 @@ export function renderCompletionEstimatePreview(params: {
             pendingPreviewFetch = false;
             void renderCompletionPreview(true);
         };
-        const requestIdleCallback = (window as Window & {
-            requestIdleCallback?: (cb: () => void) => void;
-        }).requestIdleCallback;
-        if (requestIdleCallback) {
-            requestIdleCallback(run);
-        } else {
-            window.setTimeout(run, 0);
-        }
+        window.requestIdleCallback(run);
     };
 
     async function renderCompletionPreview(allowFetch: boolean): Promise<void> {

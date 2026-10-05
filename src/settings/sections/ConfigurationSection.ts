@@ -120,14 +120,7 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
             const fileCount = countContentLogFiles(plugin);
             contentChip.setCount(fileCount);
         };
-        const requestIdleCallback = (window as Window & {
-            requestIdleCallback?: (cb: () => void) => void;
-        }).requestIdleCallback;
-        if (requestIdleCallback) {
-            requestIdleCallback(runCount);
-        } else {
-            window.setTimeout(runCount, 0);
-        }
+        window.requestIdleCallback(runCount);
     };
     scheduleLogCount();
 

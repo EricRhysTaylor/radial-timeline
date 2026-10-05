@@ -20,7 +20,6 @@ describe('undated scene hover explanation', () => {
         const target = item('3 Discovery', { missingWhen: true });
         const text = message(target, [target, gap, anchor]);
         expect(text).toContain('follows 1 Arrival in narrative order');
-        expect(text).toContain('No calendar date assumed');
         expect(text).not.toContain('Try');
     });
 

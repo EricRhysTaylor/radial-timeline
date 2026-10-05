@@ -13,7 +13,7 @@ The Welcome screen offers these starting points:
 
 1.  **Set Book Project** — choose the manuscript folder that drives the timeline, exports, Inquiry scope, and Book Manager. The right first step for a fresh vault.
 2.  **Manuscript onboarding** *(in testing — not yet released)* — bring an existing draft in from a [Scrivener export, a Word document, or one big file](Onboard-Existing-Manuscript), with or without AI assistance.
-3.  **Explore a demo vault** — download the free, fully analyzed [Pride & Prejudice demo vault](Sample-Vault) with the Welcome screen's **Download the free demo vault** button. No API key needed to explore it.
+3.  **Explore a finished book** — add a free, fully analyzed demo such as [Pride & Prejudice](Sample-Vault) or [The Odyssey](Odyssey-Demo-Vault) to this vault from the demo chooser. No API key needed to explore it.
 4.  **Visit the website** — [radialtimeline.com](https://radialtimeline.com) for support docs and the [Community](Settings-Community), where you can share your writing journey at your own comfort level.
 
 > **Coming from Scrivener, Word, or another tool?** **[Manuscript onboarding](Onboard-Existing-Manuscript)** *(in testing — not yet released)* splits your draft into scene notes, fills the YAML across acts, and previews everything before anything is written. Scene order follows the leading number in each scene's filename and its `Act` field. See [Scene Properties (Core + Advanced)](YAML-Frontmatter) for the full schema.

@@ -24,7 +24,7 @@ Pro workflows appear throughout Radial Timeline in magenta.
 
 ## Demo vaults
 
-The **Demo vaults** section at the bottom of the PRO tab lists complete worked examples with saved analysis. The [Pride & Prejudice](Sample-Vault), [The Odyssey](Odyssey-Demo-Vault), and *Sherlock Holmes* demo vaults are free downloads: **View demo & download** opens the download page on radialtimeline.com. *The Faerie Queene* is marked **Coming soon**.
+The **Demo vaults** section at the bottom of the PRO tab lists complete worked examples with saved analysis. [Pride & Prejudice](Sample-Vault) and [The Odyssey](Odyssey-Demo-Vault) are free: **Explore demo** opens the demo chooser, where **Add demo to this vault** adds one to a **Demo Projects** folder and **Download ZIP** downloads it as a separate vault. *Sherlock Holmes* is a free download from its [demo vault page](https://www.radialtimeline.com/resources/sherlock) and is listed in the chooser as **Coming soon**, as is *The Faerie Queene*.
 
 ---
 

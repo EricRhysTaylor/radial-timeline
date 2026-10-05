@@ -1,19 +1,19 @@
 ## Radial Timeline 7.4.0
 
-The Odyssey and Sherlock Holmes join Pride & Prejudice as free demo vaults, Desk Lamps show when your writing friends are at their desks, and Inquiry's corpus reads at a glance.
+Free demo books now open inside your own vault, The Odyssey and Sherlock Holmes join Pride & Prejudice, Desk Lamps show when your writing friends are at their desks, and Inquiry's corpus reads at a glance.
 
 ### Demo vaults
 
+- **Demo books open inside your vault.** **Explore a finished book** on the Welcome screen, or **Explore demo** under **Settings → PRO → Demo vaults**, opens the demo chooser. **Add demo to this vault** downloads the demo, checks it, adds it to a **Demo Projects** folder, and opens it on the timeline, with its saved Pulse, Gossamer, and Inquiry results readable without an API key. Nothing in your vault is replaced: the demo's books join Book Manager beside yours, and your AI settings stay as they are. To keep a demo apart instead, **Download ZIP** on the same card downloads it as a separate vault.
 - **The Odyssey joins the library.** A new free demo vault maps Homer's epic, in Samuel Butler's prose translation, as 89 scenes across all 24 books. Every scene has a reviewed summary and a saved Pulse analysis, the 12 Hero's Journey beats carry all four Gossamer signals, and three saved Inquiry answers explore setup, pressure, and payoff with 79 quotes linked to their scenes. Four motif rings sit beside the main plot, and in Chronologue, Ulysses's own account of his wanderings moves back years, ahead of scene 1.
 
 <img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/5a04ecad/wiki/images/odyssey-narrative.webp" alt="The Odyssey in Narrative mode: 89 scenes on the outer ring and four motif rings inside it" width="600">
 
 <img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/5a04ecad/wiki/images/odyssey-chronologue.webp" alt="The Odyssey in Chronologue mode: the scenes of Ulysses's wanderings, numbered 28 to 45, sit at the start of the timeline" width="600">
 
-- **Sherlock Holmes: four novels.** *A Study in Scarlet*, *The Sign of the Four*, *The Hound of the Baskervilles*, and *The Valley of Fear*, 56 chapters in all, each novel in its own manuscript folder. Every novel has three acts and its own **Mystery and Revelation** beats, 41 across the four, following the investigative turn, the concealed history, the confrontation, and the explanation.
+- **Sherlock Holmes: four novels.** *A Study in Scarlet*, *The Sign of the Four*, *The Hound of the Baskervilles*, and *The Valley of Fear*, 56 chapters in all, each novel in its own manuscript folder. Every novel has three acts and its own **Mystery and Revelation** beats, 41 across the four, following the investigative turn, the concealed history, the confrontation, and the explanation. Download it from the [Sherlock Holmes demo vault page](https://www.radialtimeline.com/resources/sherlock); the in-vault chooser lists it as **Coming soon**.
 - **Multi-book demos open as a collection.** Opening a demo vault with several books, such as the four Sherlock Holmes novels, adds each one to Book Manager without changing the books you already have, and each saved Inquiry answer stays with its own book.
-- **Pride & Prejudice from the Welcome screen.** The Welcome screen now opens with **Explore Pride & Prejudice**: all 61 chapters with saved Pulse analysis, four Gossamer signals, and three Inquiry sessions. **Download the free demo vault** downloads it straight from the Welcome screen.
-- **Demo vaults in Settings → PRO.** The section formerly called Bonus vaults is now the demo library. **View demo & download** on Pride & Prejudice, The Odyssey, and Sherlock Holmes opens the download page on the website; *The Faerie Queene* is marked **Coming soon**. Each download holds the books and their notes only, and you can explore the saved analysis without an API key.
+- **Demo vaults in Settings → PRO.** The section formerly called Bonus vaults is now **Demo vaults**, with *The Faerie Queene* listed as **Coming soon**.
 
 See [Demo Vault: The Odyssey](https://github.com/EricRhysTaylor/radial-timeline/wiki/Odyssey-Demo-Vault) and [Demo Vault: Pride & Prejudice](https://github.com/EricRhysTaylor/radial-timeline/wiki/Sample-Vault) in the wiki.
 
@@ -33,7 +33,7 @@ See [Desk Lamps](https://github.com/EricRhysTaylor/radial-timeline/wiki/Desk-Lam
 <img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/5a04ecad/wiki/images/inquiry-corpus-pages.webp" alt="The corpus strip for The Odyssey beside its legend: green filled pages for full scenes, faded red pages for excluded scenes, and blue outlined pages with a corner X for summary scenes with thin summaries" width="440">
 
 - **Inquiry opens with AI off.** The Inquiry view and its ribbon icon are there whether or not AI is turned on, so you can read saved sessions, including the demo vaults', without an API key. Running a new question needs AI turned on and a provider.
-- **Inquiry follows your book.** Switching books on the timeline switches Inquiry to the same book. A question that is already running keeps its material until it finishes.
+- **Inquiry follows your book.** Switching books on the timeline switches Inquiry, and its tab title, to the same book. A question that is already running keeps its material until it finishes.
 - **Saved questions read clearly in demo vaults.** Each saved question sits on a solid disc, so its number stays legible against the zone colors.
 
 See [Reading the corpus](https://github.com/EricRhysTaylor/radial-timeline/wiki/Inquiry#corpus-pages) in the wiki.
@@ -50,6 +50,7 @@ See [Reading the corpus](https://github.com/EricRhysTaylor/radial-timeline/wiki/
 
 - **Help lives in one place.** **GET HELP** in the corner of the timeline opens the Community help page, home to how-to answers, the Guide, private requests, and known issues. The Radial Timeline View title bar keeps a calmer, quieter layout.
 - **The Welcome screen links to the Community**, where writers share setups and answer each other's questions.
+- **Feedback goes to Community Help.** The Welcome screen's feedback link opens the Community help page. Without a Community account, use the contact form on the website, linked beside it.
 - **Bug reports land on the right form.** **Report a bug** opens the new GitHub bug form with your plugin version, Obsidian version, platform, and view already filled in. The email route works as before.
 
 ### Timeline view

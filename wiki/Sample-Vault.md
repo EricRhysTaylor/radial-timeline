@@ -2,10 +2,16 @@ A free, fully analyzed demo vault built around Jane Austen's *Pride & Prejudice*
 
 ## How to get it
 
-*   On the plugin's Welcome screen, click **Download the free demo vault**. The download starts right away.
-*   Or open the [demo vault page](https://www.radialtimeline.com/resources/free) on radialtimeline.com, also linked from **View demo & download** under **Settings → PRO → Demo vaults**, and follow the steps there.
+### Inside your own vault
 
-## How to install it
+1.  Click **Explore a finished book** on the Welcome screen, or **Explore demo** under **Settings → PRO → Demo vaults**.
+2.  In the demo chooser, click **Add demo to this vault** on Pride & Prejudice.
+
+Radial Timeline downloads the demo, checks it, adds it to a **Demo Projects** folder, and opens it on the timeline. Nothing in your vault is replaced: the book joins Book Manager beside yours, and your AI settings stay as they are. If the folder is already there, the card shows **Open demo** instead.
+
+### As a separate vault
+
+Click **Download ZIP** on the same card in the demo chooser, or download it from the [Pride & Prejudice demo vault page](https://www.radialtimeline.com/resources/pride) on radialtimeline.com.
 
 1.  Unzip the download. You'll get a folder named **Pride & Prejudice Demo Vault**.
 2.  In Obsidian, choose **Open another vault → Open folder as vault** and select that folder.
@@ -30,6 +36,6 @@ The download holds the book and its notes only, with no Obsidian settings or plu
 
 ## More demo vaults
 
-[The Odyssey](Odyssey-Demo-Vault) and *Sherlock Holmes* are free demo vaults too, downloaded the same way from **Settings → PRO → Demo vaults**. *Sherlock Holmes* collects four novels, *A Study in Scarlet*, *The Sign of the Four*, *The Hound of the Baskervilles*, and *The Valley of Fear*: 56 chapters, each novel in its own manuscript folder with three acts and its own **Mystery and Revelation** beats. *The Faerie Queene* is listed there as **Coming soon**.
+[The Odyssey](Odyssey-Demo-Vault) is a free demo too, added the same way from the demo chooser. *Sherlock Holmes* is a free download from its [demo vault page](https://www.radialtimeline.com/resources/sherlock), and the chooser lists it as **Coming soon**. It collects four novels, *A Study in Scarlet*, *The Sign of the Four*, *The Hound of the Baskervilles*, and *The Valley of Fear*: 56 chapters, each novel in its own manuscript folder with three acts and its own **Mystery and Revelation** beats. *The Faerie Queene* is listed there as **Coming soon**.
 
 You're welcome to fork it, edit it, write in it, or strip it for parts. The source text and all included analysis are free to read, copy, and reuse.

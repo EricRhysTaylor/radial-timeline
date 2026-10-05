@@ -73,21 +73,25 @@ const WELCOME_COPY = {
             { icon: 'target', text: "Once you get in the rhythm, don't forget to track your writing session time and word count and set due dates for scenes or publish stages." }
         ]
     },
-    feedback: 'Take a moment to [share your experiences] using the RT and what features you would like to see next to smooth your writing workflow. Radial Timeline is expanding in every direction, and your feedback helps guide it. Happy Writing!',
+    feedback: 'Take a moment to [share your feedback] about Radial Timeline and the features you would like to see next to smooth your writing workflow. Radial Timeline is expanding in every direction, and your feedback helps guide it.',
+    feedbackContactLead: ' Community feedback requires sign-in. Without a Community account, use our ',
+    feedbackContactLabel: 'contact form',
+    feedbackClosing: '. Happy Writing!',
     updateNote: 'The Community is live — connect from Radial Timeline plugin settings → Community and share your writing journey.'
 } as const;
 
 // Discovery links go through the Community's counted redirector
 // (community.radialtimeline.com/go/<slug>). Each slug must exist in the
 // Community repo's lib/go-links.json registry, which owns the destination.
-// Functional links (wiki, issues, mail) stay direct.
+// Functional links (wiki, issues, help, contact) stay direct.
 const WELCOME_URLS = {
     website: 'https://community.radialtimeline.com/go/rt-welcome-site',
     wiki: 'https://github.com/EricRhysTaylor/radial-timeline/wiki',
     community: 'https://community.radialtimeline.com/go/rt-welcome-community',
     issues: 'https://github.com/EricRhysTaylor/radial-timeline/issues',
     youtube: 'https://community.radialtimeline.com/go/rt-welcome-youtube',
-    feedbackEmail: 'feedback@radialtimeline.com'
+    feedback: 'https://community.radialtimeline.com/help',
+    contact: 'https://www.radialtimeline.com/contact'
 } as const;
 
 const CARD_ICONS = {
@@ -443,7 +447,7 @@ export function renderWelcomeScreen({ container, plugin, refreshTimeline }: Welc
     const body = container.createDiv({ cls: 'rt-welcome-body' });
 
     // Two description paragraphs stay together directly under the title. The
-    // feedback line's [bracketed] phrase becomes a mailto link.
+    // feedback line's [bracketed] phrase links to Community Help.
     body.createEl('p', { cls: 'rt-welcome-paragraph', text: WELCOME_COPY.intro });
     const feedbackP = body.createEl('p', { cls: 'rt-welcome-paragraph' });
     for (const part of WELCOME_COPY.feedback.split(/(\[[^\]]+\])/g)) {
@@ -451,12 +455,19 @@ export function renderWelcomeScreen({ container, plugin, refreshTimeline }: Welc
             feedbackP.createEl('a', {
                 cls: 'ert-welcome-step-link',
                 text: part.slice(1, -1),
-                href: `mailto:${WELCOME_URLS.feedbackEmail}`
+                href: WELCOME_URLS.feedback
             });
         } else if (part) {
             feedbackP.appendText(part);
         }
     }
+    feedbackP.appendText(WELCOME_COPY.feedbackContactLead);
+    feedbackP.createEl('a', {
+        cls: 'ert-welcome-step-link',
+        text: WELCOME_COPY.feedbackContactLabel,
+        href: WELCOME_URLS.contact
+    });
+    feedbackP.appendText(WELCOME_COPY.feedbackClosing);
 
     // Hero cards: Sample Vault · Book Project · [Onboard] · Website. The onboard
     // card follows "Set Book Project" (onboarding needs a book folder) and, like

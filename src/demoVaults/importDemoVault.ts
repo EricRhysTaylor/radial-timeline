@@ -21,6 +21,13 @@ async function ensureFolder(plugin: RadialTimelinePlugin, path: string): Promise
     }
 }
 
+/** A note's YAML header as a plain object, or undefined when it has none. */
+function readYamlHeader(text: string): Record<string, unknown> | undefined {
+    const header = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text);
+    const value: unknown = header ? parseYaml(header[1]) : undefined;
+    return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
+}
+
 function assertIdle(plugin: RadialTimelinePlugin): void {
     if (plugin._inquiryRunInFlight) throw new Error('Let the current Inquiry run finish before adding a demo.');
 }
@@ -74,9 +81,8 @@ export async function importDemoVault(
         if (existing) {
             const manifest = plugin.app.vault.getAbstractFileByPath(`${destination}/Sample Vault Config.md`);
             if (!(existing instanceof TFolder) || !(manifest instanceof TFile)) throw new Error(`The folder ${destination} already exists and is not an installed demo. Nothing was changed.`);
-            const text = await plugin.app.vault.read(manifest);
-            const header = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text);
-            const config = header ? readSampleVaultManifest(parseYaml(header[1])) : null;
+            const header = readYamlHeader(await plugin.app.vault.read(manifest));
+            const config = header ? readSampleVaultManifest(header) : null;
             const definitions = demoBookDefinitions(demo);
             if (config?.displayName !== demo.title || config.books?.length !== definitions.length
                 || !definitions.every(book => config.books?.some(entry => entry.sourceFolder === book.sourceFolder))) {
@@ -103,11 +109,8 @@ export async function importDemoVault(
         report('Checking the download…');
         const plan = await prepareDemoImport(new Uint8Array(response.arrayBuffer), demo, bookNumbers);
         for (const file of plugin.app.vault.getMarkdownFiles()) {
-            let fm = plugin.app.metadataCache.getFileCache(file)?.frontmatter;
-            if (!fm) {
-                const header = /^---\r?\n([\s\S]*?)\r?\n---/.exec(await plugin.app.vault.read(file));
-                fm = header ? parseYaml(header[1]) : undefined;
-            }
+            const fm: Record<string, unknown> | undefined = plugin.app.metadataCache.getFileCache(file)?.frontmatter
+                ?? readYamlHeader(await plugin.app.vault.read(file));
             const id = fm?.ID;
             if (typeof id === 'string' && plan.ids.has(id)) throw new Error('A copy of this manuscript already exists in this vault. Open that book instead; nothing was added.');
         }
@@ -115,7 +118,9 @@ export async function importDemoVault(
         report('Adding the demo files…');
         const stagingPath = systemFolderPath('Demo Imports', `${demo.id}-${crypto.randomUUID()}`);
         await ensureFolder(plugin, stagingPath);
-        staging = plugin.app.vault.getAbstractFileByPath(stagingPath) as TFolder;
+        const stagingFolder = plugin.app.vault.getAbstractFileByPath(stagingPath);
+        if (!(stagingFolder instanceof TFolder)) throw new Error('The demo could not be staged. Nothing was added.');
+        staging = stagingFolder;
         for (const [path, bytes] of plan.files) {
             const target = `${stagingPath}/${path}`;
             await ensureFolder(plugin, target.slice(0, target.lastIndexOf('/')));
@@ -133,7 +138,7 @@ export async function importDemoVault(
         await openDemo(plugin, demo);
         new Notice(`${demo.title} is ready to explore.`);
     } catch (error) {
-        if (staging) await plugin.app.vault.trash(staging, true);
+        if (staging) await plugin.app.fileManager.trashFile(staging);
         if (installed) throw new Error(`The complete demo is saved. ${error instanceof Error ? error.message : 'Choose Open demo to finish setup.'}`);
         throw error;
     } finally {

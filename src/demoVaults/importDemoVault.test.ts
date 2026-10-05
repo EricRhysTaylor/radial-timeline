@@ -39,8 +39,10 @@ function fixture(options?: { writeFailure?: boolean; idCollision?: boolean; rena
                     if (texts.has(key)) { texts.set(entry.path, texts.get(key)!); texts.delete(key); }
                 }
             }
-        },
-        trash: vi.fn(async (folder: TFolder) => {
+        }
+    };
+    const fileManager = {
+        trashFile: vi.fn(async (folder: TFolder) => {
             for (const key of Array.from(entries.keys())) if (key === folder.path || key.startsWith(`${folder.path}/`)) { entries.delete(key); texts.delete(key); }
         })
     };
@@ -48,7 +50,7 @@ function fixture(options?: { writeFailure?: boolean; idCollision?: boolean; rena
     const activate = vi.fn(async () => undefined);
     const plugin = {
         settings, _inquiryRunInFlight: null,
-        app: { vault, metadataCache: { getFileCache: (file: TFile) => {
+        app: { vault, fileManager, metadataCache: { getFileCache: (file: TFile) => {
             const match = /^---\n([\s\S]*?)\n---/.exec(texts.get(file.path) ?? '');
             return match ? { frontmatter: parseYaml(match[1]) } : null;
         } } },
@@ -57,7 +59,7 @@ function fixture(options?: { writeFailure?: boolean; idCollision?: boolean; rena
         getInquiryService: () => ({ getInquiryViews: () => [{ onDemoProjectsChanged: refresh }] }),
         getTimelineService: () => ({ activateView: activate })
     };
-    return { plugin, entries, texts, refresh, activate, vault, sources, authorBook };
+    return { plugin, entries, texts, refresh, activate, vault, fileManager, sources, authorBook };
 }
 
 beforeEach(() => {
@@ -104,11 +106,11 @@ describe('demo import orchestration', () => {
         expect(mocks.request).toHaveBeenCalledOnce();
     });
     it.each([{ writeFailure: true }, { renameFailure: true }])('cleans only its staging folder on failure: %j', async options => {
-        const { plugin, entries, vault, texts } = fixture(options);
+        const { plugin, entries, fileManager, texts } = fixture(options);
         await expect(importDemoVault(plugin as never, demo)).rejects.toThrow();
         expect(entries.has(destination)).toBe(false);
         expect(texts.get('Author/Chapter.md')).toContain('Author scene');
-        expect(vault.trash).toHaveBeenCalledOnce();
+        expect(fileManager.trashFile).toHaveBeenCalledOnce();
         expect(plugin.settings.books).toHaveLength(1);
     });
     it('leaves an incomplete installed demo untouched instead of silently opening it', async () => {

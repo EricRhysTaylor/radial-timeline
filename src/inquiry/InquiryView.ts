@@ -695,12 +695,9 @@ export class InquiryView extends ItemView {
         if (headerTitle && headerTitle.textContent !== titleText) {
             headerTitle.textContent = titleText;
         }
-        const tabTitle = this.containerEl
-            .closest('.workspace-leaf')
-            ?.querySelector('.workspace-tab-header-inner-title') as HTMLElement | null;
-        if (tabTitle && tabTitle.textContent !== titleText) {
-            tabTitle.textContent = titleText;
-        }
+        // Obsidian owns the tab bar outside the leaf's content subtree. Refresh
+        // its title and tooltip from getDisplayText(), including when hidden.
+        (this.leaf as unknown as { updateHeader?: () => void }).updateHeader?.(); // SAFE: Obsidian's untyped leaf header refresh, also used by TimeLineView.
     }
 
     getIcon(): string {

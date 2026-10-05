@@ -57,6 +57,8 @@ function makeView(activeIndex = 0) {
         refreshUI(options?: { skipCorpus?: boolean }): void;
         setFocusByIndex(index: number): void;
         findSavedSessionForQuestion(question: { id: string }): { key: string } | undefined;
+        getDisplayText(): string;
+        updateViewTitle(): void;
     };
     view.selection = new InquirySelectionState(view, {
         getPersistedLastMode: () => 'depth', setPersistedLastMode: vi.fn(),
@@ -68,6 +70,33 @@ function makeView(activeIndex = 0) {
 }
 
 describe('Inquiry follows the timeline book selection', () => {
+    it('refreshes the external tab title and tooltip when a hidden Inquiry view follows a book change', () => {
+        const { view, settings } = makeView();
+        const header = { textContent: '' };
+        const tab = { textContent: 'Inquiry: Scarlet', tooltip: 'Inquiry: Scarlet' };
+        // Obsidian keeps the tab bar outside the leaf's content subtree.
+        const updateHeader = vi.fn(() => {
+            tab.textContent = view.getDisplayText();
+            tab.tooltip = view.getDisplayText();
+        });
+        Object.assign(view, {
+            containerEl: {
+                querySelector: () => header,
+                closest: () => ({ querySelector: () => null })
+            },
+            leaf: { updateHeader },
+            refreshVisualChrome: () => view.updateViewTitle()
+        });
+        view.refreshUI();
+        expect(tab.textContent).toBe('Inquiry: Scarlet');
+        settings.activeBookId = 'profile-1';
+        view.onBookSettingsChanged();
+        expect(header.textContent).toBe('Inquiry: Sign');
+        expect(tab.textContent).toBe(header.textContent);
+        expect(tab.tooltip).toBe(header.textContent);
+        expect(updateHeader).toHaveBeenCalledTimes(2);
+    });
+
     it('opens on the selected Book Manager profile, translating its ID into the manuscript folder', () => {
         const { view } = makeView(2);
         view.refreshUI();

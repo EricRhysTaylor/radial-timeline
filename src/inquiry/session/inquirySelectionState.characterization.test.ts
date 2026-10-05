@@ -94,11 +94,15 @@ describe('characterization: activeBookId mutation paths (post Slice 2c)', () => 
         expect(mutations.length).toBe(0);
     });
 
-    it('total selection.setActiveBookId call count covers all 8 semantic paths', () => {
-        // Exact count: 8 controller calls replacing 8 direct mutations.
+    it('timeline selection adopts the manuscript folder through the controller', () => {
+        expect(INQUIRY_VIEW_SRC).toContain('this.selection.setActiveBookId(bookFolder);');
+    });
+
+    it('total selection.setActiveBookId call count covers all 9 semantic paths', () => {
+        // Eight existing selection paths plus timeline book synchronization.
         // Adding a new write must add a new test above OR fail this count.
         const calls = INQUIRY_VIEW_SRC.match(/this\.selection\.setActiveBookId\(/g) ?? [];
-        expect(calls.length).toBe(8);
+        expect(calls.length).toBe(9);
     });
 });
 

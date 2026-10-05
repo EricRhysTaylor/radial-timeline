@@ -409,6 +409,7 @@ export class InquiryView extends ItemView {
 
     private plugin: RadialTimelinePlugin;
     private state = createDefaultInquiryState();
+    private lastTimelineBookFolder?: string;
     // Slice 1 of InquirySessionController: owns the active-result lifecycle
     // subset of `state` (activeSessionId, activeResult, activeQuestionId,
     // activeZone, cacheStatus, corpus-fingerprint trio, lastError). Writes
@@ -722,6 +723,7 @@ export class InquiryView extends ItemView {
         this.demoVaultName = (await readInquirySidecarVaultIdentity(this.app))?.displayName ?? null;
         const freshLaunchPending = this.plugin.consumeInquiryFreshLaunchPending();
         if (!this.state.isRunning) {
+            this.lastTimelineBookFolder = undefined;
             this.clearRehydrateState();
             this.clearActiveResultState();
             this.clearResultPreview();
@@ -3072,6 +3074,9 @@ export class InquiryView extends ItemView {
 
     /** Called externally when Book Manager settings or order change. */
     onBookSettingsChanged(): void {
+        // Keep the submitted corpus stable. Completion's refresh adopts the
+        // latest timeline selection once the run is no longer in flight.
+        if (this.state.isRunning) return;
         this.refreshUI({ reason: 'book settings changed' });
     }
 
@@ -3089,9 +3094,31 @@ export class InquiryView extends ItemView {
     private refreshUI(options?: { skipCorpus?: boolean, reason?: string }): void {
         this.perfCounters.refreshUICalls++;
         this.invalidateRefreshCycleCaches();
-        this.refreshDataDependencies(options?.skipCorpus);
+        const bookChanged = this.syncTimelineBookSelection();
+        this.refreshDataDependencies(bookChanged ? false : options?.skipCorpus);
         this.refreshDerivedViewState();
         this.refreshVisualChrome();
+    }
+
+    private syncTimelineBookSelection(): boolean {
+        if (this.state.isRunning) return false;
+        // Book Manager uses profile IDs; Inquiry scopes are manuscript folders.
+        const bookFolder = normalizePath((getActiveBook(this.plugin.settings)?.sourceFolder ?? '').trim());
+        const timelineChanged = bookFolder !== this.lastTimelineBookFolder;
+        this.lastTimelineBookFolder = bookFolder;
+        if (this.state.scope !== 'book' || !bookFolder) return false;
+        // Inquiry's own navigation remains usable until the timeline changes.
+        if (!timelineChanged && this.state.activeBookId) return false;
+        if (this.state.activeBookId === bookFolder) return false;
+        this.selection.setActiveBookId(bookFolder);
+        this.selection.setTargetSceneIds(this.getVisibleTargetSceneIdsForBook(bookFolder));
+        this.clearRehydrateState();
+        this.clearActiveResultState();
+        this.clearResultPreview();
+        this.unlockPromptPreview();
+        this.setApiStatus('idle');
+        this.scheduleTargetPersist();
+        return true;
     }
 
     private invalidateRefreshCycleCaches(): void {

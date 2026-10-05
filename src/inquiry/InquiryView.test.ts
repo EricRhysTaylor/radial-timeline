@@ -174,7 +174,7 @@ describe('InquiryView payload accounting', () => {
         expect(mainSource.includes('public inquiryFreshLaunchPending = true;')).toBe(true);
         expect(mainSource.includes('public consumeInquiryFreshLaunchPending(): boolean')).toBe(true);
         expect(viewSource.includes('const freshLaunchPending = this.plugin.consumeInquiryFreshLaunchPending();')).toBe(true);
-        expect(viewSource.includes("if (!this.state.isRunning) {\n            this.clearRehydrateState();\n            this.clearActiveResultState();\n            this.clearResultPreview();\n            this.unlockPromptPreview();\n            this.setApiStatus('idle');\n        }")).toBe(true);
+        expect(viewSource.includes("if (!this.state.isRunning) {\n            this.lastTimelineBookFolder = undefined;\n            this.clearRehydrateState();\n            this.clearActiveResultState();\n            this.clearResultPreview();\n            this.unlockPromptPreview();\n            this.setApiStatus('idle');\n        }")).toBe(true);
         expect(viewSource.includes("this.startupFreshMode = freshLaunchPending || !this.state.isRunning;")).toBe(true);
         expect(viewSource.includes('this.loadTargetCache({ adoptPersistedSelection: !this.startupFreshMode });')).toBe(true);
         expect(viewSource.includes('if (this.startupFreshMode) {\n            return undefined;\n        }')).toBe(true);

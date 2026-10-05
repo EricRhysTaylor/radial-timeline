@@ -83,7 +83,9 @@ describe.skipIf(!sherlockArchive)('four-book release candidate import', () => {
     it('rebases all four novels and twelve saved Inquiry results', async () => {
         const bytes = new Uint8Array(readFileSync(sherlockArchive!));
         const collection = BONUS_VAULTS.find(demo => demo.id === 'sherlock-holmes')!;
-        const demo: BonusVaultDef = { ...collection, archive: { url: 'https://example.com/candidate-only', root: 'Obsidian Vault Sherlock Holmes Demo', bytes: bytes.length, sha256: 'aace53768d279cd6f8f881712aedcf94e7f444985caf892d89ade0e0d579b9cb' } };
+        expect(collection.status).toBe('available');
+        expect(collection.archive).toBeDefined();
+        const demo = collection;
         const books = demoBookDefinitions(demo);
         const numbers = new Map(books.map((book, index) => [book.sourceFolder, index + 3]));
         const plan = await prepareDemoImport(bytes, demo, numbers);

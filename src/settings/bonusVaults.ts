@@ -47,7 +47,7 @@ export const BONUS_VAULTS: readonly BonusVaultDef[] = [
         description: 'Explore the complete journey with saved Pulse, four Gossamer signals, and three Inquiry briefings.',
         books: [{ title: 'The Odyssey', sourceFolder: 'The Odyssey' }],
         archive: {
-            url: 'https://community.radialtimeline.com/go/site-demo-odyssey',
+            url: 'https://community.radialtimeline.com/go/rt-welcome-odyssey-download',
             sha256: '13c21a3f60e823bfbb67521160060916bba6c13d26611d67f79994e636ba8e82',
             bytes: 1098230,
             root: 'Obsidian Vault Odyssey Demo'
@@ -58,14 +58,20 @@ export const BONUS_VAULTS: readonly BonusVaultDef[] = [
         title: 'Sherlock Holmes',
         author: 'Doyle',
         countLabel: '4 novels · 56 chapters',
-        status: 'coming-soon',
+        status: 'available',
         description: 'Our first collection: switch between four complete novels and their saved analyses.',
         books: [
             { title: 'A Study in Scarlet', sourceFolder: '01 A Study in Scarlet' },
             { title: 'The Sign of the Four', sourceFolder: '02 The Sign of the Four' },
             { title: 'The Hound of the Baskervilles', sourceFolder: '03 The Hound of the Baskervilles' },
             { title: 'The Valley of Fear', sourceFolder: '04 The Valley of Fear' }
-        ]
+        ],
+        archive: {
+            url: 'https://community.radialtimeline.com/go/rt-welcome-sherlock-download',
+            sha256: 'aace53768d279cd6f8f881712aedcf94e7f444985caf892d89ade0e0d579b9cb',
+            bytes: 5483077,
+            root: 'Obsidian Vault Sherlock Holmes Demo'
+        }
     },
     {
         id: 'faerie-queene',

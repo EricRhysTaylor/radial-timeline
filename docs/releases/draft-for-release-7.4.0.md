@@ -11,7 +11,7 @@ Free demo books now open inside your own vault, The Odyssey and Sherlock Holmes 
 
 <img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/5a04ecad/wiki/images/odyssey-chronologue.webp" alt="The Odyssey in Chronologue mode: the scenes of Ulysses's wanderings, numbered 28 to 45, sit at the start of the timeline" width="600">
 
-- **Sherlock Holmes: four novels.** *A Study in Scarlet*, *The Sign of the Four*, *The Hound of the Baskervilles*, and *The Valley of Fear*, 56 chapters in all, each novel in its own manuscript folder. Every novel has three acts and its own **Mystery and Revelation** beats, 41 across the four, following the investigative turn, the concealed history, the confrontation, and the explanation. Download it from the [Sherlock Holmes demo vault page](https://www.radialtimeline.com/resources/sherlock); the in-vault chooser lists it as **Coming soon**.
+- **Sherlock Holmes: four novels.** *A Study in Scarlet*, *The Sign of the Four*, *The Hound of the Baskervilles*, and *The Valley of Fear*, 56 chapters in all, each novel in its own manuscript folder. Every novel has three acts and its own **Mystery and Revelation** beats, 41 across the four, following the investigative turn, the concealed history, the confrontation, and the explanation.
 - **Multi-book demos open as a collection.** Opening a demo vault with several books, such as the four Sherlock Holmes novels, adds each one to Book Manager without changing the books you already have, and each saved Inquiry answer stays with its own book.
 - **Demo vaults in Settings → PRO.** The section formerly called Bonus vaults is now **Demo vaults**, with *The Faerie Queene* listed as **Coming soon**.
 
@@ -56,12 +56,15 @@ See [Reading the corpus](https://github.com/EricRhysTaylor/radial-timeline/wiki/
 ### Timeline view
 
 - **The title bar fits narrow panes.** The book selector and the small icons beside it no longer overlap. When the right side needs room, the mode buttons slide left to make it. In a narrower pane the command, print, bug, and settings icons fold into one menu button, then the search field and book selector get shorter, and only in the narrowest panes do inactive modes shrink to their number, such as **1 2 Narrative 3 4**.
+- **Undated scenes stay with their story.** In Chronologue, a scene with no `When` date stays beside the dated scene it follows in its own book's narrative order and moves with it, and its hover names that scene. Nothing is dated for you: **Timeline date scaffold** is optional, and **Timeline date audit** counts undated scenes on their own instead of flagging them as missing dates.
 - **In This Book leads the beat hover.** Beat notes gain an **In This Book** field for what the beat is in your novel. When it's filled, the beat hover opens with it and the beat system's generic Purpose drops beneath as a smaller line, and timeline search finds the beat by its words. Unfilled beats hover as before. Hold **Shift** in Narrative mode to read the ring in your book's own terms: beat labels switch to their In This Book names until you let go. To add the field to existing beat notes, run **Insert missing fields** from the beat audit in **Settings → Core → Story beats system**.
 
 ### AI
 
 - **Prompt caching works on every provider.** On OpenAI models, the second and later questions in an Inquiry session read the manuscript from the provider's cache instead of paying to write it again, and one-off calls such as Pulse are no longer billed as cache writes. Gemini caches survive a plugin reload instead of being created a second time.
 - **Re-runs ask again.** Running Summary scene refresh, Pulse, or a Gossamer score again within two minutes sends a new request instead of returning the previous answer. The Gossamer confirmation notes when that signal was already scored on the same unchanged manuscript in this session, so you can cancel an accidental repeat.
+- **Hand-scored Gossamer matches an API run.** In **Gossamer score manager**, **Copy AI prompt** copies the prompt an API run sends: the same beat list, the neutral scoring role instead of your AI role template, and a JSON answer. **Paste AI response** reads that answer, so scores from a chat app compare directly with scores from the API.
+- **Summary stamps name the model that answered.** A summary's **Summary Update** stamp records the model that wrote it, such as "by Claude Opus 5.5 API" or "by Local model qwen3:80b", rather than the model selected in settings.
 - **Summaries stay factual.** Summary scene refresh ignores your AI role template, so an editor persona no longer colors a scene's summary.
 - **Pulse shows the batch total.** When a Pulse batch finishes, the card shows the batch's total cost. Cache use and per-scene costs sit under **AI prompt & context**.
 
@@ -87,6 +90,7 @@ See [Reading the corpus](https://github.com/EricRhysTaylor/radial-timeline/wiki/
 
 ### Fixes
 
+- **Long Inquiry questions run again.** A question that needed more than one pass, because the corpus was over the model's input budget or the answer ran past its output limit, failed with "Evidence could not be split into multiple chunks". Multi-pass runs work again.
 - **Inquiry citations keep your scene IDs.** Scenes with an `ID` you wrote yourself, rather than one Radial Timeline generated, keep their citations in Inquiry findings and saved results.
 - **Gossamer reads in narrative order in every mode.** Switching to Chronologue no longer changes the Gossamer prompt or its cache.
 - **Progress bars follow real runs.** Inquiry's estimate calibrates from your most recent run, and Gossamer's scales your last run's time to the length of the manuscript.

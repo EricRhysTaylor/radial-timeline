@@ -32,15 +32,15 @@ function assertIdle(plugin: RadialTimelinePlugin): void {
     if (plugin._inquiryRunInFlight) throw new Error('Let the current Inquiry run finish before adding a demo.');
 }
 
-/** Wait only during an import/open, until Obsidian has indexed the manuscript. */
+/** Wait only during an import/open, until Obsidian has read the Markdown files. */
 async function awaitDemoIndex(plugin: RadialTimelinePlugin, paths: string[]): Promise<void> {
     const ready = () => paths.every(path => {
         const file = plugin.app.vault.getAbstractFileByPath(path);
-        return file instanceof TFile && !!plugin.app.metadataCache.getFileCache(file)?.frontmatter;
+        return file instanceof TFile && !!plugin.app.metadataCache.getFileCache(file);
     });
     const deadline = Date.now() + 15000;
     while (!ready()) {
-        if (Date.now() >= deadline) throw new Error('The demo files are saved. Obsidian is still indexing them; choose Open demo again shortly.');
+        if (Date.now() >= deadline) throw new Error('Obsidian did not finish indexing the demo files.');
         await new Promise(resolve => window.setTimeout(resolve, 100));
     }
 }
@@ -133,10 +133,11 @@ export async function importDemoVault(
             if (/\.(md|json|html)$/.test(path)) await plugin.app.vault.create(target, strFromU8(bytes));
             else await plugin.app.vault.createBinary(target, new Uint8Array(bytes).buffer);
         }
-        // Let Obsidian finish reading staged scene/beat files before their paths
-        // move. Renaming during those reads can leave missing metadata forever.
+        // Let Obsidian finish reading all staged Markdown before its paths
+        // move. Renaming during those reads can leave metadata missing until reload.
         report('Indexing the demo files…');
-        await awaitDemoIndex(plugin, plan.indexedPaths.map(path => `${stagingPath}${path.slice(destination.length)}`));
+        await awaitDemoIndex(plugin, Array.from(plan.files.keys())
+            .filter(path => path.endsWith('.md')).map(path => `${stagingPath}/${path}`));
         assertIdle(plugin);
         await ensureFolder(plugin, 'Demo Projects');
         if (plugin.app.vault.getAbstractFileByPath(destination)) throw new Error('The destination appeared during import. Nothing was replaced.');
@@ -149,7 +150,7 @@ export async function importDemoVault(
         new Notice(`${demo.title} is ready to explore.`);
     } catch (error) {
         if (staging) await plugin.app.fileManager.trashFile(staging);
-        if (installed) throw new Error(`The complete demo is saved. ${error instanceof Error ? error.message : 'Choose Open demo to finish setup.'}`);
+        if (installed) throw new Error(`The complete demo is saved. Choose Open demo to finish setup. ${error instanceof Error ? error.message : ''}`.trim());
         throw error;
     } finally {
         importing.delete(plugin);

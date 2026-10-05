@@ -52,7 +52,7 @@ function fixture(options?: { writeFailure?: boolean; idCollision?: boolean; rena
         settings, _inquiryRunInFlight: null,
         app: { vault, fileManager, metadataCache: { getFileCache: (file: TFile) => {
             const match = /^---\n([\s\S]*?)\n---/.exec(texts.get(file.path) ?? '');
-            return match ? { frontmatter: parseYaml(match[1]) } : null;
+            return match ? { frontmatter: parseYaml(match[1]) } : {};
         } } },
         saveSettings: vi.fn(async () => undefined),
         setActiveBookId: vi.fn(async (id: string) => { settings.activeBookId = id; }),
@@ -70,6 +70,7 @@ beforeEach(() => {
     mocks.request.mockResolvedValue({ status: 200, arrayBuffer: new Uint8Array([1]).buffer });
     mocks.prepare.mockResolvedValue({ files: new Map([
         ['Book/1 Scene.md', strToU8(sceneBody)],
+        ['README.md', strToU8('A reader-facing note without frontmatter.')],
         ['Sample Vault Config.md', strToU8(manifest)],
         ['Radial Timeline/Inquiry/Sessions/sessions.json', strToU8(JSON.stringify({ schemaVersion: 1, sessions: [{ key: 'demo-answer', activeBookId: `${destination}/Book`, result: {} }] }))]
     ]), ids: new Set(['unique-demo-id']), indexedPaths: [scene] });
@@ -84,7 +85,7 @@ describe('demo import orchestration', () => {
             const getCache = plugin.app.metadataCache.getFileCache;
             let indexed = false;
             vi.spyOn(plugin.app.metadataCache, 'getFileCache').mockImplementation(file =>
-                file.path.includes('/Demo Imports/') && !indexed ? null : getCache(file));
+                file.path.includes('/Demo Imports/') && file.path.endsWith('/README.md') && !indexed ? null : getCache(file));
             const task = importDemoVault(plugin as never, demo);
             await vi.advanceTimersByTimeAsync(0);
             expect(Array.from(entries.keys()).some(path => path.includes('/Demo Imports/') && path.endsWith('/1 Scene.md'))).toBe(true);

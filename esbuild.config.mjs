@@ -80,6 +80,7 @@ if (isReleaseBuild) {
 		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Obsidian Vault Sherlock Holmes Demo/.obsidian/plugins/radial-timeline", name: "Sherlock Demo" },
 		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Obsidian Vault The Faerie Queene Demo/.obsidian/plugins/radial-timeline", name: "Faerie Queene Demo" },
 		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Obsidian Vault Odyssey Demo/.obsidian/plugins/radial-timeline", name: "Odyssey Demo" },
+		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Obsidian Vault Miki Projects/.obsidian/plugins/radial-timeline", name: "Miki Projects" },
 		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Scrivener Onboarding Test/.obsidian/plugins/radial-timeline", name: "Scrivener" },
 		{ path: "./release", name: "release" },
 		// Obsidian's plugin review runs a plain `npm run build` (no CI /

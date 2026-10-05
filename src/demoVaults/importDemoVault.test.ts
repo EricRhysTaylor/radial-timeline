@@ -76,6 +76,36 @@ beforeEach(() => {
 });
 
 describe('demo import orchestration', () => {
+    it('waits for staged metadata before moving files Obsidian is still reading', async () => {
+        vi.useFakeTimers();
+        try {
+            const { plugin, vault, entries } = fixture();
+            const rename = vi.spyOn(vault, 'rename');
+            const getCache = plugin.app.metadataCache.getFileCache;
+            let indexed = false;
+            vi.spyOn(plugin.app.metadataCache, 'getFileCache').mockImplementation(file =>
+                file.path.includes('/Demo Imports/') && !indexed ? null : getCache(file));
+            const task = importDemoVault(plugin as never, demo);
+            await vi.advanceTimersByTimeAsync(0);
+            expect(Array.from(entries.keys()).some(path => path.includes('/Demo Imports/') && path.endsWith('/1 Scene.md'))).toBe(true);
+            expect(rename).not.toHaveBeenCalled();
+            indexed = true;
+            await vi.advanceTimersByTimeAsync(100);
+            await task;
+            expect(rename).toHaveBeenCalledOnce();
+            expect(entries.has(scene)).toBe(true);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+    it('explains a download timeout without staging files or changing book settings', async () => {
+        const { plugin, entries, fileManager, authorBook } = fixture();
+        mocks.request.mockRejectedValue(new Error('net::ERR_TIMED_OUT'));
+        await expect(importDemoVault(plugin as never, demo)).rejects.toThrow('The demo download timed out. Nothing was added.');
+        expect(Array.from(entries.keys())).toEqual(['Author/Chapter.md']);
+        expect(plugin.settings.books).toEqual([authorBook]);
+        expect(fileManager.trashFile).not.toHaveBeenCalled();
+    });
     it('adds one complete project, preserving author profiles, content, AI permission and source configuration', async () => {
         const { plugin, texts, refresh, activate, sources, authorBook } = fixture();
         await importDemoVault(plugin as never, demo);

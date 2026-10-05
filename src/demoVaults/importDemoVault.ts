@@ -102,7 +102,13 @@ export async function importDemoVault(
         }
         if (!demo.archive || demo.status !== 'available') throw new Error('This demo is not yet available.');
         report('Downloading the demo…');
-        const response = await requestUrl({ url: demo.archive.url, method: 'GET' });
+        const response = await requestUrl({ url: demo.archive.url, method: 'GET' }).catch((error: unknown) => {
+            const message = error instanceof Error ? error.message : String(error);
+            if (/ERR_TIMED_OUT|timed?\s*out/i.test(message)) {
+                throw new Error('The demo download timed out. Nothing was added. Choose Add demo to this vault to try again, or use Download ZIP.');
+            }
+            throw error;
+        });
         if (response.status !== 200) throw new Error('The demo could not be downloaded. Please try again.');
         const registered = registerSampleBookProfiles(plugin.settings.books ?? [], demoBookDefinitions(demo), demoBookDefinitions(demo)[0].sourceFolder);
         const bookNumbers = new Map(registered.books.map((book, index) => [book.sourceFolder, index + 1]));
@@ -127,6 +133,10 @@ export async function importDemoVault(
             if (/\.(md|json|html)$/.test(path)) await plugin.app.vault.create(target, strFromU8(bytes));
             else await plugin.app.vault.createBinary(target, new Uint8Array(bytes).buffer);
         }
+        // Let Obsidian finish reading staged scene/beat files before their paths
+        // move. Renaming during those reads can leave missing metadata forever.
+        report('Indexing the demo files…');
+        await awaitDemoIndex(plugin, plan.indexedPaths.map(path => `${stagingPath}${path.slice(destination.length)}`));
         assertIdle(plugin);
         await ensureFolder(plugin, 'Demo Projects');
         if (plugin.app.vault.getAbstractFileByPath(destination)) throw new Error('The destination appeared during import. Nothing was replaced.');

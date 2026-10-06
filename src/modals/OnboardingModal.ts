@@ -8,7 +8,7 @@
  *             → Materialize → Report
  *
  * Nothing is written before the user approves at Checkpoint 2. UI strings are
- * plain (this is a dev-only beta command); i18n keys land when it graduates.
+ * plain and follow the existing onboarding vocabulary.
  *
  * See docs/engineering/plans/one-button-onboarding-local-llm-plan.md.
  */
@@ -127,6 +127,7 @@ interface OnboardingSession {
   folder: string;
   stage: 'confirm' | 'review';
   aiAvailable: boolean;
+  useAi: boolean;
   engine: 'local' | 'cloud';
   modelLabel: string;
   flowOverride: ImportFlow | null;
@@ -188,11 +189,12 @@ export class OnboardingModal extends Modal {
   /** Scrivener metadata mapping table (seeded from the automap; author-edited). */
   private metadataMapping: Record<string, ScrivenerFieldTarget> | null = null;
   /**
-   * False when preflight found no capable local model. Onboarding still runs —
-   * structure-only (split titles, sidecar synopses, mapped metadata, positional
-   * acts) — with every AI stage skipped and its controls hidden.
+   * True only when AI was requested and a capable engine is available.
+   * Structure-only imports skip every AI stage and hide its controls.
    */
   private aiAvailable = false;
+  /** AI assistance is an explicit per-run opt-in. */
+  private useAi = false;
   /** Which AI drives the run: local model (default) or the configured cloud provider. */
   private engine: 'local' | 'cloud' = 'local';
   /**
@@ -234,6 +236,7 @@ export class OnboardingModal extends Modal {
       folder: this.book?.sourceFolder ?? '', // SAFE: no book selected yet; the empty path is the "nothing chosen" state the form renders
       stage,
       aiAvailable: this.aiAvailable,
+      useAi: this.useAi,
       engine: this.engine,
       modelLabel: this.modelLabel,
       flowOverride: this.flowOverride,
@@ -257,6 +260,7 @@ export class OnboardingModal extends Modal {
 
   private restoreSession(session: OnboardingSession): void {
     this.aiAvailable = session.aiAvailable;
+    this.useAi = session.useAi;
     this.engine = session.engine;
     this.service.setEngine(session.engine);
     this.modelLabel = session.modelLabel;
@@ -307,8 +311,8 @@ export class OnboardingModal extends Modal {
 
   private async showPreflight(): Promise<void> {
     // Best-effort canonical-prompt refresh (throttled daily; never blocks).
-    void refreshOnboardingPrompt(this.plugin);
-    this.renderBusy('Checking the local model and reading the book folder…');
+    if (this.useAi) void refreshOnboardingPrompt(this.plugin);
+    this.renderBusy(this.useAi ? 'Checking AI and reading the book folder…' : 'Reading the book folder…');
 
     const book = getActiveBook(this.plugin.settings);
     if (!book || !book.sourceFolder) {
@@ -336,11 +340,13 @@ export class OnboardingModal extends Modal {
     let preflightOk = false;
     let tier = 0;
     try {
-      const preflight = await this.service.preflight();
-      preflightOk = preflight.ok;
-      preflightReason = preflight.reason;
-      tier = preflight.tier;
-      if (preflight.modelId) this.modelLabel = abbreviateModelId(preflight.modelId);
+      const preflight = this.useAi ? await this.service.preflight() : null;
+      if (preflight) {
+        preflightOk = preflight.ok;
+        preflightReason = preflight.reason;
+        tier = preflight.tier;
+        if (preflight.modelId) this.modelLabel = abbreviateModelId(preflight.modelId);
+      }
     } catch (error) {
       preflightReason = error instanceof Error ? error.message : String(error);
     }
@@ -369,10 +375,10 @@ export class OnboardingModal extends Modal {
       ingestReason = error instanceof Error ? error.message : String(error);
     }
 
-    // Two AI engines can drive the same pipeline: the local model (zero-cost
-    // author default) and the cloud provider configured in Settings → AI (BYO
-    // key — frontier grade for demo-vault conversions). Neither → structure-only.
-    const cloud = await this.service.cloudAvailability();
+    // Check configured engines only after the author requests AI assistance.
+    const cloud = this.useAi
+      ? await this.service.cloudAvailability()
+      : { ok: false, provider: 'none' as const, label: '', modelId: undefined, modelLabel: undefined, substitutedFromAlias: undefined };
     if (this.engine === 'local' && !preflightOk && cloud.ok) this.engine = 'cloud';
     if (this.engine === 'cloud' && !cloud.ok) this.engine = 'local';
     this.costProvider = cloud.ok ? cloud.provider : null;
@@ -400,7 +406,17 @@ export class OnboardingModal extends Modal {
     const engineValue = this.engine === 'cloud'
       ? `${cloud.label} (cloud, your API key)`
       : preflightOk ? `Local model — ready, tier ${tier}` : `Local model — ${notAvailable.toLowerCase()}`;
-    this.renderStatusRow(status, 'AI engine', engineValue, this.aiAvailable);
+    const modeRow = status.createDiv({ cls: 'ert-row ert-onb-stagerow' });
+    modeRow.createSpan({ text: 'Import mode: ', cls: 'ert-muted' });
+    new DropdownComponent(modeRow)
+      .addOptions({ structure: 'Structure only — no AI', ai: 'AI assisted' })
+      .setValue(this.useAi ? 'ai' : 'structure')
+      .then((dropdown) => dropdown.selectEl.setAttribute('aria-label', 'Import mode'))
+      .onChange((value) => {
+        this.useAi = value === 'ai';
+        void this.showPreflight();
+      });
+    if (this.useAi) this.renderStatusRow(status, 'AI engine', engineValue, this.aiAvailable);
 
     // Offer the switch whenever the OTHER engine is also viable.
     const engineChoices: Array<['local' | 'cloud', string]> = [];
@@ -426,7 +442,9 @@ export class OnboardingModal extends Modal {
     if (!this.aiAvailable) {
       status.createDiv({
         cls: 'ert-muted',
-        text: 'You still get scenes, titles, and any carried Scrivener metadata. AI synopses, characters/places, and auto-split need a local model (Settings → AI) or a cloud provider with your API key.',
+        text: this.useAi
+          ? 'AI is not available. Choose Structure only to import without AI, or configure a provider in Settings → AI.'
+          : 'Import scenes, titles, synopses, and mapped Scrivener metadata without AI. Missing details stay empty for you to fill. No model or API key is needed.',
       });
     }
 
@@ -440,6 +458,12 @@ export class OnboardingModal extends Modal {
         `${FLOW_LABELS[activeFlow]} — ${detection.evidence}${overridden ? ' (your choice)' : ''}`,
         true
       );
+      if (activeFlow === 'scrivener') {
+        status.createDiv({
+          cls: 'ert-muted',
+          text: 'Use Scrivener File → Export → Files to export text or Markdown documents. Include an Outliner CSV to carry synopses and custom metadata. Raw .scriv projects are not supported. Confirm metadata mappings on the next screen.',
+        });
+      }
       const choices = [detection.flow, ...detection.alternatives];
       if (choices.length > 1) {
         const switchRow = status.createDiv({ cls: 'ert-row' });
@@ -470,15 +494,14 @@ export class OnboardingModal extends Modal {
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
     const canStart = !ingestReason && candidateCount > 0 && this.model !== null;
     new ButtonComponent(actions)
-      .setButtonText(this.aiAvailable ? 'Continue' : 'Continue without AI')
+      .setButtonText(this.useAi ? 'Continue with AI' : 'Continue without AI')
       .setCta()
-      .setDisabled(!canStart)
+      .setDisabled(!canStart || (this.useAi && !this.aiAvailable))
       .onClick(() => this.showSplitCheckpoint());
-    // No engine at all? Lead with the fix — a red shortcut to the AI settings.
-    if (!this.aiAvailable) {
+    // Show AI setup only when the author requested AI assistance.
+    if (this.useAi && !this.aiAvailable) {
       new ButtonComponent(actions)
-        .setButtonText('Set up local AI')
-        .setDestructive()
+        .setButtonText('Set up AI')
         .onClick(() => {
           this.close();
           openPluginSettings(this.plugin, 'ai');

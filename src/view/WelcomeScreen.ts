@@ -58,7 +58,7 @@ const WELCOME_COPY = {
         },
         onboard: {
             title: 'Manuscript onboarding',
-            desc: 'Bring an existing draft into the timeline. Point it at your book folder and it splits scenes, fills the YAML across acts, and previews everything before anything is written.',
+            desc: 'Import a Scrivener export, Word document, or existing draft. Preserve your structure and metadata without AI, then review the scene notes before creating them.',
             cta: 'Onboard manuscript'
         }
     },
@@ -468,12 +468,9 @@ export function renderWelcomeScreen({ container, plugin, refreshTimeline }: Welc
     });
     feedbackP.appendText(WELCOME_COPY.feedbackClosing);
 
-    // Hero cards: Sample Vault · Book Project · [Onboard] · Website. The onboard
-    // card follows "Set Book Project" (onboarding needs a book folder) and, like
-    // its command, shows only in development vaults until the feature ships.
-    const showOnboard = plugin.betaFeatures;
+    // Onboarding follows Book Project because it needs an active manuscript folder.
     const cards = body.createDiv({ cls: 'rt-welcome-cards' });
-    cards.style.setProperty('--rt-welcome-card-count', String(showOnboard ? 4 : 3));
+    cards.style.setProperty('--rt-welcome-card-count', '4');
 
     // Two-pass numbering keeps badges 01..N sequential in the built order.
     let cardNumber = 0;
@@ -503,16 +500,14 @@ export function renderWelcomeScreen({ container, plugin, refreshTimeline }: Welc
         onSecondaryActivate: () => { new BookDesignerModal(plugin.app, plugin).open(); }
     });
 
-    const onboardRefs = showOnboard
-        ? buildCard(cards, plugin, {
-            number: nextNumber(),
-            icon: CARD_ICONS.onboard,
-            title: WELCOME_COPY.cards.onboard.title,
-            desc: WELCOME_COPY.cards.onboard.desc,
-            ctaLabel: WELCOME_COPY.cards.onboard.cta,
-            onActivate: () => { new OnboardingModal(plugin.app, plugin).open(); }
-        })
-        : null;
+    const onboardRefs = buildCard(cards, plugin, {
+        number: nextNumber(),
+        icon: CARD_ICONS.onboard,
+        title: WELCOME_COPY.cards.onboard.title,
+        desc: WELCOME_COPY.cards.onboard.desc,
+        ctaLabel: WELCOME_COPY.cards.onboard.cta,
+        onActivate: () => { new OnboardingModal(plugin.app, plugin).open(); }
+    });
 
     const websiteRefs = buildCard(cards, plugin, {
         number: nextNumber(),

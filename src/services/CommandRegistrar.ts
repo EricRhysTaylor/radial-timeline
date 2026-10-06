@@ -175,16 +175,13 @@ export class CommandRegistrar {
             }
         });
 
-        // Beta (development/testing builds): structure-only or Local LLM-assisted import.
-        if (this.plugin.betaFeatures) {
-            this.plugin.addCommand({
-                id: 'onboard-manuscript',
-                name: t('commands.onboardManuscript'),
-                callback: () => {
-                    new OnboardingModal(this.app, this.plugin).open();
-                }
-            });
-        }
+        this.plugin.addCommand({
+            id: 'onboard-manuscript',
+            name: t('commands.onboardManuscript'),
+            callback: () => {
+                new OnboardingModal(this.app, this.plugin).open();
+            }
+        });
 
         this.plugin.addCommand({
             id: 'timeline-date-scaffold',

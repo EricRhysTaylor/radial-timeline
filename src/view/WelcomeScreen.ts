@@ -470,7 +470,6 @@ export function renderWelcomeScreen({ container, plugin, refreshTimeline }: Welc
 
     // Onboarding follows Book Project because it needs an active manuscript folder.
     const cards = body.createDiv({ cls: 'rt-welcome-cards' });
-    cards.style.setProperty('--rt-welcome-card-count', '4');
 
     // Two-pass numbering keeps badges 01..N sequential in the built order.
     let cardNumber = 0;

@@ -2,7 +2,10 @@ import { PRIDE_AND_PREJUDICE_THUMB } from '../branding/bonusVaultThumbs';
 import type { SampleBookDefinition } from '../utils/sampleVault';
 
 export interface DemoArchive {
+    /** Direct archive transfer for Obsidian's downloader. */
     url: string;
+    /** Counted browser link for the separate-vault ZIP action. */
+    downloadUrl: string;
     sha256: string;
     bytes: number;
     root: string;
@@ -32,7 +35,8 @@ export const BONUS_VAULTS: readonly BonusVaultDef[] = [
         description: 'Recommended first demo. Saved Pulse, four Gossamer signals, and three Inquiry briefings.',
         books: [{ title: 'Pride & Prejudice', sourceFolder: 'Pride & Prejudice' }],
         archive: {
-            url: 'https://community.radialtimeline.com/go/rt-welcome-demo-download',
+            url: 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/storage/v1/object/public/demo-vault/pride-and-prejudice-demo-vault.zip',
+            downloadUrl: 'https://community.radialtimeline.com/go/rt-welcome-demo-download',
             sha256: '9c898b04621f156b0d5bd6f3cf2d3b1ef54abe13f11a2e6fbd2459e6c7aaedf2',
             bytes: 739102,
             root: 'Pride & Prejudice Demo Vault'
@@ -47,7 +51,8 @@ export const BONUS_VAULTS: readonly BonusVaultDef[] = [
         description: 'Explore the complete journey with saved Pulse, four Gossamer signals, and three Inquiry briefings.',
         books: [{ title: 'The Odyssey', sourceFolder: 'The Odyssey' }],
         archive: {
-            url: 'https://community.radialtimeline.com/go/rt-welcome-odyssey-download',
+            url: 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/storage/v1/object/public/demo-vault/odyssey-demo-vault.zip',
+            downloadUrl: 'https://community.radialtimeline.com/go/rt-welcome-odyssey-download',
             sha256: '13c21a3f60e823bfbb67521160060916bba6c13d26611d67f79994e636ba8e82',
             bytes: 1098230,
             root: 'Obsidian Vault Odyssey Demo'
@@ -67,7 +72,8 @@ export const BONUS_VAULTS: readonly BonusVaultDef[] = [
             { title: 'The Valley of Fear', sourceFolder: '04 The Valley of Fear' }
         ],
         archive: {
-            url: 'https://community.radialtimeline.com/go/rt-welcome-sherlock-download',
+            url: 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/storage/v1/object/public/demo-vault/sherlock-holmes-demo-vault.zip',
+            downloadUrl: 'https://community.radialtimeline.com/go/rt-welcome-sherlock-download',
             sha256: 'aace53768d279cd6f8f881712aedcf94e7f444985caf892d89ade0e0d579b9cb',
             bytes: 5483077,
             root: 'Obsidian Vault Sherlock Holmes Demo'

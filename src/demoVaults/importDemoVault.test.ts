@@ -7,7 +7,7 @@ import { importDemoVault } from './importDemoVault';
 import type { BonusVaultDef } from '../settings/bonusVaults';
 
 const mocks = { request: vi.fn(), prepare: vi.fn() };
-const demo: BonusVaultDef = { id: 'test', title: 'Test', author: 'Author', countLabel: '1 scene', status: 'available', books: [{ title: 'Book', sourceFolder: 'Book' }], archive: { url: 'https://example.com', sha256: 'hash', root: 'Demo', bytes: 1 } };
+const demo: BonusVaultDef = { id: 'test', title: 'Test', author: 'Author', countLabel: '1 scene', status: 'available', books: [{ title: 'Book', sourceFolder: 'Book' }], archive: { url: 'https://example.com/demo.zip', downloadUrl: 'https://example.com/go/demo', sha256: 'hash', root: 'Demo', bytes: 1 } };
 const destination = 'Demo Projects/Test';
 const scene = `${destination}/Book/1 Scene.md`;
 const sceneBody = '---\nClass: Scene\nID: unique-demo-id\n---\nDemo scene';
@@ -110,6 +110,7 @@ describe('demo import orchestration', () => {
     it('adds one complete project, preserving author profiles, content, AI permission and source configuration', async () => {
         const { plugin, texts, refresh, activate, sources, authorBook } = fixture();
         await importDemoVault(plugin as never, demo);
+        expect(mocks.request).toHaveBeenCalledWith({ url: 'https://example.com/demo.zip', method: 'GET' });
         expect(texts.get('Author/Chapter.md')).toContain('Author scene');
         expect(texts.get(scene)).toBe(sceneBody);
         expect(plugin.settings.books[0]).toBe(authorBook);

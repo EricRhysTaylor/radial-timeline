@@ -20,7 +20,7 @@ async function fixture(extra: Record<string, string> = {}) {
     };
     const bytes = zipSync(Object.fromEntries(Object.entries(entries).map(([key, value]) => [key, strToU8(value)])));
     const hash = Buffer.from(await crypto.subtle.digest('SHA-256', new Uint8Array(bytes).buffer)).toString('hex');
-    const demo: BonusVaultDef = { id: 'test', title: 'Test', author: 'Author', countLabel: '2 scenes', status: 'available', books: [{ title: 'Book', sourceFolder: 'Book' }], archive: { url: 'https://example.com/demo.zip', root: 'Demo', bytes: bytes.length, sha256: hash } };
+    const demo: BonusVaultDef = { id: 'test', title: 'Test', author: 'Author', countLabel: '2 scenes', status: 'available', books: [{ title: 'Book', sourceFolder: 'Book' }], archive: { url: 'https://example.com/demo.zip', downloadUrl: 'https://example.com/go/demo', root: 'Demo', bytes: bytes.length, sha256: hash } };
     return { bytes, demo, numbers: new Map([['Demo Projects/Test/Book', 4]]) };
 }
 

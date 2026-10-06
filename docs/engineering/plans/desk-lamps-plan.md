@@ -222,8 +222,8 @@ happens; the website manages the list.
 Built 2026-10-04 in `radial-timeline-platform` (PR #21, branch
 `claude/desk-lamps`): migration `*_community_desk_lamps`, functions
 `community-desk-lamp` and `community-desk-lamps`, and `desk_lamps` in the
-account export. Not yet applied or deployed; its `HANDOFF.md` entry has the
-deploy order and is the record of what is live.
+account export. Applied and deployed 2026-10-04 (see Status); its
+`HANDOFF.md` entry is the record of what is live.
 
 Two tables, neither readable by any client (unlike `community_follows`,
 whose SELECT is public): RLS on, no policies, service role only. Members read

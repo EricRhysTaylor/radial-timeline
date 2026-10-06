@@ -74,7 +74,7 @@ export function renderBonusVaultsSection({
         cls: ERT_CLASSES.SECTION_DESC,
         text:
             'Explore complete worked examples with saved analysis. Start with the free ' +
-            'Pride & Prejudice or Odyssey project; no API key is needed to browse saved results. ' +
+            'Pride & Prejudice, Odyssey, or Sherlock Holmes project; no API key is needed to browse saved results. ' +
             'Add a demo directly to this vault, or download a separate vault as a ZIP.'
     });
 

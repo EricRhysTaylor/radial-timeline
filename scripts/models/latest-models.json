@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-10-05T17:08:47.518Z",
+  "generatedAt": "2026-10-07T18:53:03.761Z",
   "providerFetchedAt": {
-    "openai": "2026-10-05T17:08:47.518Z",
-    "anthropic": "2026-10-05T17:08:47.518Z",
-    "google": "2026-10-05T17:08:47.518Z"
+    "openai": "2026-10-07T18:53:03.761Z",
+    "anthropic": "2026-10-07T18:53:03.761Z",
+    "google": "2026-10-07T18:53:03.761Z"
   },
   "summary": {
     "openai": 135,
-    "anthropic": 13,
-    "google": 61
+    "anthropic": 14,
+    "google": 62
   },
   "models": [
     {
@@ -1688,6 +1688,15 @@
           "pdf_input": {
             "supported": true
           },
+          "server_tools": {
+            "supported": true,
+            "code_execution": {
+              "supported": true
+            },
+            "web_search": {
+              "supported": true
+            }
+          },
           "structured_outputs": {
             "supported": true
           },
@@ -1699,6 +1708,9 @@
               },
               "adaptive": {
                 "supported": true
+              },
+              "disabled": {
+                "supported": false
               }
             }
           }
@@ -1764,6 +1776,15 @@
           "pdf_input": {
             "supported": true
           },
+          "server_tools": {
+            "supported": true,
+            "code_execution": {
+              "supported": true
+            },
+            "web_search": {
+              "supported": true
+            }
+          },
           "structured_outputs": {
             "supported": true
           },
@@ -1775,6 +1796,9 @@
               },
               "adaptive": {
                 "supported": true
+              },
+              "disabled": {
+                "supported": false
               }
             }
           }
@@ -1840,6 +1864,15 @@
           "pdf_input": {
             "supported": true
           },
+          "server_tools": {
+            "supported": true,
+            "code_execution": {
+              "supported": true
+            },
+            "web_search": {
+              "supported": true
+            }
+          },
           "structured_outputs": {
             "supported": true
           },
@@ -1851,6 +1884,9 @@
               },
               "adaptive": {
                 "supported": false
+              },
+              "disabled": {
+                "supported": true
               }
             }
           }
@@ -1858,6 +1894,94 @@
       },
       "label": "Claude Haiku 4.5",
       "createdAt": "2025-10-15T00:00:00Z"
+    },
+    {
+      "provider": "anthropic",
+      "id": "claude-haiku-5-5",
+      "raw": {
+        "type": "model",
+        "id": "claude-haiku-5-5",
+        "display_name": "Claude Haiku 5.5",
+        "created_at": "2026-10-07T18:00:00Z",
+        "line": "haiku",
+        "max_input_tokens": 1000000,
+        "max_tokens": 128000,
+        "capabilities": {
+          "batch": {
+            "supported": true
+          },
+          "citations": {
+            "supported": true
+          },
+          "code_execution": {
+            "supported": true
+          },
+          "context_management": {
+            "supported": true,
+            "clear_tool_uses_20250919": {
+              "supported": true
+            },
+            "clear_thinking_20251015": {
+              "supported": true
+            },
+            "compact_20260112": {
+              "supported": true
+            }
+          },
+          "effort": {
+            "supported": true,
+            "low": {
+              "supported": true
+            },
+            "medium": {
+              "supported": true
+            },
+            "high": {
+              "supported": true
+            },
+            "xhigh": {
+              "supported": true
+            },
+            "max": {
+              "supported": true
+            }
+          },
+          "image_input": {
+            "supported": true
+          },
+          "pdf_input": {
+            "supported": true
+          },
+          "server_tools": {
+            "supported": true,
+            "code_execution": {
+              "supported": true
+            },
+            "web_search": {
+              "supported": true
+            }
+          },
+          "structured_outputs": {
+            "supported": true
+          },
+          "thinking": {
+            "supported": true,
+            "types": {
+              "enabled": {
+                "supported": false
+              },
+              "adaptive": {
+                "supported": true
+              },
+              "disabled": {
+                "supported": true
+              }
+            }
+          }
+        }
+      },
+      "label": "Claude Haiku 5.5",
+      "createdAt": "2026-10-07T18:00:00Z"
     },
     {
       "provider": "anthropic",
@@ -1916,6 +2040,15 @@
           "pdf_input": {
             "supported": true
           },
+          "server_tools": {
+            "supported": true,
+            "code_execution": {
+              "supported": true
+            },
+            "web_search": {
+              "supported": true
+            }
+          },
           "structured_outputs": {
             "supported": true
           },
@@ -1927,6 +2060,9 @@
               },
               "adaptive": {
                 "supported": false
+              },
+              "disabled": {
+                "supported": true
               }
             }
           }
@@ -1992,6 +2128,15 @@
           "pdf_input": {
             "supported": true
           },
+          "server_tools": {
+            "supported": true,
+            "code_execution": {
+              "supported": true
+            },
+            "web_search": {
+              "supported": true
+            }
+          },
           "structured_outputs": {
             "supported": true
           },
@@ -2002,6 +2147,9 @@
                 "supported": true
               },
               "adaptive": {
+                "supported": true
+              },
+              "disabled": {
                 "supported": true
               }
             }
@@ -2068,6 +2216,15 @@
           "pdf_input": {
             "supported": true
           },
+          "server_tools": {
+            "supported": true,
+            "code_execution": {
+              "supported": true
+            },
+            "web_search": {
+              "supported": true
+            }
+          },
           "structured_outputs": {
             "supported": true
           },
@@ -2078,6 +2235,9 @@
                 "supported": false
               },
               "adaptive": {
+                "supported": true
+              },
+              "disabled": {
                 "supported": true
               }
             }
@@ -2144,6 +2304,15 @@
           "pdf_input": {
             "supported": true
           },
+          "server_tools": {
+            "supported": true,
+            "code_execution": {
+              "supported": true
+            },
+            "web_search": {
+              "supported": true
+            }
+          },
           "structured_outputs": {
             "supported": true
           },
@@ -2154,6 +2323,9 @@
                 "supported": false
               },
               "adaptive": {
+                "supported": true
+              },
+              "disabled": {
                 "supported": true
               }
             }
@@ -2220,6 +2392,15 @@
           "pdf_input": {
             "supported": true
           },
+          "server_tools": {
+            "supported": true,
+            "code_execution": {
+              "supported": true
+            },
+            "web_search": {
+              "supported": true
+            }
+          },
           "structured_outputs": {
             "supported": true
           },
@@ -2230,6 +2411,9 @@
                 "supported": false
               },
               "adaptive": {
+                "supported": true
+              },
+              "disabled": {
                 "supported": true
               }
             }
@@ -2296,6 +2480,15 @@
           "pdf_input": {
             "supported": true
           },
+          "server_tools": {
+            "supported": true,
+            "code_execution": {
+              "supported": true
+            },
+            "web_search": {
+              "supported": true
+            }
+          },
           "structured_outputs": {
             "supported": true
           },
@@ -2307,6 +2500,9 @@
               },
               "adaptive": {
                 "supported": true
+              },
+              "disabled": {
+                "supported": false
               }
             }
           }
@@ -2372,6 +2568,15 @@
           "pdf_input": {
             "supported": true
           },
+          "server_tools": {
+            "supported": true,
+            "code_execution": {
+              "supported": true
+            },
+            "web_search": {
+              "supported": true
+            }
+          },
           "structured_outputs": {
             "supported": true
           },
@@ -2383,6 +2588,9 @@
               },
               "adaptive": {
                 "supported": false
+              },
+              "disabled": {
+                "supported": true
               }
             }
           }
@@ -2448,6 +2656,15 @@
           "pdf_input": {
             "supported": true
           },
+          "server_tools": {
+            "supported": true,
+            "code_execution": {
+              "supported": true
+            },
+            "web_search": {
+              "supported": true
+            }
+          },
           "structured_outputs": {
             "supported": true
           },
@@ -2458,6 +2675,9 @@
                 "supported": true
               },
               "adaptive": {
+                "supported": true
+              },
+              "disabled": {
                 "supported": true
               }
             }
@@ -2524,6 +2744,15 @@
           "pdf_input": {
             "supported": true
           },
+          "server_tools": {
+            "supported": true,
+            "code_execution": {
+              "supported": true
+            },
+            "web_search": {
+              "supported": true
+            }
+          },
           "structured_outputs": {
             "supported": true
           },
@@ -2534,6 +2763,9 @@
                 "supported": false
               },
               "adaptive": {
+                "supported": true
+              },
+              "disabled": {
                 "supported": true
               }
             }
@@ -2600,6 +2832,15 @@
           "pdf_input": {
             "supported": true
           },
+          "server_tools": {
+            "supported": true,
+            "code_execution": {
+              "supported": true
+            },
+            "web_search": {
+              "supported": true
+            }
+          },
           "structured_outputs": {
             "supported": true
           },
@@ -2611,6 +2852,9 @@
               },
               "adaptive": {
                 "supported": true
+              },
+              "disabled": {
+                "supported": false
               }
             }
           }
@@ -3257,8 +3501,7 @@
         "temperature": 1,
         "topP": 0.95,
         "topK": 64,
-        "maxTemperature": 2,
-        "thinking": true
+        "maxTemperature": 2
       },
       "label": "Gemini 3.1 Flash TTS Preview",
       "inputTokenLimit": 8192,
@@ -3407,8 +3650,7 @@
         "temperature": 1,
         "topP": 0.95,
         "topK": 64,
-        "maxTemperature": 2,
-        "thinking": true
+        "maxTemperature": 2
       },
       "label": "Gemini 3.5 Transcribe",
       "inputTokenLimit": 98304,
@@ -3720,6 +3962,31 @@
       },
       "label": "Gemini Flash-Lite Latest",
       "inputTokenLimit": 1048576,
+      "outputTokenLimit": 65536
+    },
+    {
+      "provider": "google",
+      "id": "gemini-nano-banana-2.1",
+      "raw": {
+        "name": "models/gemini-nano-banana-2.1",
+        "version": "3.0",
+        "displayName": "Nano Banana 2.1",
+        "description": "Gemini Nano Banana 2.1.",
+        "inputTokenLimit": 65536,
+        "outputTokenLimit": 65536,
+        "supportedGenerationMethods": [
+          "generateContent",
+          "countTokens",
+          "batchGenerateContent"
+        ],
+        "temperature": 1,
+        "topP": 0.95,
+        "topK": 64,
+        "maxTemperature": 1,
+        "thinking": true
+      },
+      "label": "Nano Banana 2.1",
+      "inputTokenLimit": 65536,
       "outputTokenLimit": 65536
     },
     {

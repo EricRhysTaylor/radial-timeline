@@ -1,15 +1,15 @@
 {
-  "checkedAt": "2026-10-05T17:09:31.664Z",
+  "checkedAt": "2026-10-07T18:53:03.770Z",
   "mode": "report",
   "snapshotBefore": {
     "generatedAt": "2026-10-05T17:08:47.518Z"
   },
   "snapshotAfter": {
-    "generatedAt": "2026-10-05T17:08:47.518Z",
+    "generatedAt": "2026-10-07T18:53:03.761Z",
     "providerFetchedAt": {
-      "openai": "2026-10-05T17:08:47.518Z",
-      "anthropic": "2026-10-05T17:08:47.518Z",
-      "google": "2026-10-05T17:08:47.518Z"
+      "openai": "2026-10-07T18:53:03.761Z",
+      "anthropic": "2026-10-07T18:53:03.761Z",
+      "google": "2026-10-07T18:53:03.761Z"
     }
   },
   "staleProviders": [],
@@ -19,18 +19,37 @@
       "removed": []
     },
     "anthropic": {
-      "added": [],
+      "added": [
+        "claude-haiku-5-5"
+      ],
       "removed": []
     },
     "google": {
-      "added": [],
+      "added": [
+        "gemini-nano-banana-2.1"
+      ],
       "removed": []
     }
   },
   "aliasChanges": [],
-  "anthropicNewestChanged": null,
+  "anthropicNewestChanged": {
+    "from": {
+      "id": "claude-sonnet-5-5",
+      "displayName": "Claude Sonnet 5.5",
+      "createdAt": "2026-09-28T00:00:00Z"
+    },
+    "to": {
+      "id": "claude-haiku-5-5",
+      "displayName": "Claude Haiku 5.5",
+      "createdAt": "2026-10-07T18:00:00Z"
+    }
+  },
   "tokenLimitChanges": [],
   "releaseAlerts": [],
-  "hasActionableChanges": false,
-  "recommendedFollowUps": []
+  "hasActionableChanges": true,
+  "recommendedFollowUps": [
+    "Review scripts/models/latest-models.json and scripts/models/model-drift-report.json for provider catalog drift.",
+    "If a new provider model should ship in RT, update scripts/models/registry.json and src/ai/registry/builtinModels.ts.",
+    "If RT surfaces cost or positioning for the model, update src/ai/cost/providerPricing.ts."
+  ]
 }

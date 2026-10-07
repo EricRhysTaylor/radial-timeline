@@ -1,6 +1,6 @@
 {
-  "checkedAt": "2026-09-29T17:11:17.097Z",
-  "snapshotGeneratedAt": "2026-09-29T17:08:57.811Z",
+  "checkedAt": "2026-10-07T18:53:03.770Z",
+  "snapshotGeneratedAt": "2026-10-07T18:53:03.761Z",
   "tokenLimits": {
     "gemini-pro-latest": 65536,
     "gemini-flash-latest": 65536
@@ -31,9 +31,9 @@
   },
   "anthropic": {
     "newestModel": {
-      "id": "claude-sonnet-5-5",
-      "displayName": "Claude Sonnet 5.5",
-      "createdAt": "2026-09-28T00:00:00Z"
+      "id": "claude-haiku-5-5",
+      "displayName": "Claude Haiku 5.5",
+      "createdAt": "2026-10-07T18:00:00Z"
     }
   }
 }

@@ -119,7 +119,7 @@ Pulse sends three scenes together and requires structured JSON results. Choose a
 
 ### Onboarding And Local Model Hardware
 
-[Manuscript onboarding](Commands#onboard-manuscript) is undergoing testing and is not released yet; it does not appear in release builds. It supports structure-only import and optional Local LLM assistance; onboarding AI requests use the configured local endpoint.
+[Manuscript onboarding](Onboard-Existing-Manuscript) defaults to **Structure only — no AI**, which needs no model or special AI hardware. Choose **AI assisted** explicitly to use an available local or configured cloud engine. See the onboarding page for build availability.
 
 The verified hardware setup is a **Mac Studio M4 Max with 64GB unified memory** running **Qwen3-Next-80B-A3B-Instruct (4-bit)**. Earlier testing also used **Qwen3-30B-A3B-2507 (4-bit)**, with weaker results. Treat these as tested setups and validate your chosen model before importing a manuscript.
 

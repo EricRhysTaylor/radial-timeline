@@ -1,6 +1,6 @@
 *   [Home](Home)
 *   [Getting Started](Getting-Started)
-    *   [Manuscript Onboarding (in testing)](Onboard-Existing-Manuscript)
+    *   [Manuscript Onboarding](Onboard-Existing-Manuscript)
     *   [Demo Vault: Pride & Prejudice](Sample-Vault)
     *   [Demo Vault: The Odyssey](Odyssey-Demo-Vault)
 *   [How to](How-to)

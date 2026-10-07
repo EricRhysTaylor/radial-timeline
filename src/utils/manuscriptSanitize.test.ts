@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sanitizeCompiledManuscript, sanitizeCompiledManuscriptForPdf } from './manuscriptSanitize';
+import { getDefaultManuscriptCleanupOptions, sanitizeCompiledManuscript, sanitizeCompiledManuscriptForPdf } from './manuscriptSanitize';
 
 describe('sanitizeCompiledManuscript', () => {
     it('always removes YAML frontmatter blocks from compiled manuscript text', () => {
@@ -181,38 +181,71 @@ Ends here ^scene-end`;
         expect(sanitized).toBe('- [ ] recently read');
     });
 
-    it('keeps %%ai:%% author queries while stripping generic comments', () => {
-        const input = 'Prose %%normal note%% and %%ai: Is this beat too abrupt?%% end.';
-        const sanitized = sanitizeCompiledManuscript(input, {
-            stripComments: true,
-            stripAiComments: false,
-            stripLinks: false,
-            stripCallouts: false,
-            stripBlockIds: false
+    // `%%query:` is the current Editorialist marker; `%%ai:` is the legacy
+    // spelling older manuscripts still carry. Both follow the same toggle.
+    describe.each([
+        ['%%query:', '%%query: Is this beat too abrupt?%%'],
+        ['legacy %%ai:', '%%ai: Is this beat too abrupt?%%']
+    ])('%s author queries', (_label, marker) => {
+        it('survive the generic comment strip while stripAiComments is off', () => {
+            const input = `Prose %%normal note%% and ${marker} end.`;
+            const sanitized = sanitizeCompiledManuscript(input, {
+                stripComments: true,
+                stripAiComments: false,
+                stripLinks: false,
+                stripCallouts: false,
+                stripBlockIds: false
+            });
+
+            expect(sanitized).toBe(`Prose  and ${marker} end.`);
         });
 
-        expect(sanitized).not.toContain('%%normal note%%');
-        expect(sanitized).toContain('%%ai: Is this beat too abrupt?%%');
+        it('are removed when stripAiComments is on', () => {
+            const input = `Prose ${marker} end.`;
+
+            expect(sanitizeCompiledManuscript(input, { stripAiComments: true })).toBe('Prose  end.');
+            expect(sanitizeCompiledManuscript(input, { stripComments: true, stripAiComments: true })).toBe('Prose  end.');
+        });
+
+        it('leave ordinary comments alone when only stripAiComments is on', () => {
+            const input = `Prose ${marker} mid %%draft note%% end.`;
+
+            expect(sanitizeCompiledManuscript(input, { stripAiComments: true })).toBe('Prose  mid %%draft note%% end.');
+        });
+
+        it('keep prose between a query and a later comment', () => {
+            // The closing `%%` of the query must not pair with the opener of
+            // the next comment: that swallowed the prose between them.
+            const input = `Prose ${marker} mid %%draft note%% end.`;
+
+            expect(sanitizeCompiledManuscript(input, { stripComments: true })).toBe(`Prose ${marker} mid  end.`);
+        });
+
+        it('keep prose between a query and a comment scenes later under the PDF defaults', () => {
+            const input = `Scene one ${marker} ends.\n\nScene two prose.\n\nScene three %%draft note%% ends.`;
+            const pdfDefaults = getDefaultManuscriptCleanupOptions('pdf');
+
+            expect(sanitizeCompiledManuscript(input, pdfDefaults))
+                .toBe('Scene one  ends.\n\nScene two prose.\n\nScene three  ends.');
+        });
     });
 
-    it('strips %%ai:%% author queries only when stripAiComments is enabled', () => {
-        const input = 'Prose %%ai: Is this beat too abrupt?%% end.';
-        const sanitized = sanitizeCompiledManuscript(input, { stripAiComments: true });
+    it('matches author queries case-insensitively and with surrounding whitespace', () => {
+        for (const input of ['A %% QUERY : keep? %% B', 'A %% AI : keep? %% B']) {
+            const stripped = sanitizeCompiledManuscript(input, { stripAiComments: true });
+            expect(stripped).toBe('A  B');
 
-        expect(sanitized).not.toContain('%%ai:');
-        expect(sanitized).toContain('Prose');
-        expect(sanitized).toContain('end.');
+            // The generic comment strip must spare it as an author query.
+            const kept = sanitizeCompiledManuscript(input, { stripComments: true });
+            expect(kept).toBe(input);
+        }
     });
 
-    it('matches AI comments case-insensitively and with surrounding whitespace', () => {
-        const input = 'A %% AI : keep? %% B';
+    it('treats comments that only mention a query as ordinary comments', () => {
+        const input = 'A %%queryless note%% B %%aim: later%% C';
 
-        const stripped = sanitizeCompiledManuscript(input, { stripAiComments: true });
-        expect(stripped).not.toContain('keep?');
-
-        // The generic comment strip must spare it as an AI-comment category.
-        const kept = sanitizeCompiledManuscript(input, { stripComments: true });
-        expect(kept).toContain('%% AI : keep? %%');
+        expect(sanitizeCompiledManuscript(input, { stripComments: true })).toBe('A  B  C');
+        expect(sanitizeCompiledManuscript(input, { stripAiComments: true })).toBe(input);
     });
 });
 

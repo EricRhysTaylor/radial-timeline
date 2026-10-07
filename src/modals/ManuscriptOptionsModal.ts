@@ -816,7 +816,7 @@ export class ManuscriptOptionsModal extends Modal {
         this.cleanupAiCommentsToggle = new ToggleComponent(aiCommentsRow).onChange((value) => {
             this.setActiveCleanupOption('stripAiComments', value);
         });
-        addCleanupExample('`%%ai: Is this scene too slow?%%`');
+        addCleanupExample('`%%query: Is this scene too slow?%%`');
 
         const commentsRow = this.exportCleanupCard.createDiv({ cls: 'ert-manuscript-toggle-row' });
         commentsRow.createSpan({ cls: 'ert-manuscript-toggle-label', text: 'Strip comments — author queries follow the toggle above' });

@@ -332,7 +332,7 @@ If you're migrating a manuscript that already carries Pandoc/LaTeX markup, this 
 - YAML blocks (`---…---` with `key: value` lines) anywhere in the compiled text — including note frontmatter. Keep manuscript prose outside YAML fences.
 - Editorialist review blocks.
 
-**Removed only when the matching cleanup toggle is on:** `%%comments%%`, `%%ai: queries%%`, HTML comments, links (label kept), callouts, block IDs, and (PDF/Word) task-list markers.
+**Removed only when the matching cleanup toggle is on:** `%%comments%%`, `%%query: author queries%%` (and the older `%%ai:` spelling), HTML comments, links (label kept), callouts, block IDs, and (PDF/Word) task-list markers.
 
 **Document metadata:** `title` and `author` always come from your BookMeta note. A YAML metadata block at the top of your old manuscript is *not* forwarded — use **Settings → Publish → Advanced Pandoc** (Pro) instead:
 - **Custom Pandoc metadata** — extra `--metadata key: value` pairs for custom/imported templates (`lang`, `subtitle`, or any variable your template reads).

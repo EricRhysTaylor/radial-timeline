@@ -1,4 +1,4 @@
-## Radial Timeline 7.5.0
+## Radial Timeline 7.4.1
 
 Manuscript onboarding is out of testing: bring in a Scrivener export, a Word document, or one big file without AI. Manuscript export follows Editorialist's new `%%query:` marker for author queries.
 

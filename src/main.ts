@@ -30,7 +30,7 @@ import { INQUIRY_VIEW_TYPE } from './inquiry/constants';
 import { RendererService } from './services/RendererService';
 import { RadialTimelineSettingsTab } from './settings/SettingsTab';
 import { cleanupTooltipAnchors } from './utils/tooltip';
-import type { RadialTimelineSettings, LegacyPersistedSettings, TimelineItem, BookMeta, EmbeddedReleaseNotesBundle, EmbeddedReleaseNotesEntry, ManuscriptExportCleanupOptions, GossamerRunFilterSettings } from './types';
+import type { RadialTimelineSettings, LegacyPersistedSettings, TimelineItem, BookMeta, EmbeddedReleaseNotesBundle, EmbeddedReleaseNotesEntry, GossamerRunFilterSettings } from './types';
 import { ReleaseNotesService } from './services/ReleaseNotesService';
 import { getAllRefactorAlertIds } from './settings/refactorAlerts';
 import { autoAdoptDetectedBeatsIfEmpty } from './storyBeats/workspaceState';
@@ -64,14 +64,13 @@ import { CommunityMailbox } from './communityShare/communityMailbox';
 import { DeskLamps } from './communityShare/deskLamps';
 import { DEFAULT_BOOK_TITLE, createBookId, deriveBookTitleFromSourcePath, getActiveBook, getSagaBooks, getTimelineScope, isSagaScopeAvailable, normalizeBookProfile, shouldSeedBookProfileFromLegacySettings } from './utils/books';
 import { adaptPandocLayoutsToPublishingModel } from './utils/publishingModel';
-import { convertExportProfileToLegacyManuscriptExportTemplate, migratePublishingModelState } from './utils/publishingMigration';
+import { migratePublishingModelState, RENAMED_PANDOC_LAYOUT_IDS } from './utils/publishingMigration';
 import { initVersionCheckService } from './services/VersionCheckService';
 import { AuthorProgressService } from './services/AuthorProgressService';
 import { PublishingValidationService } from './services/PublishingValidationService';
 import { TimelineAuditAiService } from './services/TimelineAuditAiService';
 import { WritingSessionService } from './services/WritingSessionService';
 import { ensureBundledPandocLayoutsRegistered, ensureSpecDrivenBundledFictionTemplatesCurrent, setPandocFontPathsForVault } from './utils/pandocBundledLayouts';
-import { cleanupFormatForOutputFormat, normalizeManuscriptCleanupOptions } from './utils/manuscriptSanitize';
 import { DARIAN_MARS_MONTH_NAMES, MARS_TEMPLATE_ID, matchesLegacyMarsMonthNames } from './utils/planetaryMars';
 import type { GossamerHistoricalRunOverlay, GossamerMinMaxBand, GossamerRun, GossamerRunRecord } from './utils/gossamer';
 import { coerceGossamerSignal, DEFAULT_GOSSAMER_SIGNAL, type GossamerSignalType } from './types/gossamerSignals';
@@ -427,21 +426,12 @@ export default class RadialTimelinePlugin extends Plugin {
             this.settings.lastUsedExportProfileId = migration.lastUsedExportProfileId;
             changed = true;
         }
-        if ((this.settings.lastUsedManuscriptExportTemplateId || '') !== (migration.lastUsedExportProfileId || '')) {
-            this.settings.lastUsedManuscriptExportTemplateId = migration.lastUsedExportProfileId;
-            changed = true;
-        }
-        const currentLegacyTemplates = Array.isArray(this.settings.manuscriptExportTemplates)
-            ? this.settings.manuscriptExportTemplates
-            : [];
-        const legacyTemplates = migration.exportProfiles.map(profile => {
-            const existing = currentLegacyTemplates.find(template => template.id === profile.id);
-            return convertExportProfileToLegacyManuscriptExportTemplate(profile, {
-                createdAt: existing?.createdAt,
-            });
-        });
-        if (JSON.stringify(this.settings.manuscriptExportTemplates || []) !== JSON.stringify(legacyTemplates)) {
-            this.settings.manuscriptExportTemplates = legacyTemplates;
+        // The legacy preset list and its last-used id were just converted by
+        // the migration; they leave the settings file for good.
+        const legacy = this.settings as LegacyPersistedSettings;
+        if ('manuscriptExportTemplates' in legacy || 'lastUsedManuscriptExportTemplateId' in legacy) {
+            delete legacy.manuscriptExportTemplates;
+            delete legacy.lastUsedManuscriptExportTemplateId;
             changed = true;
         }
 
@@ -1234,49 +1224,21 @@ export default class RadialTimelinePlugin extends Plugin {
         }
         const bundledPandocLayoutsRegistered = ensureBundledPandocLayoutsRegistered(this);
         const publishingModelMigrated = this.syncPublishingModelState();
-        const legacyLayoutIdMap: Record<string, string> = {
-            'bundled-novel-signature-literary-rt': 'bundled-fiction-signature-literary',
-            'bundled-novel': 'bundled-fiction-signature-literary',
-        };
         let pandocLayoutReferenceMigrated = false;
-        let manuscriptExportCleanupMigrated = false;
-        if (Array.isArray(this.settings.manuscriptExportTemplates)) {
-            for (const template of this.settings.manuscriptExportTemplates) {
-                const selected = template.selectedLayoutId;
-                if (selected && legacyLayoutIdMap[selected]) {
-                    template.selectedLayoutId = legacyLayoutIdMap[selected];
-                    pandocLayoutReferenceMigrated = true;
-                }
-                const cleanupFormat = cleanupFormatForOutputFormat(template.outputFormat);
-                const existingCleanup = (template as { exportCleanup?: Partial<ManuscriptExportCleanupOptions> }).exportCleanup;
-                const normalizedCleanup = normalizeManuscriptCleanupOptions(existingCleanup, cleanupFormat);
-                if (
-                    !existingCleanup
-                    || existingCleanup.stripComments !== normalizedCleanup.stripComments
-                    || existingCleanup.stripAiComments !== normalizedCleanup.stripAiComments
-                    || existingCleanup.stripLinks !== normalizedCleanup.stripLinks
-                    || existingCleanup.stripCallouts !== normalizedCleanup.stripCallouts
-                    || existingCleanup.stripBlockIds !== normalizedCleanup.stripBlockIds
-                ) {
-                    template.exportCleanup = normalizedCleanup;
-                    manuscriptExportCleanupMigrated = true;
-                }
-            }
-        }
         if (Array.isArray(this.settings.books)) {
             for (const book of this.settings.books) {
                 const lastUsed = book.lastUsedPandocLayoutByPreset;
                 if (!lastUsed) continue;
                 const novelLayout = lastUsed.novel;
-                if (novelLayout && legacyLayoutIdMap[novelLayout]) {
-                    lastUsed.novel = legacyLayoutIdMap[novelLayout];
+                if (novelLayout && RENAMED_PANDOC_LAYOUT_IDS[novelLayout]) {
+                    lastUsed.novel = RENAMED_PANDOC_LAYOUT_IDS[novelLayout];
                     pandocLayoutReferenceMigrated = true;
                 }
             }
         }
         const globalLastUsed = (this.settings as LegacyPersistedSettings).lastUsedPandocLayoutByPreset;
-        if (globalLastUsed?.novel && legacyLayoutIdMap[globalLastUsed.novel]) {
-            globalLastUsed.novel = legacyLayoutIdMap[globalLastUsed.novel];
+        if (globalLastUsed?.novel && RENAMED_PANDOC_LAYOUT_IDS[globalLastUsed.novel]) {
+            globalLastUsed.novel = RENAMED_PANDOC_LAYOUT_IDS[globalLastUsed.novel];
             pandocLayoutReferenceMigrated = true;
         }
 
@@ -1322,7 +1284,7 @@ export default class RadialTimelinePlugin extends Plugin {
             }
         }
 
-        if (freshInstallSeeded || proEntitlementSeeded || gossamerRunFilterMigrated || aiSettingsMigrated || exportFolderMigrated || legacyKeysStripped || backdropTemplateMigrated || beatTemplateMigrated || pandocLayoutsMigrated || bundledPandocLayoutsRegistered || publishingModelMigrated || pandocLayoutReferenceMigrated || manuscriptExportCleanupMigrated || booksMigrated || timelineScopeMigrated || planetarySelectionMigrated || modeMigrated || stageTargetsMigrated) {
+        if (freshInstallSeeded || proEntitlementSeeded || gossamerRunFilterMigrated || aiSettingsMigrated || exportFolderMigrated || legacyKeysStripped || backdropTemplateMigrated || beatTemplateMigrated || pandocLayoutsMigrated || bundledPandocLayoutsRegistered || publishingModelMigrated || pandocLayoutReferenceMigrated || booksMigrated || timelineScopeMigrated || planetarySelectionMigrated || modeMigrated || stageTargetsMigrated) {
             await this.saveSettings();
         }
     }

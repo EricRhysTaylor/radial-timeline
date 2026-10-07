@@ -187,8 +187,6 @@ Chapter:`
     bookDesignerTemplates: [],
     exportProfiles: [],
     bookPublishingPreferences: [],
-    manuscriptExportTemplates: [],
-    lastUsedManuscriptExportTemplateId: undefined,
     lastUsedExportProfileId: undefined,
     backdropYamlTemplate: `Class: Backdrop                   # Backdrop events appear below the outer ring in Chronologue Mode
 When: {{When}}                       # Start Date/Time (YYYY-MM-DD HH:MM)

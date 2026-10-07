@@ -15,10 +15,8 @@ import { cleanupFormatForOutputFormat, getDefaultManuscriptCleanupOptions, norma
 import { categorizeExportError } from '../utils/exportErrors';
 import {
     adaptPandocLayoutsToPublishingModel,
-    buildLegacyTemplateFromModalExportProfile,
     buildPersistedExportProfileFromModalExportProfile,
     buildModalExportProfile,
-    buildModalExportProfileFromLegacyTemplate,
     buildTransientModalExportProfile,
     clampSplitParts,
     exportProfilesMatch,
@@ -44,7 +42,6 @@ import type {
     BookPublishingPreferences,
     ExportProfile,
     ManuscriptExportCleanupOptions,
-    ManuscriptExportTemplate,
     PandocLayoutTemplate,
     PublishingValidationSnapshot,
     TemplateProfile,
@@ -963,10 +960,7 @@ export class ManuscriptOptionsModal extends Modal {
 
     private refreshExportProfileState(): void {
         this.templateProfiles = adaptPandocLayoutsToPublishingModel(this.plugin.settings.pandocLayouts).profiles;
-        const storedProfiles = this.getStoredExportProfiles();
-        this.exportProfiles = storedProfiles.length > 0
-            ? storedProfiles.map(profile => buildModalExportProfile(profile, this.templateProfiles))
-            : this.getLegacyTemplateList().map(template => buildModalExportProfileFromLegacyTemplate(template, this.templateProfiles));
+        this.exportProfiles = this.getStoredExportProfiles().map(profile => buildModalExportProfile(profile, this.templateProfiles));
 
         const transientDefault = buildTransientModalExportProfile({
             name: 'Current settings',
@@ -996,7 +990,6 @@ export class ManuscriptOptionsModal extends Modal {
         const activePreferences = this.getActiveBookPublishingPreferences();
         const lastUsedId = activePreferences?.lastUsedExportProfileId
             || this.plugin.settings.lastUsedExportProfileId
-            || this.plugin.settings.lastUsedManuscriptExportTemplateId
             || null;
         this.lastUsedExportProfile = lastUsedId ? this.exportProfiles.find(profile => profile.id === lastUsedId) : undefined;
 
@@ -1107,11 +1100,6 @@ export class ManuscriptOptionsModal extends Modal {
         return Array.isArray(profiles) ? profiles : [];
     }
 
-    private getLegacyTemplateList(): ManuscriptExportTemplate[] {
-        const templates = this.plugin.settings.manuscriptExportTemplates;
-        return Array.isArray(templates) ? templates : [];
-    }
-
     private getActiveBookPublishingPreferences(): BookPublishingPreferences | null {
         const activeBook = getActiveBook(this.plugin.settings);
         if (!activeBook) return null;
@@ -1122,14 +1110,7 @@ export class ManuscriptOptionsModal extends Modal {
 
     private async persistTemplateList(list: ModalExportProfile[]): Promise<void> {
         this.exportProfiles = list;
-        const storedProfiles = list.map(profile => buildPersistedExportProfileFromModalExportProfile(profile));
-        this.plugin.settings.exportProfiles = storedProfiles;
-        this.plugin.settings.manuscriptExportTemplates = list.map(profile => buildLegacyTemplateFromModalExportProfile(profile, {
-            order: profile.order,
-            subplot: profile.subplot,
-            selectedLayoutId: profile.selectedLayoutId,
-            createdAt: profile.createdAt,
-        }));
+        this.plugin.settings.exportProfiles = list.map(profile => buildPersistedExportProfileFromModalExportProfile(profile));
         await this.plugin.saveSettings();
     }
 
@@ -1144,7 +1125,6 @@ export class ManuscriptOptionsModal extends Modal {
 
     private async rememberLastUsedTemplate(templateId: string | null): Promise<void> {
         this.plugin.settings.lastUsedExportProfileId = templateId || undefined;
-        this.plugin.settings.lastUsedManuscriptExportTemplateId = templateId || undefined;
         const activeBook = getActiveBook(this.plugin.settings);
         if (activeBook) {
             const preferences = Array.isArray(this.plugin.settings.bookPublishingPreferences)
@@ -1280,7 +1260,6 @@ export class ManuscriptOptionsModal extends Modal {
             order: this.order,
             subplot: this.subplot,
             selectedLayoutId: mode.isPdfManuscript ? selectedLayoutId : undefined,
-            createdAt: new Date().toISOString(),
         };
     }
 
@@ -1344,7 +1323,7 @@ export class ManuscriptOptionsModal extends Modal {
             this.selectedExportProfileId = null;
             this.selectedExportProfile = this.defaultExportProfile;
         }
-        if (this.plugin.settings.lastUsedManuscriptExportTemplateId === templateId) {
+        if (this.plugin.settings.lastUsedExportProfileId === templateId) {
             await this.rememberLastUsedTemplate(null);
         }
         this.refreshTemplateDropdown();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildLegacyTemplateFromModalExportProfile, buildModalExportProfileFromLegacyTemplate, buildTransientModalExportProfile, exportProfilesMatch, getModalExportProfileSummary, resolveIncludeSceneId, type ModalExportProfile } from './exportProfileModel';
+import { buildModalExportProfile, buildPersistedExportProfileFromModalExportProfile, buildTransientModalExportProfile, exportProfilesMatch, getModalExportProfileSummary, resolveIncludeSceneId, type ModalExportProfile } from './exportProfileModel';
 
 describe('exportProfileModel', () => {
     const templateProfiles = [
@@ -22,47 +22,6 @@ describe('exportProfileModel', () => {
             status: 'ready' as const,
         }
     ];
-
-    it('preserves stable ids and usage context when adapting legacy templates', () => {
-        const profile = buildModalExportProfileFromLegacyTemplate(
-            {
-                id: 'preset-1',
-                name: 'My preset',
-                createdAt: '2025-01-01T00:00:00.000Z',
-                exportType: 'manuscript',
-                manuscriptPreset: 'screenplay',
-                outlinePreset: 'beat-sheet',
-                outputFormat: 'pdf',
-                tocMode: 'none',
-                order: 'narrative',
-                subplot: 'All Subplots',
-                updateWordCounts: false,
-                includeSynopsis: false,
-                includeMatter: true,
-                saveMarkdownArtifact: true,
-                exportCleanup: { stripComments: true, stripLinks: false, stripCallouts: false, stripBlockIds: false },
-                splitMode: 'single',
-                splitParts: 1,
-                selectedLayoutId: 'bundled-fiction-signature-literary',
-            },
-            templateProfiles as any
-        );
-
-        expect(profile.id).toBe('preset-1');
-        expect(profile.usageContext).toBe('screenplay');
-        expect(profile.templateProfileId).toBe('bundled-fiction-signature-literary');
-
-        const roundTrip = buildLegacyTemplateFromModalExportProfile(profile, {
-            order: 'narrative',
-            subplot: 'All Subplots',
-            selectedLayoutId: 'bundled-fiction-signature-literary',
-            createdAt: '2025-01-01T00:00:00.000Z',
-        });
-
-        expect(roundTrip.id).toBe('preset-1');
-        expect(roundTrip.manuscriptPreset).toBe('screenplay');
-        expect(roundTrip.selectedLayoutId).toBe('bundled-fiction-signature-literary');
-    });
 
     it('builds a transient profile from current modal state without mutating persistence', () => {
         const profile = buildTransientModalExportProfile({
@@ -151,13 +110,12 @@ describe('exportProfileModel', () => {
             expect(exportProfilesMatch({ ...markdown, lineBreaksAsParagraphs: false }, markdown)).toBe(true);
         });
 
-        it('keeps line-per-paragraph through the legacy template round trip', () => {
-            const saved = buildLegacyTemplateFromModalExportProfile({ ...wordPreset, lineBreaksAsParagraphs: true }, {
-                order: wordPreset.order,
-                subplot: wordPreset.subplot,
-            });
-            expect(saved.lineBreaksAsParagraphs).toBe(true);
-            expect(buildModalExportProfileFromLegacyTemplate(saved, []).lineBreaksAsParagraphs).toBe(true);
+        it('round-trips a preset through its persisted shape unchanged', () => {
+            const edited: ModalExportProfile = { ...wordPreset, lineBreaksAsParagraphs: true };
+            const reloaded = buildModalExportProfile(buildPersistedExportProfileFromModalExportProfile(edited), templateProfiles as any);
+            expect(reloaded.id).toBe('word-edits');
+            expect(reloaded.templateProfileId).toBe('bundled-fiction-signature-literary');
+            expect(exportProfilesMatch(reloaded, edited)).toBe(true);
         });
     });
 });

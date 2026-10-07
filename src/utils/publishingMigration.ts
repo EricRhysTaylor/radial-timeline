@@ -3,6 +3,7 @@ import type {
     BookProfile,
     BookPublishingPreferences,
     ExportProfile,
+    LegacyPersistedSettings,
     ManuscriptExportTemplate,
     ManuscriptSceneHeadingMode,
     RadialTimelineSettings,
@@ -25,6 +26,12 @@ const PRESET_TO_CONTEXT: Record<'novel' | 'screenplay' | 'podcast', UsageContext
 
 const DEFAULT_EXPORT_PROFILE_NAME = 'Export profile';
 
+/** Bundled Pandoc layouts that were renamed; old ids resolve to the current one. */
+export const RENAMED_PANDOC_LAYOUT_IDS: Readonly<Record<string, string>> = {
+    'bundled-novel-signature-literary-rt': 'bundled-fiction-signature-literary',
+    'bundled-novel': 'bundled-fiction-signature-literary',
+};
+
 function isNonEmptyString(value: unknown): value is string {
     return typeof value === 'string' && value.trim().length > 0;
 }
@@ -42,9 +49,10 @@ function inferTemplateProfileId(
     template: ManuscriptExportTemplate,
     layouts: TemplateProfile[],
 ): string {
-    const selectedLayoutId = isNonEmptyString(template.selectedLayoutId)
+    const rawLayoutId = isNonEmptyString(template.selectedLayoutId)
         ? template.selectedLayoutId.trim()
         : '';
+    const selectedLayoutId = RENAMED_PANDOC_LAYOUT_IDS[rawLayoutId] || rawLayoutId;
     if (selectedLayoutId && layouts.some(layout => layout.id === selectedLayoutId)) {
         return selectedLayoutId;
     }
@@ -129,37 +137,6 @@ export function convertLegacyManuscriptExportTemplateToExportProfile(
     });
 }
 
-export function convertExportProfileToLegacyManuscriptExportTemplate(
-    profile: ExportProfile,
-    options?: { createdAt?: string }
-): ManuscriptExportTemplate {
-    const normalized = normalizeExportProfile(profile);
-    return {
-        id: normalized.id,
-        name: normalized.name,
-        createdAt: options?.createdAt || new Date().toISOString(),
-        exportType: normalized.exportType,
-        manuscriptPreset: normalized.manuscriptPreset || 'novel',
-        outlinePreset: normalized.outlinePreset || 'beat-sheet',
-        outputFormat: normalized.outputFormat,
-        tocMode: normalized.tocMode || 'none',
-        includeSceneIdInToc: normalized.includeSceneIdInToc,
-        includeSceneIdInHeading: normalized.includeSceneIdInHeading,
-        sceneHeadingMode: normalizeSceneHeadingMode((profile as { sceneHeadingMode?: ManuscriptSceneHeadingMode }).sceneHeadingMode),
-        order: normalized.order || 'narrative',
-        subplot: normalized.subplot || 'All Subplots',
-        updateWordCounts: normalized.updateWordCounts,
-        includeSynopsis: normalized.includeSynopsis,
-        includeMatter: normalized.includeMatter,
-        saveMarkdownArtifact: normalized.saveMarkdownArtifact,
-        lineBreaksAsParagraphs: normalized.lineBreaksAsParagraphs,
-        exportCleanup: normalized.cleanup,
-        splitMode: normalized.splitMode,
-        splitParts: normalized.splitParts,
-        selectedLayoutId: normalized.templateProfileId || undefined,
-    };
-}
-
 export function normalizeBookPublishingPreferences(preferences: Partial<BookPublishingPreferences> | undefined): BookPublishingPreferences | null {
     if (!preferences || !isNonEmptyString(preferences.bookId)) return null;
     const bookId = preferences.bookId.trim();
@@ -233,7 +210,16 @@ export function deriveBookPublishingPreferences(
     });
 }
 
-export function migratePublishingModelState(settings: Pick<RadialTimelineSettings, 'books' | 'activeBookId' | 'exportProfiles' | 'bookPublishingPreferences' | 'manuscriptExportTemplates' | 'lastUsedManuscriptExportTemplateId' | 'lastUsedExportProfileId'>, layouts: TemplateProfile[] = []): PublishingMigrationResult {
+/**
+ * Normalizes the publishing model on every load and save. A legacy preset list
+ * (manuscriptExportTemplates), when still present, is the persisted source of
+ * truth from older builds and is converted here; the caller then removes it.
+ */
+export function migratePublishingModelState(
+    settings: Pick<RadialTimelineSettings, 'books' | 'activeBookId' | 'exportProfiles' | 'bookPublishingPreferences' | 'lastUsedExportProfileId'>
+        & Pick<LegacyPersistedSettings, 'manuscriptExportTemplates' | 'lastUsedManuscriptExportTemplateId'>,
+    layouts: TemplateProfile[] = []
+): PublishingMigrationResult {
     const legacyTemplates = Array.isArray(settings.manuscriptExportTemplates) ? settings.manuscriptExportTemplates : [];
     const existingExportProfiles = Array.isArray(settings.exportProfiles) ? settings.exportProfiles : [];
     const existingBookPublishingPreferences = Array.isArray(settings.bookPublishingPreferences)

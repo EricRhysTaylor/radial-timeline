@@ -913,7 +913,6 @@ export class CommandRegistrar {
             }
             if (result.exportProfileId) {
                 this.plugin.settings.lastUsedExportProfileId = result.exportProfileId;
-                this.plugin.settings.lastUsedManuscriptExportTemplateId = result.exportProfileId;
                 if (activeBook) {
                     const preferences = Array.isArray(this.plugin.settings.bookPublishingPreferences)
                         ? [...this.plugin.settings.bookPublishingPreferences]

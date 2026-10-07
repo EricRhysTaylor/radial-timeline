@@ -3,22 +3,16 @@ import type { ManuscriptPreset, OutlinePreset } from './exportFormats';
 import type {
     ExportProfile,
     ManuscriptExportCleanupOptions,
-    ManuscriptExportTemplate,
     TemplateProfile,
 } from '../types';
 import { cleanupFormatForOutputFormat, getDefaultManuscriptCleanupOptions, normalizeManuscriptCleanupOptions } from './manuscriptSanitize';
-import {
-    convertExportProfileToLegacyManuscriptExportTemplate,
-    convertLegacyManuscriptExportTemplateToExportProfile,
-    normalizeExportProfile,
-} from './publishingMigration';
+import { normalizeExportProfile } from './publishingMigration';
 export { adaptPandocLayoutsToPublishingModel } from './publishingModel';
 
 export interface ModalExportProfile extends ExportProfile {
     order: ManuscriptOrder;
     subplot: string;
     selectedLayoutId?: string;
-    createdAt?: string;
 }
 
 function resolveTemplateProfileId(
@@ -58,18 +52,6 @@ export function buildModalExportProfile(
     };
 }
 
-export function buildModalExportProfileFromLegacyTemplate(
-    template: ManuscriptExportTemplate,
-    templateProfiles: TemplateProfile[]
-): ModalExportProfile {
-    const exportProfile = convertLegacyManuscriptExportTemplateToExportProfile(template, templateProfiles);
-    return {
-        ...buildModalExportProfile(exportProfile, templateProfiles),
-        createdAt: template.createdAt,
-        selectedLayoutId: template.selectedLayoutId || exportProfile.templateProfileId,
-    };
-}
-
 export function buildPersistedExportProfileFromModalExportProfile(profile: ModalExportProfile): ExportProfile {
     return normalizeExportProfile({
         ...profile,
@@ -78,29 +60,6 @@ export function buildPersistedExportProfileFromModalExportProfile(profile: Modal
         order: profile.order,
         subplot: profile.subplot,
     });
-}
-
-export function buildLegacyTemplateFromModalExportProfile(
-    profile: ModalExportProfile,
-    params: {
-        order: ManuscriptOrder;
-        subplot: string;
-        selectedLayoutId?: string;
-        createdAt?: string;
-    }
-): ManuscriptExportTemplate {
-    const persisted = buildPersistedExportProfileFromModalExportProfile({
-        ...profile,
-        order: params.order,
-        subplot: params.subplot,
-        selectedLayoutId: params.selectedLayoutId || profile.selectedLayoutId,
-    });
-    const legacy = convertExportProfileToLegacyManuscriptExportTemplate(persisted);
-    return {
-        ...legacy,
-        createdAt: params.createdAt || profile.createdAt || legacy.createdAt,
-        selectedLayoutId: params.selectedLayoutId || profile.selectedLayoutId || legacy.selectedLayoutId,
-    };
 }
 
 export function buildTransientModalExportProfile(params: {

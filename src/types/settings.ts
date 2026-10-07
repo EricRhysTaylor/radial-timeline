@@ -61,6 +61,11 @@ export interface ManuscriptExportCleanupOptions {
     stripBlockIds: boolean;
 }
 
+/**
+ * Legacy persisted preset shape (pre-ExportProfile). Read once on load by
+ * migratePublishingModelState, which converts it into exportProfiles and the
+ * key is removed from settings.
+ */
 export interface ManuscriptExportTemplate {
     id: string;
     name: string;
@@ -1232,8 +1237,6 @@ export interface RadialTimelineSettings {
     bookDesignerTemplates?: BookDesignerTemplate[];
     exportProfiles?: ExportProfile[];
     bookPublishingPreferences?: BookPublishingPreferences[];
-    manuscriptExportTemplates?: ManuscriptExportTemplate[];
-    lastUsedManuscriptExportTemplateId?: string;
     lastUsedExportProfileId?: string;
     /** @deprecated Use backdropYamlTemplates instead. Kept for migration. */
     backdropYamlTemplate?: string;
@@ -1369,6 +1372,10 @@ export interface LegacyPersistedSettings {
         novel?: string;
     };
     lastUsedPandocLayoutByPreset?: Record<string, string>;
+    /** Legacy preset list, converted into exportProfiles once and then removed. */
+    manuscriptExportTemplates?: ManuscriptExportTemplate[];
+    /** Legacy last-used preset id, folded into lastUsedExportProfileId and then removed. */
+    lastUsedManuscriptExportTemplateId?: string;
 }
 
 export interface HotfixHistoryEntry {

@@ -156,6 +156,67 @@ describe('publishing migration', () => {
         expect(result.lastUsedExportProfileId).toBe('legacy-podcast');
     });
 
+    it('carries line-per-paragraph and renamed layout ids out of the legacy list', () => {
+        const legacy: ManuscriptExportTemplate = {
+            id: 'legacy-word',
+            name: 'Word edits',
+            createdAt: '2026-10-07T00:00:00.000Z',
+            exportType: 'manuscript',
+            manuscriptPreset: 'novel',
+            outlinePreset: 'beat-sheet',
+            outputFormat: 'docx',
+            tocMode: 'none',
+            order: 'narrative',
+            subplot: 'All Subplots',
+            updateWordCounts: true,
+            includeSynopsis: false,
+            includeMatter: false,
+            saveMarkdownArtifact: false,
+            lineBreaksAsParagraphs: true,
+            exportCleanup: getDefaultManuscriptCleanupOptions('pdf'),
+            splitMode: 'single',
+            splitParts: 1,
+            selectedLayoutId: 'bundled-novel',
+        };
+
+        const result = migratePublishingModelState({
+            books: [],
+            exportProfiles: [],
+            bookPublishingPreferences: [],
+            manuscriptExportTemplates: [legacy],
+        }, [buildLayout('bundled-fiction-modern-classic', 'novel'), buildLayout('bundled-fiction-signature-literary', 'novel')]);
+
+        expect(result.exportProfiles[0].lineBreaksAsParagraphs).toBe(true);
+        expect(result.exportProfiles[0].templateProfileId).toBe('bundled-fiction-signature-literary');
+    });
+
+    it('keeps saved export profiles when no legacy list remains', () => {
+        const result = migratePublishingModelState({
+            books: [],
+            exportProfiles: [{
+                id: 'p1',
+                name: 'Word edits',
+                templateProfileId: 'bundled-fiction-signature-literary',
+                usageContext: 'novel',
+                outputFormat: 'docx',
+                exportType: 'manuscript',
+                includeMatter: false,
+                includeSynopsis: false,
+                updateWordCounts: true,
+                saveMarkdownArtifact: false,
+                lineBreaksAsParagraphs: true,
+                cleanup: getDefaultManuscriptCleanupOptions('pdf'),
+                splitMode: 'single',
+                splitParts: 1,
+                selectionPolicy: 'manual-range',
+            }],
+            bookPublishingPreferences: [],
+        }, []);
+
+        expect(result.exportProfiles.map(profile => profile.id)).toEqual(['p1']);
+        expect(result.exportProfiles[0].lineBreaksAsParagraphs).toBe(true);
+    });
+
     it('preserves last-used modal snapshots in book publishing preferences', () => {
         const cleanup = {
             ...getDefaultManuscriptCleanupOptions('markdown'),

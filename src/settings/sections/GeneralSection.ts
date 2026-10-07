@@ -1,5 +1,7 @@
 import type { App } from 'obsidian';
 import { Setting as ObsidianSetting, normalizePath, Notice, Modal, ButtonComponent, ExtraButtonComponent, TextComponent, setIcon, setTooltip, TFile, TFolder } from 'obsidian';
+import { OnboardingModal } from '../../modals/OnboardingModal';
+import { discoverOnboardingCandidates } from '../../onboarding/discovery';
 import { NamePromptModal } from '../../ui/NamePromptModal';
 import type RadialTimelinePlugin from '../../main';
 import { CreateBookCopyModal } from '../../modals/CreateBookCopyModal';
@@ -117,6 +119,27 @@ export function renderGeneralSection(params: {
         attr: { 'aria-label': 'Add book', type: 'button' }
     });
     setIcon(addBookBtn, 'plus');
+
+    const discoveryPanel = containerEl.createDiv({ cls: 'ert-panel ert-stack' });
+    const scanSetting = new ObsidianSetting(discoveryPanel)
+        .setName('Import an existing manuscript')
+        .setDesc('Find manuscript exports already copied into this vault. Review the source before creating a book.')
+        .addButton(button => button.setButtonText('Choose manuscript').onClick(() => new OnboardingModal(app, plugin, true).open()));
+    const candidatesEl = discoveryPanel.createDiv({ cls: 'ert-stack' });
+    const scan = async () => {
+        candidatesEl.setText('Checking for manuscript exports…');
+        try {
+            const candidates = await discoverOnboardingCandidates(app, (plugin.settings.books ?? []).map(book => book.sourceFolder)); // SAFE: a new vault has no registered books
+            if (!candidatesEl.isConnected) return;
+            candidatesEl.empty();
+            candidatesEl.createDiv({ cls: 'ert-muted', text: candidates.length ? `${candidates.length} potential manuscript folders found. Choose manuscript to inspect and import.` : 'No unregistered export detected. Copy your Scrivener export into this vault, then scan again.' });
+            for (const candidate of candidates) candidatesEl.createDiv({ cls: 'ert-muted', text: `${candidate.folder} — ${candidate.evidence}` });
+        } catch (error) {
+            if (candidatesEl.isConnected) candidatesEl.setText(`Cannot scan exports: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    };
+    scanSetting.addButton(button => button.setButtonText('Scan for exports').onClick(() => void scan()));
+    if (!(plugin.settings.books ?? []).some(book => book.sourceFolder && app.vault.getAbstractFileByPath(book.sourceFolder) instanceof TFolder)) void scan(); // SAFE: only first-run or unconfigured vaults scan automatically
 
     const booksPanel = containerEl.createDiv({ cls: `${ERT_CLASSES.STACK} ert-books-panel` });
     const autoloadHighlightedBookId = consumeBookManagerAutoloadHighlight();

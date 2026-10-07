@@ -36,6 +36,8 @@ vi.mock('../../tests/mocks/obsidian', async (importOriginal) => {
   }
   return { ...original, DropdownComponent: Control, ButtonComponent: Control };
 });
+vi.mock('../settings/FolderSuggest', () => ({ ModalFolderSuggest: class {} }));
+vi.mock('./BookDesignerModal', () => ({ BookDesignerModal: class {} }));
 import { OnboardingModal } from './OnboardingModal';
 
 function element(): object {
@@ -45,6 +47,9 @@ function element(): object {
 type PrepareHarness = {
   useAi: boolean;
   aiAvailable: boolean;
+  plugin: { settings: object };
+  book: { title: string; sourceFolder: string } | null;
+  selectSourceFolder(folder: string): Promise<void>;
   contentEl: object;
   showPreflight(): Promise<void>;
   renderBusy(): void;
@@ -72,6 +77,15 @@ describe('onboarding AI opt-in', () => {
     expect(probes.preflight).not.toHaveBeenCalled();
     expect(probes.cloud).not.toHaveBeenCalled();
     expect(probes.refresh).not.toHaveBeenCalled();
+  });
+  it('uses the chosen export without registering a source book or changing settings', async () => {
+    const harness = modal();
+    harness.showPreflight = vi.fn(async () => undefined);
+    await harness.selectSourceFolder('Imports/My Novel');
+    expect(harness.book).toMatchObject({ title: 'My Novel', sourceFolder: 'Imports/My Novel' });
+    expect(harness.showPreflight).toHaveBeenCalledTimes(1);
+    expect(harness.plugin.settings).toEqual({});
+    expect(harness.useAi).toBe(false);
   });
   it('checks providers only after explicit opt-in and stops when structure-only is selected', async () => {
     const harness = modal();

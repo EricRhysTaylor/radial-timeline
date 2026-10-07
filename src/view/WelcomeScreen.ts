@@ -505,7 +505,7 @@ export function renderWelcomeScreen({ container, plugin, refreshTimeline }: Welc
         title: WELCOME_COPY.cards.onboard.title,
         desc: WELCOME_COPY.cards.onboard.desc,
         ctaLabel: WELCOME_COPY.cards.onboard.cta,
-        onActivate: () => { new OnboardingModal(plugin.app, plugin).open(); }
+        onActivate: () => { new OnboardingModal(plugin.app, plugin, true).open(); }
     });
 
     const websiteRefs = buildCard(cards, plugin, {

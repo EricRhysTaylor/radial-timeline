@@ -326,13 +326,17 @@ export class OnboardingService {
     const folder = this.plugin.app.vault.getAbstractFileByPath(normalizePath(folderPath));
     if (!(folder instanceof TFolder)) return null;
     const proseFiles = this.listProseFiles(folderPath);
-    if (proseFiles.length === 0) return null;
-
     // Same search the ingest uses: inside the book folder, then ancestor
     // folders — Scrivener drops the outline CSV BESIDE the exported tree.
     const csv = findScrivenerSidecarFile(this.plugin.app, folderPath);
     const txtCount = proseFiles.filter((file) => file.extension.toLowerCase() === 'txt').length;
     const mdCount = proseFiles.filter((file) => file.extension.toLowerCase() === 'md').length;
+
+    if (csv && (proseFiles.length === 0 || txtCount + mdCount > 0)) {
+      return { flow: 'scrivener', evidence: `${proseFiles.length} scene files + outline sidecar (${csv.name})`, alternatives: ['folder'] };
+    }
+
+    if (proseFiles.length === 0) return null;
 
     if (proseFiles.length === 1) {
       const only = proseFiles[0];

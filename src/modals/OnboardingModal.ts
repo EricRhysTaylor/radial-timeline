@@ -15,7 +15,7 @@
 
 import { frontmatterValueToText } from '../utils/frontmatter';
 import { openSettingsTab } from '../utils/obsidianInternals';
-import { App, ButtonComponent, DropdownComponent, Modal, Notice, setIcon } from 'obsidian';
+import { App, ButtonComponent, DropdownComponent, Modal, Notice, TFolder, normalizePath, setIcon } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import {
   OnboardingService,
@@ -41,7 +41,9 @@ import {
   type ScrivenerFieldTarget,
 } from '../onboarding/adapters/scrivenerAdapter';
 import { getSupportedFrontmatterRemapTargets } from '../utils/frontmatter';
-import { getActiveBook } from '../utils/books';
+import { getActiveBook, createBookId, normalizeBookProfile } from '../utils/books';
+import { discoverOnboardingCandidates } from '../onboarding/discovery';
+import { checkScrivenerExport, createObsidianScrivenerSource } from '../onboarding/adapters/scrivenerAdapter';
 import { STAGE_ORDER, type Stage } from '../utils/constants';
 import type { AIProviderId } from '../ai/types';
 import { forecastOnboardingTokens, forecastOnboardingCost } from '../onboarding/costForecast';
@@ -125,6 +127,7 @@ function truncateText(text: string, max: number): string {
  */
 interface OnboardingSession {
   folder: string;
+  sourceBook: BookProfile | null;
   stage: 'confirm' | 'review';
   aiAvailable: boolean;
   useAi: boolean;
@@ -224,7 +227,7 @@ export class OnboardingModal extends Modal {
   private extractModel: ManuscriptModel | null = null;
   private abortController: AbortController | null = null;
 
-  constructor(app: App, plugin: RadialTimelinePlugin) {
+  constructor(app: App, plugin: RadialTimelinePlugin, private readonly chooseSource = false) {
     super(app);
     this.plugin = plugin;
     this.service = new OnboardingService(plugin);
@@ -233,6 +236,7 @@ export class OnboardingModal extends Modal {
   /** Snapshot the run into the module-scoped session so dismissal loses nothing. */
   private persistSession(stage: 'confirm' | 'review'): void {
     activeSession = {
+      sourceBook: this.book,
       folder: this.book?.sourceFolder ?? '', // SAFE: no book selected yet; the empty path is the "nothing chosen" state the form renders
       stage,
       aiAvailable: this.aiAvailable,
@@ -259,6 +263,7 @@ export class OnboardingModal extends Modal {
   }
 
   private restoreSession(session: OnboardingSession): void {
+    this.book = session.sourceBook;
     this.aiAvailable = session.aiAvailable;
     this.useAi = session.useAi;
     this.engine = session.engine;
@@ -289,7 +294,7 @@ export class OnboardingModal extends Modal {
     // Resume: a dismissed modal (stray outside click, Escape) loses nothing —
     // reopening on the same book folder picks up exactly where it left off.
     const book = getActiveBook(this.plugin.settings);
-    if (activeSession && book?.sourceFolder === activeSession.folder && activeSession.model) {
+    if (activeSession && (this.chooseSource || !book?.sourceFolder || book.sourceFolder === activeSession.folder) && activeSession.model) {
       this.book = book;
       this.restoreSession(activeSession);
       if (activeSession.stage === 'review' && this.proposals.length > 0) {
@@ -299,7 +304,8 @@ export class OnboardingModal extends Modal {
       }
       return;
     }
-    void this.showPreflight();
+    if (this.chooseSource || !book?.sourceFolder) void this.showSourceSelection();
+    else void this.showPreflight();
   }
 
   onClose(): void {
@@ -309,29 +315,79 @@ export class OnboardingModal extends Modal {
 
   // ---- Views -------------------------------------------------------------
 
+  private async showSourceSelection(): Promise<void> {
+    const { contentEl } = this;
+    contentEl.empty();
+    this.renderHeader('Start your book', 'Choose an existing manuscript export, or create a new book.');
+    const panel = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
+    panel.createDiv({ cls: 'ert-muted', text: 'Copy a Scrivener text/Markdown export and its Outliner CSV into the vault. Raw .scriv projects and RTF are not supported; use File → Export → Files in Scrivener. Choose the export folder below. The source stays untouched; the imported book is registered only after you approve the preview.' });
+    const input = panel.createEl('input', { type: 'text', cls: 'ert-input ert-input--full', attr: { placeholder: 'Manuscript folder in this vault', 'aria-label': 'Manuscript folder' } });
+    const error = panel.createDiv({ cls: 'ert-warning' });
+    const selectFolder = async (path: string) => {
+      const folder = normalizePath(path.trim());
+      if (!folder || folder === '/' || !(this.app.vault.getAbstractFileByPath(folder) instanceof TFolder)) {
+        error.setText('Choose an existing manuscript folder inside this vault.');
+        return;
+      }
+      await this.selectSourceFolder(folder);
+    };
+    const { ModalFolderSuggest } = await import('../settings/FolderSuggest');
+    new ModalFolderSuggest(this.app, input, () => error.setText(''));
+    const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
+    new ButtonComponent(actions).setButtonText('Inspect manuscript').setCta().onClick(() => void selectFolder(input.value));
+    new ButtonComponent(actions).setButtonText('Create new book').onClick(async () => {
+      const { BookDesignerModal } = await import('./BookDesignerModal');
+      this.close();
+      new BookDesignerModal(this.app, this.plugin).open();
+    });
+    new ButtonComponent(actions).setButtonText('Close').onClick(() => this.close());
+    const candidatesEl = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
+    candidatesEl.createDiv({ cls: 'ert-muted', text: 'Checking for manuscript exports…' });
+    try {
+      const candidates = await discoverOnboardingCandidates(this.app, (this.plugin.settings.books ?? []).map(book => book.sourceFolder)); // SAFE: new vaults have no registered books
+      if (!candidatesEl.isConnected) return;
+      candidatesEl.empty();
+      candidatesEl.createDiv({ cls: 'ert-muted', text: candidates.length ? 'Potential manuscripts — choose one to inspect' : 'No export detected. Choose a folder above, or copy your export into this vault and reopen onboarding.' });
+      for (const candidate of candidates) {
+        const row = candidatesEl.createDiv({ cls: 'ert-row' });
+        row.createSpan({ text: `${candidate.folder} — ${candidate.evidence}` });
+        new ButtonComponent(row).setButtonText('Inspect').onClick(() => void selectFolder(candidate.folder));
+      }
+    } catch (failure) {
+      if (candidatesEl.isConnected) candidatesEl.setText(`Cannot scan manuscript exports: ${failure instanceof Error ? failure.message : String(failure)}`);
+    }
+  }
+
+  /** Keep the chosen source local until the author approves materialization. */
+  private async selectSourceFolder(folder: string): Promise<void> {
+    activeSession = null;
+    this.book = normalizeBookProfile({ id: createBookId(), title: folder.slice(folder.lastIndexOf('/') + 1), sourceFolder: folder });
+    this.flowOverride = null;
+    this.metadataMapping = null;
+    this.model = null;
+    this.extractModel = null;
+    this.survey = null;
+    this.proposals = [];
+    this.entityProposals = [];
+    this.useAi = false;
+    this.aiAvailable = false;
+    this.modelLabel = '';
+    this.forecastSceneCount = null;
+    this.splitPlans.clear();
+    this.splitOutcomes = null;
+    await this.showPreflight();
+  }
+
   private async showPreflight(): Promise<void> {
     // Best-effort canonical-prompt refresh (throttled daily; never blocks).
     if (this.useAi) void refreshOnboardingPrompt(this.plugin);
     this.renderBusy(this.useAi ? 'Checking AI and reading the book folder…' : 'Reading the book folder…');
 
-    const book = getActiveBook(this.plugin.settings);
+    const book = this.book ?? getActiveBook(this.plugin.settings);
     if (!book || !book.sourceFolder) {
       const { contentEl } = this;
       contentEl.empty();
-      this.renderHeader('No book folder');
-      contentEl.createDiv({
-        cls: 'ert-muted',
-        text: 'Onboarding needs an active book pointing at the folder that holds your manuscript. Set one up in the Book Manager, then run onboarding again.',
-      });
-      const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
-      new ButtonComponent(actions)
-        .setButtonText('Open Book Manager')
-        .setCta()
-        .onClick(() => {
-          this.close();
-          openSettingsAtBookManager(this.plugin);
-        });
-      new ButtonComponent(actions).setButtonText('Close').onClick(() => this.close());
+      await this.showSourceSelection();
       return;
     }
     this.book = book;
@@ -352,11 +408,18 @@ export class OnboardingModal extends Modal {
     }
 
     let ingestReason = '';
+    const exportWarnings: string[] = [];
     let candidateCount = 0;
     let skippedCount = 0;
     const detection = this.service.detectImportFlow(book.sourceFolder);
     const activeFlow: ImportFlow | null = this.flowOverride ?? detection?.flow ?? null;
     try {
+      if (activeFlow === 'scrivener') {
+        const check = await checkScrivenerExport(createObsidianScrivenerSource(this.app), book.sourceFolder);
+        exportWarnings.push(...check.warnings);
+        if (check.errors.length) throw new Error(check.errors.join('\n'));
+      }
+      this.model = null;
       const ingest = await this.service.ingest(book.sourceFolder, this.flowOverride ?? undefined);
       if (ingest.kind === 'needs-order') {
         ingestReason = ingest.reason;
@@ -491,7 +554,10 @@ export class OnboardingModal extends Modal {
       this.renderStatusRow(status, 'Chapters found', `${candidateCount}${skipNote}`, candidateCount > 0);
     }
 
+    for (const warning of exportWarnings) status.createDiv({ cls: 'ert-warning', text: warning });
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
+    new ButtonComponent(actions).setButtonText('Choose another manuscript').onClick(() => void this.showSourceSelection());
+    new ButtonComponent(actions).setButtonText('Recheck export').onClick(() => void this.showPreflight());
     const canStart = !ingestReason && candidateCount > 0 && this.model !== null;
     new ButtonComponent(actions)
       .setButtonText(this.useAi ? 'Continue with AI' : 'Continue without AI')

@@ -443,6 +443,43 @@ export async function ingestScrivenerFolder(
   };
 }
 
+export interface ScrivenerExportCheck { errors: string[]; warnings: string[] }
+
+/** Validate metadata correspondence before carrying it into author notes. */
+export async function checkScrivenerExport(source: ScrivenerSource, folder: string): Promise<ScrivenerExportCheck> {
+  const listed = await source.listSceneFiles(folder);
+  const files = listed.filter(file => !isScrivenerAuxiliaryFile(file.fileName) && !/ Snapshots\//i.test(file.path) && stripLeadingYaml(file.content).trim());
+  const text = await source.readSidecar(folder);
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  if (!files.length) errors.push('No scene prose found. In Scrivener, select your manuscript documents and use File → Export → Files, choosing text or Markdown. Copy the export into this vault; raw .scriv projects and RTF are not supported.');
+  if (!text) {
+    warnings.push('Outline CSV missing. To carry synopses and metadata, select the same manuscript in Scrivener, show Title, Synopsis, Word Count and your custom columns, then export Outliner Contents as CSV beside the scene export. You can continue with scene files only.');
+    return { errors, warnings };
+  }
+  const outline = parseOutlineSidecar(text);
+  if (!outline || !outline.fields.some(field => /^title$/i.test(field))) {
+    errors.push('The CSV has no usable Title column or scene rows. Re-export Outliner Contents as CSV with Title visible, using the same manuscript selection as the scene export.');
+    return { errors, warnings };
+  }
+  const fileTitles = files.map(file => normalizeTitle(titleFromExportFileName(file.fileName)));
+  const rowTitles = outline.rows.map(row => normalizeTitle(readColumn(row, 'Title') ?? '')); // SAFE: empty outline titles cannot match a scene
+  if (new Set(fileTitles).size !== fileTitles.length || new Set(rowTitles.filter(title => fileTitles.includes(title))).size !== rowTitles.filter(title => fileTitles.includes(title)).length) {
+    errors.push('Repeated document titles make the outline mapping ambiguous. Give exported scene documents unique titles in Scrivener, then re-export both Files and Outliner Contents.');
+  }
+  const unmatchedFiles = files.filter((_, index) => !rowTitles.includes(fileTitles[index]));
+  if (unmatchedFiles.length) errors.push(`Scene files missing from the outline: ${unmatchedFiles.slice(0, 5).map(file => file.fileName).join(', ')} (${unmatchedFiles.length} total). Re-export both the scene files and CSV from the same Scrivener manuscript selection with Title visible.`);
+  const missing = outline.rows.filter((row, index) => {
+    const count = readColumn(row, 'Word Count');
+    return count !== null && Number(count.replace(/,/g, '')) > 0 && !fileTitles.includes(rowTitles[index]);
+  });
+  if (missing.length) errors.push(`Outline documents with prose but no matching scene file: ${missing.slice(0, 5).map(row => readColumn(row, 'Title')).join(', ')} (${missing.length} total). In Scrivener, select all manuscript documents, enable numbered exported files, and re-export Files as text or Markdown alongside a fresh CSV.`);
+  const uncertain = outline.rows.filter((row, index) => !fileTitles.includes(rowTitles[index]) && readColumn(row, 'Word Count') === null);
+  if (uncertain.length) warnings.push(`${uncertain.length} outline rows have no matching file and no Word Count, so completeness cannot be checked. Show Word Count in Scrivener and re-export the CSV; folder and empty placeholder rows may be harmless.`);
+  if (!outline.fields.some(field => /^synopsis$/i.test(field))) warnings.push('Synopsis column missing. Show Synopsis in Scrivener’s outliner and re-export the CSV if you want to preserve synopses.');
+  return { errors, warnings };
+}
+
 type OrderResolution =
   | { kind: 'ok'; files: ScrivenerFile[] }
   | { kind: 'needs-order'; reason: string };

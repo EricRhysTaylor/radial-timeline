@@ -78,6 +78,7 @@ describe('exportProfileModel', () => {
             includeSynopsis: false,
             updateWordCounts: true,
             saveMarkdownArtifact: false,
+            lineBreaksAsParagraphs: false,
             cleanup: { stripComments: true, stripLinks: true, stripCallouts: false, stripBlockIds: false },
             splitMode: 'single',
             splitParts: 1,
@@ -112,6 +113,7 @@ describe('exportProfileModel', () => {
             includeSynopsis: false,
             updateWordCounts: true,
             saveMarkdownArtifact: false,
+            lineBreaksAsParagraphs: false,
             cleanup: { stripComments: true, stripAiComments: false, stripLinks: true, stripCallouts: true, stripBlockIds: true },
             splitMode: 'single',
             splitParts: 1,
@@ -141,6 +143,21 @@ describe('exportProfileModel', () => {
             const edited: ModalExportProfile = { ...wordPreset, cleanup: { ...wordPreset.cleanup, stripBlockIds: false } };
             expect(exportProfilesMatch(edited, wordPreset)).toBe(false);
             expect(exportProfilesMatch({ ...wordPreset, includeSceneIdInHeading: false }, wordPreset)).toBe(false);
+            expect(exportProfilesMatch({ ...wordPreset, lineBreaksAsParagraphs: true }, wordPreset)).toBe(false);
+        });
+
+        it('ignores line-per-paragraph on Markdown, which Pandoc never sees', () => {
+            const markdown: ModalExportProfile = { ...wordPreset, outputFormat: 'markdown', lineBreaksAsParagraphs: true };
+            expect(exportProfilesMatch({ ...markdown, lineBreaksAsParagraphs: false }, markdown)).toBe(true);
+        });
+
+        it('keeps line-per-paragraph through the legacy template round trip', () => {
+            const saved = buildLegacyTemplateFromModalExportProfile({ ...wordPreset, lineBreaksAsParagraphs: true }, {
+                order: wordPreset.order,
+                subplot: wordPreset.subplot,
+            });
+            expect(saved.lineBreaksAsParagraphs).toBe(true);
+            expect(buildModalExportProfileFromLegacyTemplate(saved, []).lineBreaksAsParagraphs).toBe(true);
         });
     });
 });

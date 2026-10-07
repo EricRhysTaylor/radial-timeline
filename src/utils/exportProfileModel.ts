@@ -119,6 +119,7 @@ export function buildTransientModalExportProfile(params: {
     includeSynopsis: boolean;
     updateWordCounts: boolean;
     saveMarkdownArtifact: boolean;
+    lineBreaksAsParagraphs: boolean;
     cleanup: ManuscriptExportCleanupOptions;
     splitMode: 'single' | 'parts';
     splitParts: number;
@@ -146,6 +147,7 @@ export function buildTransientModalExportProfile(params: {
         includeSynopsis: params.includeSynopsis,
         updateWordCounts: params.updateWordCounts,
         saveMarkdownArtifact: params.saveMarkdownArtifact,
+        lineBreaksAsParagraphs: params.lineBreaksAsParagraphs,
         cleanup: params.cleanup,
         splitMode: params.splitMode,
         splitParts: params.splitParts,
@@ -181,7 +183,7 @@ export function buildComparableExportProfile(profile: ModalExportProfile) {
     const outputFormat: ExportProfile['outputFormat'] = isOutline ? 'markdown' : profile.outputFormat;
     const isPdfManuscript = !isOutline && outputFormat === 'pdf';
     const isMarkdownManuscript = !isOutline && outputFormat === 'markdown';
-    const isMatterCapable = isPdfManuscript || (!isOutline && outputFormat === 'docx');
+    const isPandocManuscript = isPdfManuscript || (!isOutline && outputFormat === 'docx');
     const includeSceneId = resolveIncludeSceneId(profile);
     const isSplit = !isOutline && profile.splitMode === 'parts';
     return {
@@ -195,10 +197,11 @@ export function buildComparableExportProfile(profile: ModalExportProfile) {
         includeSceneIdInHeading: includeSceneId,
         order: isPdfManuscript ? 'narrative' : profile.order,
         subplot: isPdfManuscript ? 'All Subplots' : (profile.subplot || 'All Subplots'),
-        includeMatter: isMatterCapable && !!profile.includeMatter,
+        includeMatter: isPandocManuscript && !!profile.includeMatter,
         includeSynopsis: isOutline && !!profile.includeSynopsis,
         updateWordCounts: !isOutline && !!profile.updateWordCounts,
         saveMarkdownArtifact: isPdfManuscript && !!profile.saveMarkdownArtifact,
+        lineBreaksAsParagraphs: isPandocManuscript && profile.lineBreaksAsParagraphs === true,
         cleanup: isOutline
             ? getDefaultManuscriptCleanupOptions('markdown')
             : normalizeManuscriptCleanupOptions(profile.cleanup, cleanupFormatForOutputFormat(outputFormat)),

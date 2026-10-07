@@ -20,6 +20,7 @@ import type { DesignedStyleSpec } from '../publishing/designedStyle';
 import { BUNDLED_FICTION_SPECS, isBundledFictionId } from '../publishing/bundledStyleSpecs';
 import { FONT_REGISTRY, vaultDirHasFont } from '../publishing/fontResolver';
 import { assertNever } from './assertNever';
+import { buildPandocLuaFilter } from './pandocLuaFilters';
 
 export type ExportType = 'manuscript' | 'outline';
 export type ManuscriptPreset = 'screenplay' | 'podcast' | 'novel';
@@ -274,6 +275,8 @@ export interface PandocOptions {
      * LaTeX, not Word styling.
      */
     headerIncludes?: string;
+    /** Every source line break starts a new paragraph (scenes written with single returns). */
+    lineBreaksAsParagraphs?: boolean;
     workingDir?: string;
     metadata?: Record<string, string | undefined>;
 }
@@ -1204,6 +1207,13 @@ export async function runPandocOnContent(
         await fs.promises.writeFile(tmpHeader, options.headerIncludes, 'utf8');
     }
 
+    let tmpFilter: string | null = null;
+    const luaFilter = buildPandocLuaFilter(options);
+    if (luaFilter) {
+        tmpFilter = path.join(tmpDir, `rt-pandoc-filter-${Date.now()}.lua`);
+        await fs.promises.writeFile(tmpFilter, luaFilter, 'utf8');
+    }
+
     const args = ['-f', 'markdown', '-t', options.targetFormat, '-o', outputAbsolutePath, tmpInput];
     if (isPdf) {
         const pdfEngineSelection = getAutoPdfEngineSelection(options.templatePath);
@@ -1220,6 +1230,9 @@ export async function runPandocOnContent(
         if (options.referenceDocPath && options.referenceDocPath.trim()) {
             args.push('--reference-doc', options.referenceDocPath.trim());
         }
+    }
+    if (tmpFilter) {
+        args.push('--lua-filter', tmpFilter);
     }
     if (options.metadata) {
         for (const [key, rawValue] of Object.entries(options.metadata)) {
@@ -1246,7 +1259,7 @@ export async function runPandocOnContent(
             resolve();
         });
     }).finally(async () => {
-        for (const tmp of [tmpInput, tmpHeader]) {
+        for (const tmp of [tmpInput, tmpHeader, tmpFilter]) {
             if (!tmp) continue;
             try {
                 await fs.promises.unlink(tmp);

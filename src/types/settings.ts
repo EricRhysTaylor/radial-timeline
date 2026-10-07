@@ -81,6 +81,8 @@ export interface ManuscriptExportTemplate {
     includeSynopsis: boolean;
     includeMatter: boolean;
     saveMarkdownArtifact: boolean;
+    /** Word/PDF: every source line break starts a new paragraph. */
+    lineBreaksAsParagraphs?: boolean;
     exportCleanup: ManuscriptExportCleanupOptions;
     splitMode: 'single' | 'parts';
     splitParts: number;
@@ -172,6 +174,11 @@ export interface ExportProfile {
     includeSynopsis: boolean;
     updateWordCounts: boolean;
     saveMarkdownArtifact: boolean;
+    /**
+     * Word/PDF: every source line break starts a new paragraph, for scenes
+     * written with single returns. Off for hard-wrapped text.
+     */
+    lineBreaksAsParagraphs: boolean;
     cleanup: ManuscriptExportCleanupOptions;
     splitMode: 'single' | 'parts';
     splitParts: number;

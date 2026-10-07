@@ -689,6 +689,7 @@ export class CommandRegistrar {
                     await runPandocOnContent(sanitizedText, `${absoluteOutputFolder}/${renderedFilename}`, {
                         targetFormat: 'docx',
                         referenceDocPath: referenceDoc.path,
+                        lineBreaksAsParagraphs: result.lineBreaksAsParagraphs === true,
                         workingDir: absoluteOutputFolder,
                         pandocPath: this.plugin.settings.pandocPath,
                         metadata: docxMetadata
@@ -894,6 +895,7 @@ export class CommandRegistrar {
                     targetFormat: 'pdf',
                     templatePath,
                     headerIncludes,
+                    lineBreaksAsParagraphs: result.lineBreaksAsParagraphs === true,
                     workingDir: absoluteOutputFolder,
                     pandocPath: this.plugin.settings.pandocPath,
                     metadata: pandocMetadata

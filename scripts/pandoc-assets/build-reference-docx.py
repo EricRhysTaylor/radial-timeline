@@ -2,7 +2,10 @@
 """Restyle pandoc's default reference.docx into standard manuscript format.
 
 Shunn-style submission format: Times New Roman 12pt, double-spaced body with
-0.5" first-line indent and no inter-paragraph spacing; centered headings.
+0.5" first-line indent and no inter-paragraph spacing; centered headings;
+centered "#" scene breaks; US Letter with 1" margins. Targets current Word:
+the document declares Word 2013+ layout so it never opens in Compatibility
+Mode.
 
 Critically also retargets EVERY font reference to fonts present on a stock
 macOS/Windows machine (Times New Roman for prose, Courier New for code) so
@@ -116,6 +119,20 @@ for sid in ("Title", "Subtitle", "Author", "Date"):
     if s is None: continue
     set_centered(ppr_of(s)); set_font(rpr_of(s))
 
+# Scene break: centered "#" on its own line, never stranded at a page bottom.
+# The export's Lua filter wraps each horizontal rule in a div with this style
+# name ("Scene Break" -> styleId SceneBreak). Inherits Normal: double-spaced,
+# no first-line indent.
+if style_by_id(root, "SceneBreak") is None:
+    scene_break = ET.SubElement(root, q("style"), {q("type"): "paragraph", q("customStyle"): "1", q("styleId"): "SceneBreak"})
+    ET.SubElement(scene_break, q("name"), {q("val"): "Scene Break"})
+    ET.SubElement(scene_break, q("basedOn"), {q("val"): "Normal"})
+    ET.SubElement(scene_break, q("next"), {q("val"): "BodyText"})
+    ET.SubElement(scene_break, q("qFormat"))
+    scene_break_ppr = ET.SubElement(scene_break, q("pPr"))
+    ET.SubElement(scene_break_ppr, q("keepNext"))
+    set_centered(scene_break_ppr)
+
 # Any remaining explicit font attrs across all styles: prose fonts -> TNR,
 # monospace/code fonts (Consolas) -> Courier New (both present on macOS).
 styles_body = ET.tostring(root, encoding="unicode")
@@ -198,7 +215,27 @@ doc_rels_out = rels_raw.encode("utf-8")
 doc_raw = zipfile.ZipFile(SRC).read("word/document.xml").decode("utf-8")
 hdr_ref = '<w:headerReference w:type="default" r:id="' + HEADER_REL_ID + '"/>'
 doc_raw = re.sub(r'(<w:sectPr[^>]*>)', r'\1' + hdr_ref, doc_raw, count=1)
+
+# Page setup: US Letter, 1" margins, header/footer 0.5" from the edge. Pandoc
+# copies the reference section properties into the export verbatim, so they
+# must sit in OOXML schema order — after footnotePr, which pandoc's default
+# leaves as the section's last child. Fail loudly if that ever changes.
+PAGE_SETUP = ('<w:pgSz w:w="12240" w:h="15840"/>'
+              '<w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" '
+              'w:header="720" w:footer="720" w:gutter="0"/>')
+assert re.search(r'</w:footnotePr>\s*</w:sectPr>', doc_raw), "sectPr no longer ends with footnotePr; place pgSz/pgMar by schema order"
+doc_raw = re.sub(r'(</w:footnotePr>)(\s*</w:sectPr>)', r'\1' + PAGE_SETUP + r'\2', doc_raw, count=1)
 document_out = doc_raw.encode("utf-8")
+
+# settings.xml — declare current Word layout (compatibilityMode 15 = Word
+# 2013 through Microsoft 365) so Word does not open the export in
+# Compatibility Mode. Pandoc carries <w:compat> from the reference settings.
+# Schema order puts compat before rsids.
+settings_raw = zipfile.ZipFile(SRC).read("word/settings.xml").decode("utf-8")
+assert "<w:compat" not in settings_raw and "<w:rsids" in settings_raw, "unexpected settings.xml shape"
+COMPAT = ('<w:compat><w:compatSetting w:name="compatibilityMode" '
+          'w:uri="http://schemas.microsoft.com/office/word" w:val="15"/></w:compat>')
+settings_out = settings_raw.replace("<w:rsids", COMPAT + "<w:rsids", 1).encode("utf-8")
 
 # ── repackage ───────────────────────────────────────────────────────────────
 with zipfile.ZipFile(SRC) as zin, zipfile.ZipFile(DST, "w", zipfile.ZIP_DEFLATED) as zout:
@@ -215,6 +252,8 @@ with zipfile.ZipFile(SRC) as zin, zipfile.ZipFile(DST, "w", zipfile.ZIP_DEFLATED
             data = doc_rels_out
         elif item.filename == "word/document.xml":
             data = document_out
+        elif item.filename == "word/settings.xml":
+            data = settings_out
         else:
             data = zin.read(item.filename)
         zout.writestr(item, data)

@@ -4,7 +4,10 @@
 
 Standard-manuscript-format Word reference document used by DOCX export
 (`--reference-doc`). Times New Roman 12pt, double-spaced, 0.5" first-line
-indent, centered chapter headings on new pages.
+indent, centered chapter headings on new pages, a centered "Scene Break"
+paragraph style (the export's Lua filter turns `---` into a centered `#`),
+US Letter with 1" margins, and a Word 2013+ compatibility flag so current
+Word never opens the export in Compatibility Mode.
 
 It is a derived artifact — regenerate it, never hand-edit:
 

@@ -87,6 +87,7 @@ export interface ManuscriptModalResult {
     includeSynopsis?: boolean;
     includeMatter?: boolean;
     saveMarkdownArtifact?: boolean;
+    lineBreaksAsParagraphs?: boolean;
     exportCleanup?: ManuscriptExportCleanupOptions;
     exportProfileId?: string;
     exportProfileTemplateId?: string;
@@ -213,6 +214,7 @@ export class ManuscriptOptionsModal extends Modal {
     private includeSynopsis: boolean = true;
     private includeMatter: boolean = true;
     private saveMarkdownArtifact: boolean = true;
+    private lineBreaksAsParagraphs: boolean = false;
     private markdownCleanupOptions: ManuscriptExportCleanupOptions = getDefaultManuscriptCleanupOptions('markdown');
     private pdfCleanupOptions: ManuscriptExportCleanupOptions = getDefaultManuscriptCleanupOptions('pdf');
     private hasWhenDates: boolean = false;
@@ -283,6 +285,7 @@ export class ManuscriptOptionsModal extends Modal {
     private synopsisRow?: HTMLElement;
     private synopsisToggle?: ToggleComponent;
     private updateWordCountsToggle?: ToggleComponent;
+    private lineBreaksToggle?: ToggleComponent;
     private cleanupCommentsToggle?: ToggleComponent;
     private cleanupAiCommentsToggle?: ToggleComponent;
     private cleanupLinksToggle?: ToggleComponent;
@@ -351,6 +354,7 @@ export class ManuscriptOptionsModal extends Modal {
         showPublishing: boolean;
         showWordCount: boolean;
         showIncludeMatter: boolean;
+        showLineBreaksAsParagraphs: boolean;
         showExportCleanup: boolean;
         showSavePrecompile: boolean;
         showSplit: boolean;
@@ -383,6 +387,7 @@ export class ManuscriptOptionsModal extends Modal {
             showPublishing: isManuscript,
             showWordCount: isManuscript,
             showIncludeMatter: isPdfManuscript || isDocxManuscript,
+            showLineBreaksAsParagraphs: isPdfManuscript || isDocxManuscript,
             showExportCleanup: isManuscript,
             showSavePrecompile: isPdfManuscript,
             showSplit: isManuscript,
@@ -734,6 +739,19 @@ export class ManuscriptOptionsModal extends Modal {
                 this.updateTemplateActionButtonState();
             });
 
+        const lineBreaksRow = this.pdfSettingsCard.createDiv({ cls: 'ert-manuscript-toggle-row' });
+        lineBreaksRow.createSpan({ cls: 'ert-manuscript-toggle-label', text: 'Every line is a paragraph' });
+        this.lineBreaksToggle = new ToggleComponent(lineBreaksRow)
+            .setValue(this.lineBreaksAsParagraphs)
+            .onChange((value) => {
+                this.lineBreaksAsParagraphs = value;
+                this.updateTemplateActionButtonState();
+            });
+        this.pdfSettingsCard.createDiv({
+            cls: 'ert-sub-card-note',
+            text: 'For scenes written with single returns: each line break starts a new indented paragraph, so no blank lines are needed. Leave off for hard-wrapped text.'
+        });
+
         this.artifactRowEl = this.pdfSettingsCard.createDiv({ cls: 'ert-manuscript-toggle-row' });
         this.artifactRowEl.createSpan({ cls: 'ert-manuscript-toggle-label', text: 'Save compiled + Pandoc-ready Markdown files' });
         this.markdownArtifactToggle = new ToggleComponent(this.artifactRowEl)
@@ -965,6 +983,7 @@ export class ManuscriptOptionsModal extends Modal {
             includeSynopsis: this.includeSynopsisUserChoice,
             updateWordCounts: this.updateWordCounts,
             saveMarkdownArtifact: this.saveMarkdownArtifact,
+            lineBreaksAsParagraphs: this.lineBreaksAsParagraphs,
             cleanup: this.getActiveCleanupOptions(),
             splitMode: this.splitMode,
             splitParts: this.splitParts,
@@ -1251,6 +1270,7 @@ export class ManuscriptOptionsModal extends Modal {
             includeSynopsis: mode.isOutline ? this.includeSynopsisUserChoice : false,
             updateWordCounts: mode.showWordCount ? this.updateWordCounts : false,
             saveMarkdownArtifact: mode.showSavePrecompile ? this.saveMarkdownArtifact : false,
+            lineBreaksAsParagraphs: mode.showLineBreaksAsParagraphs ? this.lineBreaksAsParagraphs : false,
             cleanup: mode.isManuscript
                 ? this.getActiveCleanupOptions()
                 : getDefaultManuscriptCleanupOptions('markdown'),
@@ -1363,6 +1383,8 @@ export class ManuscriptOptionsModal extends Modal {
         this.includeMatter = this.includeMatterUserChoice;
         this.hasTouchedMatterToggle = true;
         this.saveMarkdownArtifact = !!template.saveMarkdownArtifact;
+        this.lineBreaksAsParagraphs = template.lineBreaksAsParagraphs === true;
+        this.lineBreaksToggle?.setValue(this.lineBreaksAsParagraphs);
         const templateCleanup = this.getNormalizedCleanupOptions(template.cleanup, template.outputFormat);
         if (this.getCleanupFormatForState(template.outputFormat) === 'pdf') {
             this.pdfCleanupOptions = templateCleanup;
@@ -1464,6 +1486,7 @@ export class ManuscriptOptionsModal extends Modal {
             includeSynopsis: this.includeSynopsisUserChoice,
             updateWordCounts: this.updateWordCounts,
             saveMarkdownArtifact: this.saveMarkdownArtifact,
+            lineBreaksAsParagraphs: this.lineBreaksAsParagraphs,
             cleanup: this.getActiveCleanupOptions(),
             splitMode: this.splitMode,
             splitParts: this.splitParts,
@@ -1711,7 +1734,7 @@ export class ManuscriptOptionsModal extends Modal {
         this.manuscriptRulesCard?.toggleClass('ert-hidden', !mode.showToc);
         this.tocCard?.toggleClass('ert-hidden', !mode.showToc);
         this.publishingCard?.toggleClass('ert-hidden', !mode.showPublishing);
-        this.pdfSettingsCard?.toggleClass('ert-hidden', !mode.showIncludeMatter && !mode.showSavePrecompile);
+        this.pdfSettingsCard?.toggleClass('ert-hidden', !mode.showIncludeMatter && !mode.showLineBreaksAsParagraphs && !mode.showSavePrecompile);
         this.wordCountCard?.toggleClass('ert-hidden', !mode.showWordCount);
         this.wordCountCard?.toggleClass('ert-manuscript-rule-block--separated', mode.showIncludeMatter || mode.showSavePrecompile);
         this.includeMatterCard?.toggleClass('ert-hidden', !mode.showIncludeMatter);
@@ -3158,6 +3181,7 @@ export class ManuscriptOptionsModal extends Modal {
                 includeSynopsis,
                 includeMatter,
                 saveMarkdownArtifact: mode.showSavePrecompile ? this.saveMarkdownArtifact : false,
+                lineBreaksAsParagraphs: mode.showLineBreaksAsParagraphs ? this.lineBreaksAsParagraphs : false,
                 exportCleanup: mode.isManuscript ? this.getActiveCleanupOptions() : undefined,
                 // Only a saved preset may become "last used"; drafts and the
                 // restored ad-hoc snapshot carry ids that match no preset.

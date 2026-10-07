@@ -1573,7 +1573,7 @@ export class ManuscriptOptionsModal extends Modal {
         plug.append(svg);
 
         const text = plug.createSpan({ cls: 'ert-editorialist-plug__text' });
-        text.appendText('See companion app ');
+        text.appendText('See companion plugin ');
         const link = text.createEl('a', {
             cls: 'ert-link-accent',
             text: 'Editorialist',

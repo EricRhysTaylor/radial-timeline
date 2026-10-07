@@ -116,9 +116,16 @@
 
 .ert-editorialist-plug__logo {
   flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   color: var(--text-normal);
+}
+
+/* Trajan's serifs are hairline-thin; a same-colour stroke keeps ED legible at 20 px. */
+.ert-editorialist-plug__logo path {
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
 }
 
 .ert-editorialist-plug__text {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildLegacyTemplateFromModalExportProfile, buildModalExportProfileFromLegacyTemplate, buildTransientModalExportProfile, getModalExportProfileSummary } from './exportProfileModel';
+import { buildLegacyTemplateFromModalExportProfile, buildModalExportProfileFromLegacyTemplate, buildTransientModalExportProfile, exportProfilesMatch, getModalExportProfileSummary, resolveIncludeSceneId, type ModalExportProfile } from './exportProfileModel';
 
 describe('exportProfileModel', () => {
     const templateProfiles = [
@@ -89,5 +89,58 @@ describe('exportProfileModel', () => {
         expect(profile.selectionPolicy).toBe('full-book');
         expect(getModalExportProfileSummary(profile, templateProfiles as any)).toContain('Current settings');
         expect(getModalExportProfileSummary(profile, templateProfiles as any)).toContain('novel');
+    });
+
+    describe('preset matching', () => {
+        // Shape of a Word preset as saved by the export modal: the TOC flag is
+        // stored false because Word has no TOC, while the heading flag is on.
+        const wordPreset: ModalExportProfile = {
+            id: 'word-edits',
+            name: 'Word edits',
+            templateProfileId: 'bundled-fiction-signature-literary',
+            usageContext: 'novel',
+            outputFormat: 'docx',
+            exportType: 'manuscript',
+            manuscriptPreset: 'novel',
+            outlinePreset: 'beat-sheet',
+            tocMode: 'none',
+            includeSceneIdInToc: false,
+            includeSceneIdInHeading: true,
+            order: 'narrative',
+            subplot: 'All Subplots',
+            includeMatter: false,
+            includeSynopsis: false,
+            updateWordCounts: true,
+            saveMarkdownArtifact: false,
+            cleanup: { stripComments: true, stripAiComments: false, stripLinks: true, stripCallouts: true, stripBlockIds: true },
+            splitMode: 'single',
+            splitParts: 1,
+            selectionPolicy: 'manual-range',
+            selectedLayoutId: 'bundled-fiction-signature-literary',
+        };
+
+        it('reads SceneId as on when either flag is on', () => {
+            expect(resolveIncludeSceneId({ includeSceneIdInToc: false, includeSceneIdInHeading: true })).toBe(true);
+            expect(resolveIncludeSceneId({ includeSceneIdInToc: true, includeSceneIdInHeading: undefined })).toBe(true);
+            expect(resolveIncludeSceneId({ includeSceneIdInToc: false, includeSceneIdInHeading: false })).toBe(false);
+            expect(resolveIncludeSceneId({})).toBe(false);
+        });
+
+        it('matches a preset against the modal state it loads into', () => {
+            const loaded: ModalExportProfile = { ...wordPreset, createdAt: '2026-10-07T00:00:00.000Z', rangeStart: 1, rangeEnd: 40 };
+            expect(exportProfilesMatch(loaded, wordPreset)).toBe(true);
+        });
+
+        it('ignores fields the export mode does not use', () => {
+            const legacyMarkdown: ModalExportProfile = { ...wordPreset, outputFormat: 'markdown', tocMode: 'markdown', includeMatter: true, selectionPolicy: 'full-book', selectedLayoutId: 'other-layout' };
+            const live: ModalExportProfile = { ...legacyMarkdown, includeMatter: false, includeSceneIdInToc: true, selectionPolicy: 'manual-range', selectedLayoutId: undefined };
+            expect(exportProfilesMatch(live, legacyMarkdown)).toBe(true);
+        });
+
+        it('reports a real change', () => {
+            const edited: ModalExportProfile = { ...wordPreset, cleanup: { ...wordPreset.cleanup, stripBlockIds: false } };
+            expect(exportProfilesMatch(edited, wordPreset)).toBe(false);
+            expect(exportProfilesMatch({ ...wordPreset, includeSceneIdInHeading: false }, wordPreset)).toBe(false);
+        });
     });
 });

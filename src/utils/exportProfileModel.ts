@@ -6,6 +6,7 @@ import type {
     ManuscriptExportTemplate,
     TemplateProfile,
 } from '../types';
+import { cleanupFormatForOutputFormat, getDefaultManuscriptCleanupOptions, normalizeManuscriptCleanupOptions } from './manuscriptSanitize';
 import {
     convertExportProfileToLegacyManuscriptExportTemplate,
     convertLegacyManuscriptExportTemplateToExportProfile,
@@ -152,6 +153,63 @@ export function buildTransientModalExportProfile(params: {
         rangeStart: params.rangeStart,
         rangeEnd: params.rangeEnd,
     }, params.templateProfiles);
+}
+
+export function clampSplitParts(value: number): number {
+    if (!Number.isFinite(value)) return 2;
+    return Math.max(2, Math.min(20, Math.floor(value)));
+}
+
+/**
+ * Saved presets may carry either SceneId flag (legacy two-toggle UI) or both.
+ * Either being true means the consolidated SceneId toggle is on. Non-markdown
+ * presets always store the TOC flag as false, so the TOC flag alone must never
+ * decide the toggle.
+ */
+export function resolveIncludeSceneId(profile: Pick<ExportProfile, 'includeSceneIdInToc' | 'includeSceneIdInHeading'>): boolean {
+    return profile.includeSceneIdInToc === true || profile.includeSceneIdInHeading === true;
+}
+
+/**
+ * Project a profile onto the fields its export mode actually uses. The
+ * export modal decides "matches preset" by running both the saved preset and
+ * its own live state through this one projection, so a field the mode hides
+ * (TOC on Word, matter on Markdown, order on PDF) can never read as a change.
+ */
+export function buildComparableExportProfile(profile: ModalExportProfile) {
+    const isOutline = profile.exportType === 'outline';
+    const outputFormat: ExportProfile['outputFormat'] = isOutline ? 'markdown' : profile.outputFormat;
+    const isPdfManuscript = !isOutline && outputFormat === 'pdf';
+    const isMarkdownManuscript = !isOutline && outputFormat === 'markdown';
+    const isMatterCapable = isPdfManuscript || (!isOutline && outputFormat === 'docx');
+    const includeSceneId = resolveIncludeSceneId(profile);
+    const isSplit = !isOutline && profile.splitMode === 'parts';
+    return {
+        templateProfileId: profile.templateProfileId || profile.selectedLayoutId || '',
+        usageContext: profile.usageContext,
+        exportType: profile.exportType,
+        outputFormat,
+        outlinePreset: profile.outlinePreset || 'beat-sheet',
+        tocMode: isMarkdownManuscript ? (profile.tocMode || 'none') : 'none',
+        includeSceneIdInToc: isMarkdownManuscript && includeSceneId,
+        includeSceneIdInHeading: includeSceneId,
+        order: isPdfManuscript ? 'narrative' : profile.order,
+        subplot: isPdfManuscript ? 'All Subplots' : (profile.subplot || 'All Subplots'),
+        includeMatter: isMatterCapable && !!profile.includeMatter,
+        includeSynopsis: isOutline && !!profile.includeSynopsis,
+        updateWordCounts: !isOutline && !!profile.updateWordCounts,
+        saveMarkdownArtifact: isPdfManuscript && !!profile.saveMarkdownArtifact,
+        cleanup: isOutline
+            ? getDefaultManuscriptCleanupOptions('markdown')
+            : normalizeManuscriptCleanupOptions(profile.cleanup, cleanupFormatForOutputFormat(outputFormat)),
+        splitMode: isSplit ? 'parts' : 'single',
+        splitParts: isSplit ? clampSplitParts(profile.splitParts ?? 1) : 1,
+        selectionPolicy: isPdfManuscript ? 'full-book' : 'manual-range',
+    };
+}
+
+export function exportProfilesMatch(a: ModalExportProfile, b: ModalExportProfile): boolean {
+    return JSON.stringify(buildComparableExportProfile(a)) === JSON.stringify(buildComparableExportProfile(b));
 }
 
 export function getModalExportProfileSummary(

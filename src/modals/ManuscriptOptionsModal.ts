@@ -20,6 +20,9 @@ import {
     buildModalExportProfile,
     buildModalExportProfileFromLegacyTemplate,
     buildTransientModalExportProfile,
+    clampSplitParts,
+    exportProfilesMatch,
+    resolveIncludeSceneId,
     type ModalExportProfile,
 } from '../utils/exportProfileModel';
 import { getPandocLayoutSortRank, getPandocLayoutTier } from '../publishing/templateTiering';
@@ -316,12 +319,12 @@ export class ManuscriptOptionsModal extends Modal {
     private templateCard?: HTMLElement;
     private exportTemplateDropdown?: HTMLSelectElement;
     private saveTemplateButton?: ButtonComponent;
+    private reloadTemplateButton?: ButtonComponent;
     private deleteTemplateButton?: ButtonComponent;
     private templateSummaryEl?: HTMLElement;
     private templateHintEl?: HTMLElement;
     private selectedExportProfileId: string | null = null;
     private defaultExportProfileId: string | null = null;
-    private lastUsedExportProfileId: string | null = null;
     private exportProfiles: ModalExportProfile[] = [];
     private templateProfiles: TemplateProfile[] = [];
     private selectedExportProfile?: ModalExportProfile;
@@ -623,7 +626,7 @@ export class ManuscriptOptionsModal extends Modal {
         });
         this.splitPartsInputEl.addEventListener('input', () => {
             const next = Number.parseInt(this.splitPartsInputEl?.value || '', 10);
-            this.splitParts = this.clampSplitParts(next);
+            this.splitParts = clampSplitParts(next);
             if (this.splitPartsInputEl) this.splitPartsInputEl.value = String(this.splitParts);
             if (this.splitPartsRadioInputEl) this.splitPartsRadioInputEl.checked = true;
             this.splitMode = 'parts';
@@ -863,11 +866,21 @@ export class ManuscriptOptionsModal extends Modal {
                 this.syncExportUi();
                 this.updateTemplateActionButtonState();
                 this.updateExportProfileSummary();
+                void this.rememberLastUsedTemplate(null);
                 return;
             }
             void this.applyTemplateById(value);
         });
         const templateActions = this.templateCard.createDiv({ cls: 'ert-template-actions' });
+        // Re-selecting the same option in a <select> fires no change event, so
+        // discarding edits needs its own control.
+        this.reloadTemplateButton = new ButtonComponent(templateActions)
+            .setButtonText('Reload preset')
+            .onClick(() => {
+                const selectedId = this.getCurrentTemplateSelection();
+                if (!selectedId) return;
+                void this.applyTemplateById(selectedId);
+            });
         this.saveTemplateButton = new ButtonComponent(templateActions)
             .setButtonText('Create preset')
             .onClick(() => {
@@ -966,15 +979,12 @@ export class ManuscriptOptionsModal extends Modal {
             || this.plugin.settings.lastUsedExportProfileId
             || this.plugin.settings.lastUsedManuscriptExportTemplateId
             || null;
-        this.lastUsedExportProfileId = lastUsedId;
         this.lastUsedExportProfile = lastUsedId ? this.exportProfiles.find(profile => profile.id === lastUsedId) : undefined;
 
-        this.selectedExportProfileId = this.lastUsedExportProfile?.id
-            || activePreferences?.defaultExportProfileId
-            || this.defaultExportProfile?.id
-            || this.exportProfiles[0]?.id
-            || null;
-        this.selectedExportProfile = this.findExportProfileById(this.selectedExportProfileId) || this.defaultExportProfile;
+        // Start as a draft; restoreLastUsedTemplate() picks and applies the
+        // preset (or last ad-hoc settings) once the UI exists.
+        this.selectedExportProfileId = null;
+        this.selectedExportProfile = this.defaultExportProfile;
         this.selectedLayoutId = this.resolveLayoutIdForProfile(this.selectedExportProfile);
         this.updateExportProfileSummary();
     }
@@ -1020,7 +1030,7 @@ export class ManuscriptOptionsModal extends Modal {
                 isCreateMode
                     ? 'Current settings are not saved as a preset yet.'
                     : hasChanges
-                        ? 'Current settings differ from this preset. Update preset to save changes.'
+                        ? 'Current settings differ from this preset. Update preset to save them, or reload preset to discard them.'
                         : 'Preset matches current settings.'
             );
             this.templateHintEl.toggleClass('ert-export-preset-hint--warning', hasChanges);
@@ -1045,13 +1055,6 @@ export class ManuscriptOptionsModal extends Modal {
             isCreateMode,
             hasChanges: selectedTemplate ? this.hasSelectedTemplateChanges(selectedTemplate) : false
         };
-    }
-
-    private findExportProfileById(id: string | null | undefined): ModalExportProfile | undefined {
-        const normalized = (id || '').trim();
-        if (!normalized) return undefined;
-        return this.exportProfiles.find(profile => profile.id === normalized)
-            || (this.defaultExportProfile?.id === normalized ? this.defaultExportProfile : undefined);
     }
 
     private resolveLayoutIdForProfile(profile: ModalExportProfile | undefined): string | undefined {
@@ -1261,66 +1264,8 @@ export class ManuscriptOptionsModal extends Modal {
         };
     }
 
-    private createComparableTemplatePayload(template: ModalExportProfile): ModalExportProfile {
-        return {
-            order: template.order,
-            subplot: template.subplot,
-            cleanup: this.getNormalizedCleanupOptions(template.cleanup, template.outputFormat),
-            selectionPolicy: template.selectionPolicy,
-            id: template.id,
-            name: template.name,
-            templateProfileId: template.templateProfileId,
-            usageContext: template.usageContext,
-            outputFormat: template.outputFormat,
-            exportType: template.exportType,
-            outlinePreset: template.outlinePreset,
-            tocMode: template.tocMode,
-            includeSceneIdInToc: template.includeSceneIdInToc,
-            includeSceneIdInHeading: template.includeSceneIdInHeading,
-            includeMatter: template.includeMatter,
-            includeSynopsis: template.includeSynopsis,
-            updateWordCounts: template.updateWordCounts,
-            saveMarkdownArtifact: template.saveMarkdownArtifact,
-            splitMode: template.splitMode,
-            splitParts: template.splitParts,
-            selectedLayoutId: template.selectedLayoutId
-        };
-    }
-
-    private createComparablePayloadFromCurrent(template: ModalExportProfile): ReturnType<ManuscriptOptionsModal['createComparableTemplatePayload']> {
-        const current = this.createTemplateSnapshot(template.name, template.id);
-        return this.createComparableTemplatePayload(current);
-    }
-
-    private createComparablePayloadFromSavedTemplate(template: ModalExportProfile): ReturnType<ManuscriptOptionsModal['createComparableTemplatePayload']> {
-        const isOutline = template.exportType === 'outline';
-        const outputFormat: ExportFormat = isOutline ? 'markdown' : template.outputFormat;
-        const isPdfManuscript = !isOutline && outputFormat === 'pdf';
-        const normalizedCleanup = isOutline
-            ? getDefaultManuscriptCleanupOptions('markdown')
-            : this.getNormalizedCleanupOptions(template.cleanup, outputFormat);
-        const normalized: ModalExportProfile = {
-            ...template,
-            cleanup: normalizedCleanup,
-            outputFormat,
-            tocMode: !isOutline && outputFormat === 'markdown' ? template.tocMode : 'none',
-            updateWordCounts: !isOutline ? !!template.updateWordCounts : false,
-            includeSynopsis: isOutline ? !!template.includeSynopsis : false,
-            includeMatter: !isOutline ? !!template.includeMatter : false,
-            saveMarkdownArtifact: isPdfManuscript ? !!template.saveMarkdownArtifact : false,
-            splitMode: !isOutline && template.splitMode === 'parts' ? 'parts' : 'single',
-            splitParts: !isOutline && template.splitMode === 'parts'
-                ? this.clampSplitParts(template.splitParts ?? 1)
-                : 1,
-            selectedLayoutId: isPdfManuscript ? template.selectedLayoutId : undefined
-        };
-        return this.createComparableTemplatePayload(normalized);
-    }
-
     private hasSelectedTemplateChanges(template: ModalExportProfile): boolean {
-        const currentPayload = this.createComparablePayloadFromCurrent(template);
-        const savedPayload = this.createComparablePayloadFromSavedTemplate(template);
-        return JSON.stringify(currentPayload) !== JSON.stringify(savedPayload);
+        return !exportProfilesMatch(this.createTemplateSnapshot(template.name, template.id), template);
     }
 
     private updateTemplateActionButtonState(): void {
@@ -1336,6 +1281,7 @@ export class ManuscriptOptionsModal extends Modal {
             }
         }
 
+        this.reloadTemplateButton?.buttonEl.toggleClass('ert-hidden', !(selectedTemplate && hasChanges));
         this.deleteTemplateButton?.setDisabled(!selectedTemplate);
         this.updateExportProfileSummary();
     }
@@ -1393,6 +1339,7 @@ export class ManuscriptOptionsModal extends Modal {
             return;
         }
         await this.applyTemplate(template);
+        await this.rememberLastUsedTemplate(template.id);
     }
 
     private async applyTemplate(
@@ -1406,12 +1353,7 @@ export class ManuscriptOptionsModal extends Modal {
         this.outlinePreset = template.outlinePreset || 'beat-sheet';
         this.outputFormat = template.outputFormat;
         this.tocMode = template.tocMode || 'none';
-        // Saved presets may store either flag (legacy two-toggle UI) or both.
-        // Either being true implies the consolidated SceneId toggle is on.
-        const fromTemplate = template.includeSceneIdInToc ?? template.includeSceneIdInHeading;
-        if (typeof fromTemplate === 'boolean') {
-            this.includeSceneId = fromTemplate;
-        }
+        this.includeSceneId = resolveIncludeSceneId(template);
         this.sceneIdToggle?.setValue(this.includeSceneId);
         this.order = template.order;
         this.subplot = template.subplot || 'All Subplots';
@@ -1428,7 +1370,7 @@ export class ManuscriptOptionsModal extends Modal {
             this.markdownCleanupOptions = templateCleanup;
         }
         this.splitMode = template.splitMode === 'parts' ? 'parts' : 'single';
-        this.splitParts = this.clampSplitParts(template.splitParts ?? this.splitParts);
+        this.splitParts = clampSplitParts(template.splitParts ?? this.splitParts);
         this.selectedLayoutId = this.resolveLayoutIdForProfile(template);
         this.selectedExportProfileId = template.id;
         this.selectedExportProfile = { ...template };
@@ -1469,28 +1411,39 @@ export class ManuscriptOptionsModal extends Modal {
         }
     }
 
+    /**
+     * Open on the preset the author last chose, loaded exactly as saved so it
+     * reads as matching. Without one, restore their last ad-hoc settings
+     * (draft), then the book's default preset. The scene range is not part of
+     * a preset, so it carries over from the last session when that session
+     * used the same order and subplot.
+     */
     private async restoreLastUsedTemplate(): Promise<void> {
         const activePreferences = this.getActiveBookPublishingPreferences();
         const snapshot = activePreferences?.lastUsedExportProfileSnapshot;
+        const lastUsedPreset = this.lastUsedExportProfile;
+        if (lastUsedPreset) {
+            const rangeMatches = !!snapshot
+                && snapshot.order === lastUsedPreset.order
+                && (snapshot.subplot || 'All Subplots') === lastUsedPreset.subplot;
+            await this.applyTemplate({
+                ...lastUsedPreset,
+                rangeStart: rangeMatches ? snapshot.rangeStart : undefined,
+                rangeEnd: rangeMatches ? snapshot.rangeEnd : undefined,
+            }, { showNotice: false });
+            return;
+        }
         if (snapshot) {
-            const modalSnapshot = buildModalExportProfile(snapshot, this.templateProfiles);
-            await this.applyTemplate(modalSnapshot, { showNotice: false });
+            await this.applyTemplate(buildModalExportProfile(snapshot, this.templateProfiles), { showNotice: false });
             return;
         }
-        const lastUsed = this.lastUsedExportProfileId || this.plugin.settings.lastUsedManuscriptExportTemplateId;
-        if (!lastUsed) {
-            this.refreshTemplateDropdown();
-            this.updateExportProfileSummary();
+        const defaultPreset = this.getTemplateList().find(item => item.id === activePreferences?.defaultExportProfileId);
+        if (defaultPreset) {
+            await this.applyTemplate(defaultPreset, { showNotice: false });
             return;
         }
-        const template = this.getTemplateList().find(item => item.id === lastUsed);
-        if (!template) {
-            this.lastUsedExportProfileId = null;
-            this.refreshTemplateDropdown();
-            this.updateExportProfileSummary();
-            return;
-        }
-        await this.applyTemplate(template, { showNotice: false });
+        this.refreshTemplateDropdown();
+        this.updateExportProfileSummary();
     }
 
     private buildCurrentSnapshot(): ExportProfile {
@@ -2521,11 +2474,6 @@ export class ManuscriptOptionsModal extends Modal {
         }
     }
 
-    private clampSplitParts(value: number): number {
-        if (!Number.isFinite(value)) return 2;
-        return Math.max(2, Math.min(20, Math.floor(value)));
-    }
-
     private getSelectedSceneCount(): number {
         if (this.totalScenes === 0) return 0;
         return Math.max(0, this.rangeEnd - this.rangeStart + 1);
@@ -3193,9 +3141,6 @@ export class ManuscriptOptionsModal extends Modal {
         try {
             const selectedProfile = this.selectedExportProfile || this.defaultExportProfile || this.getTemplateList()[0];
             const selectedLayoutId = this.resolveLayoutIdForProfile(selectedProfile);
-            if (selectedProfile?.id && selectedProfile.id !== this.defaultExportProfile?.id) {
-                await this.rememberLastUsedTemplate(selectedProfile.id);
-            }
             const outcome = await this.onSubmit({
                 order: submissionOrder,
                 tocMode,
@@ -3214,7 +3159,9 @@ export class ManuscriptOptionsModal extends Modal {
                 includeMatter,
                 saveMarkdownArtifact: mode.showSavePrecompile ? this.saveMarkdownArtifact : false,
                 exportCleanup: mode.isManuscript ? this.getActiveCleanupOptions() : undefined,
-                exportProfileId: selectedProfile?.id,
+                // Only a saved preset may become "last used"; drafts and the
+                // restored ad-hoc snapshot carry ids that match no preset.
+                exportProfileId: this.getCurrentTemplateSelection() ?? undefined,
                 exportProfileTemplateId: selectedLayoutId,
                 selectedLayoutId: mode.isPdfManuscript ? selectedLayoutId : undefined,
                 splitMode: mode.showSplit ? this.splitMode : 'single',

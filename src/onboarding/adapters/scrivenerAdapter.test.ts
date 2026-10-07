@@ -33,13 +33,14 @@ const SCENE_FILES: ScrivenerFile[] = [
 ];
 
 // Note the quoted comma in row 1's synopsis, a quoted embedded newline in
-// row 3's synopsis, and NO row for "Unlisted" (file 4). "Word Count" is a
+// row 3's synopsis, and a title-only row for "Unlisted" (file 4). "Word Count" is a
 // derived outliner column; "Storyline" is custom metadata.
 const OUTLINE_CSV = [
   'Title,Synopsis,Label,Status,Keywords,Storyline,Word Count',
   '"The Hook","Mara finds the letter, and hides it again.",Discovery,First Draft,letter; secrets,Homecoming,812',
   '"Landfall","The ferry arrives at dawn.",Travel,Done,,Homecoming,1043',
   '"The Archivist","Records in the basement.\nA forbidden name surfaces.",Reveal,To Do,archives,Conspiracy,977',
+  'Unlisted,,,,,,',
 ].join('\n');
 
 function sourceOf(files: ScrivenerFile[], sidecar: string | null): ScrivenerSource {
@@ -104,7 +105,7 @@ describe('titleFromExportFileName', () => {
 describe('ingestScrivenerFolder', () => {
   it('orders scenes by filename numbering regardless of listing order', async () => {
     const shuffled = [SCENE_FILES[2], SCENE_FILES[0], SCENE_FILES[3], SCENE_FILES[1]];
-    const result = await ingestScrivenerFolder(sourceOf(shuffled, OUTLINE_CSV), 'Book/Source');
+    const result = await ingestScrivenerFolder(sourceOf(shuffled, null), 'Book/Source');
     expect(result.kind).toBe('ok');
     if (result.kind === 'ok') {
       expect(flattenScenes(result.model).map((scene) => scene.sourceRef)).toEqual([
@@ -115,6 +116,22 @@ describe('ingestScrivenerFolder', () => {
       ]);
       expect(result.model.sourceKind).toBe('scrivener');
     }
+  });
+
+  it('uses narrative outline order even when filenames number scenes differently', async () => {
+    const result = await ingestScrivenerFolder(sourceOf([
+      file('1 Ending.md', 'Ending prose.'), file('2 Beginning.md', 'Beginning prose.'),
+    ], 'Title,Synopsis\nBeginning,Opening metadata\nEnding,Closing metadata'), 'Book/Source');
+    expect(result.kind).toBe('ok');
+    if (result.kind !== 'ok') return;
+    expect(flattenScenes(result.model).map(scene => [scene.title, scene.knownSynopsis])).toEqual([
+      ['Beginning', 'Opening metadata'], ['Ending', 'Closing metadata'],
+    ]);
+  });
+
+  it('blocks numbered exports with an incomplete outline instead of guessing order or metadata', async () => {
+    const result = await ingestScrivenerFolder(sourceOf(SCENE_FILES, 'Title,Synopsis\nDifferent title,Wrong metadata'), 'Book/Source');
+    expect(result.kind).toBe('needs-order');
   });
 
   it('carries synopsis and metadata from matched sidecar rows', async () => {
@@ -156,7 +173,7 @@ describe('ingestScrivenerFolder', () => {
     ]);
   });
 
-  it('leaves a file without a sidecar row bare (no synopsis, no metadata)', async () => {
+  it('leaves a title-only outline row bare (no synopsis, no metadata)', async () => {
     const result = await ingestScrivenerFolder(sourceOf(SCENE_FILES, OUTLINE_CSV), 'Book/Source');
     expect(result.kind).toBe('ok');
     if (result.kind !== 'ok') return;
@@ -178,7 +195,7 @@ describe('ingestScrivenerFolder', () => {
     expect(result.model.customFields).toEqual([]);
   });
 
-  it('falls back to sidecar row order when file names are unnumbered', async () => {
+  it('uses sidecar row order when file names are unnumbered', async () => {
     const unnumbered = [
       file('Landfall.md', 'Dawn ferry.'),
       file('The Hook.md', 'The letter.'),

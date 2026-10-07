@@ -12,3 +12,5 @@ Structure-only carries exported synopses, mapped metadata, and scene titles. Map
 Dismissed runs can resume while Obsidian remains open. Restarting Obsidian clears that in-memory review session.
 
 Book Manager scans automatically only when there is no usable configured book folder. Established vaults can use **Scan for exports** or **Choose manuscript**. Discovery is local and read-only. Potential candidates are suggestions, not a guarantee of completeness. A CSV with Word Count enables the check for outline documents with prose but no exported scene file; without that column, unmatched rows are reported as uncertain.
+
+When an outline CSV is supplied, its row order determines narrative order, even when exported filenames use a different numbering sequence. An incomplete outline blocks import rather than guessing. Metadata is matched by document title, never by row position. The mapping step shows example values and proposes canonical keys; your choices are applied once when the imported notes are created, without changing the Settings key remapper. Word Count is only a hint for identifying missing prose documents, not an imported statistic you need to manage.

@@ -43,7 +43,7 @@ import {
 import { getSupportedFrontmatterRemapTargets } from '../utils/frontmatter';
 import { getActiveBook, createBookId, normalizeBookProfile } from '../utils/books';
 import { discoverOnboardingCandidates } from '../onboarding/discovery';
-import { checkScrivenerExport, createObsidianScrivenerSource } from '../onboarding/adapters/scrivenerAdapter';
+import { checkScrivenerExport, createObsidianScrivenerSource, findScrivenerSidecarFile } from '../onboarding/adapters/scrivenerAdapter';
 import { STAGE_ORDER, type Stage } from '../utils/constants';
 import type { AIProviderId } from '../ai/types';
 import { forecastOnboardingTokens, forecastOnboardingCost } from '../onboarding/costForecast';
@@ -554,6 +554,10 @@ export class OnboardingModal extends Modal {
       this.renderStatusRow(status, 'Chapters found', `${candidateCount}${skipNote}`, candidateCount > 0);
     }
 
+    if (activeFlow === 'scrivener' && this.model && !ingestReason) {
+      const outline = findScrivenerSidecarFile(this.app, book.sourceFolder);
+      this.renderStatusRow(status, 'Narrative order', outline ? 'Outline CSV row order — matched by document title' : 'Numbered filenames — no outline supplied', true);
+    }
     for (const warning of exportWarnings) status.createDiv({ cls: 'ert-warning', text: warning });
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
     new ButtonComponent(actions).setButtonText('Choose another manuscript').onClick(() => void this.showSourceSelection());
@@ -720,9 +724,10 @@ export class OnboardingModal extends Modal {
    * re-renders and are applied to the model just before extraction.
    */
   private renderMetadataMappingTable(contentEl: HTMLElement): void {
-    if (!this.model || this.model.sourceKind !== 'scrivener' || this.model.customFields.length === 0) return;
+    const model = this.model;
+    if (!model || model.sourceKind !== 'scrivener' || model.customFields.length === 0) return;
     if (!this.metadataMapping) {
-      this.metadataMapping = proposeScrivenerAutomap(this.model.customFields);
+      this.metadataMapping = proposeScrivenerAutomap(model.customFields);
     }
     const mapping = this.metadataMapping;
 
@@ -730,13 +735,13 @@ export class OnboardingModal extends Modal {
     panel.createDiv({ cls: 'ert-onb-synopsis__label', text: 'Scrivener metadata' });
     panel.createDiv({
       cls: 'ert-muted',
-      text: 'Each exported field can map to a Radial Timeline key, ride along as a custom field, or be dropped.',
+      text: 'Match each exported field to a Radial Timeline key using the sample values below, keep it as a custom field, or ignore it. These choices are applied once to the imported notes; they do not change the Settings key remapper.',
     });
 
     const rtKeys = getSupportedFrontmatterRemapTargets();
     const encode = (decision: ScrivenerFieldTarget): string =>
       decision.target === 'rt-key' ? `rt:${decision.key}` : decision.target;
-    const fields = this.model.customFields;
+    const fields = model.customFields;
 
     // Bulk lane for the per-subplot-column model: most exported custom columns
     // ARE subplots, so one click flips every still-custom field at once.
@@ -764,7 +769,9 @@ export class OnboardingModal extends Modal {
         };
         for (const key of rtKeys) options[`rt:${key}`] = `Map to ${key}`;
         const decision = mapping[field] ?? { target: 'custom' as const };
-        grid.createDiv({ cls: 'ert-onb-map__field', text: field });
+        const fieldEl = grid.createDiv({ cls: 'ert-onb-map__field', text: field });
+        const samples = [...new Set(flattenScenes(model).map(scene => scene.knownMetadata[field]).filter(value => value?.trim()))].slice(0, 3);
+        if (samples.length) fieldEl.createDiv({ cls: 'ert-muted', text: `Examples: ${truncateText(samples.join(' · '), 140)}` });
         const cell = grid.createDiv({ cls: 'ert-onb-map__choice' });
         new DropdownComponent(cell)
           .addOptions(options)

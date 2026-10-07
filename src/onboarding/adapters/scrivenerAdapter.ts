@@ -454,7 +454,7 @@ export async function checkScrivenerExport(source: ScrivenerSource, folder: stri
   const warnings: string[] = [];
   if (!files.length) errors.push('No scene prose found. In Scrivener, select your manuscript documents and use File → Export → Files, choosing text or Markdown. Copy the export into this vault; raw .scriv projects and RTF are not supported.');
   if (!text) {
-    warnings.push('Outline CSV missing. To carry synopses and metadata, select the same manuscript in Scrivener, show Title, Synopsis, Word Count and your custom columns, then export Outliner Contents as CSV beside the scene export. You can continue with scene files only.');
+    warnings.push('Outline CSV missing. To carry synopses and metadata, select the same manuscript in Scrivener, show Title, Synopsis and your custom columns, then export Outliner Contents as CSV beside the scene export. You can continue with scene files only.');
     return { errors, warnings };
   }
   const outline = parseOutlineSidecar(text);
@@ -475,7 +475,7 @@ export async function checkScrivenerExport(source: ScrivenerSource, folder: stri
   });
   if (missing.length) errors.push(`Outline documents with prose but no matching scene file: ${missing.slice(0, 5).map(row => readColumn(row, 'Title')).join(', ')} (${missing.length} total). In Scrivener, select all manuscript documents, enable numbered exported files, and re-export Files as text or Markdown alongside a fresh CSV.`);
   const uncertain = outline.rows.filter((row, index) => !fileTitles.includes(rowTitles[index]) && readColumn(row, 'Word Count') === null);
-  if (uncertain.length) warnings.push(`${uncertain.length} outline rows have no matching file and no Word Count, so completeness cannot be checked. Show Word Count in Scrivener and re-export the CSV; folder and empty placeholder rows may be harmless.`);
+  if (uncertain.length) warnings.push(`${uncertain.length} outline rows have no matching scene file, so completeness cannot be checked for those rows. Verify they are folders or empty placeholders in Scrivener; otherwise re-export Files and Outliner Contents from the same manuscript selection.`);
   if (!outline.fields.some(field => /^synopsis$/i.test(field))) warnings.push('Synopsis column missing. Show Synopsis in Scrivener’s outliner and re-export the CSV if you want to preserve synopses.');
   return { errors, warnings };
 }
@@ -485,20 +485,11 @@ type OrderResolution =
   | { kind: 'needs-order'; reason: string };
 
 /**
- * Reading order: filename numbering first (Scrivener's "number exported files"
- * prefix); else the sidecar's row order when its titles cover every file
- * (outliner rows are in binder order); else stop and ask — never guess.
+ * The outline row order is authoritative whenever a CSV is supplied.
+ * Numbered filenames supply order only for exports with no outline.
+ * A partial outline blocks import rather than substituting filename order.
  */
 function resolveOrder(files: ScrivenerFile[], sidecar: OutlineSidecar | null): OrderResolution {
-  const byName = new Map(files.map((file) => [file.fileName, file]));
-  const numbered = resolveReadingOrder(files.map((file) => file.fileName), null);
-  if (numbered.kind === 'ordered') {
-    const inOrder = numbered.order
-      .map((name) => byName.get(name))
-      .filter((file): file is ScrivenerFile => file !== undefined);
-    return { kind: 'ok', files: inOrder };
-  }
-
   if (sidecar) {
     const byTitle = new Map<string, ScrivenerFile>();
     for (const file of files) {
@@ -521,10 +512,20 @@ function resolveOrder(files: ScrivenerFile[], sidecar: OutlineSidecar | null): O
       kind: 'needs-order',
       reason:
         `The outline CSV does not match every exported file by title ` +
-        `(${inOrder.length}/${files.length} matched). Re-export with numbered ` +
-        `file names, or make the outline titles match the file names.`,
+        `(${inOrder.length}/${files.length} matched). Re-export Files and Outliner Contents ` +
+        `from the same manuscript selection in Scrivener with matching document titles.`,
     };
   }
+
+  const byName = new Map(files.map((file) => [file.fileName, file]));
+  const numbered = resolveReadingOrder(files.map((file) => file.fileName), null);
+  if (numbered.kind === 'ordered') {
+    const inOrder = numbered.order
+      .map((name) => byName.get(name))
+      .filter((file): file is ScrivenerFile => file !== undefined);
+    return { kind: 'ok', files: inOrder };
+  }
+
 
   return {
     kind: 'needs-order',
@@ -536,8 +537,7 @@ function resolveOrder(files: ScrivenerFile[], sidecar: OutlineSidecar | null): O
 
 /**
  * Match sidecar rows to files (already in reading order) for metadata carry.
- * Primary: by normalized title. Fallback: when no title matches at all and the
- * row count equals the file count, assume binder order and zip positionally.
+ * Match by normalized document title only. Never attach metadata by position.
  */
 function matchRowsToFiles(
   files: ScrivenerFile[],
@@ -558,10 +558,6 @@ function matchRowsToFiles(
     return key.length > 0 ? (rowByTitle.get(key) ?? null) : null;
   });
 
-  const anyTitleMatch = matches.some((row) => row !== null);
-  if (!anyTitleMatch && sidecar.rows.length === files.length) {
-    return files.map((_, index) => sidecar.rows[index]);
-  }
   return matches;
 }
 

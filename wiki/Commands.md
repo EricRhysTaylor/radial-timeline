@@ -19,7 +19,7 @@ These are the main command-palette entries.
 2. **[Create note…](#create-note)**
 3. **Open inquiry** — opens the [Inquiry View](Inquiry).
 4. **[Book designer](Book-Designer)** ← standalone guide
-5. **[Manuscript onboarding](#onboard-manuscript)** *(in testing — not yet released)*
+5. **[Manuscript onboarding](#onboard-manuscript)**
 6. **[Timeline date scaffold](#timeline-order)**
 7. **[Timeline date audit](#timeline-audit)** *(beta)*
 8. **[Subplot manager](#manage-subplots)**
@@ -48,7 +48,7 @@ Some commands are hidden until their required feature is enabled. Others remain 
 *   **Runtime estimator** is a **Pro** workflow. Runtime configuration lives in [Settings → Core](Settings-Core#runtime-estimation).
 *   With AI off, the **Timeline date audit** AI scan and the runtime estimator's AI mode tell you AI is off instead of running.
 *   **Planetary time calculator** is visible, but it needs at least one configured planetary profile before it can produce a conversion.
-*   **Inquiry omnibus** and **Manuscript onboarding** are undergoing testing and are not released yet. They do not appear in release builds.
+*   **Inquiry omnibus** is undergoing testing and is not released yet. It does not appear in release builds.
 
 ---
 
@@ -74,16 +74,13 @@ Related: [Scene Properties (Core + Advanced)](YAML-Frontmatter).
 ---
 
 <a name="onboard-manuscript"></a>
-## Manuscript onboarding *(in testing — not yet released)*
+## Manuscript onboarding
 
-Opens the guided onboarding flow for importing an existing manuscript.
+Opens the guided flow for importing a Scrivener export, a Word document, or one large text file. **Structure only — no AI** is the default; AI assistance is an explicit choice.
 
-> [!NOTE]
-> Undergoing testing and not released yet — it does not appear in release builds of the plugin. It offers structure-only import or Local LLM assistance — see [Settings → AI → Local LLM](Settings-AI#local-llm) for setup and the hardware guidance in [Onboarding And Local Model Hardware](Settings-AI#onboarding-and-local-model-hardware).
+Choose the source, check export readiness and narrative order, confirm scene boundaries and metadata mappings, then review before applying. The Welcome flow accepts a source folder without prior Book Manager setup. Imports create a separate book folder and preserve the original source.
 
-Walks a book folder through a four-stage sequence — preparing and reading the source text, proposing scene splits for confirmation, generating scene profiles (characters, places, summaries) for review, and writing the accepted result to the vault. Each stage is reviewable before it commits anything.
-
-Related: [Settings → AI → Local LLM](Settings-AI#local-llm), [Book Designer](Book-Designer).
+See [Manuscript onboarding](Onboard-Existing-Manuscript) for build availability, Scrivener export instructions, and one-time metadata mapping.
 
 ---
 

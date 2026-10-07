@@ -1,40 +1,41 @@
-Onboarding imports your draft as scene notes with frontmatter. Review scene splits and properties before creating the book folder. Your source manuscript is preserved.
+Onboarding imports your draft as scene notes with frontmatter. Review scene boundaries, narrative order, and metadata before creating the imported book. Your source manuscript stays untouched.
 
-Start it from the Welcome screen (**Manuscript onboarding**) or the Command Palette: **Radial timeline: Manuscript onboarding (BETA)**.
+Start from **Manuscript onboarding** on the Welcome screen or **Radial timeline: Manuscript onboarding** in the Command Palette. The Welcome flow lets you choose an export directly; you do not need to configure Book Manager first.
 
-> **Undergoing testing — not released yet.** Manuscript onboarding does not appear in release builds of the plugin. [Report issues](https://github.com/EricRhysTaylor/radial-timeline/issues).
+> **Build availability:** the direct source chooser, export discovery, and CSV-first ordering described here are in the current main build, after release 7.4.0. Update to a release containing these changes before expecting the same screens.
 
----
+## Import sources
 
-## Three import lanes
+* **Scrivener export:** export one text or Markdown file per scene using **File → Export → Files**. Preserve the binder hierarchy and enable numbered filenames. Export **Outliner Contents as CSV** with Title, Synopsis, and the metadata columns you want to carry, covering the same manuscript selection. Put the CSV beside the exported files or in their parent folder, then copy the export into your vault. Raw `.scriv` projects and RTF exports are not supported.
+* **Word document:** use one `.docx` for the manuscript. Heading 1–3 and Title styles supply its chapter structure. Combine per-scene Word files before importing.
+* **One big file:** use a text, Markdown, or HTML manuscript. Its divisions and scene markers supply the starting structure. Convert PDFs before importing.
 
-Onboarding detects the right lane from what you point it at, and you can override the detection on the Prepare step.
+Onboarding detects the source type; you can override it during **Prepare**.
 
-*   **Scrivener export** — one file per scene, produced with Scrivener's **File ▸ Export ▸ Files…** (turn on "number exported files" so each filename carries its binder position) plus, optionally, **Outliner Contents as CSV** exported alongside. Scene order comes from the filename numbering, or from the CSV's row order; the CSV's Synopsis and metadata columns are carried into each scene's frontmatter. Acts, subplots, and outline metadata are mapped into Radial Timeline's schema, with Main Plot as the spine.
-*   **Word document** — the whole manuscript in **one** `.docx`. Word's built-in **Heading 1–3 / Title** paragraph styles become the chapter structure, in document order, and scenes are split inside each chapter (markers and Auto-split, same as the single-file lane). Combine per-scene Word files into a single document before importing.
-*   **One big file** — a whole book in a single text, Markdown, or HTML file (a Project Gutenberg classic, for example). Its internal divisions (books/chapters) become the starting structure. Convert PDF source material to one of these formats before importing.
+## Find and check a Scrivener export
 
-## With or without AI
+Choose a suggested export or select its folder yourself. Suggestions are local, read-only checks for potential manuscripts, not proof that an export is complete. Book Manager scans automatically when no configured book folder is usable; established vaults can use **Scan for exports** or **Choose manuscript**.
 
-Every lane works both ways:
+When a CSV is supplied, **its row order determines narrative order**, even if filename numbering differs. Rows match scene files by document title. Without a CSV, numbered filenames supply the order.
 
-*   **Structure-only (no AI).** Deterministic splitting from your document's structure and scene markers. No manuscript text leaves your machine and no model is required.
-*   **With a local LLM.** The model proposes scene breaks inside unmarked prose (**Auto-split with AI**), writes grounded synopses, and can generate opt-in Character and Place notes. AI requests go to your configured Local LLM endpoint, never to the selected cloud AI provider. Use a server on the same machine to keep manuscript text on-device.
+Missing scene files, duplicate-title ambiguity, and scene files absent from the supplied outline block import. Follow the reported instructions in Scrivener, export the same manuscript selection again, and choose **Recheck export**. Without a CSV, scene-only import is supported with a warning. Some unmatched outline rows may be folders or empty placeholders; check them against the binder. A Word Count column can help identify missing prose documents, but it is not required metadata to manage.
 
-> **Local model requirement:** onboarding is tested and verified with **Qwen3-Next-80B-A3B-Instruct (4-bit)**, the recommended model; the previously verified **Qwen3-30B-A3B-2507 (4-bit)** also performs, though not as strongly. Onboarding reads and reasons over your entire manuscript, which demands far more than everyday AI features — smaller or lesser models may fail to follow the workflow or produce unreliable scene splits. See [Settings → AI](Settings-AI#local-llm) for hardware notes and local server setup.
+## Import without AI
 
-## The flow
+**Structure only — no AI** is the default. No model or API key is required, and onboarding makes no AI requests in this mode. It uses document structure and scene markers, carries exported synopses and metadata, and leaves missing synopses for you to write.
 
-1.  **Prepare.** Onboarding shows what it detected: import lane (with override), local model status, and the chapter/division count. Continue with AI, or without it.
-2.  **Confirm scenes.** Each chapter is split into its scenes. Marker breaks split automatically; Auto-split proposes the rest, and you adjust. Set the book's **Publish Stage** here (a first draft is Zero; a finished, published book is Press).
-3.  **Checkpoints.** Review scene titles, synopses, and structure in an accordion view — including any scenes flagged as needing a human decision — before anything is written to the vault.
+Choose **AI assisted** explicitly if you want AI splitting or generated summaries. Configure an available provider under [Settings → AI](Settings-AI) before using that mode.
 
-**Scene markers:** `***`, `---`, `⁂`, a `# heading`, or a similar separator (`* * *`, `___`, `• • •`, `. . .`) on its own line in your manuscript forces a scene break at that spot. Markers are exact, survive re-runs, and the AI won't override them.
+## Review and apply
 
-Onboarding sessions are **resumable** — if you close the panel or Obsidian mid-run, you can pick up where you left off.
+1. **Prepare:** choose the source type and import mode, check export readiness, and confirm how narrative order is determined.
+2. **Confirm scenes:** review boundaries and titles, choose the book's Publish Stage, and map exported metadata. The mapping table proposes fields and shows example values. Map a column to a Radial Timeline property, keep it as a custom field, or ignore it. For a column representing a subplot, choose **Mark scenes with this subplot (column name)**.
+3. **Review and apply:** inspect the proposed scene notes before approving their creation. Onboarding writes a separate `<Book> RT` folder and registers the imported book.
 
-## What you get
+Metadata mappings are applied once when the imported notes are created. They do not change the [Settings key remapper](Settings-Advanced), and you do not repeat them every time the plugin runs. ACT folders determine acts when present; otherwise the import allocates acts by position. Review the proposed acts and subplots before applying.
 
-Scene notes with real frontmatter (`Act`, `Synopsis`, `Subplot`, `When`, and the rest of the [scene schema](YAML-Frontmatter)), subplot mapping with Main Plot as the spine, and optional Character and Place notes for use in the timeline. Review dates and durations for Chronologue and add beat notes for Gossamer.
+**Scene markers:** a separator such as `***`, `---`, `⁂`, or a heading on its own line can force a scene break. Review the resulting boundaries before applying.
 
-Want to see the end state before onboarding your own book? Explore the [Pride & Prejudice sample vault](Sample-Vault).
+You can close and resume a review while Obsidian remains open. Restarting Obsidian clears the in-memory review session.
+
+The imported notes use the [scene properties](YAML-Frontmatter) that drive the timeline. Review dates and durations for Chronologue and add beat notes for Gossamer. To explore a finished example first, open the [Pride & Prejudice sample vault](Sample-Vault).

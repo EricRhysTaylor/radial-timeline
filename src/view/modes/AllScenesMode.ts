@@ -6,6 +6,7 @@ import { handleDominantSubplotSelection } from '../interactions/DominantSubplotH
 import { SceneInteractionManager } from '../interactions/SceneInteractionManager';
 import { OuterRingDragController, isDragInProgress, isDragInteractionActive, wasRecentlyHandledByDrag } from '../interactions/OuterRingDragController';
 import { maybeHandleZeroDraftClick } from '../interactions/ZeroDraftHandler';
+import { isSubplotDragActive, wasRecentlyHandledBySubplotDrag } from '../interactions/SubplotRingDragController';
 import { setupSceneContextMenu } from '../interactions/SceneContextMenu';
 import type { RadialTimelineView } from '../TimeLineView';
 
@@ -21,7 +22,7 @@ export function setupSceneInteractions(view: RadialTimelineView, group: Element,
         view.renderScope.registerDomEvent(path as HTMLElement, 'click', (evt: MouseEvent) => { void (async () => {
             // Skip if drag controller is handling this interaction
             // The drag controller handles click-to-open for quick clicks and drag operations
-            if (isDragInProgress() || wasRecentlyHandledByDrag()) return;
+            if (isDragInProgress() || wasRecentlyHandledByDrag() || wasRecentlyHandledBySubplotDrag()) return;
 
             // Suspend hover until pointer moves again after click-open.
             // This prevents immediate stale re-hover when the timeline stays visible in a split pane.
@@ -108,7 +109,7 @@ export function setupAllScenesDelegatedHover(view: RadialTimelineView, container
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (e: PointerEvent) => {
         if (suspendHoverUntilPointerMove) return;
 
-        if (isDragInteractionActive()) {
+        if (isDragInteractionActive() || isSubplotDragActive()) {
             if (currentGroup) {
                 svg.classList.remove('scene-hover');
                 clearSelection();
@@ -135,7 +136,7 @@ export function setupAllScenesDelegatedHover(view: RadialTimelineView, container
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', (e: PointerEvent) => {
         if (suspendHoverUntilPointerMove) return;
 
-        if (isDragInteractionActive()) {
+        if (isDragInteractionActive() || isSubplotDragActive()) {
             if (currentGroup) {
                 svg.classList.remove('scene-hover');
                 clearSelection();
@@ -159,7 +160,7 @@ export function setupAllScenesDelegatedHover(view: RadialTimelineView, container
             return;
         }
 
-        if (isDragInteractionActive()) {
+        if (isDragInteractionActive() || isSubplotDragActive()) {
             if (currentGroup) {
                 svg.classList.remove('scene-hover');
                 clearSelection();

@@ -1,4 +1,5 @@
-import { getOuterRingIndex, resolveSubplotColorFromGroup } from './dragGeometry';
+import { resolveSubplotColorFromGroup } from './dragGeometry';
+import { membershipOfRing } from './subplotRings';
 import { getFrontMatterInfo, parseYaml, Menu, Notice, TFile, type App } from 'obsidian';
 import { normalizeStatus } from '../../utils/text';
 import { applySceneInsertionPlan, planSceneInsertion } from '../../services/SceneInsertService';
@@ -347,12 +348,12 @@ function resolvePrimarySubplotFromGroup(group: Element): string | undefined {
 
 // ── Subplot membership (same mutation path as dragging between rings) ──
 
-/** The subplot of the ring this copy sits on; null on the outer ring, which holds every scene. */
-function ringSubplotForGroup(group: Element): string | null {
+/** The subplot the clicked ring stands for; null on a ring that lists every scene. */
+function ringSubplotForGroup(view: SceneContextMenuView, group: Element): string | null {
     const svg = group.instanceOf(SVGElement) ? group.ownerSVGElement : null;
     const ring = group.getAttribute('data-ring');
-    if (!svg || ring === null || Number(ring) === getOuterRingIndex(svg)) return null;
-    return svg.querySelector(`.rt-subplot-ring-label-text[data-ring="${ring}"]`)?.getAttribute('data-subplot-name') ?? null;
+    if (!svg || ring === null) return null;
+    return membershipOfRing(svg, Number(ring), view.plugin.settings.currentMode);
 }
 
 function knownSubplots(group: Element): string[] {
@@ -391,15 +392,25 @@ function addSubplotMenuItems(menu: Menu, view: SceneContextMenuView, group: Elem
     const current = readSubplotMemberships(view.plugin.app, file, mappings);
     const effective = current.length > 0 ? current : ['Main Plot'];
     const known = knownSubplots(group);
-    const ringSubplot = ringSubplotForGroup(group);
+    const ringSubplot = ringSubplotForGroup(view, group);
+    const moveFrom = (from: string): void => pickSubplot(view, known.filter(name => name !== from), `Move ${file.basename} from ${from} to…`,
+        to => { void changeSubplotMembership(view, file, { kind: 'move', from, to }); });
 
-    if (ringSubplot) {
-        const from = ringSubplot;
+    // On a subplot ring the ring is the source. On a ring that lists every
+    // scene, the source is the scene's subplot, chosen first if it has several.
+    const sources = ringSubplot ? [ringSubplot] : effective;
+    if (sources.length === 1) {
+        const from = sources[0];
         menu.addItem(item => {
             item.setIcon('arrow-right-left');
             item.setTitle(`Move from ${from} to…`);
-            item.onClick(() => pickSubplot(view, known.filter(name => name !== from), `Move ${file.basename} from ${from} to…`,
-                to => { void changeSubplotMembership(view, file, { kind: 'move', from, to }); }));
+            item.onClick(() => moveFrom(from));
+        });
+    } else {
+        menu.addItem(item => {
+            item.setIcon('arrow-right-left');
+            item.setTitle('Move from subplot…');
+            item.onClick(() => pickSubplot(view, sources, `Move ${file.basename} from…`, moveFrom));
         });
     }
     menu.addItem(item => {

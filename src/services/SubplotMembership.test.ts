@@ -36,9 +36,12 @@ describe('planSubplotMembership — Main Plot', () => {
     it('returns a scene with no membership left to Main Plot', () => {
         expect(planSubplotMembership(['The Shipwreck'], { kind: 'remove', from: 'The Shipwreck' })).toEqual(['Main Plot']);
     });
-    it('treats a scene with no Subplot field as Main Plot: removing it is no change, adding a subplot sets it', () => {
+    it('treats a scene with no Subplot field as Main Plot', () => {
+        // Dragging it drops Main Plot for the new subplot; Shift-dragging keeps Main Plot.
+        expect(planSubplotMembership([], { kind: 'move', from: 'Main Plot', to: 'The Shipwreck' })).toEqual(['The Shipwreck']);
+        expect(planSubplotMembership([], { kind: 'add', to: 'The Shipwreck' })).toEqual(['Main Plot', 'The Shipwreck']);
         expect(planSubplotMembership([], { kind: 'remove', from: 'Main Plot' })).toBeNull();
-        expect(planSubplotMembership([], { kind: 'add', to: 'The Shipwreck' })).toEqual(['The Shipwreck']);
+        expect(planSubplotMembership([], { kind: 'add', to: 'Main Plot' })).toBeNull();
     });
     it('ignores blank and repeated names already in the field', () => {
         expect(planSubplotMembership(['A', ' A ', ''], { kind: 'add', to: 'B' })).toEqual(['A', 'B']);

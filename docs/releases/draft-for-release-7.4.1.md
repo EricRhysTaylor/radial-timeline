@@ -21,7 +21,7 @@ See [Manuscript onboarding](https://github.com/EricRhysTaylor/radial-timeline/wi
 
 ### Timeline
 
-- **Move scenes between subplots by dragging.** In Narrative Mode, drag a scene from one subplot ring onto another: it leaves the subplot you grabbed and joins the one you dropped on, keeping any others. Hold **Shift** to add the subplot instead. The ring lights up and a label by the pointer says what the drop will do. Only the scene's Subplot field changes, never its number, order, or act, and each change offers **Undo**. Right-click a scene for the same **Move**, **Add**, and **Remove** subplot actions.
+- **Move scenes between subplots by dragging.** In Narrative, Chronologue, and Progress modes, drag a scene from one subplot ring onto another: it leaves the subplot you grabbed and joins the one you dropped on, keeping any others. Hold **Shift** to add the subplot instead. The ring lights up and a label by the pointer says what the drop will do. Only the scene's Subplot field changes, never its number, order, or act, and each change offers **Undo**. In Progress mode the outer ring is Main Plot and joins in; in Narrative and Chronologue it lists every scene and keeps its own drag. Right-click a scene for the same **Move**, **Add**, and **Remove** subplot actions.
 
 ### Fixes
 

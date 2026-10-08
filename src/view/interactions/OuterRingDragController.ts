@@ -22,15 +22,6 @@ import { appendRecentStructuralMove, getActiveRecentStructuralMoves } from '../.
 import { openStructuralMoveHistoryLog } from '../../utils/recentStructuralMoveLog';
 import type { RadialTimelineSettings } from '../../types/settings';
 import { fileStem } from '../../utils/paths';
-import { getActiveFrontmatterMappings } from '../../utils/frontmatter';
-import {
-    applySubplotMembershipChange,
-    describeSubplotMembershipChange,
-    formatMemberships,
-    planSubplotMembership,
-    readSubplotMemberships,
-    type SubplotMembershipChange,
-} from '../../services/SubplotMembership';
 
 export interface OuterRingViewAdapter {
     plugin: RadialTimelinePlugin;
@@ -210,14 +201,6 @@ export class OuterRingDragController {
     private originOuterR?: number;
     private sourcePath: string | null = null;
     private sourceScenePathEl: SVGPathElement | null = null;
-    // The ring the item was grabbed on, and the subplot that ring stands for
-    // (null on the outer ring, which holds every scene and is no membership).
-    private sourceRing = -1;
-    private sourceSubplot: string | null = null;
-    private shiftHeld = false;
-    private lastPointer: { x: number; y: number } | null = null;
-    private previewEl: HTMLElement | null = null;
-    private highlightedRing: number | null = null;
     private readonly overlays: DragOverlays;
 
     constructor(view: OuterRingViewAdapter, svg: SVGSVGElement, options: OuterRingDragOptions) {
@@ -230,12 +213,12 @@ export class OuterRingDragController {
     attach(): void {
         if (this.options.mode !== 'narrative') return;
         
-        // Outer ring scenes and beats drag to reorder; scenes on any ring also
-        // drag onto another subplot ring to change their subplots.
+        // Only the outer ring reorders. Scenes on subplot rings drag to change
+        // subplots (SubplotRingDragController); the All Scenes ring does not.
         const outerRing = this.getOuterRingIndex();
         const draggableGroups = Array.from(
             this.svg.querySelectorAll<SVGGElement>('.rt-scene-group[data-item-type="Scene"], .rt-scene-group[data-item-type="Beat"]')
-        ).filter(g => Number(g.getAttribute('data-ring') ?? -1) === outerRing || g.getAttribute('data-item-type') === 'Scene');
+        ).filter(g => Number(g.getAttribute('data-ring') ?? -1) === outerRing);
         if (!draggableGroups.length) return;
 
         // Mark outer ring groups so CSS can scope grab cursor to them only
@@ -254,7 +237,6 @@ export class OuterRingDragController {
         this.view.renderScope.registerDomEvent(window as unknown as HTMLElement, 'pointermove', (evt: PointerEvent) => this.onPointerMove(evt));
         this.view.renderScope.registerDomEvent(window as unknown as HTMLElement, 'pointerup', (evt: PointerEvent) => { void this.onPointerUp(evt); });
         this.view.renderScope.registerDomEvent(window as unknown as HTMLElement, 'keydown', (evt: KeyboardEvent) => this.onKey(evt));
-        this.view.renderScope.registerDomEvent(window as unknown as HTMLElement, 'keyup', (evt: KeyboardEvent) => this.onKey(evt));
         
         draggableGroups.forEach(group => {
             // Listen on the scene/beat path for pointer events (outer ring only)
@@ -268,8 +250,7 @@ export class OuterRingDragController {
         this.view.renderScope.registerDomEvent(this.svg as unknown as HTMLElement, 'pointerover', (e: PointerEvent) => {
             if (this.dragging) return;
             const group = (e.target as Element).closest<SVGGElement>('.rt-scene-group[data-draggable="true"]');
-            // The tangent arrows say "reorder", which only the outer ring does.
-            if (group && Number(group.getAttribute('data-ring') ?? -1) === this.getOuterRingIndex()) this.showDragIndicator(group);
+            if (group) this.showDragIndicator(group);
         });
         this.view.renderScope.registerDomEvent(this.svg as unknown as HTMLElement, 'pointerout', (e: PointerEvent) => {
             const toEl = e.relatedTarget as Element | null;
@@ -516,78 +497,9 @@ export class OuterRingDragController {
             this.currentTarget.element.style.removeProperty('--rt-drag-stroke-color');
         }
         this.currentTarget = null;
-        this.clearRingHighlight();
-        this.hidePreview();
 
         // Hide tick and arc completely when not in use
         this.overlays.clear();
-    }
-
-    // ── Membership drop feedback: the whole destination ring lights up, and a
-    // label by the pointer says what the drop will do ("Move A → D", "Add D").
-
-    private ringElements(ring: number): Element[] {
-        return Array.from(this.svg.querySelectorAll(`.rt-scene-group[data-ring="${ring}"], .rt-void-cell[data-ring="${ring}"]`));
-    }
-
-    private highlightRing(ring: number): void {
-        this.clearRingHighlight();
-        this.highlightedRing = ring;
-        for (const el of this.ringElements(ring)) {
-            el.classList.add('rt-membership-target');
-            if (this.originColor) (el as SVGElement).style.setProperty('--rt-drag-stroke-color', this.originColor);
-        }
-    }
-
-    private clearRingHighlight(): void {
-        if (this.highlightedRing === null) return;
-        for (const el of this.ringElements(this.highlightedRing)) {
-            el.classList.remove('rt-membership-target');
-            (el as SVGElement).style.removeProperty('--rt-drag-stroke-color');
-        }
-        this.highlightedRing = null;
-    }
-
-    private describeMembershipPreview(ring: number): { action: string; detail: string } {
-        const change = this.membershipChangeFor(ring, this.shiftHeld);
-        const file = this.sourcePath ? this.view.plugin.app.vault.getAbstractFileByPath(this.sourcePath) : null;
-        const before = file instanceof TFile
-            ? readSubplotMemberships(this.view.plugin.app, file, getActiveFrontmatterMappings(this.view.plugin.settings))
-            : [];
-        const after = planSubplotMembership(before, change);
-        if (!after) {
-            return { action: `Already in ${change.to}`, detail: 'No change' };
-        }
-        const hint = !this.sourceSubplot ? '' : this.shiftHeld ? ' · release Shift to move' : ' · hold Shift to add';
-        return { action: describeSubplotMembershipChange(change), detail: `Subplots: ${formatMemberships(after)}${hint}` };
-    }
-
-    private updatePreview(): void {
-        const target = this.currentTarget;
-        if (!this.dragging || !target || !this.isMembershipTarget(target)) {
-            this.hidePreview();
-            return;
-        }
-        const body = this.svg.ownerDocument?.body;
-        if (!body) return;
-        if (!this.previewEl) {
-            this.previewEl = body.createDiv({ cls: 'rt-drag-membership-preview' });
-            this.previewEl.createDiv({ cls: 'rt-drag-membership-preview-action' });
-            this.previewEl.createDiv({ cls: 'rt-drag-membership-preview-detail' });
-        }
-        const { action, detail } = this.describeMembershipPreview(target.ring);
-        const [actionEl, detailEl] = Array.from(this.previewEl.children) as HTMLElement[];
-        actionEl.setText(action);
-        detailEl.setText(detail);
-        if (this.lastPointer) {
-            this.previewEl.style.setProperty('--rt-drag-preview-x', `${this.lastPointer.x + 16}px`);
-            this.previewEl.style.setProperty('--rt-drag-preview-y', `${this.lastPointer.y + 16}px`);
-        }
-    }
-
-    private hidePreview(): void {
-        this.previewEl?.remove();
-        this.previewEl = null;
     }
 
     private setHighlight(target: DropTarget | null): void {
@@ -606,14 +518,6 @@ export class OuterRingDragController {
         
         this.clearHighlight();
         this.currentTarget = target;
-
-        // A subplot ring changes memberships, not position: light the ring and
-        // say what the drop does; no insertion tick or travel arc.
-        if (this.isMembershipTarget(target)) {
-            this.highlightRing(target.ring);
-            this.updatePreview();
-            return;
-        }
 
         if (target.type === 'scene') {
             // target.group is always an .rt-scene-group element (Scene or Beat)
@@ -645,20 +549,13 @@ export class OuterRingDragController {
         }
     }
 
-    /** A drop on a subplot ring, as opposed to the outer ring's order. */
-    private isMembershipTarget(target: DropTarget): boolean {
-        return target.type === 'void' ? !target.isOuterRing : target.ring !== this.getOuterRingIndex();
-    }
-
     /**
-     * Same-ring drags keep the outer ring's reorder; a subplot ring is a
-     * membership edit for scenes only, never onto the grabbed ring itself.
+     * Reorder targets are on the outer ring only: its scenes and beats, and
+     * its empty acts. A drop on a subplot ring does nothing from here — the
+     * All Scenes ring is no subplot membership.
      */
     private isValidTarget(target: DropTarget): boolean {
-        if (this.isMembershipTarget(target)) {
-            return this.sourceItemType === 'Scene' && target.ring !== this.sourceRing;
-        }
-        return this.sourceRing === this.getOuterRingIndex();
+        return target.type === 'void' ? target.isOuterRing : target.ring === this.getOuterRingIndex();
     }
 
     private findDropTarget(evt: PointerEvent): DropTarget | null {
@@ -724,10 +621,6 @@ export class OuterRingDragController {
         }
         this.svg.classList.remove('rt-dragging-outer');
         this.clearHighlight();
-        this.sourceRing = -1;
-        this.sourceSubplot = null;
-        this.shiftHeld = false;
-        this.lastPointer = null;
         this.log('resetState');
     }
 
@@ -753,7 +646,7 @@ export class OuterRingDragController {
         this.log('beginDrag', { sceneId: this.sourceSceneId, itemType: this.sourceItemType });
     }
 
-    private async finishDrag(shift: boolean): Promise<void> {
+    private async finishDrag(): Promise<void> {
         if (this.confirming) {
             this.resetState();
             return;
@@ -763,20 +656,12 @@ export class OuterRingDragController {
             this.resetState();
             return;
         }
-
-        // Another subplot ring: change memberships (Shift read at the drop).
-        if (this.isMembershipTarget(target)) {
-            await this.finishMembershipDrop(target.ring, shift);
-            return;
-        }
-
         // An empty act on the outer ring.
         if (target.type === 'void') {
             await this.finishDropOnEmptyAct({ act: target.act, startAngle: target.startAngle });
             return;
         }
-
-        // Another outer-ring scene: reorder.
+        // Another outer-ring scene or beat: reorder.
         await this.finishDropOnScene(target);
     }
 
@@ -1108,85 +993,6 @@ export class OuterRingDragController {
         }
     }
 
-    /**
-     * The membership edit a drop on `ring` makes. The grabbed ring is the
-     * source: a normal drag moves that membership, Shift adds. The outer ring
-     * holds every scene and is no membership, so a drag from it can only add.
-     */
-    private membershipChangeFor(ring: number, shift: boolean): Exclude<SubplotMembershipChange, { kind: 'remove' }> {
-        const to = this.getSubplotNameFromRing(ring);
-        return this.sourceSubplot && !shift
-            ? { kind: 'move', from: this.sourceSubplot, to }
-            : { kind: 'add', to };
-    }
-
-    /**
-     * A drop on another subplot ring: change the scene's subplot memberships.
-     * Nothing else moves: no renames, no reorder, no Act or When change, even
-     * when the drop lands in another act.
-     */
-    private async finishMembershipDrop(ring: number, shift: boolean): Promise<void> {
-        const sourcePath = this.sourcePath;
-        const file = sourcePath ? this.view.plugin.app.vault.getAbstractFileByPath(sourcePath) : null;
-        if (!(file instanceof TFile) || this.sourceItemType !== 'Scene') {
-            this.resetState();
-            return;
-        }
-        const change = this.membershipChangeFor(ring, shift);
-        const mappings = getActiveFrontmatterMappings(this.view.plugin.settings);
-        const before = readSubplotMemberships(this.view.plugin.app, file, mappings);
-        const after = planSubplotMembership(before, change);
-        if (!after) {
-            this.resetState();
-            return;
-        }
-        const entry = this.buildOuterRingOrder().find(o => o.path === file.path);
-        const sourceDescriptor = entry ? this.formatItemDescriptor(entry) : file.basename;
-
-        this.confirming = true;
-        const modal = new DragConfirmModal(
-            this.view.plugin.app,
-            {
-                actionSummary: `${sourceDescriptor}: ${describeSubplotMembershipChange(change)}`,
-                renameCount: 0,
-                showRenameImpact: false,
-                contextLabel: 'Subplots',
-                contextChange: `${formatMemberships(before)} → ${formatMemberships(after)}`,
-                badge: change.kind === 'add' ? 'Add Subplot' : 'Move Scene',
-                title: 'Confirm subplot change',
-            },
-            [],
-            undefined,
-            this.originModalColor ?? this.originColor,
-            'scene'
-        );
-        const started = await modal.waitForBegin();
-        if (!started) {
-            this.confirming = false;
-            this.resetState();
-            return;
-        }
-        try {
-            this.log('apply membership drop', { ring, change, path: file.path });
-            await applySubplotMembershipChange(this.view.plugin.app, file, change, {
-                mappings,
-                itemLabel: sourceDescriptor,
-                onChanged: () => {
-                    // Let the metadata cache catch up before the timeline redraws.
-                    void sleep(100).then(() => this.options.onRefresh());
-                },
-            });
-            // The Undo notice carries the result; no Dismiss step for a subplot change.
-            modal.close();
-        } catch (error) {
-            console.error('Subplot membership change failed:', error);
-            await modal.finishWithDismiss('Subplot change failed. Check console for details, then dismiss.', true);
-        } finally {
-            this.confirming = false;
-            this.resetState();
-        }
-    }
-
     private formatRenameProgressLine(prefix: string, progress: SceneReorderProgress): string {
         if (progress.phase === 'scan') {
             if (progress.totalFiles === 0) return `${prefix}: no filename renames needed.`;
@@ -1250,9 +1056,6 @@ export class OuterRingDragController {
 
     private onPointerMove(evt: PointerEvent): void {
         if (!this.sourceSceneGroup || !this.sourceSceneId) return;
-        this.lastPointer = { x: evt.clientX, y: evt.clientY };
-        const shiftChanged = this.shiftHeld !== evt.shiftKey;
-        this.shiftHeld = evt.shiftKey;
         if (!this.dragging) {
             const dx = evt.clientX - this.startX;
             const dy = evt.clientY - this.startY;
@@ -1267,9 +1070,6 @@ export class OuterRingDragController {
         if (this.dragging) {
             const target = this.findDropTarget(evt);
             this.setHighlight(target);
-            // setHighlight skips an unchanged target; the label still follows
-            // the pointer and the Shift key.
-            if (target && (shiftChanged || this.previewEl)) this.updatePreview();
             this.log('drag move', { targetType: target?.type });
         }
     }
@@ -1281,9 +1081,8 @@ export class OuterRingDragController {
         }
         
         if (this.dragging) {
-            // Drag was in progress - finish it and prevent click handler from firing.
-            // Shift is read at the drop: releasing it first makes the drop a move.
-            await this.finishDrag(evt.shiftKey);
+            // Drag was in progress - finish it and prevent click handler from firing
+            await this.finishDrag();
         } else {
             // No drag happened - just reset, let the click event fire naturally
             // The click handler in AllScenesMode will handle file opening
@@ -1304,16 +1103,8 @@ export class OuterRingDragController {
     }
 
     private onKey(evt: KeyboardEvent): void {
-        if (!this.sourceSceneGroup || this.confirming) return;
-        if (evt.key === 'Escape' && evt.type === 'keydown') {
-            // Cancel the drag; nothing changes.
-            this.resetState();
-            return;
-        }
-        if (evt.key === 'Shift') {
-            this.shiftHeld = evt.type === 'keydown';
-            this.updatePreview();
-        }
+        // Escape cancels the drag; nothing changes.
+        if (evt.key === 'Escape' && this.sourceSceneGroup && !this.confirming) this.resetState();
     }
 
     /**
@@ -1368,8 +1159,6 @@ export class OuterRingDragController {
         this.sourceScenePathEl = group.querySelector<SVGPathElement>('.rt-scene-path');
         this.sourceItemType = (group.getAttribute('data-item-type') as 'Scene' | 'Beat') || 'Scene';
         this.sourcePath = filePath;
-        this.sourceRing = Number(group.getAttribute('data-ring') ?? -1);
-        this.sourceSubplot = this.sourceRing === this.getOuterRingIndex() ? null : this.getSubplotNameFromRing(this.sourceRing);
         dragInteractionActive = true;
         this.startX = evt.clientX;
         this.startY = evt.clientY;
@@ -1425,56 +1214,5 @@ export class OuterRingDragController {
 
     private resolveSubplotColorFromGroup(group: SVGGElement): string | undefined {
         return resolveSubplotColorFromGroup(group);
-    }
-
-    /**
-     * Get the master subplot order from SVG labels
-     * Ring 0 (outermost) = first subplot in the array
-     */
-    private getMasterSubplotOrder(): string[] {
-        const labels = this.svg.querySelectorAll('.rt-subplot-ring-label-text');
-        return Array.from(labels)
-            .map(label => label.getAttribute('data-subplot-name'))
-            .filter((name): name is string => name !== null);
-    }
-
-    /**
-     * Get subplot name from ring number
-     * Ring offset 0 = outermost = first in masterSubplotOrder
-     */
-    private getSubplotNameFromRing(ring: number): string {
-        // Each ring label names its own ring; prefer that over arithmetic on
-        // the label count, which skipped rings (backdrop) would throw off.
-        const label = this.svg.querySelector(`.rt-subplot-ring-label-text[data-ring="${ring}"]`);
-        const labelled = label?.getAttribute('data-subplot-name');
-        if (labelled) return labelled;
-        const order = this.getMasterSubplotOrder();
-        const numRings = order.length;
-        // Ring is stored as the actual ring index, with higher numbers being inner rings
-        // masterSubplotOrder[0] = outermost ring
-        const ringOffset = numRings - 1 - ring;
-        if (ringOffset >= 0 && ringOffset < order.length) {
-            return order[ringOffset];
-        }
-        return `Ring ${ring}`;
-    }
-
-    /**
-     * Get the current subplots for a scene from frontmatter
-     */
-    private async getSceneSubplots(filePath: string): Promise<string[]> {
-        const file = this.view.plugin.app.vault.getAbstractFileByPath(filePath);
-        if (!(file instanceof TFile)) return [];
-        const cache = this.view.plugin.app.metadataCache.getFileCache(file);
-        const fm = cache?.frontmatter;
-        if (!fm) return [];
-        
-        const subplotValue: unknown = fm['Subplot'] || fm['subplot'];
-        if (!subplotValue) return [];
-        
-        if (Array.isArray(subplotValue)) {
-            return subplotValue.map(s => String(s).trim()).filter(s => s.length > 0);
-        }
-        return typeof subplotValue === 'string' ? [subplotValue.trim()].filter(s => s.length > 0) : [];
     }
 }

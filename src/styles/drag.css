@@ -36,13 +36,32 @@
    SUBPLOT MEMBERSHIP DROP (drag onto another subplot ring)
    ============================================ */
 
+/* Subplot-ring scenes can be grabbed in Narrative, Chronologue and Progress. */
+.radial-timeline-svg .rt-scene-group[data-subplot-draggable="true"] .rt-scene-path {
+  cursor: grab;
+}
+
+.radial-timeline-svg.rt-dragging-subplot .rt-scene-group[data-subplot-draggable="true"] .rt-scene-path {
+  cursor: grabbing;
+}
+
+/* During the drag, empty cells on subplot rings accept the drop. */
+.radial-timeline-svg.rt-dragging-subplot .rt-void-cell[data-ring] {
+  pointer-events: auto;
+}
+
+.radial-timeline-svg.rt-dragging-subplot .rt-scene-group.rt-drag-source .rt-scene-path {
+  fill: var(--rt-drag-stroke-color, var(--interactive-accent, #705DCF));
+  fill-opacity: 1;
+}
+
 /* The whole destination ring lights up: scenes outlined, empty cells tinted. */
-.radial-timeline-svg[data-mode="narrative"] .rt-scene-group.rt-membership-target .rt-scene-path {
+.radial-timeline-svg .rt-scene-group.rt-membership-target .rt-scene-path {
   stroke: var(--rt-drag-stroke-color, var(--interactive-accent, #705DCF));
   stroke-width: 3px;
 }
 
-.radial-timeline-svg[data-mode="narrative"] .rt-void-cell.rt-membership-target {
+.radial-timeline-svg .rt-void-cell.rt-membership-target {
   fill: var(--rt-drag-stroke-color, var(--interactive-accent, #705DCF));
   fill-opacity: 0.22;
   stroke: none;

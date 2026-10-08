@@ -4,6 +4,7 @@ import { buildSearchHighlight } from '../../services/searchHighlight';
 import { SceneInteractionManager } from '../interactions/SceneInteractionManager';
 import { maybeHandleZeroDraftClick } from '../interactions/ZeroDraftHandler';
 import { setupSceneContextMenu } from '../interactions/SceneContextMenu';
+import { isSubplotDragActive, wasRecentlyHandledBySubplotDrag } from '../interactions/SubplotRingDragController';
 import type { RadialTimelineView } from '../TimeLineView';
 
 export function setupMainPlotMode(view: RadialTimelineView, svg: SVGSVGElement): void {
@@ -38,7 +39,7 @@ export function setupMainPlotMode(view: RadialTimelineView, svg: SVGSVGElement):
 
     // Register handlers for Scene elements (main plot scenes)
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (e: PointerEvent) => {
-        if (suspendHoverUntilPointerMove) return;
+        if (suspendHoverUntilPointerMove || isSubplotDragActive()) return;
 
         const g = (e.target as Element).closest('.rt-scene-group[data-item-type="Scene"]');
         if (!g || g === currentGroup) return;
@@ -96,6 +97,8 @@ export function setupMainPlotMode(view: RadialTimelineView, svg: SVGSVGElement):
         const g = (e.target as Element).closest('.rt-scene-group[data-item-type="Scene"]');
         if (!g) return;
         e.stopPropagation();
+        // A subplot drag just ended on this scene — don't also open the file.
+        if (wasRecentlyHandledBySubplotDrag()) return;
 
         // Suspend hover until pointer moves again after click-open.
         // Prevents stale re-hover when timeline remains visible in split panes.

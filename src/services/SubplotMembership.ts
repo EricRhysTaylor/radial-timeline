@@ -10,7 +10,9 @@
  *   move A to D: B, C, D        add D: A, B, C, D
  *   move A to C: B, C           add C: no change
  *   move A to A: no change      remove A: B, C
- * A scene left with no membership returns to Main Plot.
+ * A scene with no Subplot field is in Main Plot, so dragging it moves Main
+ * Plot and Shift-dragging keeps it. A scene left with no membership returns
+ * to Main Plot.
  */
 
 import { Notice, type App, type TFile } from 'obsidian';
@@ -37,11 +39,12 @@ function normalizeMemberships(memberships: string[]): string[] {
 
 /**
  * The memberships after the change, or null when nothing changes. `current`
- * holds the scene's explicit memberships; an empty list is the implicit Main
- * Plot of a scene with no Subplot field.
+ * holds the scene's explicit memberships; an empty list (no Subplot field)
+ * means Main Plot.
  */
 export function planSubplotMembership(current: string[], change: SubplotMembershipChange): string[] | null {
-    const before = normalizeMemberships(current);
+    const explicit = normalizeMemberships(current);
+    const before = explicit.length > 0 ? explicit : [MAIN_PLOT];
     let after: string[];
     if (change.kind === 'add') {
         if (before.includes(change.to)) return null;
@@ -55,9 +58,7 @@ export function planSubplotMembership(current: string[], change: SubplotMembersh
     }
     if (after.length === 0) after = [MAIN_PLOT];
     const unchanged = after.length === before.length && after.every((name, index) => name === before[index]);
-    // An implicit Main Plot scene asked to stay in Main Plot is no change either.
-    const stillImplicitMainPlot = before.length === 0 && after.length === 1 && after[0] === MAIN_PLOT;
-    return unchanged || stillImplicitMainPlot ? null : after;
+    return unchanged ? null : after;
 }
 
 /** "Move The Shipwreck → The Keeper's Letters", "Add The Keeper's Letters", "Remove The Shipwreck". */

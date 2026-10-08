@@ -109,6 +109,13 @@ export class ModeInteractionController {
 
         // Setup drag-to-reorder on the outer ring (narrative mode only)
         setupOuterRingDrag(this.view, svg);
+        await this.setupSubplotRingDrag(svg);
+    }
+
+    /** Drag a scene between subplot rings to change its subplots. */
+    private async setupSubplotRingDrag(svg: SVGSVGElement): Promise<void> {
+        const { setupSubplotRingDrag } = await import('../view/interactions/SubplotRingDragController');
+        setupSubplotRingDrag(this.view, svg);
     }
     
     /**
@@ -118,6 +125,7 @@ export class ModeInteractionController {
         // Import and use existing Main Plot mode setup
         const { setupMainPlotMode } = await import('../view/modes/MainPlotMode');
         setupMainPlotMode(this.view, svg);
+        await this.setupSubplotRingDrag(svg);
     }
     
     /**
@@ -139,6 +147,7 @@ export class ModeInteractionController {
         // Pass the actual view instance directly (don't spread - it breaks methods like registerDomEvent).
         // Scene data is read from view.sceneData; the shift controller derives its own outer radius.
         setupChronologueMode(this.view, svg);
+        await this.setupSubplotRingDrag(svg);
     }
     
     /**

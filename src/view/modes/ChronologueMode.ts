@@ -7,6 +7,7 @@
 import { TFile } from 'obsidian';
 import { setupChronologueShiftController } from '../interactions/ChronologueShiftController';
 import { ChronologueDragController, wasRecentlyHandledByChronologueDrag } from '../interactions/ChronologueDragController';
+import { isSubplotDragActive, wasRecentlyHandledBySubplotDrag } from '../interactions/SubplotRingDragController';
 import { openOrRevealFile } from '../../utils/fileUtils';
 import { buildSearchHighlight } from '../../services/searchHighlight';
 import { handleDominantSubplotSelection } from '../interactions/DominantSubplotHandler';
@@ -274,7 +275,7 @@ function setupSceneHoverInteractions(view: RadialTimelineView, svg: SVGSVGElemen
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (e: PointerEvent) => {
         // Suspend hover synopsis reveal when shift/alt/runtime mode is active
         // CHECK THIS FIRST before any other work!
-        if (view.chronologueState.shift || view.chronologueState.alien || view.chronologueState.runtime) {
+        if (view.chronologueState.shift || view.chronologueState.alien || view.chronologueState.runtime || isSubplotDragActive()) {
             return;
         }
 
@@ -381,7 +382,7 @@ function setupSceneClickInteractions(view: RadialTimelineView, svg: SVGSVGElemen
         if (!g) return;
 
         // A drag just ended on this scene — don't also open the file.
-        if (wasRecentlyHandledByChronologueDrag()) {
+        if (wasRecentlyHandledByChronologueDrag() || wasRecentlyHandledBySubplotDrag()) {
             e.stopPropagation();
             return;
         }

@@ -156,7 +156,7 @@
   fill-opacity: 1;
 }
 
-/* Narrative mode: grab cursor on outer ring scene/beat arcs only (inner subplot rings are read-only) */
+/* Narrative mode: grab cursor on draggable arcs — outer ring scenes and beats (reorder), subplot-ring scenes (move to another subplot) */
 .radial-timeline-svg[data-mode="narrative"] .rt-scene-group[data-draggable="true"] .rt-scene-path {
   cursor: grab;
 }

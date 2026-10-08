@@ -31,3 +31,46 @@
   stroke: var(--interactive-accent, #5e81ff);
   stroke-width: 3px;
 }
+
+/* ============================================
+   SUBPLOT MEMBERSHIP DROP (drag onto another subplot ring)
+   ============================================ */
+
+/* The whole destination ring lights up: scenes outlined, empty cells tinted. */
+.radial-timeline-svg[data-mode="narrative"] .rt-scene-group.rt-membership-target .rt-scene-path {
+  stroke: var(--rt-drag-stroke-color, var(--interactive-accent, #705DCF));
+  stroke-width: 3px;
+}
+
+.radial-timeline-svg[data-mode="narrative"] .rt-void-cell.rt-membership-target {
+  fill: var(--rt-drag-stroke-color, var(--interactive-accent, #705DCF));
+  fill-opacity: 0.22;
+  stroke: none;
+}
+
+/* What the drop will do, beside the pointer: "Move A → D" / "Add D". */
+.rt-drag-membership-preview {
+  position: fixed;
+  left: var(--rt-drag-preview-x, 0);
+  top: var(--rt-drag-preview-y, 0);
+  z-index: var(--layer-tooltip, 70);
+  pointer-events: none;
+  max-width: 320px;
+  padding: 6px 10px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s, 4px);
+  background: var(--background-primary);
+  box-shadow: var(--shadow-s);
+  font-size: var(--font-ui-small);
+  line-height: 1.35;
+}
+
+.rt-drag-membership-preview-action {
+  color: var(--text-normal);
+  font-weight: var(--font-semibold, 600);
+}
+
+.rt-drag-membership-preview-detail {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}

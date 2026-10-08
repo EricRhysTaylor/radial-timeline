@@ -19,7 +19,11 @@ See [Manuscript onboarding](https://github.com/EricRhysTaylor/radial-timeline/wi
 - **Word manuscripts are cleaner.** Scene breaks (`---`) become a centered `#`, pages are US Letter with 1" margins, and Word no longer opens the file in Compatibility Mode. If you write with a single return between paragraphs, the new **Every line is a paragraph** option makes each line its own indented paragraph in Word and PDF.
 - **Author queries become Word comments.** In a Word export with **Strip author queries** off, each query becomes a margin comment at the spot you asked it, signed with the book's author, so your editor can answer it in the comment thread instead of reading `%%query: …%%` in the text.
 
+### Timeline
+
+- **Move scenes between subplots by dragging.** In Narrative Mode, drag a scene from one subplot ring onto another: it leaves the subplot you grabbed and joins the one you dropped on, keeping any others. Hold **Shift** to add the subplot instead. The ring lights up and a label by the pointer says what the drop will do. Only the scene's Subplot field changes, never its number, order, or act, and each change offers **Undo**. Right-click a scene for the same **Move**, **Add**, and **Remove** subplot actions.
+
 ### Fixes
 
 - **Prose near author queries stays in your export.** With **Strip comments** on, the default for PDF and Word, an author query followed anywhere later in the manuscript by an ordinary `%%comment%%` dropped all the prose between the two from the exported file. Exports now keep that prose. Your scene notes were never changed.
-- **Dropping a scene on a subplot ring changes only its subplot.** In Narrative Mode, dragging a scene from the outer ring onto another subplot's ring also moved it in the manuscript and renamed the notes around it: with Sequence alignment, to wherever the drop landed in the ring. The scene now keeps its place, and a drop in another act moves it only as far as that act. The confirmation names the subplot the scene is leaving instead of always saying Main Plot, and a drop onto a scene in a subplot ring works too.
+- **Dropping a scene on a subplot ring no longer renumbers scenes.** In Narrative Mode, a scene dropped on another subplot's ring was also moved to wherever the drop landed in the ring and the notes around it were renamed, and the confirmation named Main Plot as the subplot it was leaving, whatever it was.

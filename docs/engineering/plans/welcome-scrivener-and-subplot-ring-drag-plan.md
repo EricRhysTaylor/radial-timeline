@@ -65,6 +65,8 @@ Use one canonical book-scoped source of subplot names, combining actual membersh
 
 ## Phase 3 — Ring drag membership contract
 
+**Built 2026-10-07** (src/services/SubplotMembership.ts, OuterRingDragController, SceneContextMenu). Decisions where the plan was silent: a drag from the outer ring (All Scenes, no membership) onto a subplot ring adds; a subplot-ring copy dropped on the outer ring is not a target. The existing confirmation dialog shows the membership change without rename impact and closes on Begin; the result Notice carries Undo, which restores the Subplot field exactly. Menu actions pick the subplot with a fuzzy picker. Phases 1–2 (onboarding defaults, planned empty rings) are not built.
+
 The grabbed ring identifies the source membership. Do not infer it from the scene's first/dominant subplot. This matters when a scene appears on three or more rings.
 
 For memberships A, B, C, dragging the A copy:

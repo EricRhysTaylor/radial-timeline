@@ -1,4 +1,4 @@
-import { resolveSubplotColorFromGroup } from './dragGeometry';
+import { getOuterRingIndex, resolveSubplotColorFromGroup } from './dragGeometry';
 import { getFrontMatterInfo, parseYaml, Menu, Notice, TFile, type App } from 'obsidian';
 import { normalizeStatus } from '../../utils/text';
 import { applySceneInsertionPlan, planSceneInsertion } from '../../services/SceneInsertService';
@@ -12,7 +12,14 @@ import { readPartMarker, SHARED_PART_FIELD_KEY } from '../../utils/timelineParts
 import { describeParts } from '../../publishing/layoutVisuals';
 import { resolveActiveNovelPandocLayout } from '../../utils/exportFormats';
 import { readSharedChapterTitle, SHARED_CHAPTER_FIELD_KEY } from '../../utils/timelineChapters';
-import { frontmatterValueToText } from '../../utils/frontmatter';
+import { frontmatterValueToText, getActiveFrontmatterMappings } from '../../utils/frontmatter';
+import {
+    applySubplotMembershipChange,
+    planSubplotMembership,
+    readSubplotMemberships,
+    type SubplotMembershipChange,
+} from '../../services/SubplotMembership';
+import { SubplotPickerModal } from '../../modals/SubplotPickerModal';
 import { formatLocalDateKey } from '../../utils/date';
 
 type SceneContextMenuView = {
@@ -338,6 +345,88 @@ function resolvePrimarySubplotFromGroup(group: Element): string | undefined {
     return label?.getAttribute('data-subplot-name') ?? undefined;
 }
 
+// ── Subplot membership (same mutation path as dragging between rings) ──
+
+/** The subplot of the ring this copy sits on; null on the outer ring, which holds every scene. */
+function ringSubplotForGroup(group: Element): string | null {
+    const svg = group.instanceOf(SVGElement) ? group.ownerSVGElement : null;
+    const ring = group.getAttribute('data-ring');
+    if (!svg || ring === null || Number(ring) === getOuterRingIndex(svg)) return null;
+    return svg.querySelector(`.rt-subplot-ring-label-text[data-ring="${ring}"]`)?.getAttribute('data-subplot-name') ?? null;
+}
+
+function knownSubplots(group: Element): string[] {
+    const svg = group.instanceOf(SVGElement) ? group.ownerSVGElement : null;
+    if (!svg) return [];
+    const names = Array.from(svg.querySelectorAll('.rt-subplot-ring-label-text[data-subplot-name]'))
+        .map(label => label.getAttribute('data-subplot-name') ?? '')
+        .filter(Boolean);
+    return [...new Set(names)];
+}
+
+async function changeSubplotMembership(view: SceneContextMenuView, file: TFile, change: SubplotMembershipChange): Promise<void> {
+    try {
+        const after = await applySubplotMembershipChange(view.plugin.app, file, change, {
+            mappings: getActiveFrontmatterMappings(view.plugin.settings),
+            itemLabel: file.basename,
+            onChanged: () => refreshTimelineView(view, file),
+        });
+        if (!after) new Notice(`${file.basename}: no subplot change.`);
+    } catch (error) {
+        console.error('[SceneContextMenu] Failed to change subplot membership:', error);
+        new Notice(`Could not update ${file.basename}. Review the note frontmatter and try again.`, 7000);
+    }
+}
+
+function pickSubplot(view: SceneContextMenuView, names: string[], placeholder: string, onChoose: (name: string) => void): void {
+    if (names.length === 0) {
+        new Notice('No other subplot to choose.');
+        return;
+    }
+    new SubplotPickerModal(view.plugin.app, names, placeholder, onChoose).open();
+}
+
+function addSubplotMenuItems(menu: Menu, view: SceneContextMenuView, group: Element, file: TFile): void {
+    const mappings = getActiveFrontmatterMappings(view.plugin.settings);
+    const current = readSubplotMemberships(view.plugin.app, file, mappings);
+    const effective = current.length > 0 ? current : ['Main Plot'];
+    const known = knownSubplots(group);
+    const ringSubplot = ringSubplotForGroup(group);
+
+    if (ringSubplot) {
+        const from = ringSubplot;
+        menu.addItem(item => {
+            item.setIcon('arrow-right-left');
+            item.setTitle(`Move from ${from} to…`);
+            item.onClick(() => pickSubplot(view, known.filter(name => name !== from), `Move ${file.basename} from ${from} to…`,
+                to => { void changeSubplotMembership(view, file, { kind: 'move', from, to }); }));
+        });
+    }
+    menu.addItem(item => {
+        item.setIcon('plus-circle');
+        item.setTitle('Add to subplot…');
+        item.onClick(() => pickSubplot(view, known.filter(name => !effective.includes(name)), `Add ${file.basename} to…`,
+            to => { void changeSubplotMembership(view, file, { kind: 'add', to }); }));
+    });
+    const removable = (ringSubplot ? [ringSubplot] : effective)
+        .filter(from => planSubplotMembership(current, { kind: 'remove', from }) !== null);
+    if (removable.length === 1) {
+        const from = removable[0];
+        menu.addItem(item => {
+            item.setIcon('minus-circle');
+            item.setTitle(`Remove from ${from}`);
+            item.onClick(() => { void changeSubplotMembership(view, file, { kind: 'remove', from }); });
+        });
+    } else if (removable.length > 1) {
+        menu.addItem(item => {
+            item.setIcon('minus-circle');
+            item.setTitle('Remove from subplot…');
+            item.onClick(() => pickSubplot(view, removable, `Remove ${file.basename} from…`,
+                from => { void changeSubplotMembership(view, file, { kind: 'remove', from }); }));
+        });
+    }
+}
+
 async function addSceneAfterAnchor(view: SceneContextMenuView, group: Element, file: TFile): Promise<void> {
     if (typeof view.plugin.getSceneData !== 'function') {
         new Notice('Could not add scene because timeline scene data is unavailable.', 5000);
@@ -466,6 +555,8 @@ function showSceneContextMenu(view: SceneContextMenuView, group: Element, event:
                 void setPartAtScene(view, file, currentPartValue);
             });
         });
+        menu.addSeparator();
+        addSubplotMenuItems(menu, view, group, file);
         menu.addSeparator();
     }
 

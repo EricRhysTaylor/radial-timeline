@@ -70,9 +70,9 @@ Always update both:
 
 This method automatically updates ordering for you.
 
-**Note:** Dragging is supported on the **outer ring only**. You can drag into an empty act by dropping onto one of the empty **void** cells for that act.
+**Note:** Reordering works on the **outer ring only**. You can drag into an empty act by dropping onto one of the empty **void** cells for that act.
 
-**Move a scene to another subplot:** drag it from the outer ring and drop it on that subplot's ring, on a scene or an empty cell. The scene's subplot changes and its place in the manuscript doesn't, so no notes are renamed. Drop it in another act and it also moves into that act, as the first scene of a later act or the last of an earlier one.
+**Move a scene to another subplot:** drag the scene where it sits on one subplot ring and drop it on another subplot's ring, on a scene or an empty cell. It leaves the subplot you grabbed it from and joins the one you dropped it on; its other subplots stay. Hold **Shift** as you drop to add the subplot and keep the one you grabbed. The ring you're over lights up, and a label by the pointer says what the drop will do. Dragging from the outer ring onto a subplot ring adds that subplot, because the outer ring holds every scene. Only the scene's Subplot field changes: nothing is renamed or reordered, and its act stays put even if you drop it in another act. Each change offers **Undo**, and right-clicking a scene gives the same Move, Add and Remove actions.
 
 ---
 

@@ -17,6 +17,10 @@ export interface DragConfirmCurrentMoveSummary {
     /** Header override for a move that is not a reorder (a subplot change). */
     badge?: string;
     title?: string;
+    /** A subplot change renames nothing; leave the rename card out. */
+    showRenameImpact?: boolean;
+    /** Label for the contextChange card (default "Context change"). */
+    contextLabel?: string;
 }
 
 export class DragConfirmModal extends ErtModal {
@@ -101,9 +105,11 @@ export class DragConfirmModal extends ErtModal {
         this.renderMoveSummary(actionSummary, this.currentMove.actionSummary);
 
         const impactGrid = currentMoveSection.createDiv({ cls: 'ert-drag-confirm-impact-grid' });
-        this.createImpactCard(impactGrid, 'Rename impact', this.formatRenameImpact(this.currentMove.renameCount), ICON_LIST_ORDERED);
+        if (this.currentMove.showRenameImpact !== false) {
+            this.createImpactCard(impactGrid, 'Rename impact', this.formatRenameImpact(this.currentMove.renameCount), ICON_LIST_ORDERED);
+        }
         if (this.currentMove.contextChange) {
-            this.createImpactCard(impactGrid, 'Context change', this.currentMove.contextChange, ICON_BLOCKS);
+            this.createImpactCard(impactGrid, this.currentMove.contextLabel ?? 'Context change', this.currentMove.contextChange, ICON_BLOCKS);
         }
         if (this.currentMove.rippleRename) {
             this.createImpactCard(impactGrid, 'Extra effect', 'Ripple rename enabled', ICON_WAVES);

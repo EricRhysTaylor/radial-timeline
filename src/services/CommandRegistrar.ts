@@ -494,17 +494,19 @@ export class CommandRegistrar {
             }
 
             const bookMetaResolution = this.resolveBookMetaForExport(folder);
+            // Word and PDF both need BookMeta; name the one the author chose.
+            const bookMetaFormatLabel = result.outputFormat === 'docx' ? 'Word' : 'PDF';
             if (bookMetaResolution.warning) {
                 throw new ExportFailure({
                     category: 'missing_metadata',
                     message: bookMetaResolution.warning,
-                    detail: 'Keep exactly one BookMeta note per book folder before exporting PDF.'
+                    detail: `Keep exactly one BookMeta note per book folder before exporting ${bookMetaFormatLabel}.`
                 });
             }
             if (!bookMetaResolution.bookMeta) {
                 throw new ExportFailure({
                     category: 'missing_metadata',
-                    message: 'No BookMeta note found for PDF export.',
+                    message: `No BookMeta note found for ${bookMetaFormatLabel} export.`,
                     detail: 'Create one BookMeta note in the active book source folder so title, author, and Book Pages resolve explicitly.'
                 });
             }

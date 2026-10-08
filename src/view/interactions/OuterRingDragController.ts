@@ -23,12 +23,6 @@ import { openStructuralMoveHistoryLog } from '../../utils/recentStructuralMoveLo
 import type { RadialTimelineSettings } from '../../types/settings';
 import { fileStem } from '../../utils/paths';
 
-/**
- * Settings plus the legacy `masterSubplotOrder` key that older vault data.json
- * files may still carry (it is no longer part of RadialTimelineSettings).
- */
-type SettingsWithLegacySubplotOrder = RadialTimelineSettings & { masterSubplotOrder?: string[] };
-
 export interface OuterRingViewAdapter {
     plugin: RadialTimelinePlugin;
     renderScope: {
@@ -56,11 +50,64 @@ export type OuterRingOrderEntry = {
     path: string;
     basename: string;
     numberText: string;
-    subplot: string;
+    /** 0-based act, from the group's data-act. */
+    act: number;
     ring: number;
     itemType: 'Scene' | 'Beat';
     startAngle: number;
 };
+
+/**
+ * Where a drop on a ring (not on a scene of the outer ring) puts the item in
+ * manuscript order.
+ *
+ * - Outer ring (an empty act): at the drop angle, as before.
+ * - A subplot ring, same act: nowhere new. The drop changes the subplot, and
+ *   a subplot ring's angles (Fill spreads scenes, Sequence leaves gaps at
+ *   other threads' scenes) say nothing about manuscript position.
+ * - A subplot ring, another act: the act changes, so the item moves just far
+ *   enough to sit in it — first in a later act, last in an earlier one.
+ */
+export function planRingDropOrder(
+    order: OuterRingOrderEntry[],
+    movedPath: string,
+    target: { act: number; startAngle: number; isOuterRing: boolean }
+): OuterRingOrderEntry[] {
+    const fromIdx = order.findIndex(entry => entry.path === movedPath);
+    if (fromIdx === -1) return [...order];
+    const moved = order[fromIdx];
+    if (!target.isOuterRing && target.act === moved.act) return [...order];
+
+    const rest = order.filter((_, index) => index !== fromIdx);
+    let insertionIndex: number;
+    if (target.isOuterRing) {
+        insertionIndex = Number.isFinite(target.startAngle)
+            ? rest.findIndex(entry => entry.startAngle >= target.startAngle)
+            : -1;
+    } else if (target.act > moved.act) {
+        insertionIndex = rest.findIndex(entry => entry.act >= target.act);
+    } else {
+        insertionIndex = rest.findIndex(entry => entry.act > target.act);
+    }
+    if (insertionIndex === -1) insertionIndex = rest.length;
+    rest.splice(insertionIndex, 0, moved);
+    return rest;
+}
+
+/**
+ * The subplots a scene gets when dropped on a subplot ring: the target joins,
+ * replacing the scene's other subplots except Main Plot. Undefined when the
+ * scene is already in the target subplot.
+ */
+export function planRingDropSubplots(currentSubplots: string[], targetSubplot: string): string[] | undefined {
+    if (currentSubplots.includes(targetSubplot)) return undefined;
+    return currentSubplots.includes('Main Plot') ? ['Main Plot', targetSubplot] : [targetSubplot];
+}
+
+/** A scene's subplots as the dialog names them; no Subplot field means Main Plot. */
+export function describeSubplots(subplots: string[]): string {
+    return subplots.length > 0 ? subplots.join(', ') : 'Main Plot';
+}
 
 export function dedupeOuterRingOrderEntries(entries: OuterRingOrderEntry[]): OuterRingOrderEntry[] {
     const seenPaths = new Set<string>();
@@ -425,8 +472,6 @@ export class OuterRingDragController {
      * Number text is extracted from the file path basename prefix (e.g., "03 Scene Title.md" → "03").
      */
     private buildOuterRingOrder(): OuterRingOrderEntry[] {
-        const masterSubplotOrder = (this.view.plugin.settings as SettingsWithLegacySubplotOrder).masterSubplotOrder || ['Main Plot'];
-        
         // Use shared helper for outer ring detection
         const outerRing = this.getOuterRingIndex();
         
@@ -455,11 +500,10 @@ export class OuterRingDragController {
             const prefixMatch = basename.match(/^\s*(\d+(?:\.\d+)?)\s+/);
             numberText = prefixMatch ? prefixMatch[1] : '';
             
-            const subplotIdx = Number(group.getAttribute('data-subplot-index') ?? 0);
-            const subplot = masterSubplotOrder[subplotIdx] || 'Main Plot';
+            const act = Number(group.getAttribute('data-act') ?? 0);
             const ring = Number(group.getAttribute('data-ring') ?? 0);
             const startAngle = Number(group.getAttribute('data-start-angle') ?? 0);
-            return { sceneId, path, basename, numberText, subplot, ring, itemType, startAngle };
+            return { sceneId, path, basename, numberText, act, ring, itemType, startAngle };
         }).filter(entry => entry.sceneId && entry.path);
 
         const deduped = dedupeOuterRingOrderEntries(mapped);
@@ -467,15 +511,6 @@ export class OuterRingDragController {
             this.log('deduped outer ring order', { before: mapped.length, after: deduped.length });
         }
         return deduped;
-    }
-
-    private findInsertionIndexByAngle(
-        entries: Array<{ startAngle: number }>,
-        targetStartAngle: number
-    ): number {
-        if (!Number.isFinite(targetStartAngle)) return entries.length;
-        const index = entries.findIndex(entry => entry.startAngle >= targetStartAngle);
-        return index === -1 ? entries.length : index;
     }
 
     private clearHighlight(): void {
@@ -511,7 +546,16 @@ export class OuterRingDragController {
         
         this.clearHighlight();
         this.currentTarget = target;
-        
+
+        // A subplot ring changes the subplot, not the position: highlight the
+        // cell, but draw no insertion tick or travel arc.
+        if (this.isSubplotRingTarget(target)) {
+            const el = target.type === 'scene' ? target.group : target.element;
+            el.classList.add('rt-drop-target');
+            if (this.originColor) el.style.setProperty('--rt-drag-stroke-color', this.originColor);
+            return;
+        }
+
         if (target.type === 'scene') {
             // target.group is always an .rt-scene-group element (Scene or Beat)
             target.group.classList.add('rt-drop-target');
@@ -540,6 +584,10 @@ export class OuterRingDragController {
                 }
             }
         }
+    }
+
+    private isSubplotRingTarget(target: DropTarget): boolean {
+        return target.type === 'void' ? !target.isOuterRing : target.ring !== this.getOuterRingIndex();
     }
 
     private findDropTarget(evt: PointerEvent): DropTarget | null {
@@ -642,13 +690,28 @@ export class OuterRingDragController {
             return;
         }
 
-        // Handle drop on void cell (empty act)
+        // Drop on an empty cell: an empty act on the outer ring, or a subplot ring.
         if (this.currentTarget?.type === 'void') {
-            await this.finishDropOnVoidCell(this.currentTarget);
+            const { act, ring, startAngle, isOuterRing } = this.currentTarget;
+            await this.finishDropOnRing({ act, ring, startAngle, isOuterRing });
             return;
         }
 
-        // Handle drop on another scene
+        // Drop on a scene in a subplot ring: same as its empty cells. Those
+        // copies are not in the outer-ring order, so the scene path would
+        // ignore the drop.
+        if (this.currentTarget?.type === 'scene' && this.isSubplotRingTarget(this.currentTarget)) {
+            const { act, ring, group } = this.currentTarget;
+            await this.finishDropOnRing({
+                act,
+                ring,
+                startAngle: Number(group.getAttribute('data-start-angle') ?? ''),
+                isOuterRing: false,
+            });
+            return;
+        }
+
+        // Handle drop on another outer-ring scene
         if (this.currentTarget?.type === 'scene') {
             await this.finishDropOnScene(this.currentTarget);
             return;
@@ -711,18 +774,11 @@ export class OuterRingDragController {
         const sourceActNumber = sourceActIdx + 1;
         const actChanged = targetActNumber !== undefined && targetActNumber !== sourceActNumber;
 
-        // Determine target subplot from target scene's subplot-index
-        const masterSubplotOrder = (this.view.plugin.settings as SettingsWithLegacySubplotOrder).masterSubplotOrder || ['Main Plot'];
-        const targetSubplotIdx = Number(targetGroup?.getAttribute('data-subplot-index') ?? 0);
-        const targetSubplot = masterSubplotOrder[targetSubplotIdx] || 'Main Plot';
-        
-        // Get source subplot for comparison
-        const sourceSubplot = order[fromIdx]?.subplot ?? 'Main Plot';
-        const subplotChanged = sourceSubplot !== targetSubplot;
-        const hasMetadataMove = actChanged || (subplotChanged && sourceType === 'Scene');
+        // A reorder on the outer ring never changes a scene's subplot: every
+        // scene shares that ring. Subplot changes are drops on a subplot ring.
 
-        // No-op drop: no reorder and no metadata change means nothing to do.
-        if (isNoOpReorder && !hasMetadataMove) {
+        // No-op drop: no reorder and no act change means nothing to do.
+        if (isNoOpReorder && !actChanged) {
             this.resetState();
             return;
         }
@@ -766,26 +822,19 @@ export class OuterRingDragController {
             return;
         }
 
-        // Apply act and subplot updates to the moved item (only if they changed)
+        // Apply the act update to the moved item (only if it changed)
         updates.forEach(u => {
-            if (u.path === sourcePath) {
-                if (actChanged) {
-                    u.actNumber = targetActNumber;
-                }
-                if (subplotChanged && sourceType === 'Scene') {
-                    u.subplots = [targetSubplot];
-                }
+            if (u.path === sourcePath && actChanged) {
+                u.actNumber = targetActNumber;
             }
         });
 
-        // If the moved item didn't need renumbering, we still need to update its act/subplot
-        const needsActOrSubplot = actChanged || (subplotChanged && sourceType === 'Scene');
-        if (!updates.find(u => u.path === sourcePath) && needsActOrSubplot) {
+        // If the moved item didn't need renumbering, we still need to update its act
+        if (!updates.find(u => u.path === sourcePath) && actChanged) {
             updates.push({
                 path: sourcePath,
                 newNumber: sourceOriginalNumber,
-                actNumber: actChanged ? targetActNumber : undefined,
-                subplots: (subplotChanged && sourceType === 'Scene') ? [targetSubplot] : undefined
+                actNumber: targetActNumber,
             });
         }
 
@@ -796,7 +845,7 @@ export class OuterRingDragController {
         }
         let reorderApplied = false;
         try {
-            this.log('apply updates', { count: updates.length, from: fromIdx, to: toIdx, itemType: sourceType, subplot: subplotChanged ? targetSubplot : undefined });
+            this.log('apply updates', { count: updates.length, from: fromIdx, to: toIdx, itemType: sourceType });
             await applySceneNumberUpdates(this.view.plugin.app, updates, {
                 onProgress: (progress) => {
                     modal.updateProgress(this.formatRenameProgressLine('Reorder', progress));
@@ -860,86 +909,62 @@ export class OuterRingDragController {
         }
     }
 
-    private async finishDropOnVoidCell(target: { type: 'void'; element: SVGPathElement; act: number; ring: number; startAngle: number; endAngle: number; isOuterRing: boolean }): Promise<void> {
+    /**
+     * A drop on a ring rather than on an outer-ring scene: an empty act on the
+     * outer ring (moves the item there), or a subplot ring — an empty cell or
+     * one of its scenes — which puts the scene in that subplot and keeps its
+     * place in the manuscript unless the act changes (see planRingDropOrder).
+     */
+    private async finishDropOnRing(target: { act: number; ring: number; startAngle: number; isOuterRing: boolean }): Promise<void> {
         if (!this.sourceSceneId || !this.sourcePath) {
             this.resetState();
             return;
         }
+        const sourcePath = this.sourcePath;
+        const sourceSceneId = this.sourceSceneId;
 
         const targetActNumber = target.act + 1; // Convert 0-indexed to 1-indexed
         const order = this.buildOuterRingOrder();
-        const fromIdx = order.findIndex(o => o.sceneId === this.sourceSceneId);
+        const fromIdx = order.findIndex(o => o.path === sourcePath);
         if (fromIdx === -1) {
             this.resetState();
             return;
         }
-
-        // Determine source act for comparison (only update/show Act if it changes)
-        const sourceActIdx = this.sourceSceneGroup ? Number(this.sourceSceneGroup.getAttribute('data-act') ?? 0) : 0;
-        const sourceActNumber = sourceActIdx + 1;
+        const movedEntry = order[fromIdx];
+        const sourceActNumber = movedEntry.act + 1;
         const actChanged = targetActNumber !== sourceActNumber;
 
-        const sourceOriginalNumber = order[fromIdx]?.numberText ?? '';
-        const movedEntry = order[fromIdx];
+        const sourceOriginalNumber = movedEntry.numberText ?? '';
         const sourceType = movedEntry.itemType;
         const sourceLabel = sourceType === 'Beat' ? 'beat' : 'scene';
         const targetSubplotName = this.getSubplotNameFromRing(target.ring);
         const sourceDescriptor = this.formatItemDescriptor(movedEntry);
 
-        // Build the post-drop sequence by inserting the moved item at the void-cell angle.
-        // This keeps numbering aligned with neighboring beats/scenes in manuscript order.
-        const moved = order[fromIdx];
-        const reordered = [...order];
-        reordered.splice(fromIdx, 1);
-        const insertionIndex = this.findInsertionIndexByAngle(reordered, target.startAngle);
-        reordered.splice(insertionIndex, 0, moved);
-        const isNoOpReorder = insertionIndex === fromIdx;
+        const reordered = planRingDropOrder(order, sourcePath, target);
+        const isNoOpReorder = reordered.every((entry, index) => entry.path === order[index]?.path);
         const { updates: renumberUpdates, nextNumberByPath } = this.buildRenumberDiff(reordered, isNoOpReorder);
         const updates: SceneUpdate[] = [...renumberUpdates];
         const expectedOrderedPaths = reordered.map(entry => entry.path);
         const expectedNumbersByPath = Object.fromEntries(nextNumberByPath);
 
-        // Safety fallback: if a dragged scene has no numeric prefix, force a valid sequence number.
-        const fallbackSourceNumber = this.formatPrefixWithWidth(1, this.getPrefixWidthForEntry(movedEntry));
-        const sourceNextNumber = isNoOpReorder
-            ? (sourceOriginalNumber || fallbackSourceNumber)
-            : (nextNumberByPath.get(this.sourcePath) || fallbackSourceNumber);
+        // Beats live on the outer ring only, so only scenes change subplot, and
+        // only on a subplot ring.
+        const currentSubplots = await this.getSceneSubplots(sourcePath);
+        const newSubplots = sourceType === 'Scene' && !target.isOuterRing
+            ? planRingDropSubplots(currentSubplots, targetSubplotName)
+            : undefined;
 
-        // Get current subplots for the item
-        const currentSubplots = await this.getSceneSubplots(this.sourcePath);
-        const hasMainPlot = currentSubplots.includes('Main Plot');
-        
-        // Determine new subplots based on the move
-        // Beats are always on Main Plot, so only process subplot changes for scenes
-        let newSubplots: string[] | undefined;
-        if (sourceType === 'Beat') {
-            // Beats stay on Main Plot - no subplot changes
-        } else {
-            // Check if target subplot is already one of the scene's subplots
-            const isMovingToExistingSubplot = currentSubplots.includes(targetSubplotName);
-            
-            if (isMovingToExistingSubplot) {
-                // Already on the target subplot — keep subplots unchanged.
-            } else if (target.isOuterRing) {
-                // Outer-ring drops keep the current subplot assignment.
-            } else {
-                if (hasMainPlot) {
-                    newSubplots = ['Main Plot', targetSubplotName];
-                } else {
-                    newSubplots = [targetSubplotName];
-                }
-            }
-        }
-        
-        // Merge act/subplot updates onto the moved item's renumber update.
-        const movedUpdate = updates.find(update => update.path === this.sourcePath);
+        // Merge act/subplot updates onto the moved item's renumber update. A
+        // metadata-only update keeps the item's own number; '' (no prefix)
+        // leaves the filename alone.
+        const movedUpdate = updates.find(update => update.path === sourcePath);
         if (movedUpdate) {
             if (actChanged) movedUpdate.actNumber = targetActNumber;
             if (newSubplots !== undefined) movedUpdate.subplots = newSubplots;
         } else if (actChanged || newSubplots !== undefined) {
             updates.push({
-                path: this.sourcePath,
-                newNumber: sourceNextNumber,
+                path: sourcePath,
+                newNumber: sourceOriginalNumber,
                 actNumber: actChanged ? targetActNumber : undefined,
                 subplots: newSubplots
             });
@@ -952,18 +977,18 @@ export class OuterRingDragController {
         }
         let reorderApplied = false;
 
-        const sourceContext = this.formatContext(sourceActNumber, movedEntry.subplot);
-        const destinationSubplot = target.isOuterRing ? movedEntry.subplot : targetSubplotName;
-        const destinationContext = this.formatContext(targetActNumber, destinationSubplot);
-        const contextChange = this.buildContextChangeSummary(
-            sourceContext,
-            (actChanged || newSubplots !== undefined) ? destinationContext : sourceContext
-        );
+        // Name the scene's real subplots: the outer ring holds every scene, so
+        // its own subplot index says nothing about where this one lives.
+        const sourceContext = this.formatContext(sourceActNumber, describeSubplots(currentSubplots));
+        const destinationContext = this.formatContext(targetActNumber, describeSubplots(newSubplots ?? currentSubplots));
+        const contextChange = this.buildContextChangeSummary(sourceContext, destinationContext);
         const rippleRename = this.isRippleRenameEnabled();
         const recentMoves = getActiveRecentStructuralMoves(this.view.plugin.settings);
-        const actionSummary = target.isOuterRing
-            ? `Move ${sourceDescriptor} to Act ${targetActNumber}`
-            : `Move ${sourceDescriptor} to Act ${targetActNumber} • ${targetSubplotName}`;
+        const destinationLabel = target.isOuterRing
+            ? `Act ${targetActNumber}`
+            : actChanged ? `Act ${targetActNumber} • ${targetSubplotName}` : targetSubplotName;
+        const actionSummary = `Move ${sourceDescriptor} to ${destinationLabel}`;
+        const subplotOnly = isNoOpReorder && !actChanged;
 
         this.confirming = true;
         const modal = new DragConfirmModal(
@@ -973,6 +998,7 @@ export class OuterRingDragController {
                 renameCount: renumberUpdates.length,
                 ...(contextChange ? { contextChange } : {}),
                 rippleRename,
+                ...(subplotOnly ? { badge: `Move ${sourceLabel === 'beat' ? 'Beat' : 'Scene'}`, title: 'Confirm subplot change' } : {}),
             },
             recentMoves,
             (entry) => openStructuralMoveHistoryLog(this.view.plugin, entry),
@@ -986,37 +1012,32 @@ export class OuterRingDragController {
             return;
         }
 
-        const noticeText = target.isOuterRing 
-            ? `Moved ${sourceDescriptor} to Act ${targetActNumber}`
-            : `Moved ${sourceDescriptor} to Act ${targetActNumber}, ${targetSubplotName}`;
+        const noticeText = `Moved ${sourceDescriptor} to ${destinationLabel}`;
         try {
-            this.log('apply void cell drop', { targetAct: targetActNumber, ring: target.ring, subplot: targetSubplotName, path: this.sourcePath, itemType: sourceType });
+            this.log('apply ring drop', { targetAct: targetActNumber, ring: target.ring, subplot: targetSubplotName, path: sourcePath, itemType: sourceType, renames: renumberUpdates.length });
             await applySceneNumberUpdates(this.view.plugin.app, updates, {
                 onProgress: (progress) => {
-                    modal.updateProgress(this.formatRenameProgressLine('Reorder', progress));
+                    modal.updateProgress(this.formatRenameProgressLine(subplotOnly ? 'Move' : 'Reorder', progress));
                 },
                 verification: {
                     expectedOrderedPaths,
                     expectedNumbersByPath,
-                    movedItemPath: this.sourcePath,
-                    expectedMovedIndex: reordered.findIndex(entry => entry.path === this.sourcePath),
+                    movedItemPath: sourcePath,
+                    expectedMovedIndex: reordered.findIndex(entry => entry.path === sourcePath),
                 },
                 onWarning: () => {
                     new Notice('RT detected a potential issue after this operation. Please review the affected note. If needed, use backup or sync/version history to restore.', 8000);
                 },
             });
             reorderApplied = true;
-            const historySummary = target.isOuterRing
-                ? `${sourceDescriptor} | Act ${targetActNumber}`
-                : `${sourceDescriptor} | Act ${targetActNumber} • ${targetSubplotName}`;
             await this.recordRecentMove({
                 itemType: sourceType,
-                filePath: this.sourcePath,
-                fallbackItemId: this.sourceSceneId,
+                filePath: sourcePath,
+                fallbackItemId: sourceSceneId,
                 itemLabel: this.getLabelFromBasename(movedEntry.basename, sourceType),
                 sourceContext,
                 destinationContext,
-                summary: historySummary,
+                summary: `${sourceDescriptor} | ${destinationLabel}`,
                 renameCount: renumberUpdates.length,
                 crossedActs: actChanged,
                 rippleRename,
@@ -1027,7 +1048,7 @@ export class OuterRingDragController {
             // Small delay to allow Obsidian's metadata cache to update before refresh
             await sleep(100);
             this.options.onRefresh();
-            await modal.finishWithDismiss('Reorder complete.');
+            await modal.finishWithDismiss(subplotOnly ? 'Move complete.' : 'Reorder complete.');
         } catch (error) {
             if (error instanceof SceneReorderVerificationError) {
                 console.error('Drag reorder verification warning:', error);
@@ -1289,6 +1310,11 @@ export class OuterRingDragController {
      * Ring offset 0 = outermost = first in masterSubplotOrder
      */
     private getSubplotNameFromRing(ring: number): string {
+        // Each ring label names its own ring; prefer that over arithmetic on
+        // the label count, which skipped rings (backdrop) would throw off.
+        const label = this.svg.querySelector(`.rt-subplot-ring-label-text[data-ring="${ring}"]`);
+        const labelled = label?.getAttribute('data-subplot-name');
+        if (labelled) return labelled;
         const order = this.getMasterSubplotOrder();
         const numRings = order.length;
         // Ring is stored as the actual ring index, with higher numbers being inner rings

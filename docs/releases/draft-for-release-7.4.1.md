@@ -22,3 +22,4 @@ See [Manuscript onboarding](https://github.com/EricRhysTaylor/radial-timeline/wi
 ### Fixes
 
 - **Prose near author queries stays in your export.** With **Strip comments** on, the default for PDF and Word, an author query followed anywhere later in the manuscript by an ordinary `%%comment%%` dropped all the prose between the two from the exported file. Exports now keep that prose. Your scene notes were never changed.
+- **Dropping a scene on a subplot ring changes only its subplot.** In Narrative Mode, dragging a scene from the outer ring onto another subplot's ring also moved it in the manuscript and renamed the notes around it: with Sequence alignment, to wherever the drop landed in the ring. The scene now keeps its place, and a drop in another act moves it only as far as that act. The confirmation names the subplot the scene is leaving instead of always saying Main Plot, and a drop onto a scene in a subplot ring works too.

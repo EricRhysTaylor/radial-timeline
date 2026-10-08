@@ -14,6 +14,9 @@ export interface DragConfirmCurrentMoveSummary {
     renameCount: number;
     contextChange?: string;
     rippleRename?: boolean;
+    /** Header override for a move that is not a reorder (a subplot change). */
+    badge?: string;
+    title?: string;
 }
 
 export class DragConfirmModal extends ErtModal {
@@ -83,8 +86,8 @@ export class DragConfirmModal extends ErtModal {
         // Header — differentiates between scene and beat moves
         const capitalLabel = this.itemLabel.charAt(0).toUpperCase() + this.itemLabel.slice(1);
         const header = contentEl.createDiv({ cls: 'ert-modal-header' });
-        header.createSpan({ cls: 'ert-modal-badge', text: `Reorder ${capitalLabel}` });
-        header.createDiv({ cls: 'ert-modal-title', text: `Confirm ${this.itemLabel} reorder` });
+        header.createSpan({ cls: 'ert-modal-badge', text: this.currentMove.badge ?? `Reorder ${capitalLabel}` });
+        header.createDiv({ cls: 'ert-modal-title', text: this.currentMove.title ?? `Confirm ${this.itemLabel} reorder` });
 
         const listDiv = contentEl.createDiv({ cls: 'ert-drag-confirm-list' });
 

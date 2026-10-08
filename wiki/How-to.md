@@ -72,6 +72,8 @@ This method automatically updates ordering for you.
 
 **Note:** Dragging is supported on the **outer ring only**. You can drag into an empty act by dropping onto one of the empty **void** cells for that act.
 
+**Move a scene to another subplot:** drag it from the outer ring and drop it on that subplot's ring, on a scene or an empty cell. The scene's subplot changes and its place in the manuscript doesn't, so no notes are renamed. Drop it in another act and it also moves into that act, as the first scene of a later act or the last of an earlier one.
+
 ---
 
 #### Summary

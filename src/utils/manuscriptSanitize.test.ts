@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getDefaultManuscriptCleanupOptions, sanitizeCompiledManuscript, sanitizeCompiledManuscriptForPdf } from './manuscriptSanitize';
+import { countManuscriptComments, getDefaultManuscriptCleanupOptions, sanitizeCompiledManuscript, sanitizeCompiledManuscriptForPdf } from './manuscriptSanitize';
 
 describe('sanitizeCompiledManuscript', () => {
     it('always removes YAML frontmatter blocks from compiled manuscript text', () => {
@@ -328,5 +328,28 @@ after %%stripped%%`;
         expect(out).toContain('\\newpage');
         expect(out).toContain('\\vspace{2em}');
         expect(out).not.toContain('%%note%%');
+    });
+});
+
+describe('countManuscriptComments', () => {
+    const scene = [
+        'She opens the hatch. %%query: Is this too slow?%%',
+        '%%ai: Older question spelling%%',
+        'A private note %%check the tide tables%% sits here.',
+        '<!-- html note -->',
+        '```',
+        '%%inside a code block%%',
+        '```',
+    ].join('\n');
+
+    it('separates author queries from private notes and skips code', () => {
+        expect(countManuscriptComments(scene)).toEqual({ authorQueries: 2, privateNotes: 2 });
+    });
+
+    it('agrees with what the strippers remove', () => {
+        const notesStripped = sanitizeCompiledManuscript(scene, { stripComments: true });
+        expect(countManuscriptComments(notesStripped)).toEqual({ authorQueries: 2, privateNotes: 0 });
+        const queriesStripped = sanitizeCompiledManuscript(scene, { stripAiComments: true });
+        expect(countManuscriptComments(queriesStripped)).toEqual({ authorQueries: 0, privateNotes: 2 });
     });
 });

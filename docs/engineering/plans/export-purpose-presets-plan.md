@@ -2,6 +2,8 @@
 
 Status: proposed 2026-10-07 (Eric). Owner: whoever is working on export presets in `ManuscriptOptionsModal`; coordinate before restructuring the modal.
 
+**Built 2026-10-07, as built-in presets (Eric's scope call).** The three purposes are built-in presets in the same selection as saved presets (`src/utils/exportPurposes.ts`), shown first as a "Who is it for?" row and listed under **Built-in** in the preset dropdown. Differences from the proposal: no stored `purpose` field and no migration, because the existing "settings differ" check and **Reload preset** already mark and undo overrides; the cleanup toggles stay where they were instead of folding under Advanced; **Save as preset** turns a changed built-in into a preset of your own. The modal's single SceneId toggle drives TOC and heading IDs together, so AI review's Markdown TOC carries IDs. The read-back line counts with `countManuscriptComments`, the sanitizer's own classifier.
+
 ## Problem
 
 The export modal's cleanup posture follows the output format: Markdown keeps everything, PDF and Word strip everything (`cleanupFormatForOutputFormat` → reader defaults). That is right for readers and wrong for the most common Word export a working author makes: sending the manuscript to an editor. For that round the author must remember to:

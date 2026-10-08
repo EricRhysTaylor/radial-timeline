@@ -14,6 +14,9 @@ See [Manuscript onboarding](https://github.com/EricRhysTaylor/radial-timeline/wi
 ### Manuscript export
 
 - **Author queries are now `%%query:`.** Editorialist writes the questions you leave for your next reviewer as `%%query: Is this scene too slow?%%`. Manuscript export recognizes the new marker and still recognizes `%%ai: …%%` in older manuscripts. **Strip author queries** governs both, and your saved export settings carry over.
+- **Who is it for?** The export panel now starts with three built-in presets: **Editor round** (Word, scene IDs, your questions as margin comments, private notes stripped), **AI review** (Markdown with IDs and questions kept), and **Readers** (clean Word or PDF). A line above the Export button reads back what the file will carry, such as "34 scenes with IDs · 3 questions as margin comments · your notes stripped", and warns when notes, queries, or scene IDs would reach the wrong reader.
+- **Export presets reopen where you left off.** The panel reopens on the last preset you chose, loaded exactly as saved. Choosing a preset no longer reports that your settings differ from it, and **Reload preset** restores a preset after you change it.
+- **Word manuscripts are cleaner.** Scene breaks (`---`) become a centered `#`, pages are US Letter with 1" margins, and Word no longer opens the file in Compatibility Mode. If you write with a single return between paragraphs, the new **Every line is a paragraph** option makes each line its own indented paragraph in Word and PDF.
 - **Author queries become Word comments.** In a Word export with **Strip author queries** off, each query becomes a margin comment at the spot you asked it, signed with the book's author, so your editor can answer it in the comment thread instead of reading `%%query: …%%` in the text.
 
 ### Fixes

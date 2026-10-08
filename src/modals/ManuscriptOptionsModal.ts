@@ -2,7 +2,7 @@
  * Manuscript Options Modal
  */
 import { openSettingsTab } from '../utils/obsidianInternals';
-import { App, ButtonComponent, DropdownComponent, FileSystemAdapter, Modal, Notice, Platform, setIcon, TAbstractFile, TFile, ToggleComponent, normalizePath } from 'obsidian';
+import { App, ButtonComponent, DropdownComponent, FileSystemAdapter, Modal, Notice, Platform, setIcon, TAbstractFile, TFile, ToggleComponent, getFrontMatterInfo, normalizePath } from 'obsidian';
 import * as path from 'path'; // SAFE: Node path needed to build absolute paths for native Finder reveal
 import type RadialTimelinePlugin from '../main';
 import { getSceneFilesByOrder, ManuscriptOrder, TocMode, type ManuscriptSceneHeadingMode } from '../utils/manuscript';
@@ -11,7 +11,9 @@ import { clearFontAvailabilityCache, ExportFormat, ExportType, ManuscriptPreset,
 import { ensureBundledLayoutInstalledForExport } from '../utils/pandocBundledLayouts';
 import { getActiveBook, getActiveBookTitle, getActiveBookSourceFolder, DEFAULT_BOOK_TITLE } from '../utils/books';
 import { chunkScenesIntoParts } from '../utils/splitOutput';
-import { cleanupFormatForOutputFormat, getDefaultManuscriptCleanupOptions, normalizeManuscriptCleanupOptions } from '../utils/manuscriptSanitize';
+import { cleanupFormatForOutputFormat, countManuscriptComments, getDefaultManuscriptCleanupOptions, normalizeManuscriptCleanupOptions, type ManuscriptCommentCounts } from '../utils/manuscriptSanitize';
+import { EXPORT_PURPOSES, buildPurposeProfile, builtInPresetId, getExportPurposeForPresetId, type ExportPurpose } from '../utils/exportPurposes';
+import { readSceneId } from '../utils/sceneIds';
 import { categorizeExportError } from '../utils/exportErrors';
 import {
     adaptPandocLayoutsToPublishingModel,
@@ -48,6 +50,13 @@ import type {
 } from '../types';
 
 const OPEN_SCENES_FILTER = '__open_scenes__';
+
+type ReadbackPart = { text: string; warn: boolean };
+type SceneMarkers = ManuscriptCommentCounts & { hasSceneId: boolean };
+
+function countLabel(count: number, singular: string, plural = `${singular}s`): string {
+    return `${count} ${count === 1 ? singular : plural}`;
+}
 
 // Layout variant detection, pictogram data, and DOM rendering live in
 // src/publishing/layoutVisuals so the settings panel and this modal stay
@@ -324,6 +333,13 @@ export class ManuscriptOptionsModal extends Modal {
     private templateSummaryEl?: HTMLElement;
     private templateHintEl?: HTMLElement;
     private selectedExportProfileId: string | null = null;
+    private lastUsedPresetId: string | null = null;
+    private purposeCard?: HTMLElement;
+    private purposeNoteEl?: HTMLElement;
+    private purposePills: { el: HTMLElement; purpose: ExportPurpose }[] = [];
+    private readbackEl?: HTMLElement;
+    /** Per-scene comment counts and SceneId presence for the export summary, by path. */
+    private sceneMarkers = new Map<string, SceneMarkers>();
     private defaultExportProfileId: string | null = null;
     private exportProfiles: ModalExportProfile[] = [];
     private templateProfiles: TemplateProfile[] = [];
@@ -509,6 +525,19 @@ export class ManuscriptOptionsModal extends Modal {
             e.preventDefault();
             this.openPublishingSettings();
         });
+
+        // WHO IS IT FOR — built-in presets, one per purpose
+        this.purposeCard = container.createDiv({ cls: 'ert-glass-card ert-sub-card' });
+        this.createSectionHeading(this.purposeCard, 'Who is it for?', 'users');
+        const purposeRow = this.purposeCard.createDiv({ cls: 'ert-manuscript-pill-row ert-manuscript-pill-row--single' });
+        for (const purpose of EXPORT_PURPOSES) {
+            const pill = purposeRow.createEl('button', { text: purpose.label, attr: { 'data-ert-toggle': '' } });
+            pill.onClickEvent(() => {
+                void this.applyTemplateById(builtInPresetId(purpose.id));
+            });
+            this.purposePills.push({ el: pill, purpose });
+        }
+        this.purposeNoteEl = this.purposeCard.createDiv({ cls: 'ert-sub-card-note' });
 
         // A) OUTPUT
         const outputCard = container.createDiv({ cls: 'ert-glass-card ert-sub-card' });
@@ -916,7 +945,8 @@ export class ManuscriptOptionsModal extends Modal {
             });
         this.refreshTemplateDropdown();
 
-        // I) FOOTER
+        // I) FOOTER — one-line read-back of what the file will contain
+        this.readbackEl = container.createDiv({ cls: 'ert-sub-card-note ert-hidden' });
         const actions = container.createDiv({ cls: 'ert-modal-actions' });
         this.actionButton = new ButtonComponent(actions)
             .setButtonText(this.getPrimaryActionLabel())
@@ -956,34 +986,14 @@ export class ManuscriptOptionsModal extends Modal {
         const count = this.getSelectedSceneCount();
         const words = this.getSelectedWordCount();
         this.badgeEl.setText(`EXPORT — ${bookTitle} • ${count} scenes selected • ${words.toLocaleString()} words`);
+        this.updateReadback();
     }
 
     private refreshExportProfileState(): void {
         this.templateProfiles = adaptPandocLayoutsToPublishingModel(this.plugin.settings.pandocLayouts).profiles;
         this.exportProfiles = this.getStoredExportProfiles().map(profile => buildModalExportProfile(profile, this.templateProfiles));
 
-        const transientDefault = buildTransientModalExportProfile({
-            name: 'Current settings',
-            usageContext: this.manuscriptPreset,
-            exportType: this.exportType,
-            outputFormat: this.outputFormat,
-            order: this.order,
-            subplot: this.subplot,
-            outlinePreset: this.outlinePreset,
-            tocMode: this.tocMode,
-            includeSceneIdInToc: this.includeSceneId,
-            includeSceneIdInHeading: this.includeSceneId,
-            includeMatter: this.includeMatterUserChoice,
-            includeSynopsis: this.includeSynopsisUserChoice,
-            updateWordCounts: this.updateWordCounts,
-            saveMarkdownArtifact: this.saveMarkdownArtifact,
-            lineBreaksAsParagraphs: this.lineBreaksAsParagraphs,
-            cleanup: this.getActiveCleanupOptions(),
-            splitMode: this.splitMode,
-            splitParts: this.splitParts,
-            selectedLayoutId: this.selectedLayoutId,
-            templateProfiles: this.templateProfiles,
-        });
+        const transientDefault = this.buildLiveProfile(undefined, 'Current settings', false);
         this.defaultExportProfile = transientDefault;
         this.defaultExportProfileId = transientDefault.id;
 
@@ -991,6 +1001,7 @@ export class ManuscriptOptionsModal extends Modal {
         const lastUsedId = activePreferences?.lastUsedExportProfileId
             || this.plugin.settings.lastUsedExportProfileId
             || null;
+        this.lastUsedPresetId = lastUsedId;
         this.lastUsedExportProfile = lastUsedId ? this.exportProfiles.find(profile => profile.id === lastUsedId) : undefined;
 
         // Start as a draft; restoreLastUsedTemplate() picks and applies the
@@ -1005,7 +1016,7 @@ export class ManuscriptOptionsModal extends Modal {
         if (!this.templateSummaryEl) return;
         this.templateSummaryEl.empty();
 
-        const { selectedTemplate, isCreateMode, hasChanges } = this.getSelectedTemplateState();
+        const { selectedTemplate, isCreateMode, isBuiltIn, hasChanges } = this.getSelectedTemplateState();
         const isPandoc = this.exportType === 'manuscript' && this.outputFormat === 'pdf';
         this.templateSummaryEl.toggleClass('ert-hidden', !isPandoc);
 
@@ -1028,7 +1039,7 @@ export class ManuscriptOptionsModal extends Modal {
             });
             badge.createSpan({
                 cls: 'ert-badgePill__text',
-                text: isCreateMode ? 'Draft' : hasChanges ? 'Modified' : 'Saved'
+                text: isCreateMode ? 'Draft' : hasChanges ? 'Modified' : isBuiltIn ? 'Built-in' : 'Saved'
             });
 
             this.templateSummaryEl.createSpan({
@@ -1041,9 +1052,13 @@ export class ManuscriptOptionsModal extends Modal {
             this.templateHintEl.setText(
                 isCreateMode
                     ? 'Current settings are not saved as a preset yet.'
-                    : hasChanges
-                        ? 'Current settings differ from this preset. Update preset to save them, or reload preset to discard them.'
-                        : 'Preset matches current settings.'
+                    : isBuiltIn
+                        ? hasChanges
+                            ? 'Current settings differ from this built-in preset. Reload preset to restore it, or save your version as a new preset.'
+                            : 'Built-in preset. Save as preset to keep a version of your own.'
+                        : hasChanges
+                            ? 'Current settings differ from this preset. Update preset to save them, or reload preset to discard them.'
+                            : 'Preset matches current settings.'
             );
             this.templateHintEl.toggleClass('ert-export-preset-hint--warning', hasChanges);
             this.templateHintEl.toggleClass('ert-export-preset-hint--muted', !hasChanges);
@@ -1055,18 +1070,58 @@ export class ManuscriptOptionsModal extends Modal {
     private getSelectedTemplateState(): {
         selectedTemplate?: ModalExportProfile;
         isCreateMode: boolean;
+        isBuiltIn: boolean;
         hasChanges: boolean;
     } {
         const selectedId = this.getCurrentTemplateSelection();
-        const selectedTemplate = selectedId
-            ? this.getTemplateList().find(item => item.id === selectedId)
-            : undefined;
+        const selectedTemplate = this.findTemplateById(selectedId);
         const isCreateMode = !selectedTemplate;
         return {
             selectedTemplate,
             isCreateMode,
+            isBuiltIn: !!getExportPurposeForPresetId(selectedId),
             hasChanges: selectedTemplate ? this.hasSelectedTemplateChanges(selectedTemplate) : false
         };
+    }
+
+    /**
+     * A saved preset, or a built-in purpose preset laid over the export as it
+     * stands, so a built-in only ever differs in the settings it owns.
+     */
+    private findTemplateById(id: string | null | undefined): ModalExportProfile | undefined {
+        const purpose = getExportPurposeForPresetId(id);
+        if (purpose) return buildPurposeProfile(purpose, this.buildLiveProfile(undefined, 'Current settings', true));
+        return this.getTemplateList().find(item => item.id === id);
+    }
+
+    /** The export as the modal holds it right now, before any format gating. */
+    private buildLiveProfile(id: string | undefined, name: string, includeRange: boolean): ModalExportProfile {
+        return buildTransientModalExportProfile({
+            id,
+            name,
+            usageContext: this.manuscriptPreset,
+            exportType: this.exportType,
+            outputFormat: this.outputFormat,
+            order: this.order,
+            subplot: this.subplot,
+            outlinePreset: this.outlinePreset,
+            tocMode: this.tocMode,
+            includeSceneIdInToc: this.includeSceneId,
+            includeSceneIdInHeading: this.includeSceneId,
+            includeMatter: this.includeMatterUserChoice,
+            includeSynopsis: this.includeSynopsisUserChoice,
+            updateWordCounts: this.updateWordCounts,
+            saveMarkdownArtifact: this.saveMarkdownArtifact,
+            lineBreaksAsParagraphs: this.lineBreaksAsParagraphs,
+            cleanup: this.getActiveCleanupOptions(),
+            splitMode: this.splitMode,
+            splitParts: this.splitParts,
+            // Non-PDF modes clear selectedLayoutId; keep the selected preset's layout then.
+            selectedLayoutId: this.selectedLayoutId ?? this.resolveLayoutIdForProfile(this.selectedExportProfile),
+            templateProfiles: this.templateProfiles,
+            rangeStart: includeRange ? this.rangeStart : undefined,
+            rangeEnd: includeRange ? this.rangeEnd : undefined,
+        });
     }
 
     private resolveLayoutIdForProfile(profile: ModalExportProfile | undefined): string | undefined {
@@ -1120,7 +1175,8 @@ export class ManuscriptOptionsModal extends Modal {
         const value = dropdownValue || selectedValue;
         const trimmed = value.trim();
         if (!trimmed) return null;
-        return this.getTemplateList().some(template => template.id === trimmed) ? trimmed : null;
+        const isKnown = !!getExportPurposeForPresetId(trimmed) || this.getTemplateList().some(template => template.id === trimmed);
+        return isKnown ? trimmed : null;
     }
 
     private async rememberLastUsedTemplate(templateId: string | null): Promise<void> {
@@ -1160,19 +1216,28 @@ export class ManuscriptOptionsModal extends Modal {
         placeholder.selected = !this.selectedExportProfileId;
         this.exportTemplateDropdown.appendChild(placeholder);
 
-        templates.forEach(template => {
-            const option = doc.win.createEl('option');
-            option.value = template.id;
-            option.text = template.name;
-            if (this.selectedExportProfileId && this.selectedExportProfileId === template.id) {
-                option.selected = true;
-                placeholder.selected = false;
-            }
-            this.exportTemplateDropdown?.appendChild(option);
-        });
+        const addGroup = (label: string, entries: { id: string; name: string }[]): void => {
+            if (entries.length === 0) return;
+            const group = doc.win.createEl('optgroup');
+            group.label = label;
+            entries.forEach(entry => {
+                const option = doc.win.createEl('option');
+                option.value = entry.id;
+                option.text = entry.name;
+                if (this.selectedExportProfileId === entry.id) {
+                    option.selected = true;
+                    placeholder.selected = false;
+                }
+                group.appendChild(option);
+            });
+            this.exportTemplateDropdown?.appendChild(group);
+        };
+        addGroup('Built-in', EXPORT_PURPOSES.map(purpose => ({ id: builtInPresetId(purpose.id), name: purpose.label })));
+        addGroup('Your presets', templates);
 
         const hasActiveTemplate = !!this.selectedExportProfileId
-            && templates.some(template => template.id === this.selectedExportProfileId);
+            && (!!getExportPurposeForPresetId(this.selectedExportProfileId)
+                || templates.some(template => template.id === this.selectedExportProfileId));
         this.exportTemplateDropdown.value = hasActiveTemplate ? this.selectedExportProfileId! : '';
         this.exportTemplateDropdown.disabled = false;
         const hasTransientProfile = !!this.selectedExportProfile
@@ -1268,11 +1333,14 @@ export class ManuscriptOptionsModal extends Modal {
     }
 
     private updateTemplateActionButtonState(): void {
-        const { selectedTemplate, isCreateMode, hasChanges } = this.getSelectedTemplateState();
+        const { selectedTemplate, isCreateMode, isBuiltIn, hasChanges } = this.getSelectedTemplateState();
 
         if (this.saveTemplateButton) {
             if (isCreateMode) {
                 this.saveTemplateButton.setButtonText('Create preset');
+                this.saveTemplateButton.setDisabled(false);
+            } else if (isBuiltIn) {
+                this.saveTemplateButton.setButtonText('Save as preset');
                 this.saveTemplateButton.setDisabled(false);
             } else {
                 this.saveTemplateButton.setButtonText(hasChanges ? 'Update preset' : 'Preset up to date');
@@ -1281,8 +1349,99 @@ export class ManuscriptOptionsModal extends Modal {
         }
 
         this.reloadTemplateButton?.buttonEl.toggleClass('ert-hidden', !(selectedTemplate && hasChanges));
-        this.deleteTemplateButton?.setDisabled(!selectedTemplate);
+        this.deleteTemplateButton?.setDisabled(!selectedTemplate || isBuiltIn);
+        this.syncPurposeUi(hasChanges);
+        this.updateReadback();
         this.updateExportProfileSummary();
+    }
+
+    private syncPurposeUi(hasChanges: boolean): void {
+        const active = getExportPurposeForPresetId(this.getCurrentTemplateSelection());
+        this.purposePills.forEach(({ el, purpose }) => el.toggleClass('is-active', purpose.id === active?.id));
+        this.purposeNoteEl?.setText(
+            !active
+                ? 'Choose who this export is for, or start from one of your saved presets below.'
+                : hasChanges
+                    ? `${active.description} You've changed some of these settings; Reload preset below restores them.`
+                    : active.description
+        );
+    }
+
+    /**
+     * One line above the Export button saying what the file will carry, so a
+     * leaked note or a lost question shows before the file exists. Counts come
+     * from the sanitizer's own comment classification.
+     */
+    private updateReadback(): void {
+        const el = this.readbackEl;
+        if (!el) return;
+        el.empty();
+        const paths = this.getSelectedScenePaths();
+        const visible = this.exportType === 'manuscript' && paths.length > 0;
+        el.toggleClass('ert-hidden', !visible);
+        if (!visible) return;
+
+        const forReaders = getExportPurposeForPresetId(this.getCurrentTemplateSelection())?.id === 'readers';
+        const cleanup = this.getActiveCleanupOptions();
+        const markers = paths
+            .map(path => this.sceneMarkers.get(path))
+            .filter((marker): marker is SceneMarkers => marker !== undefined);
+        const counted = markers.length === paths.length;
+        const parts: ReadbackPart[] = [];
+
+        const scenes = countLabel(paths.length, 'scene');
+        if (!this.includeSceneId) {
+            parts.push({ text: scenes, warn: false });
+        } else if (forReaders) {
+            parts.push({ text: scenes, warn: false }, { text: 'scene IDs are on', warn: true });
+        } else {
+            const missing = markers.filter(marker => !marker.hasSceneId).length;
+            parts.push(missing > 0
+                ? { text: `${scenes} with IDs (${missing} without one)`, warn: true }
+                : { text: `${scenes} with IDs`, warn: false });
+        }
+
+        if (!counted) {
+            parts.push({ text: 'counting questions and notes…', warn: false });
+        } else {
+            const queries = markers.reduce((sum, marker) => sum + marker.authorQueries, 0);
+            const notes = markers.reduce((sum, marker) => sum + marker.privateNotes, 0);
+            if (queries > 0) parts.push(this.describeAuthorQueries(queries, cleanup.stripAiComments, forReaders));
+            if (notes > 0) {
+                parts.push(cleanup.stripComments
+                    ? { text: 'your notes stripped', warn: false }
+                    : { text: `${countLabel(notes, 'private note')} will appear`, warn: true });
+            }
+        }
+
+        parts.forEach((part, index) => {
+            if (index > 0) el.appendText(' · ');
+            el.createSpan({ text: part.text, cls: part.warn ? 'ert-export-preset-hint--warning' : undefined });
+        });
+    }
+
+    private describeAuthorQueries(count: number, stripped: boolean, forReaders: boolean): ReadbackPart {
+        if (stripped) return { text: `${countLabel(count, 'question')} stripped`, warn: false };
+        const queries = countLabel(count, 'author query', 'author queries');
+        if (this.outputFormat === 'pdf') return { text: `${queries} will print as text`, warn: true };
+        if (forReaders) return { text: `${queries} will appear${this.outputFormat === 'docx' ? ' as comments' : ''}`, warn: true };
+        return this.outputFormat === 'docx'
+            ? { text: `${countLabel(count, 'question')} as margin comments`, warn: false }
+            : { text: `${countLabel(count, 'question')} kept for review`, warn: false };
+    }
+
+    private async loadSceneMarkers(): Promise<void> {
+        for (const path of this.scenePaths) {
+            if (this.sceneMarkers.has(path)) continue;
+            const file = this.app.vault.getAbstractFileByPath(path);
+            if (!(file instanceof TFile)) continue;
+            const content = await this.app.vault.cachedRead(file);
+            this.sceneMarkers.set(path, {
+                ...countManuscriptComments(content.slice(getFrontMatterInfo(content).contentStart)),
+                hasSceneId: !!readSceneId(this.app.metadataCache.getFileCache(file)?.frontmatter),
+            });
+        }
+        this.updateReadback();
     }
 
     private async saveTemplate(name: string, existingId?: string): Promise<void> {
@@ -1300,7 +1459,8 @@ export class ManuscriptOptionsModal extends Modal {
 
     private async saveOrUpdateTemplate(): Promise<void> {
         const selectedId = this.getCurrentTemplateSelection();
-        if (selectedId) {
+        const purpose = getExportPurposeForPresetId(selectedId);
+        if (selectedId && !purpose) {
             const existing = this.getTemplateList().find(item => item.id === selectedId);
             if (!existing) return;
             if (!this.hasSelectedTemplateChanges(existing)) {
@@ -1310,7 +1470,8 @@ export class ManuscriptOptionsModal extends Modal {
             await this.saveTemplate(existing.name, existing.id);
             return;
         }
-        const defaultName = `Manuscript Export ${new Date().toLocaleDateString()}`;
+        // Built-ins are never overwritten; saving one makes a preset of your own.
+        const defaultName = purpose ? purpose.label : `Manuscript Export ${new Date().toLocaleDateString()}`;
         new SaveExportTemplateModal(this.app, (name) => {
             void this.saveTemplate(name);
         }, defaultName).open();
@@ -1332,7 +1493,7 @@ export class ManuscriptOptionsModal extends Modal {
     }
 
     private async applyTemplateById(templateId: string): Promise<void> {
-        const template = this.getTemplateList().find(item => item.id === templateId);
+        const template = this.findTemplateById(templateId);
         if (!template) {
             new Notice('Preset not found.');
             return;
@@ -1422,6 +1583,15 @@ export class ManuscriptOptionsModal extends Modal {
     private async restoreLastUsedTemplate(): Promise<void> {
         const activePreferences = this.getActiveBookPublishingPreferences();
         const snapshot = activePreferences?.lastUsedExportProfileSnapshot;
+        const lastUsedPurpose = getExportPurposeForPresetId(this.lastUsedPresetId);
+        if (lastUsedPurpose) {
+            // A built-in follows the book: lay it over the last session's settings.
+            const base = snapshot
+                ? buildModalExportProfile(snapshot, this.templateProfiles)
+                : this.buildLiveProfile(undefined, 'Current settings', false);
+            await this.applyTemplate(buildPurposeProfile(lastUsedPurpose, base), { showNotice: false });
+            return;
+        }
         const lastUsedPreset = this.lastUsedExportProfile;
         if (lastUsedPreset) {
             const rangeMatches = !!snapshot
@@ -1448,33 +1618,9 @@ export class ManuscriptOptionsModal extends Modal {
     }
 
     private buildCurrentSnapshot(): ExportProfile {
-        const persistRange = !this.isOpenScenesMode();
-        const transient = buildTransientModalExportProfile({
-            id: '__last_used_snapshot__',
-            name: 'Last used',
-            usageContext: this.manuscriptPreset,
-            exportType: this.exportType,
-            outputFormat: this.outputFormat,
-            order: this.order,
-            subplot: this.subplot,
-            outlinePreset: this.outlinePreset,
-            tocMode: this.tocMode,
-            includeSceneIdInToc: this.includeSceneId,
-            includeSceneIdInHeading: this.includeSceneId,
-            includeMatter: this.includeMatterUserChoice,
-            includeSynopsis: this.includeSynopsisUserChoice,
-            updateWordCounts: this.updateWordCounts,
-            saveMarkdownArtifact: this.saveMarkdownArtifact,
-            lineBreaksAsParagraphs: this.lineBreaksAsParagraphs,
-            cleanup: this.getActiveCleanupOptions(),
-            splitMode: this.splitMode,
-            splitParts: this.splitParts,
-            selectedLayoutId: this.selectedLayoutId,
-            templateProfiles: this.templateProfiles,
-            rangeStart: persistRange ? this.rangeStart : undefined,
-            rangeEnd: persistRange ? this.rangeEnd : undefined,
-        });
-        return buildPersistedExportProfileFromModalExportProfile(transient);
+        return buildPersistedExportProfileFromModalExportProfile(
+            this.buildLiveProfile('__last_used_snapshot__', 'Last used', !this.isOpenScenesMode())
+        );
     }
 
     private async persistCurrentSnapshot(): Promise<void> {
@@ -1708,6 +1854,7 @@ export class ManuscriptOptionsModal extends Modal {
         const shouldLockSelection = mode.lockSceneSelectionToFullBook;
         const showSceneSelectionCards = !shouldLockSelection;
 
+        this.purposeCard?.toggleClass('ert-hidden', !mode.isManuscript);
         this.manuscriptOptionsCard?.toggleClass('ert-hidden', !mode.showManuscriptPreset);
         this.outlineOptionsCard?.toggleClass('ert-hidden', !mode.showOutlinePreset);
         this.manuscriptRulesCard?.toggleClass('ert-hidden', !mode.showToc);
@@ -2972,6 +3119,7 @@ export class ManuscriptOptionsModal extends Modal {
             this.rangeStart = 1;
             this.rangeEnd = Math.max(1, this.totalScenes);
             this.hasWhenDates = whenDates.some((value) => !!value);
+            this.loadSceneMarkers().catch(error => console.error('[Radial Timeline] Export summary could not read scenes:', error));
 
             this.updateBadgeSceneCount();
 

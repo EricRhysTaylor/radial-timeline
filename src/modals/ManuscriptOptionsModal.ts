@@ -830,7 +830,7 @@ export class ManuscriptOptionsModal extends Modal {
         addCleanupExample('`[[Scene name|alias]]` → alias · `[label](https://…)` → label');
 
         const aiCommentsRow = this.exportCleanupCard.createDiv({ cls: 'ert-manuscript-toggle-row' });
-        aiCommentsRow.createSpan({ cls: 'ert-manuscript-toggle-label', text: 'Strip author queries — off keeps them for Editorialist review' });
+        aiCommentsRow.createSpan({ cls: 'ert-manuscript-toggle-label', text: 'Strip author queries — off keeps them for review (Word: as margin comments)' });
         this.cleanupAiCommentsToggle = new ToggleComponent(aiCommentsRow).onChange((value) => {
             this.setActiveCleanupOption('stripAiComments', value);
         });

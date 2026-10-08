@@ -14,6 +14,7 @@ See [Manuscript onboarding](https://github.com/EricRhysTaylor/radial-timeline/wi
 ### Manuscript export
 
 - **Author queries are now `%%query:`.** Editorialist writes the questions you leave for your next reviewer as `%%query: Is this scene too slow?%%`. Manuscript export recognizes the new marker and still recognizes `%%ai: …%%` in older manuscripts. **Strip author queries** governs both, and your saved export settings carry over.
+- **Author queries become Word comments.** In a Word export with **Strip author queries** off, each query becomes a margin comment at the spot you asked it, signed with the book's author, so your editor can answer it in the comment thread instead of reading `%%query: …%%` in the text.
 
 ### Fixes
 

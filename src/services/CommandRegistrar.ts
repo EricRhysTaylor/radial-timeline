@@ -43,6 +43,7 @@ import { ensureBundledLayoutInstalledForExport } from '../utils/pandocBundledLay
 import { getLayoutAbbreviation, resolveTemplateAccess, TEMPLATE_ACCESS_FALLBACK_MESSAGE } from '../publishing/templateTiering';
 import { hasProFeatureAccess } from '../settings/featureGate';
 import { cleanupFormatForOutputFormat, getDefaultManuscriptCleanupOptions, normalizeManuscriptCleanupOptions, sanitizeCompiledManuscript, sanitizeCompiledManuscriptForPdf } from '../utils/manuscriptSanitize';
+import { convertAuthorQueriesToWordComments } from '../utils/authorQueryComments';
 import { getManuscriptLayoutExportBehavior } from '../utils/manuscriptLayoutExport';
 import { ExportFailure, categorizeExportError } from '../utils/exportErrors';
 import { getRuntimeSettings } from '../utils/runtimeEstimator';
@@ -675,6 +676,9 @@ export class CommandRegistrar {
                     // Reader-facing cleanup posture (same as PDF): comments,
                     // links, callouts, task markers stripped per modal toggles.
                     const sanitizedText = sanitizeCompiledManuscriptForPdf(assembled.text, cleanupOptions);
+                    // Author queries kept for review become Word margin comments, so an
+                    // editor can answer each one in its comment thread.
+                    const docxText = convertAuthorQueriesToWordComments(sanitizedText, { author: docxMetadata.author });
 
                     const renderedFilename = isSplitRun
                         ? `${baseTitle} - Part ${range.part}.docx`
@@ -686,7 +690,7 @@ export class CommandRegistrar {
                             extension,
                             fileStem: ctx.fileStem
                         });
-                    await runPandocOnContent(sanitizedText, `${absoluteOutputFolder}/${renderedFilename}`, {
+                    await runPandocOnContent(docxText, `${absoluteOutputFolder}/${renderedFilename}`, {
                         targetFormat: 'docx',
                         referenceDocPath: referenceDoc.path,
                         lineBreaksAsParagraphs: result.lineBreaksAsParagraphs === true,

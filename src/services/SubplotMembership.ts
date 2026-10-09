@@ -20,6 +20,9 @@ import { canonicalizeFrontmatterKey, frontmatterValueToText } from '../utils/fro
 
 export const MAIN_PLOT = 'Main Plot';
 
+// Throwing from processFrontMatter aborts its YAML serialization/write.
+const SKIP_SUBPLOT_WRITE = new Error('Subplot write not required');
+
 export type SubplotMembershipChange =
     | { kind: 'move'; from: string; to: string }
     | { kind: 'add'; to: string }
@@ -50,7 +53,7 @@ export function planSubplotMembership(current: string[], change: SubplotMembersh
         if (before.includes(change.to)) return null;
         after = [...before, change.to];
     } else if (change.kind === 'move') {
-        if (change.from === change.to) return null;
+        if (change.from === change.to || !before.includes(change.from)) return null;
         after = before.filter(name => name !== change.from);
         if (!after.includes(change.to)) after.push(change.to);
     } else {
@@ -96,37 +99,64 @@ export interface SubplotFieldSnapshot {
     key: string;
     existed: boolean;
     value: unknown;
+    /** Value this operation wrote; Undo must not overwrite a later edit. */
+    appliedValue: string | string[];
 }
 
 function cloneValue(value: unknown): unknown {
     return Array.isArray(value) ? [...(value as unknown[])] : value;
 }
 
-/**
- * Write memberships to the scene's Subplot field (its mapped key, else
- * "Subplot"): one name as a string, several as a list. Returns what was there.
- */
+function writeMembershipsToFrontmatter(
+    fm: Record<string, unknown>,
+    memberships: string[],
+    mappings?: Record<string, string>
+): SubplotFieldSnapshot {
+    const names = normalizeMemberships(memberships);
+    const key = findSubplotKey(fm, mappings) ?? 'Subplot';
+    const appliedValue = names.length === 1 ? names[0] : names;
+    const snapshot = {
+        key,
+        existed: key in fm,
+        value: cloneValue(fm[key]),
+        appliedValue: Array.isArray(appliedValue) ? [...appliedValue] : appliedValue,
+    };
+    fm[key] = appliedValue;
+    return snapshot;
+}
+
+/** Write only Subplot and remember both the original and applied values. */
 export async function writeSubplotMemberships(
     app: App,
     file: TFile,
     memberships: string[],
     mappings?: Record<string, string>
 ): Promise<SubplotFieldSnapshot> {
-    const names = normalizeMemberships(memberships);
-    let snapshot: SubplotFieldSnapshot = { key: 'Subplot', existed: false, value: undefined };
+    let snapshot!: SubplotFieldSnapshot;
     await app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
-        const key = findSubplotKey(fm, mappings) ?? 'Subplot';
-        snapshot = { key, existed: key in fm, value: cloneValue(fm[key]) };
-        fm[key] = names.length === 1 ? names[0] : names;
+        snapshot = writeMembershipsToFrontmatter(fm, memberships, mappings);
     });
     return snapshot;
 }
 
-export async function restoreSubplotField(app: App, file: TFile, snapshot: SubplotFieldSnapshot): Promise<void> {
-    await app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
-        if (snapshot.existed) fm[snapshot.key] = cloneValue(snapshot.value);
-        else delete fm[snapshot.key];
-    });
+function equalsAppliedValue(value: unknown, applied: string | string[]): boolean {
+    if (!Array.isArray(applied)) return value === applied;
+    return Array.isArray(value) && value.length === applied.length && value.every((name, index) => name === applied[index]);
+}
+
+/** Return false if another operation or the author has since changed Subplot. */
+export async function restoreSubplotField(app: App, file: TFile, snapshot: SubplotFieldSnapshot): Promise<boolean> {
+    try {
+        await app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
+            if (!equalsAppliedValue(fm[snapshot.key], snapshot.appliedValue)) throw SKIP_SUBPLOT_WRITE;
+            if (snapshot.existed) fm[snapshot.key] = cloneValue(snapshot.value);
+            else delete fm[snapshot.key];
+        });
+        return true;
+    } catch (error) {
+        if (error !== SKIP_SUBPLOT_WRITE) throw error;
+        return false;
+    }
 }
 
 /**
@@ -139,10 +169,24 @@ export async function applySubplotMembershipChange(
     change: SubplotMembershipChange,
     options: { mappings?: Record<string, string>; itemLabel: string; onChanged?: () => void }
 ): Promise<string[] | null> {
-    const before = readSubplotMemberships(app, file, options.mappings);
-    const after = planSubplotMembership(before, change);
-    if (!after) return null;
-    const snapshot = await writeSubplotMemberships(app, file, after, options.mappings);
+    // Plan and write against the same live frontmatter. The metadata cache
+    // may still describe the previous edit while a drag confirmation is open.
+    let before: string[] = [];
+    let after!: string[];
+    let undoSnapshot!: SubplotFieldSnapshot;
+    try {
+        await app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
+            const key = findSubplotKey(fm, options.mappings);
+            before = key ? subplotValueToList(fm[key]) : [];
+            const planned = planSubplotMembership(before, change);
+            if (!planned) throw SKIP_SUBPLOT_WRITE;
+            after = planned;
+            undoSnapshot = writeMembershipsToFrontmatter(fm, after, options.mappings);
+        });
+    } catch (error) {
+        if (error !== SKIP_SUBPLOT_WRITE) throw error;
+        return null;
+    }
     options.onChanged?.();
 
     const fragment = activeWindow.createFragment();
@@ -152,9 +196,16 @@ export async function applySubplotMembershipChange(
     undo.onClickEvent((event) => {
         event.preventDefault();
         notice.hide();
-        void restoreSubplotField(app, file, snapshot).then(() => {
+        void restoreSubplotField(app, file, undoSnapshot).then((restored) => {
+            if (!restored) {
+                new Notice(`${options.itemLabel}: Undo skipped because its subplots changed after this operation.`, 5000);
+                return;
+            }
             options.onChanged?.();
             new Notice(`${options.itemLabel}: back to ${formatMemberships(before)}.`, 3000);
+        }).catch((error: unknown) => {
+            console.error('Subplot Undo failed:', error);
+            new Notice(`${options.itemLabel}: Undo failed. Check the scene's subplots before continuing.`, 5000);
         });
     });
     return after;

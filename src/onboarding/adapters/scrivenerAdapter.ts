@@ -12,9 +12,8 @@
  *
  * Normalization:
  *   - one ManuscriptScene per exported prose file;
- *   - reading order from filename numbering, else from sidecar row order;
- *   - sidecar rows matched to files by title (positional fallback when no
- *     titles match and counts align);
+ *   - reading order from the sidecar's row order, else from filename numbering;
+ *   - sidecar rows matched to files by normalized title, never by position;
  *   - the Synopsis column populates `knownSynopsis`; every other carryable
  *     column lands in `knownMetadata` as strings. Canonical RT Scene keys are
  *     never used as `knownMetadata` keys — a Scrivener column whose name
@@ -28,11 +27,7 @@
 
 import { normalizePath, TFile, TFolder } from 'obsidian';
 import type { App } from 'obsidian';
-import {
-  type ManuscriptModel,
-  type ManuscriptScene,
-  resolveReadingOrder,
-} from './manuscriptModel';
+import type { ManuscriptModel, ManuscriptScene } from './manuscriptModel';
 
 // --- Source surface ---------------------------------------------------------
 
@@ -46,16 +41,22 @@ export interface ScrivenerFile {
   content: string;
 }
 
+/** The outline CSV found for an export: its file name (shown to the author) and text. */
+export interface OutlineFile {
+  name: string;
+  text: string;
+}
+
 /** The minimal surface the adapter needs — easy to stub in tests. */
 export interface ScrivenerSource {
-  /** Exported prose files (`.md`/`.txt`) directly in the book folder, sidecar excluded. */
+  /** Exported prose files (`.md`/`.txt`) anywhere under the export folder, sidecar excluded. */
   listSceneFiles(folderPath: string): Promise<ScrivenerFile[]>;
-  /** Raw text of the CSV outline sidecar in the folder, or null when absent. */
-  readSidecar(folderPath: string): Promise<string | null>;
+  /** The export's Outliner CSV (one with a Title column), or null when absent. */
+  readSidecar(folderPath: string): Promise<OutlineFile | null>;
 }
 
 export type ScrivenerIngestResult =
-  | { kind: 'ok'; model: ManuscriptModel }
+  | { kind: 'ok'; model: ManuscriptModel; outlineName: string | null; warnings: string[] }
   | { kind: 'needs-order'; reason: string };
 
 // --- Delimited-text parsing (no dependencies) -------------------------------
@@ -227,9 +228,27 @@ export type ScrivenerFieldTarget =
   /**
    * Per-subplot COLUMN model: the column's NAME is the subplot; any non-empty
    * cell marks the scene as belonging to it (the cell's text is a note and
-   * rides along as a custom field). First flagged column wins per scene.
+   * rides along as a custom field). A scene flagged in several columns
+   * belongs to each of those subplots.
    */
   | { target: 'subplot-flag' };
+
+/**
+ * Scene fields an outline column can become, in the order the import review
+ * offers them: timeline structure first, then notes, then the advanced
+ * template. Fields the importer writes itself (Class, Status, Publish Stage)
+ * and plugin-maintained fields (Words, Pulse/Summary Update) are not offered —
+ * a mapped value there would be overwritten or would break the timeline.
+ */
+export const SCRIVENER_FIELD_TARGETS = {
+  timeline: ['Subplot', 'Character', 'POV', 'Place', 'When', 'Duration', 'Act', 'Chapter'],
+  other: ['Synopsis', 'Summary', 'Pending Edits', 'Due', 'Questions', 'Reader Emotion', 'Internal', 'Type', 'Shift', 'Iteration'],
+} as const;
+
+const TARGET_KEYS = new Set<string>([...SCRIVENER_FIELD_TARGETS.timeline, ...SCRIVENER_FIELD_TARGETS.other]);
+
+/** Fields that hold a list: values from several columns accumulate instead of competing. */
+const LIST_KEYS = new Set(['Subplot', 'Character', 'Place']);
 
 /** Scrivener outliner columns that are tool/derived data — never worth carrying. */
 const IGNORED_FIELDS = new Set([
@@ -240,49 +259,58 @@ const IGNORED_FIELDS = new Set([
   'section type', 'position', 'depth',
 ]);
 
-/** Scrivener names that map to a *differently named* RT key. */
+/** True for outliner columns that are Scrivener's own bookkeeping, not story metadata. */
+export function isDerivedOutlineField(fieldName: string): boolean {
+  return IGNORED_FIELDS.has(bareFieldName(fieldName).toLowerCase());
+}
+
+/** Common Scrivener column names for a differently named scene field. */
 const FIELD_ALIASES: Record<string, string> = {
-  storyline: 'Subplot',
-  location: 'Place',
-  setting: 'Place',
-  date: 'When',
-  characters: 'Character',
-  notes: 'Summary',
+  subplots: 'Subplot', storyline: 'Subplot', storylines: 'Subplot', plotline: 'Subplot',
+  plotlines: 'Subplot', plot: 'Subplot', thread: 'Subplot', threads: 'Subplot',
+  theme: 'Subplot', themes: 'Subplot', arc: 'Subplot', arcs: 'Subplot',
+  characters: 'Character', people: 'Character', person: 'Character', cast: 'Character',
+  places: 'Place', location: 'Place', locations: 'Place', setting: 'Place', settings: 'Place',
+  date: 'When', 'story date': 'When', 'scene date': 'When',
+  'point of view': 'POV', viewpoint: 'POV',
+  'value shift': 'Shift', 'scene type': 'Type',
 };
 
+/** The column name as the author wrote it (the adapter prefixes canonical-key collisions). */
+export function bareFieldName(fieldName: string): string {
+  return fieldName.replace(new RegExp(`^${COLLISION_PREFIX}`, 'i'), '').trim();
+}
+
 /**
- * Propose a best-guess disposition for each distinct sidecar field name:
- * map to an RT key, keep as a custom field, or ignore. The author overrides
- * per row in the mapping table before Materialize; unmatched fields default
- * to `custom` so nothing is silently lost. Accepts both raw sidecar column
- * names and the `Scrivener `-prefixed keys the adapter writes on collision.
+ * Propose a disposition for each carried field: a scene field when the column
+ * name (or a common synonym) names one, skip for Scrivener's derived columns,
+ * otherwise keep it unchanged so nothing is silently lost. The author reviews
+ * every proposal before anything is written.
  */
 export function proposeScrivenerAutomap(
   fieldNames: string[]
 ): Record<string, ScrivenerFieldTarget> {
   const proposals: Record<string, ScrivenerFieldTarget> = {};
   for (const fieldName of fieldNames) {
-    const bare = fieldName.replace(new RegExp(`^${COLLISION_PREFIX}`, 'i'), '').trim();
-    const lower = bare.toLowerCase();
-
+    const lower = bareFieldName(fieldName).toLowerCase();
     if (IGNORED_FIELDS.has(lower)) {
       proposals[fieldName] = { target: 'ignore' };
       continue;
     }
-    const canonical = CANONICAL_BY_LOWER.get(lower);
-    if (canonical) {
-      proposals[fieldName] = { target: 'rt-key', key: canonical };
-      continue;
-    }
-    const alias = FIELD_ALIASES[lower];
-    if (alias) {
-      proposals[fieldName] = { target: 'rt-key', key: alias };
-      continue;
-    }
-    // Label, Keywords, and any custom metadata column: keep, author decides.
-    proposals[fieldName] = { target: 'custom' };
+    const key = CANONICAL_BY_LOWER.get(lower) ?? FIELD_ALIASES[lower];
+    proposals[fieldName] = key && TARGET_KEYS.has(key) ? { target: 'rt-key', key } : { target: 'custom' };
   }
   return proposals;
+}
+
+/** Single-value scene fields that more than one column feeds; the first filled column wins. */
+export function mappingConflicts(mapping: Record<string, ScrivenerFieldTarget>): string[] {
+  const counts = new Map<string, number>();
+  for (const decision of Object.values(mapping)) {
+    if (decision.target !== 'rt-key' || LIST_KEYS.has(decision.key)) continue;
+    counts.set(decision.key, (counts.get(decision.key) ?? 0) + 1); // SAFE: first column for a field starts its tally at 0
+  }
+  return [...counts].filter(([, count]) => count > 1).map(([key]) => key);
 }
 
 // --- Scene assembly ---------------------------------------------------------
@@ -327,37 +355,34 @@ function fileToScene(file: ScrivenerFile, row: Record<string, string> | null): M
 // --- Ingest -----------------------------------------------------------------
 
 /**
- * Ingest a folder of Scrivener-exported scene files (plus an optional CSV
- * outline sidecar) into a single-chapter Manuscript Model.
- */
-/**
- * Apply the author's mapping-table decisions to one scene's carried metadata:
- * `ignore` drops the field, `rt-key` renames it to the canonical key (first
- * writer wins on collision), `custom` — and any unmapped field — keeps it as-is.
+ * Apply the author's mapping decisions to one scene's carried metadata:
+ * `ignore` drops the field, `rt-key` renames it to the scene field, `custom`
+ * — and any unmapped field — keeps it as-is. List fields (Subplot, Character,
+ * Place) gather every mapped column, `; `-joined; a single-value field keeps
+ * the first filled column (the review flags such conflicts).
  */
 export function applyMetadataMapping(
   metadata: Record<string, string>,
   mapping: Record<string, ScrivenerFieldTarget>
 ): Record<string, string> {
   const out: Record<string, string> = {};
+  const put = (key: string, value: string): void => {
+    if (!(key in out)) out[key] = value;
+    else if (LIST_KEYS.has(key)) out[key] = `${out[key]}; ${value}`;
+  };
   for (const [key, value] of Object.entries(metadata)) {
+    if (value.trim().length === 0) continue;
     const decision = mapping[key];
     if (!decision || decision.target === 'custom') {
       if (!(key in out)) out[key] = value;
-      continue;
-    }
-    if (decision.target === 'ignore') continue;
-    if (decision.target === 'subplot-flag') {
+    } else if (decision.target === 'subplot-flag') {
       // Membership marker: the COLUMN name is the subplot; the cell text is a
       // per-scene note and is kept as a custom field so nothing is lost.
-      const subplotName = key.replace(/^Scrivener /i, '').trim();
-      if (value.trim().length > 0) {
-        if (!('Subplot' in out)) out['Subplot'] = subplotName;
-        if (!(key in out)) out[key] = value;
-      }
-      continue;
+      put('Subplot', bareFieldName(key));
+      if (!(key in out)) out[key] = value;
+    } else if (decision.target === 'rt-key') {
+      put(decision.key, value);
     }
-    if (!(decision.key in out)) out[decision.key] = value;
   }
   return out;
 }
@@ -404,6 +429,15 @@ export function deriveSourceAct(path: string): number | undefined {
   return last ? Number(last[1]) : undefined;
 }
 
+/** Same-selection re-export advice, shared by every blocking outline problem. */
+const REEXPORT_ADVICE = 'In Scrivener, select the same documents and export both Files and Outliner Contents again.';
+
+/**
+ * Ingest a Scrivener export — scene files plus an optional Outliner CSV — into
+ * a single-chapter Manuscript Model. Files are read once: the same listing is
+ * validated (blocking problems return `needs-order` with the author-facing
+ * reasons; soft ones ride along as `warnings`) and then assembled into scenes.
+ */
 export async function ingestScrivenerFolder(
   source: ScrivenerSource,
   folderPath: string
@@ -416,15 +450,18 @@ export async function ingestScrivenerFolder(
     (file) =>
       !isScrivenerAuxiliaryFile(file.fileName) &&
       !/ Snapshots\//i.test(file.path) &&
-      file.content.trim().length > 0
+      stripLeadingYaml(file.content).trim().length > 0
   );
-  if (files.length === 0) {
-    return { kind: 'needs-order', reason: 'The book folder contains no exported scene files with prose.' };
+  const outlineFile = await source.readSidecar(folderPath);
+  const sidecar = outlineFile ? parseOutlineSidecar(outlineFile.text) : null;
+  if (outlineFile && !sidecar?.fields.some((field) => /^title$/i.test(field))) {
+    return { kind: 'needs-order', reason: `${outlineFile.name} has no Title column or no rows. ${REEXPORT_ADVICE}` };
   }
-  const sidecarText = await source.readSidecar(folderPath);
-  const sidecar = sidecarText ? parseOutlineSidecar(sidecarText) : null;
 
-  const ordered = resolveOrder(files, sidecar);
+  const check = inspectScrivenerExport(files, sidecar);
+  if (check.errors.length > 0) return { kind: 'needs-order', reason: check.errors.join('\n') };
+
+  const ordered = resolveOrder(files, sidecar, folderPath);
   if (ordered.kind === 'needs-order') return ordered;
 
   const rowsByFile = matchRowsToFiles(ordered.files, sidecar);
@@ -440,43 +477,41 @@ export async function ingestScrivenerFolder(
       chapters: [{ title: null, scenes }],
       customFields: collectCustomFields(scenes),
     },
+    outlineName: outlineFile?.name ?? null,
+    warnings: check.warnings,
   };
 }
 
 export interface ScrivenerExportCheck { errors: string[]; warnings: string[] }
 
-/** Validate metadata correspondence before carrying it into author notes. */
-export async function checkScrivenerExport(source: ScrivenerSource, folder: string): Promise<ScrivenerExportCheck> {
-  const listed = await source.listSceneFiles(folder);
-  const files = listed.filter(file => !isScrivenerAuxiliaryFile(file.fileName) && !/ Snapshots\//i.test(file.path) && stripLeadingYaml(file.content).trim());
-  const text = await source.readSidecar(folder);
+/** Validate that the outline describes exactly these scene files before carrying its metadata. */
+export function inspectScrivenerExport(files: ScrivenerFile[], outline: OutlineSidecar | null): ScrivenerExportCheck {
   const errors: string[] = [];
   const warnings: string[] = [];
-  if (!files.length) errors.push('No scene prose found. In Scrivener, select your manuscript documents and use File → Export → Files, choosing text or Markdown. Copy the export into this vault; raw .scriv projects and RTF are not supported.');
-  if (!text) {
-    warnings.push('Outline CSV missing. To carry synopses and metadata, select the same manuscript in Scrivener, show Title, Synopsis and your custom columns, then export Outliner Contents as CSV beside the scene export. You can continue with scene files only.');
+  if (!files.length) {
+    errors.push('No scene text found. In Scrivener, choose File → Export → Files as plain text, then copy the exported folder into this vault.');
     return { errors, warnings };
   }
-  const outline = parseOutlineSidecar(text);
-  if (!outline || !outline.fields.some(field => /^title$/i.test(field))) {
-    errors.push('The CSV has no usable Title column or scene rows. Re-export Outliner Contents as CSV with Title visible, using the same manuscript selection as the scene export.');
+  if (!outline) {
+    warnings.push('No outline CSV found, so scenes arrive without synopses or metadata. To bring those, export Outliner Contents as CSV next to this folder.');
     return { errors, warnings };
   }
   const fileTitles = files.map(file => normalizeTitle(titleFromExportFileName(file.fileName)));
   const rowTitles = outline.rows.map(row => normalizeTitle(readColumn(row, 'Title') ?? '')); // SAFE: empty outline titles cannot match a scene
-  if (new Set(fileTitles).size !== fileTitles.length || new Set(rowTitles.filter(title => fileTitles.includes(title))).size !== rowTitles.filter(title => fileTitles.includes(title)).length) {
-    errors.push('Repeated document titles make the outline mapping ambiguous. Give exported scene documents unique titles in Scrivener, then re-export both Files and Outliner Contents.');
+  const matchedRows = rowTitles.filter(title => fileTitles.includes(title));
+  if (new Set(fileTitles).size !== fileTitles.length || new Set(matchedRows).size !== matchedRows.length) {
+    errors.push(`Two documents share a title, so the outline cannot tell them apart. Rename one in Scrivener. ${REEXPORT_ADVICE}`);
   }
   const unmatchedFiles = files.filter((_, index) => !rowTitles.includes(fileTitles[index]));
-  if (unmatchedFiles.length) errors.push(`Scene files missing from the outline: ${unmatchedFiles.slice(0, 5).map(file => file.fileName).join(', ')} (${unmatchedFiles.length} total). Re-export both the scene files and CSV from the same Scrivener manuscript selection with Title visible.`);
+  if (unmatchedFiles.length) errors.push(`${unmatchedFiles.length} scene file${unmatchedFiles.length === 1 ? ' is' : 's are'} not in the outline: ${unmatchedFiles.slice(0, 5).map(file => titleFromExportFileName(file.fileName)).join(', ')}. ${REEXPORT_ADVICE}`);
   const missing = outline.rows.filter((row, index) => {
     const count = readColumn(row, 'Word Count');
     return count !== null && Number(count.replace(/,/g, '')) > 0 && !fileTitles.includes(rowTitles[index]);
   });
-  if (missing.length) errors.push(`Outline documents with prose but no matching scene file: ${missing.slice(0, 5).map(row => readColumn(row, 'Title')).join(', ')} (${missing.length} total). In Scrivener, select all manuscript documents, enable numbered exported files, and re-export Files as text or Markdown alongside a fresh CSV.`);
+  if (missing.length) errors.push(`${missing.length} outline document${missing.length === 1 ? ' has' : 's have'} text but no exported file: ${missing.slice(0, 5).map(row => readColumn(row, 'Title')).join(', ')}. ${REEXPORT_ADVICE}`);
   const uncertain = outline.rows.filter((row, index) => !fileTitles.includes(rowTitles[index]) && readColumn(row, 'Word Count') === null);
-  if (uncertain.length) warnings.push(`${uncertain.length} outline rows have no matching scene file, so completeness cannot be checked for those rows. Verify they are folders or empty placeholders in Scrivener; otherwise re-export Files and Outliner Contents from the same manuscript selection.`);
-  if (!outline.fields.some(field => /^synopsis$/i.test(field))) warnings.push('Synopsis column missing. Show Synopsis in Scrivener’s outliner and re-export the CSV if you want to preserve synopses.');
+  if (uncertain.length) warnings.push(`${uncertain.length} outline row${uncertain.length === 1 ? ' has' : 's have'} no exported file. That is expected for folders and empty documents; otherwise export again with Word Count visible so missing text can be detected.`);
+  if (!outline.fields.some(field => /^synopsis$/i.test(field))) warnings.push('The outline has no Synopsis column, so scenes arrive without synopses.');
   return { errors, warnings };
 }
 
@@ -484,12 +519,57 @@ type OrderResolution =
   | { kind: 'ok'; files: ScrivenerFile[] }
   | { kind: 'needs-order'; reason: string };
 
+/** Leading binder number of a path segment ("03 Chapter Three" → 3), or null. */
+function segmentNumber(segment: string): number | null {
+  const match = segment.match(/^\s*(\d+)/);
+  return match ? Number(match[1]) : null;
+}
+
+/**
+ * Order numbered exports without an outline. Scrivener numbers documents by
+ * binder position; in a hierarchical export that numbering restarts in every
+ * folder. Unique file numbers are book-wide and order on their own; repeated
+ * ones are per-folder, so the folders must be numbered too, and the path is
+ * compared segment by segment.
+ */
+function orderNumberedFiles(files: ScrivenerFile[], folderPath: string): OrderResolution {
+  const prefix = folderPath.replace(/\/+$/, '') + '/';
+  const segmentsOf = (file: ScrivenerFile): string[] =>
+    (file.path.startsWith(prefix) ? file.path.slice(prefix.length) : file.fileName).split('/');
+  const fileNumbers = files.map((file) => segmentNumber(file.fileName));
+  if (fileNumbers.some((n) => n === null)) {
+    return {
+      kind: 'needs-order',
+      reason: 'The exported files are not numbered and no outline CSV was found. Export again with numbered files, or add the Outliner Contents CSV.',
+    };
+  }
+  if (new Set(fileNumbers).size === files.length) {
+    return { kind: 'ok', files: files.slice().sort((a, b) => (segmentNumber(a.fileName) ?? 0) - (segmentNumber(b.fileName) ?? 0)) }; // SAFE: every file number was checked non-null above
+  }
+  const keys = new Map(files.map((file) => [file, segmentsOf(file).map(segmentNumber)]));
+  if ([...keys.values()].some((numbers) => numbers.some((n) => n === null))) {
+    return {
+      kind: 'needs-order',
+      reason: 'File numbers restart in each folder, but the folders are not numbered, so the order is unclear. Add the Outliner Contents CSV.',
+    };
+  }
+  const ordered = files.slice().sort((a, b) => {
+    const left = keys.get(a) ?? [];
+    const right = keys.get(b) ?? [];
+    for (let i = 0; i < Math.min(left.length, right.length); i++) {
+      if (left[i] !== right[i]) return (left[i] ?? 0) - (right[i] ?? 0); // SAFE: every segment number was checked non-null above
+    }
+    return left.length - right.length;
+  });
+  return { kind: 'ok', files: ordered };
+}
+
 /**
  * The outline row order is authoritative whenever a CSV is supplied.
  * Numbered filenames supply order only for exports with no outline.
  * A partial outline blocks import rather than substituting filename order.
  */
-function resolveOrder(files: ScrivenerFile[], sidecar: OutlineSidecar | null): OrderResolution {
+function resolveOrder(files: ScrivenerFile[], sidecar: OutlineSidecar | null, folderPath: string): OrderResolution {
   if (sidecar) {
     const byTitle = new Map<string, ScrivenerFile>();
     for (const file of files) {
@@ -510,29 +590,10 @@ function resolveOrder(files: ScrivenerFile[], sidecar: OutlineSidecar | null): O
     if (inOrder.length === files.length) return { kind: 'ok', files: inOrder };
     return {
       kind: 'needs-order',
-      reason:
-        `The outline CSV does not match every exported file by title ` +
-        `(${inOrder.length}/${files.length} matched). Re-export Files and Outliner Contents ` +
-        `from the same manuscript selection in Scrivener with matching document titles.`,
+      reason: `The outline matches ${inOrder.length} of ${files.length} exported files by title. ${REEXPORT_ADVICE}`,
     };
   }
-
-  const byName = new Map(files.map((file) => [file.fileName, file]));
-  const numbered = resolveReadingOrder(files.map((file) => file.fileName), null);
-  if (numbered.kind === 'ordered') {
-    const inOrder = numbered.order
-      .map((name) => byName.get(name))
-      .filter((file): file is ScrivenerFile => file !== undefined);
-    return { kind: 'ok', files: inOrder };
-  }
-
-
-  return {
-    kind: 'needs-order',
-    reason:
-      'Exported file names are not numbered and no outline CSV was found. ' +
-      'Re-export with "number exported files" enabled, or add the outline CSV.',
-  };
+  return orderNumberedFiles(files, folderPath);
 }
 
 /**
@@ -573,80 +634,69 @@ function collectCustomFields(scenes: ManuscriptScene[]): string[] {
 
 const SCENE_EXTENSIONS = new Set(['md', 'txt']);
 
-/** Adapt a live Obsidian App to the `ScrivenerSource` surface. */
-/**
- * Locate the Outliner CSV sidecar. Scrivener exports it as a SIBLING of the
- * exported folder tree, so the book folder rarely contains it: search anywhere
- * under the book folder first (snapshot folders skipped), then climb the
- * ancestor folders' direct children up to the vault root. "outlin*"-named CSVs
- * win at every level.
- */
-export function findScrivenerSidecarFile(app: App, folderPath: string): TFile | null {
-  const root = app.vault.getAbstractFileByPath(normalizePath(folderPath));
-  if (!(root instanceof TFolder)) return null;
-  const pick = (candidates: TFile[]): TFile | null => {
-    const csvs = candidates
-      .filter((file) => file.extension.toLowerCase() === 'csv')
-      .sort((a, b) => a.name.localeCompare(b.name));
-    if (csvs.length === 0) return null;
-    return csvs.find((file) => /outlin/i.test(file.name)) ?? csvs[0];
-  };
-  const descendants: TFile[] = [];
-  const walk = (folder: TFolder): void => {
-    for (const child of folder.children) {
+/** Every file under a folder, skipping Scrivener snapshot folders wholesale. */
+function filesUnder(folder: TFolder): TFile[] {
+  const out: TFile[] = [];
+  const walk = (current: TFolder): void => {
+    for (const child of current.children) {
       if (child instanceof TFolder) {
         if (!isSnapshotFolderName(child.name)) walk(child);
-      } else if (child instanceof TFile) {
-        descendants.push(child);
-      }
-    }
-  };
-  walk(root);
-  const inside = pick(descendants);
-  if (inside) return inside;
-  for (let parent = root.parent; parent; parent = parent.parent) {
-    const hit = pick(parent.children.filter((child): child is TFile => child instanceof TFile));
-    if (hit) return hit;
-  }
-  return null;
-}
-
-export function createObsidianScrivenerSource(app: App): ScrivenerSource {
-  // Exports preserve the binder hierarchy (Book/ACT 1/…) — walk it, skipping
-  // snapshot folders wholesale.
-  const walk = (folder: TFolder, out: TFile[]): void => {
-    for (const child of folder.children) {
-      if (child instanceof TFolder) {
-        if (!isSnapshotFolderName(child.name)) walk(child, out);
       } else if (child instanceof TFile) {
         out.push(child);
       }
     }
   };
-  const descendantsOf = (folderPath: string): TFile[] => {
-    const folder = app.vault.getAbstractFileByPath(normalizePath(folderPath));
-    if (!(folder instanceof TFolder)) return [];
-    const out: TFile[] = [];
-    walk(folder, out);
-    return out;
-  };
+  walk(folder);
+  return out;
+}
 
+/**
+ * Locate the export's Outliner CSV. Scrivener writes it wherever the author
+ * saves it — usually BESIDE the exported folder — so search under the export
+ * folder first, then each ancestor's direct children up to the vault root.
+ * Within a level, a CSV named after the export folder wins, then one named
+ * "outline…". Only a CSV with a Title column counts: an unrelated spreadsheet
+ * in a parent folder must never be mistaken for the outline.
+ */
+export async function findScrivenerOutline(app: App, folderPath: string): Promise<OutlineFile | null> {
+  const root = app.vault.getAbstractFileByPath(normalizePath(folderPath));
+  if (!(root instanceof TFolder)) return null;
+  const exportName = root.name.toLowerCase();
+  const rank = (file: TFile): number =>
+    file.basename.toLowerCase().includes(exportName) ? 0 : /outlin/i.test(file.name) ? 1 : 2;
+  const levels: TFile[][] = [filesUnder(root)];
+  for (let parent = root.parent; parent; parent = parent.parent) {
+    levels.push(parent.children.filter((child): child is TFile => child instanceof TFile));
+  }
+  for (const level of levels) {
+    const csvs = level
+      .filter((file) => file.extension.toLowerCase() === 'csv')
+      .sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
+    for (const csv of csvs) {
+      const text = await app.vault.cachedRead(csv);
+      if (parseOutlineSidecar(text)?.fields.some((field) => /^title$/i.test(field))) {
+        return { name: csv.name, text };
+      }
+    }
+  }
+  return null;
+}
+
+/** Adapt a live Obsidian App to the `ScrivenerSource` surface. */
+export function createObsidianScrivenerSource(app: App): ScrivenerSource {
   return {
     async listSceneFiles(folderPath: string): Promise<ScrivenerFile[]> {
-      const files = descendantsOf(folderPath).filter((file) =>
-        SCENE_EXTENSIONS.has(file.extension.toLowerCase())
-      );
+      const folder = app.vault.getAbstractFileByPath(normalizePath(folderPath));
+      if (!(folder instanceof TFolder)) return [];
+      const files = filesUnder(folder).filter((file) => SCENE_EXTENSIONS.has(file.extension.toLowerCase()));
       return Promise.all(
         files.map(async (file) => ({
           fileName: file.name,
           path: file.path,
-          content: await app.vault.read(file),
+          content: await app.vault.cachedRead(file),
         }))
       );
     },
-    async readSidecar(folderPath: string): Promise<string | null> {
-      const sidecar = findScrivenerSidecarFile(app, folderPath);
-      return sidecar ? app.vault.read(sidecar) : null;
-    },
+    readSidecar: (folderPath: string) => findScrivenerOutline(app, folderPath),
   };
 }

@@ -132,8 +132,8 @@ export function renderGeneralSection(params: {
             const candidates = await discoverOnboardingCandidates(app, (plugin.settings.books ?? []).map(book => book.sourceFolder)); // SAFE: a new vault has no registered books
             if (!candidatesEl.isConnected) return;
             candidatesEl.empty();
-            candidatesEl.createDiv({ cls: 'ert-muted', text: candidates.length ? `${candidates.length} potential manuscript folders found. Choose manuscript to inspect and import.` : 'No unregistered export detected. Copy your Scrivener export into this vault, then scan again.' });
-            for (const candidate of candidates) candidatesEl.createDiv({ cls: 'ert-muted', text: `${candidate.folder} — ${candidate.evidence}` });
+            candidatesEl.createDiv({ cls: 'ert-section-desc', text: candidates.length ? `${candidates.length} potential manuscript folders found. Choose manuscript to inspect and import.` : 'No unregistered export detected. Copy your Scrivener export into this vault, then scan again.' });
+            for (const candidate of candidates) candidatesEl.createDiv({ cls: 'ert-section-desc', text: `${candidate.folder} — ${candidate.evidence}` });
         } catch (error) {
             if (candidatesEl.isConnected) candidatesEl.setText(`Cannot scan exports: ${error instanceof Error ? error.message : String(error)}`);
         }

@@ -33,10 +33,11 @@ import { ingestSingleFile } from './adapters/singleFileAdapter';
 import { ingestDocxFile, DocxParseError } from './adapters/docxAdapter';
 import {
   createObsidianScrivenerSource,
-  findScrivenerSidecarFile,
+  findScrivenerOutline,
   ingestScrivenerFolder,
   isScrivenerAuxiliaryFile,
   isSnapshotFolderName,
+  type ScrivenerIngestResult,
 } from './adapters/scrivenerAdapter';
 import {
   flattenScenes,
@@ -68,6 +69,8 @@ import {
   linkedPlaces,
   effectiveFlags,
   resolveActs,
+  resolveImportActs,
+  type ActSource,
   type SurveyResult,
 } from './extraction';
 import {
@@ -168,6 +171,16 @@ export interface EntityProposal {
   role: string;
   /** Grounded prose written into the note's YAML `Summary` ('' = leave blank). */
   summary: string;
+}
+
+/** Structure-only proposals plus where their acts came from (shown in the import review). */
+export interface StructureOnlyImport {
+  proposals: SceneProposal[];
+  actSource: ActSource;
+  /** The act count the proposals were assigned against. */
+  actCount: number;
+  /** Highest act the source names (0 when it names none). */
+  highestSourceAct: number;
 }
 
 export interface MaterializeReport {
@@ -322,13 +335,13 @@ export class OnboardingService {
    * sees this on the Prepare screen and can override when contents are
    * ambiguous (e.g. numbered .md notes next to an unrelated .csv).
    */
-  detectImportFlow(folderPath: string): FlowDetection | null {
+  async detectImportFlow(folderPath: string): Promise<FlowDetection | null> {
     const folder = this.plugin.app.vault.getAbstractFileByPath(normalizePath(folderPath));
     if (!(folder instanceof TFolder)) return null;
     const proseFiles = this.listProseFiles(folderPath);
     // Same search the ingest uses: inside the book folder, then ancestor
     // folders — Scrivener drops the outline CSV BESIDE the exported tree.
-    const csv = findScrivenerSidecarFile(this.plugin.app, folderPath);
+    const csv = await findScrivenerOutline(this.plugin.app, folderPath);
     const txtCount = proseFiles.filter((file) => file.extension.toLowerCase() === 'txt').length;
     const mdCount = proseFiles.filter((file) => file.extension.toLowerCase() === 'md').length;
 
@@ -370,7 +383,7 @@ export class OnboardingService {
    * choice) wins when provided.
    */
   async ingest(folderPath: string, flowOverride?: ImportFlow): Promise<MarkdownIngestResult> {
-    const detection = this.detectImportFlow(folderPath);
+    const detection = await this.detectImportFlow(folderPath);
     const flow = flowOverride ?? detection?.flow ?? 'folder'; // SAFE: detectImportFlow already returns 'folder' as its terminal case, so this keeps the same answer when detection returns nothing
 
     if (flow === 'docx' || flow === 'single') {
@@ -393,11 +406,14 @@ export class OnboardingService {
       return { kind: 'ok', model: ingestSingleFile(file.name, content) };
     }
 
-    if (flow === 'scrivener') {
-      return ingestScrivenerFolder(createObsidianScrivenerSource(this.plugin.app), folderPath);
-    }
+    if (flow === 'scrivener') return this.ingestScrivener(folderPath);
     const source = createObsidianMarkdownSource(this.plugin.app);
     return ingestMarkdownFolder(source, folderPath);
+  }
+
+  /** Read and validate a Scrivener export (scene files plus its outline CSV). */
+  ingestScrivener(folderPath: string): Promise<ScrivenerIngestResult> {
+    return ingestScrivenerFolder(createObsidianScrivenerSource(this.plugin.app), folderPath);
   }
 
   /**
@@ -460,28 +476,28 @@ export class OnboardingService {
     }
   }
 
-  /** Sequential per-scene extraction. Skips already-onboarded notes and survey-classified non-scenes. */
   /**
-   * Structure-only extraction — NO local model required. Builds every scene
-   * proposal from what the source carried: split/filename titles, sidecar
-   * synopses, mapped Subplot/When via carried metadata, positional acts. The
-   * AI-derived fields (characters, places, invented synopses) stay empty for
-   * the author or a later AI pass. Instant; used when preflight finds no model.
+   * Structure-only extraction — no AI. Builds every scene proposal from what
+   * the source carried: titles, synopses, mapped metadata (every authored
+   * subplot is kept), and acts from a mapped Act column, ACT export folders,
+   * or an even split by position. Fields the source did not carry stay empty.
    */
-  buildStructureOnlyProposals(model: ManuscriptModel, options: { publishStage?: Stage } = {}): SceneProposal[] {
+  buildStructureOnlyProposals(model: ManuscriptModel, options: { publishStage?: Stage } = {}): StructureOnlyImport {
     const actCount = Math.max(3, this.plugin.settings.actCount ?? 3); // SAFE: three acts is the plugin's structural minimum and its shipped default
     const scenes = this.candidateScenes(model);
-    const proposals: SceneProposal[] = scenes.map((scene) => {
+    const acts = resolveImportActs(scenes, actCount);
+    const proposals: SceneProposal[] = scenes.map((scene, index) => {
       const extraction = deterministicExtraction(scene);
+      const frontmatter = buildSceneFrontmatter(extraction, {
+        actCount,
+        publishStage: options.publishStage,
+        carriedMetadata: scene.knownMetadata,
+      });
+      frontmatter.Act = acts.acts[index];
       return {
         sourceRef: scene.sourceRef,
         title: scene.title ?? titleFromFileName(basename(scene.sourceRef)),
-        frontmatter: buildSceneFrontmatter(extraction, {
-          actCount,
-          publishStage: options.publishStage,
-          subplotVocabulary: extraction.subplot,
-          carriedMetadata: scene.knownMetadata,
-        }),
+        frontmatter,
         body: scene.rawText,
         flags: [],
         // Carried Character/Place columns feed profile creation like AI names do.
@@ -489,11 +505,7 @@ export class OnboardingService {
         places: linkedPlaces(extraction),
       };
     });
-    const acts = resolveActs(scenes.map((scene) => scene.sourceAct), actCount);
-    proposals.forEach((proposal, index) => {
-      (proposal.frontmatter as Record<string, unknown>).Act = acts[index];
-    });
-    return proposals;
+    return { proposals, actSource: acts.source, actCount, highestSourceAct: acts.highest };
   }
 
   /** A scene's structural act, looked up by sourceRef (split refs fall back to their base file). */
@@ -797,18 +809,18 @@ export class OnboardingService {
    * profile notes for linked entities, and register the folder as a book.
    */
   async materialize(
-    sourceBook: BookProfile | null,
+    sourceBook: BookProfile,
     proposals: SceneProposal[],
-    entityProposals: EntityProposal[],
-    options?: { folderName?: string }
+    entityProposals: EntityProposal[]
   ): Promise<MaterializeReport> {
     const vault = this.plugin.app.vault;
-    const destFolder = normalizePath(
-      options?.folderName ?? suggestOnboardingFolderName(sourceBook?.sourceFolder ?? 'Book') // SAFE: caller did not name the destination, so it is derived; 'Book' is the stem when there is no source folder
-    );
-    if (!(vault.getAbstractFileByPath(destFolder) instanceof TFolder)) {
-      await vault.createFolder(destFolder);
+    const destFolder = this.destinationFor(sourceBook);
+    // Never merge into an existing folder: a second import would collide note
+    // by note and register a duplicate book. Block before writing anything.
+    if (vault.getAbstractFileByPath(destFolder)) {
+      throw new Error(`"${destFolder}" already exists. Rename the book or move that folder, then import again.`);
     }
+    await vault.createFolder(destFolder);
 
     const errors: string[] = [];
     let notesCreated = 0;
@@ -839,7 +851,7 @@ export class OnboardingService {
     // PARALLEL to the book folder — the author-vault convention. Only the kinds
     // the author enabled at Checkpoint 1 are present in entityProposals; an empty
     // list means "scenes only". Craft sections always stay blank.
-    const bookTitle = sourceBook?.title ?? basename(destFolder);
+    const bookTitle = sourceBook.title;
     const stubsCreated = await this.createEntityNotes(destFolder, entityProposals, bookTitle);
     await this.registerBook(sourceBook, destFolder);
 
@@ -850,6 +862,16 @@ export class OnboardingService {
       needsReview: proposals.filter((proposal) => proposal.error || proposal.flags.length > 0),
       errors,
     };
+  }
+
+  /** The new book folder an import writes: beside the source, named after the book. */
+  destinationFor(book: BookProfile): string {
+    return normalizePath(suggestOnboardingFolderName(book.sourceFolder, book.title));
+  }
+
+  /** True when the import's destination folder is already taken. */
+  destinationExists(book: BookProfile): boolean {
+    return this.plugin.app.vault.getAbstractFileByPath(this.destinationFor(book)) !== null;
   }
 
   private candidateScenes(model: ManuscriptModel): ManuscriptScene[] {
@@ -923,13 +945,13 @@ export class OnboardingService {
     return created;
   }
 
-  private async registerBook(sourceBook: BookProfile | null, destFolder: string): Promise<void> {
+  private async registerBook(sourceBook: BookProfile, destFolder: string): Promise<void> {
     const newBook = normalizeBookProfile({
       id: createBookId(),
-      title: sourceBook?.title ?? basename(destFolder),
+      title: sourceBook.title,
       sourceFolder: destFolder,
-      genre: sourceBook?.genre,
-      projectStage: sourceBook?.projectStage,
+      genre: sourceBook.genre,
+      projectStage: sourceBook.projectStage,
     });
     this.plugin.settings.books = [...(this.plugin.settings.books ?? []), newBook]; // SAFE: the first onboarded book seeds an empty list
     this.plugin.settings.activeBookId = newBook.id;

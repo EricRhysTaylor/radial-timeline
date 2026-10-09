@@ -3,6 +3,8 @@
 Date: 2026-10-06
 Status: implementation plan; remaining product changes are not implemented by this document.
 
+2026-10-08: the Scrivener import is now two steps (Choose → one-screen Review → Import), with authored multi-subplot memberships, mapped Act columns, and synonym mapping for diverging column names. See `docs/engineering/audits/reports/2026-10-08-scrivener-import-usability.md`. Planned empty subplots and editable act boundaries remain unbuilt.
+
 ## Intended experience
 
 A writer can start a new book, import an existing manuscript, or explore a demo from Welcome. Scrivener imports preserve narrative order and author metadata without requiring AI or prior Book Manager setup. Onboarding proposes an initial act/subplot plan. Authors organize memberships afterward by dragging scenes between rings in the main timeline.

@@ -183,32 +183,29 @@ export function parseSplitProposal(raw: string | null | undefined): ParseResult<
   return { ok: true, value: { starts, labels } };
 }
 
+/** Split a carried list cell ("Mara; Ines, Oduya") into trimmed, non-empty names. */
+function splitList(value: string | undefined): string[] {
+  return (value ?? '') // SAFE: an absent source column yields no names, and the filter drops the empty split result
+    .split(/[;,\n]/)
+    .map((name) => name.trim())
+    .filter((name) => name.length > 0);
+}
+
 /**
- * Structure-only extraction (no local model available): a SceneExtraction built
- * purely from what the source carried. Scrivener sidecars supply the synopsis
- * and (via the mapping table) Subplot/When; everything AI-derived — characters,
- * places, invented titles — stays empty for the author (or a later AI pass) to
- * fill. Feed the returned subplot back as the vocabulary so a carried Subplot
- * survives `enforceSubplotVocabulary` instead of collapsing to Main Plot.
+ * Structure-only extraction (no AI): a SceneExtraction built purely from what
+ * the source carried. Scrivener sidecars supply the synopsis and, via the
+ * mapping, Subplot/Character/Place lists (`;`- or `,`-separated) and When.
+ * Nothing is invented — fields the source did not carry stay empty.
  */
 export function deterministicExtraction(source: {
   knownSynopsis: string | null;
   knownMetadata: Record<string, string>;
 }): SceneExtraction {
-  const carriedSubplot = sanitizeName(source.knownMetadata['Subplot'] ?? ''); // SAFE: a source note with no Subplot carries nothing forward
-  // Mapped Character/Place columns (e.g. Scrivener "Characters", "Location")
-  // carry real per-scene lists — split on ;/, so they become proper wiki-linked
-  // arrays instead of being silently blocked by the pre-filled empty fields.
-  const splitList = (value: string | undefined): string[] =>
-    (value ?? '') // SAFE: an absent source column yields no names, and the filter drops the empty split result
-      .split(/[;,]/)
-      .map((name) => name.trim())
-      .filter((name) => name.length > 0);
   return {
-    act: 1, // recomputed positionally downstream
+    act: 1, // recomputed downstream from the source's acts or by position
     title: '',
-    synopsis: source.knownSynopsis?.trim() ?? '', // SAFE: no pre-existing synopsis on the source note; empty means "extract one"
-    subplot: carriedSubplot ? [carriedSubplot] : [],
+    synopsis: (source.knownSynopsis ?? source.knownMetadata['Synopsis'] ?? '').trim(), // SAFE: a scene the source gave no synopsis keeps an empty one for the author
+    subplot: splitList(source.knownMetadata['Subplot']).map(sanitizeName),
     character: splitList(source.knownMetadata['Character']),
     place: splitList(source.knownMetadata['Place']),
     when: null, // a mapped When arrives via carriedMetadata gap-fill
@@ -256,10 +253,12 @@ export interface BuildFrontmatterOptions {
    */
   publishStage?: Stage;
   /**
-   * The survey's capped subplot vocabulary. Scene subplots are restricted to it
-   * (case-insensitive, canonical casing restored); anything else — including
-   * everything when the survey failed — falls back to "Main Plot". This is what
-   * keeps the timeline at 4–14 rings instead of one ring per invented name.
+   * AI runs only: the survey's capped subplot vocabulary. Scene subplots are
+   * restricted to one name from it (canonical casing restored); no match —
+   * including everything when the survey failed — becomes "Main Plot". This is
+   * what keeps an AI run at 4–14 rings instead of one ring per invented name.
+   * Omitted for structure-only imports: the author's own subplots are kept as
+   * written, every one of them.
    */
   subplotVocabulary?: string[];
   /** Non-canonical metadata carried from the source (written as-is). */
@@ -281,7 +280,9 @@ export function buildSceneFrontmatter(
     Class: 'Scene',
     Act: clampActNumber(extraction.act, Math.max(3, options.actCount)),
     Synopsis: extraction.synopsis,
-    Subplot: enforceSubplotVocabulary(extraction.subplot, options.subplotVocabulary ?? []), // SAFE: no vocabulary supplied means nothing to match against, a case enforceSubplotVocabulary documents
+    Subplot: options.subplotVocabulary
+      ? enforceSubplotVocabulary(extraction.subplot, options.subplotVocabulary)
+      : authoredSubplots(extraction.subplot),
     Character: dedupe(extraction.character.map(toWikiLink)).slice(0, MAX_CHARACTERS),
     Place: dedupe(extraction.place.map(toWikiLink)).slice(0, MAX_PLACES),
     Status: 'Complete',
@@ -333,6 +334,55 @@ export function enforceSubplotVocabulary(subplots: string[], vocabulary: string[
     .map((name) => canonical.get(subplotKey(name)))
     .find((name): name is string => typeof name === 'string');
   return [first ?? 'Main Plot']; // SAFE: documented contract of this function — no vocabulary match places the scene on the main plot
+}
+
+/**
+ * The author's own subplots, deduped (case- and punctuation-insensitive, first
+ * spelling kept). A scene with none belongs to Main Plot.
+ */
+export function authoredSubplots(subplots: string[]): string[] {
+  const seen = new Set<string>();
+  const names: string[] = [];
+  for (const raw of subplots) {
+    const name = sanitizeName(raw);
+    const key = subplotKey(name);
+    if (name.length === 0 || seen.has(key)) continue;
+    seen.add(key);
+    names.push(name);
+  }
+  return names.length > 0 ? names : ['Main Plot'];
+}
+
+const ROMAN_ACTS: Record<string, number> = { i: 1, ii: 2, iii: 3, iv: 4, v: 5, vi: 6, vii: 7, viii: 8, ix: 9, x: 10 };
+
+/** Act number from an author's Act cell ("2", "Act 2", "Act II"), or undefined when it names none. */
+export function parseActValue(value: string | undefined): number | undefined {
+  const text = (value ?? '').trim(); // SAFE: a scene with no Act cell names no act
+  const digits = text.match(/\d+/);
+  if (digits) return Number(digits[0]) || undefined;
+  const roman = text.match(/(?:^|\s)([ivx]+)$/i);
+  return roman ? ROMAN_ACTS[roman[1].toLowerCase()] : undefined;
+}
+
+/** Where an import's acts came from — shown to the author, never hidden. */
+export type ActSource = 'column' | 'folders' | 'position';
+
+/**
+ * Acts for an import, in narrative order. An Act column the author mapped is
+ * author truth and wins; otherwise ACT export folders; otherwise the book is
+ * divided evenly by position. `highest` is the largest act the source names,
+ * so the review can say when it exceeds the configured act count.
+ */
+export function resolveImportActs(
+  scenes: Array<{ knownMetadata: Record<string, string>; sourceAct?: number }>,
+  actCount: number
+): { acts: number[]; source: ActSource; highest: number } {
+  const fromColumn = scenes.map((scene) => parseActValue(scene.knownMetadata['Act']));
+  const fromFolders = scenes.map((scene) => scene.sourceAct);
+  const named = fromColumn.some((act) => act !== undefined) ? fromColumn : fromFolders;
+  const source: ActSource = named === fromColumn ? 'column' : named.some((act) => act !== undefined) ? 'folders' : 'position';
+  const highest = Math.max(0, ...named.map((act) => act ?? 0)); // SAFE: unnamed acts do not raise the highest named act
+  return { acts: resolveActs(named, actCount), source, highest };
 }
 
 /**

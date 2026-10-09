@@ -265,29 +265,118 @@
   flex-wrap: wrap;
 }
 
-/* Scrivener metadata mapping table — field name | disposition dropdown */
-.ert-ui .ert-onb-map__bulk {
+/* Import chooser — one button per export found in the vault. */
+.ert-ui .ert-onb-source {
   display: flex;
-  justify-content: flex-end;
-  margin-bottom: var(--ert-gap-xs);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  height: auto;
+  padding: var(--ert-pad-sm) var(--ert-pad-cozy);
+  text-align: left;
+  white-space: normal;
 }
 
+.ert-ui .ert-onb-source__name {
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+/* Collapsed help and the scene list — quiet until opened. */
+.ert-ui .ert-onb-help {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+
+.ert-ui .ert-onb-help summary {
+  cursor: pointer;
+}
+
+.ert-ui .ert-onb-help ol {
+  margin: var(--ert-gap-xs) 0 0;
+  padding-left: 1.4em;
+}
+
+.ert-ui .ert-onb-warn {
+  color: var(--text-warning, var(--text-accent));
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* Scrivener review — title + stage on one row, labels above controls. */
+.ert-ui .ert-onb-bookrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--ert-gap-cozy);
+}
+
+.ert-ui .ert-onb-bookrow > .ert-input,
+.ert-ui .ert-onb-field:first-child {
+  flex: 1 1 260px;
+}
+
+.ert-ui .ert-onb-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Outline columns — column name and sample values | where it goes. */
 .ert-ui .ert-onb-map {
   display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: var(--ert-gap-xs) var(--ert-gap-cozy);
+  grid-template-columns: minmax(0, 1fr) minmax(200px, max-content);
+  gap: var(--ert-gap-sm) var(--ert-gap-cozy);
   align-items: center;
 }
 
 .ert-ui .ert-onb-map__field {
-  font-family: var(--font-monospace);
-  font-size: 12px;
+  min-width: 0;
+  font-weight: 600;
   color: var(--text-normal);
+}
+
+.ert-ui .ert-onb-map__field .ert-section-desc {
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .ert-ui .ert-onb-map__choice {
   min-width: 0;
+}
+
+/* Live result — label column | value. */
+.ert-ui .ert-onb-resultrow {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  gap: var(--ert-gap-cozy);
+  align-items: baseline;
+}
+
+.ert-ui .ert-onb-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ert-gap-xs);
+}
+
+.ert-ui .ert-onb-scenelist {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 260px;
+  overflow-y: auto;
+  margin-top: var(--ert-gap-xs);
+}
+
+.ert-ui .ert-onb-scenelist__row {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--ert-gap-sm);
+  align-items: baseline;
+  color: var(--text-normal);
 }
 
 /* Checkpoint 1 — opt-in extra actions */

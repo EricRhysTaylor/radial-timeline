@@ -17,14 +17,14 @@ export async function discoverOnboardingCandidates(app: App, registeredFolders: 
     for (const folder of roots) {
       if (excluded(folder)) continue;
       const scenes = files.filter(f => f.path.startsWith(`${folder}/`) && /^(md|txt)$/i.test(f.extension) && !isScrivenerAuxiliaryFile(f.name));
-      candidates.set(folder, { folder, evidence: `${scenes.length} scene files · outline ${file.name}` });
+      candidates.set(folder, { folder, evidence: `${scenes.length} scene${scenes.length === 1 ? '' : 's'} · ${file.name}` });
     }
   }
   for (const file of files) {
     if (excluded(file.path) || !/^(txt|docx)$/i.test(file.extension) || isScrivenerAuxiliaryFile(file.name) || !file.path.includes('/')) continue;
     const folder = file.path.slice(0, file.path.lastIndexOf('/'));
     if ([...candidates.keys()].some(root => folder === root || folder.startsWith(`${root}/`))) continue;
-    candidates.set(folder, { folder, evidence: file.extension === 'docx' ? 'Word manuscript' : 'Text export — outline not detected' });
+    candidates.set(folder, { folder, evidence: file.extension === 'docx' ? 'Word document' : 'Text files, no outline CSV' });
   }
   return [...candidates.values()].sort((a, b) => a.folder.localeCompare(b.folder));
 }

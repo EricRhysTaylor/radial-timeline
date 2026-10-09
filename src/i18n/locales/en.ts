@@ -3031,7 +3031,7 @@ export const en: TranslationKeys = {
         exportTimelineData: 'Timeline share export',
         assignSceneTime: 'Scene time assignment',
         copyPerformanceReport: 'Copy performance report (dev)',
-        onboardManuscript: 'Manuscript onboarding',
+        onboardManuscript: 'Import manuscript',
     },
     timelineDataExportModal: {
         badge: 'Export',

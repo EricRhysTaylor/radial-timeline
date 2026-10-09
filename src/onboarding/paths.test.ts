@@ -14,9 +14,11 @@ describe('path helpers', () => {
     expect(dirname('Top.md')).toBe('');
   });
 
-  it('suggests a sibling <Source> RT folder', () => {
-    expect(suggestOnboardingFolderName('Books/Odyssey')).toBe('Books/Odyssey RT');
-    expect(suggestOnboardingFolderName('Odyssey')).toBe('Odyssey RT');
+  it('suggests a sibling <Book title> RT folder', () => {
+    expect(suggestOnboardingFolderName('Books/Odyssey', 'Odyssey')).toBe('Books/Odyssey RT');
+    expect(suggestOnboardingFolderName('Exports/Draft', 'The Salt Road')).toBe('Exports/The Salt Road RT');
+    expect(suggestOnboardingFolderName('Draft', 'A/B: C')).toBe('A B C RT');
+    expect(suggestOnboardingFolderName('Draft', '  ')).toBe('Draft RT');
   });
 
   it('sanitizes illegal file-name characters', () => {

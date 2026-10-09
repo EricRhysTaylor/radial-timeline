@@ -1,14 +1,17 @@
 /*
- * OnboardingModal — drives the existing-vault onboarding spine with two review
- * checkpoints (per the canonical prompt's stage-with-approval model):
+ * OnboardingModal — imports an existing manuscript into a new book.
  *
- *   Preflight → CHECKPOINT 1 (Split: confirm scenes + order, before any AI)
- *             → Progress (survey + sequential extraction, abortable)
- *             → CHECKPOINT 2 (Review: proposed frontmatter + flagged guesses)
- *             → Materialize → Report
+ * Every import starts at Choose (detected exports, or any folder). Then:
  *
- * Nothing is written before the user approves at Checkpoint 2. UI strings are
- * plain and follow the existing onboarding vocabulary.
+ *   Scrivener export → Review (one screen: title, outline columns, live
+ *                      result) → Import → the timeline
+ *   Other sources    → Prepare → CHECKPOINT 1 (Split: confirm scenes + order,
+ *                      before any AI) → Progress (optional AI extraction)
+ *                      → CHECKPOINT 2 (Review) → Materialize → Report
+ *
+ * Nothing is written before the author approves. Scrivener scenes arrive
+ * already split and described by the outline, so that lane needs no split
+ * editor and no AI.
  *
  * See docs/engineering/plans/one-button-onboarding-local-llm-plan.md.
  */
@@ -33,17 +36,12 @@ import {
   applySplitsToModel,
   type ScenePlan,
 } from '../onboarding/sceneSplitting';
-import { suggestOnboardingFolderName } from '../onboarding/paths';
+import { basename } from '../onboarding/paths';
 import { refreshOnboardingPrompt } from '../onboarding/promptSync';
-import {
-  proposeScrivenerAutomap,
-  applyMetadataMappingToModel,
-  type ScrivenerFieldTarget,
-} from '../onboarding/adapters/scrivenerAdapter';
-import { getSupportedFrontmatterRemapTargets } from '../utils/frontmatter';
+import { proposeScrivenerAutomap, type ScrivenerFieldTarget } from '../onboarding/adapters/scrivenerAdapter';
 import { getActiveBook, createBookId, normalizeBookProfile } from '../utils/books';
 import { discoverOnboardingCandidates } from '../onboarding/discovery';
-import { checkScrivenerExport, createObsidianScrivenerSource, findScrivenerSidecarFile } from '../onboarding/adapters/scrivenerAdapter';
+import { renderScrivenerBlocked, renderScrivenerExportHelp, renderScrivenerReview, type ScrivenerReviewState } from './OnboardingScrivenerReview';
 import { STAGE_ORDER, type Stage } from '../utils/constants';
 import type { AIProviderId } from '../ai/types';
 import { forecastOnboardingTokens, forecastOnboardingCost } from '../onboarding/costForecast';
@@ -84,25 +82,12 @@ const FLOW_LABELS: Record<ImportFlow, string> = {
 };
 
 /**
- * Open plugin settings on a specific tab. The tab is forced AFTER the pane
- * opens — setting it before let the pane restore its last-active tab instead
- * (observed landing on AI when the author expected the Book Manager).
+ * Open plugin settings on the AI tab. The tab is forced AFTER the pane opens —
+ * setting it before let the pane restore its last-active tab instead.
  */
-function openPluginSettings(plugin: RadialTimelinePlugin, tab: 'core' | 'ai', scrollSelector?: string): void {
+function openAiSettings(plugin: RadialTimelinePlugin): void {
   if (!openSettingsTab(plugin.app)) return;
-  window.setTimeout(() => {
-    plugin.settingsTab?.setActiveTab(tab);
-    if (scrollSelector) {
-      window.setTimeout(() => {
-        activeDocument.querySelector(scrollSelector)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 150);
-    }
-  }, 80);
-}
-
-/** Open plugin settings scrolled to the Book Manager (same landing as the Welcome screen link). */
-function openSettingsAtBookManager(plugin: RadialTimelinePlugin): void {
-  openPluginSettings(plugin, 'core', '.ert-books-heading');
+  window.setTimeout(() => plugin.settingsTab?.setActiveTab('ai'), 80);
 }
 
 /** Local model ids can be full filesystem paths — show just the leaf name in the header pill. */
@@ -128,7 +113,7 @@ function truncateText(text: string, max: number): string {
 interface OnboardingSession {
   folder: string;
   sourceBook: BookProfile | null;
-  stage: 'confirm' | 'review';
+  stage: 'confirm' | 'review' | 'scrivener';
   aiAvailable: boolean;
   useAi: boolean;
   engine: 'local' | 'cloud';
@@ -179,7 +164,7 @@ export class OnboardingModal extends Modal {
   private splitPlans: Map<string, ScenePlan> = new Map();
   /** Per-file auto-split outcomes; null until "Auto-split with AI" has run. */
   private splitOutcomes: Map<string, 'split' | 'failed' | 'fallback'> | null = null;
-  private publishStage: Stage = 'Press';
+  private publishStage: Stage = 'Zero';
   // Extra work beyond scenes — all off by default so the core run is just
   // "split into scene notes with YAML + Synopsis". The author opts in.
   private createCharacters = false;
@@ -189,7 +174,7 @@ export class OnboardingModal extends Modal {
   private modelLabel = '';
   /** Author's Prepare-screen lane choice; null = trust auto-detection. */
   private flowOverride: ImportFlow | null = null;
-  /** Scrivener metadata mapping table (seeded from the automap; author-edited). */
+  /** Scrivener column decisions (seeded from the automap; author-edited at Review). */
   private metadataMapping: Record<string, ScrivenerFieldTarget> | null = null;
   /**
    * True only when AI was requested and a capable engine is available.
@@ -234,7 +219,7 @@ export class OnboardingModal extends Modal {
   }
 
   /** Snapshot the run into the module-scoped session so dismissal loses nothing. */
-  private persistSession(stage: 'confirm' | 'review'): void {
+  private persistSession(stage: OnboardingSession['stage']): void {
     activeSession = {
       sourceBook: this.book,
       folder: this.book?.sourceFolder ?? '', // SAFE: no book selected yet; the empty path is the "nothing chosen" state the form renders
@@ -297,7 +282,9 @@ export class OnboardingModal extends Modal {
     if (activeSession && (this.chooseSource || !book?.sourceFolder || book.sourceFolder === activeSession.folder) && activeSession.model) {
       this.book = book;
       this.restoreSession(activeSession);
-      if (activeSession.stage === 'review' && this.proposals.length > 0) {
+      if (activeSession.stage === 'scrivener') {
+        void this.showScrivenerReview();
+      } else if (activeSession.stage === 'review' && this.proposals.length > 0) {
         this.showReviewCheckpoint();
       } else {
         this.showSplitCheckpoint();
@@ -318,43 +305,49 @@ export class OnboardingModal extends Modal {
   private async showSourceSelection(): Promise<void> {
     const { contentEl } = this;
     contentEl.empty();
-    this.renderHeader('Start your book', 'Choose an existing manuscript export, or create a new book.');
+    const header = contentEl.createDiv({ cls: 'ert-modal-header' });
+    header.createSpan({ cls: 'ert-modal-badge', text: 'Import' });
+    header.createDiv({ cls: 'ert-modal-title', text: 'Import a manuscript' });
+    header.createDiv({ cls: 'ert-modal-subtitle', text: 'Choose your Scrivener export or Word document. Your files are not changed.' });
+
     const panel = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
-    panel.createDiv({ cls: 'ert-muted', text: 'Copy a Scrivener text/Markdown export and its Outliner CSV into the vault. Raw .scriv projects and RTF are not supported; use File → Export → Files in Scrivener. Choose the export folder below. The source stays untouched; the imported book is registered only after you approve the preview.' });
-    const input = panel.createEl('input', { type: 'text', cls: 'ert-input ert-input--full', attr: { placeholder: 'Manuscript folder in this vault', 'aria-label': 'Manuscript folder' } });
-    const error = panel.createDiv({ cls: 'ert-warning' });
+    const found = panel.createDiv({ cls: 'ert-stack' });
+    found.createDiv({ cls: 'ert-section-desc', text: 'Looking for exports in this vault…' });
+
+    const other = panel.createDiv({ cls: 'ert-onb-bookrow' });
+    const input = other.createEl('input', { type: 'text', cls: 'ert-input', attr: { placeholder: 'Or type a folder in this vault', 'aria-label': 'Manuscript folder' } });
+    const error = panel.createDiv({ cls: 'ert-section-desc ert-section-desc--alert' });
     const selectFolder = async (path: string) => {
       const folder = normalizePath(path.trim());
       if (!folder || folder === '/' || !(this.app.vault.getAbstractFileByPath(folder) instanceof TFolder)) {
-        error.setText('Choose an existing manuscript folder inside this vault.');
+        error.setText('Choose a folder inside this vault.');
         return;
       }
       await this.selectSourceFolder(folder);
     };
+    new ButtonComponent(other).setButtonText('Open').onClick(() => void selectFolder(input.value));
     const { ModalFolderSuggest } = await import('../settings/FolderSuggest');
     new ModalFolderSuggest(this.app, input, () => error.setText(''));
+    renderScrivenerExportHelp(panel);
+
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
-    new ButtonComponent(actions).setButtonText('Inspect manuscript').setCta().onClick(() => void selectFolder(input.value));
-    new ButtonComponent(actions).setButtonText('Create new book').onClick(async () => {
-      const { BookDesignerModal } = await import('./BookDesignerModal');
-      this.close();
-      new BookDesignerModal(this.app, this.plugin).open();
-    });
-    new ButtonComponent(actions).setButtonText('Close').onClick(() => this.close());
-    const candidatesEl = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
-    candidatesEl.createDiv({ cls: 'ert-muted', text: 'Checking for manuscript exports…' });
+    new ButtonComponent(actions).setButtonText('Cancel').onClick(() => this.close());
+
     try {
       const candidates = await discoverOnboardingCandidates(this.app, (this.plugin.settings.books ?? []).map(book => book.sourceFolder)); // SAFE: new vaults have no registered books
-      if (!candidatesEl.isConnected) return;
-      candidatesEl.empty();
-      candidatesEl.createDiv({ cls: 'ert-muted', text: candidates.length ? 'Potential manuscripts — choose one to inspect' : 'No export detected. Choose a folder above, or copy your export into this vault and reopen onboarding.' });
+      if (!found.isConnected) return;
+      found.empty();
+      if (candidates.length === 0) {
+        found.createDiv({ cls: 'ert-section-desc', text: 'No exports found in this vault yet. Copy your export in, or type its folder below.' });
+      }
       for (const candidate of candidates) {
-        const row = candidatesEl.createDiv({ cls: 'ert-row' });
-        row.createSpan({ text: `${candidate.folder} — ${candidate.evidence}` });
-        new ButtonComponent(row).setButtonText('Inspect').onClick(() => void selectFolder(candidate.folder));
+        const row = found.createEl('button', { cls: 'ert-onb-source', attr: { type: 'button' } });
+        row.createSpan({ cls: 'ert-onb-source__name', text: basename(candidate.folder) });
+        row.createSpan({ cls: 'ert-section-desc', text: candidate.folder === basename(candidate.folder) ? candidate.evidence : `${candidate.evidence} · ${candidate.folder}` });
+        row.addEventListener('click', () => void selectFolder(candidate.folder));
       }
     } catch (failure) {
-      if (candidatesEl.isConnected) candidatesEl.setText(`Cannot scan manuscript exports: ${failure instanceof Error ? failure.message : String(failure)}`);
+      if (found.isConnected) found.setText(`Cannot scan this vault: ${failure instanceof Error ? failure.message : String(failure)}`);
     }
   }
 
@@ -378,9 +371,84 @@ export class OnboardingModal extends Modal {
     await this.showPreflight();
   }
 
+  /**
+   * Scrivener lane: read and validate the export, then the one-screen review.
+   * Column decisions survive a re-read (Check again, or reopening after a
+   * stray dismissal); a column new to this read gets the automap's proposal.
+   */
+  private async showScrivenerReview(): Promise<void> {
+    const book = this.book;
+    if (!book) return;
+    this.renderBusy('Reading the export…');
+    const result = await this.service.ingestScrivener(book.sourceFolder);
+    if (result.kind !== 'ok') {
+      renderScrivenerBlocked(this.contentEl, book.sourceFolder, result.reason, {
+        onRecheck: () => void this.showScrivenerReview(),
+        onChangeSource: () => void this.showSourceSelection(),
+      });
+      return;
+    }
+    this.model = result.model;
+    const proposed = proposeScrivenerAutomap(result.model.customFields);
+    const decided = this.metadataMapping ?? {}; // SAFE: a first read has no author decisions yet; every column then takes its proposal
+    this.metadataMapping = Object.fromEntries(
+      result.model.customFields.map((field) => [field, decided[field] ?? proposed[field]]) // SAFE: the author's earlier decision wins; columns they never saw take the proposal
+    );
+    const state: ScrivenerReviewState = {
+      book,
+      model: result.model,
+      outlineName: result.outlineName,
+      warnings: result.warnings,
+      mapping: this.metadataMapping,
+      publishStage: this.publishStage,
+      createProfiles: this.createCharacters,
+    };
+    const remember = (): void => {
+      this.publishStage = state.publishStage;
+      this.createCharacters = state.createProfiles;
+      this.createPlaces = state.createProfiles;
+      this.persistSession('scrivener');
+    };
+    remember();
+    renderScrivenerReview(this.contentEl, state, {
+      propose: (model, publishStage) => this.service.buildStructureOnlyProposals(model, { publishStage }),
+      destinationFor: (target) => this.service.destinationFor(target),
+      destinationExists: (target) => this.service.destinationExists(target),
+      onEdit: remember,
+      onChangeSource: () => void this.showSourceSelection(),
+      onCancel: () => {
+        activeSession = null; // explicit cancel discards the run
+        this.close();
+      },
+      onImport: (reviewed) => void this.importScrivener(reviewed.proposals),
+    });
+  }
+
+  /** Write the reviewed Scrivener import, then show the author their timeline. */
+  private async importScrivener(proposals: SceneProposal[]): Promise<void> {
+    const book = this.book;
+    if (!book) return;
+    this.renderBusy('Creating scene notes…');
+    let report: MaterializeReport;
+    try {
+      const kinds: EntityKind[] = this.createCharacters ? ['character', 'place'] : [];
+      const entities = await this.service.enrichEntities(proposals, { kinds, generateSummaries: false });
+      report = await this.service.materialize(book, proposals, entities);
+    } catch (error) {
+      this.renderMessage('Import failed', error instanceof Error ? error.message : String(error), true);
+      return;
+    }
+    if (report.errors.length > 0) {
+      this.showReport(report);
+      return;
+    }
+    activeSession = null;
+    this.close();
+    new Notice(`Imported ${report.notesCreated} scenes into “${report.bookFolder}”.`);
+    await this.plugin.getTimelineService().activateView();
+  }
+
   private async showPreflight(): Promise<void> {
-    // Best-effort canonical-prompt refresh (throttled daily; never blocks).
-    if (this.useAi) void refreshOnboardingPrompt(this.plugin);
     this.renderBusy(this.useAi ? 'Checking AI and reading the book folder…' : 'Reading the book folder…');
 
     const book = this.book ?? getActiveBook(this.plugin.settings);
@@ -391,6 +459,18 @@ export class OnboardingModal extends Modal {
       return;
     }
     this.book = book;
+
+    // A Scrivener export is already split into scenes and described by its
+    // outline: it goes straight to the one-screen review, never through the
+    // split editor or AI.
+    const detection = await this.service.detectImportFlow(book.sourceFolder);
+    const activeFlow: ImportFlow | null = this.flowOverride ?? detection?.flow ?? null;
+    if (activeFlow === 'scrivener') {
+      await this.showScrivenerReview();
+      return;
+    }
+    // Best-effort canonical-prompt refresh (throttled daily; never blocks).
+    if (this.useAi) void refreshOnboardingPrompt(this.plugin);
 
     let preflightReason = '';
     let preflightOk = false;
@@ -408,17 +488,9 @@ export class OnboardingModal extends Modal {
     }
 
     let ingestReason = '';
-    const exportWarnings: string[] = [];
     let candidateCount = 0;
     let skippedCount = 0;
-    const detection = this.service.detectImportFlow(book.sourceFolder);
-    const activeFlow: ImportFlow | null = this.flowOverride ?? detection?.flow ?? null;
     try {
-      if (activeFlow === 'scrivener') {
-        const check = await checkScrivenerExport(createObsidianScrivenerSource(this.app), book.sourceFolder);
-        exportWarnings.push(...check.warnings);
-        if (check.errors.length) throw new Error(check.errors.join('\n'));
-      }
       this.model = null;
       const ingest = await this.service.ingest(book.sourceFolder, this.flowOverride ?? undefined);
       if (ingest.kind === 'needs-order') {
@@ -470,7 +542,7 @@ export class OnboardingModal extends Modal {
       ? `${cloud.label} (cloud, your API key)`
       : preflightOk ? `Local model — ready, tier ${tier}` : `Local model — ${notAvailable.toLowerCase()}`;
     const modeRow = status.createDiv({ cls: 'ert-row ert-onb-stagerow' });
-    modeRow.createSpan({ text: 'Import mode: ', cls: 'ert-muted' });
+    modeRow.createSpan({ text: 'Import mode: ', cls: 'ert-section-desc' });
     new DropdownComponent(modeRow)
       .addOptions({ structure: 'Structure only — no AI', ai: 'AI assisted' })
       .setValue(this.useAi ? 'ai' : 'structure')
@@ -487,7 +559,7 @@ export class OnboardingModal extends Modal {
     if (cloud.ok) engineChoices.push(['cloud', `${cloud.label} (cloud, your API key)`]);
     if (engineChoices.length > 1) {
       const engineRow = status.createDiv({ cls: 'ert-row ert-onb-stagerow' });
-      engineRow.createSpan({ text: 'Run AI with: ', cls: 'ert-muted' });
+      engineRow.createSpan({ text: 'Run AI with: ', cls: 'ert-section-desc' });
       new DropdownComponent(engineRow)
         .addOptions(Object.fromEntries(engineChoices))
         .setValue(this.engine)
@@ -498,16 +570,16 @@ export class OnboardingModal extends Modal {
     }
     if (this.engine === 'cloud' && this.costSubstitutedFrom) {
       status.createDiv({
-        cls: 'ert-warning',
+        cls: 'ert-onb-warn',
         text: `Your settings pin "${this.costSubstitutedFrom}", which this provider does not offer. Onboarding will run ${cloud.modelLabel ?? 'a different model'} instead — the estimate below prices that model, not the pinned one.`,
       });
     }
     if (!this.aiAvailable) {
       status.createDiv({
-        cls: 'ert-muted',
+        cls: 'ert-section-desc',
         text: this.useAi
           ? 'AI is not available. Choose Structure only to import without AI, or configure a provider in Settings → AI.'
-          : 'Import scenes, titles, synopses, and mapped Scrivener metadata without AI. Missing details stay empty for you to fill. No model or API key is needed.',
+          : 'Imports scenes and titles without AI. Missing details stay empty for you to fill.',
       });
     }
 
@@ -521,24 +593,18 @@ export class OnboardingModal extends Modal {
         `${FLOW_LABELS[activeFlow]} — ${detection.evidence}${overridden ? ' (your choice)' : ''}`,
         true
       );
-      if (activeFlow === 'scrivener') {
-        status.createDiv({
-          cls: 'ert-muted',
-          text: 'Use Scrivener File → Export → Files to export text or Markdown documents. Include an Outliner CSV to carry synopses and custom metadata. Raw .scriv projects are not supported. Confirm metadata mappings on the next screen.',
-        });
-      }
       const choices = [detection.flow, ...detection.alternatives];
       if (choices.length > 1) {
         const switchRow = status.createDiv({ cls: 'ert-row' });
-        switchRow.createSpan({ text: 'Treat this folder as: ', cls: 'ert-muted' });
+        switchRow.createSpan({ text: 'Treat this folder as: ', cls: 'ert-section-desc' });
         new DropdownComponent(switchRow)
           .addOptions(Object.fromEntries(choices.map((flow) => [flow, FLOW_LABELS[flow]])))
           .setValue(activeFlow)
           .onChange((value) => {
             this.flowOverride = value as ImportFlow; // SAFE: options are exactly ImportFlow values
             // A lane switch re-ingests: split plans/outcomes are keyed by the
-            // old model's sourceRefs and must rebuild from scratch — and the
-            // metadata table belongs to the old lane's fields.
+            // old model's sourceRefs and must rebuild from scratch — and
+            // column decisions belong to the old lane's fields.
             this.splitPlans = new Map();
             this.splitOutcomes = null;
             this.metadataMapping = null;
@@ -553,15 +619,9 @@ export class OnboardingModal extends Modal {
       const skipNote = skippedCount > 0 ? ` (${skippedCount} already onboarded, skipped)` : '';
       this.renderStatusRow(status, 'Chapters found', `${candidateCount}${skipNote}`, candidateCount > 0);
     }
-
-    if (activeFlow === 'scrivener' && this.model && !ingestReason) {
-      const outline = findScrivenerSidecarFile(this.app, book.sourceFolder);
-      this.renderStatusRow(status, 'Narrative order', outline ? 'Outline CSV row order — matched by document title' : 'Numbered filenames — no outline supplied', true);
-    }
-    for (const warning of exportWarnings) status.createDiv({ cls: 'ert-warning', text: warning });
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
     new ButtonComponent(actions).setButtonText('Choose another manuscript').onClick(() => void this.showSourceSelection());
-    new ButtonComponent(actions).setButtonText('Recheck export').onClick(() => void this.showPreflight());
+    new ButtonComponent(actions).setButtonText('Check again').onClick(() => void this.showPreflight());
     const canStart = !ingestReason && candidateCount > 0 && this.model !== null;
     new ButtonComponent(actions)
       .setButtonText(this.useAi ? 'Continue with AI' : 'Continue without AI')
@@ -574,16 +634,9 @@ export class OnboardingModal extends Modal {
         .setButtonText('Set up AI')
         .onClick(() => {
           this.close();
-          openPluginSettings(this.plugin, 'ai');
+          openAiSettings(this.plugin);
         });
     }
-    // Set/reset the active book project without hunting through settings.
-    new ButtonComponent(actions)
-      .setButtonText('Book Manager')
-      .onClick(() => {
-        this.close();
-        openSettingsAtBookManager(this.plugin);
-      });
     new ButtonComponent(actions).setButtonText('Close').onClick(() => this.close());
   }
 
@@ -607,7 +660,7 @@ export class OnboardingModal extends Modal {
     }
     this.persistSession('confirm');
 
-    const totalLine = contentEl.createDiv({ cls: 'ert-muted' });
+    const totalLine = contentEl.createDiv({ cls: 'ert-section-desc' });
     const updateTotal = (): void => {
       // No scene count until the chapters are actually split — quoting "24
       // scenes" before splitting and "90" after read as a contradiction.
@@ -672,7 +725,7 @@ export class OnboardingModal extends Modal {
     updateTotal();
 
     const stageRow = contentEl.createDiv({ cls: 'ert-row ert-onb-stagerow' });
-    stageRow.createSpan({ text: 'Publish stage: ', cls: 'ert-muted' });
+    stageRow.createSpan({ text: 'Publish stage: ', cls: 'ert-section-desc' });
     new DropdownComponent(stageRow)
       .addOptions(Object.fromEntries(STAGE_ORDER.map((stage) => [stage, stage])))
       .setValue(this.publishStage)
@@ -680,11 +733,10 @@ export class OnboardingModal extends Modal {
         this.publishStage = value as Stage; // SAFE: dropdown options are exactly STAGE_ORDER
       });
     stageRow.createSpan({
-      cls: 'ert-muted',
+      cls: 'ert-section-desc',
       text: 'Set first draft to Zero; a finished, published book is Press.',
     });
 
-    this.renderMetadataMappingTable(contentEl);
 
     // All actions live together at the bottom. Auto-split is the main path for
     // unmarked prose, so it takes the CTA until it has run; Continue takes over
@@ -695,7 +747,7 @@ export class OnboardingModal extends Modal {
     const offerAutoSplit = splittable && !this.splitOutcomes && this.aiAvailable;
     if (offerAutoSplit) {
       contentEl.createDiv({
-        cls: 'ert-muted',
+        cls: 'ert-section-desc',
         text: 'Auto-split proposes scene breaks for every file that has none — you can adjust after.',
       });
     }
@@ -715,75 +767,6 @@ export class OnboardingModal extends Modal {
       activeSession = null; // explicit cancel discards the run
       this.close();
     });
-  }
-
-  /**
-   * Scrivener metadata mapping table (flow 2 only): one row per sidecar field,
-   * disposition per row — map to an RT key, keep as a custom field, or ignore.
-   * Seeded from the automap proposal; the author's edits persist across
-   * re-renders and are applied to the model just before extraction.
-   */
-  private renderMetadataMappingTable(contentEl: HTMLElement): void {
-    const model = this.model;
-    if (!model || model.sourceKind !== 'scrivener' || model.customFields.length === 0) return;
-    if (!this.metadataMapping) {
-      this.metadataMapping = proposeScrivenerAutomap(model.customFields);
-    }
-    const mapping = this.metadataMapping;
-
-    const panel = contentEl.createDiv({ cls: 'ert-onb-options ert-stack' });
-    panel.createDiv({ cls: 'ert-onb-synopsis__label', text: 'Scrivener metadata' });
-    panel.createDiv({
-      cls: 'ert-muted',
-      text: 'Match each exported field to a Radial Timeline key using the sample values below, keep it as a custom field, or ignore it. These choices are applied once to the imported notes; they do not change the Settings key remapper.',
-    });
-
-    const rtKeys = getSupportedFrontmatterRemapTargets();
-    const encode = (decision: ScrivenerFieldTarget): string =>
-      decision.target === 'rt-key' ? `rt:${decision.key}` : decision.target;
-    const fields = model.customFields;
-
-    // Bulk lane for the per-subplot-column model: most exported custom columns
-    // ARE subplots, so one click flips every still-custom field at once.
-    const bulkRow = panel.createDiv({ cls: 'ert-onb-map__bulk' });
-    new ButtonComponent(bulkRow)
-      .setButtonText('Mark all custom fields as subplots')
-      .onClick(() => {
-        for (const field of fields) {
-          const current = mapping[field] ?? { target: 'custom' as const };
-          if (current.target === 'custom') mapping[field] = { target: 'subplot-flag' };
-        }
-        renderRows();
-      });
-
-    const grid = panel.createDiv({ cls: 'ert-onb-map' });
-    const renderRows = (): void => {
-      grid.empty();
-      for (const field of fields) {
-        const bare = field.replace(/^Scrivener /i, '').trim();
-        const options: Record<string, string> = {
-          custom: 'Keep as custom field',
-          ignore: 'Ignore',
-          // The column NAME is the subplot; a non-empty cell marks membership.
-          'subplot-flag': `Subplot “${bare}” — mark its scenes`,
-        };
-        for (const key of rtKeys) options[`rt:${key}`] = `Map to ${key}`;
-        const decision = mapping[field] ?? { target: 'custom' as const };
-        const fieldEl = grid.createDiv({ cls: 'ert-onb-map__field', text: field });
-        const samples = [...new Set(flattenScenes(model).map(scene => scene.knownMetadata[field]).filter(value => value?.trim()))].slice(0, 3);
-        if (samples.length) fieldEl.createDiv({ cls: 'ert-muted', text: `Examples: ${truncateText(samples.join(' · '), 140)}` });
-        const cell = grid.createDiv({ cls: 'ert-onb-map__choice' });
-        new DropdownComponent(cell)
-          .addOptions(options)
-          .setValue(encode(decision))
-          .onChange((value) => {
-            mapping[field] = value.startsWith('rt:')
-              ? { target: 'rt-key', key: value.slice(3) }
-              : { target: value as 'custom' | 'ignore' | 'subplot-flag' }; // SAFE: options are exactly custom|ignore|subplot-flag|rt:*
-          });
-      }
-    };
-    renderRows();
   }
 
   /** A labeled checkbox row; returns the input for enable/disable wiring. */
@@ -945,7 +928,7 @@ export class OnboardingModal extends Modal {
     this.renderStageHeader(2, 'Auto-splitting', 'Proposing scene boundaries with the local model…');
 
     const progressWrap = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
-    const statusEl = progressWrap.createDiv({ cls: 'ert-muted', text: 'Reading each file…' });
+    const statusEl = progressWrap.createDiv({ cls: 'ert-section-desc', text: 'Reading each file…' });
     const barTrack = progressWrap.createDiv({ cls: 'ert-progress-track' });
     barTrack.setCssStyles({ height: '6px', background: 'var(--background-modifier-border)', borderRadius: '3px' }); // SAFE: progress track
     const barFill = barTrack.createDiv();
@@ -968,11 +951,7 @@ export class OnboardingModal extends Modal {
   private async runExtraction(): Promise<void> {
     if (!this.model) return;
     // Apply the confirmed scene split: one source file may now yield several scenes.
-    let model = applySplitsToModel(this.model, this.splitPlans);
-    // Then the Scrivener mapping table: rename/keep/drop carried metadata fields.
-    if (this.metadataMapping) {
-      model = applyMetadataMappingToModel(model, this.metadataMapping);
-    }
+    const model = applySplitsToModel(this.model, this.splitPlans);
 
     this.extractModel = model;
 
@@ -980,7 +959,7 @@ export class OnboardingModal extends Modal {
     // instant — no survey, no per-scene calls, no entity summaries.
     if (!this.aiAvailable) {
       this.survey = null;
-      this.proposals = this.service.buildStructureOnlyProposals(model, { publishStage: this.publishStage });
+      this.proposals = this.service.buildStructureOnlyProposals(model, { publishStage: this.publishStage }).proposals;
       const kinds: EntityKind[] = [];
       if (this.createCharacters) kinds.push('character');
       if (this.createPlaces) kinds.push('place');
@@ -998,7 +977,7 @@ export class OnboardingModal extends Modal {
     this.renderStageHeader(2, 'Reading scenes', 'Filling in each scene’s details — synopsis, characters, places, timing.');
 
     const progressWrap = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
-    const statusEl = progressWrap.createDiv({ cls: 'ert-muted', text: 'Surveying the whole book…' });
+    const statusEl = progressWrap.createDiv({ cls: 'ert-section-desc', text: 'Surveying the whole book…' });
     const barTrack = progressWrap.createDiv({ cls: 'ert-progress-track' });
     barTrack.setCssStyles({ height: '6px', background: 'var(--background-modifier-border)', borderRadius: '3px' }); // SAFE: progress track
     const barFill = barTrack.createDiv();
@@ -1080,9 +1059,9 @@ export class OnboardingModal extends Modal {
       this.renderReviewScene(list, proposal, i + 1, openByDefault);
     });
 
-    const destName = suggestOnboardingFolderName(this.book?.sourceFolder ?? 'Book'); // SAFE: no source folder chosen yet, so the suggested destination name starts from the generic stem
+    const destName = this.book ? this.service.destinationFor(this.book) : '';
     contentEl.createDiv({
-      cls: 'ert-muted',
+      cls: 'ert-section-desc',
       text: `Will write to a new folder: ${destName} (source left untouched) · Publish Stage: ${this.publishStage}.`,
     });
 
@@ -1280,7 +1259,7 @@ export class OnboardingModal extends Modal {
       contentEl.empty();
       this.renderStageHeader(3, 'Creating profiles', 'Summarizing characters and places with the local model…');
       const progressWrap = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
-      const statusEl = progressWrap.createDiv({ cls: 'ert-muted', text: 'Gathering characters and places…' });
+      const statusEl = progressWrap.createDiv({ cls: 'ert-section-desc', text: 'Gathering characters and places…' });
       const barTrack = progressWrap.createDiv({ cls: 'ert-progress-track' });
       barTrack.setCssStyles({ height: '6px', background: 'var(--background-modifier-border)', borderRadius: '3px' }); // SAFE: progress track
       const barFill = barTrack.createDiv();
@@ -1309,6 +1288,7 @@ export class OnboardingModal extends Modal {
       });
     }
 
+    if (!this.book) return;
     this.renderBusy('Writing scene notes…');
     let report: MaterializeReport;
     try {
@@ -1345,7 +1325,7 @@ export class OnboardingModal extends Modal {
         .join(' · ');
       this.renderStatusRow(panel, 'Guessed fields', `${rollup} scene${flagged.length === 1 ? '' : 's'}`, true);
       panel.createDiv({
-        cls: 'ert-muted',
+        cls: 'ert-section-desc',
         text: 'Expected when the text has no explicit dates or act marks — spot-check on the timeline.',
       });
     }
@@ -1359,7 +1339,7 @@ export class OnboardingModal extends Modal {
       }
     }
     for (const err of report.errors) {
-      panel.createDiv({ cls: 'ert-error', text: err });
+      panel.createDiv({ cls: 'ert-section-desc ert-section-desc--alert', text: err });
     }
 
     new Notice(`Onboarded ${report.notesCreated} scenes into ${report.bookFolder}.`);
@@ -1526,14 +1506,14 @@ export class OnboardingModal extends Modal {
   private renderBusy(message: string): void {
     const { contentEl } = this;
     contentEl.empty();
-    contentEl.createDiv({ cls: 'ert-muted', text: message });
+    contentEl.createDiv({ cls: 'ert-section-desc', text: message });
   }
 
   private renderMessage(title: string, body: string, showClose: boolean): void {
     const { contentEl } = this;
     contentEl.empty();
     this.renderHeader(title);
-    contentEl.createDiv({ cls: 'ert-muted', text: body });
+    contentEl.createDiv({ cls: 'ert-section-desc', text: body });
     if (showClose) {
       const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
       new ButtonComponent(actions).setButtonText('Close').setCta().onClick(() => this.close());
@@ -1542,7 +1522,7 @@ export class OnboardingModal extends Modal {
 
   private renderStatusRow(parent: HTMLElement, label: string, value: string, good: boolean): void {
     const row = parent.createDiv({ cls: 'ert-row' });
-    row.createSpan({ text: `${label}: `, cls: 'ert-muted' });
-    row.createSpan({ text: value, cls: good ? undefined : 'ert-error' });
+    row.createSpan({ text: `${label}: `, cls: 'ert-section-desc' });
+    row.createSpan({ text: value, cls: good ? undefined : 'ert-section-desc ert-section-desc--alert' });
   }
 }

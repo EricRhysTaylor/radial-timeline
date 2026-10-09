@@ -108,16 +108,22 @@ describe('deterministicExtraction (structure-only mode)', () => {
     expect(e.place).toEqual([]);
     expect(e.when).toBeNull();
     expect(e.flags).toEqual([]);
-    // Feeding the subplot back as vocabulary keeps the carried thread alive.
-    const fm = buildSceneFrontmatter(e, { actCount: 3, subplotVocabulary: e.subplot });
+    // Structure-only imports keep the author's subplots as written.
+    const fm = buildSceneFrontmatter(e, { actCount: 3 });
     expect(fm.Subplot).toEqual(['Homecoming']);
     expect(fm.Synopsis).toBe('The ferry docks at dawn.');
+  });
+
+  it('keeps every subplot in a multi-value cell and a mapped Synopsis column', () => {
+    const e = deterministicExtraction({ knownSynopsis: null, knownMetadata: { Subplot: 'Grief; Sisters, grief', Synopsis: 'From a Logline column.' } });
+    expect(buildSceneFrontmatter(e, { actCount: 3 }).Subplot).toEqual(['Grief', 'Sisters']);
+    expect(e.synopsis).toBe('From a Logline column.');
   });
 
   it('yields blank synopsis and Main Plot when the source carried nothing', () => {
     const e = deterministicExtraction({ knownSynopsis: null, knownMetadata: {} });
     expect(e.synopsis).toBe('');
-    const fm = buildSceneFrontmatter(e, { actCount: 3, subplotVocabulary: e.subplot });
+    const fm = buildSceneFrontmatter(e, { actCount: 3 });
     expect(fm.Subplot).toEqual(['Main Plot']);
   });
 
@@ -128,7 +134,7 @@ describe('deterministicExtraction (structure-only mode)', () => {
     });
     expect(e.character).toEqual(['Newlan', 'Michi', 'Aria']);
     expect(e.place).toEqual(['BowShock']);
-    const fm = buildSceneFrontmatter(e, { actCount: 3, subplotVocabulary: e.subplot });
+    const fm = buildSceneFrontmatter(e, { actCount: 3 });
     expect(fm.Character).toEqual(['[[Newlan]]', '[[Michi]]', '[[Aria]]']);
     expect(fm.Place).toEqual(['[[BowShock]]']);
   });
@@ -137,7 +143,6 @@ describe('deterministicExtraction (structure-only mode)', () => {
     const e = deterministicExtraction({ knownSynopsis: null, knownMetadata: { When: '1184-06-15' } });
     const fm = buildSceneFrontmatter(e, {
       actCount: 3,
-      subplotVocabulary: e.subplot,
       carriedMetadata: { When: '1184-06-15' },
     });
     expect(fm.When).toBe('1184-06-15');

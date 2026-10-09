@@ -19,12 +19,13 @@ export function dirname(path: string): string {
 }
 
 /**
- * Suggested destination for the onboarded RT book: a sibling of the untouched
- * source folder named `<Source> RT` (working name — see plan Open Question 5).
+ * Destination for the onboarded RT book: a sibling of the untouched source
+ * folder named `<Book title> RT`. The suffix keeps it distinct from the
+ * source when the title matches the export folder's name.
  */
-export function suggestOnboardingFolderName(sourceFolder: string): string {
+export function suggestOnboardingFolderName(sourceFolder: string, bookTitle: string): string {
   const parent = dirname(sourceFolder);
-  const base = basename(sourceFolder) || 'Book'; // SAFE: a source folder at the vault root has no basename; 'Book' is the stem for the suggested name
+  const base = sanitizeFileName(bookTitle) || basename(sourceFolder) || 'Book'; // SAFE: a blank title names the folder after the source; a vault-root source with no name uses the generic stem
   const name = `${base} RT`;
   return parent ? `${parent}/${name}` : name;
 }

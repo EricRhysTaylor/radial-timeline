@@ -57,9 +57,9 @@ const WELCOME_COPY = {
             secondary: '→ or open Book Designer'
         },
         onboard: {
-            title: 'Manuscript onboarding',
-            desc: 'Import a Scrivener export, Word document, or existing draft. Preserve your structure and metadata without AI, then review the scene notes before creating them.',
-            cta: 'Onboard manuscript'
+            title: 'Import a manuscript',
+            desc: 'Bring in a Scrivener export or a Word document. Scenes, order, synopses and metadata come with it.',
+            cta: 'Import manuscript'
         }
     },
     workflow: {
@@ -468,7 +468,7 @@ export function renderWelcomeScreen({ container, plugin, refreshTimeline }: Welc
     });
     feedbackP.appendText(WELCOME_COPY.feedbackClosing);
 
-    // Onboarding follows Book Project because it needs an active manuscript folder.
+    // Starting points: a finished demo, a new book, or an imported manuscript.
     const cards = body.createDiv({ cls: 'rt-welcome-cards' });
 
     // Two-pass numbering keeps badges 01..N sequential in the built order.

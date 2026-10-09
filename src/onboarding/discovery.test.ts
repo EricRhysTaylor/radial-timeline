@@ -12,7 +12,7 @@ const outline = 'Title,Synopsis,Word Count\nArrival,An arrival,5';
 describe('read-only onboarding discovery', () => {
   it('groups an outline and nested scenes as one manuscript', async () => {
     const candidates = await discoverOnboardingCandidates(app({ 'Export/Outline.csv': outline, 'Export/Book/ACT 1/Arrival.txt': 'prose', 'Export/Book/ACT 1/Arrival Notes.txt': 'notes' }), []);
-    expect(candidates).toEqual([{ folder: 'Export', evidence: '1 scene files · outline Outline.csv' }]);
+    expect(candidates).toEqual([{ folder: 'Export', evidence: '1 scene · Outline.csv' }]);
   });
   it('excludes registered books, snapshots and raw Scrivener internals', async () => {
     const candidates = await discoverOnboardingCandidates(app({ 'Book/Outline.csv': outline, 'Book/Scene.txt': 'prose', 'Other/Scene Snapshots/old.txt': 'old', 'Project.scriv/Files/Scene.txt': 'internal' }), ['Book']);

@@ -6,6 +6,8 @@ import {
   proposeScrivenerAutomap,
   applyMetadataMapping,
   applyMetadataMappingToModel,
+  inspectScrivenerExport,
+  mappingConflicts,
   isScrivenerAuxiliaryFile,
   isSnapshotFolderName,
   deriveSourceAct,
@@ -46,7 +48,7 @@ const OUTLINE_CSV = [
 function sourceOf(files: ScrivenerFile[], sidecar: string | null): ScrivenerSource {
   return {
     listSceneFiles: async () => files,
-    readSidecar: async () => sidecar,
+    readSidecar: async () => (sidecar === null ? null : { name: 'Outline.csv', text: sidecar }),
   };
 }
 
@@ -232,15 +234,28 @@ describe('ingestScrivenerFolder', () => {
 describe('proposeScrivenerAutomap', () => {
   it('maps canonical-named and aliased fields to RT keys', () => {
     const proposals = proposeScrivenerAutomap([
-      'Synopsis', 'Status', 'Scrivener Status', 'POV', 'Storyline', 'Location',
+      'Synopsis', 'Scrivener POV', 'Storyline', 'Location', 'Scrivener Act',
     ]);
     expect(proposals['Synopsis']).toEqual({ target: 'rt-key', key: 'Synopsis' });
-    expect(proposals['Status']).toEqual({ target: 'rt-key', key: 'Status' });
     // The adapter's collision-prefixed key still automaps to the RT key.
-    expect(proposals['Scrivener Status']).toEqual({ target: 'rt-key', key: 'Status' });
-    expect(proposals['POV']).toEqual({ target: 'rt-key', key: 'POV' });
+    expect(proposals['Scrivener POV']).toEqual({ target: 'rt-key', key: 'POV' });
+    expect(proposals['Scrivener Act']).toEqual({ target: 'rt-key', key: 'Act' });
     expect(proposals['Storyline']).toEqual({ target: 'rt-key', key: 'Subplot' });
     expect(proposals['Location']).toEqual({ target: 'rt-key', key: 'Place' });
+  });
+
+  it('recognizes common Scrivener names for subplots, cast, places and dates', () => {
+    const proposals = proposeScrivenerAutomap(['Themes', 'People', 'Settings', 'Story Date', 'Point of View', 'Value Shift']);
+    expect(proposals['Themes']).toEqual({ target: 'rt-key', key: 'Subplot' });
+    expect(proposals['People']).toEqual({ target: 'rt-key', key: 'Character' });
+    expect(proposals['Settings']).toEqual({ target: 'rt-key', key: 'Place' });
+    expect(proposals['Story Date']).toEqual({ target: 'rt-key', key: 'When' });
+    expect(proposals['Point of View']).toEqual({ target: 'rt-key', key: 'POV' });
+    expect(proposals['Value Shift']).toEqual({ target: 'rt-key', key: 'Shift' });
+  });
+
+  it('keeps Scrivener Status as its own field (RT Status is the writing state the importer sets)', () => {
+    expect(proposeScrivenerAutomap(['Scrivener Status'])['Scrivener Status']).toEqual({ target: 'custom' });
   });
 
   it('keeps Label, Keywords, and unknown fields as custom (nothing silently lost)', () => {
@@ -293,14 +308,28 @@ describe('applyMetadataMapping', () => {
     expect('The IcT' in out).toBe(false); // empty cell = not flagged, nothing carried
   });
 
-  it('subplot-flag: first flagged column wins when a scene is marked in several', () => {
+  it('subplot-flag: a scene marked in several columns joins each subplot', () => {
     const flags: Record<string, ScrivenerFieldTarget> = {
       'Newlan as Leader': { target: 'subplot-flag' },
       BowShock: { target: 'subplot-flag' },
+      Themes: { target: 'rt-key', key: 'Subplot' },
     };
-    const out = applyMetadataMapping({ 'Newlan as Leader': 'x', BowShock: 'also x' }, flags);
-    expect(out.Subplot).toBe('Newlan as Leader');
-    expect(out.BowShock).toBe('also x'); // the other column's note still rides along
+    const out = applyMetadataMapping({ 'Newlan as Leader': 'x', BowShock: 'also x', Themes: 'Grief' }, flags);
+    expect(out.Subplot).toBe('Newlan as Leader; BowShock; Grief');
+    expect(out.BowShock).toBe('also x'); // each column's note still rides along
+  });
+
+  it('gathers list fields from several columns and reports single-value conflicts', () => {
+    const mapping: Record<string, ScrivenerFieldTarget> = {
+      People: { target: 'rt-key', key: 'Character' },
+      POV: { target: 'rt-key', key: 'Character' },
+      'Story Date': { target: 'rt-key', key: 'When' },
+      Date: { target: 'rt-key', key: 'When' },
+    };
+    const out = applyMetadataMapping({ People: 'Mara, Ines', POV: 'Mara', 'Story Date': '1891-03-02', Date: '1890' }, mapping);
+    expect(out.Character).toBe('Mara, Ines; Mara');
+    expect(out.When).toBe('1891-03-02');
+    expect(mappingConflicts(mapping)).toEqual(['When']);
   });
 
   it('keeps unmapped fields as-is and lets the first writer win on collision', () => {

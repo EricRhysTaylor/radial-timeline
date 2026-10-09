@@ -43,6 +43,7 @@ const RT_BRANDS = [
   'My Share',
   'Desk Lamps',
   'Desk Lamp',
+  'Scrivener',
 ];
 
 const RT_ACRONYMS = [...DEFAULT_ACRONYMS, 'RT', 'APR', 'POV', 'BETA'];
@@ -79,6 +80,8 @@ const RT_IGNORE_REGEX = [
   'Year \\d+',
   '^advanced workflows',
   'StoryLine',
+  // Scrivener's own menu path, quoted verbatim in the import help.
+  'File → Export',
 ];
 
 export const RT_SENTENCE_CASE_OPTIONS = {

@@ -207,6 +207,7 @@ export function renderScrivenerReview(container: HTMLElement, state: ScrivenerRe
       }
     }
 
+    const listWasOpen = resultPanel.querySelector('details')?.open === true;
     resultPanel.empty();
     resultPanel.createDiv({ cls: 'ert-section-title', text: 'Your timeline' });
     const subplotRow = resultPanel.createDiv({ cls: 'ert-onb-resultrow' });
@@ -245,6 +246,7 @@ export function renderScrivenerReview(container: HTMLElement, state: ScrivenerRe
     }
 
     const list = resultPanel.createEl('details', { cls: 'ert-onb-help' });
+    list.open = listWasOpen;
     list.createEl('summary', { text: `Show all ${summary.scenes} scenes` });
     const rows = list.createDiv({ cls: 'ert-onb-scenelist' });
     result.proposals.forEach((proposal, index) => {

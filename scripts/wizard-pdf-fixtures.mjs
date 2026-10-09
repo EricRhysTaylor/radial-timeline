@@ -17,9 +17,10 @@
  * gives broad structural coverage; this set's job is to confirm the .tex
  * actually compiles end-to-end.
  *
- * Asserted per fixture: pandoc exits 0, pdfinfo reports >= expectedPages.
- * That's it. No text-content checks, no visual baselines — those add maintenance
- * cost without adding much beyond what the bundled-template QA already covers.
+ * Each fixture must compile and meet its page-count floor. Part fixtures
+ * also require the quote and attribution in the rendered PDF: a stale macro
+ * arity can compile successfully while silently moving or losing content.
+ * The --visual mode additionally compares rasterized pages to baselines.
  */
 import { DESIGNED_STYLE_SPEC_VERSION } from '../src/publishing/designedStyle.ts';
 
@@ -124,13 +125,14 @@ export const WIZARD_FIXTURES = [
     },
     {
         slug: 'wizard-parts-inline-epigraph',
+        expectedPdfText: ['An inline quote.', 'TEST AUTHOR'],
         spec: baseSpec({
             parts: { mode: 'roman', pageBreak: true, epigraph: true, epigraphPlacement: 'inline' },
             chapters: { mode: 'off', pageBreak: false, resetSceneCounter: false },
             epigraph: { enabled: true, italic: true, attributionStyle: 'em-dash-caps' },
         }),
         body: [
-            '\\rtPart{I}{An inline quote.}{Test Author}',
+            '\\rtPart{I}{}{An inline quote.}{Test Author}',
             '',
             SHORT_BODY,
         ].join('\n\n'),
@@ -138,6 +140,7 @@ export const WIZARD_FIXTURES = [
     },
     {
         slug: 'wizard-parts-own-page-epigraph',
+        expectedPdfText: ['An own-page quote.', 'TEST AUTHOR'],
         // Triggers the \cleardoublepage branch in \rtPart for own-page epigraph.
         spec: baseSpec({
             parts: { mode: 'roman', pageBreak: true, epigraph: true, epigraphPlacement: 'own-page' },
@@ -145,7 +148,7 @@ export const WIZARD_FIXTURES = [
             epigraph: { enabled: true, italic: true, attributionStyle: 'em-dash-caps' },
         }),
         body: [
-            '\\rtPart{I}{An own-page quote.}{Test Author}',
+            '\\rtPart{I}{}{An own-page quote.}{Test Author}',
             '',
             SHORT_BODY,
         ].join('\n\n'),
@@ -207,6 +210,7 @@ export const WIZARD_FIXTURES = [
     },
     {
         slug: 'wizard-all-bells',
+        expectedPdfText: ['A grand quote.', 'ALL-BELLS AUTHOR', 'First Chapter'],
         // Stack-test: most axes activated together. Catches multi-axis
         // interactions that single-axis fixtures wouldn't.
         spec: baseSpec({
@@ -227,7 +231,7 @@ export const WIZARD_FIXTURES = [
             epigraph: { enabled: true, italic: true, attributionStyle: 'em-dash-caps' },
         }),
         body: [
-            '\\rtPart{I}{A grand quote.}{All-Bells Author}',
+            '\\rtPart{I}{}{A grand quote.}{All-Bells Author}',
             '',
             '\\rtChapter{1}{First Chapter}',
             '',

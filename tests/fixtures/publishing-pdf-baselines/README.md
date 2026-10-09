@@ -12,4 +12,12 @@ Required local tools:
 - xelatex
 - pdfinfo, pdftotext, and pdftoppm from Poppler
 
-Do not edit baseline PNGs by hand.
+Do not edit baseline PNGs by hand. Inspect every rendered page and verify the
+declared fonts and expected content before regenerating references. Part
+fixtures assert the quote and attribution in the PDF as well as compilation.
+
+Rendering toolchain for this reference generation:
+
+- pandoc 3.11
+- XeTeX 3.141592653-2.6-0.999998 (TeX Live 2026)
+- pdftoppm version 26.09.0

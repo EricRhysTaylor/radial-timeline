@@ -84,7 +84,7 @@ if (isReleaseBuild) {
 		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Obsidian Vault The Faerie Queene Demo/.obsidian/plugins/radial-timeline", name: "Faerie Queene Demo", beta: true },
 		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Obsidian Vault Odyssey Demo/.obsidian/plugins/radial-timeline", name: "Odyssey Demo", beta: true },
 		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Obsidian Vault Miki Projects/.obsidian/plugins/radial-timeline", name: "Miki Projects", beta: true },
-		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Scrivener Onboarding Test/.obsidian/plugins/radial-timeline", name: "Scrivener", beta: true },
+		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Testing Vaults/Scrivener Onboarding Test/.obsidian/plugins/radial-timeline", name: "Scrivener", beta: true },
 		{ path: "./release", name: "release" },
 		// Obsidian's plugin review runs a plain `npm run build` (no CI /
 		// RT_RELEASE_BUILD env) and looks for main.js in ./build, ./dist,

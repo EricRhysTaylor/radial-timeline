@@ -17,10 +17,6 @@ vi.mock('../onboarding/OnboardingService', () => ({
   },
 }));
 vi.mock('../onboarding/promptSync', () => ({ refreshOnboardingPrompt: probes.refresh }));
-vi.mock('../utils/books', async (importOriginal) => ({
-  ...await importOriginal<typeof import('../utils/books')>(),
-  getActiveBook: () => ({ id: 'book', title: 'Book', sourceFolder: 'Book' }),
-}));
 vi.mock('../../tests/mocks/obsidian', async (importOriginal) => {
   const original = await importOriginal<typeof import('obsidian')>();
   class Control {
@@ -61,6 +57,7 @@ function modal(): PrepareHarness {
   const plugin = { settings: {} } as RadialTimelinePlugin;
   // SAFE: the Obsidian Modal mock does not use App; all rendering is replaced below.
   const harness = new OnboardingModal({} as App, plugin) as unknown as PrepareHarness;
+  harness.book = { title: 'Book', sourceFolder: 'Book' };
   harness.contentEl = element();
   harness.renderBusy = vi.fn();
   harness.renderStageHeader = vi.fn();

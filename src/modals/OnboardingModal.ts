@@ -39,7 +39,7 @@ import {
 import { basename } from '../onboarding/paths';
 import { refreshOnboardingPrompt } from '../onboarding/promptSync';
 import { proposeScrivenerAutomap, type ScrivenerFieldTarget } from '../onboarding/adapters/scrivenerAdapter';
-import { getActiveBook, createBookId, normalizeBookProfile } from '../utils/books';
+import { createBookId, normalizeBookProfile } from '../utils/books';
 import { discoverOnboardingCandidates } from '../onboarding/discovery';
 import { renderScrivenerBlocked, renderScrivenerExportHelp, renderScrivenerReview, type ScrivenerReviewState } from './OnboardingScrivenerReview';
 import { STAGE_ORDER, type Stage } from '../utils/constants';
@@ -212,7 +212,7 @@ export class OnboardingModal extends Modal {
   private extractModel: ManuscriptModel | null = null;
   private abortController: AbortController | null = null;
 
-  constructor(app: App, plugin: RadialTimelinePlugin, private readonly chooseSource = false) {
+  constructor(app: App, plugin: RadialTimelinePlugin) {
     super(app);
     this.plugin = plugin;
     this.service = new OnboardingService(plugin);
@@ -277,10 +277,8 @@ export class OnboardingModal extends Modal {
     contentEl.addClass('ert-modal-container', 'ert-stack');
 
     // Resume: a dismissed modal (stray outside click, Escape) loses nothing —
-    // reopening on the same book folder picks up exactly where it left off.
-    const book = getActiveBook(this.plugin.settings);
-    if (activeSession && (this.chooseSource || !book?.sourceFolder || book.sourceFolder === activeSession.folder) && activeSession.model) {
-      this.book = book;
+    // reopening picks up exactly where it left off.
+    if (activeSession?.model) {
       this.restoreSession(activeSession);
       if (activeSession.stage === 'scrivener') {
         void this.showScrivenerReview();
@@ -291,8 +289,7 @@ export class OnboardingModal extends Modal {
       }
       return;
     }
-    if (this.chooseSource || !book?.sourceFolder) void this.showSourceSelection();
-    else void this.showPreflight();
+    void this.showSourceSelection();
   }
 
   onClose(): void {
@@ -451,14 +448,11 @@ export class OnboardingModal extends Modal {
   private async showPreflight(): Promise<void> {
     this.renderBusy(this.useAi ? 'Checking AI and reading the book folder…' : 'Reading the book folder…');
 
-    const book = this.book ?? getActiveBook(this.plugin.settings);
-    if (!book || !book.sourceFolder) {
-      const { contentEl } = this;
-      contentEl.empty();
+    const book = this.book;
+    if (!book) {
       await this.showSourceSelection();
       return;
     }
-    this.book = book;
 
     // A Scrivener export is already split into scenes and described by its
     // outline: it goes straight to the one-screen review, never through the

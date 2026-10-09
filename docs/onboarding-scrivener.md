@@ -5,7 +5,7 @@
 3. Put both in your vault. On the Welcome screen choose **Import manuscript** (or run **Import manuscript** from the command palette) and pick the export.
 4. Review, then **Import**. One screen shows everything:
    - **Book title** and **Stage**. The book is written to a new `<Title> RT` folder beside the export; the export is not changed.
-   - **Outline columns**, each with sample values and where it goes. Common Scrivener names are matched for you: Themes, Storyline or Plotline → Subplot; People, Characters or Cast → Character; Location or Setting → Place; Date or Story Date → When; Point of View → POV. Anything else is kept under its own name, or you can send it to a scene field or skip it.
+   - **Outline columns**, each with sample values and where it goes. Common Scrivener names are matched for you: Themes, Storyline or Plotline → Subplot; People, Characters or Cast → Character; Location or Setting → Place; Date or Story Date → When; POV or Point of View → POV character, which is listed first in Character because that is where Radial Timeline looks for it. Anything else is kept under its own name, or you can send it to a scene field or skip it.
    - **Your timeline**: the subplot rings with their scene counts, where acts come from, and the characters and places named. Open **Show all scenes** to check order and memberships.
 5. The timeline opens on your new book.
 

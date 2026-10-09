@@ -124,7 +124,7 @@ export function renderGeneralSection(params: {
     const scanSetting = new ObsidianSetting(discoveryPanel)
         .setName('Import an existing manuscript')
         .setDesc('Find manuscript exports already copied into this vault. Review the source before creating a book.')
-        .addButton(button => button.setButtonText('Choose manuscript').onClick(() => new OnboardingModal(app, plugin, true).open()));
+        .addButton(button => button.setButtonText('Choose manuscript').onClick(() => new OnboardingModal(app, plugin).open()));
     const candidatesEl = discoveryPanel.createDiv({ cls: 'ert-stack' });
     const scan = async () => {
         candidatesEl.setText('Checking for manuscript exports…');

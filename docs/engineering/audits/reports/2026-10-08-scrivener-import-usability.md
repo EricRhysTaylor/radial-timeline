@@ -20,6 +20,8 @@ Hint, warning and error lines used `ert-muted` / `ert-warning` / `ert-error`, wh
 - A mapped Subplot cell `Smuggling Run; Sisters` became one ring named `Smuggling Run; Sisters`; structure-only imports were held to one subplot per scene (an AI-run policy). Per-subplot flag columns kept only the first flagged column.
 - A column mapped to Act was silently overwritten by folder or positional acts.
 - Scrivener Status mapped to RT Status was a silent no-op (the importer writes Status itself).
+- A Scrivener POV column (a character name) was mapped into RT's POV field, which holds a mode such as "third"; Radial Timeline marks the first listed Character as the POV character, so the wrong person was marked.
+- With the outline at the vault root, every top-level folder was offered as an export, including the plugin's own `Radial Timeline` folder.
 - Without an outline, per-folder file numbering (`01 Chapter/01`, `02 Chapter/01`) interleaved chapters.
 - The outline search climbed to the vault root and took any CSV, so an unrelated spreadsheet could be read as the outline.
 - Importing twice merged into the existing `<Source> RT` folder note by note and registered a duplicate book.
@@ -48,6 +50,10 @@ Scrivener exports never enter the split editor or AI; other sources (Word, singl
 - `npx tsc --noEmit`; `npm run build-only`; `npm run gates` (15/15).
 - Full suite: 4,098 passed, 7 skipped. New `scrivenerImport.test.ts` runs the divergent-names export end to end (Themes → two subplots on one scene, People → three wiki-linked characters, Story Date → When, Status kept as `Scrivener Status`, Word Count dropped, Main Plot for an unthemed scene) and covers Act columns and per-folder numbering.
 - Test vault: `Plugin/Test Vaults/Obsidian Vault Scrivener Import` (12-scene "The Salt Road" export in numbered chapter folders plus `The Salt Road Outline.csv`).
+
+## Live acceptance (2026-10-09)
+
+Fresh test vault, Welcome → Import manuscript → The Salt Road → Review → Import, in Obsidian 1.14.4 with the built plugin. The review showed the expected rings (Smuggling Run 4, Sisters 5, The Inspector 4, Grief 3, Main Plot 1), thirds acts and 5 characters / 4 places. Import wrote 12 scenes, 5 Character and 4 Place notes, registered and activated the book, closed the window and showed the timeline. Fixed after this run: the plugin's own folder offered as an export, uneven select widths, POV names.
 
 ## Deferred
 

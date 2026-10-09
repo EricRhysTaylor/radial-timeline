@@ -348,6 +348,10 @@
   min-width: 0;
 }
 
+.ert-ui .ert-onb-map__choice select {
+  width: 100%;
+}
+
 /* Live result — label column | value. */
 .ert-ui .ert-onb-resultrow {
   display: grid;

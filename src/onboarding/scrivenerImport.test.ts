@@ -26,13 +26,13 @@ const FILES = [
   scene('02 Chapter Two', '02 The Salt Road Home.txt'),
 ];
 const OUTLINE = [
-  'Title,Synopsis,Label,Status,Word Count,Themes,People,Location,Story Date,Tension',
-  'Chapter One,,Chapter,,0,,,,,',
-  'The Harbor at Dawn,Mara loads a crate.,Scene,First Draft,74,Smuggling Run,"Mara Vell, Tomas Reyes",Port Cassel,1891-03-02,3',
-  'Ines Comes Home,Her sister returns.,Scene,First Draft,73,Sisters,"Mara Vell, Ines Vell",Port Cassel,1891-03-03,2',
-  'Chapter Two,,Chapter,,0,,,,,',
-  'Salt and Silver,One last run.,Scene,To Do,80,Smuggling Run; Sisters,"Mara Vell, Ines Vell, Captain Oduya",The Salt Flats,1891-03-09,5',
-  'The Salt Road Home,Mara walks out.,Scene,First Draft,60,,"Mara Vell, Ines Vell",The Salt Flats,1892-05-20,6',
+  'Title,Synopsis,Label,Status,Word Count,Themes,People,Location,Story Date,POV,Tension',
+  'Chapter One,,Chapter,,0,,,,,,',
+  'The Harbor at Dawn,Mara loads a crate.,Scene,First Draft,74,Smuggling Run,"Mara Vell, Tomas Reyes",Port Cassel,1891-03-02,Mara Vell,3',
+  'Ines Comes Home,Her sister returns.,Scene,First Draft,73,Sisters,"Mara Vell, Ines Vell",Port Cassel,1891-03-03,Ines Vell,2',
+  'Chapter Two,,Chapter,,0,,,,,,',
+  'Salt and Silver,One last run.,Scene,To Do,80,Smuggling Run; Sisters,"Mara Vell, Ines Vell, Captain Oduya",The Salt Flats,1891-03-09,Mara Vell,5',
+  'The Salt Road Home,Mara walks out.,Scene,First Draft,60,,"Mara Vell, Ines Vell",The Salt Flats,1892-05-20,,6',
 ].join('\n');
 
 function source(files: ScrivenerFile[], outline: string | null): ScrivenerSource {
@@ -58,6 +58,7 @@ describe('Scrivener import with diverging field names', () => {
     expect(mapping['People']).toEqual({ target: 'rt-key', key: 'Character' });
     expect(mapping['Location']).toEqual({ target: 'rt-key', key: 'Place' });
     expect(mapping['Story Date']).toEqual({ target: 'rt-key', key: 'When' });
+    expect(mapping['Scrivener POV']).toEqual({ target: 'pov-character' });
     expect(mapping['Scrivener Status']).toEqual({ target: 'custom' });
     expect(mapping['Word Count']).toEqual({ target: 'ignore' });
 
@@ -79,6 +80,9 @@ describe('Scrivener import with diverging field names', () => {
       Label: 'Scene',
     });
     expect(salt).not.toHaveProperty('Word Count');
+    expect(salt).not.toHaveProperty('POV');
+    // Radial Timeline marks the first listed character as the POV character.
+    expect(result.proposals[1].frontmatter?.Character).toEqual(['[[Ines Vell]]', '[[Mara Vell]]']);
     expect(result.proposals[3].frontmatter?.Subplot).toEqual(['Main Plot']);
     expect(result.actSource).toBe('position');
 

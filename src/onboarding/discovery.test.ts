@@ -18,6 +18,16 @@ describe('read-only onboarding discovery', () => {
     const candidates = await discoverOnboardingCandidates(app({ 'Book/Outline.csv': outline, 'Book/Scene.txt': 'prose', 'Other/Scene Snapshots/old.txt': 'old', 'Project.scriv/Files/Scene.txt': 'internal' }), ['Book']);
     expect(candidates).toEqual([]);
   });
+  it('nominates only the folders holding a vault-root outline\'s documents', async () => {
+    const candidates = await discoverOnboardingCandidates(app({
+      'Salt Outline.csv': outline,
+      'Salt/01 Arrival.txt': 'prose',
+      'Place/Arrival.md': 'a place sharing a scene title',
+      'Place/Harbor.md': 'another place',
+      'Radial Timeline/Pandoc/fonts/OFL.txt': 'font license',
+    }), []);
+    expect(candidates).toEqual([{ folder: 'Salt', evidence: '1 scene · Salt Outline.csv' }]);
+  });
   it('does not label arbitrary CSVs as Scrivener projects', async () => {
     expect(await discoverOnboardingCandidates(app({ 'Accounts/data.csv': 'Title,Price\nProduct,50' }), [])).toEqual([]);
   });

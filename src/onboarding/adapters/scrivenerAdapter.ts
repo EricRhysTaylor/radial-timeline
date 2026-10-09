@@ -177,7 +177,7 @@ export function titleFromExportFileName(fileName: string): string {
 }
 
 /** Normalize a title for file↔row matching (case/whitespace-insensitive). */
-function normalizeTitle(title: string): string {
+export function normalizeTitle(title: string): string {
   // Scrivener strips filename-hostile characters when exporting files but keeps
   // them in outliner titles ("FB: A New Home" → "FB A New Home.txt") — fold
   // that punctuation on both sides so title matching survives the round trip.
@@ -231,7 +231,13 @@ export type ScrivenerFieldTarget =
    * rides along as a custom field). A scene flagged in several columns
    * belongs to each of those subplots.
    */
-  | { target: 'subplot-flag' };
+  | { target: 'subplot-flag' }
+  /**
+   * The scene's viewpoint character. Radial Timeline marks the FIRST name in
+   * Character as the POV character (its POV field holds a mode such as
+   * "third", not a name), so the name is placed first in Character.
+   */
+  | { target: 'pov-character' };
 
 /**
  * Scene fields an outline column can become, in the order the import review
@@ -241,8 +247,8 @@ export type ScrivenerFieldTarget =
  * a mapped value there would be overwritten or would break the timeline.
  */
 export const SCRIVENER_FIELD_TARGETS = {
-  timeline: ['Subplot', 'Character', 'POV', 'Place', 'When', 'Duration', 'Act', 'Chapter'],
-  other: ['Synopsis', 'Summary', 'Pending Edits', 'Due', 'Questions', 'Reader Emotion', 'Internal', 'Type', 'Shift', 'Iteration'],
+  timeline: ['Subplot', 'Character', 'Place', 'When', 'Duration', 'Act', 'Chapter'],
+  other: ['Synopsis', 'Summary', 'POV', 'Pending Edits', 'Due', 'Questions', 'Reader Emotion', 'Internal', 'Type', 'Shift', 'Iteration'],
 } as const;
 
 const TARGET_KEYS = new Set<string>([...SCRIVENER_FIELD_TARGETS.timeline, ...SCRIVENER_FIELD_TARGETS.other]);
@@ -272,9 +278,11 @@ const FIELD_ALIASES: Record<string, string> = {
   characters: 'Character', people: 'Character', person: 'Character', cast: 'Character',
   places: 'Place', location: 'Place', locations: 'Place', setting: 'Place', settings: 'Place',
   date: 'When', 'story date': 'When', 'scene date': 'When',
-  'point of view': 'POV', viewpoint: 'POV',
   'value shift': 'Shift', 'scene type': 'Type',
 };
+
+/** Scrivener columns naming the viewpoint character (a name, not RT's POV mode). */
+const POV_CHARACTER_FIELDS = new Set(['pov', 'pov character', 'point of view', 'viewpoint', 'viewpoint character']);
 
 /** The column name as the author wrote it (the adapter prefixes canonical-key collisions). */
 export function bareFieldName(fieldName: string): string {
@@ -295,6 +303,10 @@ export function proposeScrivenerAutomap(
     const lower = bareFieldName(fieldName).toLowerCase();
     if (IGNORED_FIELDS.has(lower)) {
       proposals[fieldName] = { target: 'ignore' };
+      continue;
+    }
+    if (POV_CHARACTER_FIELDS.has(lower)) {
+      proposals[fieldName] = { target: 'pov-character' };
       continue;
     }
     const key = CANONICAL_BY_LOWER.get(lower) ?? FIELD_ALIASES[lower];
@@ -359,7 +371,8 @@ function fileToScene(file: ScrivenerFile, row: Record<string, string> | null): M
  * `ignore` drops the field, `rt-key` renames it to the scene field, `custom`
  * — and any unmapped field — keeps it as-is. List fields (Subplot, Character,
  * Place) gather every mapped column, `; `-joined; a single-value field keeps
- * the first filled column (the review flags such conflicts).
+ * the first filled column (the review flags such conflicts). A POV character
+ * goes to the front of Character, where Radial Timeline looks for it.
  */
 export function applyMetadataMapping(
   metadata: Record<string, string>,
@@ -382,6 +395,8 @@ export function applyMetadataMapping(
       if (!(key in out)) out[key] = value;
     } else if (decision.target === 'rt-key') {
       put(decision.key, value);
+    } else if (decision.target === 'pov-character') {
+      out['Character'] = 'Character' in out ? `${value}; ${out['Character']}` : value;
     }
   }
   return out;

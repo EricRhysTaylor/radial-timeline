@@ -89,7 +89,7 @@ function encode(decision: ScrivenerFieldTarget): string {
 
 function decode(value: string): ScrivenerFieldTarget {
   if (value.startsWith('rt:')) return { target: 'rt-key', key: value.slice(3) };
-  return { target: value as 'custom' | 'ignore' | 'subplot-flag' }; // SAFE: the select's only other values are exactly these three
+  return { target: value as 'custom' | 'ignore' | 'subplot-flag' | 'pov-character' }; // SAFE: the select's only other values are exactly these four
 }
 
 /** A field's target select: scene fields first, then the column's own options. */
@@ -97,16 +97,21 @@ function renderTargetSelect(parent: HTMLElement, field: string, decision: Scrive
   const dropdown = new DropdownComponent(parent);
   const select = dropdown.selectEl;
   select.setAttribute('aria-label', `Where “${bareFieldName(field)}” goes`);
-  const group = (label: string, keys: readonly string[]): void => {
+  const group = (label: string, options: Array<[value: string, text: string]>): void => {
     const optgroup = select.createEl('optgroup', { attr: { label } });
-    for (const key of keys) optgroup.createEl('option', { value: `rt:${key}`, text: key });
+    for (const [value, text] of options) optgroup.createEl('option', { value, text });
   };
-  group('Scene field', SCRIVENER_FIELD_TARGETS.timeline);
-  group('More scene fields', SCRIVENER_FIELD_TARGETS.other);
-  const own = select.createEl('optgroup', { attr: { label: 'This column' } });
-  own.createEl('option', { value: 'subplot-flag', text: `Subplot “${bareFieldName(field)}” for filled cells` });
-  own.createEl('option', { value: 'custom', text: `Keep as “${field}”` });
-  own.createEl('option', { value: 'ignore', text: 'Skip' });
+  const fieldOptions = (keys: readonly string[]): Array<[string, string]> => keys.map((key) => [`rt:${key}`, key]);
+  group('Scene field', [
+    ...fieldOptions(SCRIVENER_FIELD_TARGETS.timeline),
+    ['pov-character', 'POV character (listed first in Character)'],
+  ]);
+  group('More scene fields', fieldOptions(SCRIVENER_FIELD_TARGETS.other));
+  group('This column', [
+    ['subplot-flag', `Subplot “${bareFieldName(field)}” for filled cells`],
+    ['custom', `Keep as “${field}”`],
+    ['ignore', 'Skip'],
+  ]);
   dropdown.setValue(encode(decision)).onChange((value) => onPick(decode(value)));
 }
 

@@ -238,8 +238,9 @@ describe('proposeScrivenerAutomap', () => {
     ]);
     expect(proposals['Synopsis']).toEqual({ target: 'rt-key', key: 'Synopsis' });
     // The adapter's collision-prefixed key still automaps to the RT key.
-    expect(proposals['Scrivener POV']).toEqual({ target: 'rt-key', key: 'POV' });
     expect(proposals['Scrivener Act']).toEqual({ target: 'rt-key', key: 'Act' });
+    // A Scrivener POV column names a character; RT's POV field is a mode.
+    expect(proposals['Scrivener POV']).toEqual({ target: 'pov-character' });
     expect(proposals['Storyline']).toEqual({ target: 'rt-key', key: 'Subplot' });
     expect(proposals['Location']).toEqual({ target: 'rt-key', key: 'Place' });
   });
@@ -250,7 +251,7 @@ describe('proposeScrivenerAutomap', () => {
     expect(proposals['People']).toEqual({ target: 'rt-key', key: 'Character' });
     expect(proposals['Settings']).toEqual({ target: 'rt-key', key: 'Place' });
     expect(proposals['Story Date']).toEqual({ target: 'rt-key', key: 'When' });
-    expect(proposals['Point of View']).toEqual({ target: 'rt-key', key: 'POV' });
+    expect(proposals['Point of View']).toEqual({ target: 'pov-character' });
     expect(proposals['Value Shift']).toEqual({ target: 'rt-key', key: 'Shift' });
   });
 
@@ -330,6 +331,15 @@ describe('applyMetadataMapping', () => {
     expect(out.Character).toBe('Mara, Ines; Mara');
     expect(out.When).toBe('1891-03-02');
     expect(mappingConflicts(mapping)).toEqual(['When']);
+  });
+
+  it('puts the POV character first in Character, whichever column comes first', () => {
+    const mapping: Record<string, ScrivenerFieldTarget> = {
+      People: { target: 'rt-key', key: 'Character' },
+      'Scrivener POV': { target: 'pov-character' },
+    };
+    expect(applyMetadataMapping({ People: 'Mara Vell, Ines Vell', 'Scrivener POV': 'Ines Vell' }, mapping).Character).toBe('Ines Vell; Mara Vell, Ines Vell');
+    expect(applyMetadataMapping({ 'Scrivener POV': 'Ines Vell', People: 'Mara Vell, Ines Vell' }, mapping).Character).toBe('Ines Vell; Mara Vell, Ines Vell');
   });
 
   it('keeps unmapped fields as-is and lets the first writer win on collision', () => {

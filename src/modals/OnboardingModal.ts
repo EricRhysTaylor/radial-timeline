@@ -41,7 +41,7 @@ import { refreshOnboardingPrompt } from '../onboarding/promptSync';
 import { proposeScrivenerAutomap, type ScrivenerFieldTarget } from '../onboarding/adapters/scrivenerAdapter';
 import { createBookId, normalizeBookProfile } from '../utils/books';
 import { discoverOnboardingCandidates } from '../onboarding/discovery';
-import { MISSING_OUTLINE_TEXT, renderScrivenerBlocked, renderScrivenerExportHelp, renderScrivenerReview, renderSourceParts, type ScrivenerReviewState } from './OnboardingScrivenerReview';
+import { MISSING_OUTLINE_TEXT, renderScrivenerExportHelp, renderScrivenerProblems, renderScrivenerReview, renderSourceParts, type ScrivenerReviewState } from './OnboardingScrivenerReview';
 import { STAGE_ORDER, type Stage } from '../utils/constants';
 import type { AIProviderId } from '../ai/types';
 import { forecastOnboardingTokens, forecastOnboardingCost } from '../onboarding/costForecast';
@@ -124,6 +124,7 @@ interface OnboardingSession {
   createPlaces: boolean;
   generateSummaries: boolean;
   metadataMapping: Record<string, ScrivenerFieldTarget> | null;
+  importAnyway: boolean;
   model: ManuscriptModel | null;
   extractModel: ManuscriptModel | null;
   splitPlans: Map<string, ScenePlan>;
@@ -176,6 +177,8 @@ export class OnboardingModal extends Modal {
   private flowOverride: ImportFlow | null = null;
   /** Scrivener column decisions (seeded from the automap; author-edited at Review). */
   private metadataMapping: Record<string, ScrivenerFieldTarget> | null = null;
+  /** The author chose to import a Scrivener export despite its problems. */
+  private importAnyway = false;
   /**
    * True only when AI was requested and a capable engine is available.
    * Structure-only imports skip every AI stage and hide its controls.
@@ -237,6 +240,7 @@ export class OnboardingModal extends Modal {
       ...captureSpendFields(this),
       generateSummaries: this.generateSummaries,
       metadataMapping: this.metadataMapping,
+      importAnyway: this.importAnyway,
       model: this.model,
       extractModel: this.extractModel,
       splitPlans: this.splitPlans,
@@ -261,6 +265,7 @@ export class OnboardingModal extends Modal {
     applySpendFields(this, session);
     this.generateSummaries = session.generateSummaries;
     this.metadataMapping = session.metadataMapping;
+    this.importAnyway = session.importAnyway;
     this.model = session.model;
     this.extractModel = session.extractModel;
     this.splitPlans = session.splitPlans;
@@ -362,6 +367,7 @@ export class OnboardingModal extends Modal {
     this.book = normalizeBookProfile({ id: createBookId(), title: folder.slice(folder.lastIndexOf('/') + 1), sourceFolder: folder });
     this.flowOverride = null;
     this.metadataMapping = null;
+    this.importAnyway = false;
     this.model = null;
     this.extractModel = null;
     this.survey = null;
@@ -385,12 +391,25 @@ export class OnboardingModal extends Modal {
     const book = this.book;
     if (!book) return;
     this.renderBusy('Reading the export…');
-    const result = await this.service.ingestScrivener(book.sourceFolder);
+    const result = await this.service.ingestScrivener(book.sourceFolder, { importAnyway: this.importAnyway });
     if (result.kind !== 'ok') {
-      renderScrivenerBlocked(this.contentEl, book.sourceFolder, result.reason, {
-        onRecheck: () => void this.showScrivenerReview(),
-        onChangeSource: () => void this.showSourceSelection(),
-      });
+      const recheck = (): void => {
+        this.importAnyway = false;
+        void this.showScrivenerReview();
+      };
+      const changeSource = (): void => void this.showSourceSelection();
+      if (result.kind === 'empty') {
+        renderScrivenerProblems(this.contentEl, book.sourceFolder, [{ problem: result.reason, ifImported: '' }], { onRecheck: recheck, onChangeSource: changeSource });
+      } else {
+        renderScrivenerProblems(this.contentEl, book.sourceFolder, result.problems, {
+          onRecheck: recheck,
+          onChangeSource: changeSource,
+          onContinue: () => {
+            this.importAnyway = true;
+            void this.showScrivenerReview();
+          },
+        });
+      }
       return;
     }
     this.model = result.model;
@@ -497,7 +516,7 @@ export class OnboardingModal extends Modal {
     let skippedCount = 0;
     try {
       this.model = null;
-      const ingest = await this.service.ingest(book.sourceFolder, this.flowOverride ?? undefined);
+      const ingest = await this.service.ingest(book.sourceFolder, activeFlow ?? 'folder');
       if (ingest.kind === 'needs-order') {
         ingestReason = ingest.reason;
       } else {

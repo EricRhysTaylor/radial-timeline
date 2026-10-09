@@ -16,6 +16,6 @@ Details:
 - A cell with several values (`Grief; Sisters` or `Mara, Ines`) gives the scene each of them. A column used as a per-subplot checkbox can be set to **Subplot “<column>” for filled cells**; a scene filled in several such columns joins each subplot. Scenes with no subplot go to Main Plot.
 - Acts come from a column you send to Act, otherwise from `ACT 1`, `ACT 2`… export folders, otherwise the book is split evenly into the configured number of acts.
 - Word Count and Scrivener's other bookkeeping columns are not imported. Scrivener's Status column is kept as `Scrivener Status`, because Radial Timeline's Status is its own writing state.
-- If the outline and the files disagree (a file missing from the outline, a document with text but no file, two documents with one title), the import stops and names the problem. Export Files and Outliner Contents again from the same selection, then choose **Check again**.
+- If the outline and the files don't line up (a file missing from the outline, a document with text but no file, two documents with one title, files with no clear order), **Check this export** lists each problem and what continuing would do. Fix it in Scrivener and choose **Check again**, or choose **Continue anyway**: the review then shows those consequences as warnings. Only an export with no scene text cannot be imported.
 - No AI is used. Synopses come from the outline; AI summary refresh can fill gaps later if you use it.
 - Closing the window by accident keeps your choices until Obsidian restarts.

@@ -64,6 +64,8 @@ Fresh test vault, Welcome → Import manuscript → The Salt Road → Review →
 - Character and place notes are separate switches beside the names they create, set off by dividers.
 - Reassurance copy about files staying unchanged was removed; chooser cards use the shared `ert-modal-choice` card.
 
+- Export problems no longer stop the import outright. Each problem carries what importing anyway does (`ScrivenerProblem.ifImported`); **Continue anyway** imports with those consequences listed as review warnings. Lenient rules: the outline orders the files it lists (shared titles pair rows and files in turn), unlisted files follow in file order; a title held by more than one file or row carries no outline properties; an unusable CSV is left out; with no order source, files go by folder and name. Only an export with no scene text is refused. `ingest()` now takes the resolved lane instead of re-detecting it.
+
 ## Deferred
 
 - Word and single-file imports still use the four-stage path; the same one-screen review would suit them once scene splitting is folded in.

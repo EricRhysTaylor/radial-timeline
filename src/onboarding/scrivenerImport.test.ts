@@ -152,9 +152,11 @@ describe('numbered exports without an outline', () => {
     ]);
   });
 
-  it('asks for the outline when numbering restarts in unnumbered folders', async () => {
+  it('asks about order when numbering restarts in unnumbered folders, and orders by folder if imported anyway', async () => {
     const files = [scene('Chapter Two', '1 Salt and Silver.txt'), scene('Chapter One', '1 The Harbor at Dawn.txt')];
     const result = await ingestScrivenerFolder(source(files, null), 'Salt');
-    expect(result.kind).toBe('needs-order');
+    expect(result.kind === 'problems' && result.problems[0].problem).toContain('folders are not numbered');
+    const anyway = await ingestScrivenerFolder(source(files, null), 'Salt', { importAnyway: true });
+    expect(anyway.kind === 'ok' && anyway.model.chapters[0].scenes.map((s) => s.title)).toEqual(['The Harbor at Dawn', 'Salt and Silver']);
   });
 });

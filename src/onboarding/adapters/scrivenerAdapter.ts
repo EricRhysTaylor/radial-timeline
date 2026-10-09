@@ -57,7 +57,10 @@ export interface ScrivenerSource {
 
 export type ScrivenerIngestResult =
   | { kind: 'ok'; model: ManuscriptModel; outlineName: string | null; warnings: string[] }
-  | { kind: 'needs-order'; reason: string };
+  /** Things that don't line up; importing anyway is the author's call. */
+  | { kind: 'problems'; problems: ScrivenerProblem[] }
+  /** Nothing to import. */
+  | { kind: 'empty'; reason: string };
 
 // --- Delimited-text parsing (no dependencies) -------------------------------
 
@@ -459,18 +462,24 @@ export function deriveSourceAct(path: string): number | undefined {
   return last ? Number(last[1]) : undefined;
 }
 
-/** Same-selection re-export advice, shared by every blocking outline problem. */
-const REEXPORT_ADVICE = 'In Scrivener, select the same documents and export both Files and Outliner Contents again.';
+/** Up to five names, quoted, then a count of the rest. */
+function listNames(names: string[]): string {
+  const quoted = names.slice(0, 5).map((name) => `“${name}”`).join(', ');
+  return names.length > 5 ? `${quoted} and ${names.length - 5} more` : quoted;
+}
 
 /**
  * Ingest a Scrivener export — scene files plus an optional Outliner CSV — into
- * a single-chapter Manuscript Model. Files are read once: the same listing is
- * validated (blocking problems return `needs-order` with the author-facing
- * reasons; soft ones ride along as `warnings`) and then assembled into scenes.
+ * a single-chapter Manuscript Model. Files are read once. Only an export with
+ * no scene text cannot be imported (`empty`). Anything that doesn't line up
+ * comes back as `problems` for the author to fix in Scrivener; with
+ * `importAnyway` the import goes ahead and each problem's consequence rides
+ * along as a warning.
  */
 export async function ingestScrivenerFolder(
   source: ScrivenerSource,
-  folderPath: string
+  folderPath: string,
+  options: { importAnyway?: boolean } = {}
 ): Promise<ScrivenerIngestResult> {
   const listed = await source.listSceneFiles(folderPath);
   // Real exports are messy: per-doc MetaData/Notes sidecars, snapshot folders,
@@ -482,21 +491,28 @@ export async function ingestScrivenerFolder(
       !/ Snapshots\//i.test(file.path) &&
       stripLeadingYaml(file.content).trim().length > 0
   );
-  const outlineFile = await source.readSidecar(folderPath);
-  const sidecar = outlineFile ? parseOutlineSidecar(outlineFile.text) : null;
-  if (outlineFile && !(sidecar && hasTitleColumn(sidecar))) {
-    return { kind: 'needs-order', reason: `${outlineFile.name} has no Title column or no rows. ${REEXPORT_ADVICE}` };
+  if (files.length === 0) {
+    return { kind: 'empty', reason: 'No scene text found. In Scrivener, choose File → Export → Files as plain text, then copy the exported folder into this vault.' };
   }
+  const outlineFile = await source.readSidecar(folderPath);
+  const parsed = outlineFile ? parseOutlineSidecar(outlineFile.text) : null;
+  const outline = parsed && hasTitleColumn(parsed) ? parsed : null;
+  const problems: ScrivenerProblem[] = [];
+  if (outlineFile && !outline) {
+    problems.push({
+      problem: `${outlineFile.name} has no Title column or no rows.`,
+      ifImported: `${outlineFile.name} is left out, so scenes import without synopses or properties.`,
+    });
+  }
+  const check = inspectScrivenerExport(files, outline);
+  problems.push(...check.problems);
+  const order = resolveOrder(files, outline, folderPath);
+  if (order.problem) problems.push(order.problem);
+  if (problems.length > 0 && !options.importAnyway) return { kind: 'problems', problems };
 
-  const check = inspectScrivenerExport(files, sidecar);
-  if (check.errors.length > 0) return { kind: 'needs-order', reason: check.errors.join('\n') };
-
-  const ordered = resolveOrder(files, sidecar, folderPath);
-  if (ordered.kind === 'needs-order') return ordered;
-  const disagreement = sidecar ? numberingDisagreement(ordered.files, folderPath) : null;
-
-  const rowsByFile = matchRowsToFiles(ordered.files, sidecar);
-  const scenes = ordered.files.map((file, index) => ({
+  const disagreement = outline && problems.length === 0 ? numberingDisagreement(order.files, folderPath) : null;
+  const rowsByFile = matchRowsToFiles(order.files, outline);
+  const scenes = order.files.map((file, index) => ({
     ...fileToScene(file, rowsByFile[index]),
     sourceAct: deriveSourceAct(file.path),
   }));
@@ -508,8 +524,12 @@ export async function ingestScrivenerFolder(
       chapters: [{ title: null, scenes }],
       customFields: collectCustomFields(scenes),
     },
-    outlineName: outlineFile?.name ?? null,
-    warnings: disagreement ? [...check.warnings, disagreement] : check.warnings,
+    outlineName: outline ? outlineFile?.name ?? null : null, // SAFE: an outline is only parsed from a found file
+    warnings: [
+      ...problems.map((problem) => problem.ifImported),
+      ...check.warnings,
+      ...(disagreement ? [disagreement] : []),
+    ],
   };
 }
 
@@ -528,44 +548,68 @@ function numberingDisagreement(outlineOrder: ScrivenerFile[], folderPath: string
   return `The file numbers and the outline disagree on order, starting at “${title}”. The outline’s order is used. If you moved scenes in the binder between the two exports, export both again.`;
 }
 
-export interface ScrivenerExportCheck { errors: string[]; warnings: string[] }
+/**
+ * Something in an export that doesn't line up. The import can still go ahead;
+ * `ifImported` says what happens to the affected scenes when it does.
+ */
+export interface ScrivenerProblem {
+  problem: string;
+  ifImported: string;
+}
 
-/** Validate that the outline describes exactly these scene files before carrying its metadata. */
+export interface ScrivenerExportCheck { problems: ScrivenerProblem[]; warnings: string[] }
+
+/** Check that the outline describes exactly these scene files before carrying its metadata. */
 export function inspectScrivenerExport(files: ScrivenerFile[], outline: OutlineSidecar | null): ScrivenerExportCheck {
-  const errors: string[] = [];
+  const problems: ScrivenerProblem[] = [];
   const warnings: string[] = [];
-  if (!files.length) {
-    errors.push('No scene text found. In Scrivener, choose File → Export → Files as plain text, then copy the exported folder into this vault.');
-    return { errors, warnings };
-  }
-  if (!outline) return { errors, warnings }; // a missing outline is shown by the review itself
+  if (!outline) return { problems, warnings }; // a missing outline is shown by the review itself
   const fileTitles = files.map(file => normalizeTitle(titleFromExportFileName(file.fileName)));
   const rowTitles = outline.rows.map(row => normalizeTitle(readColumn(row, 'Title') ?? '')); // SAFE: empty outline titles cannot match a scene
-  const matchedRows = rowTitles.filter(title => fileTitles.includes(title));
-  if (new Set(fileTitles).size !== fileTitles.length || new Set(matchedRows).size !== matchedRows.length) {
-    errors.push(`Two documents share a title, so the outline cannot tell them apart. Rename one in Scrivener. ${REEXPORT_ADVICE}`);
+  const shared = [...new Set(fileTitles.filter((title, index) =>
+    fileTitles.indexOf(title) !== index || rowTitles.filter(row => row === title).length > 1
+  ))];
+  if (shared.length) {
+    const names = shared.map(title => titleFromExportFileName(files[fileTitles.indexOf(title)].fileName));
+    problems.push({
+      problem: `More than one document is titled ${listNames(names)}, so the outline can’t tell those scenes apart.`,
+      ifImported: `Scenes titled ${listNames(names)} import without outline properties.`,
+    });
   }
-  const unmatchedFiles = files.filter((_, index) => !rowTitles.includes(fileTitles[index]));
-  if (unmatchedFiles.length) errors.push(`${unmatchedFiles.length} scene file${unmatchedFiles.length === 1 ? ' is' : 's are'} not in the outline: ${unmatchedFiles.slice(0, 5).map(file => titleFromExportFileName(file.fileName)).join(', ')}. ${REEXPORT_ADVICE}`);
-  const missing = outline.rows.filter((row, index) => {
-    const count = readColumn(row, 'Word Count');
-    return count !== null && Number(count.replace(/,/g, '')) > 0 && !fileTitles.includes(rowTitles[index]);
-  });
-  if (missing.length) errors.push(`${missing.length} outline document${missing.length === 1 ? ' has' : 's have'} text but no exported file: ${missing.slice(0, 5).map(row => readColumn(row, 'Title')).join(', ')}. ${REEXPORT_ADVICE}`);
+  const unmatched = files.filter((_, index) => !rowTitles.includes(fileTitles[index])).map(file => titleFromExportFileName(file.fileName));
+  if (unmatched.length) {
+    problems.push({
+      problem: `${unmatched.length} scene file${unmatched.length === 1 ? ' is' : 's are'} not in the outline: ${listNames(unmatched)}.`,
+      ifImported: `${listNames(unmatched)} ${unmatched.length === 1 ? 'imports' : 'import'} without outline properties, after the scenes the outline lists.`,
+    });
+  }
+  const missing = outline.rows
+    .filter((row, index) => {
+      const count = readColumn(row, 'Word Count');
+      return count !== null && Number(count.replace(/,/g, '')) > 0 && !fileTitles.includes(rowTitles[index]);
+    })
+    .map(row => readColumn(row, 'Title') ?? ''); // SAFE: a row reaches here only through its title, which can be blank
+  if (missing.length) {
+    problems.push({
+      problem: `${missing.length} outline document${missing.length === 1 ? ' has' : 's have'} text but no exported file: ${listNames(missing)}.`,
+      ifImported: `${listNames(missing)} ${missing.length === 1 ? 'is' : 'are'} not imported.`,
+    });
+  }
   const uncertain = outline.rows.filter((row, index) => !fileTitles.includes(rowTitles[index]) && readColumn(row, 'Word Count') === null);
   if (uncertain.length) warnings.push(`${uncertain.length} outline row${uncertain.length === 1 ? ' has' : 's have'} no exported file. That is expected for folders and empty documents; otherwise export again with Word Count visible so missing text can be detected.`);
   if (!outline.fields.some(field => /^synopsis$/i.test(field))) warnings.push('The outline has no Synopsis column, so scenes arrive without synopses.');
-  return { errors, warnings };
+  return { problems, warnings };
 }
-
-type OrderResolution =
-  | { kind: 'ok'; files: ScrivenerFile[] }
-  | { kind: 'needs-order'; reason: string };
 
 /** Leading binder number of a path segment ("03 Chapter Three" → 3), or null. */
 function segmentNumber(segment: string): number | null {
   const match = segment.match(/^\s*(\d+)/);
   return match ? Number(match[1]) : null;
+}
+
+/** Files in folder-and-name order, numbers compared as numbers. */
+function byPath(files: ScrivenerFile[]): ScrivenerFile[] {
+  return files.slice().sort((a, b) => a.path.localeCompare(b.path, undefined, { numeric: true }));
 }
 
 /**
@@ -575,15 +619,20 @@ function segmentNumber(segment: string): number | null {
  * ones are per-folder, so the folders must be numbered too, and the path is
  * compared segment by segment.
  */
-function orderNumberedFiles(files: ScrivenerFile[], folderPath: string): OrderResolution {
+function orderNumberedFiles(files: ScrivenerFile[], folderPath: string):
+  | { kind: 'ok'; files: ScrivenerFile[] }
+  | { kind: 'unclear'; problem: ScrivenerProblem } {
   const prefix = folderPath.replace(/\/+$/, '') + '/';
   const segmentsOf = (file: ScrivenerFile): string[] =>
     (file.path.startsWith(prefix) ? file.path.slice(prefix.length) : file.fileName).split('/');
   const fileNumbers = files.map((file) => segmentNumber(file.fileName));
   if (fileNumbers.some((n) => n === null)) {
     return {
-      kind: 'needs-order',
-      reason: 'The exported files are not numbered and no outline CSV was found. Export again with numbered files, or add the Outliner Contents CSV.',
+      kind: 'unclear',
+      problem: {
+        problem: 'The files are not numbered and there is no outline CSV, so the order is unknown.',
+        ifImported: 'Scenes are ordered by file name. Check the order in the scene list before importing.',
+      },
     };
   }
   if (new Set(fileNumbers).size === files.length) {
@@ -592,8 +641,11 @@ function orderNumberedFiles(files: ScrivenerFile[], folderPath: string): OrderRe
   const keys = new Map(files.map((file) => [file, segmentsOf(file).map(segmentNumber)]));
   if ([...keys.values()].some((numbers) => numbers.some((n) => n === null))) {
     return {
-      kind: 'needs-order',
-      reason: 'File numbers restart in each folder, but the folders are not numbered, so the order is unclear. Add the Outliner Contents CSV.',
+      kind: 'unclear',
+      problem: {
+        problem: 'File numbers restart in each folder, but the folders are not numbered, so the order is unclear.',
+        ifImported: 'Scenes are ordered by folder and file name. Check the order in the scene list before importing.',
+      },
     };
   }
   const ordered = files.slice().sort((a, b) => {
@@ -608,61 +660,56 @@ function orderNumberedFiles(files: ScrivenerFile[], folderPath: string): OrderRe
 }
 
 /**
- * The outline row order is authoritative whenever a CSV is supplied.
- * Numbered filenames supply order only for exports with no outline.
- * A partial outline blocks import rather than substituting filename order.
+ * Narrative order. An outline orders every file it lists (a title shared by
+ * several documents pairs rows and files in turn); files it doesn't list follow
+ * in file order. Without an outline, file numbering orders the book. When
+ * neither settles it, files go by name and the problem says so.
  */
-function resolveOrder(files: ScrivenerFile[], sidecar: OutlineSidecar | null, folderPath: string): OrderResolution {
-  if (sidecar) {
-    const byTitle = new Map<string, ScrivenerFile>();
-    for (const file of files) {
-      const key = normalizeTitle(titleFromExportFileName(file.fileName));
-      if (key.length > 0 && !byTitle.has(key)) byTitle.set(key, file);
-    }
-    const inOrder: ScrivenerFile[] = [];
-    const used = new Set<ScrivenerFile>();
-    for (const row of sidecar.rows) {
-      const rowTitle = readColumn(row, 'Title');
-      if (!rowTitle) continue;
-      const file = byTitle.get(normalizeTitle(rowTitle));
-      if (file && !used.has(file)) {
-        inOrder.push(file);
-        used.add(file);
-      }
-    }
-    if (inOrder.length === files.length) return { kind: 'ok', files: inOrder };
-    return {
-      kind: 'needs-order',
-      reason: `The outline matches ${inOrder.length} of ${files.length} exported files by title. ${REEXPORT_ADVICE}`,
-    };
+function resolveOrder(
+  files: ScrivenerFile[],
+  outline: OutlineSidecar | null,
+  folderPath: string
+): { files: ScrivenerFile[]; problem: ScrivenerProblem | null } {
+  const numbered = orderNumberedFiles(files, folderPath);
+  const fileOrder = numbered.kind === 'ok' ? numbered.files : byPath(files);
+  if (!outline) return { files: fileOrder, problem: numbered.kind === 'ok' ? null : numbered.problem };
+  const byTitle = new Map<string, ScrivenerFile[]>();
+  for (const file of fileOrder) {
+    const key = normalizeTitle(titleFromExportFileName(file.fileName));
+    byTitle.set(key, [...(byTitle.get(key) ?? []), file]); // SAFE: a title's first file starts its list
   }
-  return orderNumberedFiles(files, folderPath);
+  const listed: ScrivenerFile[] = [];
+  for (const row of outline.rows) {
+    const file = byTitle.get(normalizeTitle(readColumn(row, 'Title') ?? ''))?.shift(); // SAFE: a row with no title matches no file
+    if (file) listed.push(file);
+  }
+  return { files: [...listed, ...fileOrder.filter((file) => !listed.includes(file))], problem: null };
 }
 
 /**
- * Match sidecar rows to files (already in reading order) for metadata carry.
- * Match by normalized document title only. Never attach metadata by position.
+ * Match outline rows to files for metadata carry, by normalized document title
+ * only — never by position. A title held by more than one file or row is
+ * ambiguous, so those scenes carry no outline properties.
  */
 function matchRowsToFiles(
   files: ScrivenerFile[],
-  sidecar: OutlineSidecar | null
+  outline: OutlineSidecar | null
 ): (Record<string, string> | null)[] {
-  if (!sidecar) return files.map(() => null);
-
-  const rowByTitle = new Map<string, Record<string, string>>();
-  for (const row of sidecar.rows) {
+  if (!outline) return files.map(() => null);
+  const keyOf = (file: ScrivenerFile): string => normalizeTitle(titleFromExportFileName(file.fileName));
+  const rowsByTitle = new Map<string, Record<string, string>[]>();
+  for (const row of outline.rows) {
     const title = readColumn(row, 'Title');
     if (!title) continue;
     const key = normalizeTitle(title);
-    if (!rowByTitle.has(key)) rowByTitle.set(key, row);
+    rowsByTitle.set(key, [...(rowsByTitle.get(key) ?? []), row]); // SAFE: a title's first row starts its list
   }
-
-  const matches = files.map((file) => {
-    const key = normalizeTitle(titleFromExportFileName(file.fileName));
-    return key.length > 0 ? (rowByTitle.get(key) ?? null) : null;
+  const fileCounts = new Map<string, number>();
+  for (const file of files) fileCounts.set(keyOf(file), (fileCounts.get(keyOf(file)) ?? 0) + 1); // SAFE: a title's first file starts its tally at 0
+  return files.map((file) => {
+    const rows = rowsByTitle.get(keyOf(file));
+    return rows?.length === 1 && fileCounts.get(keyOf(file)) === 1 ? rows[0] : null;
   });
-
-  return matches;
 }
 
 function collectCustomFields(scenes: ManuscriptScene[]): string[] {

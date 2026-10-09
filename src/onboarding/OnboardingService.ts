@@ -378,14 +378,11 @@ export class OnboardingService {
   }
 
   /**
-   * Parse the book folder into a Manuscript Model. The flow is auto-detected
-   * from the folder contents; `flowOverride` (the author's Prepare-screen
-   * choice) wins when provided.
+   * Parse the book folder into a Manuscript Model for the given lane — the
+   * detected one, or the author's Prepare-screen choice. Scrivener exports have
+   * their own path (ingestScrivener).
    */
-  async ingest(folderPath: string, flowOverride?: ImportFlow): Promise<MarkdownIngestResult> {
-    const detection = await this.detectImportFlow(folderPath);
-    const flow = flowOverride ?? detection?.flow ?? 'folder'; // SAFE: detectImportFlow already returns 'folder' as its terminal case, so this keeps the same answer when detection returns nothing
-
+  async ingest(folderPath: string, flow: Exclude<ImportFlow, 'scrivener'>): Promise<MarkdownIngestResult> {
     if (flow === 'docx' || flow === 'single') {
       const proseFiles = this.listProseFiles(folderPath);
       const file = proseFiles[0];
@@ -406,14 +403,16 @@ export class OnboardingService {
       return { kind: 'ok', model: ingestSingleFile(file.name, content) };
     }
 
-    if (flow === 'scrivener') return this.ingestScrivener(folderPath);
     const source = createObsidianMarkdownSource(this.plugin.app);
     return ingestMarkdownFolder(source, folderPath);
   }
 
-  /** Read and validate a Scrivener export (scene files plus its outline CSV). */
-  ingestScrivener(folderPath: string): Promise<ScrivenerIngestResult> {
-    return ingestScrivenerFolder(createObsidianScrivenerSource(this.plugin.app), folderPath);
+  /**
+   * Read and check a Scrivener export (scene files plus its outline CSV). With
+   * `importAnyway`, problems become warnings instead of stopping the import.
+   */
+  ingestScrivener(folderPath: string, options: { importAnyway?: boolean } = {}): Promise<ScrivenerIngestResult> {
+    return ingestScrivenerFolder(createObsidianScrivenerSource(this.plugin.app), folderPath, options);
   }
 
   /**

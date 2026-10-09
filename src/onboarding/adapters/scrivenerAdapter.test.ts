@@ -132,9 +132,12 @@ describe('ingestScrivenerFolder', () => {
     ]);
   });
 
-  it('blocks numbered exports with an incomplete outline instead of guessing order or metadata', async () => {
-    const result = await ingestScrivenerFolder(sourceOf(SCENE_FILES, 'Title,Synopsis\nDifferent title,Wrong metadata'), 'Book/Source');
-    expect(result.kind).toBe('needs-order');
+  it('stops on an incomplete outline instead of guessing, and never attaches metadata by position', async () => {
+    const outline = 'Title,Synopsis\nDifferent title,Wrong metadata';
+    const result = await ingestScrivenerFolder(sourceOf(SCENE_FILES, outline), 'Book/Source');
+    expect(result.kind).toBe('problems');
+    const anyway = await ingestScrivenerFolder(sourceOf(SCENE_FILES, outline), 'Book/Source', { importAnyway: true });
+    expect(anyway.kind === 'ok' && flattenScenes(anyway.model).every((scene) => scene.knownSynopsis === null)).toBe(true);
   });
 
   it('carries synopsis and metadata from matched sidecar rows', async () => {
@@ -212,13 +215,20 @@ describe('ingestScrivenerFolder', () => {
     ]);
   });
 
-  it('asks for order when files are unnumbered and the sidecar cannot cover them', async () => {
-    const unnumbered = [file('Alpha.md', 'a'), file('Beta.md', 'b')];
+  it('asks about order when files are unnumbered and the sidecar cannot cover them', async () => {
+    const unnumbered = [file('Beta.md', 'b'), file('Alpha.md', 'a')];
     const noSidecar = await ingestScrivenerFolder(sourceOf(unnumbered, null), 'Book/Source');
-    expect(noSidecar.kind).toBe('needs-order');
+    expect(noSidecar.kind === 'problems' && noSidecar.problems[0].problem).toContain('order is unknown');
+    const anyway = await ingestScrivenerFolder(sourceOf(unnumbered, null), 'Book/Source', { importAnyway: true });
+    expect(anyway.kind === 'ok' && flattenScenes(anyway.model).map((scene) => scene.title)).toEqual(['Alpha', 'Beta']);
 
     const partial = await ingestScrivenerFolder(sourceOf(unnumbered, OUTLINE_CSV), 'Book/Source');
-    expect(partial.kind).toBe('needs-order');
+    expect(partial.kind).toBe('problems');
+  });
+
+  it('refuses only an export with no scene text', async () => {
+    const result = await ingestScrivenerFolder(sourceOf([file('1 Empty.md', '   ')], null), 'Book/Source', { importAnyway: true });
+    expect(result.kind).toBe('empty');
   });
 
   it('strips a leading YAML block from exported file bodies', async () => {

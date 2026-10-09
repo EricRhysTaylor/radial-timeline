@@ -18,6 +18,7 @@ import {
   isDerivedOutlineField,
   mappingConflicts,
   type ScrivenerFieldTarget,
+  type ScrivenerProblem,
 } from '../onboarding/adapters/scrivenerAdapter';
 import type { StructureOnlyImport } from '../onboarding/OnboardingService';
 import { summarizeImport } from '../onboarding/importSummary';
@@ -87,23 +88,43 @@ function nameList(names: string[]): string {
   return names.length > 8 ? `${shown} and ${names.length - 8} more` : shown;
 }
 
-/** The export cannot be imported as it stands: say why and how to fix it. */
-export function renderScrivenerBlocked(
+/**
+ * The export doesn't line up. Each problem says what continuing would do, so
+ * the author can fix it in Scrivener or carry on. Only an export with nothing
+ * to import (no `onContinue`) has no way forward.
+ */
+export function renderScrivenerProblems(
   container: HTMLElement,
   folder: string,
-  reason: string,
-  actions: { onRecheck: () => void; onChangeSource: () => void }
+  problems: ScrivenerProblem[],
+  actions: { onRecheck: () => void; onChangeSource: () => void; onContinue?: () => void }
 ): void {
   container.empty();
-  renderHeader(container, 'This export needs a fix', `“${basename(folder)}” can’t be imported yet.`);
+  const name = basename(folder);
+  if (actions.onContinue) {
+    renderHeader(container, 'Check this export', `Some of “${name}” doesn’t line up. Fix it in Scrivener, or continue anyway.`);
+  } else {
+    renderHeader(container, 'Nothing to import', `“${name}” has no scene text.`);
+  }
   const panel = container.createDiv({ cls: 'ert-panel ert-stack' });
-  for (const line of reason.split('\n')) {
-    panel.createDiv({ cls: 'ert-section-desc ert-section-desc--alert', text: line });
+  for (const item of problems) {
+    const entry = panel.createDiv({ cls: 'ert-stack ert-onb-cast' });
+    entry.createDiv({ cls: 'ert-onb-warn', text: item.problem });
+    if (actions.onContinue) entry.createDiv({ cls: 'ert-section-desc', text: `If you continue: ${item.ifImported}` });
+  }
+  if (actions.onContinue) {
+    panel.createEl('hr', { cls: 'ert-onb-divider' });
+    panel.createDiv({ cls: 'ert-section-desc', text: 'To fix it, select the same documents in Scrivener, export Files and Outliner Contents again, then choose Check again.' });
   }
   renderScrivenerExportHelp(panel);
   const row = container.createDiv({ cls: 'ert-modal-actions' });
   new ButtonComponent(row).setButtonText('Choose another export').onClick(actions.onChangeSource);
-  new ButtonComponent(row).setButtonText('Check again').setCta().onClick(actions.onRecheck);
+  const recheck = new ButtonComponent(row).setButtonText('Check again').onClick(actions.onRecheck);
+  if (actions.onContinue) {
+    new ButtonComponent(row).setButtonText('Continue anyway').setCta().onClick(actions.onContinue);
+  } else {
+    recheck.setCta();
+  }
 }
 
 function encode(decision: ScrivenerFieldTarget): string {

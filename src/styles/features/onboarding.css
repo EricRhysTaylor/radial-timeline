@@ -265,22 +265,40 @@
   flex-wrap: wrap;
 }
 
-/* Import chooser — one button per export found in the vault. */
-.ert-ui .ert-onb-source {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  width: 100%;
-  height: auto;
-  padding: var(--ert-pad-sm) var(--ert-pad-cozy);
-  text-align: left;
-  white-space: normal;
-}
-
+/* Import chooser — each export is an .ert-modal-choice card. */
 .ert-ui .ert-onb-source__name {
   font-weight: 600;
   color: var(--text-normal);
+}
+
+/* A manuscript's parts — label | value, one line each (scenes, properties). */
+.ert-ui .ert-onb-sources {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  gap: var(--ert-gap-xs) var(--ert-gap-cozy);
+  align-items: baseline;
+  font-weight: 400;
+}
+
+.ert-ui .ert-modal-header + .ert-onb-sources {
+  margin-top: calc(-1 * var(--ert-gap-sm));
+  margin-bottom: var(--ert-gap-sm);
+}
+
+.ert-ui .ert-onb-sources__value {
+  color: var(--text-normal);
+}
+
+.ert-ui .ert-onb-divider {
+  width: 100%;
+  margin: var(--ert-gap-xs) 0;
+  border: none;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.ert-ui .ert-onb-cast {
+  gap: var(--ert-gap-xs);
 }
 
 /* Collapsed help and the scene list — quiet until opened. */

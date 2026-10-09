@@ -55,6 +55,15 @@ Scrivener exports never enter the split editor or AI; other sources (Word, singl
 
 Fresh test vault, Welcome → Import manuscript → The Salt Road → Review → Import, in Obsidian 1.14.4 with the built plugin. The review showed the expected rings (Smuggling Run 4, Sisters 5, The Inspector 4, Grief 3, Main Plot 1), thirds acts and 5 characters / 4 places. Import wrote 12 scenes, 5 Character and 4 Place notes, registered and activated the book, closed the window and showed the timeline. Fixed after this run: the plugin's own folder offered as an export, uneven select widths, POV names.
 
+## Revisions after review (2026-10-09)
+
+- Chooser and review present an export as its two files: **Scenes** (text files) and **Properties** (the outline CSV from the Scrivener project). A missing CSV is flagged on the chooser card and in the review.
+- Discovery and import share one rule for which CSV belongs to an export (`outlineListsAll`): a CSV inside the export folder is its outline; one further up counts only if it lists every scene file. Before this, a no-CSV export could be matched to another export's root outline and blocked.
+- A text export without an outline is one candidate at the folder above its numbered/ACT binder folders, not one per chapter folder.
+- When numbered files and the outline disagree on order, the review warns, naming the first scene that differs; the outline order is used.
+- Character and place notes are separate switches beside the names they create, set off by dividers.
+- Reassurance copy about files staying unchanged was removed; chooser cards use the shared `ert-modal-choice` card.
+
 ## Deferred
 
 - Word and single-file imports still use the four-stage path; the same one-screen review would suit them once scene splitting is folded in.

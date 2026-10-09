@@ -11,10 +11,8 @@ describe('Scrivener export readiness', () => {
   it('accepts matched scenes, punctuation-folded titles, and empty binder folders', () => {
     expect(check('Title,Synopsis,Word Count\nAct 1,,0\nArrival?,Author synopsis,5\nDeparture,Another synopsis,5\nEmpty placeholder,,0')).toEqual({ errors: [], warnings: [] });
   });
-  it('reports a missing CSV as optional metadata, with an export fix', () => {
-    const result = check(null);
-    expect(result.errors).toEqual([]);
-    expect(result.warnings[0]).toContain('Outliner Contents as CSV');
+  it('accepts scene files without an outline (the review flags the missing CSV)', () => {
+    expect(check(null)).toEqual({ errors: [], warnings: [] });
   });
   it('blocks missing scene prose listed in Word Count', () => {
     const result = check('Title,Synopsis,Word Count\nArrival,,5\nDeparture,,5\nMissing scene,,50');

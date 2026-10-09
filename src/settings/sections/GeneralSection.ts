@@ -1,7 +1,7 @@
 import type { App } from 'obsidian';
 import { Setting as ObsidianSetting, normalizePath, Notice, Modal, ButtonComponent, ExtraButtonComponent, TextComponent, setIcon, setTooltip, TFile, TFolder } from 'obsidian';
 import { OnboardingModal } from '../../modals/OnboardingModal';
-import { discoverOnboardingCandidates } from '../../onboarding/discovery';
+import { describeOnboardingCandidate, discoverOnboardingCandidates } from '../../onboarding/discovery';
 import { NamePromptModal } from '../../ui/NamePromptModal';
 import type RadialTimelinePlugin from '../../main';
 import { CreateBookCopyModal } from '../../modals/CreateBookCopyModal';
@@ -133,7 +133,7 @@ export function renderGeneralSection(params: {
             if (!candidatesEl.isConnected) return;
             candidatesEl.empty();
             candidatesEl.createDiv({ cls: 'ert-section-desc', text: candidates.length ? `${candidates.length} potential manuscript folders found. Choose manuscript to inspect and import.` : 'No unregistered export detected. Copy your Scrivener export into this vault, then scan again.' });
-            for (const candidate of candidates) candidatesEl.createDiv({ cls: 'ert-section-desc', text: `${candidate.folder} — ${candidate.evidence}` });
+            for (const candidate of candidates) candidatesEl.createDiv({ cls: 'ert-section-desc', text: `${candidate.folder} — ${describeOnboardingCandidate(candidate)}` });
         } catch (error) {
             if (candidatesEl.isConnected) candidatesEl.setText(`Cannot scan exports: ${error instanceof Error ? error.message : String(error)}`);
         }

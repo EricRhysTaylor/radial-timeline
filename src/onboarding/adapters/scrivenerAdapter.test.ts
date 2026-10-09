@@ -8,6 +8,7 @@ import {
   applyMetadataMappingToModel,
   inspectScrivenerExport,
   mappingConflicts,
+  outlineListsAll,
   isScrivenerAuxiliaryFile,
   isSnapshotFolderName,
   deriveSourceAct,
@@ -349,6 +350,16 @@ describe('applyMetadataMapping', () => {
     );
     expect(out.Mood).toBe('tense');
     expect(out.Same).toBe('first');
+  });
+});
+
+describe('outlineListsAll', () => {
+  it('claims an export only when the outline lists every scene file', () => {
+    const outline = parseOutlineSidecar('Title,Synopsis\nChapter One,\nThe Hook,a\nLandfall: Dawn,b');
+    if (!outline) throw new Error('outline did not parse');
+    expect(outlineListsAll(outline, ['1 The Hook.txt', '2 Landfall Dawn.txt'])).toBe(true);
+    expect(outlineListsAll(outline, ['1 The Hook.txt', '01 Opening.txt'])).toBe(false);
+    expect(outlineListsAll(outline, [])).toBe(false);
   });
 });
 

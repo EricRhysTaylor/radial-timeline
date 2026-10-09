@@ -41,7 +41,7 @@ import { refreshOnboardingPrompt } from '../onboarding/promptSync';
 import { proposeScrivenerAutomap, type ScrivenerFieldTarget } from '../onboarding/adapters/scrivenerAdapter';
 import { createBookId, normalizeBookProfile } from '../utils/books';
 import { discoverOnboardingCandidates } from '../onboarding/discovery';
-import { renderScrivenerBlocked, renderScrivenerExportHelp, renderScrivenerReview, type ScrivenerReviewState } from './OnboardingScrivenerReview';
+import { MISSING_OUTLINE_TEXT, renderScrivenerBlocked, renderScrivenerExportHelp, renderScrivenerReview, renderSourceParts, type ScrivenerReviewState } from './OnboardingScrivenerReview';
 import { STAGE_ORDER, type Stage } from '../utils/constants';
 import type { AIProviderId } from '../ai/types';
 import { forecastOnboardingTokens, forecastOnboardingCost } from '../onboarding/costForecast';
@@ -305,7 +305,7 @@ export class OnboardingModal extends Modal {
     const header = contentEl.createDiv({ cls: 'ert-modal-header' });
     header.createSpan({ cls: 'ert-modal-badge', text: 'Import' });
     header.createDiv({ cls: 'ert-modal-title', text: 'Import a manuscript' });
-    header.createDiv({ cls: 'ert-modal-subtitle', text: 'Choose your Scrivener export or Word document. Your files are not changed.' });
+    header.createDiv({ cls: 'ert-modal-subtitle', text: 'Choose your Scrivener export or Word document.' });
 
     const panel = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
     const found = panel.createDiv({ cls: 'ert-stack' });
@@ -338,9 +338,17 @@ export class OnboardingModal extends Modal {
         found.createDiv({ cls: 'ert-section-desc', text: 'No exports found in this vault yet. Copy your export in, or type its folder below.' });
       }
       for (const candidate of candidates) {
-        const row = found.createEl('button', { cls: 'ert-onb-source', attr: { type: 'button' } });
-        row.createSpan({ cls: 'ert-onb-source__name', text: basename(candidate.folder) });
-        row.createSpan({ cls: 'ert-section-desc', text: candidate.folder === basename(candidate.folder) ? candidate.evidence : `${candidate.evidence} · ${candidate.folder}` });
+        const row = found.createEl('button', { cls: 'ert-modal-choice', attr: { type: 'button' } });
+        const name = row.createDiv({ cls: 'ert-onb-source__name', text: basename(candidate.folder) });
+        if (candidate.folder !== basename(candidate.folder)) name.createSpan({ cls: 'ert-section-desc', text: `  ${candidate.folder}` });
+        renderSourceParts(row, candidate.kind === 'word'
+          ? [{ label: 'Document', value: candidate.document }]
+          : [
+            { label: 'Scenes', value: `${candidate.sceneCount} text file${candidate.sceneCount === 1 ? '' : 's'}` },
+            candidate.outline
+              ? { label: 'Properties', value: `${candidate.outline} (Scrivener outline)` }
+              : { label: 'Properties', value: MISSING_OUTLINE_TEXT, warn: true },
+          ]);
         row.addEventListener('click', () => void selectFolder(candidate.folder));
       }
     } catch (failure) {
@@ -398,12 +406,13 @@ export class OnboardingModal extends Modal {
       warnings: result.warnings,
       mapping: this.metadataMapping,
       publishStage: this.publishStage,
-      createProfiles: this.createCharacters,
+      createCharacterNotes: this.createCharacters,
+      createPlaceNotes: this.createPlaces,
     };
     const remember = (): void => {
       this.publishStage = state.publishStage;
-      this.createCharacters = state.createProfiles;
-      this.createPlaces = state.createProfiles;
+      this.createCharacters = state.createCharacterNotes;
+      this.createPlaces = state.createPlaceNotes;
       this.persistSession('scrivener');
     };
     remember();
@@ -428,7 +437,9 @@ export class OnboardingModal extends Modal {
     this.renderBusy('Creating scene notes…');
     let report: MaterializeReport;
     try {
-      const kinds: EntityKind[] = this.createCharacters ? ['character', 'place'] : [];
+      const kinds: EntityKind[] = [];
+      if (this.createCharacters) kinds.push('character');
+      if (this.createPlaces) kinds.push('place');
       const entities = await this.service.enrichEntities(proposals, { kinds, generateSummaries: false });
       report = await this.service.materialize(book, proposals, entities);
     } catch (error) {
@@ -1056,7 +1067,7 @@ export class OnboardingModal extends Modal {
     const destName = this.book ? this.service.destinationFor(this.book) : '';
     contentEl.createDiv({
       cls: 'ert-section-desc',
-      text: `Will write to a new folder: ${destName} (source left untouched) · Publish Stage: ${this.publishStage}.`,
+      text: `Creates ${destName} · Publish Stage: ${this.publishStage}.`,
     });
 
     // Optional extras, decided here — after the narrative is settled. Built at

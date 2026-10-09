@@ -116,6 +116,23 @@ describe('Scrivener import with diverging field names', () => {
   });
 });
 
+describe('order from two sources', () => {
+  it('warns when file numbering and the outline disagree, and follows the outline', async () => {
+    const files = [scene('01 Chapter One', '01 Ines Comes Home.txt'), scene('01 Chapter One', '02 The Harbor at Dawn.txt')];
+    const outline = 'Title,Synopsis\nThe Harbor at Dawn,a\nInes Comes Home,b';
+    const result = await ingestScrivenerFolder(source(files, outline), 'Salt');
+    expect(result.kind).toBe('ok');
+    if (result.kind !== 'ok') return;
+    expect(result.model.chapters[0].scenes.map((s) => s.title)).toEqual(['The Harbor at Dawn', 'Ines Comes Home']);
+    expect(result.warnings).toEqual([expect.stringContaining('starting at “The Harbor at Dawn”')]);
+  });
+
+  it('stays quiet when numbering and outline agree', async () => {
+    const result = await ingestScrivenerFolder(source(FILES, OUTLINE), 'Salt');
+    expect(result.kind === 'ok' && result.warnings).toEqual([]);
+  });
+});
+
 describe('numbered exports without an outline', () => {
   it('orders per-folder numbering by folder number, then file number', async () => {
     const result = await ingestScrivenerFolder(source(FILES, null), 'Salt');
@@ -124,7 +141,7 @@ describe('numbered exports without an outline', () => {
     expect(result.model.chapters[0].scenes.map((s) => s.title)).toEqual([
       'The Harbor at Dawn', 'Ines Comes Home', 'Salt and Silver', 'The Salt Road Home',
     ]);
-    expect(result.warnings[0]).toContain('No outline CSV');
+    expect(result.outlineName).toBeNull();
   });
 
   it('orders book-wide numbering by file number alone, whatever the folder names', async () => {

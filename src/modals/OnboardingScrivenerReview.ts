@@ -32,7 +32,8 @@ export interface ScrivenerReviewState {
   warnings: string[];
   mapping: Record<string, ScrivenerFieldTarget>;
   publishStage: Stage;
-  createProfiles: boolean;
+  createCharacterNotes: boolean;
+  createPlaceNotes: boolean;
 }
 
 export interface ScrivenerReviewHost {
@@ -57,11 +58,33 @@ export function renderScrivenerExportHelp(parent: HTMLElement): void {
   steps.createEl('li', { text: 'Put both in this vault. The CSV can sit next to the exported folder.' });
 }
 
-function renderHeader(container: HTMLElement, title: string, subtitle: string): void {
+function renderHeader(container: HTMLElement, title: string, subtitle?: string): void {
   const header = container.createDiv({ cls: 'ert-modal-header' });
   header.createSpan({ cls: 'ert-modal-badge', text: 'Scrivener import' });
   header.createDiv({ cls: 'ert-modal-title', text: title });
-  header.createDiv({ cls: 'ert-modal-subtitle', text: subtitle });
+  if (subtitle) header.createDiv({ cls: 'ert-modal-subtitle', text: subtitle });
+}
+
+/** What an import without an outline CSV loses, and how to include it. */
+export const MISSING_OUTLINE_TEXT = 'No outline CSV found. Scenes will import without synopses or properties. To include them, export Outliner Contents as CSV next to the scene folder.';
+
+/**
+ * The parts of a manuscript, one labeled line each: a Scrivener export is its
+ * scene files plus the outline CSV with their properties. A warning line flags
+ * a missing part.
+ */
+export function renderSourceParts(parent: HTMLElement, parts: Array<{ label: string; value: string; warn?: boolean }>): void {
+  const list = parent.createDiv({ cls: 'ert-onb-sources' });
+  for (const part of parts) {
+    list.createSpan({ cls: 'ert-section-desc', text: part.label });
+    list.createSpan({ cls: part.warn ? 'ert-onb-warn' : 'ert-onb-sources__value', text: part.value });
+  }
+}
+
+/** A name list short enough to read at a glance. */
+function nameList(names: string[]): string {
+  const shown = names.slice(0, 8).join(', ');
+  return names.length > 8 ? `${shown} and ${names.length - 8} more` : shown;
 }
 
 /** The export cannot be imported as it stands: say why and how to fix it. */
@@ -123,12 +146,14 @@ function truncate(text: string, max: number): string {
 export function renderScrivenerReview(container: HTMLElement, state: ScrivenerReviewState, host: ScrivenerReviewHost): void {
   container.empty();
   const scenes = flattenScenes(state.model);
-  const folderName = basename(state.book.sourceFolder);
-  renderHeader(
-    container,
-    'Review your import',
-    `${scenes.length} scene${scenes.length === 1 ? '' : 's'} from “${folderName}”, in ${state.outlineName ? `the order of ${state.outlineName}` : 'numbered file order'}.`
-  );
+  renderHeader(container, 'Review your import');
+  renderSourceParts(container, [
+    { label: 'Scenes', value: `${scenes.length} text file${scenes.length === 1 ? '' : 's'} in “${basename(state.book.sourceFolder)}”` },
+    state.outlineName
+      ? { label: 'Properties', value: `${state.outlineName}, the outline exported from your Scrivener project` }
+      : { label: 'Properties', value: MISSING_OUTLINE_TEXT, warn: true },
+    { label: 'Order', value: state.outlineName ? 'From the outline' : 'From the numbered file names' },
+  ]);
   for (const warning of state.warnings) container.createDiv({ cls: 'ert-onb-warn', text: warning });
 
   // --- Book -----------------------------------------------------------------
@@ -160,7 +185,8 @@ export function renderScrivenerReview(container: HTMLElement, state: ScrivenerRe
   let conflictsEl: HTMLElement | null = null;
   if (fields.length > 0) {
     const fieldPanel = container.createDiv({ cls: 'ert-panel ert-stack' });
-    fieldPanel.createDiv({ cls: 'ert-section-title', text: 'Outline columns' });
+    fieldPanel.createDiv({ cls: 'ert-section-title', text: 'Scene properties' });
+    fieldPanel.createDiv({ cls: 'ert-section-desc', text: `Each column of ${state.outlineName ?? 'the outline'}, and where it goes in Radial Timeline.` });
     const grid = fieldPanel.createDiv({ cls: 'ert-onb-map' });
     for (const field of fields) {
       const cell = grid.createDiv({ cls: 'ert-onb-map__field' });
@@ -202,7 +228,7 @@ export function renderScrivenerReview(container: HTMLElement, state: ScrivenerRe
     destinationEl.setText(
       !state.book.title ? 'Give the book a title.'
         : taken ? `A folder named “${basename(destination)}” already exists. Choose another title.`
-          : `Creates “${destination}”. Your export stays as it is.`
+          : `Creates “${destination}”.`
     );
 
     if (conflictsEl) {
@@ -234,22 +260,29 @@ export function renderScrivenerReview(container: HTMLElement, state: ScrivenerRe
         text: `Your export names ${result.highestSourceAct} acts but the timeline has ${result.actCount}; later acts are placed in Act ${result.actCount}. Raise the act count in Settings first to keep them.`,
       });
     }
-    const entityCount = summary.characters.length + summary.places.length;
-    if (entityCount > 0) {
-      const castRow = resultPanel.createDiv({ cls: 'ert-onb-resultrow' });
-      castRow.createSpan({ cls: 'ert-section-desc', text: 'Cast' });
-      castRow.createSpan({ text: `${summary.characters.length} character${summary.characters.length === 1 ? '' : 's'} · ${summary.places.length} place${summary.places.length === 1 ? '' : 's'}` });
-      const check = resultPanel.createDiv({ cls: 'ert-onb-check' });
-      new ToggleComponent(check)
-        .setValue(state.createProfiles)
-        .then((toggle) => toggle.toggleEl.setAttribute('aria-label', 'Create character and place notes'))
-        .onChange((value) => {
-          state.createProfiles = value;
+    const cast: Array<{ label: string; names: string[]; noun: string; on: boolean; set: (on: boolean) => void }> = [
+      { label: 'Characters', names: summary.characters, noun: 'character', on: state.createCharacterNotes, set: (on) => { state.createCharacterNotes = on; } },
+      { label: 'Places', names: summary.places, noun: 'place', on: state.createPlaceNotes, set: (on) => { state.createPlaceNotes = on; } },
+    ];
+    const named = cast.filter((item) => item.names.length > 0);
+    if (named.length > 0) resultPanel.createEl('hr', { cls: 'ert-onb-divider' });
+    for (const entry of named) {
+      const row = resultPanel.createDiv({ cls: 'ert-onb-resultrow' });
+      row.createSpan({ cls: 'ert-section-desc', text: entry.label });
+      const value = row.createDiv({ cls: 'ert-stack ert-onb-cast' });
+      value.createSpan({ text: nameList(entry.names) });
+      const toggleRow = value.createDiv({ cls: 'ert-onb-check' });
+      new ToggleComponent(toggleRow)
+        .setValue(entry.on)
+        .then((toggle) => toggle.toggleEl.setAttribute('aria-label', `Create a note for each ${entry.noun}`))
+        .onChange((on) => {
+          entry.set(on);
           host.onEdit();
         });
-      check.createSpan({ text: `Also create a note for each (${entityCount})` });
+      toggleRow.createSpan({ cls: 'ert-section-desc', text: `Create a note for each ${entry.noun} (${entry.names.length})` });
     }
 
+    resultPanel.createEl('hr', { cls: 'ert-onb-divider' });
     const list = resultPanel.createEl('details', { cls: 'ert-onb-help' });
     list.open = listWasOpen;
     list.createEl('summary', { text: `Show all ${summary.scenes} scenes` });

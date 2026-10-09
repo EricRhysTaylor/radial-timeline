@@ -2,16 +2,17 @@
 
 1. In Scrivener, select your manuscript in the binder and choose **File → Export → Files…** as plain text, with numbered files. A raw `.scriv` project cannot be imported.
 2. Choose **File → Export → Outliner Contents as CSV…** with Title, Synopsis and the columns you want to bring. Save it next to the exported folder.
-3. Put both in your vault. On the Welcome screen choose **Import manuscript** (or run **Import manuscript** from the command palette) and pick the export.
+3. Put both in your vault. On the Welcome screen choose **Import manuscript** (or run **Import manuscript** from the command palette) and pick the export. Each export shows its two parts: the scene files and the outline CSV with their properties. An export without a CSV is flagged before you pick it.
 4. Review, then **Import**. One screen shows everything:
-   - **Book title** and **Stage**. The book is written to a new `<Title> RT` folder beside the export; the export is not changed.
-   - **Outline columns**, each with sample values and where it goes. Common Scrivener names are matched for you: Themes, Storyline or Plotline → Subplot; People, Characters or Cast → Character; Location or Setting → Place; Date or Story Date → When; POV or Point of View → POV character, which is listed first in Character because that is where Radial Timeline looks for it. Anything else is kept under its own name, or you can send it to a scene field or skip it.
-   - **Your timeline**: the subplot rings with their scene counts, where acts come from, and the characters and places named. Open **Show all scenes** to check order and memberships.
+   - **Scenes**, **Properties** (the outline CSV) and **Order** at the top.
+   - **Book title** and **Stage**. The book is written to a new `<Title> RT` folder beside the export.
+   - **Scene properties**: each outline column, with sample values and where it goes. Common Scrivener names are matched for you: Themes, Storyline or Plotline → Subplot; People, Characters or Cast → Character; Location or Setting → Place; Date or Story Date → When; POV or Point of View → POV character, which is listed first in Character because that is where Radial Timeline looks for it. Anything else is kept under its own name, or you can send it to a scene field or skip it.
+   - **Your timeline**: the subplot rings with their scene counts and where acts come from; the characters and places named, each with a switch to create a note for every one; and **Show all scenes** to check order and memberships.
 5. The timeline opens on your new book.
 
 Details:
 
-- Order comes from the outline CSV. Without one, numbered file names give the order; if numbering restarts in each folder, the folders must be numbered too.
+- Order comes from the outline CSV. Without one, numbered file names give the order; if numbering restarts in each folder, the folders must be numbered too. If both are present and disagree (the binder changed between the two exports), the review says so and uses the outline.
 - A cell with several values (`Grief; Sisters` or `Mara, Ines`) gives the scene each of them. A column used as a per-subplot checkbox can be set to **Subplot “<column>” for filled cells**; a scene filled in several such columns joins each subplot. Scenes with no subplot go to Main Plot.
 - Acts come from a column you send to Act, otherwise from `ACT 1`, `ACT 2`… export folders, otherwise the book is split evenly into the configured number of acts.
 - Word Count and Scrivener's other bookkeeping columns are not imported. Scrivener's Status column is kept as `Scrivener Status`, because Radial Timeline's Status is its own writing state.

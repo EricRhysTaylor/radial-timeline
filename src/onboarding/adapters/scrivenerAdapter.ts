@@ -177,7 +177,7 @@ export function titleFromExportFileName(fileName: string): string {
 }
 
 /** Normalize a title for file↔row matching (case/whitespace-insensitive). */
-export function normalizeTitle(title: string): string {
+function normalizeTitle(title: string): string {
   // Scrivener strips filename-hostile characters when exporting files but keeps
   // them in outliner titles ("FB: A New Home" → "FB A New Home.txt") — fold
   // that punctuation on both sides so title matching survives the round trip.
@@ -186,6 +186,21 @@ export function normalizeTitle(title: string): string {
     .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase();
+}
+
+/** True when an outline has a Title column. */
+export function hasTitleColumn(outline: OutlineSidecar): boolean {
+  return outline.fields.some((field) => /^title$/i.test(field));
+}
+
+/**
+ * True when the outline lists every one of these exported scene files by
+ * title. An outline found OUTSIDE an export's folder belongs to that export
+ * only when this holds — otherwise it is another export's outline.
+ */
+export function outlineListsAll(outline: OutlineSidecar, sceneFileNames: string[]): boolean {
+  const titles = new Set(outline.rows.map((row) => normalizeTitle(readColumn(row, 'Title') ?? ''))); // SAFE: a row with no title matches no scene file
+  return sceneFileNames.length > 0 && sceneFileNames.every((name) => titles.has(normalizeTitle(titleFromExportFileName(name))));
 }
 
 /** Case-insensitive column lookup on a sidecar record. */
@@ -469,7 +484,7 @@ export async function ingestScrivenerFolder(
   );
   const outlineFile = await source.readSidecar(folderPath);
   const sidecar = outlineFile ? parseOutlineSidecar(outlineFile.text) : null;
-  if (outlineFile && !sidecar?.fields.some((field) => /^title$/i.test(field))) {
+  if (outlineFile && !(sidecar && hasTitleColumn(sidecar))) {
     return { kind: 'needs-order', reason: `${outlineFile.name} has no Title column or no rows. ${REEXPORT_ADVICE}` };
   }
 
@@ -478,6 +493,7 @@ export async function ingestScrivenerFolder(
 
   const ordered = resolveOrder(files, sidecar, folderPath);
   if (ordered.kind === 'needs-order') return ordered;
+  const disagreement = sidecar ? numberingDisagreement(ordered.files, folderPath) : null;
 
   const rowsByFile = matchRowsToFiles(ordered.files, sidecar);
   const scenes = ordered.files.map((file, index) => ({
@@ -493,8 +509,23 @@ export async function ingestScrivenerFolder(
       customFields: collectCustomFields(scenes),
     },
     outlineName: outlineFile?.name ?? null,
-    warnings: check.warnings,
+    warnings: disagreement ? [...check.warnings, disagreement] : check.warnings,
   };
+}
+
+/**
+ * Exports carry order twice: the outline's rows and, with numbered files, the
+ * file names. Both come from the binder, so they only disagree when the binder
+ * changed between the two exports. The outline wins; say so, naming the first
+ * scene that lands differently.
+ */
+function numberingDisagreement(outlineOrder: ScrivenerFile[], folderPath: string): string | null {
+  const numbered = orderNumberedFiles(outlineOrder, folderPath);
+  if (numbered.kind !== 'ok') return null;
+  const index = numbered.files.findIndex((file, i) => file !== outlineOrder[i]);
+  if (index === -1) return null;
+  const title = titleFromExportFileName(outlineOrder[index].fileName);
+  return `The file numbers and the outline disagree on order, starting at “${title}”. The outline’s order is used. If you moved scenes in the binder between the two exports, export both again.`;
 }
 
 export interface ScrivenerExportCheck { errors: string[]; warnings: string[] }
@@ -507,10 +538,7 @@ export function inspectScrivenerExport(files: ScrivenerFile[], outline: OutlineS
     errors.push('No scene text found. In Scrivener, choose File → Export → Files as plain text, then copy the exported folder into this vault.');
     return { errors, warnings };
   }
-  if (!outline) {
-    warnings.push('No outline CSV found, so scenes arrive without synopses or metadata. To bring those, export Outliner Contents as CSV next to this folder.');
-    return { errors, warnings };
-  }
+  if (!outline) return { errors, warnings }; // a missing outline is shown by the review itself
   const fileTitles = files.map(file => normalizeTitle(titleFromExportFileName(file.fileName)));
   const rowTitles = outline.rows.map(row => normalizeTitle(readColumn(row, 'Title') ?? '')); // SAFE: empty outline titles cannot match a scene
   const matchedRows = rowTitles.filter(title => fileTitles.includes(title));
@@ -670,8 +698,9 @@ function filesUnder(folder: TFolder): TFile[] {
  * saves it — usually BESIDE the exported folder — so search under the export
  * folder first, then each ancestor's direct children up to the vault root.
  * Within a level, a CSV named after the export folder wins, then one named
- * "outline…". Only a CSV with a Title column counts: an unrelated spreadsheet
- * in a parent folder must never be mistaken for the outline.
+ * "outline…". Only a CSV with a Title column counts, and one outside the
+ * export folder must list every scene file: an unrelated spreadsheet, or
+ * another export's outline, is never taken for this export's.
  */
 export async function findScrivenerOutline(app: App, folderPath: string): Promise<OutlineFile | null> {
   const root = app.vault.getAbstractFileByPath(normalizePath(folderPath));
@@ -679,17 +708,22 @@ export async function findScrivenerOutline(app: App, folderPath: string): Promis
   const exportName = root.name.toLowerCase();
   const rank = (file: TFile): number =>
     file.basename.toLowerCase().includes(exportName) ? 0 : /outlin/i.test(file.name) ? 1 : 2;
-  const levels: TFile[][] = [filesUnder(root)];
+  const inside = filesUnder(root);
+  const sceneNames = inside
+    .filter((file) => SCENE_EXTENSIONS.has(file.extension.toLowerCase()) && !isScrivenerAuxiliaryFile(file.name))
+    .map((file) => file.name);
+  const levels: TFile[][] = [inside];
   for (let parent = root.parent; parent; parent = parent.parent) {
     levels.push(parent.children.filter((child): child is TFile => child instanceof TFile));
   }
-  for (const level of levels) {
+  for (const [depth, level] of levels.entries()) {
     const csvs = level
       .filter((file) => file.extension.toLowerCase() === 'csv')
       .sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
     for (const csv of csvs) {
       const text = await app.vault.cachedRead(csv);
-      if (parseOutlineSidecar(text)?.fields.some((field) => /^title$/i.test(field))) {
+      const outline = parseOutlineSidecar(text);
+      if (outline && hasTitleColumn(outline) && (depth === 0 || outlineListsAll(outline, sceneNames))) {
         return { name: csv.name, text };
       }
     }

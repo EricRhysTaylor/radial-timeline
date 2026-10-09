@@ -168,7 +168,7 @@ export class SubplotRingDragController {
     }
 
     private onPointerMove(evt: PointerEvent): void {
-        if (!this.sourceGroup) return;
+        if (this.confirming || !this.sourceGroup) return;
         this.lastPointer = { x: evt.clientX, y: evt.clientY };
         this.shiftHeld = evt.shiftKey;
         if (!this.dragging && Math.hypot(evt.clientX - this.startX, evt.clientY - this.startY) >= MOVE_THRESHOLD_PX) {
@@ -182,7 +182,7 @@ export class SubplotRingDragController {
     }
 
     private async onPointerUp(evt: PointerEvent): Promise<void> {
-        if (!this.sourceGroup) return;
+        if (this.confirming || !this.sourceGroup) return;
         if (this.holdTimer !== null) window.clearTimeout(this.holdTimer);
         this.holdTimer = null;
         if (this.dragging) {

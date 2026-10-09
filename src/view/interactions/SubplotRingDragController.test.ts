@@ -8,6 +8,10 @@ import { describeSceneFile, SubplotRingDragController } from './SubplotRingDragC
 
 // What the confirm dialog showed, what was renumbered, and which membership
 // edits were applied.
+const confirmation = vi.hoisted(() => ({
+    hold: false,
+    resolvers: [] as Array<(value: boolean) => void>,
+}));
 const shown: DragConfirmCurrentMoveSummary[] = [];
 const renumbered: SceneUpdate[][] = [];
 const memberships: Array<{ path: string; change: SubplotMembershipChange }> = [];
@@ -17,7 +21,11 @@ vi.mock('../../modals/DragConfirmModal', () => ({
         constructor(_app: unknown, summary: DragConfirmCurrentMoveSummary) {
             shown.push(summary);
         }
-        waitForBegin(): Promise<boolean> { return Promise.resolve(true); }
+        waitForBegin(): Promise<boolean> {
+            return confirmation.hold
+                ? new Promise(resolve => confirmation.resolvers.push(resolve))
+                : Promise.resolve(true);
+        }
         updateProgress(): void {}
         close(): void {}
         finishWithDismiss(): Promise<void> { return Promise.resolve(); }
@@ -160,6 +168,7 @@ type SubplotInternals = {
     target: { ring: number; element: FakeEl } | null;
     membershipOf(ring: number): string | null;
     finishDrop(shift: boolean): Promise<void>;
+    onPointerUp(event: PointerEvent): Promise<void>;
 };
 
 function subplotDrag(mode: string, subplots: Record<string, string | string[]> = lighthouseSubplots) {
@@ -180,6 +189,8 @@ function subplotDrag(mode: string, subplots: Record<string, string | string[]> =
 }
 
 beforeEach(() => {
+    confirmation.hold = false;
+    confirmation.resolvers.length = 0;
     shown.length = 0;
     renumbered.length = 0;
     memberships.length = 0;
@@ -309,5 +320,25 @@ describe('the All Scenes ring reorders and never edits subplots', () => {
         expect(renumbered[0].length).toBeGreaterThan(0);
         expect(renumbered[0].every((update) => update.subplots === undefined)).toBe(true);
         expect(memberships).toHaveLength(0);
+    });
+});
+
+
+describe('native modal interaction after a ring drop', () => {
+    it.each([true, false])('a pointer release on the confirmation controls never starts another drop (Begin=%s)', async (begin) => {
+        confirmation.hold = true;
+        const { drag, internals } = subplotDrag('narrative');
+        const drop = drag('14 Scene', SHIPWRECK_RING, KEEPERS_RING, false);
+        expect(shown).toHaveLength(1);
+        // The window listener also receives the pointer-up preceding the
+        // dialog's Begin/Cancel click. It must leave that one dialog alone.
+        const buttonRelease = internals.onPointerUp({ shiftKey: false } as PointerEvent);
+        try {
+            expect(shown).toHaveLength(1);
+        } finally {
+            confirmation.resolvers.forEach((resolve, index) => resolve(index === 0 && begin));
+            await Promise.all([drop, buttonRelease]);
+        }
+        expect(memberships).toHaveLength(begin ? 1 : 0);
     });
 });

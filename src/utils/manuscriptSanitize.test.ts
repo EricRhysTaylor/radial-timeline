@@ -97,6 +97,21 @@ Scene text after.`;
         expect(sanitized).not.toContain('=== EDIT ===');
     });
 
+    it.each(['````', '~~~~'])('strips %s review fences without stopping at nested shorter fences', (fence) => {
+        const input = ['Before.', '', `${fence}editorialist-review`, '=== MEMO ===', 'Issues: Private review.', fence.slice(0, 3), 'Hidden payload.', fence + ' ignored trailing text', 'Still private.', fence + fence[0], '', '---', 'Class: Scene', '---', 'After.'].join('\n');
+        expect(sanitizeCompiledManuscriptForPdf(input, { stripAiComments: false })).toBe('Before.\n\nAfter.');
+    });
+
+    it('preserves a review-fence example inside a longer ordinary code block', () => {
+        const example = ['````markdown', '```editorialist-review', '=== MEMO ===', 'Issues: Example.', '```', '````'].join('\n');
+        expect(sanitizeCompiledManuscript(example)).toBe(example);
+    });
+
+    it('preserves long fenced code through cleanup and strips private comments after it', () => {
+        const code = ['````text', '%%keep%%', '```', '[keep](example)', '````'].join('\n');
+        expect(sanitizeCompiledManuscript(code + '\n\nAfter %%private%%.', { stripComments: true, stripLinks: true })).toBe(code + '\n\nAfter .');
+    });
+
     it('strips comments, links, callouts, and block ids when enabled', () => {
         const input = `Visible %%hidden%% and <!-- html hidden -->.
 [Doc link](https://example.com) with [[Folder/My Note|Alias]].

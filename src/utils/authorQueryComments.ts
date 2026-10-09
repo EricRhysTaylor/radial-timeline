@@ -17,8 +17,9 @@
 // exports keep the markers (that is the Editorialist review path) and PDF has
 // no comment layer. Fenced code blocks are left alone.
 
+import { MARKDOWN_FENCE_OPEN_PATTERN as FENCE_PATTERN, isClosingMarkdownFence } from './markdownFence';
+
 const AUTHOR_QUERY_PATTERN = /%%\s*(?:query|ai)\s*:\s*([\s\S]*?)%%/gi;
-const FENCE_PATTERN = /^\s*(```|~~~)/;
 
 export interface AuthorQueryCommentOptions {
     /** Shown as the comment's author in Word. Falls back to "Author". */
@@ -70,7 +71,7 @@ export function convertAuthorQueriesToWordComments(
             buffer.push(line);
             continue;
         }
-        if (fence !== null && match && match[1] === fence) {
+        if (fence !== null && isClosingMarkdownFence(line, fence)) {
             buffer.push(line);
             flush(true);
             fence = null;

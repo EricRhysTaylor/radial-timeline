@@ -71,4 +71,14 @@ describe('convertAuthorQueriesToWordComments', () => {
         expect(out).toContain('```\n%%query: not a query%%\n```');
         expect(out).toContain(`Prose ${span(1, 'Real?')}`);
     });
+    it.each(['````', '~~~~'])('leaves queries inside a %s fence untouched after a shorter nested fence', (fence) => {
+        const example = [fence + 'text', fence.slice(0, 3), '%%query: This is literal code.%%', fence].join('\n');
+        expect(convertAuthorQueriesToWordComments(example, opts)).toBe(example);
+    });
+
+    it('recognizes a longer closing fence before converting a later prose query', () => {
+        const example = ['```text', 'literal', '````'].join('\n');
+        expect(convertAuthorQueriesToWordComments(example + '\n\nProse %%query: Real question?%%', opts)).toBe(example + '\n\nProse ' + span(1, 'Real question?'));
+    });
+
 });

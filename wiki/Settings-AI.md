@@ -7,9 +7,9 @@ The AI tab controls provider setup, model selection, prompt framing, cost awaren
 
 ## AI Toggle
 
-*   **Enable AI LLM features**: Turns AI-driven commands and scene-analysis UI on or off. Disabling AI hides those surfaces but does not delete existing note properties.
+*   **Enable AI LLM features**: Enables AI-assisted commands and scene analysis. Turning it off stops queued requests and closes active AI connections. Saved Inquiry results remain available to read.
 
-> **Default: off.** New installs make no AI connection and transfer no data until you enable this toggle and configure either a cloud provider API key or a local AI server. Existing vaults keep the setting you already chose — upgrading never flips it for you.
+On a new install, enable this toggle and configure a cloud provider API key or a local AI server to use AI features. Existing vaults retain the setting you chose.
 
 ## AI Strategy
 
@@ -17,7 +17,7 @@ This is the main routing section for cloud and local AI.
 
 *   **Provider**: Choose **Anthropic**, **OpenAI**, **Google**, or **Local LLM**.
 *   **Model**: Choose **Auto** for the latest stable model, or select a specific model to pin it.
-*   **Access**: Set the tier that your provider account has granted you. These tiers are applied for and approved by the provider, then reflected here for context limits and capability headroom.
+*   **Access**: Set the tier that your provider account has granted you. This setting controls context limits and capability headroom; your provider manages account billing and data-use terms.
 *   **Cost Estimate**: Shows estimated Inquiry pricing for your current manuscript scope.
 *   **What gets sent to the AI**: Breakdown cards for Inquiry and Gossamer so you can see the rough corpus, prompt, output, and processing footprint.
 
@@ -29,7 +29,7 @@ This is the main routing section for cloud and local AI.
 
 ## Prompt Caching And Re-runs
 
-*   **Caching.** Inquiry sends your manuscript once per session; the second and later questions read it from the provider's prompt cache, which costs less, on Anthropic, OpenAI, and Google models. One-off calls such as Pulse don't pay to write a cache. Google (Gemini) caches survive a plugin reload instead of being created again.
+*   **Caching.** Inquiry and Gossamer can reuse matching manuscript material through the selected provider's prompt cache. Anthropic and OpenAI requests include the material, and the provider identifies matching input for reuse. Gemini can store the material in a temporary cache that later requests reference, including after a plugin reload while the cache remains valid. Cache availability and pricing depend on the provider, model, and time between requests.
 *   **Re-runs ask again.** Running Summary scene refresh, Pulse, or a Gossamer score again, even within two minutes, sends a new request instead of returning the previous answer. The Gossamer confirmation notes when that signal was already scored on the same unchanged manuscript in this session, so you can cancel an accidental repeat.
 
 ## API Keys
@@ -38,7 +38,13 @@ Store each cloud provider’s key in **Obsidian secret storage** on this device.
 
 *   Radial Timeline validates saved keys with the provider and shows their status.
 *   **Replace key…** updates the saved key; **Copy key name** copies its secret-storage name.
-*   Secure key saving requires an Obsidian build with secret storage. Keys are never saved in plain-text plugin settings.
+*   Secure key saving requires an Obsidian build with secret storage.
+
+## AI Processing
+
+Running an AI feature sends its selected manuscript material and instructions to your configured cloud provider or Local LLM server. Inquiry's [material modes](Inquiry#corpus-material-modes) determine which notes contribute prose or summaries.
+
+Cloud providers process submitted content under their own retention, caching, and model-training policies. See [Anthropic's data retention policy](https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data), [OpenAI's data controls](https://developers.openai.com/api/docs/guides/your-data), and [Gemini's terms](https://ai.google.dev/gemini-api/terms).
 
 ## Configuration
 

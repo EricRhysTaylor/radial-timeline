@@ -155,11 +155,13 @@ Inquiry builds a "corpus" from your manuscript files before sending them to the 
 
 | Material Mode | What Is Sent | Best For |
 | :--- | :--- | :--- |
-| **Full** | Complete note body content | Scenes you want deep analysis on |
+| **Full** | Note prose after frontmatter, comments, and imported editorial review blocks are removed | Scenes you want deep analysis on |
 | **Summary** | `Summary` field only | Lower token usage while preserving high-level context |
 | **None** | Excluded entirely | Reference notes, worldbuilding docs you want to skip |
 
 Configure per-class material modes in [Inquiry sources](Settings-Inquiry#sources).
+
+Inquiry uses the selected notes and their chosen story fields. A selected note needs readable material in its chosen mode; a missing note, missing Summary, or empty body prompts you to resolve the selection before running.
 
 ### Corpus Content (CC) Thresholds
 

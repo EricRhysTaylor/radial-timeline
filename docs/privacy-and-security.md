@@ -10,66 +10,59 @@ Radial Timeline is a **desktop-only** Obsidian plugin. It is not intended for Ob
 
 ## AI features
 
-- AI is optional and **ships off by default**. New installs make no AI
-  connection and transfer no data until the author enables
-  **Settings → AI → Enable AI LLM features** and configures either a cloud
-  provider API key or a local AI server. Existing
-  vaults keep whatever choice they already made; upgrading never flips the
-  setting.
-- That toggle is the master switch for AI-assisted features. While it is off,
-  Inquiry remains available for reading saved results. New provider runs are
-  refused at the AI client and immediately before each transmission, including
-  cache uploads and retries. Queued requests stop when permission is withdrawn.
-  An in-flight connection is closed, but content already received by a provider
-  cannot be recalled and provider-side processing or billing may continue.
-- When AI is off, normal plugin use does not dispatch manuscript content to AI
-  providers.
-- Remote model metadata, provider snapshot, and pricing refresh behavior is
-  additionally governed by privacy/network settings in the AI panel.
-- Choosing **Provider → Local LLM** keeps analysis on a runtime you host
-  yourself; no manuscript content reaches a hosted provider on that path.
-- **AI jobs** (beta) hand work to an AI client the author runs themselves,
-  such as Codex or Claude Code. The plugin makes no network request on this
-  path: it writes job files to `Radial Timeline/AI Jobs/` in the vault, and
-  reads the answers the client writes back there. A job contains the text it
-  covers: one scene (Summary), a scene and its neighbors (Pulse), or the whole
-  Inquiry corpus or manuscript (Gossamer, Inquiry). What the client does with
-  that text is governed by the client and the author's own subscription.
-  Applied jobs and their answers are deleted; the folder can be emptied at any
-  time. The plugin never runs an AI client itself or uses a subscription
-  login. Jobs can also be prepared through the request link
-  `obsidian://radial-timeline-ai-jobs`, which only writes job files in the
-  vault (and can switch the active book); it sends nothing anywhere.
+Enable **Settings → AI → Enable AI LLM features** and configure a cloud
+provider or local AI server to use AI-assisted commands. Existing vaults
+retain the setting the author chose.
 
-### Estimates, evidence, and logs
+Running an AI feature sends its selected manuscript material and instructions
+to the configured provider or Local LLM server. The author chooses the provider,
+model, manuscript scope, and material modes. Note prose is prepared by removing
+frontmatter, HTML and Obsidian comments, and imported Editorialist review blocks.
+Features may also use selected story fields such as Summary or beat Purpose.
+Selected material must be readable in its chosen mode before a run can proceed.
 
-- All token, cost, capacity, and preflight estimates are local and send nothing
-  to any provider. Token-count APIs
-  are not used. Settings cost comparisons, Inquiry refreshes, and preflight
-  estimates do not need an API key or a provider connection. Numbers are
-  labeled as local estimates; actual usage is learned after an authorized run.
-- Evidence excludes YAML frontmatter, HTML and Obsidian comments, and imported
-  Editorialist review blocks. Features may explicitly select author-facing
-  metadata such as Summary or beat Purpose. Referenced links are not followed
-  to upload other notes. Missing or unreadable selected files, missing selected summaries, and empty
-  selected bodies block the run. Summary choices are never widened to Full.
-- Full content logs are written only when **Enable AI content logs** is on,
-  including on errors. These logs duplicate the submitted material in the vault
-  and can be copied by the author's sync or backup tools. Credential redaction
-  covers the complete log envelope. Concise diagnostics remain available when
-  content logs are off.
-- OpenAI analysis requests set `store: false`. This disables ordinary response
-  storage, not all provider retention: abuse monitoring and prompt caching have
-  their own policies. See [OpenAI data controls](https://developers.openai.com/api/docs/guides/your-data).
-- Gemini's unpaid services can use submitted content for product improvement
-  and human review, subject to regional exceptions. Paid-service treatment
-  depends on an active billing account on the actual Cloud project, not RT's
-  Access tier setting. See [Gemini terms](https://ai.google.dev/gemini-api/terms).
-- Authorized Inquiry/Gossamer runs may cache their stable input at the selected
-  provider. Gemini resources expire after the configured TTL; Anthropic cache
-  windows and OpenAI cache retention are governed by their provider policies.
-  Turning AI off prevents further transmission but does not delete material
-  already retained by a provider.
+Turning AI off stops queued requests and closes active connections. Saved
+Inquiry results remain available to read. Providers handle material already
+received under their own processing and retention terms.
+
+Model metadata and pricing refreshes follow the network settings in the AI panel.
+**Local LLM** sends analysis requests to the server the author configures.
+
+### Caching and provider policies
+
+Inquiry and Gossamer can reuse matching input through the selected provider's
+prompt cache. Anthropic and OpenAI requests include the material for the
+provider to identify matching input. Gemini can store material in a temporary
+cache that later requests reference. Cache availability, duration, and pricing
+vary by provider and model.
+
+Cloud providers process submitted content under their own retention, caching,
+and model-training policies. OpenAI requests use `store: false`; its abuse
+monitoring and prompt caching follow separate retention policies. See
+[OpenAI data controls](https://developers.openai.com/api/docs/guides/your-data).
+Gemini's data-use terms depend on the actual project's billing status and region;
+unpaid services can use content for product improvement and human review. See
+[Gemini terms](https://ai.google.dev/gemini-api/terms).
+
+### Content logs
+
+Enabling **Enable AI content logs** saves full prompts, submitted material, and
+responses in the vault for reviewing AI runs, including failed runs. Credentials
+are redacted across the log. The author's vault sync and backup settings apply
+to these files. Concise diagnostics record request status and errors.
+
+### AI jobs (beta)
+
+AI jobs prepare work for an AI client the author runs, such as Codex or Claude
+Code. The plugin writes job files to `Radial Timeline/AI Jobs/` in the vault and
+reads the client's answers from that folder. A job contains the material it
+covers: one scene (Summary), a scene and its neighbors (Pulse), or the whole
+Inquiry corpus or manuscript (Gossamer, Inquiry). The client's processing follows
+its terms and the author's subscription. Applied jobs and their answers are
+deleted; the author can empty the folder at any time.
+
+The request link `obsidian://radial-timeline-ai-jobs` can prepare these vault
+files and switch the active book. The author runs the AI client separately.
 
 ## Desktop integration (Pandoc export)
 

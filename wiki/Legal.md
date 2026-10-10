@@ -1,3 +1,5 @@
+See the [Privacy Policy](https://www.radialtimeline.com/legal) for plugin, website, and Community data handling, and [AI settings](Settings-AI#ai-processing) for manuscript processing.
+
 <a name="license"></a>
 ## License
 

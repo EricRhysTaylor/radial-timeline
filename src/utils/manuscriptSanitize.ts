@@ -115,7 +115,7 @@ function stripAuthorQueries(content: string): string {
     return content.replace(OBSIDIAN_COMMENT_PATTERN, comment => AUTHOR_QUERY_PREFIX_PATTERN.test(comment) ? '' : comment);
 }
 
-function stripEditorialistReviewBlocks(content: string): string {
+export function stripEditorialistReviewBlocks(content: string): string {
     const lines = content.split('\n');
     const output: string[] = [];
     let codeFence: string | null = null;

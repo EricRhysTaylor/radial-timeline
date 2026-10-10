@@ -12,6 +12,7 @@ import { extractFrontmatterObject } from './frontmatter';
 import { groupTimelineChapterMarkersByScenePath, resolveTimelineChapterMarkers, type TimelineChapterMarker } from './timelineChapters';
 import { readPartMarker } from './timelineParts';
 import { cleanEvidenceBody } from '../inquiry/utils/evidenceCleaning';
+import { stripEditorialistReviewBlocks } from './manuscriptSanitize';
 import { readSceneId } from './sceneIds';
 import {
   resolveBookPages,
@@ -153,10 +154,10 @@ function extractBodyTextAfterFrontmatter(content: string): string {
 
 /**
  * Extract the body text basis used for manuscript word counts.
- * Excludes YAML frontmatter and draft-only comment syntax.
+ * Excludes YAML frontmatter, imported editorial reviews and draft-only comments.
  */
 export function extractCountableBodyText(content: string): string {
-  return cleanEvidenceBody(content.replace(/\r\n?/g, '\n'));
+  return cleanEvidenceBody(stripEditorialistReviewBlocks(content.replace(/\r\n?/g, '\n')));
 }
 
 // ════════════════════════════════════════════════════════════════════════════

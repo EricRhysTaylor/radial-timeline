@@ -72,7 +72,7 @@ export class CommandRegistrar {
         this.plugin.addRibbonIcon('rt-logo', t('commands.openTimeline'), () => {
             void this.plugin.getTimelineService().activateView();
         });
-        this.plugin.addRibbonIcon('waves', t('commands.openInquiry'), () => {
+        this.plugin.addRibbonIcon('ri-logo', t('commands.openInquiry'), () => {
             void this.plugin.getInquiryService().activateView();
         });
     }

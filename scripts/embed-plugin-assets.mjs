@@ -48,6 +48,11 @@ const outFile = path.join(srcDir, 'generated', 'embeddedAssets.ts');
  */
 export const EMBEDDED_ASSET_MANIFEST = [
     {
+        key: 'icons/radial-inquiry.svg',
+        src: 'assets/icons/radial-inquiry.svg',
+        note: 'Theme-aware Radial Inquiry mark for ribbons, tabs, and settings',
+    },
+    {
         key: 'pandoc/reference-manuscript.docx',
         src: 'assets/pandoc/reference-manuscript.docx',
         note: 'Word export --reference-doc (standard manuscript format)',
@@ -117,6 +122,7 @@ export const LICENCE_FILE_NAMES = new Set(['OFL.txt', 'LICENSE.txt', 'LICENSE.md
 /** MIME types for data-URI consumers (images). Fonts/docx are written as bytes. */
 const MIME_BY_EXTENSION = {
     '.png': 'image/png',
+    '.svg': 'image/svg+xml',
     '.ttf': 'font/ttf',
     '.otf': 'font/otf',
     '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

@@ -762,7 +762,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
     private renderInquiryHero(containerEl: HTMLElement): void {
         this.renderSettingsHero(containerEl, {
             badgeLabel: 'Inquiry · Signals',
-            badgeIcon: 'waves',
+            badgeIcon: 'ri-logo',
             badgeVariant: ERT_CLASSES.BADGE_PILL_NEUTRAL,
             wikiHref: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Settings-Inquiry',
             title: 'Analyze your story as a complete system.',
@@ -881,7 +881,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         communityTab.createSpan({ text: 'Com', cls: 'ert-settings-tab-label' });
         const inquiryTab = tabBar.createDiv({ cls: 'ert-settings-tab' });
         const inquiryIcon = inquiryTab.createSpan({ cls: 'ert-settings-tab-icon' });
-        setIcon(inquiryIcon, 'waves');
+        setIcon(inquiryIcon, 'ri-logo');
         inquiryTab.createSpan({ text: 'Inq', cls: 'ert-settings-tab-label' });
         const publishingTab = tabBar.createDiv({ cls: 'ert-settings-tab ert-settings-tab-publishing' });
         const publishingIcon = publishingTab.createSpan({ cls: 'ert-settings-tab-icon' });

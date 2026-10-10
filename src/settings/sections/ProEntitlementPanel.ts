@@ -177,7 +177,7 @@ export function renderProEntitlementPanel({
     const featureItems = [
         { icon: 'file-text', label: 'Publishing' },
         { icon: 'share-2', label: 'APR Campaigns' },
-        { icon: 'waves', label: 'Inquiry+' },
+        { icon: 'ri-logo', label: 'Inquiry+' },
         { icon: 'waypoints', label: 'Structure' },
         { icon: 'sparkles', label: 'Free demo vaults' }
     ];

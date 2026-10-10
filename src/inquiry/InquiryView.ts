@@ -701,7 +701,7 @@ export class InquiryView extends ItemView {
     }
 
     getIcon(): string {
-        return 'waves';
+        return 'ri-logo';
     }
 
     async onOpen(): Promise<void> {

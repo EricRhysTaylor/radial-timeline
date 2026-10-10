@@ -155,7 +155,7 @@ export function renderAiSection(params: {
     heroOnFeatures.createEl('h5', { text: t('settings.ai.hero.highlightsKicker'), cls: 'ert-kicker' });
     const heroOnList = heroOnFeatures.createEl('ul', { cls: ERT_CLASSES.STACK });
     [
-        { icon: 'waves', text: t('settings.ai.hero.featureInquiry') },
+        { icon: 'ri-logo', text: t('settings.ai.hero.featureInquiry') },
         { icon: 'activity', text: t('settings.ai.hero.featurePulse') },
         { icon: 'waypoints', text: t('settings.ai.hero.featureGossamer') },
         { icon: 'sparkles', text: t('settings.ai.hero.featureForceMultiplier') }

@@ -10,6 +10,8 @@ Radial Timeline is a **desktop-only** Obsidian plugin. It is not intended for Ob
 
 ## AI features
 
+AI ships off by default in new vaults.
+
 Enable **Settings → AI → Enable AI LLM features** and configure a cloud
 provider or local AI server to use AI-assisted commands. Existing vaults
 retain the setting the author chose.

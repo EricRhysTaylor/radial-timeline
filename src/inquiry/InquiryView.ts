@@ -2990,7 +2990,7 @@ export class InquiryView extends ItemView {
 
     private getLatestSameCorpusActualCostForResolvedEngine(): number | null {
         const engine = this.getResolvedEngine();
-        if (engine.blocked || !engine.modelId || engine.provider === 'none' || engine.provider === 'ollama') {
+        if (engine.blocked || !engine.modelId || !['openai', 'anthropic', 'google'].includes(engine.provider)) {
             return null;
         }
         const currentContext = this.getCurrentCorpusContext();
@@ -4865,7 +4865,7 @@ export class InquiryView extends ItemView {
     }
 
     private updateNavigationIcons(): void {
-        if (!this.navPrevButton || !this.navNextButton || !this.navPrevIcon || !this.navNextIcon) return;
+        if (!(this.navPrevButton && this.navNextButton && this.navPrevIcon && this.navNextIcon)) return;
         this.setIconUse(this.navPrevIcon, 'chevron-left');
         this.setIconUse(this.navNextIcon, 'chevron-right');
 
@@ -9396,7 +9396,7 @@ export class InquiryView extends ItemView {
 
 
     private updateFindingsPanel(): void {
-        if (!this.findingsTitleEl || !this.summaryEl || !this.verdictEl || !this.findingsListEl) return;
+        if (!(this.findingsTitleEl && this.summaryEl && this.verdictEl && this.findingsListEl)) return;
         const findingsListEl = this.findingsListEl;
         clearSvgChildren(this.findingsListEl);
 
@@ -10342,7 +10342,7 @@ export class InquiryView extends ItemView {
             : this.getActivePrompt(effectiveZone);
         if (!activeQuestion) return null;
         const engine = this.getResolvedEngine();
-        if (engine.blocked || !engine.modelId || engine.provider === 'none' || engine.provider === 'ollama') {
+        if (engine.blocked || !engine.modelId || !['openai', 'anthropic', 'google'].includes(engine.provider)) {
             return null;
         }
         const targetSceneIds = this.getActiveTargetSceneIds();
@@ -10661,7 +10661,7 @@ export class InquiryView extends ItemView {
 
         const logTitle = this.formatInquiryLogTitle(result);
         const filePath = this.getAvailableArtifactPath(folder.path, logTitle);
-        const shouldWriteContent = this.plugin.settings.logApiInteractions || this.isErrorResult(result);
+        const shouldWriteContent = this.plugin.settings.logApiInteractions;
         const content = this.buildInquiryLogContent(result, trace, manifest, logTitle, shouldWriteContent);
 
         let summaryPath: string | null = null;

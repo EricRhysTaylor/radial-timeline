@@ -4,11 +4,11 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 // DEPRECATED: Legacy provider adapter; prefer aiClient entrypoints.
-import { requestUrl } from 'obsidian';
+import { requestProvider, ProviderTransportError } from './providerTransport';
 import { warnLegacyAccess } from './legacyAccessGuard';
 import { splitAtCacheBreak } from '../ai/prompts/composeEnvelope';
 import { modelSupportsAdaptiveThinking, modelThinkingDefaultsOn, modelUsesAlwaysOnThinking } from '../ai/registry/modelRequestProfiles';
-import type { AnthropicCacheTtl, EvidenceDocument, TokenCountResult } from '../ai/types';
+import type { AIRequestControl, AnthropicCacheTtl, EvidenceDocument } from '../ai/types';
 import { fnv1a32Hex } from '../utils/hash';
 
 export type AnthropicTextBlock = {
@@ -76,11 +76,11 @@ interface AnthropicErrorResponse {
   error: { type: string; message: string };
 }
 
-interface AnthropicTokenCountSuccessResponse {
-  input_tokens?: number;
-  total_tokens?: number;
-}
+
 export interface AnthropicApiResponse {
+    status?: number;
+    retryCount?: number;
+    requestId?: string;
   success: boolean;
   content: string | null;
   responseData: unknown;
@@ -118,7 +118,6 @@ function mapAnthropicResponseCitations(
 }
 
 interface BuildAnthropicMessageRequestInput {
-  mode: 'generate' | 'count';
   modelId: string;
   systemPrompt: string | null;
   userPrompt: string;
@@ -387,10 +386,6 @@ function buildAnthropicMessageRequestBody(
     };
   }
 
-  if (input.mode === 'count') {
-    return requestBody;
-  }
-
   const thinkingBudget = typeof input.thinkingBudgetTokens === 'number'
     ? input.thinkingBudgetTokens
     : 0;
@@ -543,24 +538,6 @@ function buildAnthropicBetaHeader(): string {
   return 'prompt-caching-2024-07-31';
 }
 
-export function normalizeAnthropicTokenCountResponse(
-  responseData: unknown,
-  modelId: string
-): TokenCountResult | null {
-  const data = responseData as AnthropicTokenCountSuccessResponse;
-  const inputTokens = typeof data?.input_tokens === 'number'
-    ? data.input_tokens
-    : undefined;
-  if (typeof inputTokens !== 'number' || !Number.isFinite(inputTokens)) {
-    return null;
-  }
-  return {
-    provider: 'anthropic',
-    modelId,
-    inputTokens: Math.max(0, Math.floor(inputTokens)),
-    source: 'provider_count'
-  };
-}
 export async function callAnthropicApi(
   apiKey: string,
   modelId: string,
@@ -574,7 +551,8 @@ export async function callAnthropicApi(
   citationsEnabled?: boolean,
   evidenceDocuments?: { title: string; content: string }[],
   jsonSchema?: Record<string, unknown>,
-  cacheTtl?: AnthropicCacheTtl
+  cacheTtl?: AnthropicCacheTtl,
+  requestControl?: AIRequestControl
 ): Promise<AnthropicApiResponse> {
   warnLegacyAccess('anthropicApi.callAnthropicApi', internalAdapterAccess);
   const apiUrl = 'https://api.anthropic.com/v1/messages';
@@ -585,7 +563,6 @@ export async function callAnthropicApi(
   if (!modelId) {
     return { success: false, content: null, responseData: { type: 'error', error: { type: 'plugin_config_error', message: 'Anthropic model ID not configured.' } }, error: 'Anthropic model ID not configured.' };  }
   const requestBody = buildAnthropicMessageRequestBody({
-    mode: 'generate',
     modelId,
     systemPrompt,
     userPrompt,
@@ -598,11 +575,13 @@ export async function callAnthropicApi(
     jsonSchema,
     cacheTtl
   });
+  const streamedRequestBody = { ...requestBody, stream: true };
   const dispatchDiagnostics = buildAnthropicDispatchDiagnostics(requestBody.messages[0]?.content ?? []);
 
   let responseData: unknown;
+  let transport: { status?: number; retryCount?: number; requestId?: string } = {};
   try {
-    const response = await requestUrl({
+    const response = await requestProvider({
       url: apiUrl,
       method: 'POST',
       headers: {
@@ -611,10 +590,11 @@ export async function callAnthropicApi(
         'x-api-key': apiKey,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify(streamedRequestBody),
       throw: false,
-    });
+    }, requestControl);
     responseData = response.json;
+    transport = { status: response.status, retryCount: response.retryCount, requestId: response.headers?.['request-id'] ?? response.headers?.['x-request-id'] };
     if (response.status >= 400) {
       const err = responseData as AnthropicErrorResponse;
       const rawMsg = err?.error?.message ?? response.text ?? `Anthropic error (${response.status})`; // SAFE: error-message composition — the request already failed; this only picks the most specific text available
@@ -623,8 +603,9 @@ export async function callAnthropicApi(
         success: false,
         content: null,
         responseData,
+        ...transport,
         requestPayload: {
-          requestBody,
+          requestBody: streamedRequestBody,
           dispatchDiagnostics
         },
         error: msg
@@ -645,8 +626,9 @@ export async function callAnthropicApi(
         success: true,
         content: JSON.stringify(toolUseBlock.input),
         responseData,
+        ...transport,
         requestPayload: {
-          requestBody,
+          requestBody: streamedRequestBody,
           dispatchDiagnostics
         },
         ...(mappedCitations?.length ? { citations: mappedCitations } : {})
@@ -658,8 +640,9 @@ export async function callAnthropicApi(
         success: true,
         content,
         responseData,
+        ...transport,
         requestPayload: {
-          requestBody,
+          requestBody: streamedRequestBody,
           dispatchDiagnostics
         },
         citations: mappedCitations
@@ -669,84 +652,28 @@ export async function callAnthropicApi(
       success: false,
       content: null,
       responseData,
+      ...transport,
       requestPayload: {
-        requestBody,
+        requestBody: streamedRequestBody,
         dispatchDiagnostics
       },
       error: 'Invalid response structure from Anthropic.'
     };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    if (e instanceof ProviderTransportError) transport = { ...transport, status: e.status };
     responseData = { type: 'error', error: { type: 'network_or_execution_error', message: msg } };
     return {
       success: false,
       content: null,
       responseData,
+      ...transport,
       requestPayload: {
-        requestBody,
+        requestBody: streamedRequestBody,
         dispatchDiagnostics
       },
       error: msg
     };
-  }
-}
-
-export async function countAnthropicTokens(
-  apiKey: string,
-  modelId: string,
-  systemPrompt: string | null,
-  userPrompt: string,
-  citationsEnabled?: boolean,
-  evidenceDocuments?: EvidenceDocument[],
-  cacheTtl?: AnthropicCacheTtl,
-  jsonSchema?: Record<string, unknown>
-): Promise<TokenCountResult> {
-  const apiUrl = 'https://api.anthropic.com/v1/messages/count_tokens';
-  const apiVersion = '2023-06-01';
-
-  if (!apiKey) {
-    throw new Error('Anthropic API key not configured.');
-  }
-  if (!modelId) {
-    throw new Error('Anthropic model ID not configured.');
-  }
-
-  const requestBody = buildAnthropicMessageRequestBody({
-    mode: 'count',
-    modelId,
-    systemPrompt,
-    userPrompt,
-    citationsEnabled,
-    evidenceDocuments,
-    cacheTtl,
-    jsonSchema
-  });
-
-  let responseData: unknown;
-  try {
-    const response = await requestUrl({
-      url: apiUrl,
-      method: 'POST',
-      headers: {
-        'anthropic-version': apiVersion,
-        'anthropic-beta': buildAnthropicBetaHeader(),
-        'x-api-key': apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-      throw: false,
-    });
-    responseData = response.json;
-    if (response.status >= 400) {
-      const err = responseData as AnthropicErrorResponse;
-      const msg = err?.error?.message ?? response.text ?? `Anthropic token count error (${response.status})`;
-      throw new Error(msg);
-    }
-    const normalized = normalizeAnthropicTokenCountResponse(responseData, modelId);
-    if (normalized) return normalized;
-    throw new Error('Invalid token count response from Anthropic.');
-  } catch (e) {
-    throw (e instanceof Error ? e : new Error(String(e)));
   }
 }
 
@@ -757,7 +684,7 @@ interface AnthropicModelsResponse { data: AnthropicModel[]; }
 export async function fetchAnthropicModels(apiKey: string): Promise<AnthropicModel[]> {
   if (!apiKey) throw new Error('Anthropic API key is required to fetch models.');
 
-  const response = await requestUrl({
+  const response = await requestProvider({
     url: 'https://api.anthropic.com/v1/models',
     method: 'GET',
     headers: {

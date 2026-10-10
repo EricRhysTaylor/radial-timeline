@@ -863,7 +863,7 @@ export function renderAiSection(params: {
         providerSetting.setDesc(
             provider === 'ollama'
                 ? t('settings.ai.provider.disclosureLocal')
-                : t('settings.ai.provider.disclosureCloud', { provider: label })
+                : t('settings.ai.provider.disclosureCloud', { provider: label }) + (provider === 'google' ? ' Gemini unpaid services may use content for product improvement and human review; paid treatment depends on your Cloud project billing, with regional exceptions. All estimates stay local.' : ' All estimates stay local.')
         );
     };
     let providerDropdown: DropdownComponent | null = null;
@@ -1706,7 +1706,7 @@ export function renderAiSection(params: {
         const activeCacheRowKey = getActiveCostComparisonCacheRowKey();
 
         const headerRow = costEstimateTable.createDiv({ cls: 'ert-ai-models-row ert-ai-models-row--header' });
-        ['Provider', 'Model', 'Fresh estimate*', 'Cached estimate**', 'Expected Passes'].forEach(text => {
+        ['Provider', 'Model', 'Fresh local estimate*', 'Cached local estimate**', 'Expected Passes'].forEach(text => {
             createCostTableCell(headerRow, text);
         });
 
@@ -1853,10 +1853,7 @@ export function renderAiSection(params: {
         renderCostComparisonRows(buildLoadingCostRows());
         const aiClient = getAIClient(plugin);
         try {
-            const [registryModels] = await Promise.all([
-                aiClient.getRegistryModels(),
-                aiClient.refreshPricing()
-            ]);
+            const registryModels = await aiClient.getRegistryModels();
             const [corpusSummary, rows] = await Promise.all([
                 computeCostEstimateCorpusSummary(),
                 computeCostComparisonRows(registryModels)

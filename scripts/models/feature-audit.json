@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-03T15:47:50.110Z",
+  "generatedAt": "2026-10-10T19:02:38.026Z",
   "scoringModel": "rt-impact-v1",
   "scoringAxes": [
     "authorTrust",
@@ -16,8 +16,8 @@
   "providerSummaries": {
     "anthropic": {
       "total": 9,
-      "implemented": 6,
-      "rtRelevantGaps": 0
+      "implemented": 5,
+      "rtRelevantGaps": 1
     },
     "openai": {
       "total": 7,

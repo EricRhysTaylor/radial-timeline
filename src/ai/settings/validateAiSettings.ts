@@ -212,7 +212,8 @@ export function validateAiSettings(input?: AiSettingsV1 | null): AiSettingsValid
     }
 
     const sanitizeTier = (tier: unknown): 1 | 2 | 3 | 4 => {
-        if (tier === 1 || tier === 2 || tier === 3 || tier === 4) return tier;
+        const supported = [1, 2, 3, 4].find(candidate => candidate === tier);
+        if (supported !== undefined) return supported as 1 | 2 | 3 | 4; // SAFE: supported comes from the exact access-tier allowlist
         return 1;
     };
     value.aiAccessProfile.anthropicTier = sanitizeTier(value.aiAccessProfile.anthropicTier);

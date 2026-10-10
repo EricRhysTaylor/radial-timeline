@@ -47,6 +47,8 @@ describe('OpenAIProvider', () => {
             undefined,
             undefined,
             true,
+            undefined,
+            true,
             undefined
         );
         expect(vi.mocked(callOpenAiResponsesApi).mock.calls[1][8]).toBe(false);

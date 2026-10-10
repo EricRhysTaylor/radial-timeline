@@ -140,7 +140,7 @@
       ],
       "impactAssessment": "medium",
       "implementationStatus": "complete",
-      "implementationNotes": "Extended thinking enabled for Anthropic Inquiry deep runs only (first ship). resolveThinkingBudget() in computeCaps gates on provider=anthropic + feature=inquiry + reasoningDepth=deep → 4096 token budget. Temperature forced to 1 when thinking enabled (Anthropic requirement). thinkingBudgetTokens threaded through GenerateTextRequest → ProviderCallArgs → callAnthropicApi. Response parsing updated to skip thinking content blocks. Beta header conditionally appended. Gossamer/sceneAnalysis not yet enabled.",
+      "implementationNotes": "Extended thinking enabled for Anthropic Inquiry deep runs only (first ship). resolveThinkingBudget() in computeCaps gates on provider=anthropic + feature=inquiry + reasoningDepth=deep \u2192 4096 token budget. Temperature forced to 1 when thinking enabled (Anthropic requirement). thinkingBudgetTokens threaded through GenerateTextRequest \u2192 ProviderCallArgs \u2192 callAnthropicApi. Response parsing updated to skip thinking content blocks. Beta header conditionally appended. Gossamer/sceneAnalysis not yet enabled.",
       "sourceFiles": [
         "src/api/anthropicApi.ts",
         "src/ai/caps/computeCaps.ts",
@@ -175,8 +175,8 @@
         "inquiry"
       ],
       "impactAssessment": "medium",
-      "implementationStatus": "complete",
-      "implementationNotes": "Provider-counted token estimation runs through estimateInputTokens, which dispatches to each provider's HTTP countTokens endpoint when one exists (Anthropic /v1/messages/count_tokens, Google models/{id}:countTokens). On any failure for Anthropic/Google (missing key, network error, malformed response) the function THROWS — no silent chars/4 fallback. The aiClient caller catches the throw, surfaces 'Token count unavailable' as a warning, and propagates method='unavailable' so downstream UI shows 'unavailable' rather than fabricating a number. This change (2026-05-23) closes a doctrine violation where the heuristic was substituted for failed provider counts. OpenAI/Ollama have no provider count endpoint at all and return chars/4 as the canonical RT corpus count — that is NOT a fallback, it is the legitimate corpus metric for those providers per doctrine §1.",
+      "implementationStatus": "not_applicable",
+      "implementationNotes": "Owner decision 2026-10-10: all estimates must stay local and send nothing to providers. Remote token-count adapters were removed. Execution uses locally estimated envelope tokens and conservative budgets; actual usage is recorded only after an explicitly authorized analysis.",
       "sourceFiles": [
         "src/api/anthropicApi.ts",
         "src/api/geminiApi.ts",
@@ -190,53 +190,10 @@
       "blockers": [],
       "addedToRegistry": "2026-03-03",
       "priority": "p1",
-      "implementationEvidence": [
-        {
-          "label": "Anthropic API seam exposes canonical provider-side token counts",
-          "sourceFiles": [
-            "src/api/anthropicApi.ts",
-            "src/ai/types.ts"
-          ],
-          "allOf": [
-            "countAnthropicTokens",
-            "/v1/messages/count_tokens",
-            "normalizeAnthropicTokenCountResponse",
-            "source\\s*:\\s*'provider_count'",
-            "export interface TokenCountResult"
-          ]
-        },
-        {
-          "label": "Canonical runtime estimation dispatches to provider HTTP tokenizers and throws on failure (no silent fallback)",
-          "sourceFiles": [
-            "src/ai/tokens/inputTokenEstimate.ts",
-            "src/ai/runtime/aiClient.ts"
-          ],
-          "allOf": [
-            "countAnthropicTokens",
-            "countGeminiTokens",
-            "result\\.source === 'provider_count'",
-            "throw new Error\\('Anthropic API key unavailable",
-            "tokenCountAttemptWarnings",
-            "tokenEstimateMethod:\\s*estimate\\.tokenEstimateMethod"
-          ]
-        },
-        {
-          "label": "Inquiry forecast and debug surfaces carry the counted-token method through planning",
-          "sourceFiles": [
-            "src/ai/forecast/estimateTokensFromVault.ts",
-            "src/inquiry/services/inquiryEstimateSnapshot.ts",
-            "src/inquiry/render/inquiryLogBuilders.ts"
-          ],
-          "allOf": [
-            "trace\\.tokenEstimate\\.estimationMethod",
-            "method:\\s*trace\\.tokenEstimate\\.estimationMethod",
-            "describeTokenEstimateMethod"
-          ]
-        }
-      ],
+      "implementationEvidence": [],
       "targetRelease": "shipped",
       "owner": "eric",
-      "lastTouched": "2026-03-22",
+      "lastTouched": "2026-10-10",
       "rtImpact": {
         "authorTrust": "medium",
         "runtimeReliability": "medium",
@@ -244,7 +201,7 @@
         "passPrediction": "high",
         "citationTrust": "low"
       },
-      "rtRecommendation": "implement now"
+      "rtRecommendation": "ignore"
     },
     {
       "id": "anthropic-citations",
@@ -380,7 +337,7 @@
       ],
       "impactAssessment": "high",
       "implementationStatus": "complete",
-      "implementationNotes": "System and user messages are now separated for models that support the system role, enabling OpenAI automatic prompt caching for stable prefixes. Concatenation fallback preserved for reasoning models (o1/o1-mini) and local endpoints (baseUrl guard). Active call chain: aiClient → OpenAIProvider → callProvider → callOpenAiApi.",
+      "implementationNotes": "System and user messages are now separated for models that support the system role, enabling OpenAI automatic prompt caching for stable prefixes. Concatenation fallback preserved for reasoning models (o1/o1-mini) and local endpoints (baseUrl guard). Active call chain: aiClient \u2192 OpenAIProvider \u2192 callProvider \u2192 callOpenAiApi.",
       "sourceFiles": [
         "src/api/openaiApi.ts",
         "src/ai/providers/openaiProvider.ts"
@@ -491,7 +448,7 @@
           ],
           "allOf": [
             "isExternalAttributionCitation",
-            "Citation · Tool annotations"
+            "Citation \u00b7 Tool annotations"
           ]
         }
       ],
@@ -650,15 +607,15 @@
       "priority": "p0",
       "implementationEvidence": [
         {
-          "label": "Gemini cache manager exposes cache creation and peek seams",
+          "label": "Gemini cache setup is isolated by credential and shares concurrent creations",
           "sourceFiles": [
             "src/api/geminiCacheManager.ts",
             "src/ai/runtime/aiClient.ts"
           ],
           "allOf": [
             "getOrCreateGeminiCache",
-            "peekGeminiCache",
-            "peekGeminiCache\\("
+            "state\\.pending",
+            "hashApiKeyId"
           ]
         },
         {

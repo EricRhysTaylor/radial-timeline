@@ -99,7 +99,7 @@ async function writePulseLog(
         : null;
 
     const isError = payload.status === 'error';
-    const shouldWriteContent = plugin.settings.logApiInteractions || isError;
+    const shouldWriteContent = plugin.settings.logApiInteractions;
 
     // Content log is optional and must stay non-blocking for generation flow.
     let contentLogWritten = false;
@@ -236,7 +236,8 @@ export async function callAiProvider(
     commandContext: string,
     sceneName?: string,
     tripletInfo?: { prev: string; current: string; next: string },
-    onUsage?: PulseUsageObserver
+    onUsage?: PulseUsageObserver,
+    shouldAbort?: () => boolean
 ): Promise<AiProviderResponse> {
     const aiSettings = getCanonicalAiSettings(plugin);
     const selection = resolveConfiguredSelection(aiSettings, {
@@ -256,7 +257,7 @@ export async function callAiProvider(
 
     try {
         submittedAt = new Date();
-        runResult = await aiClient.run({ ...buildPulseRunRequest(userPrompt), providerOverride });
+        runResult = await aiClient.run({ ...buildPulseRunRequest(userPrompt), providerOverride, shouldAbort });
         returnedAt = new Date();
 
         responseDataForLog = runResult.responseData;

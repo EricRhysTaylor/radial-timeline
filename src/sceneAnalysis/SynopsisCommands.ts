@@ -11,7 +11,7 @@ import { sleep } from '../utils/sleep';
 import { Vault, Notice } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { SceneAnalysisProcessingModal, type ProcessingMode, type SceneQueueItem } from '../modals/SceneAnalysisProcessingModal';
-import { getAllSceneData, compareScenesByOrder } from './data';
+import { getAllSceneData, compareScenesByOrder, assertSceneSourcesUnchanged } from './data';
 import { classifySynopsis } from './synopsisQuality';
 import {
     buildSummaryRunRequest,
@@ -73,7 +73,7 @@ function normalizeErrorMessage(error: unknown): string {
     if (error instanceof Error) return error.message.trim();
     if (error === null || error === undefined) return 'Unknown error';
     if (typeof error === 'string') return error.trim();
-    if (typeof error === 'number' || typeof error === 'boolean' || typeof error === 'bigint' || typeof error === 'symbol') {
+    if (['number', 'boolean', 'bigint', 'symbol'].includes(typeof error)) {
         return String(error).trim();
     }
     try {
@@ -284,7 +284,7 @@ export async function runSynopsisBatch(
             let attribution: string | null = null;
 
             if (!isResuming || !alreadySummaryUpdatedToday || !newSummary) {
-                const sent = await sendSummaryRefreshRequest(plugin, buildSummaryRunRequest(scene, target));
+                const sent = await sendSummaryRefreshRequest(plugin, { ...buildSummaryRunRequest(scene, target), shouldAbort: () => modal.isAborted() });
                 modal.setAiAdvancedContext(sent.advancedContext ?? null);
                 const parsed = parseSummaryReply(sent.reply);
                 if (!parsed.ok) {
@@ -301,7 +301,7 @@ export async function runSynopsisBatch(
             // Generate the hover blurb from the newly generated Summary, not the full scene text.
             if (alsoUpdateSynopsis) {
                 try {
-                    const sent = await sendSummaryRefreshRequest(plugin, buildSynopsisRunRequest(scene, newSummary, synopsisMaxWords));
+                    const sent = await sendSummaryRefreshRequest(plugin, { ...buildSynopsisRunRequest(scene, newSummary, synopsisMaxWords), shouldAbort: () => modal.isAborted() });
                     modal.setAiAdvancedContext(sent.advancedContext ?? null);
                     const parsed = parseSynopsisReply(sent.reply, synopsisMaxWords);
                     if (!parsed.ok) throw new Error(parsed.problem);
@@ -326,11 +326,13 @@ export async function runSynopsisBatch(
             }
 
             try {
+                const assertSourcesCurrent = await assertSceneSourcesUnchanged(vault, [scene]);
                 await persistSummaryForScene(
                     plugin,
                     scene.file.path,
                     { summary: newSummary, synopsis: newSynopsis },
-                    attribution
+                    attribution,
+                    assertSourcesCurrent
                 );
                 processedCount++;
 

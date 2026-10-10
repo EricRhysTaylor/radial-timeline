@@ -26,10 +26,12 @@ export function createAiRunner(
     commandContext: string,
     sceneName?: string,
     tripletInfo?: { prev: string; current: string; next: string },
-    onUsage?: PulseUsageObserver
+    onUsage?: PulseUsageObserver,
+    shouldAbort?: () => boolean
   ) => Promise<AiProviderResponse>,
-  onUsage?: PulseUsageObserver
+  onUsage?: PulseUsageObserver,
+  shouldAbort?: () => boolean
 ): AiRunner {
   return (userPrompt, subplotName, commandContext, sceneName, tripletInfo) =>
-    callAiProvider(plugin, vault, userPrompt, subplotName, commandContext, sceneName, tripletInfo, onUsage);
+    callAiProvider(plugin, vault, userPrompt, subplotName, commandContext, sceneName, tripletInfo, onUsage, shouldAbort);
 }

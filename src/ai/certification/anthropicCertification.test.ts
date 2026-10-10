@@ -9,7 +9,6 @@ vi.mock('../credentials/credentials', () => ({
     getCredential: vi.fn(async (_plugin: unknown, provider: string) => provider === 'anthropic' ? liveAnthropicKey : '')
 }));
 
-import { countAnthropicTokens } from '../../api/anthropicApi';
 import { getAIClient } from '../runtime/aiClient';
 import { buildDefaultAiSettings } from '../settings/aiSettings';
 import { resetPricingToBuiltin } from '../cost/providerPricing';
@@ -294,29 +293,13 @@ describe.skipIf(!liveAnthropicKey || !liveRequestTransportEnabled)('Anthropic li
 
         const cases: CertificationCaseResult[] = [];
 
-        cases.push(await executeCase('prepared_count_matches_provider_count', async () => {
+        cases.push(await executeCase('prepared_estimate_is_local', async () => {
             const preparedResult = await client.prepareRunEstimate(baselineInquiryRequest);
-            assertCondition(preparedResult.ok, `prepareRunEstimate failed: ${preparedResult.ok ? 'unexpected success state' : preparedResult.result.error ?? 'unknown error'}`);
-            const prepared = preparedResult.estimate;
-            const providerCount = await countAnthropicTokens(
-                liveAnthropicKey,
-                prepared.model.id,
-                prepared.systemPrompt,
-                prepared.userPrompt,
-                prepared.citationsEnabled,
-                prepared.evidenceDocuments,
-                undefined,
-                undefined
-            );
-            expect(prepared.tokenEstimateMethod).toBe('anthropic_count');
-            expect(prepared.tokenEstimateInput).toBe(providerCount.inputTokens);
+            assertCondition(preparedResult.ok, 'Unable to prepare local estimate.');
+            expect(preparedResult.estimate.tokenEstimateMethod).toBe('heuristic_chars');
             return {
-                summary: 'Prepared estimate used Anthropic count_tokens and matched the direct provider count exactly.',
-                details: {
-                    tokenEstimateMethod: prepared.tokenEstimateMethod,
-                    preparedInputTokens: prepared.tokenEstimateInput,
-                    providerCountInputTokens: providerCount.inputTokens
-                }
+                summary: 'Prepared estimate is local and sends no content to a token-count endpoint.',
+                details: { estimatedInputTokens: preparedResult.estimate.tokenEstimateInput }
             };
         }));
 

@@ -162,8 +162,8 @@ describe('AI settings models table', () => {
     it('renders cloud transparency sections while hiding them for the Local provider path', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
         expect(source.includes("setName(t('settings.ai.largeHandling.name'))")).toBe(true);
-        expect(source.includes('Fresh estimate*')).toBe(true);
-        expect(source.includes('Cached estimate**')).toBe(true);
+        expect(source.includes('Fresh local estimate*')).toBe(true);
+        expect(source.includes('Cached local estimate**')).toBe(true);
         expect(source.includes('* Based on published provider pricing. Actual charges may differ due to caching, credits, or account-level adjustments.')).toBe(true);
         expect(source.includes("createSpan({ text: 'See provider pricing: ' })")).toBe(true);
         expect(source.includes("appendText(' runs on your machine with no API charges.')")).toBe(true);
@@ -271,7 +271,7 @@ describe('AI settings models table', () => {
         expect(source.includes('formatProviderCacheWindowLabel(provider, ensureCanonicalAiSettings())')).toBe(true);
         expect(cacheWindowSource.includes('export function formatProviderCacheWindowLabel')).toBe(true);
         expect(cacheWindowSource.includes('normalizeGeminiCacheTtlSeconds(windows.googleTtlSeconds)')).toBe(true);
-        expect(source.includes("'Fresh estimate*', 'Cached estimate**'")).toBe(true);
+        expect(source.includes("'Fresh local estimate*', 'Cached local estimate**'")).toBe(true);
     });
 
     it('shows pending Inquiry corpus estimates as estimating instead of a real zero-token request', () => {

@@ -18,6 +18,7 @@
  */
 import { createHash } from 'crypto';
 import { createGeminiCache, listGeminiCaches } from './geminiApi';
+import type { AIRequestControl } from '../ai/types';
 import { estimateTokensFromChars, DEFAULT_CHARS_PER_TOKEN } from '../ai/estimates';
 
 interface GeminiCacheEntry {
@@ -36,18 +37,15 @@ export interface GeminiCacheResult {
     expiresAt: number;
 }
 
-/** In-memory store: content fingerprint → cache resource */
-const cacheStore = new Map<string, GeminiCacheEntry>();
+interface CredentialCacheState {
+    entries: Map<string, GeminiCacheEntry>;
+    adoption?: Promise<void>;
+    pending: Map<string, Promise<GeminiCacheResult>>;
+}
 
-/** displayName prefix marking a cache RT created; the fingerprint follows it. */
+// Separate credential namespaces avoid cache adoption/key-switch races.
+const stores = new Map<string, CredentialCacheState>();
 const RT_CACHE_DISPLAY_PREFIX = 'rt-cache-';
-
-/**
- * Identity (hash, never the key itself) of the API key whose caches the store
- * holds and has adopted from the provider. Caches belong to the key's
- * project: a different key starts an empty store and adopts afresh.
- */
-let adoptedForKeyId: string | null = null;
 
 /**
  * Gemini explicit caching minimum: 4,096 tokens on 3.x Flash and 3.1 Pro —
@@ -95,53 +93,26 @@ function hashApiKeyId(apiKey: string): string {
  * live ones RT created. Throws if the listing fails; the caller fails the run
  * the same way a failed create does, and the next call tries again.
  */
-async function adoptProviderCaches(apiKey: string): Promise<void> {
-    const keyId = hashApiKeyId(apiKey);
-    if (adoptedForKeyId === keyId) return;
-    if (adoptedForKeyId !== null) cacheStore.clear();
-    const listings = await listGeminiCaches(apiKey);
-    for (const listing of listings) {
-        if (!listing.displayName?.startsWith(RT_CACHE_DISPLAY_PREFIX)) continue;
-        const expiresAt = listing.expireTime ? Date.parse(listing.expireTime) : NaN;
-        if (!Number.isFinite(expiresAt)) continue;
-        const entry: GeminiCacheEntry = { cacheName: listing.name, expiresAt };
-        if (!isEntryValid(entry)) continue;
-        const fp = listing.displayName.slice(RT_CACHE_DISPLAY_PREFIX.length);
-        const known = cacheStore.get(fp);
-        if (!known || known.expiresAt < expiresAt) cacheStore.set(fp, entry);
+async function adoptProviderCaches(apiKey: string, state: CredentialCacheState, control?: AIRequestControl): Promise<void> {
+    if (!state.adoption) {
+        state.adoption = (async () => {
+            const listings = await listGeminiCaches(apiKey, control);
+            for (const listing of listings) {
+                if (!listing.displayName?.startsWith(RT_CACHE_DISPLAY_PREFIX)) continue;
+                const expiresAt = listing.expireTime ? Date.parse(listing.expireTime) : NaN;
+                const entry = { cacheName: listing.name, expiresAt };
+                if (!Number.isFinite(expiresAt) || !isEntryValid(entry)) continue;
+                state.entries.set(listing.displayName.slice(RT_CACHE_DISPLAY_PREFIX.length), entry);
+            }
+        })();
+        void state.adoption.catch(() => { state.adoption = undefined; });
     }
-    adoptedForKeyId = keyId;
+    await state.adoption;
 }
 
 /** Check whether a cache entry is still valid (with safety margin). */
 function isEntryValid(entry: GeminiCacheEntry): boolean {
     return entry.expiresAt - EXPIRY_SAFETY_MARGIN_MS > Date.now();
-}
-
-/** Remove expired entries from the store. */
-export function pruneGeminiCacheStore(): void {
-    const now = Date.now();
-    for (const [key, entry] of cacheStore) {
-        if (entry.expiresAt <= now) cacheStore.delete(key);
-    }
-}
-
-/**
- * Pure in-memory check: does a valid cache entry exist for this content?
- *
- * No API calls, no side effects. Used by aiClient to determine whether
- * optimistic warm state is safe before execute().
- */
-export function peekGeminiCache(
-    modelId: string,
-    systemPrompt: string,
-    stableContent: string
-): boolean {
-    const estimatedTokens = estimateTokensFromChars(stableContent.length, CHARS_PER_TOKEN);
-    if (estimatedTokens < GEMINI_MIN_ESTIMATED_CACHE_TOKENS) return false;
-    const fp = hashCacheKey(modelId, systemPrompt, stableContent);
-    const hit = cacheStore.get(fp);
-    return !!hit && isEntryValid(hit);
 }
 
 /**
@@ -160,35 +131,40 @@ export async function getOrCreateGeminiCache(
     modelId: string,
     stableContent: string,
     systemPrompt?: string,
-    ttlSeconds: number = DEFAULT_TTL_SECONDS
+    ttlSeconds: number = DEFAULT_TTL_SECONDS,
+    control?: AIRequestControl
 ): Promise<GeminiCacheResult | null> {
-    // Housekeeping: prune expired entries on each call
-    pruneGeminiCacheStore();
-
-    // Guard: skip cache for small stable prefixes (below Gemini min threshold)
+    control?.assertActive();
     const estimatedTokens = estimateTokensFromChars(stableContent.length, CHARS_PER_TOKEN);
     if (estimatedTokens < GEMINI_MIN_ESTIMATED_CACHE_TOKENS) return null;
-
-    const fp = hashCacheKey(modelId, systemPrompt ?? '', stableContent);
+    const fp = hashCacheKey(modelId, systemPrompt ?? '', stableContent); // SAFE: omitted system prompt means no system instruction
     const keyId = hashApiKeyId(apiKey);
-    const hit = adoptedForKeyId === keyId ? cacheStore.get(fp) : undefined;
-    if (hit && isEntryValid(hit)) {
-        return { cacheName: hit.cacheName, status: 'hit', expiresAt: hit.expiresAt };
+    let state = stores.get(keyId);
+    if (!state) {
+        state = { entries: new Map(), pending: new Map() };
+        stores.set(keyId, state);
     }
-
-    // Miss: before creating, adopt live RT caches the provider still holds
-    // (lost from memory by a plugin reload).
-    await adoptProviderCaches(apiKey);
-    const adopted = cacheStore.get(fp);
-    if (adopted && isEntryValid(adopted)) {
-        return { cacheName: adopted.cacheName, status: 'hit', expiresAt: adopted.expiresAt };
+    const existing = state.pending.get(fp);
+    if (existing) {
+        const result = await existing;
+        control?.assertActive();
+        return { ...result, status: 'hit' };
     }
-    cacheStore.delete(fp);      // expired or missing
-
-    const cacheName = await createGeminiCache(
-        apiKey, modelId, stableContent, ttlSeconds, systemPrompt, `${RT_CACHE_DISPLAY_PREFIX}${fp}`
-    );
-    const expiresAt = Date.now() + (ttlSeconds * 1000);
-    cacheStore.set(fp, { cacheName, expiresAt });
-    return { cacheName, status: 'created', expiresAt };
+    const stateForRequest = state;
+    const pending = (async (): Promise<GeminiCacheResult> => {
+        await adoptProviderCaches(apiKey, stateForRequest, control);
+        control?.assertActive();
+        const hit = stateForRequest.entries.get(fp);
+        if (hit && isEntryValid(hit)) return { cacheName: hit.cacheName, status: 'hit', expiresAt: hit.expiresAt };
+        stateForRequest.entries.delete(fp);
+        const cacheName = await createGeminiCache(
+            apiKey, modelId, stableContent, ttlSeconds, systemPrompt, `${RT_CACHE_DISPLAY_PREFIX}${fp}`, control
+        );
+        const expiresAt = Date.now() + ttlSeconds * 1000;
+        stateForRequest.entries.set(fp, { cacheName, expiresAt });
+        return { cacheName, status: 'created', expiresAt };
+    })();
+    state.pending.set(fp, pending);
+    try { return await pending; }
+    finally { state.pending.delete(fp); }
 }

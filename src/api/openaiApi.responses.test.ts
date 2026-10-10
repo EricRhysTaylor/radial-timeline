@@ -1,10 +1,18 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('obsidian', () => ({
     requestUrl: vi.fn()
 }));
 
 import * as obsidian from 'obsidian';
+
+vi.mock('./providerTransport', async () => ({
+    ...await vi.importActual('./providerTransport'),
+    requestProvider: async (options: unknown) => {
+        const response = await obsidian.requestUrl(options as never);
+        return { ...response, headers: {}, retryCount: 0 };
+    }
+}));
 import {
     buildOpenAiResponsesInput,
     callOpenAiApi,
@@ -16,6 +24,15 @@ import {
 } from './openaiApi';
 
 describe('openai responses normalization', () => {
+    beforeEach(() => { vi.spyOn(obsidian, 'requestUrl').mockReset(); });
+    it.each(['incomplete', 'failed', 'cancelled'])('rejects %s responses even when they contain valid JSON text', async status => {
+        vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
+            status: 200, text: '', json: { status, output_text: '{"ok":true}', incomplete_details: { reason: 'max_output_tokens' } }
+        } as never);
+        const result = await callOpenAiResponsesApi('fixture-key', 'gpt-6.1-sol', null, 'Synthetic fixture only');
+        expect(result.success).toBe(false);
+        expect(result.content).toBeNull();
+    });
     it('extracts text from output_text and message content blocks', () => {
         const responseData = {
             output_text: 'Top-level summary',
@@ -182,6 +199,7 @@ describe('openai responses normalization', () => {
         expect(response.requestPayload).toEqual({
             model: 'gpt-6.1-sol',
             prompt_cache_options: { mode: 'explicit' },
+            store: false,
             input: [
                 {
                     role: 'system',
@@ -295,6 +313,7 @@ describe('openai responses normalization', () => {
         ]);
         expect(response.requestPayload).toEqual({
             model: 'gpt-4.1',
+            store: false,
             messages: [
                 { role: 'system', content: 'You are precise.' },
                 { role: 'user', content: 'Return JSON.' }

@@ -981,6 +981,7 @@ async function runAiInference(
         try {
             const run = await aiClient.run({
                 feature: 'TimelineAuditAI',
+                shouldAbort: () => callbacks.abortSignal?.aborted === true,
                 task: 'TimelineDiagnosis',
                 requiredCapabilities: getTimelineAuditAiRequiredCapabilities(aiSettings.provider),
                 featureModeInstructions: 'Reconstruct fiction-scene chronology conservatively from manuscript evidence. Treat scaffolded dates as provisional and prefer uncertainty over invented precision.',

@@ -1,13 +1,7 @@
-import type RadialTimelinePlugin from '../../main';
-import { getCredential } from '../credentials/credentials';
 import type {
-    AIProviderId,
     EvidenceDocument,
-    InputTokenEstimateMethod,
-    TokenCountResult
+    InputTokenEstimateMethod
 } from '../types';
-import { countAnthropicTokens } from '../../api/anthropicApi';
-import { countGeminiTokens } from '../../api/geminiApi';
 import { estimateTokensFromChars, DEFAULT_CHARS_PER_TOKEN } from '../estimates';
 
 export { DEFAULT_CHARS_PER_TOKEN };
@@ -22,13 +16,9 @@ export interface InputTokenEstimate {
 }
 
 export interface EstimateInputTokensRequest {
-    plugin?: RadialTimelinePlugin;
-    provider?: AIProviderId;
-    modelId?: string;
     systemPrompt?: string | null;
     userPrompt: string;
     evidenceDocuments?: EvidenceDocument[];
-    citationsEnabled?: boolean;
     jsonSchema?: Record<string, unknown>;
     safeInputBudget?: number;
     charsPerToken?: number;
@@ -36,24 +26,15 @@ export interface EstimateInputTokensRequest {
 
 const HEURISTIC_UNCERTAINTY_RATIO = 0.04;
 const HEURISTIC_UNCERTAINTY_MIN = 3000;
-// Provider-counted estimates are exact for the prompt envelope, but we keep
-// a small uncertainty band to account for any per-request envelope additions
-// (cache markers, structured-output tools) the count call doesn't include.
+// Retained only to interpret estimates stored by older plugin versions.
 const PROVIDER_COUNT_UNCERTAINTY_RATIO = 0.005;
 const PROVIDER_COUNT_UNCERTAINTY_MIN = 256;
-
-function normalizeProvider(provider: EstimateInputTokensRequest['provider']): AIProviderId | 'none' {
-    if (provider === 'anthropic' || provider === 'openai' || provider === 'google' || provider === 'ollama') {
-        return provider;
-    }
-    return 'none';
-}
 
 export function describeTokenEstimateMethod(method: TokenEstimateMethod): string {
     if (method === 'anthropic_count') return 'Anthropic provider count';
     if (method === 'google_count') return 'Gemini provider count';
     if (method === 'unavailable') return 'Provider count unavailable';
-    return 'Heuristic estimate';
+    return 'Local estimate (no provider request)';
 }
 
 // Canonical implementation lives in ai/estimates/tokenEstimate.ts — a pure
@@ -66,22 +47,29 @@ export function estimateTokensFromText(text: string, charsPerToken = DEFAULT_CHA
 }
 
 /**
- * The chars/4 estimate for a whole request: system + user prompt plus every
- * evidence document (title, a 4-char separator allowance, content). The one
- * heuristic both model selection and the displayed estimate use, so the
- * model chosen for a corpus and the size shown for it never disagree.
+ * Local execution estimate, separate from the UI corpus chars/4 metric.
+ * Non-ASCII text reserves its UTF-8 byte count: chars/4 badly undercounts
+ * CJK and other scripts. No provider tokenizer or network request is used.
  */
+function estimateExecutionTextTokens(text: string, charsPerToken = DEFAULT_CHARS_PER_TOKEN): number {
+    const ascii = text.replace(/[^\x00-\x7f]/g, '');
+    const unicode = text.replace(/[\x00-\x7f]/g, '');
+    return estimateTokensFromChars(ascii.length, charsPerToken) + new TextEncoder().encode(unicode).length;
+}
+
 export function estimateHeuristicInputTokens(params: {
     systemPrompt?: string | null;
     userPrompt?: string | null;
     evidenceDocuments?: ReadonlyArray<{ title?: string; content?: string }>;
+    jsonSchema?: Record<string, unknown>;
     charsPerToken?: number;
 }): number {
-    const promptChars = (params.systemPrompt?.length ?? 0) + (params.userPrompt?.length ?? 0);
-    const evidenceChars = (params.evidenceDocuments || []).reduce((sum, doc) => (
-        sum + (doc.title?.length ?? 0) + 4 + (doc.content?.length ?? 0)
-    ), 0);
-    return estimateTokensFromChars(promptChars + evidenceChars, params.charsPerToken);
+    const parts = [params.systemPrompt, params.userPrompt];
+    for (const doc of params.evidenceDocuments ?? []) { // SAFE: no documents means only system/user content contributes
+        parts.push(doc.title, '    ', doc.content);
+    }
+    if (params.jsonSchema) parts.push(JSON.stringify(params.jsonSchema));
+    return estimateExecutionTextTokens(parts.filter((part): part is string => typeof part === 'string').join(''), params.charsPerToken);
 }
 
 export function estimateUncertaintyTokens(method: TokenEstimateMethod, safeInputBudget?: number): number {
@@ -92,109 +80,11 @@ export function estimateUncertaintyTokens(method: TokenEstimateMethod, safeInput
     return Math.max(HEURISTIC_UNCERTAINTY_MIN, Math.floor(budget * HEURISTIC_UNCERTAINTY_RATIO));
 }
 
-function toCountedEstimate(
-    result: TokenCountResult,
-    safeInputBudget?: number
-): InputTokenEstimate {
-    let method: TokenEstimateMethod;
-    if (result.source === 'provider_count') {
-        method = result.provider === 'google' ? 'google_count' : 'anthropic_count';
-    } else {
-        method = 'heuristic_chars';
-    }
+/** All estimates are local. This module must never import credentials or a transport. */
+export function estimateInputTokens(request: EstimateInputTokensRequest): InputTokenEstimate {
     return {
-        inputTokens: Math.max(0, Math.floor(result.inputTokens)),
-        method,
-        uncertaintyTokens: estimateUncertaintyTokens(method, safeInputBudget)
+        inputTokens: estimateHeuristicInputTokens(request),
+        method: 'heuristic_chars',
+        uncertaintyTokens: estimateUncertaintyTokens('heuristic_chars', request.safeInputBudget)
     };
-}
-
-/**
- * Provider-counted token estimation.
- *
- * Dispatches to the provider's authoritative tokenizer when available:
- *   - anthropic: HTTP /v1/messages/count_tokens (knows document blocks + citations)
- *   - google:    HTTP models/{id}:countTokens   (free, no quota cost)
- *   - openai:    Returns chars/4 (the canonical RT corpus count per
- *                doctrine §1). OpenAI does not expose a free pre-flight
- *                count endpoint and we do not ship a local tokenizer.
- *                The chars/4 number is NOT a fallback for a failed
- *                provider count — it is the legitimate corpus metric for
- *                OpenAI runs because no provider-count endpoint exists.
- *   - ollama:    Same as OpenAI — chars/4 corpus count, no provider count.
- *
- * **No silent fallback for Anthropic/Google.** Per the RT doctrine
- * (`code-doctrine.md` §2 and `inquiry-critical-path-rules.md` §8): when
- * the provider count call fails for any reason (no API key, network
- * error, malformed response, model-id rejected), this function THROWS.
- * The caller is responsible for catching the throw and surfacing
- * "unavailable" in the UI — NOT substituting the heuristic and labeling
- * it as if it were authoritative.
- *
- * Earlier versions of this function returned the heuristic with an
- * `error` field attached on the assumption that callers would display
- * "Heuristic estimate — {reason}". They didn't — the headline number
- * was shown without the badge, which was a doctrine violation
- * ("substitute incorrect numbers"). The throw makes the unavailability
- * impossible to ignore.
- */
-export async function estimateInputTokens(request: EstimateInputTokensRequest): Promise<InputTokenEstimate> {
-    const provider = normalizeProvider(request.provider);
-
-    // OpenAI / Ollama / 'none' have no provider count endpoint. The
-    // chars/4 corpus count is the canonical metric for these providers.
-    if (provider === 'openai' || provider === 'ollama' || provider === 'none') {
-        return {
-            inputTokens: estimateHeuristicInputTokens({
-                systemPrompt: request.systemPrompt,
-                userPrompt: request.userPrompt,
-                evidenceDocuments: request.evidenceDocuments,
-                charsPerToken: request.charsPerToken
-            }),
-            method: 'heuristic_chars',
-            uncertaintyTokens: estimateUncertaintyTokens('heuristic_chars', request.safeInputBudget),
-        };
-    }
-
-    if (!request.plugin || !request.modelId) {
-        throw new Error('Plugin or modelId missing; cannot resolve provider credentials for token counting.');
-    }
-
-    if (provider === 'anthropic') {
-        const apiKey = await getCredential(request.plugin, 'anthropic');
-        if (!apiKey) {
-            throw new Error('Anthropic API key unavailable for token counting.');
-        }
-        const counted = await countAnthropicTokens(
-            apiKey,
-            request.modelId,
-            request.systemPrompt ?? null,
-            request.userPrompt,
-            request.citationsEnabled,
-            request.evidenceDocuments,
-            undefined,
-            request.jsonSchema
-        );
-        return toCountedEstimate(counted, request.safeInputBudget);
-    }
-
-    if (provider === 'google') {
-        const apiKey = await getCredential(request.plugin, 'google');
-        if (!apiKey) {
-            throw new Error('Gemini API key unavailable for token counting.');
-        }
-        // Gemini has no document-block/citations distinction at the API
-        // level — evidence is concatenated into the user prompt by the
-        // runner before this point. Just count system + user.
-        const counted = await countGeminiTokens(
-            apiKey,
-            request.modelId,
-            request.systemPrompt ?? null,
-            request.userPrompt
-        );
-        return toCountedEstimate(counted, request.safeInputBudget);
-    }
-
-    // Exhaustive check — should be unreachable.
-    throw new Error(`Unsupported provider for token counting: ${String(provider)}`);
 }

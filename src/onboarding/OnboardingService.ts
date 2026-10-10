@@ -544,6 +544,7 @@ export class OnboardingService {
       try {
         const result = await aiClient.run({
           feature: 'Onboarding',
+          shouldAbort: () => options.signal?.aborted === true,
           task: 'OnboardingScene',
           requiredCapabilities: ['jsonStrict'],
           featureModeInstructions: getOnboardingSceneInstructions(),

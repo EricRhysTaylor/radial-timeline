@@ -3,6 +3,7 @@ import {
     modelSupportsRequestTopP,
     modelSupportsThinkingBudget
 } from '../ai/registry/modelRequestProfiles';
+import type { AIRequestControl } from '../ai/types';
 
 export type AiProvider = 'openai' | 'anthropic' | 'google' | 'ollama';
 
@@ -105,6 +106,7 @@ export function providerSupportsBatchApi(provider: AiProvider): boolean {
 
 /** Parameters flowing through aiClient.execute() to provider adapters. */
 export interface ProviderDispatchParams {
+    requestControl?: AIRequestControl;
     modelId: string;
     systemPrompt?: string | null;
     userPrompt: string;

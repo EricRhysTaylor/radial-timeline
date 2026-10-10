@@ -244,7 +244,7 @@ export async function writeAiJob(app: App, prepared: PreparedAiJob): Promise<voi
     const answer = answerPath(prepared.job.id);
     if (await io.exists(answer)) {
         const previous = await readAiJob(app, prepared.job.id);
-        if (previous.kind !== 'ok' || previous.job.sourceFingerprint !== prepared.job.sourceFingerprint) {
+        if (previous.kind !== 'ok' || await readAiJobPrompt(app, prepared.job.id) !== prepared.prompt) {
             await io.remove(answer);
         }
     }

@@ -40,7 +40,7 @@ vi.mock('./diagnostics', () => ({
     runLocalLlmDiagnostics
 }));
 
-describe('LocalLlmClient live model selection', () => {
+describe('LocalLlmClient diagnostic ownership', () => {
     beforeEach(() => {
         listModels.mockReset();
         getCredential.mockReset();
@@ -76,30 +76,6 @@ describe('LocalLlmClient live model selection', () => {
             warnings: [],
             reason: 'Local LLM backend Ollama resolved from canonical localLlm settings.'
         });
-    });
-
-    it('merges live backend context and output limits into the selected local model', async () => {
-        listModels.mockResolvedValue([{ id: 'mistral-nemo', contextWindow: 65536, maxOutput: 6000 }]);
-        fetchOllamaModelDetails.mockResolvedValue({ contextWindow: 131072, maxOutput: 8192 });
-
-        const { getLocalLlmClient } = await import('./client');
-        const client = getLocalLlmClient({ settings: { aiSettings: {} } } as any);
-        const selection = await client.resolveSelectionFromLiveData();
-
-        expect(selection.model.contextWindow).toBe(131072);
-        expect(selection.model.maxOutput).toBe(8192);
-        expect(selection.reason).toContain('Live backend limits loaded');
-    });
-
-    it('falls back to canonical local model metadata when live lookup fails', async () => {
-        listModels.mockRejectedValue(new Error('connection refused'));
-
-        const { getLocalLlmClient } = await import('./client');
-        const client = getLocalLlmClient({ settings: { aiSettings: {} } } as any);
-        const selection = await client.resolveSelectionFromLiveData();
-
-        expect(selection.model.contextWindow).toBe(32000);
-        expect(selection.model.maxOutput).toBe(4000);
     });
 
     it('reuses one in-flight diagnostics run across settings render instances', async () => {

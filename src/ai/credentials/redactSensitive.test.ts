@@ -2,6 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { redactSensitiveObject, redactSensitiveValue } from './redactSensitive';
 
 describe('redactSensitive helpers', () => {
+    it('redacts pinned request credentials and handles circular arrays safely', () => {
+        const array: unknown[] = ['fixture'];
+        array.push(array);
+        const redacted = redactSensitiveObject({ requestControl: { credential: 'nonstandard-fixture-secret' }, array });
+        expect(redacted.requestControl.credential).toBe('[REDACTED]');
+        expect(redacted.array).toEqual(['fixture', '[Circular]']);
+    });
     it('redacts common credential signatures in strings', () => {
         const value = 'Authorization: Bearer sk-test-abc123?key=AIzaSyD-EXAMPLE1234567890abcd';
         const redacted = redactSensitiveValue(value);

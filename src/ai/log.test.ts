@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { TFile, TFolder, normalizePath } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import {
+    formatAiLogContent,
     buildUsageCostBreakdown,
     countContentLogFiles,
     formatActualUsageCost,
@@ -14,6 +15,19 @@ import {
     resolveLogsRoot,
     resolveRecoverSnapshotsRoot
 } from './log';
+
+describe('full content-log credential redaction', () => {
+    it('redacts raw text sections as well as JSON payloads', () => {
+        const secret = ['sk', 'syntheticFixtureCredential1234567890'].join('-');
+        const content = formatAiLogContent({
+            title: 'Fixture', metadata: { feature: 'Pulse', scopeTarget: 'fixture', provider: 'openai', status: 'error' },
+            request: { systemPrompt: secret, userPrompt: secret, evidenceText: secret, requestPayload: { text: secret } },
+            response: { rawResponse: { text: secret }, assistantContent: secret, parsedOutput: null }, notes: {}
+        });
+        expect(content).not.toContain(secret);
+        expect(content).toContain('[REDACTED]');
+    });
+});
 
 function makeFolder(path: string, children: Array<TFile | TFolder> = []): TFolder {
     const folder = new TFolder(path) as TFolder & { children: Array<TFile | TFolder> };

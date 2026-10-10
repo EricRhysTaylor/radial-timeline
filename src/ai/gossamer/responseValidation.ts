@@ -126,7 +126,8 @@ export function validateGossamerResponse(
         }
 
         const score = ai?.score;
-        if (typeof score !== 'number' || !Number.isFinite(score) || score < 0 || score > 100) {
+        const validScore = typeof score === 'number' && Number.isFinite(score) && score >= 0 && score <= 100;
+        if (!validScore) {
             failures.push({
                 index: i,
                 code: 'score',

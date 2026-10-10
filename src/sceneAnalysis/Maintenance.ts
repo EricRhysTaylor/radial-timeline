@@ -297,7 +297,7 @@ async function purgeScenesBeats(
                 delete fmObj['Pulse Last Updated'];
                 delete fmObj['Beats Last Updated'];
 
-                if (hadPrevious || hadCurrent || hadNext || hadTimestamp) {
+                if ([hadPrevious, hadCurrent, hadNext, hadTimestamp].some(Boolean)) {
                     purgedCount++;
                 }
             });

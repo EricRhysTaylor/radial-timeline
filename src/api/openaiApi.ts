@@ -4,12 +4,11 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 // DEPRECATED: Legacy provider adapter; prefer aiClient entrypoints.
-import { sleep } from '../utils/sleep';
-import { requestUrl } from 'obsidian'; // Use requestUrl for consistency
+import { requestProvider, ProviderTransportError } from './providerTransport';
 import { warnLegacyAccess } from './legacyAccessGuard';
 import { modelSupportsSystemRole } from './providerCapabilities';
 import { modelSupportsRequestTemperature, modelSupportsRequestTopP } from '../ai/registry/modelRequestProfiles';
-import type { SourceAttributionType, SourceCitation } from '../ai/types';
+import type { AIRequestControl, SourceAttributionType, SourceCitation } from '../ai/types';
 import { splitAtCacheBreak } from '../ai/prompts/composeEnvelope';
 
 // Interface for the expected successful OpenAI Chat Completion response
@@ -39,6 +38,9 @@ interface OpenAiErrorResponse {
 }
 
 export interface OpenAiApiResponse {
+    status?: number;
+    retryCount?: number;
+    requestId?: string;
     success: boolean;
     content: string | null;
     responseData: unknown;
@@ -84,31 +86,11 @@ interface OpenAiAnnotationRecord {
     [key: string]: unknown;
 }
 
-// Models that require the OpenAI background-poll Responses transport.
-// Currently empty — gpt-5.4-pro was the only entry and was removed in the
-// minimum-viable-catalog trim (2026-05-22). Re-populate when a future
-// model needs background-poll handling.
-const OPENAI_BACKGROUND_RESPONSE_MODEL_IDS = new Set<string>([]);
-const OPENAI_BACKGROUND_POLL_INTERVAL_MS = 2000;
-const OPENAI_BACKGROUND_MAX_POLLS = 180;
-
 function normalizeBaseUrl(baseUrl: string | undefined, endpointPath: '/chat/completions' | '/responses'): string {
     if (!baseUrl) return `https://api.openai.com/v1${endpointPath}`;
     const base = baseUrl.replace(/\/$/, '');
     if (base.endsWith(endpointPath)) return base;
     return `${base}${endpointPath}`;
-}
-
-function normalizeResponseObjectUrl(responseId: string): string {
-    return `https://api.openai.com/v1/responses/${encodeURIComponent(responseId)}`;
-}
-
-function shouldUseOpenAiBackgroundMode(modelId: string): boolean {
-    return OPENAI_BACKGROUND_RESPONSE_MODEL_IDS.has((modelId || '').trim());
-}
-
-function isPendingBackgroundStatus(status: unknown): boolean {
-    return status === 'queued' || status === 'in_progress';
 }
 
 function buildOpenAiChatMessages(
@@ -459,37 +441,6 @@ function extractResponsesFailureMessage(responseData: unknown): string | null {
     return null;
 }
 
-async function pollOpenAiBackgroundResponse(
-    apiKey: string,
-    initialResponseData: unknown
-): Promise<unknown> {
-    let responseData = initialResponseData;
-    for (let pollIndex = 0; pollIndex < OPENAI_BACKGROUND_MAX_POLLS; pollIndex += 1) {
-        if (!responseData || typeof responseData !== 'object') return responseData;
-        const data = responseData as Record<string, unknown>;
-        const status = data.status;
-        if (!isPendingBackgroundStatus(status)) return responseData;
-        const responseId = typeof data.id === 'string' ? data.id.trim() : '';
-        if (!responseId) return responseData;
-        if (pollIndex > 0) {
-            await sleep(OPENAI_BACKGROUND_POLL_INTERVAL_MS);
-        }
-        const response = await requestUrl({
-            url: normalizeResponseObjectUrl(responseId),
-            method: 'GET',
-            headers: {
-                Authorization: `Bearer ${apiKey}`
-            },
-            throw: false
-        });
-        responseData = response.json;
-        if (response.status >= 400) {
-            return responseData;
-        }
-    }
-    return responseData;
-}
-
 export function normalizeOpenAiResponsesUsage(usageValue: unknown): {
     prompt_tokens?: number;
     completion_tokens?: number;
@@ -560,7 +511,8 @@ export async function callOpenAiApi(
     responseFormat?: OpenAiResponseFormat,
     temperature?: number,
     topP?: number,
-    internalAdapterAccess?: boolean
+    internalAdapterAccess?: boolean,
+    requestControl?: AIRequestControl
 ): Promise<OpenAiApiResponse> {
     warnLegacyAccess('openaiApi.callOpenAiApi', internalAdapterAccess);
     const apiUrl = normalizeBaseUrl(baseUrl, '/chat/completions');
@@ -577,11 +529,12 @@ export async function callOpenAiApi(
     const requestBody: {
         model: string;
         messages: { role: string; content: string }[];
+        store: false;
         max_completion_tokens?: number;
         response_format?: OpenAiResponseFormat;
         temperature?: number;
         top_p?: number;
-    } = { model: modelId, messages };
+    } = { model: modelId, messages, store: false };
 
     if (maxTokens !== null) {
         requestBody.max_completion_tokens = maxTokens;
@@ -597,9 +550,10 @@ export async function callOpenAiApi(
     }
 
     let responseData: unknown;
+    let transport: { status?: number; retryCount?: number; requestId?: string } = {};
 
     try {
-        const response = await requestUrl({
+        const response = await requestProvider({
             url: apiUrl,
             method: 'POST',
             headers: {
@@ -608,8 +562,9 @@ export async function callOpenAiApi(
             },
             body: JSON.stringify(requestBody),
             throw: false,
-        });
+        }, requestControl);
         responseData = response.json;
+        transport = { status: response.status, retryCount: response.retryCount, requestId: response.headers?.['request-id'] ?? response.headers?.['x-request-id'] };
         if (response.status >= 400) {
             const errorDetails = responseData as OpenAiErrorResponse;
             const msg = errorDetails?.error?.message ?? response.text ?? `OpenAI error (${response.status})`;
@@ -618,6 +573,7 @@ export async function callOpenAiApi(
                     success: false,
                     content: null,
                     responseData,
+                    ...transport,
                     requestPayload: requestBody,
                     adapterNotes: [
                         'Legacy OpenAI chat response_format was rejected by the model or endpoint; RT did not retry without JSON-mode enforcement.'
@@ -625,19 +581,24 @@ export async function callOpenAiApi(
                     error: `Legacy OpenAI chat endpoint rejected response_format: ${msg}`
                 };
             }
-            return { success: false, content: null, responseData, requestPayload: requestBody, error: msg };
+            return { success: false, content: null, responseData, ...transport,
+                requestPayload: requestBody, error: msg };
         }
         const success = responseData as OpenAiChatSuccessResponse;
         const content = extractChatMessageContent(success?.choices?.[0]?.message?.content);
         if (content) {
             const citations = extractOpenAiAnnotationCitations(responseData);
-            return { success: true, content, responseData, requestPayload: requestBody, ...(citations.length ? { citations } : {}) };
+            return { success: true, content, responseData, ...transport,
+                requestPayload: requestBody, ...(citations.length ? { citations } : {}) };
         }
-        return { success: false, content: null, responseData, requestPayload: requestBody, error: 'Invalid response structure from OpenAI.' };
+        return { success: false, content: null, responseData, ...transport,
+                requestPayload: requestBody, error: 'Invalid response structure from OpenAI.' };
     } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
+        if (err instanceof ProviderTransportError) transport = { ...transport, status: err.status };
         responseData = { error: { message: msg, type: 'network_or_execution_error' } };
-        return { success: false, content: null, responseData, requestPayload: requestBody, error: msg };
+        return { success: false, content: null, responseData, ...transport,
+                requestPayload: requestBody, error: msg };
     }
 }
 
@@ -653,7 +614,8 @@ export async function callOpenAiResponsesApi(
     /** Place an explicit cache breakpoint after the prompt's cache break (when it has one). */
     cacheBreakpoint?: boolean,
     promptCacheKey?: string,
-    internalAdapterAccess?: boolean
+    internalAdapterAccess?: boolean,
+    requestControl?: AIRequestControl
 ): Promise<OpenAiApiResponse> {
     warnLegacyAccess('openaiApi.callOpenAiResponsesApi', internalAdapterAccess);
     const apiUrl = normalizeBaseUrl(undefined, '/responses');
@@ -688,15 +650,14 @@ export async function callOpenAiResponsesApi(
         temperature?: number;
         top_p?: number;
         prompt_cache_key?: string;
-        background?: boolean;
-        store?: boolean;
+        store: false;
     } = {
         model: modelId,
         input: buildOpenAiResponsesInput(modelId, systemPrompt, userPrompt, cacheBreakpoint === true),
-        prompt_cache_options: { mode: 'explicit' }
+        prompt_cache_options: { mode: 'explicit' },
+        store: false
     };
     const adapterNotes: string[] = [];
-    const useBackgroundMode = shouldUseOpenAiBackgroundMode(modelId);
 
     if (maxTokens !== null) {
         requestBody.max_output_tokens = maxTokens;
@@ -717,16 +678,11 @@ export async function callOpenAiResponsesApi(
     if (promptCacheKey) {
         requestBody.prompt_cache_key = promptCacheKey;
     }
-    if (useBackgroundMode) {
-        requestBody.background = true;
-        requestBody.store = true;
-        adapterNotes.push('OpenAI Responses background mode enabled for pro lane.');
-    }
-
     let responseData: unknown;
+    let transport: { status?: number; retryCount?: number; requestId?: string } = {};
 
     try {
-        const response = await requestUrl({
+        const response = await requestProvider({
             url: apiUrl,
             method: 'POST',
             headers: {
@@ -735,8 +691,9 @@ export async function callOpenAiResponsesApi(
             },
             body: JSON.stringify(requestBody),
             throw: false
-        });
+        }, requestControl);
         responseData = response.json;
+        transport = { status: response.status, retryCount: response.retryCount, requestId: response.headers?.['request-id'] ?? response.headers?.['x-request-id'] };
         if (response.status >= 400) {
             const errorDetails = responseData as OpenAiErrorResponse;
             const msg = errorDetails?.error?.message ?? response.text ?? `OpenAI error (${response.status})`;
@@ -745,6 +702,7 @@ export async function callOpenAiResponsesApi(
                     success: false,
                     content: null,
                     responseData,
+                    ...transport,
                     requestPayload: requestBody,
                     adapterNotes: [
                         'OpenAI Responses text.format was rejected by the model or endpoint; RT did not retry without structured-format enforcement.'
@@ -752,32 +710,19 @@ export async function callOpenAiResponsesApi(
                     error: `OpenAI Responses rejected structured text.format: ${msg}`
                 };
             }
-            return { success: false, content: null, responseData, requestPayload: requestBody, adapterNotes, error: msg };
+            return { success: false, content: null, responseData, ...transport,
+                requestPayload: requestBody, adapterNotes, error: msg };
         }
-        if (useBackgroundMode) {
-            responseData = await pollOpenAiBackgroundResponse(apiKey, responseData);
-        }
-
         const content = extractOpenAiResponsesContent(responseData);
         const citations = extractOpenAiAnnotationCitations(responseData);
         const normalizedResponseData = normalizeOpenAiResponsesResponseData(responseData, modelId, content);
-        if (content) {
-            return {
-                success: true,
-                content,
-                responseData: normalizedResponseData,
-                requestPayload: requestBody,
-                adapterNotes,
-                ...(citations.length ? { citations } : {})
-            };
-        }
-
         const incompleteReason = extractResponsesErrorReason(responseData);
         if (incompleteReason) {
             return {
                 success: false,
                 content: null,
                 responseData: normalizedResponseData,
+                ...transport,
                 requestPayload: requestBody,
                 adapterNotes,
                 error: `OpenAI Responses returned incomplete output (${incompleteReason}).`
@@ -789,9 +734,22 @@ export async function callOpenAiResponsesApi(
                 success: false,
                 content: null,
                 responseData: normalizedResponseData,
+                ...transport,
                 requestPayload: requestBody,
                 adapterNotes,
                 error: failureMessage
+            };
+        }
+
+        if (content) {
+            return {
+                success: true,
+                content,
+                responseData: normalizedResponseData,
+                ...transport,
+                requestPayload: requestBody,
+                adapterNotes,
+                ...(citations.length ? { citations } : {})
             };
         }
 
@@ -799,14 +757,17 @@ export async function callOpenAiResponsesApi(
             success: false,
             content: null,
             responseData: normalizedResponseData,
+            ...transport,
             requestPayload: requestBody,
             adapterNotes,
             error: 'Invalid response structure from OpenAI Responses API.'
         };
     } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
+        if (err instanceof ProviderTransportError) transport = { ...transport, status: err.status };
         responseData = { error: { message: msg, type: 'network_or_execution_error' } };
-        return { success: false, content: null, responseData, requestPayload: requestBody, adapterNotes, error: msg };
+        return { success: false, content: null, responseData, ...transport,
+                requestPayload: requestBody, adapterNotes, error: msg };
     }
 }
 
@@ -815,7 +776,7 @@ interface OpenAiModel { id: string; object: string; created: number; owned_by: s
 interface OpenAiListModelsResponse { object: string; data: OpenAiModel[]; }
 export async function fetchOpenAiModels(apiKey: string): Promise<OpenAiModel[]> {
     if (!apiKey) throw new Error('OpenAI API key is required to fetch models.');
-    const response = await requestUrl({
+    const response = await requestProvider({
         url: 'https://api.openai.com/v1/models',
         method: 'GET',
         headers: { Authorization: `Bearer ${apiKey}` },

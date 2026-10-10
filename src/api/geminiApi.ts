@@ -4,10 +4,10 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 // DEPRECATED: Legacy provider adapter; prefer aiClient entrypoints.
-import { requestUrl } from 'obsidian';
+import { requestProvider, ProviderTransportError } from './providerTransport';
 import { modelSupportsRequestTemperature, modelSupportsRequestTopP } from '../ai/registry/modelRequestProfiles';
 import { warnLegacyAccess } from './legacyAccessGuard';
-import type { SourceCitation, TokenCountResult } from '../ai/types';
+import type { AIRequestControl, SourceCitation } from '../ai/types';
 
 interface GeminiPart { text?: string }
 interface GeminiContent { parts?: GeminiPart[]; role?: string }
@@ -55,6 +55,9 @@ interface GeminiErrorResponse {
 }
 
 export interface GeminiApiResponse {
+    status?: number;
+    retryCount?: number;
+    requestId?: string;
   success: boolean;
   content: string | null;
   responseData: unknown;
@@ -196,7 +199,8 @@ export async function callGeminiApi(
   cachedContentName?: string, // Optional: name of cached content resource (e.g. "cachedContents/...")
   topP?: number,
   citationsEnabled?: boolean,
-  internalAdapterAccess?: boolean
+  internalAdapterAccess?: boolean,
+  requestControl?: AIRequestControl
 ): Promise<GeminiApiResponse> {
   warnLegacyAccess('geminiApi.callGeminiApi', internalAdapterAccess);
   if (!apiKey) {
@@ -218,7 +222,7 @@ export async function callGeminiApi(
 
   // Handle potential "models/" prefix in the modelId to prevent double prefixing
   const cleanModelId = modelId.startsWith('models/') ? modelId.slice(7) : modelId;
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cleanModelId)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cleanModelId)}:generateContent`;
 
   type GeminiRequest = {
     contents: { role: 'user'; parts: { text: string }[] }[];
@@ -277,25 +281,29 @@ export async function callGeminiApi(
   }
 
   let responseData: unknown;
+  let transport: { status?: number; retryCount?: number; requestId?: string } = {};
   try {
-    const resp = await requestUrl({
+    const resp = await requestProvider({
       url,
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
       body: JSON.stringify(body),
       throw: false,
-    });
+    }, requestControl);
     responseData = resp.json;
+    transport = { status: resp.status, retryCount: resp.retryCount, requestId: resp.headers?.['request-id'] ?? resp.headers?.['x-request-id'] };
     if (resp.status >= 400) {
       const err = responseData as GeminiErrorResponse;
       const msg = err?.error?.message ?? resp.text ?? `Gemini error (${resp.status})`;
-      return { success: false, content: null, responseData, requestPayload: body, error: msg };
+      return { success: false, content: null, responseData, ...transport,
+        requestPayload: body, error: msg };
     }
     const success = responseData as GeminiGenerateSuccess;
     // Detect safety block explicitly
     if (success?.promptFeedback && success.promptFeedback.blockReason) {
       const reason = success.promptFeedback.blockReason;
-      return { success: false, content: null, responseData, requestPayload: body, error: `Gemini safety blocked: ${reason}` };
+      return { success: false, content: null, responseData, ...transport,
+        requestPayload: body, error: `Gemini safety blocked: ${reason}` };
     }
     
     // Check for finish reasons that indicate incomplete response
@@ -306,6 +314,7 @@ export async function callGeminiApi(
           success: false, 
           content: null, 
           responseData, 
+          ...transport,
           requestPayload: body,
           error: 'Response exceeded maximum token limit. The output was truncated before completion. Try reducing the manuscript size or increasing maxOutputTokens.' 
         };
@@ -315,6 +324,7 @@ export async function callGeminiApi(
           success: false, 
           content: null, 
           responseData, 
+          ...transport,
           requestPayload: body,
           error: 'Response blocked by Gemini safety filters.' 
         };
@@ -324,20 +334,25 @@ export async function callGeminiApi(
           success: false, 
           content: null, 
           responseData, 
+          ...transport,
           requestPayload: body,
           error: 'Response blocked due to recitation concerns.' 
         };
       }
-      // STOP is the normal finish reason, continue processing
+      if (candidate.finishReason !== 'STOP') {
+        return { success: false, content: null, responseData, ...transport,
+        requestPayload: body, error: `Gemini response did not complete (${candidate.finishReason}).` };
+      }
     }
     
-    const text = candidate?.content?.parts?.map(p => p.text || '').join('').trim();
+    const text = candidate?.content?.parts?.filter(p => !('thought' in p) || !p.thought).map(p => p.text || '').join('').trim();
     if (text) {
       const citations = extractGeminiGroundingCitations(responseData);
       return {
         success: true,
         content: text,
         responseData,
+        ...transport,
         requestPayload: body,
         ...(citations.length ? { citations } : {})
       };
@@ -350,11 +365,14 @@ export async function callGeminiApi(
       finishReason: candidate?.finishReason
     });
     
-    return { success: false, content: null, responseData, requestPayload: body, error: 'Invalid response structure from Gemini.' };
+    return { success: false, content: null, responseData, ...transport,
+        requestPayload: body, error: 'Invalid response structure from Gemini.' };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    if (e instanceof ProviderTransportError) transport = { ...transport, status: e.status };
     responseData = { error: { message: msg } };
-    return { success: false, content: null, responseData, requestPayload: body, error: msg };
+    return { success: false, content: null, responseData, ...transport,
+        requestPayload: body, error: msg };
   }
 }
 
@@ -378,12 +396,13 @@ export async function createGeminiCache(
   content: string,
   ttlSeconds: number = 3600,
   systemInstruction?: string,
-  displayName?: string
+  displayName?: string,
+  requestControl?: AIRequestControl
 ): Promise<string> {
   if (!apiKey) throw new Error('Gemini API key is required to create cache.');
 
   const cleanModelId = modelId.startsWith('models/') ? modelId.slice(7) : modelId;
-  const url = `https://generativelanguage.googleapis.com/v1beta/cachedContents?key=${encodeURIComponent(apiKey)}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/cachedContents`;
 
   const body: Record<string, unknown> = {
     model: `models/${cleanModelId}`,
@@ -402,13 +421,13 @@ export async function createGeminiCache(
     body.displayName = displayName;
   }
 
-  const resp = await requestUrl({
+  const resp = await requestProvider({
     url,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
     body: JSON.stringify(body),
     throw: false
-  });
+  }, requestControl);
 
   if (resp.status >= 400) {
     const err = resp.json as GeminiErrorResponse;
@@ -438,14 +457,14 @@ export interface GeminiCacheListing {
  * GET v1beta/cachedContents — metadata only, never the cached text.
  * Throws on any HTTP or response-shape error.
  */
-export async function listGeminiCaches(apiKey: string): Promise<GeminiCacheListing[]> {
+export async function listGeminiCaches(apiKey: string, requestControl?: AIRequestControl): Promise<GeminiCacheListing[]> {
   if (!apiKey) throw new Error('Gemini API key is required to list caches.');
   const listings: GeminiCacheListing[] = [];
   let pageToken: string | undefined;
   do {
-    const url = `https://generativelanguage.googleapis.com/v1beta/cachedContents?key=${encodeURIComponent(apiKey)}&pageSize=1000`
+    const url = `https://generativelanguage.googleapis.com/v1beta/cachedContents?pageSize=1000`
       + (pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : '');
-    const resp = await requestUrl({ url, method: 'GET', throw: false });
+    const resp = await requestProvider({ url, method: 'GET', headers: { 'x-goog-api-key': apiKey }, throw: false }, requestControl);
     if (resp.status >= 400) {
       const err = resp.json as GeminiErrorResponse;
       throw new Error(err?.error?.message ?? `Failed to list caches (${resp.status})`);
@@ -468,104 +487,14 @@ export async function listGeminiCaches(apiKey: string): Promise<GeminiCacheListi
   return listings;
 }
 
-/**
- * Count input tokens for a Gemini request using the provider's countTokens API.
- *
- * Endpoint:
- *   POST https://generativelanguage.googleapis.com/v1beta/models/{model}:countTokens
- *
- * The countTokens endpoint is free (no quota cost beyond the HTTP roundtrip)
- * and returns the exact tokenization the model would see, so this is the
- * authoritative source for input cost forecasting.
- *
- * Throws on network or API errors so callers can fall back to a heuristic.
- */
-export async function countGeminiTokens(
-  apiKey: string,
-  modelId: string,
-  systemPrompt: string | null,
-  userPrompt: string
-): Promise<TokenCountResult> {
-  if (!apiKey) {
-    throw new Error('Gemini API key not configured.');
-  }
-  if (!modelId) {
-    throw new Error('Gemini model ID not configured.');
-  }
-
-  const cleanModelId = modelId.startsWith('models/') ? modelId.slice(7) : modelId;
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cleanModelId)}:countTokens?key=${encodeURIComponent(apiKey)}`;
-
-  // The countTokens endpoint accepts two body shapes (per Google's
-  // v1beta reference) and ONLY two:
-  //   1. `{ contents: [...] }`               — counts message contents only.
-  //   2. `{ generateContentRequest: { ... } }` — counts the full request
-  //      (contents + systemInstruction + tools + ...).
-  //
-  // A top-level `systemInstruction` field — what we used to send
-  // alongside `contents` — is an unknown field on this endpoint and
-  // Google rejects the whole request with HTTP 400 INVALID_ARGUMENT
-  // ("Invalid JSON payload received. Unknown name 'systemInstruction'…").
-  // This silently broke Gemini countTokens for every Inquiry run with
-  // a non-empty system prompt (i.e. almost every run).
-  //
-  // When the caller supplies a system prompt, wrap in
-  // `generateContentRequest` so the system tokens are counted accurately.
-  // When there's no system prompt, the simple `contents`-only form is
-  // shorter and equivalent.
-  const body: Record<string, unknown> = systemPrompt && systemPrompt.length > 0
-    ? {
-        generateContentRequest: {
-          model: `models/${cleanModelId}`,
-          contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-          systemInstruction: { parts: [{ text: systemPrompt }] }
-        }
-      }
-    : {
-        contents: [{ role: 'user', parts: [{ text: userPrompt }] }]
-      };
-
-  const resp = await requestUrl({
-    url,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    throw: false
-  });
-
-  if (resp.status >= 400) {
-    const err = resp.json as GeminiErrorResponse;
-    // Always include status + status name + model so the dev console
-    // diagnostic is actionable. Without status, "Model not found" looks
-    // identical to "Quota exceeded" — both just say their message.
-    const providerMessage = err?.error?.message ?? resp.text ?? 'no error message in response';
-    const providerStatus = err?.error?.status ?? `HTTP ${resp.status}`;
-    throw new Error(
-      `Gemini countTokens failed for "${cleanModelId}" — ${providerStatus} (HTTP ${resp.status}): ${providerMessage}`
-    );
-  }
-
-  const data = resp.json as { totalTokens?: number };
-  const totalTokens = typeof data?.totalTokens === 'number' ? data.totalTokens : NaN;
-  if (!Number.isFinite(totalTokens)) {
-    throw new Error(`Invalid token count response from Gemini for "${cleanModelId}" — response had no numeric totalTokens field.`);
-  }
-  return {
-    provider: 'google',
-    modelId: cleanModelId,
-    inputTokens: Math.max(0, Math.floor(totalTokens)),
-    source: 'provider_count'
-  };
-}
-
 // --- fetch models ---
 interface GoogleModel { name: string; displayName?: string }
 interface GoogleModelsResponse { models?: GoogleModel[] }
 
 export async function fetchGeminiModels(apiKey: string): Promise<{ id: string; name: string }[]> {
   if (!apiKey) throw new Error('Gemini API key is required to fetch models.');
-  const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`;
-  const resp = await requestUrl({ url, method: 'GET', throw: false });
+  const url = `https://generativelanguage.googleapis.com/v1beta/models`;
+  const resp = await requestProvider({ url, method: 'GET', headers: { 'x-goog-api-key': apiKey }, throw: false });
   const data = resp.json as GoogleModelsResponse;
   if (resp.status >= 400 || !Array.isArray(data?.models)) {
     throw new Error(`Error fetching Gemini models (${resp.status})`);

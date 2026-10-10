@@ -70,3 +70,16 @@ describe('validateJsonResponse structured envelope normalization', () => {
         expect(result.normalizationWarnings).toBeUndefined();
     });
 });
+
+describe('full response-schema enforcement', () => {
+    const schema = {
+        type: 'object', additionalProperties: false, required: ['items'],
+        properties: { items: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['score'], properties: { score: { type: 'integer', minimum: 0, maximum: 100 } } } } }
+    };
+    it.each(['null', '5', '[]', '{"items":null}', '{"items":[{"score":"90"}]}', '{"items":[{"score":101}]}', '{"items":[],"extra":true}', '[{"items":[]}]'])('rejects incompatible JSON %s', raw => {
+        expect(validateJsonResponse(raw, schema).ok).toBe(false);
+    });
+    it('accepts correctly typed nested output without coercion', () => {
+        expect(validateJsonResponse('{"items":[{"score":90}]}', schema).ok).toBe(true);
+    });
+});

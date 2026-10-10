@@ -7,12 +7,43 @@
 import { extractBodyAfterFrontmatter } from '../utils/frontmatterDocument';
 import { getFrontMatterInfo, parseYaml, type Vault, type TFile } from 'obsidian';
 import { getActiveFrontmatterMappings, normalizeFrontmatterKeys } from '../utils/frontmatter';
-import { stripObsidianComments } from '../utils/text';
+import { cleanEvidenceBody } from '../inquiry/utils/evidenceCleaning';
 import { normalizeBooleanValue } from '../utils/sceneHelpers';
 import type RadialTimelinePlugin from '../main';
 import type { ProcessingMode } from '../modals/SceneAnalysisProcessingModal';
 import type { ProcessedCheckOptions, SceneData } from './types';
 import { isPathInExplicitFolderScope } from '../utils/pathScope';
+import { createHash } from 'crypto';
+
+export function sceneSourceRevision(content: string): string {
+    return createHash('sha256').update(content).digest('hex');
+}
+
+/** Prevent a late AI response from overwriting analysis of an edited or replaced scene. */
+export type SceneSourceSnapshot = Pick<SceneData, 'file' | 'body' | 'sourceRevision' | 'sourcePath'>;
+
+export async function assertSceneSourcesUnchanged(vault: Vault, scenes: SceneSourceSnapshot[]): Promise<() => void> {
+    const revisions: Array<{ scene: SceneSourceSnapshot; mtime?: number }> = [];
+    for (const scene of scenes) {
+        if (scene.sourcePath !== undefined && scene.file.path !== scene.sourcePath) throw new Error(`Scene source was moved during analysis: "${scene.sourcePath}". Run the analysis again.`);
+        const file = vault.getAbstractFileByPath(scene.file.path);
+        if (!file || file !== scene.file) throw new Error(`Scene source changed or was replaced: "${scene.file.path}". Run the analysis again.`);
+        const raw = await vault.read(scene.file);
+        const unchanged = scene.sourceRevision
+            ? sceneSourceRevision(raw) === scene.sourceRevision
+            : cleanEvidenceBody(raw) === scene.body;
+        if (!unchanged) throw new Error(`Scene source changed during analysis: "${scene.file.path}". Run the analysis again.`);
+        revisions.push({ scene, mtime: scene.file.stat?.mtime });
+    }
+    // Called inside the synchronous frontmatter mutation, after backup I/O.
+    return () => {
+        for (const { scene, mtime } of revisions) {
+            if (vault.getAbstractFileByPath(scene.file.path) !== scene.file || scene.file.stat?.mtime !== mtime) {
+                throw new Error(`Scene source changed before write-back: "${scene.file.path}". Run the analysis again.`);
+            }
+        }
+    };
+}
 
 function extractSceneNumber(filename: string): number | null {
     const match = filename.match(/^(\d+(\.\d+)?)/);
@@ -198,12 +229,13 @@ export async function getAllSceneData(
             }
 
             const sceneNumber = extractSceneNumber(file.name);
-            const body = stripObsidianComments(
+            const body = cleanEvidenceBody(
                 extractBodyAfterFrontmatter(content, fmInfo).trim()
             );
-            return { file, frontmatter, sceneNumber, body };
-        } catch { // SAFE: unreadable scene file — null skips just this file; the remaining vault files still produce scene data
-            return null;
+            return { file, frontmatter, sceneNumber, body, sourceRevision: sceneSourceRevision(content), sourcePath: file.path };
+        } catch (error) {
+            const reason = error instanceof Error ? error.message : String(error);
+            throw new Error(`Unable to read scene source "${file.path}": ${reason}`);
         }
     });
 

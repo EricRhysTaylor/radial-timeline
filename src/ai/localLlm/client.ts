@@ -4,46 +4,18 @@ import { getCredential } from '../credentials/credentials';
 import { getLocalLlmBackend } from './backends';
 import { runLocalLlmDiagnostics } from './diagnostics';
 import {
-    buildLocalLlmModelIdentity,
     getCanonicalLocalLlmSettings,
-    LOCAL_LLM_BACKEND_LABELS,
-    resolveLocalLlmSelection
+    LOCAL_LLM_BACKEND_LABELS
 } from './settings';
 import { runStructuredJsonPipeline } from './structuredJson';
-import { fetchOllamaModelDetails, type LocalLlmModelEntry } from './transport';
-import { buildDefaultAiSettings } from '../settings/aiSettings';
-import { validateAiSettings } from '../settings/validateAiSettings';
 import type {
     GenerateJsonRequest,
     GenerateTextRequest,
     LocalLlmSettings,
-    ModelInfo,
-    ModelSelectionResult,
     ProviderExecutionResult
 } from '../types';
 
-const LIVE_MODEL_CACHE_TTL_MS = 60_000;
-
-function mergeLiveLocalModelInfo(base: ModelInfo, liveEntry?: Partial<LocalLlmModelEntry> | null): ModelInfo {
-    if (!liveEntry) return base;
-    const contextWindow = typeof liveEntry.contextWindow === 'number' && Number.isFinite(liveEntry.contextWindow) && liveEntry.contextWindow > 0
-        ? Math.floor(liveEntry.contextWindow)
-        : base.contextWindow;
-    const maxOutput = typeof liveEntry.maxOutput === 'number' && Number.isFinite(liveEntry.maxOutput) && liveEntry.maxOutput > 0
-        ? Math.floor(liveEntry.maxOutput)
-        : base.maxOutput;
-    if (contextWindow === base.contextWindow && maxOutput === base.maxOutput) {
-        return base;
-    }
-    return {
-        ...base,
-        contextWindow,
-        maxOutput
-    };
-}
-
 export class LocalLlmClient {
-    private liveSelectionCache = new Map<string, { expiresAt: number; selection: ModelSelectionResult }>();
     private diagnosticsQueue: Promise<unknown> = Promise.resolve();
     private diagnosticsByConfiguration = new Map<string, Promise<Awaited<ReturnType<typeof runLocalLlmDiagnostics>>>>();
 
@@ -69,45 +41,6 @@ export class LocalLlmClient {
     async listModels(overrides?: Partial<LocalLlmSettings>) {
         const { backend, transport } = await this.buildTransport(overrides);
         return backend.listModels(transport);
-    }
-
-    async resolveSelectionFromLiveData(overrides?: Partial<LocalLlmSettings>): Promise<ModelSelectionResult> {
-        const aiSettings = validateAiSettings(this.plugin.settings.aiSettings ?? buildDefaultAiSettings()).value;
-        const baseSelection = resolveLocalLlmSelection(aiSettings);
-        const { localLlm, backend, transport } = await this.buildTransport(overrides);
-        const modelId = localLlm.defaultModelId.trim() || baseSelection.model.id;
-        const cacheKey = buildLocalLlmModelIdentity(backend.id, transport.baseUrl, modelId);
-        const cached = this.liveSelectionCache.get(cacheKey);
-        if (cached && cached.expiresAt > Date.now()) {
-            return cached.selection;
-        }
-
-        try {
-            const models = await backend.listModels(transport);
-            const matched = models.find(model => model.id === modelId) ?? null;
-            const ollamaDetails = backend.id === 'ollama'
-                ? await fetchOllamaModelDetails(transport, modelId).catch(() => null)
-                : null;
-            const model = mergeLiveLocalModelInfo(
-                baseSelection.model,
-                {
-                    contextWindow: ollamaDetails?.contextWindow ?? matched?.contextWindow,
-                    maxOutput: ollamaDetails?.maxOutput ?? matched?.maxOutput
-                }
-            );
-            const selection: ModelSelectionResult = {
-                ...baseSelection,
-                model,
-                reason: `${baseSelection.reason} Live backend limits ${model === baseSelection.model ? 'unavailable; using configured defaults.' : 'loaded from the active backend.'}`
-            };
-            this.liveSelectionCache.set(cacheKey, {
-                expiresAt: Date.now() + LIVE_MODEL_CACHE_TTL_MS,
-                selection
-            });
-            return selection;
-        } catch {
-            return baseSelection;
-        }
     }
 
     runDiagnostics(overrides?: Partial<LocalLlmSettings>) {

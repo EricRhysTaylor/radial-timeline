@@ -33,6 +33,13 @@ beforeEach(() => {
 });
 
 describe('Pulse provider usage observation', () => {
+    it('does not persist manuscript content on failures when content logging is off', async () => {
+        run.mockResolvedValue(result({ aiStatus: 'rejected', content: null, error: 'Synthetic failure' }));
+        await expect(callAiProvider(plugin, vault, 'PRIVATE_FIXTURE_MANUSCRIPT', null, 'fixture')).rejects.toThrow();
+        const creates = vi.mocked(vault.create).mock.calls;
+        expect(creates.length).toBeGreaterThan(0);
+        expect(creates.every(([, content]) => !content.includes('PRIVATE_FIXTURE_MANUSCRIPT'))).toBe(true);
+    });
     it('emits exactly once on a valid response, with logging disabled', async () => {
         run.mockResolvedValue(result());
         const observer = vi.fn();
@@ -64,4 +71,3 @@ describe('Pulse run request', () => {
         expect(request.bypassProviderReuse).toBeUndefined();
     });
 });
-

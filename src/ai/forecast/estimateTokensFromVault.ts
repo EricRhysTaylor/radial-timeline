@@ -538,8 +538,7 @@ export async function estimateInquiryTokens(params: {
         promptEnvelopeCharsAdded: (params.promptOverheadTokens ?? FORECAST_PROMPT_OVERHEAD_TOKENS) * FORECAST_CHARS_PER_TOKEN
     };
     if (params.plugin && params.provider && params.modelId && manifestEntries.length > 0) {
-        try {
-            providerExecutionEstimate = await buildCanonicalExecutionEstimate({
+        providerExecutionEstimate = await buildCanonicalExecutionEstimate({
                 plugin: params.plugin,
                 provider: params.provider,
                 modelId: params.modelId,
@@ -564,9 +563,6 @@ export async function estimateInquiryTokens(params: {
                     params.plugin.settings?.aiSettings?.citationsEnabled !== false
                 )
             });
-        } catch {
-            // Keep heuristic execution estimate when canonical execution estimate cannot be prepared.
-        }
     }
     const scopePrefix = params.scopeContext?.label ? `${params.scopeContext.label} — ` : '';
 
@@ -656,16 +652,12 @@ export async function estimateGossamerTokens(params: {
         promptEnvelopeCharsAdded: (params.promptOverheadTokens ?? FORECAST_PROMPT_OVERHEAD_TOKENS) * FORECAST_CHARS_PER_TOKEN
     };
     if (params.provider && params.modelId && params.beatSystem && (params.beats?.length ?? 0) > 0 && evidenceChars > 0) {
-        try {
-            providerExecutionEstimate = await buildCanonicalGossamerExecutionEstimate({
+        providerExecutionEstimate = await buildCanonicalGossamerExecutionEstimate({
                 plugin: params.plugin,
                 provider: params.provider,
                 modelId: params.modelId,
                 promptText: buildUnifiedBeatAnalysisPrompt(evidence.text, params.beats ?? [], params.beatSystem)
             });
-        } catch {
-            // Keep heuristic execution estimate when canonical execution estimate cannot be prepared.
-        }
     }
     logCountingForensics({
         path: 'gossamer',

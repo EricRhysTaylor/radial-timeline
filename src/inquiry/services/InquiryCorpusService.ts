@@ -52,10 +52,9 @@ export function isModeActive(mode?: SceneInclusion): boolean {
     return normalizeEvidenceMode(mode) !== 'excluded';
 }
 
-export function normalizeContributionMode(mode: SceneInclusion, className: string): SceneInclusion {
-    if (mode === 'summary' && !isSynopsisCapableClass(className)) {
-        return 'full';
-    }
+export function normalizeContributionMode(mode: SceneInclusion, _className: string): SceneInclusion {
+    // Summary is an author-selected projection, including on reference notes.
+    // Missing summaries must not turn into permission to send the full body.
     return mode;
 }
 
@@ -84,15 +83,14 @@ export function resolveContributionMode(config: InquiryClassConfig): SceneInclus
 
 export function normalizeClassContribution(config: InquiryClassConfig): InquiryClassConfig {
     const isReference = !isSynopsisCapableClass(config.className);
-    const contribution = normalizeContributionMode(resolveContributionMode(config), config.className);
     const bookActive = !isReference && config.bookScope !== 'excluded';
     const sagaActive = !isReference && config.sagaScope !== 'excluded';
     const referenceActive = isReference && config.referenceScope !== 'excluded';
     return {
         ...config,
-        bookScope: isReference ? 'excluded' : (bookActive ? contribution : 'excluded'),
-        sagaScope: isReference ? 'excluded' : (sagaActive ? contribution : 'excluded'),
-        referenceScope: isReference ? (referenceActive ? contribution : 'excluded') : 'excluded'
+        bookScope: isReference ? 'excluded' : (bookActive ? config.bookScope : 'excluded'),
+        sagaScope: isReference ? 'excluded' : (sagaActive ? config.sagaScope : 'excluded'),
+        referenceScope: isReference ? (referenceActive ? config.referenceScope : 'excluded') : 'excluded'
     };
 }
 

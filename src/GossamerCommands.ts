@@ -52,6 +52,7 @@ import { FORECAST_CHARS_PER_TOKEN, FORECAST_PROMPT_OVERHEAD_TOKENS } from './ai/
 import type { AIRunRequest, AIProviderId } from './ai/types';
 import type { TimelineItem } from './types';
 import { buildGossamerEvidenceDocument } from './gossamer/evidence/buildGossamerEvidence';
+import { assertSceneSourcesUnchanged } from './sceneAnalysis/data';
 import { logCountingForensics } from './ai/diagnostics/countingForensics';
 import { toBeatModelMatchKey } from './utils/beatsInputNormalize';
 import { getActiveFrontmatterMappings, asBeatFrontmatter, readBeatPurpose } from './utils/frontmatter';
@@ -133,7 +134,7 @@ async function writeGossamerLog(
     : null;
 
   const isError = payload.status === 'error';
-  const shouldWriteContent = plugin.settings.logApiInteractions || isError;
+  const shouldWriteContent = plugin.settings.logApiInteractions;
 
   // Write Content Log first (if enabled) so we know whether to mark it as written
   let contentLogWritten = false;
@@ -507,6 +508,7 @@ export async function writeGossamerScores(
     model: string;
     /** Who produced the scores, for the "Gossamer Last Updated" stamp. */
     attribution: string;
+    assertSourcesCurrent?: () => void;
   }
 ): Promise<{ runId: string; updateCount: number; unmatchedBeats: string[]; snapshotPath: string | null }> {
   let dominantStage = 'Zero';
@@ -555,6 +557,7 @@ export async function writeGossamerScores(
   });
   for (const { beat, file } of matchedTargets) {
     await plugin.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
+      params.assertSourcesCurrent?.();
       // Append new score to end (G1=oldest, newest=highest number)
       const { nextIndex, updated } = appendGossamerScore(fm);
       Object.assign(fm, updated);
@@ -1164,13 +1167,15 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
     // A successful run always names the provider that answered.
     const runProvider = result.provider as Exclude<AIProviderId, 'none'>;
     const runModel = result.modelResolved || result.modelRequested;
+    const assertSourcesCurrent = await assertSceneSourcesUnchanged(plugin.app.vault, evidenceDocument.sourceScenes);
     const { updateCount, unmatchedBeats, snapshotPath } = await writeGossamerScores(plugin, {
       plotBeats,
       scores: analysis.beats,
       signal: selectedSignal,
       provider: runProvider,
       model: runModel,
-      attribution: describeAiRunModel(runProvider, runModel)
+      attribution: describeAiRunModel(runProvider, runModel),
+      assertSourcesCurrent
     });
     recordGossamerReading(plugin, selectedSignal, runRequest, returnedAt.getTime());
 

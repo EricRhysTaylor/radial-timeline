@@ -6,7 +6,7 @@ Radial Timeline is a **desktop-only** Obsidian plugin. It is not intended for Ob
 
 - No telemetry or analytics SDKs are shipped with the plugin.
 - Vault data stays local unless you explicitly use a feature that requires an external request.
-- API keys are stored with Obsidian `secretStorage` when available, with compatibility fallback only where Obsidian does not expose it.
+- API keys are read only from Obsidian `secretStorage`. If secure storage is unavailable, cloud AI cannot run; keys are never saved as plaintext settings.
 
 ## AI features
 
@@ -17,12 +17,11 @@ Radial Timeline is a **desktop-only** Obsidian plugin. It is not intended for Ob
   vaults keep whatever choice they already made; upgrading never flips the
   setting.
 - That toggle is the master switch for AI-assisted features. While it is off,
-  the Inquiry ribbon icon is hidden, Inquiry refuses to open and shows a
-  notice instead, and the Pulse, Summary scene refresh, and Gossamer analysis
-  commands are hidden from the command palette. Behind those, the AI client
-  itself refuses every AI run and every provider token count while the switch
-  is off, so no feature can send manuscript text to a provider by another
-  path.
+  Inquiry remains available for reading saved results. New provider runs are
+  refused at the AI client and immediately before each transmission, including
+  cache uploads and retries. Queued requests stop when permission is withdrawn.
+  An in-flight connection is closed, but content already received by a provider
+  cannot be recalled and provider-side processing or billing may continue.
 - When AI is off, normal plugin use does not dispatch manuscript content to AI
   providers.
 - Remote model metadata, provider snapshot, and pricing refresh behavior is
@@ -41,6 +40,36 @@ Radial Timeline is a **desktop-only** Obsidian plugin. It is not intended for Ob
   login. Jobs can also be prepared through the request link
   `obsidian://radial-timeline-ai-jobs`, which only writes job files in the
   vault (and can switch the active book); it sends nothing anywhere.
+
+### Estimates, evidence, and logs
+
+- All token, cost, capacity, and preflight estimates are local and send nothing
+  to any provider. Token-count APIs
+  are not used. Settings cost comparisons, Inquiry refreshes, and preflight
+  estimates do not need an API key or a provider connection. Numbers are
+  labeled as local estimates; actual usage is learned after an authorized run.
+- Evidence excludes YAML frontmatter, HTML and Obsidian comments, and imported
+  Editorialist review blocks. Features may explicitly select author-facing
+  metadata such as Summary or beat Purpose. Referenced links are not followed
+  to upload other notes. Missing or unreadable selected files, missing selected summaries, and empty
+  selected bodies block the run. Summary choices are never widened to Full.
+- Full content logs are written only when **Enable AI content logs** is on,
+  including on errors. These logs duplicate the submitted material in the vault
+  and can be copied by the author's sync or backup tools. Credential redaction
+  covers the complete log envelope. Concise diagnostics remain available when
+  content logs are off.
+- OpenAI analysis requests set `store: false`. This disables ordinary response
+  storage, not all provider retention: abuse monitoring and prompt caching have
+  their own policies. See [OpenAI data controls](https://developers.openai.com/api/docs/guides/your-data).
+- Gemini's unpaid services can use submitted content for product improvement
+  and human review, subject to regional exceptions. Paid-service treatment
+  depends on an active billing account on the actual Cloud project, not RT's
+  Access tier setting. See [Gemini terms](https://ai.google.dev/gemini-api/terms).
+- Authorized Inquiry/Gossamer runs may cache their stable input at the selected
+  provider. Gemini resources expire after the configured TTL; Anthropic cache
+  windows and OpenAI cache retention are governed by their provider policies.
+  Turning AI off prevents further transmission but does not delete material
+  already retained by a provider.
 
 ## Desktop integration (Pandoc export)
 

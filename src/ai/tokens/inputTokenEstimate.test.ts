@@ -1,197 +1,38 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { describeTokenEstimateMethod, estimateInputTokens } from './inputTokenEstimate';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-const { getCredential, countAnthropicTokens, countGeminiTokens } = vi.hoisted(() => ({
-    getCredential: vi.fn(),
-    countAnthropicTokens: vi.fn(),
-    countGeminiTokens: vi.fn()
-}));
-
-vi.mock('../credentials/credentials', () => ({
-    getCredential
-}));
-
-vi.mock('../../api/anthropicApi', () => ({
-    countAnthropicTokens
-}));
-
-vi.mock('../../api/geminiApi', () => ({
-    countGeminiTokens
-}));
-
-import {
-    describeTokenEstimateMethod,
-    estimateInputTokens
-} from './inputTokenEstimate';
-
-describe('estimateInputTokens', () => {
-    beforeEach(() => {
-        getCredential.mockReset();
-        countAnthropicTokens.mockReset();
-        countGeminiTokens.mockReset();
+describe('local input estimates', () => {
+    it('measures the complete local envelope without credentials', () => {
+        expect(estimateInputTokens({
+            systemPrompt: '1234', userPrompt: '12345678',
+            evidenceDocuments: [{ title: '1234', content: '12345678' }], safeInputBudget: 100000
+        })).toEqual({ inputTokens: 7, method: 'heuristic_chars', uncertaintyTokens: 4000 });
     });
 
-    it('uses Anthropic provider counts when available', async () => {
-        getCredential.mockResolvedValue('test-key');
-        countAnthropicTokens.mockResolvedValue({
-            provider: 'anthropic',
-            modelId: 'claude-opus-4-7',
-            inputTokens: 43210,
-            source: 'provider_count'
-        });
-
-        const result = await estimateInputTokens({
-            plugin: {} as never,
-            provider: 'anthropic',
-            modelId: 'claude-opus-4-7',
-            systemPrompt: 'system',
-            userPrompt: 'user',
-            safeInputBudget: 100000
-        });
-
-        expect(result).toEqual({
-            inputTokens: 43210,
-            method: 'anthropic_count',
-            uncertaintyTokens: 500
-        });
-        expect(countAnthropicTokens).toHaveBeenCalledWith(
-            'test-key',
-            'claude-opus-4-7',
-            'system',
-            'user',
-            undefined,
-            undefined,
-            undefined,
-            undefined
-        );
+    it('needs no plugin, provider, model, or API key', () => {
+        expect(estimateInputTokens({ userPrompt: 'Manuscript text' }).method).toBe('heuristic_chars');
     });
 
-    it('throws when Anthropic counting fails — no silent fallback', async () => {
-        // Per RT doctrine (code-doctrine.md §2, inquiry-critical-path-rules.md §8),
-        // a failed provider count must NOT be substituted with the chars/4
-        // heuristic. The function must throw so the caller can surface
-        // "Token count unavailable" rather than fabricating a number.
-        getCredential.mockResolvedValue('test-key');
-        countAnthropicTokens.mockRejectedValue(new Error('counting unavailable'));
-
-        await expect(estimateInputTokens({
-            plugin: {} as never,
-            provider: 'anthropic',
-            modelId: 'claude-opus-4-7',
-            systemPrompt: 'system',
-            userPrompt: 'user prompt',
-            evidenceDocuments: [{ title: 'Scene 1', content: 'Evidence text' }],
-            safeInputBudget: 100000
-        })).rejects.toThrow('counting unavailable');
+    it('reserves capacity for Unicode scripts instead of counting four CJK characters as one token', () => {
+        expect(estimateInputTokens({ userPrompt: '你好' }).inputTokens).toBe(6);
     });
 
-    it('throws when Anthropic API key is missing — no silent fallback', async () => {
-        getCredential.mockResolvedValue('');
-
-        await expect(estimateInputTokens({
-            plugin: {} as never,
-            provider: 'anthropic',
-            modelId: 'claude-opus-4-7',
-            systemPrompt: 'system',
-            userPrompt: 'user prompt'
-        })).rejects.toThrow(/Anthropic API key unavailable/);
-        expect(countAnthropicTokens).not.toHaveBeenCalled();
+    it('includes provider schema overhead in the local request estimate', () => {
+        const base = estimateInputTokens({ userPrompt: 'Fixture text' });
+        const withSchema = estimateInputTokens({ userPrompt: 'Fixture text', jsonSchema: { type: 'object', properties: { answer: { type: 'string' } } } });
+        expect(withSchema.inputTokens).toBeGreaterThan(base.inputTokens);
     });
 
-    it('keeps OpenAI on the chars/4 heuristic path — no local tokenizer is shipped', async () => {
-        const result = await estimateInputTokens({
-            plugin: {} as never,
-            provider: 'openai',
-            modelId: 'gpt-5.5',
-            systemPrompt: 'system',
-            userPrompt: 'user prompt'
-        });
-
-        expect(result.method).toBe('heuristic_chars');
-        expect(getCredential).not.toHaveBeenCalled();
-        expect(countAnthropicTokens).not.toHaveBeenCalled();
-        expect(countGeminiTokens).not.toHaveBeenCalled();
+    it('has no runtime provider, credential, or transport dependency', () => {
+        const source = readFileSync(resolve('src/ai/tokens/inputTokenEstimate.ts'), 'utf8');
+        expect(source).not.toMatch(/from ['"].*(?:api\/|credentials\/|transport|main)['"]/);
     });
 
-    it('keeps Ollama on the heuristic path (no remote tokenizer)', async () => {
-        const result = await estimateInputTokens({
-            plugin: {} as never,
-            provider: 'ollama',
-            modelId: 'llama-3',
-            systemPrompt: 'system',
-            userPrompt: 'user prompt'
-        });
-
-        expect(result.method).toBe('heuristic_chars');
-        expect(getCredential).not.toHaveBeenCalled();
-        expect(countAnthropicTokens).not.toHaveBeenCalled();
-        expect(countGeminiTokens).not.toHaveBeenCalled();
-    });
-
-    it('uses Gemini provider counts for google models when a key is configured', async () => {
-        getCredential.mockResolvedValue('test-key');
-        countGeminiTokens.mockResolvedValue({
-            provider: 'google',
-            modelId: 'gemini-3.1-pro-preview',
-            inputTokens: 12345,
-            source: 'provider_count'
-        });
-
-        const result = await estimateInputTokens({
-            plugin: {} as never,
-            provider: 'google',
-            modelId: 'gemini-3.1-pro-preview',
-            systemPrompt: 'system',
-            userPrompt: 'user',
-            safeInputBudget: 100000
-        });
-
-        expect(result).toEqual({
-            inputTokens: 12345,
-            method: 'google_count',
-            uncertaintyTokens: 500
-        });
-        expect(countGeminiTokens).toHaveBeenCalledWith(
-            'test-key',
-            'gemini-3.1-pro-preview',
-            'system',
-            'user'
-        );
-    });
-
-    it('throws when Gemini count fails — no silent fallback', async () => {
-        // Same doctrine as the Anthropic path: provider-count failure
-        // is surfaced as a throw, never substituted with chars/4.
-        getCredential.mockResolvedValue('test-key');
-        countGeminiTokens.mockRejectedValue(new Error('gemini network error'));
-
-        await expect(estimateInputTokens({
-            plugin: {} as never,
-            provider: 'google',
-            modelId: 'gemini-3.1-pro-preview',
-            systemPrompt: 'system',
-            userPrompt: 'user prompt'
-        })).rejects.toThrow('gemini network error');
-    });
-
-    it('throws when Gemini API key is missing — no silent fallback', async () => {
-        getCredential.mockResolvedValue('');
-
-        await expect(estimateInputTokens({
-            plugin: {} as never,
-            provider: 'google',
-            modelId: 'gemini-3.1-pro-preview',
-            systemPrompt: 'system',
-            userPrompt: 'user prompt'
-        })).rejects.toThrow(/Gemini API key unavailable/);
-        expect(countGeminiTokens).not.toHaveBeenCalled();
-    });
-});
-
-describe('describeTokenEstimateMethod', () => {
-    it('labels provider counts, heuristic chars, and unavailable distinctly', () => {
+    it('labels new estimates as local and preserves historical count labels', () => {
+        expect(describeTokenEstimateMethod('heuristic_chars')).toBe('Local estimate (no provider request)');
         expect(describeTokenEstimateMethod('anthropic_count')).toBe('Anthropic provider count');
         expect(describeTokenEstimateMethod('google_count')).toBe('Gemini provider count');
-        expect(describeTokenEstimateMethod('heuristic_chars')).toBe('Heuristic estimate');
-        expect(describeTokenEstimateMethod('unavailable')).toBe('Provider count unavailable');
     });
 });

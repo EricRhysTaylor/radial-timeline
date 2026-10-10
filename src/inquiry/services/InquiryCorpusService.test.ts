@@ -99,9 +99,9 @@ describe('normalizeContributionMode', () => {
         expect(normalizeContributionMode('summary', 'outline')).toBe('summary');
     });
 
-    it('upgrades summary to full for non-synopsis classes', () => {
-        expect(normalizeContributionMode('summary', 'character')).toBe('full');
-        expect(normalizeContributionMode('summary', 'place')).toBe('full');
+    it('preserves summary for references without widening permission', () => {
+        expect(normalizeContributionMode('summary', 'character')).toBe('summary');
+        expect(normalizeContributionMode('summary', 'place')).toBe('summary');
     });
 
     it('passes through full and none unchanged', () => {
@@ -162,7 +162,7 @@ describe('normalizeClassContribution', () => {
             referenceScope: 'excluded'
         }));
         expect(result.bookScope).toBe('full');
-        expect(result.sagaScope).toBe('full');
+        expect(result.sagaScope).toBe('summary');
         expect(result.referenceScope).toBe('excluded');
     });
 });
@@ -472,11 +472,11 @@ describe('InquiryCorpusService', () => {
             expect(service.getGroupEffectiveMode('scene', configMap, 'book')).toBe('full');
         });
 
-        it('normalizes contribution mode for non-synopsis class', () => {
+        it('preserves an explicit summary override for a reference class', () => {
             const configMap = new Map([['character', makeClassConfig({ className: 'character', referenceScope: 'full' })]]);
             service.setClassOverride('character', 'summary');
-            // summary gets upgraded to full for non-synopsis classes
-            expect(service.getGroupEffectiveMode('character', configMap, 'book')).toBe('full');
+            // Summary must not grant permission to send the full reference body.
+            expect(service.getGroupEffectiveMode('character', configMap, 'book')).toBe('summary');
         });
     });
 

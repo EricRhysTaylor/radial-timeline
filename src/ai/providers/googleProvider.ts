@@ -128,7 +128,8 @@ export class GoogleProvider implements AIProvider {
                 req.modelId,
                 split.stable,
                 req.systemPrompt ?? undefined,
-                ttlSeconds
+                ttlSeconds,
+                req.requestControl
             );
             if (!cache) return { userPrompt: uncachedPrompt };
             return {
@@ -143,7 +144,8 @@ export class GoogleProvider implements AIProvider {
     }
 
     async generateText(req: GenerateTextRequest): Promise<ProviderExecutionResult> {
-        const apiKey = await getCredential(this.plugin, 'google');
+        req.requestControl?.assertActive();
+        const apiKey = await getCredential(this.plugin, 'google', req.requestControl?.credential);
         const aiSettings = validateAiSettings(this.plugin.settings.aiSettings ?? buildDefaultAiSettings()).value;
         const prepared = await this.prepareCachedPrompt(req, apiKey, aiSettings.cacheWindows?.googleTtlSeconds);
         if ('failure' in prepared) return prepared.failure;
@@ -159,7 +161,8 @@ export class GoogleProvider implements AIProvider {
             cachedContentName,
             req.topP,
             req.citationsEnabled,
-            true
+            true,
+            req.requestControl
         );
         const classification = classifyProviderError(result);
         const cacheResult = this.deriveCacheResult(result.responseData, cachedContentName, cacheStatus);
@@ -167,7 +170,9 @@ export class GoogleProvider implements AIProvider {
             success: result.success,
             content: result.content,
             responseData: result.responseData,
+            retryCount: result.retryCount,
             requestPayload: result.requestPayload,
+            diagnostics: { httpStatus: result.status, requestId: result.requestId },
             aiStatus: result.success ? 'success' : classification.aiStatus,
             aiReason: result.success ? undefined : classification.aiReason,
             aiProvider: 'google',
@@ -181,7 +186,8 @@ export class GoogleProvider implements AIProvider {
     }
 
     async generateJson(req: GenerateJsonRequest): Promise<ProviderExecutionResult> {
-        const apiKey = await getCredential(this.plugin, 'google');
+        req.requestControl?.assertActive();
+        const apiKey = await getCredential(this.plugin, 'google', req.requestControl?.credential);
         const aiSettings = validateAiSettings(this.plugin.settings.aiSettings ?? buildDefaultAiSettings()).value;
         const prepared = await this.prepareCachedPrompt(req, apiKey, aiSettings.cacheWindows?.googleTtlSeconds);
         if ('failure' in prepared) return prepared.failure;
@@ -197,7 +203,8 @@ export class GoogleProvider implements AIProvider {
             cachedContentName,
             req.topP,
             req.citationsEnabled,
-            true
+            true,
+            req.requestControl
         );
         const classification = classifyProviderError(result);
         const cacheResult = this.deriveCacheResult(result.responseData, cachedContentName, cacheStatus);
@@ -205,7 +212,9 @@ export class GoogleProvider implements AIProvider {
             success: result.success,
             content: result.content,
             responseData: result.responseData,
+            retryCount: result.retryCount,
             requestPayload: result.requestPayload,
+            diagnostics: { httpStatus: result.status, requestId: result.requestId },
             aiStatus: result.success ? 'success' : classification.aiStatus,
             aiReason: result.success ? undefined : classification.aiReason,
             aiProvider: 'google',

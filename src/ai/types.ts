@@ -329,7 +329,16 @@ export interface EvidenceDocument {
     content: string;
 }
 
+export interface AIRequestControl {
+    /** Credential resolved once for this authorized run; never included in a provider payload or log. */
+    credential?: string;
+    assertActive: () => void;
+    timeoutMs: number;
+    retryPolicy: { maxAttempts: number; baseDelayMs: number };
+}
+
 export interface GenerateTextRequest {
+    requestControl?: AIRequestControl;
     modelId: string;
     systemPrompt?: string | null;
     userPrompt: string;
@@ -410,6 +419,8 @@ export interface ModelSelectionResult {
 }
 
 export interface AIRunRequest {
+    /** Stop queued work, transport activity, and retries when the owning run is cancelled. */
+    shouldAbort?: () => boolean;
     feature: string;
     task: string;
     requiredCapabilities: Capability[];
@@ -454,18 +465,10 @@ export interface AIRunRequest {
 }
 
 export type InputTokenEstimateMethod = 'heuristic_chars' | 'anthropic_count' | 'google_count' | 'unavailable';
-export type TokenCountSource = 'provider_count' | 'estimate';
 export type RTCorpusEstimateMethod =
     | 'rt_chars_heuristic'
     | 'rt_cleaned_corpus_exact'
     | 'rt_pending';
-
-export interface TokenCountResult {
-    provider: Exclude<AIProviderId, 'none'>;
-    modelId: string;
-    inputTokens: number;
-    source: TokenCountSource;
-}
 
 export interface RTCorpusTokenBreakdown {
     scenesTokens: number;

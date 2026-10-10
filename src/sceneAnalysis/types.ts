@@ -15,6 +15,9 @@ export interface SceneData {
     frontmatter: Record<string, unknown>;
     sceneNumber: number | null;
     body: string;
+    /** Full source revision captured locally; never added to scene YAML or provider prompts. */
+    sourceRevision?: string;
+    sourcePath?: string;
 }
 
 /**

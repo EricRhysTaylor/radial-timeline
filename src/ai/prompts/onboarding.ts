@@ -375,6 +375,8 @@ export function buildOnboardingEntityPrompt(input: EntityEnrichmentInput): strin
   ].join('\n\n');
 }
 
+const ONBOARDING_AI_METADATA_FIELDS = new Set(['title', 'act', 'chapter', 'character', 'place', 'location', 'subplot', 'storyline', 'when', 'duration']);
+
 export function buildOnboardingScenePrompt(input: SceneExtractionInput): string {
   const parts: string[] = [];
   if (input.subplotVocabulary.length > 0) {
@@ -383,7 +385,9 @@ export function buildOnboardingScenePrompt(input: SceneExtractionInput): string 
   if (input.knownSynopsis && input.knownSynopsis.trim().length > 0) {
     parts.push(`Source synopsis (prefer/refine this): ${input.knownSynopsis.trim()}`);
   }
-  const known = input.knownMetadata ? Object.entries(input.knownMetadata) : [];
+  // Custom source fields are preserved locally during import, never uploaded
+  // merely because they exist in author frontmatter or a metadata CSV.
+  const known = input.knownMetadata ? Object.entries(input.knownMetadata).filter(([key]) => ONBOARDING_AI_METADATA_FIELDS.has(key.toLowerCase())) : [];
   if (known.length > 0) {
     parts.push(
       `Source metadata already present:\n${known.map(([k, v]) => `- ${k}: ${v}`).join('\n')}`

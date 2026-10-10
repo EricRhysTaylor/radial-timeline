@@ -11,6 +11,10 @@ import { AIClient } from './aiClient';
  * AI mode) must still be refused before any provider work starts.
  */
 describe('AI client master switch', () => {
+    it('requires explicit boolean consent rather than a truthy imported setting', async () => {
+        const plugin = { settings: { enableAiSceneAnalysis: 'false' } } as unknown as RadialTimelinePlugin; // SAFE: malformed persisted setting tests the request boundary
+        expect((await new AIClient(plugin).run(request)).aiStatus).toBe('unavailable');
+    });
     const request = {
         feature: 'Gossamer',
         task: 'BeatMomentumAnalysis',
@@ -36,10 +40,12 @@ describe('AI client master switch', () => {
         expect(registry).not.toHaveBeenCalled();
     });
 
-    it('refuses a run estimate (which can call a provider token-count endpoint) while AI is off', async () => {
+    it('prepares a local estimate while AI is off without enabling execution', async () => {
         const { client, registry } = offClient();
         const prepared = await client.prepareRunEstimate(request);
-        expect(prepared.ok).toBe(false);
-        expect(registry).not.toHaveBeenCalled();
+        expect(prepared.ok).toBe(true);
+        if (prepared.ok) expect(prepared.estimate.tokenEstimateMethod).toBe('heuristic_chars');
+        expect(registry).toHaveBeenCalledOnce();
+        expect((await client.run(request)).aiStatus).toBe('unavailable');
     });
 });

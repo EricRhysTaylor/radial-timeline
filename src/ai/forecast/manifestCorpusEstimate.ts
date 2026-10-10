@@ -28,13 +28,13 @@ export async function estimateCorpusFromManifestEntries(params: {
         counts[`${cls}Count`] += 1;
 
         const file = params.vault.getAbstractFileByPath(entry.path);
-        if (!(file instanceof TFile)) continue;
+        if (!(file instanceof TFile)) throw new Error(`Selected corpus file is missing: "${entry.path}".`);
 
         let chars = 0;
         if (entry.mode === 'summary') {
             const rawFrontmatter = params.metadataCache.getFileCache(file)?.frontmatter;
             const frontmatter = rawFrontmatter ? normalizeFrontmatterKeys(rawFrontmatter, params.frontmatterMappings) : {};
-            chars = extractSummary(frontmatter).length;
+            chars = cleanEvidenceBody(extractSummary(frontmatter)).length;
         } else if (entry.mode === 'full') {
             chars = cleanEvidenceBody(await params.vault.read(file)).length;
         }

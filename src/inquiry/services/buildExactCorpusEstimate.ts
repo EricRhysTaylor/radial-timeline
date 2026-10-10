@@ -86,7 +86,7 @@ export async function buildExactCorpusEstimateFromManifestEntries(
         if (mode === 'excluded') continue;
 
         const file = params.vault.getAbstractFileByPath(entry.path);
-        if (!isTFile(file)) continue;
+        if (!isTFile(file)) throw new Error(`Selected corpus file is missing: "${entry.path}".`);
 
         let chars = 0;
         if (mode === 'summary') {
@@ -95,7 +95,7 @@ export async function buildExactCorpusEstimateFromManifestEntries(
             const frontmatter = rawFrontmatter
                 ? normalizeFrontmatterKeys(rawFrontmatter, params.frontmatterMappings)
                 : {};
-            chars = extractSummary(frontmatter).length;
+            chars = cleanEvidenceBody(extractSummary(frontmatter)).length;
         } else if (mode === 'full') {
             const raw = await params.vault.cachedRead(file);
             chars = cleanEvidenceBody(raw).length;

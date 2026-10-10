@@ -7,9 +7,10 @@ import { getSecret, isSecretStorageAvailable, setSecret } from './secretStorage'
 
 export type CredentialProvider = AIProviderId;
 
+const CREDENTIAL_PROVIDERS: CredentialSecretProvider[] = ['openai', 'anthropic', 'google', 'ollama'];
+
 function toCanonicalProvider(provider: CredentialProvider): CredentialSecretProvider | null {
-    if (provider === 'openai' || provider === 'anthropic' || provider === 'google' || provider === 'ollama') return provider;
-    return null;
+    return CREDENTIAL_PROVIDERS.find(candidate => candidate === provider) ?? null; // SAFE: disabled or unsupported providers have no credential
 }
 
 function toSecretField(provider: CredentialSecretProvider): CredentialSecretField {
@@ -65,10 +66,12 @@ export function setCredentialSecretId(
 
 export async function getCredential(
     plugin: RadialTimelinePlugin,
-    provider: CredentialProvider
+    provider: CredentialProvider,
+    resolvedCredential?: string
 ): Promise<string> {
     const canonical = toCanonicalProvider(provider);
     if (!canonical) return '';
+    if (resolvedCredential !== undefined) return resolvedCredential;
 
     const aiSettings = getAiSettings(plugin);
     const secretId = getCredentialSecretId(aiSettings, canonical);
@@ -100,7 +103,7 @@ export async function migrateLegacyKeysToSecretStorage(
     }
 
     const aiSettings = getAiSettings(plugin);
-    const providers: CredentialSecretProvider[] = ['openai', 'anthropic', 'google', 'ollama'];
+    const providers = CREDENTIAL_PROVIDERS;
     let changed = false;
 
     for (const provider of providers) {

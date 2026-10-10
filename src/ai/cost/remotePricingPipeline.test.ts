@@ -622,19 +622,19 @@ describe('AiSection cost table BUILTIN_MODELS fallback', () => {
 
         // The cost table refresh path fetches registry models from the AI client
         expect(source).toContain("aiClient.getRegistryModels()");
-        expect(source).toContain("aiClient.refreshPricing()");
+        expect(source).not.toContain("aiClient.refreshPricing()");
 
         // The cost table refresh passes registry models to computeCostComparisonRows
         expect(source).toContain("computeCostComparisonRows(registryModels)");
     });
 
-    it('refreshCostComparisonTable calls both getRegistryModels and refreshPricing in parallel', () => {
+    it('refreshCostComparisonTable uses bundled models without initiating pricing requests', () => {
         const { readFileSync } = require('node:fs');
         const { resolve } = require('node:path');
         const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
 
-        // Both calls are in a Promise.all
-        expect(source).toMatch(/Promise\.all\(\[\s*aiClient\.getRegistryModels\(\),\s*aiClient\.refreshPricing\(\)/);
+        expect(source).toContain('const registryModels = await aiClient.getRegistryModels();');
+        expect(source).not.toContain('aiClient.refreshPricing()');
     });
 });
 

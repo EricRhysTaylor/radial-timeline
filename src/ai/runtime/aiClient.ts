@@ -16,9 +16,10 @@ import { selectModel } from '../router/selectModel';
 import { resolveActiveRoleTemplate, buildNeutralRoleTemplate } from '../roleTemplate';
 import { buildDefaultAiSettings } from '../settings/aiSettings';
 import { validateAiSettings } from '../settings/validateAiSettings';
-import { getLocalLlmClient } from '../localLlm/client';
+import { resolveLocalLlmSelection } from '../localLlm/settings';
 import type {
     AIProvider,
+    AIRequestControl,
     AIProviderId,
     AIRunEstimateResult,
     AIRunPreparedEstimate,
@@ -35,7 +36,6 @@ import type {
     RegistryRefreshResult
 } from '../types';
 import { buildProviders } from '../providers/provider';
-import { peekGeminiCache } from '../../api/geminiCacheManager';
 import { AICache } from './cache';
 import { buildTelemetryEvent, emitTelemetry } from './aiTelemetry';
 import { AIRateLimiter } from './rateLimit';
@@ -44,7 +44,9 @@ import { estimateHeuristicInputTokens, estimateInputTokens, estimateUncertaintyT
 import { extractTokenUsage } from '../usage/providerUsage';
 import { estimateTokensFromChars } from '../estimates';
 import { resolveAccessTier } from './runtimeSelection';
-import { fnv1a32HexUnpadded } from '../../utils/hash';
+import { createHash } from 'crypto';
+import { cleanEvidenceBody } from '../../inquiry/utils/evidenceCleaning';
+import { getCredential } from '../credentials/credentials';
 import { t } from '../../i18n';
 
 const DEFAULT_REMOTE_PROVIDER_SNAPSHOT_URL = 'https://raw.githubusercontent.com/ericrhystaylor/radial-timeline/HEAD/scripts/models/latest-models.json';
@@ -57,10 +59,6 @@ interface PluginWithAiDebug extends RadialTimelinePlugin {
 function getAiSettings(settings: RadialTimelineSettings): AiSettingsV1 {
     const validated = validateAiSettings(settings.aiSettings ?? buildDefaultAiSettings());
     return validated.value;
-}
-
-function toProviderKey(feature: string, provider: AIProviderId): string {
-    return `${feature}:${provider}`;
 }
 
 // Third copy of chars/4 removed — see ai/estimates/tokenEstimate.ts.
@@ -77,12 +75,13 @@ function mergePolicy(base: ModelPolicy, request: AIRunRequest): ModelPolicy {
 }
 
 function hash(input: string): string {
-    return fnv1a32HexUnpadded(input);
+    return createHash('sha256').update(input).digest('hex');
 }
 
-function mergeOverrides(base: AiSettingsV1['overrides'], request: AIRunRequest): AiSettingsV1['overrides'] {
+function mergeOverrides(base: AiSettingsV1['overrides'], request: AIRunRequest, featureOverrides?: AiSettingsV1['overrides']): AiSettingsV1['overrides'] {
     return {
         ...base,
+        ...featureOverrides,
         ...(request.overrides || {})
     };
 }
@@ -99,6 +98,9 @@ function buildCacheKey(params: {
     citationsEnabled?: boolean;
     useDocumentBlocks?: boolean;
     evidenceDocuments?: Array<{ title: string; content: string }>;
+    overrides: AiSettingsV1['overrides'];
+    maxOutputTokens: number;
+    credentialId?: string;
 }): string {
     return hash(JSON.stringify({
         provider: params.provider,
@@ -111,6 +113,9 @@ function buildCacheKey(params: {
         responseSchema: params.responseSchema ?? null,
         citationsEnabled: params.citationsEnabled ?? false,
         useDocumentBlocks: params.useDocumentBlocks ?? false,
+        overrides: params.overrides,
+        maxOutputTokens: params.maxOutputTokens,
+        credentialId: params.credentialId,
         evidenceDocuments: params.evidenceDocuments ?? []
     }));
 }
@@ -315,7 +320,7 @@ export function buildRequestEnvelope(
         roleTemplateText: roleTemplate.prompt,
         projectContext: isInquiry ? '' : getProjectContext(plugin, request),
         featureModeInstructions: parts.featureModeInstructions,
-        userInput: parts.userInput,
+        userInput: cleanEvidenceBody(parts.userInput),
         userQuestion: parts.userQuestion,
         outputRules: getOutputRules(request),
         placeUserQuestionLast: parts.placeUserQuestionLast,
@@ -420,6 +425,7 @@ function toSnapshotProvider(provider: AIProviderId): 'openai' | 'anthropic' | 'g
 }
 
 export class AIClient {
+    private disposed = false;
     private registry: ModelRegistry;
     private providers: Record<AIProviderId, AIProvider | null>;
     private cache = new AICache();
@@ -427,11 +433,15 @@ export class AIClient {
     private registryReady = false;
     private providerSnapshot: ProviderSnapshotLoadResult = { source: 'none', snapshot: null };
     private providerSnapshotReady = false;
-    private pricingReady = false;
 
     constructor(private plugin: RadialTimelinePlugin) {
         this.providers = buildProviders(plugin);
         this.registry = this.buildRegistry();
+    }
+
+    dispose(): void {
+        this.disposed = true;
+        this.cache.clear();
     }
 
     /**
@@ -487,7 +497,6 @@ export class AIClient {
         if (result.table) {
             mergeRemotePricing(result.table, result.source, result.fetchedAt);
         }
-        this.pricingReady = true;
         return result;
     }
 
@@ -563,13 +572,11 @@ export class AIClient {
 
     /**
      * The master switch (Settings → AI → Enable AI LLM features). Every AI
-     * request, provider token counting included, passes through run() or
-     * prepareRunEstimate(), so this one check is what keeps "AI off sends
-     * nothing" true for every feature, whether or not its own entry point
-     * hides while AI is off.
+     * execution passes through run(). Estimate preparation is always local
+     * and does not require permission to transmit manuscript content.
      */
     private refusalWhileAiOff(): AIRunResult | null {
-        if (this.plugin.settings.enableAiSceneAnalysis) return null;
+        if (this.plugin.settings.enableAiSceneAnalysis === true) return null;
         return {
             content: null,
             responseData: null,
@@ -584,14 +591,9 @@ export class AIClient {
     }
 
     async prepareRunEstimate(request: AIRunRequest): Promise<AIRunEstimateResult> {
-        const refusal = this.refusalWhileAiOff();
-        if (refusal) return { ok: false, result: refusal };
         const aiSettings = getAiSettings(this.plugin.settings);
         if (!this.registryReady) {
             await this.refreshRegistry();
-        }
-        if (!this.pricingReady) {
-            await this.refreshPricing();
         }
 
         const featureProfile = aiSettings.featureProfiles?.[request.feature];
@@ -642,13 +644,15 @@ export class AIClient {
         });
         const userPrompt = envelope.userPrompt || '';
         const systemPrompt = envelope.systemPrompt || '';
-        const evidenceDocuments = useDocumentBlocks ? request.evidenceDocuments : undefined;
+        const evidenceDocuments = useDocumentBlocks
+            ? request.evidenceDocuments?.map(doc => ({ ...doc, content: cleanEvidenceBody(doc.content) }))
+            : undefined;
 
         const heuristicEstimate = Number.isFinite(request.tokenEstimateInput)
             ? Math.max(0, Math.floor(request.tokenEstimateInput as number))
-            : estimateHeuristicInputTokens({ systemPrompt, userPrompt, evidenceDocuments });
+            : estimateHeuristicInputTokens({ systemPrompt, userPrompt, evidenceDocuments, jsonSchema: request.responseSchema });
         const initialSelection = provider === 'ollama'
-            ? await getLocalLlmClient(this.plugin).resolveSelectionFromLiveData()
+            ? resolveLocalLlmSelection(aiSettings)
             : selectModel(this.registry.getAll(), {
                 provider,
                 policy,
@@ -680,7 +684,7 @@ export class AIClient {
             }
         }
 
-        const overrides = mergeOverrides(aiSettings.overrides, request);
+        const overrides = mergeOverrides(aiSettings.overrides, request, featureProfile?.overrides);
         const caps = computeCaps({
             provider,
             model: initialSelection.model,
@@ -689,54 +693,22 @@ export class AIClient {
             overrides,
             userCitationsEnabled: aiSettings.citationsEnabled
         });
-        const effectiveInputCeiling = Math.floor(caps.maxInputTokens * INPUT_TOKEN_GUARD_FACTOR);
+        const effectiveInputCeiling = Math.max(0, Math.min(
+            Math.floor(caps.maxInputTokens * INPUT_TOKEN_GUARD_FACTOR),
+            initialSelection.model.contextWindow - caps.maxOutputTokens
+        ));
 
-        // Per RT doctrine (`code-doctrine.md` §2, `inquiry-critical-path-rules.md`
-        // §8): when the provider count call fails for Anthropic/Google, the
-        // UI must show "unavailable" — never substitute the chars/4
-        // heuristic as if it were a provider count. estimateInputTokens
-        // throws on failure; we catch here and propagate sentinel values
-        // (`inputTokens: 0`, `method: 'unavailable'`) plus the error message
-        // as a warning.
-        const tokenCountAttemptWarnings: string[] = [];
-        let countedEstimate: { inputTokens: number; method: InputTokenEstimateMethod };
-        if (Number.isFinite(request.tokenEstimateInput)) {
-            countedEstimate = {
-                inputTokens: heuristicEstimate,
-                method: 'heuristic_chars'
-            };
-        } else {
-            try {
-                countedEstimate = await estimateInputTokens({
-                    plugin: this.plugin,
-                    provider,
-                    modelId: initialSelection.model.id,
-                    systemPrompt,
-                    userPrompt,
-                    evidenceDocuments,
-                    citationsEnabled: caps.citationsEnabled,
-                    jsonSchema: request.responseSchema,
-                    safeInputBudget: effectiveInputCeiling
-                });
-            } catch (error) {
-                const message = error instanceof Error ? error.message : String(error);
-                // Surface via the structured `warnings` channel only.
-                // Obsidian plugins are not supposed to write to the
-                // browser console (per project rule), so the diagnostic
-                // flows: estimate.warnings → trace.notes → Inquiry Log,
-                // and also into the unavailable-pill tooltip via the
-                // session's persisted estimate-failure message.
-                tokenCountAttemptWarnings.push(
-                    `${provider} countTokens failed for model "${initialSelection.model.id}": ${message}`
-                );
-                countedEstimate = {
-                    inputTokens: 0,
-                    method: 'unavailable'
-                };
-            }
-        }
-        let tokenEstimateInput = countedEstimate.inputTokens;
-        let tokenEstimateMethod = countedEstimate.method;
+        // Estimation never reads credentials or contacts a provider. Count the
+        // composed request locally, including evidence and output-schema overhead.
+        const countedEstimate = estimateInputTokens({
+            systemPrompt,
+            userPrompt,
+            evidenceDocuments,
+            jsonSchema: request.responseSchema,
+            safeInputBudget: effectiveInputCeiling
+        });
+        const tokenEstimateInput = countedEstimate.inputTokens;
+        const tokenEstimateMethod = countedEstimate.method;
         const tokenEstimateUncertainty = estimateUncertaintyTokens(tokenEstimateMethod, effectiveInputCeiling);
         const expectedPassCount = effectiveInputCeiling > 0
             ? Math.max(1, Math.ceil(tokenEstimateInput / effectiveInputCeiling))
@@ -753,7 +725,10 @@ export class AIClient {
             responseSchema: request.responseSchema,
             citationsEnabled: caps.citationsEnabled,
             useDocumentBlocks,
-            evidenceDocuments
+            evidenceDocuments,
+            overrides,
+            maxOutputTokens: caps.maxOutputTokens,
+            credentialId: JSON.stringify(aiSettings.credentials)
         });
 
         return {
@@ -762,7 +737,7 @@ export class AIClient {
                 provider,
                 model: initialSelection.model,
                 modelSelectionReason: initialSelection.reason,
-                warnings: [...initialSelection.warnings, ...tokenCountAttemptWarnings],
+                warnings: [...initialSelection.warnings],
                 requiredCapabilities,
                 roleTemplateName: roleTemplate.name,
                 featureModeInstructions,
@@ -796,6 +771,11 @@ export class AIClient {
     async run(request: AIRunRequest): Promise<AIRunResult> {
         const refusal = this.refusalWhileAiOff();
         if (refusal) return refusal;
+        // Capture author choices before the first await, not after preparation.
+        const providerAtStart = this.plugin.settings.aiSettings?.provider;
+        const featureRoutingAtStart = JSON.stringify(this.plugin.settings.aiSettings?.featureProfiles?.[request.feature]);
+        const bookAtStart = this.plugin.settings.activeBookId;
+        const sourcePathAtStart = this.plugin.settings.sourcePath;
         const prepared = request.preparedEstimate
             ? { ok: true as const, estimate: request.preparedEstimate }
             : await this.prepareRunEstimate(request);
@@ -826,6 +806,23 @@ export class AIClient {
         const userPrompt = estimate.userPrompt;
         const bypassProviderReuse = request.bypassProviderReuse === true;
         const bypassInMemoryCache = request.bypassInMemoryCache === true || bypassProviderReuse;
+        const requestControl: AIRequestControl = {
+            assertActive: () => {
+                const routingChanged = this.plugin.settings.aiSettings?.provider !== providerAtStart
+                    || JSON.stringify(this.plugin.settings.aiSettings?.featureProfiles?.[request.feature]) !== featureRoutingAtStart;
+                if (this.disposed || this.plugin.settings.enableAiSceneAnalysis !== true || request.shouldAbort?.()
+                    || routingChanged || this.plugin.settings.activeBookId !== bookAtStart
+                    || this.plugin.settings.sourcePath !== sourcePathAtStart) {
+                    throw new Error('AI request cancelled: permission was withdrawn or the run was stopped.');
+                }
+            },
+            timeoutMs: 600_000,
+            retryPolicy: {
+                maxAttempts: Math.max(1, caps.retryPolicy.maxAttempts),
+                baseDelayMs: caps.retryPolicy.baseDelayMs
+            }
+        };
+        requestControl.assertActive();
 
         if (tokenEstimateInput > effectiveInputCeiling) {
             // Always expose the guard; Inquiry-specific chunking should happen in feature orchestration.
@@ -882,7 +879,12 @@ export class AIClient {
             });
         }
 
-        const cacheKey = estimate.cacheKey;
+        // A key rotation must not reuse a response from another provider account.
+        // Only the digest lives in the cache; estimate preparation never reads keys.
+        const credential = await getCredential(this.plugin, provider);
+        requestControl.assertActive();
+        requestControl.credential = credential;
+        const cacheKey = hash(JSON.stringify({ request: estimate.cacheKey, bookId: bookAtStart, credential }));
         const recordResolvedAlias = (requestedModelId?: string | null, resolvedModelId?: string | null): void => {
             if (!requestedModelId || !resolvedModelId) return;
             cacheResolvedModel(requestedModelId, resolvedModelId);
@@ -901,8 +903,6 @@ export class AIClient {
                 });
             }
         }
-
-        await this.limiter.waitForSlot(toProviderKey(request.feature, provider), caps.requestPerMinute);
 
         const snapshotState = await this.getProviderSnapshot(false);
         const snapshotProvider = toSnapshotProvider(provider);
@@ -970,18 +970,6 @@ export class AIClient {
             }
         }
 
-        // Optimistic warm: if the in-memory cache store already has a valid entry,
-        // we know the upcoming execute will hit it. Set warm + ratio immediately
-        // so the UI shows the hatched overlay from the start of the run.
-        const optimisticWarm = !bypassProviderReuse
-            && provider === 'google' && cacheDelimiterUsed
-            && stableText !== undefined && cachedStableRatio !== undefined
-            && peekGeminiCache(modelSelection.model.id, systemPrompt, stableText);
-
-        if (optimisticWarm) {
-            reuseState = 'warm';
-        }
-
         const advancedContext: AIRunAdvancedContext = {
             roleTemplateName: estimate.roleTemplateName,
             provider,
@@ -997,10 +985,8 @@ export class AIClient {
             reuseState,
             // Only expose confirmed cached-prefix metrics when the provider
             // already proved a warm hit.
-            cachedStableRatio: optimisticWarm
-                ? cachedStableRatio : undefined,
-            cachedStableTokens: optimisticWarm
-                ? cachedStableTokens : undefined,
+            cachedStableRatio: undefined,
+            cachedStableTokens: undefined,
             totalInputTokens: tokenEstimateInput,
             featureModeInstructions: estimate.featureModeInstructions,
             finalPrompt: estimate.finalPrompt
@@ -1022,6 +1008,7 @@ export class AIClient {
 
         const providerCallStartedAt = new Date();
         const execution = await this.execute(providerClient, {
+            requestControl,
             modelId: modelSelection.model.id,
             systemPrompt,
             userPrompt,
@@ -1091,7 +1078,7 @@ export class AIClient {
                     advancedContext.cacheExpiresAt = execution.cacheExpiresAt;
                 }
                 setLastRunAdvanced(this.plugin, request.feature, advancedContext);
-            } else if (execution.cacheStatus === 'created' || optimisticWarm || advancedContext.reuseState !== 'idle') {
+            } else if (execution.cacheStatus === 'created' || advancedContext.reuseState !== 'idle') {
                 // Cache was attempted or predicted but did not hit.
                 advancedContext.reuseState = 'eligible';
                 if (provider === 'google') {
@@ -1154,6 +1141,7 @@ export class AIClient {
                     // a 6.5k-token prompt with no manuscript context, while the
                     // first call had been built on the full ~300k-token corpus.
                     const retry = await this.execute(providerClient, {
+                        requestControl,
                         modelId: modelSelection.model.id,
                         systemPrompt,
                         userPrompt,
@@ -1278,9 +1266,12 @@ export class AIClient {
         provider: AIProvider,
         params: ProviderDispatchParams,
         returnType: 'text' | 'json',
-        _caps: ComputedCaps,
+        caps: ComputedCaps,
         modelConstraints?: { cacheVsCitationsExclusive?: boolean }
     ): Promise<ProviderExecutionResult> {
+        params.requestControl?.assertActive();
+        await this.limiter.waitForSlot(provider.id, caps.requestPerMinute, params.requestControl?.assertActive);
+        params.requestControl?.assertActive();
         // Central sanitization — authoritative enforcement point.
         // Provider adapters receive only sanitized params.
         const providerId = provider.id as AiProvider;
@@ -1290,6 +1281,7 @@ export class AIClient {
         let result: ProviderExecutionResult;
         if (returnType === 'json') {
             result = await provider.generateJson({
+                requestControl: sanitized.requestControl,
                 modelId: sanitized.modelId,
                 systemPrompt: sanitized.systemPrompt ?? null,
                 userPrompt: sanitized.userPrompt,
@@ -1306,6 +1298,7 @@ export class AIClient {
             });
         } else {
             result = await provider.generateText({
+                requestControl: sanitized.requestControl,
                 modelId: sanitized.modelId,
                 systemPrompt: sanitized.systemPrompt ?? null,
                 userPrompt: sanitized.userPrompt,
@@ -1320,6 +1313,7 @@ export class AIClient {
             });
         }
 
+        params.requestControl?.assertActive();
         if (notes.length) {
             result.sanitizationNotes = [
                 ...(result.sanitizationNotes || []),
@@ -1336,6 +1330,11 @@ export function getAIClient(plugin: RadialTimelinePlugin): AIClient {
         anyPlugin._aiClient = new AIClient(plugin);
     }
     return anyPlugin._aiClient;
+}
+
+export function disposeAIClient(plugin: RadialTimelinePlugin): void {
+    const target = plugin as unknown as { _aiClient?: AIClient };
+    target._aiClient?.dispose();
 }
 
 export function getLastAiAdvancedContext(

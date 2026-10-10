@@ -15,6 +15,8 @@ import { setSceneAnalysisReviewWarning, updateSceneAnalysis } from './FileUpdate
 import { createAiRunner, type Provider } from './RequestRunner';
 import {
     getAllSceneData,
+    assertSceneSourcesUnchanged,
+    sceneSourceRevision,
     compareScenesByOrder,
     getSubplotNamesFromFM,
     hasBeenProcessedForBeats,
@@ -178,14 +180,21 @@ async function applyTripletAnalysisResult(input: {
     provider: Provider | null | undefined;
     attribution: string | null;
 }): Promise<{ route: 'write' | 'warning' | 'skip'; success: boolean }> {
-    return applySceneAnalysisSafeWrite({
+    const assertSourcesCurrent = await assertSceneSourcesUnchanged(input.vault, [input.triplet.prev, input.triplet.current, input.triplet.next].filter((scene): scene is SceneData => !!scene));
+    const result = await applySceneAnalysisSafeWrite({
         provider: input.provider,
         parsedAnalysis: input.parsedAnalysis,
         writeAnalysis: (analysis) =>
-            updateSceneAnalysis(input.vault, input.triplet.current.file, analysis, input.plugin, input.attribution),
+            updateSceneAnalysis(input.vault, input.triplet.current.file, analysis, input.plugin, input.attribution, assertSourcesCurrent),
         writeWarning: (warning) =>
             setSceneAnalysisReviewWarning(input.vault, input.triplet.current.file, input.plugin, warning)
     });
+    if (result.success) {
+        // Later triplets share this scene as a neighbor; our own analysis write
+        // is an accepted new revision, not an author edit invalidating the batch.
+        input.triplet.current.sourceRevision = sceneSourceRevision(await input.vault.read(input.triplet.current.file));
+    }
+    return result;
 }
 
 function getLocalReviewErrorMessage(scene: SceneData): string {
@@ -284,7 +293,7 @@ export async function processWithModal(
 
         const runAi = createAiRunner(plugin, vault, callAiProvider, report => {
             modal.recordPulseUsage(sceneNameForLog, report);
-        });
+        }, () => modal.isAborted());
 
         // Calculate triplet metric and start progress bar animation
         const tripletMetric = getTripletMetric(triplet);
@@ -429,7 +438,7 @@ export async function processSubplotWithModal(
         const tripletForLog = buildPulseTriplet(prevNum, currentNum, nextNum).scenes;
         const runAi = createAiRunner(plugin, vault, callAiProvider, report => {
             modal.recordPulseUsage(sceneNameForLog, report);
-        });
+        }, () => modal.isAborted());
 
         // Calculate triplet metric and start progress bar animation
         const tripletMetric = getTripletMetric(triplet);
@@ -568,7 +577,7 @@ export async function processEntireSubplotWithModalInternal(
         const tripletForLog = buildPulseTriplet(prevNum, currentNum, nextNum).scenes;
         const runAi = createAiRunner(plugin, vault, callAiProvider, report => {
             modal.recordPulseUsage(sceneNameForLog, report);
-        });
+        }, () => modal.isAborted());
 
         // Calculate triplet metric and start progress bar animation
         const tripletMetric = getTripletMetric(triplet);

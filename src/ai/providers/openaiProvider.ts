@@ -35,7 +35,8 @@ export class OpenAIProvider implements AIProvider {
     }
 
     async generateText(req: GenerateTextRequest): Promise<ProviderExecutionResult> {
-        const apiKey = await getCredential(this.plugin, 'openai');
+        req.requestControl?.assertActive();
+        const apiKey = await getCredential(this.plugin, 'openai', req.requestControl?.credential);
         const result = await callOpenAiResponsesApi(
             apiKey,
             req.modelId,
@@ -46,7 +47,9 @@ export class OpenAIProvider implements AIProvider {
             req.temperature,
             req.topP,
             !req.bypassProviderReuse,
-            req.promptCacheKey
+            req.promptCacheKey,
+            true,
+            req.requestControl
         );
         const cacheResult = this.deriveCacheResult(result.responseData);
         return result.success
@@ -54,8 +57,9 @@ export class OpenAIProvider implements AIProvider {
                 success: true,
                 content: result.content,
                 responseData: result.responseData,
+                retryCount: result.retryCount,
                 requestPayload: result.requestPayload,
-                diagnostics: result.adapterNotes?.length ? { adapterNotes: result.adapterNotes } : undefined,
+                diagnostics: { httpStatus: result.status, requestId: result.requestId, adapterNotes: result.adapterNotes },
                 aiStatus: 'success',
                 aiProvider: 'openai',
                 aiModelRequested: req.modelId,
@@ -68,8 +72,9 @@ export class OpenAIProvider implements AIProvider {
                 success: false,
                 content: result.content,
                 responseData: result.responseData,
+                retryCount: result.retryCount,
                 requestPayload: result.requestPayload,
-                diagnostics: result.adapterNotes?.length ? { adapterNotes: result.adapterNotes } : undefined,
+                diagnostics: { httpStatus: result.status, requestId: result.requestId, adapterNotes: result.adapterNotes },
                 aiStatus: classifyProviderError(result).aiStatus,
                 aiReason: classifyProviderError(result).aiReason,
                 aiProvider: 'openai',
@@ -83,7 +88,8 @@ export class OpenAIProvider implements AIProvider {
     }
 
     async generateJson(req: GenerateJsonRequest): Promise<ProviderExecutionResult> {
-        const apiKey = await getCredential(this.plugin, 'openai');
+        req.requestControl?.assertActive();
+        const apiKey = await getCredential(this.plugin, 'openai', req.requestControl?.credential);
         const result = await callOpenAiResponsesApi(
             apiKey,
             req.modelId,
@@ -100,7 +106,9 @@ export class OpenAIProvider implements AIProvider {
             req.temperature,
             req.topP,
             !req.bypassProviderReuse,
-            req.promptCacheKey
+            req.promptCacheKey,
+            true,
+            req.requestControl
         );
         const cacheResult = this.deriveCacheResult(result.responseData);
         return result.success
@@ -108,8 +116,9 @@ export class OpenAIProvider implements AIProvider {
                 success: true,
                 content: result.content,
                 responseData: result.responseData,
+                retryCount: result.retryCount,
                 requestPayload: result.requestPayload,
-                diagnostics: result.adapterNotes?.length ? { adapterNotes: result.adapterNotes } : undefined,
+                diagnostics: { httpStatus: result.status, requestId: result.requestId, adapterNotes: result.adapterNotes },
                 aiStatus: 'success',
                 aiProvider: 'openai',
                 aiModelRequested: req.modelId,
@@ -122,8 +131,9 @@ export class OpenAIProvider implements AIProvider {
                 success: false,
                 content: result.content,
                 responseData: result.responseData,
+                retryCount: result.retryCount,
                 requestPayload: result.requestPayload,
-                diagnostics: result.adapterNotes?.length ? { adapterNotes: result.adapterNotes } : undefined,
+                diagnostics: { httpStatus: result.status, requestId: result.requestId, adapterNotes: result.adapterNotes },
                 aiStatus: classifyProviderError(result).aiStatus,
                 aiReason: classifyProviderError(result).aiReason,
                 aiProvider: 'openai',

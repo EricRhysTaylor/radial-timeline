@@ -3,12 +3,14 @@ import { normalizeFrontmatterKeys } from '../../utils/frontmatter';
 import { readSceneId, resolveSceneReferenceId } from '../../utils/sceneIds';
 import { cleanEvidenceBody } from '../../inquiry/utils/evidenceCleaning';
 import { countWords } from '../../utils/text';
+import { sceneSourceRevision, type SceneSourceSnapshot } from '../../sceneAnalysis/data';
 
 export interface GossamerEvidenceDocument {
     text: string;
     totalScenes: number;
     includedScenes: number;
     totalWords: number;
+    sourceScenes: SceneSourceSnapshot[];
 }
 
 interface SceneEvidenceEntry {
@@ -39,12 +41,14 @@ export async function buildGossamerEvidenceDocument(params: {
     frontmatterMappings?: Record<string, string>;
 }): Promise<GossamerEvidenceDocument> {
     const entries: SceneEvidenceEntry[] = [];
+    const sourceScenes: SceneSourceSnapshot[] = [];
     for (const sceneFile of params.sceneFiles) {
         const frontmatter = getNormalizedFrontmatter(params.metadataCache, sceneFile, params.frontmatterMappings);
         const sceneId = resolveSceneReferenceId(readSceneId(frontmatter) ?? undefined, sceneFile.path);
 
         const raw = await params.vault.read(sceneFile);
         const content = cleanEvidenceBody(raw);
+        sourceScenes.push({ file: sceneFile, body: content, sourceRevision: sceneSourceRevision(raw), sourcePath: sceneFile.path });
 
         if (!content) continue;
         entries.push({
@@ -59,7 +63,8 @@ export async function buildGossamerEvidenceDocument(params: {
             text: 'No scene body content available.',
             totalScenes: params.sceneFiles.length,
             includedScenes: 0,
-            totalWords: 0
+            totalWords: 0,
+            sourceScenes
         };
     }
 
@@ -90,6 +95,7 @@ export async function buildGossamerEvidenceDocument(params: {
         text,
         totalScenes: params.sceneFiles.length,
         includedScenes: entries.length,
-        totalWords
+        totalWords,
+        sourceScenes
     };
 }

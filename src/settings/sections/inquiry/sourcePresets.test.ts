@@ -3,8 +3,8 @@ import { buildPresetClassConfig } from './sourcePresets';
 import type { InquiryClassConfig } from '../../../types/settings';
 const config = (className: string): InquiryClassConfig => ({ className, enabled: true, bookScope: 'full', sagaScope: 'full', referenceScope: 'full' });
 describe('Inquiry source presets', () => {
-    it('preserves canonical full-text normalization for the default scene preset', () => {
-        expect(buildPresetClassConfig(config('Scene'), 'default')).toMatchObject({ bookScope: 'full', sagaScope: 'full', referenceScope: 'excluded', enabled: true });
+    it('preserves the default book full-text and saga summary choices independently', () => {
+        expect(buildPresetClassConfig(config('Scene'), 'default')).toMatchObject({ bookScope: 'full', sagaScope: 'summary', referenceScope: 'excluded', enabled: true });
     });
     it.each(['Scene', 'Outline'])('uses summary material for %s in Light and full material in Deep', name => {
         expect(buildPresetClassConfig(config(name), 'light')).toMatchObject({ bookScope: 'summary', sagaScope: 'summary' });

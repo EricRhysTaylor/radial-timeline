@@ -471,7 +471,9 @@ function scanSources() {
     const cacheManagerSrc = readSourceFile('src/api/geminiCacheManager.ts');
     if (cacheManagerSrc) {
         const aiClientSrc = readSourceFile('src/ai/runtime/aiClient.ts');
-        const runtimeWired = !!aiClientSrc?.includes('peekGeminiCache');
+        const googleProviderSrc = readSourceFile('src/ai/providers/googleProvider.ts');
+        const runtimeWired = !!googleProviderSrc?.includes('getOrCreateGeminiCache')
+            && !!aiClientSrc?.includes('buildProviders(plugin)');
         findings.push({
             file: 'aiClient.ts',
             finding: `Cache manager exists, canonical runtime wires it: ${runtimeWired}`,

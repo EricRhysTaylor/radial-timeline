@@ -378,6 +378,8 @@ export function formatAiLogContent(
     envelope: AiLogEnvelope,
     options?: { jsonSpacing?: number; metadataExtras?: string[] }
 ): string {
+    // Redact every section before formatting, including raw prompt/response text.
+    envelope = redactSensitiveObject(envelope);
     const lines: string[] = [];
     const normalizeText = (value?: string | null) => value && value.trim() ? value : 'N/A';
     const formatList = (items?: string[]) => items && items.length ? items.join('; ') : 'None.';

@@ -29,6 +29,20 @@ function rtDisplayName(modelId: string, system: string, content: string): string
 const inMinutes = (minutes: number) => new Date(Date.now() + minutes * 60_000).toISOString();
 
 describe('geminiCacheManager', () => {
+    it('creates one resource for concurrent requests with identical content', async () => {
+        const { getOrCreateGeminiCache } = await loadManager();
+        const results = await Promise.all([1, 2, 3].map(() => getOrCreateGeminiCache('concurrent-key', MODEL, CORPUS, SYSTEM, 900)));
+        expect(createGeminiCache).toHaveBeenCalledOnce();
+        expect(results.map(result => result?.status)).toEqual(['created', 'hit', 'hit']);
+    });
+
+    it('keeps simultaneously used credential namespaces independent', async () => {
+        vi.mocked(createGeminiCache).mockImplementation(async key => `cachedContents/${key}`);
+        const { getOrCreateGeminiCache } = await loadManager();
+        const results = await Promise.all(['account-A', 'account-B'].map(key => getOrCreateGeminiCache(key, MODEL, CORPUS, SYSTEM, 900)));
+        expect(results.map(result => result?.cacheName)).toEqual(['cachedContents/account-A', 'cachedContents/account-B']);
+        expect((await getOrCreateGeminiCache('account-A', MODEL, CORPUS, SYSTEM, 900))?.cacheName).toBe('cachedContents/account-A');
+    });
     beforeEach(() => {
         vi.mocked(createGeminiCache).mockReset().mockResolvedValue('cachedContents/new');
         vi.mocked(listGeminiCaches).mockReset().mockResolvedValue([]);
@@ -45,13 +59,12 @@ describe('geminiCacheManager', () => {
         vi.mocked(listGeminiCaches).mockResolvedValue([
             { name: 'cachedContents/before-reload', displayName: rtDisplayName(MODEL, SYSTEM, CORPUS), model: `models/${MODEL}`, expireTime: inMinutes(10) }
         ]);
-        const { getOrCreateGeminiCache, peekGeminiCache } = await loadManager();
+        const { getOrCreateGeminiCache } = await loadManager();
 
         const result = await getOrCreateGeminiCache('key-1', MODEL, CORPUS, SYSTEM, 900);
 
         expect(result).toMatchObject({ cacheName: 'cachedContents/before-reload', status: 'hit' });
         expect(createGeminiCache).not.toHaveBeenCalled();
-        expect(peekGeminiCache(MODEL, SYSTEM, CORPUS)).toBe(true);
     });
 
     it('lists once per key per session, then serves misses by creating', async () => {

@@ -19,10 +19,18 @@ export class AICache {
     }
 
     set(key: string, value: unknown): void {
+        for (const [cachedKey, entry] of this.entries) {
+            if (Date.now() - entry.createdAt > this.ttlMs) this.entries.delete(cachedKey);
+        }
+        if (this.entries.size >= 64) this.entries.delete(this.entries.keys().next().value as string);
         this.entries.set(key, {
             key,
             value,
             createdAt: Date.now()
         });
+    }
+
+    clear(): void {
+        this.entries.clear();
     }
 }

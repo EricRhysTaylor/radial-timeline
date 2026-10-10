@@ -8,12 +8,15 @@ const SENSITIVE_FIELD_NAMES = new Set([
     'xapikey',
     'x_api_key',
     'x-api-key',
+    'x-goog-api-key',
+    'xgoogapikey',
     'token',
     'accesstoken',
     'access_token',
     'refresh_token',
     'refreshtoken',
     'secret',
+    'credential',
     'key'
 ]);
 
@@ -51,7 +54,7 @@ export function redactSensitiveValue(str: string): string {
         (_, prefix: string) => `${prefix}${REDACTED}`
     );
     value = value.replace(
-        /(\bx-api-key\b\s*[:=]\s*["']?)([^"'\s,;]+)/gi,
+        /(\bx-(?:api|goog-api)-key\b\s*[:=]\s*["']?)([^"'\s,;]+)/gi,
         (_, prefix: string) => `${prefix}${REDACTED}`
     );
     value = value.replace(/\bBearer\s+[A-Za-z0-9._~+/=-]{8,}/gi, `Bearer ${REDACTED}`);
@@ -67,7 +70,11 @@ function cloneAndRedact(value: unknown, seen: WeakMap<object, unknown>): unknown
     }
 
     if (Array.isArray(value)) {
-        return value.map(item => cloneAndRedact(item, seen));
+        if (seen.has(value)) return '[Circular]';
+        const output: unknown[] = [];
+        seen.set(value, output);
+        for (const item of value) output.push(cloneAndRedact(item, seen));
+        return output;
     }
 
     if (!value || typeof value !== 'object') {

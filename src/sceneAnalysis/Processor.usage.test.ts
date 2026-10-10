@@ -14,6 +14,8 @@ vi.mock('./aiProvider', () => ({ callAiProvider: provider }));
 vi.mock('./FileUpdater', () => ({ updateSceneAnalysis: update, setSceneAnalysisReviewWarning: vi.fn() }));
 vi.mock('./data', () => ({
     getAllSceneData,
+    assertSceneSourcesUnchanged: vi.fn(async () => () => undefined),
+    sceneSourceRevision: vi.fn(() => "fixture-revision"),
     compareScenesByOrder: (a: SceneData, b: SceneData) => a.sceneNumber! - b.sceneNumber!,
     getSubplotNamesFromFM: () => ['Romance'],
     hasBeenProcessedForBeats: (fm: Record<string, unknown>) => fm.done === true,
@@ -41,7 +43,7 @@ function setup() {
         settings: {}, openScenePaths: new Set(['1.md', '2.md']),
         saveSettings: vi.fn(), refreshTimelineIfNeeded: vi.fn()
     } as unknown as RadialTimelinePlugin;
-    return { reports, modal, typedModal: modal as unknown as SceneAnalysisProcessingModal, plugin, vault: {} as Vault };
+    return { reports, modal, typedModal: modal as unknown as SceneAnalysisProcessingModal, plugin, vault: { read: async () => "Scene prose" } as Vault };
 }
 beforeEach(() => {
     vi.clearAllMocks();

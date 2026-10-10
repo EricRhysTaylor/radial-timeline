@@ -662,34 +662,20 @@ export class InquiryRunnerService implements InquiryRunner {
         const sceneModeByPath = new Map(
             sceneEntries.map(entry => [entry.path, this.normalizeEntryMode(entry.mode)])
         );
-        let readSuccessCount = 0;
-        let readFailCount = 0;
         for (const scene of scenes) {
             const mode = sceneModeByPath.get(scene.path) ?? 'excluded';
             const sceneLabel = scene.title ? `${scene.title} (${scene.label})` : scene.label;
             const sceneMeta: EvidenceDocumentMeta = { title: scene.title || scene.label, path: scene.path, sceneId: scene.sceneId, evidenceClass: 'scene' };
             if (mode === 'summary') {
-                if (!scene.summary) continue;
+                if (!scene.summary) throw new Error(`Selected Inquiry Summary is missing: "${scene.path}". Choose Full explicitly or exclude this note.`);
                 blocks.push({ label: `Scene ${sceneLabel} (${scene.sceneId}) (Summary)`, content: scene.summary, meta: sceneMeta });
                 continue;
             }
             if (mode === 'full') {
                 const content = await this.readFileContent(scene.path);
-                if (!content) {
-                    readFailCount++;
-                    if (readFailCount <= 3) {
-                        console.warn(`[Inquiry] readFileContent returned empty for scene "${scene.path}"`);
-                    }
-                    continue;
-                }
-                readSuccessCount++;
                 blocks.push({ label: `Scene ${sceneLabel} (${scene.sceneId}) (Full)`, content, meta: sceneMeta });
             }
         }
-        if (readFailCount > 0) {
-            console.warn(`[Inquiry] buildEvidenceBlocks: ${readFailCount} scene reads failed, ${readSuccessCount} succeeded`);
-        }
-
         const references = await this.collectReferenceDocs(referenceEntries);
         blocks.push(...references);
         const dedupedBlocks: EvidenceBlock[] = [];
@@ -701,9 +687,7 @@ export class InquiryRunnerService implements InquiryRunner {
             dedupedBlocks.push(block);
         });
 
-        if (!dedupedBlocks.length) {
-            dedupedBlocks.push({ label: 'Evidence', content: t('inquiry.runner.noEvidenceForScope') });
-        }
+        if (!dedupedBlocks.length) throw new Error('No evidence is selected for this Inquiry. Choose source material before running analysis.');
 
         // Hard guard: Inquiry corpus must never include Synopsis-sourced content.
         // Catches accidental reintroduction of Synopsis semantics in future changes.
@@ -730,10 +714,9 @@ export class InquiryRunnerService implements InquiryRunner {
             if (!normalizedPath || seenPaths.has(normalizedPath)) return;
             seenPaths.add(normalizedPath);
             const file = this.vault.getAbstractFileByPath(entry.path);
-            if (!file || !('path' in file)) return;
-            if (!this.isTFile(file)) return;
+            if (!file || !this.isTFile(file)) throw new Error(`Selected Inquiry scene is missing: "${entry.path}".`);
             const frontmatter = this.getFrontmatter(file);
-            const summary = extractSummary(frontmatter);
+            const summary = cleanEvidenceBody(extractSummary(frontmatter));
             const sceneNumber = this.extractSceneNumber(frontmatter) ?? this.extractSceneNumberFromText(file.basename);
             const title = this.getSceneTitle(file, frontmatter);
             let sceneId = this.resolveCanonicalSceneId(entry.sceneId ?? readSceneId(frontmatter) ?? undefined);
@@ -785,12 +768,10 @@ export class InquiryRunnerService implements InquiryRunner {
             const meta: EvidenceDocumentMeta = { title: baseLabel, path: entry.path, evidenceClass: 'outline' };
             if (mode === 'summary') {
                 const summary = this.getSummaryForPath(entry.path);
-                if (!summary) continue;
                 blocks.push({ label: `${baseLabel} (Summary)`, content: summary, meta });
                 continue;
             }
             const content = await this.readFileContent(entry.path);
-            if (!content) continue;
             blocks.push({ label: `${baseLabel} (Full)`, content, meta });
         }
         return blocks;
@@ -805,12 +786,10 @@ export class InquiryRunnerService implements InquiryRunner {
             const meta: EvidenceDocumentMeta = { title: baseLabel, path: entry.path, evidenceClass: this.formatClassLabel(entry.class) };
             if (mode === 'summary') {
                 const summary = this.getSummaryForPath(entry.path);
-                if (!summary) continue;
                 blocks.push({ label: `${baseLabel} (Summary)`, content: summary, meta });
                 continue;
             }
             const content = await this.readFileContent(entry.path);
-            if (!content) continue;
             blocks.push({ label: `${baseLabel} (Full)`, content, meta });
         }
         return blocks;
@@ -847,36 +826,22 @@ export class InquiryRunnerService implements InquiryRunner {
         return filename ? `${fallback} (${filename})` : fallback;
     }
 
-    private async readFileContent(path: string): Promise<string | null> {
+    private async readFileContent(path: string): Promise<string> {
         const file = this.vault.getAbstractFileByPath(path);
-        if (!file) {
-            console.warn(`[Inquiry] readFileContent: vault.getAbstractFileByPath("${path}") returned null`);
-            return null;
-        }
-        if (!this.isTFile(file)) {
-            console.warn(`[Inquiry] readFileContent: "${path}" is not a TFile (type: ${file.constructor?.name ?? typeof file})`);
-            return null;
-        }
-        try {
-            const raw = await this.vault.read(file);
-            const cleaned = cleanEvidenceBody(raw);
-            if (!cleaned) {
-                console.warn(`[Inquiry] readFileContent: "${path}" has ${raw.length} raw chars but cleanEvidenceBody returned empty`);
-            }
-            return cleaned;
-        } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            console.warn(`[Inquiry] readFileContent: vault.read("${path}") threw: ${message}`);
-            return null;
-        }
+        if (!file || !this.isTFile(file)) throw new Error(`Selected Inquiry source is missing: "${path}".`);
+        const raw = await this.vault.read(file);
+        const content = cleanEvidenceBody(raw);
+        if (!content) throw new Error(`Selected Inquiry source has no public body text: "${path}". Exclude this note or supply the selected material.`);
+        return content;
     }
 
-    private getSummaryForPath(path: string): string | null {
+    private getSummaryForPath(path: string): string {
         const file = this.vault.getAbstractFileByPath(path);
-        if (!file || !this.isTFile(file)) return null;
+        if (!file || !this.isTFile(file)) throw new Error(`Selected Inquiry source is missing: "${path}".`);
         const frontmatter = this.getFrontmatter(file);
-        const summary = extractSummary(frontmatter);
-        return summary ? summary : null;
+        const summary = cleanEvidenceBody(extractSummary(frontmatter));
+        if (!summary) throw new Error(`Selected Inquiry Summary is missing: "${path}". Choose Full explicitly or exclude this note.`);
+        return summary;
     }
 
     private normalizeEntryMode(mode?: CorpusManifestEntry['mode']): 'excluded' | 'summary' | 'full' {
@@ -1216,6 +1181,7 @@ export class InquiryRunnerService implements InquiryRunner {
             instructionPrompt,
             cacheableUserInput,
             providerReuseKey,
+            shouldAbort: executionOptions?.shouldAbort,
             forceFreshRun: executionOptions?.forceFreshRun,
             skipProviderCache: executionOptions?.skipProviderCache,
             // Request the full output ceiling on the first pass (the precheck
@@ -1282,6 +1248,7 @@ export class InquiryRunnerService implements InquiryRunner {
             instructionPrompt?: string;
             cacheableUserInput?: string;
             providerReuseKey?: string;
+            shouldAbort?: () => boolean;
             forceFreshRun?: boolean;
             skipProviderCache?: boolean;
             forceMaxOutputCeiling?: boolean;
@@ -1312,6 +1279,7 @@ export class InquiryRunnerService implements InquiryRunner {
         );
         return aiClient.run({
             ...this.buildInquiryRequest({ ...options, userInput: effectiveUserInput }),
+            shouldAbort: options.shouldAbort,
             providerOverride: options.ai.provider,
             overrides: {
                 temperature: options.temperature,
@@ -1700,6 +1668,7 @@ export class InquiryRunnerService implements InquiryRunner {
                 jsonSchema: options.jsonSchema,
                 temperature: options.temperature,
                 maxTokens: options.maxTokens,
+                shouldAbort: options.executionOptions?.shouldAbort,
                 forceFreshRun: options.executionOptions?.forceFreshRun
             });
             this.recordUsage(usageAccumulator, this.extractUsage(options.ai.provider, chunkRun.responseData), 'chunk');
@@ -1783,6 +1752,7 @@ export class InquiryRunnerService implements InquiryRunner {
             jsonSchema: options.jsonSchema,
             temperature: options.temperature,
             maxTokens: options.maxTokens,
+            shouldAbort: options.executionOptions?.shouldAbort,
             forceFreshRun: options.executionOptions?.forceFreshRun
         });
         this.recordUsage(usageAccumulator, this.extractUsage(options.ai.provider, synthesisRun.responseData), 'synthesis');
@@ -3059,13 +3029,7 @@ export class InquiryRunnerService implements InquiryRunner {
         const sanitizationNotes: string[] = [];
         let evidenceBlocks: EvidenceBlock[] = [];
 
-        try {
-            evidenceBlocks = await this.buildEvidenceBlocks(input);
-        } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            notes.push(`Evidence build error: ${message}`);
-            evidenceBlocks = [{ label: 'Evidence', content: t('inquiry.runner.unableToBuildEvidence') }];
-        }
+        evidenceBlocks = await this.buildEvidenceBlocks(input);
 
         const { systemPrompt, userPrompt, evidenceText, instructionPrompt, cacheableUserInput } = this.buildPrompt(input, evidenceBlocks);
         const outputTokenCap = this.getOutputTokenCap(input.ai.provider);

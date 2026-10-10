@@ -6,12 +6,18 @@ vi.mock('obsidian', () => ({
 
 import * as obsidian from 'obsidian';
 
+vi.mock('./providerTransport', async () => ({
+    ...await vi.importActual('./providerTransport'),
+    requestProvider: async (options: unknown) => {
+        const response = await obsidian.requestUrl(options as never);
+        return { ...response, headers: {}, retryCount: 0 };
+    }
+}));
+
 import {
     buildAnthropicDispatchDiagnostics,
     buildAnthropicUserContent,
     callAnthropicApi,
-    countAnthropicTokens,
-    normalizeAnthropicTokenCountResponse,
     sanitizeAnthropicOutputSchema
 } from './anthropicApi';
 
@@ -46,149 +52,6 @@ function mockTextResponse(text: string, extra: Record<string, unknown> = {}): vo
         }
     } as never);
 }
-
-describe('anthropic token counting', () => {
-    beforeEach(() => {
-        mockedRequestUrl.mockReset();
-    });
-
-    it('builds a count_tokens request and returns a canonical provider-count result', async () => {
-        mockedRequestUrl.mockResolvedValue({
-            status: 200,
-            text: '',
-            json: {
-                input_tokens: 4321
-            }
-        } as never);
-
-        const result = await countAnthropicTokens(
-            'test-key',
-            'claude-opus-4-8',
-            'System rules',
-            'User prompt body'
-        );
-
-        expect(result).toEqual({
-            provider: 'anthropic',
-            modelId: 'claude-opus-4-8',
-            inputTokens: 4321,
-            source: 'provider_count'
-        });
-
-        const request = mockedRequestUrl.mock.calls[0]?.[0] as { url?: string; body?: string; headers?: Record<string, string> };
-        const body = JSON.parse(request.body ?? '{}') as {
-            model?: string;
-            system?: Array<{ type?: string; text?: string }>;
-            messages?: Array<{ role?: string; content?: Array<{ type?: string; text?: string }> }>;
-        };
-
-        expect(request.url).toBe('https://api.anthropic.com/v1/messages/count_tokens');
-        expect(request.headers?.['anthropic-version']).toBe('2023-06-01');
-        expect(body.model).toBe('claude-opus-4-8');
-        expect(body.system).toEqual([{ type: 'text', text: 'System rules' }]);
-        expect(body.messages?.[0]?.role).toBe('user');
-        expect(body.messages?.[0]?.content?.[0]).toEqual({ type: 'text', text: 'User prompt body' });
-    });
-
-    it('includes the structured tool schema in count_tokens requests for JSON runs', async () => {
-        mockedRequestUrl.mockResolvedValue({
-            status: 200,
-            text: '',
-            json: {
-                input_tokens: 896
-            }
-        } as never);
-
-        await countAnthropicTokens(
-            'test-key',
-            'claude-opus-4-8',
-            'System rules',
-            'Return {"answer":"ACK"}.',
-            false,
-            undefined,
-            undefined,
-            {
-                type: 'object',
-                properties: {
-                    answer: { type: 'string' }
-                },
-                required: ['answer'],
-                additionalProperties: false
-            }
-        );
-
-        const request = mockedRequestUrl.mock.calls[0]?.[0] as { body?: string };
-        const body = JSON.parse(request.body ?? '{}') as {
-            tools?: Array<{ name?: string; input_schema?: Record<string, unknown> }>;
-            tool_choice?: { type?: string; name?: string };
-        };
-
-        expect(body.tools).toEqual([{
-            name: 'record_structured_response',
-            // Verbose description prevents Opus 4.7+ from wrapping the tool
-            // input in a $PARAMETER_NAME envelope (smoke-discovered 2026-05-23).
-            description: expect.stringContaining('Do NOT wrap the response in any envelope') as unknown as string,
-            input_schema: {
-                type: 'object',
-                properties: {
-                    answer: { type: 'string' }
-                },
-                required: ['answer'],
-                additionalProperties: false
-            }
-        }]);
-        expect(body.tool_choice).toEqual({
-            type: 'tool',
-            name: 'record_structured_response'
-        });
-    });
-
-    it('omits the structured tool schema when citations are enabled (citations + tool_use are mutually exclusive on Anthropic)', async () => {
-        mockedRequestUrl.mockResolvedValue({
-            status: 200,
-            text: '',
-            json: {
-                input_tokens: 1024
-            }
-        } as never);
-
-        await countAnthropicTokens(
-            'test-key',
-            'claude-opus-4-8',
-            'System rules',
-            'Return JSON per the schema in the prompt.',
-            true,
-            undefined,
-            undefined,
-            {
-                type: 'object',
-                properties: {
-                    answer: { type: 'string' }
-                },
-                required: ['answer'],
-                additionalProperties: false
-            }
-        );
-
-        const request = mockedRequestUrl.mock.calls[0]?.[0] as { body?: string };
-        const body = JSON.parse(request.body ?? '{}') as {
-            tools?: unknown;
-            tool_choice?: unknown;
-        };
-
-        // Citations attach only to text content blocks. Forcing a tool call
-        // produces a tool_use block with no text — citations would have nowhere
-        // to anchor. Anthropic's docs make this incompatibility explicit.
-        expect(body.tools).toBeUndefined();
-        expect(body.tool_choice).toBeUndefined();
-    });
-
-    it('rejects token count responses that omit input_tokens', () => {
-        expect(normalizeAnthropicTokenCountResponse({
-            total_tokens: 987
-        }, 'claude-opus-4-8')).toBeNull();
-    });
-});
 
 describe('sanitizeAnthropicOutputSchema', () => {
     it('strips unsupported numeric and string-length constraints and stamps additionalProperties:false', () => {

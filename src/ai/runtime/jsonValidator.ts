@@ -1,5 +1,21 @@
 import { MalformedJsonError } from '../errors';
 import { unwrapStructuredEnvelope } from '../structuredResponseUnwrap';
+import Ajv, { type ValidateFunction } from 'ajv';
+
+const ajv = new Ajv({ allErrors: true, strict: true, allowUnionTypes: true });
+const validators = new Map<string, ValidateFunction>();
+
+function getValidator(schema: Record<string, unknown>): ValidateFunction {
+    const key = JSON.stringify(schema);
+    const existing = validators.get(key);
+    if (existing) return existing;
+    const validator = ajv.compile(schema);
+    // Keep only our bounded cache; Ajv otherwise retains every new schema object.
+    ajv.removeSchema(schema);
+    if (validators.size >= 64) validators.delete(validators.keys().next().value as string);
+    validators.set(key, validator);
+    return validator;
+}
 
 export interface JsonValidationResult<T = unknown> {
     ok: boolean;
@@ -33,6 +49,12 @@ function getRequired(schema?: Record<string, unknown>): string[] {
 export function extractJsonPayload(raw: string): string {
     const trimmed = raw.trim();
     if (!trimmed) return trimmed;
+    try {
+        JSON.parse(trimmed);
+        return trimmed;
+    } catch { // SAFE: only known text/code-fence wrappers are unwrapped below; JSON parsing still rejects malformed results
+        // Do not turn a valid JSON array or string into an object by slicing braces.
+    }
     const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (fenceMatch) return fenceMatch[1].trim();
     const firstBrace = trimmed.indexOf('{');
@@ -61,14 +83,16 @@ export function validateJsonResponse<T = unknown>(
     }
 
     const requiredKeys = getRequired(schema);
+    const unwrapWarnings: string[] = [];
+    let unwrapped = false;
     if (requiredKeys.length && parsed && typeof parsed === 'object') {
-        const unwrapWarnings: string[] = [];
         const unwrap = unwrapStructuredEnvelope(parsed, requiredKeys, {
             onUnwrap: key => {
                 unwrapWarnings.push(`Unwrapped structured response envelope key "${key}" before JSON schema validation`);
             }
         });
         parsed = unwrap.value;
+        unwrapped = !!unwrap.unwrappedKey;
 
         const record = parsed as Record<string, unknown>;
         const missing = requiredKeys.filter(key => !(key in record));
@@ -78,15 +102,20 @@ export function validateJsonResponse<T = unknown>(
                 error: new MalformedJsonError(`JSON missing required keys: ${missing.join(', ')}`, { provider })
             };
         }
-        if (unwrap.unwrappedKey) {
+    }
+
+    if (schema) {
+        const validate = getValidator(schema);
+        if (!validate(parsed)) {
             return {
-                ok: true,
-                parsed: parsed as T,
-                normalizedRaw: JSON.stringify(parsed),
-                normalizationWarnings: unwrapWarnings
+                ok: false,
+                error: new MalformedJsonError(`JSON does not match the response schema: ${ajv.errorsText(validate.errors)}`, { provider })
             };
         }
     }
-
-    return { ok: true, parsed: parsed as T };
+    return {
+        ok: true,
+        parsed: parsed as T,
+        ...(unwrapped ? { normalizedRaw: JSON.stringify(parsed), normalizationWarnings: unwrapWarnings } : {})
+    };
 }

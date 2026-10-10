@@ -85,8 +85,7 @@ const answer = {
     summaryDepth: 'The colony is set up before it is lost.',
     verdictFlow: 72,
     verdictDepth: 64,
-    findings: [finding],
-    answeredBy: 'Claude app · Opus 5.5'
+    findings: [finding]
 };
 
 describe('Inquiry runs answered by an AI client the author runs', () => {

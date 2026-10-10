@@ -215,7 +215,8 @@ export async function persistSummaryForScene(
     plugin: RadialTimelinePlugin,
     scenePath: string,
     result: { summary?: string; synopsis?: string },
-    attribution: string
+    attribution: string,
+    assertSourcesCurrent?: () => void
 ): Promise<{ summary?: string; synopsis?: string }> {
     const file = plugin.app.vault.getAbstractFileByPath(scenePath);
     if (!(file instanceof TFile)) {
@@ -245,6 +246,7 @@ export async function persistSummaryForScene(
     });
 
     await plugin.app.fileManager.processFrontMatter(file, (fm) => {
+        assertSourcesCurrent?.();
         const frontmatter = fm as Record<string, unknown>;
 
         // Write canonical keys and clean up case-variant duplicates.

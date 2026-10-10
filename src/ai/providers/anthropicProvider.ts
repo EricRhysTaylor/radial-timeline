@@ -94,7 +94,8 @@ export class AnthropicProvider implements AIProvider {
     }
 
     async generateText(req: GenerateTextRequest): Promise<ProviderExecutionResult> {
-        const apiKey = await getCredential(this.plugin, 'anthropic');
+        req.requestControl?.assertActive();
+        const apiKey = await getCredential(this.plugin, 'anthropic', req.requestControl?.credential);
         validateAiSettings(this.plugin.settings.aiSettings ?? buildDefaultAiSettings());
         const cacheTtl: AnthropicCacheTtl | undefined = req.bypassProviderReuse
             ? undefined
@@ -112,7 +113,8 @@ export class AnthropicProvider implements AIProvider {
             req.citationsEnabled,
             req.evidenceDocuments,
             undefined,
-            cacheTtl
+            cacheTtl,
+            req.requestControl
         );
         const classification = classifyProviderError(result);
         const outcome = this.resolveResponseOutcome(result, classification);
@@ -121,7 +123,9 @@ export class AnthropicProvider implements AIProvider {
             success: result.success && outcome.aiStatus === 'success',
             content: result.content,
             responseData: result.responseData,
+            retryCount: result.retryCount,
             requestPayload: result.requestPayload,
+            diagnostics: { httpStatus: result.status, requestId: result.requestId },
             aiStatus: outcome.aiStatus,
             aiReason: outcome.aiReason,
             aiProvider: 'anthropic',
@@ -134,7 +138,8 @@ export class AnthropicProvider implements AIProvider {
     }
 
     async generateJson(req: GenerateJsonRequest): Promise<ProviderExecutionResult> {
-        const apiKey = await getCredential(this.plugin, 'anthropic');
+        req.requestControl?.assertActive();
+        const apiKey = await getCredential(this.plugin, 'anthropic', req.requestControl?.credential);
         validateAiSettings(this.plugin.settings.aiSettings ?? buildDefaultAiSettings());
         const cacheTtl: AnthropicCacheTtl | undefined = req.bypassProviderReuse
             ? undefined
@@ -152,7 +157,8 @@ export class AnthropicProvider implements AIProvider {
             req.citationsEnabled,
             req.evidenceDocuments,
             req.jsonSchema,
-            cacheTtl
+            cacheTtl,
+            req.requestControl
         );
         const classification = classifyProviderError(result);
         const outcome = this.resolveResponseOutcome(result, classification);
@@ -161,7 +167,9 @@ export class AnthropicProvider implements AIProvider {
             success: result.success && outcome.aiStatus === 'success',
             content: result.content,
             responseData: result.responseData,
+            retryCount: result.retryCount,
             requestPayload: result.requestPayload,
+            diagnostics: { httpStatus: result.status, requestId: result.requestId },
             aiStatus: outcome.aiStatus,
             aiReason: outcome.aiReason,
             aiProvider: 'anthropic',

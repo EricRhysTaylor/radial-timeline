@@ -42,16 +42,16 @@ This number is the **only number shown to authors**.
 
 ---
 
-### Provider Execution Count (internal)
+### Local Execution Estimate (internal)
 
-Represents the actual tokens sent to the AI provider.
+Estimates the complete request locally. It never contacts a provider or reads an API key. Actual provider token usage is a separate post-execution fact.
 
 Includes:
 
 - envelope
 - instructions
 - schema
-- provider tokenization
+- locally estimated request overhead
 
 Used only for:
 
@@ -245,8 +245,10 @@ selected provider. This is the owner-directed behavior as of 2026-10-01.
 **Permission and configuration gate execution.** `InquiryView.isInquiryReadOnly()`
 is the shared predicate: AI is not explicitly enabled, the selected provider has
 no usable credential, or the engine is blocked/unavailable. It gates new analyses,
-force-reruns, Omnibus, simulations, pending-edit application, and provider token
-estimates. Client-job preparation also requires explicit AI enablement, but keeps
+force-reruns, Omnibus, simulations, pending-edit application, and provider
+execution. All estimates, including Settings comparisons, are local and send
+nothing to any provider. Client-job preparation requires explicit AI enablement,
+but keeps
 its existing external-client contract (no API key required). AIClient independently
 enforces the master switch at the request boundary.
 
@@ -275,3 +277,18 @@ The source invariant guard and behavioral access tests enforce this boundary.
 Inquiry is designed for **large manuscripts and sagas**.
 
 Accuracy and transparency are more important than defensive fallbacks.
+
+
+## 13. Estimates Send Nothing (owner decision 2026-10-10)
+
+All estimates and forecasts are local, including Inquiry snapshots, Settings
+comparisons, preflight packaging, and client-job preparation. Never call remote
+count-token endpoints, read credentials, refresh remote metadata, or probe a
+model server while preparing an estimate. Count the same cleaned material and
+request envelope used by execution, label the result as a local estimate, and
+reserve output capacity in the context budget. Non-ASCII execution estimates
+reserve UTF-8 bytes rather than applying the UI corpus chars/4 metric to scripts
+that tokenize differently. These remain conservative local estimates. Provider-count methods retained
+in persisted types describe historical runs only. Actual usage is recorded
+after an explicitly authorized analysis, never inferred as an exact preflight
+count. This replaces the earlier remote-count requirement.

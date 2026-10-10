@@ -1,3 +1,4 @@
+import { extractJsonPayload } from '../runtime/jsonValidator';
 /*
  * Radial Timeline (tm) Plugin for Obsidian
  * Copyright (c) 2025 Eric Rhys Taylor
@@ -23,6 +24,7 @@ import {
     listAiJobAnswerIds,
     readAiJob,
     readAiJobAnswer,
+    readAiJobPrompt,
     readAnswerAttribution,
     recordAiJobRejection,
     removeAiJob,
@@ -83,7 +85,7 @@ async function ingestOne(app: App, id: string, handlers: ReadonlyMap<string, AiJ
         throw new Error(`rebuilt job id "${fresh.id}" does not match "${job.id}"`);
     }
 
-    if (fresh.sourceFingerprint !== job.sourceFingerprint) {
+    if (rebuilt.prepared.prompt !== await readAiJobPrompt(app, id)) {
         // A new prompt: writeAiJob discards the answer written for the old one.
         await writeAiJob(app, {
             prompt: rebuilt.prepared.prompt,
@@ -93,7 +95,20 @@ async function ingestOne(app: App, id: string, handlers: ReadonlyMap<string, AiJ
     }
 
     const answer = await readAiJobAnswer(app, id);
-    const result = await rebuilt.apply(answer, readAnswerAttribution(answer));
+    // Attribution is job metadata, not a feature response-schema property.
+    // Preserve every other field so full schema validation still rejects extras.
+    let featureAnswer = answer;
+    try {
+        const parsed: unknown = JSON.parse(extractJsonPayload(answer));
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            const payload = { ...parsed } as Record<string, unknown>;
+            delete payload.answeredBy;
+            featureAnswer = JSON.stringify(payload);
+        }
+    } catch { // SAFE: malformed answers are passed unchanged to the feature validator so they receive a recorded rejection
+        // The author-facing feature check owns the parse error.
+    }
+    const result = await rebuilt.apply(featureAnswer, readAnswerAttribution(answer));
     if (!result.ok) {
         await recordAiJobRejection(app, job, result.problems);
         await removeAiJobAnswer(app, id);

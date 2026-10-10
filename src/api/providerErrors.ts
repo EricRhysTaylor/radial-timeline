@@ -103,6 +103,10 @@ export function classifyProviderError(err: unknown): ProviderErrorClassification
     const normalized = message.toLowerCase();
     const status = extractStatus(envelope);
 
+    if (normalized.includes('ai request cancelled')) {
+        return { aiStatus: 'rejected', aiReason: 'cancelled' };
+    }
+
     if (isSpendCapMessage(normalized)) {
         return { aiStatus: 'rejected', aiReason: 'spend_cap' };
     }

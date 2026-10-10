@@ -55,7 +55,7 @@ import { DEFAULT_SETTINGS } from './settings/defaults';
 import { migrateAiSettings, stripLegacyAiSettings } from './ai/settings/migrateAiSettings';
 import { validateAiSettings } from './ai/settings/validateAiSettings';
 import { buildDefaultAiSettings } from './ai/settings/aiSettings';
-import { getAIClient } from './ai/runtime/aiClient';
+import { getAIClient, disposeAIClient } from './ai/runtime/aiClient';
 import { migrateLegacyKeysToSecretStorage, needsLegacyKeyMigration } from './ai/credentials/credentials';
 import { hasSecret } from './ai/credentials/secretStorage';
 import type { AIProviderId } from './ai/types';
@@ -1496,6 +1496,7 @@ export default class RadialTimelinePlugin extends Plugin {
     }
 
     onunload() {
+        disposeAIClient(this);
         // Settings can own a live local-model generation even when Obsidian
         // reloads the plugin without first calling PluginSettingTab.hide().
         // Dispose its UI timers before the old instance loses those hooks; the

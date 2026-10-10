@@ -71,6 +71,11 @@ describe('onboarding prompt text', () => {
 });
 
 describe('onboarding prompt builders', () => {
+  it('does not upload arbitrary custom frontmatter fields', () => {
+    const prompt = buildOnboardingScenePrompt({ body: 'Public prose.', subplotVocabulary: [], knownMetadata: { Storyline: 'Homecoming', Password: 'PRIVATE_METADATA_SENTINEL', AuthorNotes: 'PRIVATE_AUTHOR_SENTINEL' } });
+    expect(prompt).toContain('Storyline: Homecoming');
+    expect(prompt).not.toContain('PRIVATE_');
+  });
   it('survey prompt lists scene openings in reading order, without file names', () => {
     const prompt = buildOnboardingSurveyPrompt([
       { opening: 'On Ithaca.' },

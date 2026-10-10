@@ -29,7 +29,8 @@ export async function updateSceneAnalysis(
   file: TFile,
   parsedAnalysis: ParsedSceneAnalysis,
   plugin: RadialTimelinePlugin,
-  attribution: string | null
+  attribution: string | null,
+  assertSourcesCurrent?: () => void
 ): Promise<boolean> {
   try {
     await snapshotFrontmatterFields(plugin.app, [file], {
@@ -48,6 +49,7 @@ export async function updateSceneAnalysis(
         .filter(Boolean);
 
     await plugin.app.fileManager.processFrontMatter(file, (fm) => {
+      assertSourcesCurrent?.();
       const fmObj = fm as Record<string, unknown>;
       delete fmObj['previousSceneAnalysis'];
       delete fmObj['currentSceneAnalysis'];

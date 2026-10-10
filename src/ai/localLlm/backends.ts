@@ -70,7 +70,8 @@ function createOpenAiCompatibleBackend(id: LocalLlmBackendId): LocalLlmBackend {
                 baseUrl: request.baseUrl,
                 timeoutMs: request.timeoutMs,
                 apiKey: request.apiKey,
-                signal: request.signal
+                signal: request.signal,
+                requestControl: request.requestControl
             },
             modelId: request.modelId,
             systemPrompt: request.systemPrompt,

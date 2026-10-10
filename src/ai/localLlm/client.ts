@@ -12,6 +12,7 @@ import type {
     GenerateJsonRequest,
     GenerateTextRequest,
     LocalLlmSettings,
+    AIRequestControl,
     ProviderExecutionResult
 } from '../types';
 
@@ -21,19 +22,21 @@ export class LocalLlmClient {
 
     constructor(private plugin: RadialTimelinePlugin) {}
 
-    private async buildTransport(overrides?: Partial<LocalLlmSettings>) {
+    private async buildTransport(overrides?: Partial<LocalLlmSettings>, requestControl?: AIRequestControl) {
         const localLlm = {
             ...getCanonicalLocalLlmSettings(this.plugin),
             ...(overrides || {})
         };
-        const apiKey = await getCredential(this.plugin, 'ollama');
+        const apiKey = await getCredential(this.plugin, 'ollama', requestControl?.credential);
+        requestControl?.assertActive();
         return {
             localLlm,
             backend: getLocalLlmBackend(localLlm.backend),
             transport: {
                 baseUrl: localLlm.baseUrl,
                 timeoutMs: localLlm.timeoutMs,
-                apiKey
+                apiKey,
+                requestControl
             }
         };
     }
@@ -75,7 +78,8 @@ export class LocalLlmClient {
     }
 
     async generateText(req: GenerateTextRequest): Promise<ProviderExecutionResult> {
-        const { localLlm, backend, transport } = await this.buildTransport();
+        req.requestControl?.assertActive();
+        const { localLlm, backend, transport } = await this.buildTransport(undefined, req.requestControl);
         const modelId = localLlm.defaultModelId.trim() || req.modelId;
         const result = await backend.complete({
             ...transport,
@@ -86,6 +90,7 @@ export class LocalLlmClient {
             temperature: req.temperature,
             topP: req.topP
         });
+        req.requestControl?.assertActive();
         const classification = classifyProviderError(result);
         return {
             success: result.success,
@@ -102,7 +107,8 @@ export class LocalLlmClient {
     }
 
     async generateJson(req: GenerateJsonRequest): Promise<ProviderExecutionResult> {
-        const { localLlm, backend, transport } = await this.buildTransport();
+        req.requestControl?.assertActive();
+        const { localLlm, backend, transport } = await this.buildTransport(undefined, req.requestControl);
         const modelId = localLlm.defaultModelId.trim() || req.modelId;
         const structured = await runStructuredJsonPipeline({
             providerLabel: LOCAL_LLM_BACKEND_LABELS[localLlm.backend],
@@ -124,6 +130,7 @@ export class LocalLlmClient {
             systemPrompt: req.systemPrompt ?? null,
             userPrompt: req.userPrompt
         });
+        req.requestControl?.assertActive();
         if (structured.ok) {
             return {
                 success: true,

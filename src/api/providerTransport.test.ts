@@ -4,6 +4,7 @@ import type { AIRequestControl } from '../ai/types';
 
 const { requestMock } = vi.hoisted(() => ({ requestMock: vi.fn() }));
 vi.mock('https', () => ({ request: requestMock }));
+vi.mock('http', () => ({ request: requestMock }));
 import { requestProvider, decodeAnthropicStream } from './providerTransport';
 
 const options = { url: 'https://api.anthropic.com/v1/messages', method: 'POST', body: 'synthetic fixture' };
@@ -34,6 +35,20 @@ beforeEach(() => { requestMock.mockReset(); });
 afterEach(() => vi.useRealTimers());
 
 describe('cloud transport lifecycle', () => {
+    it('allows HTTP only for an explicitly configured Local LLM transport', async () => {
+        const localOptions = { ...options, url: 'http://127.0.0.1:1234/v1/chat/completions' };
+        await expect(requestProvider(localOptions, control())).rejects.toThrow('require HTTPS');
+        expect(requestMock).not.toHaveBeenCalled();
+        mockRequest(200, { answer: 'fixture' });
+        expect(await requestProvider(localOptions, control(), { allowHttp: true })).toMatchObject({ status: 200 });
+    });
+
+    it('closes a socket that exceeds the configured response bound', async () => {
+        const req = mockRequest(200, { answer: 'long fixture response' });
+        await expect(requestProvider(options, control(), { maxResponseBytes: 5 })).rejects.toThrow('response size limit');
+        expect(req.destroy).toHaveBeenCalledOnce();
+    });
+
     it('retains HTTP status and request diagnostics', async () => {
         mockRequest(401, { error: { message: 'Invalid authentication' } }, { 'request-id': 'fixture-request' });
         const result = await requestProvider(options, control());

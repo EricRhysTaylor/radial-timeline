@@ -1,4 +1,5 @@
 import { request } from 'https'; // SAFE: desktop-only abortable HTTPS sockets and SSE; Obsidian requestUrl exposes neither cancellation nor response streaming
+import { request as requestHttp } from 'http'; // SAFE: only explicitly configured Local LLM endpoints may use HTTP
 import type { RequestUrlParam } from 'obsidian';
 import type { AIRequestControl } from '../ai/types';
 import { redactSensitiveValue } from '../ai/credentials/redactSensitive';
@@ -10,6 +11,13 @@ export interface ProviderHttpResponse {
     text: string;
     json: unknown;
     retryCount: number;
+}
+
+export interface ProviderTransportOptions {
+    /** Local LLM endpoints support HTTP; cloud calls remain HTTPS-only. */
+    allowHttp?: boolean;
+    signal?: AbortSignal;
+    maxResponseBytes?: number;
 }
 
 /** A transport failure preserves HTTP diagnostics without persisting request headers. */
@@ -64,10 +72,10 @@ export function decodeAnthropicStream(text: string): unknown {
     return { ...message, content: blocks };
 }
 
-function sendProviderRequest(options: RequestUrlParam, control?: AIRequestControl): Promise<ProviderHttpResponse> {
+function sendProviderRequest(options: RequestUrlParam, control: AIRequestControl | undefined, transport: ProviderTransportOptions): Promise<ProviderHttpResponse> {
     control?.assertActive();
     const url = new URL(options.url);
-    if (url.protocol !== 'https:') throw new ProviderTransportError('Cloud provider requests require HTTPS.');
+    if (url.protocol !== 'https:' && !(transport.allowHttp && url.protocol === 'http:')) throw new ProviderTransportError('Cloud provider requests require HTTPS.');
     const body = typeof options.body === 'string' ? Buffer.from(options.body, 'utf8') : options.body ? Buffer.from(options.body) : undefined;
     if (url.hostname === 'api.anthropic.com' && body && body.byteLength > 32 * 1024 * 1024) {
         throw new ProviderTransportError('Anthropic request exceeds the 32 MB request limit.', 413);
@@ -83,13 +91,24 @@ function sendProviderRequest(options: RequestUrlParam, control?: AIRequestContro
             if (error) reject(error);
             else if (response) resolve(response);
         };
-        const req = request(url, { method: options.method, headers: options.headers }, res => {
+        const send = url.protocol === 'http:' ? requestHttp : request;
+        const req = send(url, { method: options.method, headers: options.headers, signal: transport.signal }, res => {
             const headers: Record<string, string> = {};
             for (const [key, value] of Object.entries(res.headers)) {
                 if (value !== undefined) headers[key.toLowerCase()] = Array.isArray(value) ? value.join(', ') : String(value);
             }
             const chunks: Buffer[] = [];
-            res.on('data', (chunk: Buffer) => chunks.push(chunk));
+            let responseBytes = 0;
+            res.on('data', (chunk: Buffer) => {
+                responseBytes += chunk.length;
+                if (transport.maxResponseBytes !== undefined && responseBytes > transport.maxResponseBytes) {
+                    const error = new ProviderTransportError('Provider response exceeded the response size limit.');
+                    req.destroy(error);
+                    finish(error);
+                    return;
+                }
+                if (!settled) chunks.push(chunk);
+            });
             res.on('error', error => finish(new ProviderTransportError(error.message)));
             res.on('aborted', () => finish(new ProviderTransportError('Provider response connection ended before completion.')));
             res.on('end', () => {
@@ -134,7 +153,7 @@ function sendProviderRequest(options: RequestUrlParam, control?: AIRequestContro
 }
 
 /** Retry only explicit transient HTTP rejections, never ambiguous network/timeout failures. */
-export async function requestProvider(options: RequestUrlParam, control?: AIRequestControl): Promise<ProviderHttpResponse> {
+export async function requestProvider(options: RequestUrlParam, control?: AIRequestControl, transport: ProviderTransportOptions = {}): Promise<ProviderHttpResponse> {
     const maxAttempts = control?.retryPolicy.maxAttempts ?? 1; // SAFE: metadata/key-validation requests make one attempt
     const started = Date.now();
     const deadlineMs = requestTimeout(options, control);
@@ -142,7 +161,7 @@ export async function requestProvider(options: RequestUrlParam, control?: AIRequ
         control?.assertActive();
         const remaining = deadlineMs - (Date.now() - started);
         if (remaining <= 0) throw new ProviderTransportError('Provider request timed out before retry.');
-        const response = await sendProviderRequest(options, control ? { ...control, timeoutMs: remaining } : undefined);
+        const response = await sendProviderRequest(options, control ? { ...control, timeoutMs: remaining } : undefined, transport);
         const classification = classifyProviderError({ status: response.status, responseData: response.json });
         const transient = response.status === 429 || [500, 502, 503, 529].includes(response.status);
         const terminal = classification.aiReason === 'spend_cap' || classification.aiReason === 'quota_exceeded';

@@ -1,4 +1,6 @@
 import { requestUrl } from 'obsidian';
+import type { AIRequestControl } from '../types';
+import { requestProvider } from '../../api/providerTransport';
 
 export interface LocalLlmTransportRequest {
     baseUrl: string;
@@ -12,6 +14,7 @@ export interface LocalLlmTransportRequest {
      * an HTTP abort as proof that the model is idle.
      */
     signal?: AbortSignal;
+    requestControl?: AIRequestControl;
 }
 
 /** Raised when the caller cancelled, as distinct from a timeout. */
@@ -386,55 +389,6 @@ export async function fetchOllamaModelDetails(
     };
 }
 
-/**
- * Genuinely abortable HTTP completion.
- *
- * Returns null when the connection could not be established at all, so the
- * caller can try the CORS-safe path. Aborts — timeout or caller cancel — are
- * thrown, never retried: retrying through a non-abortable transport is exactly
- * how a cancelled request turns back into an orphan.
- */
-async function fetchCompletionAbortable(
-    url: string,
-    requestPayload: Record<string, unknown>,
-    transport: LocalLlmTransportRequest
-): Promise<{ status: number; text: string } | null> {
-    const controller = new AbortController();
-    let timedOut = false;
-    const timer = window.setTimeout(() => {
-        timedOut = true;
-        controller.abort();
-    }, transport.timeoutMs);
-    const onExternalAbort = () => controller.abort();
-    // An AbortSignal is not a DOM element: registerDomEvent cannot bind it, and
-    // this is a module-level function with no Component to own the handle.
-    // SAFE: removed unconditionally in the finally below, so it cannot leak.
-    transport.signal?.addEventListener('abort', onExternalAbort);
-
-    try {
-        // This path exists so a cancelled or timed-out completion actually stops
-        // (see the doc above). SAFE: requestUrl cannot be aborted.
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: buildHeaders(transport.apiKey),
-            body: JSON.stringify(requestPayload),
-            signal: controller.signal
-        });
-        const text = await readBoundedText(response, COMPLETION_MAX_BYTES);
-        return { status: response.status, text };
-    } catch (error) {
-        if (timedOut) throw new Error('Local LLM completion request timed out.');
-        if (transport.signal?.aborted) throw new Error(LOCAL_LLM_CANCELLED);
-        // A TypeError here means the connection never happened (CORS block or
-        // refused), which the requestUrl path may still manage.
-        if (error instanceof TypeError) return null;
-        throw error;
-    } finally {
-        window.clearTimeout(timer);
-        transport.signal?.removeEventListener('abort', onExternalAbort);
-    }
-}
-
 export async function callOpenAiCompatibleLocalCompletion(input: {
     transport: LocalLlmTransportRequest;
     modelId: string;
@@ -487,37 +441,29 @@ export async function callOpenAiCompatibleLocalCompletion(input: {
     };
 
     try {
-        // Abortable first so the client releases the connection on timeout. The
-        // local server may not observe that disconnect until its next write.
-        const direct = await fetchCompletionAbortable(url, requestPayload, input.transport);
-        if (direct) {
-            let responseData: unknown;
-            try {
-                responseData = JSON.parse(direct.text);
-            } catch {
-                return {
-                    success: false,
-                    content: null,
-                    responseData: direct.text,
-                    requestPayload,
-                    error: 'Local LLM backend returned a non-JSON response.'
-                };
-            }
-            return interpret(direct.status, responseData);
-        }
-
-        // CORS-safe fallback, reached only when the connection never happened —
-        // never after an abort, which is thrown above.
-        const response = await withTimeout(requestUrl({
+        // Use one cancellable socket path for completions. Browser fetch/CORS
+        // failure must never cause a second, non-abortable manuscript POST.
+        input.transport.requestControl?.assertActive();
+        if (input.transport.signal?.aborted) throw new Error(LOCAL_LLM_CANCELLED);
+        const response = await requestProvider({
             url,
             method: 'POST',
             headers: buildHeaders(input.transport.apiKey),
             body: JSON.stringify(requestPayload),
             throw: false
-        }), input.transport.timeoutMs, 'Local LLM completion request timed out.');
+        }, {
+            assertActive: () => {
+                input.transport.requestControl?.assertActive();
+                if (input.transport.signal?.aborted) throw new Error(LOCAL_LLM_CANCELLED);
+            },
+            timeoutMs: input.transport.timeoutMs,
+            retryPolicy: { maxAttempts: 1, baseDelayMs: 0 }
+        }, { allowHttp: true, signal: input.transport.signal, maxResponseBytes: COMPLETION_MAX_BYTES });
+        input.transport.requestControl?.assertActive();
+        if (input.transport.signal?.aborted) throw new Error(LOCAL_LLM_CANCELLED);
         return interpret(response.status, response.json);
     } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
+        const message = input.transport.signal?.aborted ? LOCAL_LLM_CANCELLED : error instanceof Error ? error.message : String(error);
         return {
             success: false,
             content: null,

@@ -1,109 +1,55 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { callOpenAiCompatibleLocalCompletion, LOCAL_LLM_CANCELLED } from './transport';
+import { requestProvider } from '../../api/providerTransport';
 
-/**
- * A caller giving up must release its HTTP request. The server may not observe
- * that disconnect until its next write, so higher-level model jobs are also
- * serialized by LocalLlmClient.
- */
-
-const originalFetch = globalThis.fetch;
-
-const jsonResponse = (body: unknown, status = 200) => ({
-    status,
-    body: null,
-    text: () => Promise.resolve(JSON.stringify(body))
-}) as unknown as Response;
+vi.mock('../../api/providerTransport', () => ({ requestProvider: vi.fn() }));
 
 const base = {
     transport: { baseUrl: 'http://localhost:1234/v1', timeoutMs: 5000 },
-    modelId: 'm',
-    userPrompt: 'hi'
+    modelId: 'fixture-model', userPrompt: 'Synthetic fixture only'
 };
-
-beforeEach(() => { vi.useRealTimers(); });
-afterEach(() => { globalThis.fetch = originalFetch; });
-
-describe('local completion abort', () => {
-    it('passes an abort signal to fetch', async () => {
-        let seen: AbortSignal | undefined;
-        globalThis.fetch = vi.fn((_url: unknown, init?: RequestInit) => {
-            seen = init?.signal ?? undefined;
-            return Promise.resolve(jsonResponse({ choices: [{ message: { content: 'ok' } }] }));
-        }) as never;
-
-        const result = await callOpenAiCompatibleLocalCompletion(base);
-
-        expect(result.success).toBe(true);
-        expect(seen).toBeInstanceOf(AbortSignal);
+beforeEach(() => {
+    vi.mocked(requestProvider).mockReset().mockResolvedValue({
+        status: 200, headers: {}, text: '', retryCount: 0,
+        json: { choices: [{ message: { content: 'fixture socket response' } }] }
     });
+});
 
-    it('reports a caller cancel distinctly from a timeout', async () => {
-        const controller = new AbortController();
-        globalThis.fetch = vi.fn((_url: unknown, init?: RequestInit) => new Promise((_res, rej) => {
-            // No DOM element and no Component here, and the stub dies with the test.
-            // SAFE: an AbortSignal cannot be bound by registerDomEvent.
-            init?.signal?.addEventListener('abort', () => rej(new DOMException('Aborted', 'AbortError')));
-        })) as never;
-
-        const pending = callOpenAiCompatibleLocalCompletion({
-            ...base,
-            transport: { ...base.transport, signal: controller.signal }
-        });
-        controller.abort();
-        const result = await pending;
-
-        expect(result.success).toBe(false);
-        expect(result.error).toBe(LOCAL_LLM_CANCELLED);
-    });
-
-    it('never retries through the non-abortable path after a cancel', async () => {
-        // Retrying via requestUrl is exactly how a cancelled request becomes an
-        // orphan again.
-        const controller = new AbortController();
-        const fetchMock = vi.fn((_url: unknown, init?: RequestInit) => new Promise((_res, rej) => {
-            if (init?.signal) {
-                init.signal.onabort = () => rej(new DOMException('Aborted', 'AbortError'));
-            }
-        }));
-        globalThis.fetch = fetchMock as never;
-
-        const pending = callOpenAiCompatibleLocalCompletion({
-            ...base,
-            transport: { ...base.transport, signal: controller.signal }
-        });
-        controller.abort();
-        await pending;
-
-        // One attempt only; the requestUrl mock would have thrown its own error.
-        expect(fetchMock).toHaveBeenCalledTimes(1);
-    });
-
-    it('times out without leaving the request running', async () => {
-        globalThis.fetch = vi.fn((_url: unknown, init?: RequestInit) => new Promise((_res, rej) => {
-            if (init?.signal) {
-                init.signal.onabort = () => rej(new DOMException('Aborted', 'AbortError'));
-            }
-        })) as never;
-
+describe('local completion cancellation boundary', () => {
+    it('does not connect when the caller signal is already aborted', async () => {
+        const controller = new AbortController(); controller.abort();
         const result = await callOpenAiCompatibleLocalCompletion({
-            ...base,
-            transport: { ...base.transport, timeoutMs: 20 }
+            ...base, transport: { ...base.transport, signal: controller.signal }
         });
-
-        expect(result.success).toBe(false);
-        expect(result.error).toContain('timed out');
+        expect(result.error).toBe(LOCAL_LLM_CANCELLED);
+        expect(requestProvider).not.toHaveBeenCalled();
     });
 
-    it('falls back to the CORS-safe path only when the connection never happened', async () => {
-        // A TypeError means fetch could not connect at all — requestUrl may
-        // still manage it. The mock throws, which is enough to prove the
-        // fallback was attempted rather than the abort path taken.
-        globalThis.fetch = vi.fn(() => Promise.reject(new TypeError('Failed to fetch'))) as never;
+    it('preserves the caller signal on the socket request', async () => {
+        const controller = new AbortController();
+        const result = await callOpenAiCompatibleLocalCompletion({
+            ...base, transport: { ...base.transport, signal: controller.signal }
+        });
+        expect(result.success).toBe(true);
+        expect(vi.mocked(requestProvider).mock.calls[0]?.[2]?.signal).toBe(controller.signal);
+    });
 
+    it('does not connect after permission is withdrawn', async () => {
+        const result = await callOpenAiCompatibleLocalCompletion({
+            ...base, transport: { ...base.transport, requestControl: {
+                assertActive: () => { throw new Error('AI request cancelled'); },
+                timeoutMs: 5000, retryPolicy: { maxAttempts: 2, baseDelayMs: 0 }
+            } }
+        });
+        expect(result.error).toBe('AI request cancelled');
+        expect(requestProvider).not.toHaveBeenCalled();
+    });
+
+    it.each(['Fixture completion timed out', 'Fixture response connection lost'])('never resubmits after %s', async message => {
+        vi.mocked(requestProvider).mockRejectedValueOnce(new Error(message));
         const result = await callOpenAiCompatibleLocalCompletion(base);
-
         expect(result.success).toBe(false);
-        expect(result.error).toContain('requestUrl should be mocked');
+        expect(result.error).toBe(message);
+        expect(requestProvider).toHaveBeenCalledOnce();
     });
 });

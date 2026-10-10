@@ -19,6 +19,7 @@ import { normalizeAngleSigned, normalizeAngleUnsigned } from '../../renderer/uti
 import {
     ELAPSED_ARC_RADIUS,
     ELAPSED_TICK_LENGTH,
+    CHRONOLOGUE_BOUNDARY_LINE_SPACING,
     SHIFT_BUTTON_POS_X,
     SHIFT_BUTTON_POS_Y
 } from '../../renderer/layout/LayoutConstants';
@@ -405,19 +406,23 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
                     if (isBoundary) {
                         // Boundary labels keep their multi-line layout
                         // Uses a cleaner adaptive format for boundaries too
-                        const alienLines: string[] = [];
-                        if (profile.epochLabel) alienLines.push(profile.epochLabel);
-                        alienLines.push(`YEAR ${conversion.localYear}`);
-                        alienLines.push(`${monthName} ${conversion.localDayOfMonth}`);
+                        // Use the same two-line extent as Earth boundaries. A
+                        // four-line label either hits the scene title or clips
+                        // above the SVG when moved outside the ring.
+                        const yearLabel = profile.epochLabel
+                            ? `${profile.epochLabel} YEAR ${conversion.localYear}`
+                            : `YEAR ${conversion.localYear}`;
+                        let dateLabel = `${monthName} ${conversion.localDayOfMonth}`;
                         if (includeTimeInLabel(earthLabel)) {
-                            alienLines.push(`${padTime(conversion.localHours)}:${padTime(conversion.localMinutes)}`);
+                            dateLabel += ` ${padTime(conversion.localHours)}:${padTime(conversion.localMinutes)}`;
                         }
+                        const alienLines = [yearLabel, dateLabel];
 
                         while (textPath.firstChild) textPath.removeChild(textPath.firstChild);
                         alienLines.forEach((line, i) => {
                             const tspan = doc.win.createSvg('tspan');
                             tspan.setAttribute('x', '0');
-                            tspan.setAttribute('dy', i === 0 ? '0' : '0.9em');
+                            tspan.setAttribute('dy', i === 0 ? '0' : CHRONOLOGUE_BOUNDARY_LINE_SPACING);
                             tspan.textContent = line;
                             textPath.appendChild(tspan);
                         });
@@ -438,7 +443,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
                         earthLabel.split('\n').forEach((line, i) => {
                             const tspan = doc.win.createSvg('tspan');
                             tspan.setAttribute('x', '0');
-                            tspan.setAttribute('dy', i === 0 ? '0' : '0.9em');
+                            tspan.setAttribute('dy', i === 0 ? '0' : CHRONOLOGUE_BOUNDARY_LINE_SPACING);
                             tspan.textContent = line;
                             textPath.appendChild(tspan);
                         });
@@ -564,7 +569,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
                         earthLabel.split('\n').forEach((line, i) => {
                             const tspan = doc.win.createSvg('tspan');
                             tspan.setAttribute('x', '0');
-                            tspan.setAttribute('dy', i === 0 ? '0' : '0.9em');
+                            tspan.setAttribute('dy', i === 0 ? '0' : CHRONOLOGUE_BOUNDARY_LINE_SPACING);
                             tspan.textContent = line;
                             textPath.appendChild(tspan);
                         });

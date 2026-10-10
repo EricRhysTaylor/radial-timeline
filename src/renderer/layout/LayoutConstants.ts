@@ -14,6 +14,9 @@
 /** Total SVG canvas size (1600px = 800px radius) */
 export const SVG_SIZE = 1600;
 
+/** Boundary date lines need clearance for the 14px glyphs and their 3px outline. */
+export const CHRONOLOGUE_BOUNDARY_LINE_SPACING = '1.6em';
+
 // =============================================================================
 // TIMELINE STATUS ICONS - ICON-CENTERED POSITIONING
 // =============================================================================

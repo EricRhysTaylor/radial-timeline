@@ -13,7 +13,7 @@ import {
     type ChronologueSceneEntry
 } from '../components/ChronologueTimeline';
 import { renderBackdropRing, type BackdropRingLayout } from '../components/BackdropRing';
-import { BACKDROP_RING_HEIGHT } from '../layout/LayoutConstants';
+import { BACKDROP_RING_HEIGHT, CHRONOLOGUE_BOUNDARY_LINE_SPACING } from '../layout/LayoutConstants';
 import {
     renderBackdropMicroRings,
     type BackdropMicroRingLayout,
@@ -233,7 +233,7 @@ export function renderOuterLabelTexts({
         if ((isFirst || isLast) && shortName.includes('\n')) {
             const lines = shortName.split('\n');
             labelContent = lines
-                .map((line, i) => `<tspan x="0" dy="${i === 0 ? 0 : '0.9em'}">${line}</tspan>`)
+                .map((line, i) => `<tspan x="0" dy="${i === 0 ? 0 : CHRONOLOGUE_BOUNDARY_LINE_SPACING}">${line}</tspan>`)
                 .join('');
         }
 

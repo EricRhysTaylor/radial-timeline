@@ -578,6 +578,10 @@ export interface TranslationKeys {
             };
         };
     };
+    ribbon: {
+        openTimeline: string;
+        openInquiry: string;
+    };
     commands: {
         openTimeline: string;
         openInquiry: string;
@@ -3011,6 +3015,10 @@ export const en: TranslationKeys = {
                 press: 'P',
             },
         },
+    },
+    ribbon: {
+        openTimeline: 'Open radial timeline',
+        openInquiry: 'Open radial inquiry',
     },
     commands: {
         openTimeline: 'Open',

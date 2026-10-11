@@ -5,19 +5,23 @@
 //   npm run server:stop     stop the process listening on the endpoint port
 //   npm run server:status   report endpoint, model id, pid, and GPU wired limit
 //
-// The runtime is a hand-maintained script outside the repo (see the
-// 2026-07-11 "Local LLM server setup" run report in Command Center). Nothing
-// restarts it after a reboot, so this command is the one place to bring it up.
-// Missing prerequisites fail loudly — no fallbacks.
+// This file is the single source of truth for which model and flags the server
+// runs. The runtime is mlx-lm installed as a uv tool (`uv tool install mlx-lm
+// --python 3.12`), weights in the Hugging Face cache — see the Command Center
+// "Mac migration runbook". Nothing restarts the server after a reboot, so this
+// command is the one place to bring it up. Missing prerequisites fail loudly —
+// no fallbacks.
 
 import { spawn, execFileSync } from 'node:child_process';
-import { existsSync, openSync } from 'node:fs';
+import { existsSync, mkdirSync, openSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
-const MLX_DIR = join(homedir(), '.local', 'share', 'mlx-lm');
-const START_SCRIPT = join(MLX_DIR, 'start-server.sh');
-const LOG_FILE = join(MLX_DIR, 'server.log');
+const MLX_SERVER = join(homedir(), '.local', 'bin', 'mlx_lm.server');
+const MODEL_REPO = 'mlx-community/Qwen3-Next-80B-A3B-Instruct-4bit';
+const MODEL_SNAPSHOTS = join(homedir(), '.cache', 'huggingface', 'hub', `models--${MODEL_REPO.replace('/', '--')}`, 'snapshots');
+const LOG_DIR = join(homedir(), '.local', 'share', 'mlx-lm');
+const LOG_FILE = join(LOG_DIR, 'server.log');
 const PORT = 8080;
 const BASE_URL = `http://localhost:${PORT}/v1`;
 const REQUIRED_WIRED_LIMIT_MB = 57344;
@@ -80,7 +84,7 @@ function checkWiredLimit() {
   }
   if (limit < REQUIRED_WIRED_LIMIT_MB) {
     console.log(yellow(`⚠ iogpu.wired_limit_mb is ${limit}; the 80B model expects ${REQUIRED_WIRED_LIMIT_MB}.`));
-    console.log(yellow(`  The com.radialtimeline.wiredlimit LaunchDaemon should set this at boot. Manual fix:`));
+    console.log(yellow(`  The setting resets on every reboot. Re-apply it with:`));
     console.log(yellow(`  sudo sysctl iogpu.wired_limit_mb=${REQUIRED_WIRED_LIMIT_MB}`));
   } else {
     console.log(`  GPU wired limit: ${limit} MB`);
@@ -143,16 +147,20 @@ async function start() {
 
   const holder = listenerPid();
   if (holder) fail(`Port ${PORT} is held by pid ${holder} (${processCommand(holder)}) but it is not answering /v1/models. Stop it first.`);
-  if (!existsSync(START_SCRIPT)) fail(`Start script not found: ${START_SCRIPT}\n  This command only works on the Mac Studio with the mlx-lm venv installed.`);
+  if (!existsSync(MLX_SERVER)) fail(`mlx_lm.server not found: ${MLX_SERVER}\n  Install it with: uv tool install mlx-lm --python 3.12`);
+  if (!existsSync(MODEL_SNAPSHOTS)) fail(`Model weights not found: ${MODEL_SNAPSHOTS}\n  Download ${MODEL_REPO} into the Hugging Face cache first.`);
 
   checkWiredLimit();
-  console.log(`  Launching ${START_SCRIPT}`);
+  console.log(`  Launching ${MLX_SERVER} --model ${MODEL_REPO}`);
   console.log(`  Log → ${LOG_FILE}`);
 
+  mkdirSync(LOG_DIR, { recursive: true });
   const logFd = openSync(LOG_FILE, 'w');
-  const child = spawn(START_SCRIPT, [], {
+  // Offline: the weights are already cached; never reach the network at load.
+  const child = spawn(MLX_SERVER, ['--model', MODEL_REPO, '--host', '127.0.0.1', '--port', String(PORT)], {
     detached: true,
     stdio: ['ignore', logFd, logFd],
+    env: { ...process.env, HF_HUB_OFFLINE: '1' },
   });
   child.unref();
 

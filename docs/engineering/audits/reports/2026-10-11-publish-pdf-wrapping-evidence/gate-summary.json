@@ -1,0 +1,100 @@
+{
+  "ok": true,
+  "generatedAt": "2026-10-11T22:22:20.466Z",
+  "steps": [
+    {
+      "id": "model-drift",
+      "label": "AI model drift",
+      "status": "PASS",
+      "durationMs": 45.914042
+    },
+    {
+      "id": "api-features",
+      "label": "API feature audit",
+      "status": "PASS",
+      "durationMs": 263.1225
+    },
+    {
+      "id": "model-coverage",
+      "label": "Model coverage",
+      "status": "PASS",
+      "durationMs": 33.30666600000001
+    },
+    {
+      "id": "css-duplicates-pre",
+      "label": "CSS duplicates",
+      "status": "PASS",
+      "durationMs": 55.85841599999998
+    },
+    {
+      "id": "shipped-assets",
+      "label": "Shipped assets",
+      "status": "PASS",
+      "durationMs": 41.96579099999997
+    },
+    {
+      "id": "build",
+      "label": "Production build",
+      "status": "PASS",
+      "durationMs": 9588.95275
+    },
+    {
+      "id": "quality",
+      "label": "Code quality",
+      "status": "PASS",
+      "durationMs": 282.9460829999989
+    },
+    {
+      "id": "obsidian-review",
+      "label": "Obsidian review",
+      "status": "PASS",
+      "durationMs": 445.17062500000065
+    },
+    {
+      "id": "lint-obsidian-enforced",
+      "label": "Obsidian lint baseline",
+      "status": "PASS",
+      "durationMs": 9625.957666000002
+    },
+    {
+      "id": "lint-obsidian",
+      "label": "Obsidian lint (report-only)",
+      "status": "PASS",
+      "durationMs": 17666.809542
+    },
+    {
+      "id": "css-drift",
+      "label": "CSS drift",
+      "status": "PASS",
+      "durationMs": 302.0520000000033
+    },
+    {
+      "id": "unused-css",
+      "label": "Unused CSS ratchet",
+      "status": "PASS",
+      "durationMs": 10540.424375000002
+    },
+    {
+      "id": "compliance",
+      "label": "Compliance",
+      "status": "PASS",
+      "durationMs": 1810.721792000004
+    },
+    {
+      "id": "spec-coverage",
+      "label": "Spec coverage",
+      "status": "PASS",
+      "durationMs": 198.77833300000202
+    },
+    {
+      "id": "tests",
+      "label": "Unit tests",
+      "status": "PASS",
+      "durationMs": 9093.030625
+    }
+  ],
+  "testsPassed": 4253,
+  "testsSkipped": 17,
+  "liveRenderTestsPassed": 9,
+  "targetedTestsPassed": 102
+}

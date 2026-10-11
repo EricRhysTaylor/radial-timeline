@@ -1194,6 +1194,12 @@ export function getAutoPdfEngineSelection(templatePath?: string): PdfEngineSelec
     return selectPdfEngine(available, templateNeedsUnicodeEngine(templatePath));
 }
 
+// Typesetting only: preserve literal source text while allowing long lines and
+// highlighted tokens to wrap. Author-supplied preamble follows these defaults.
+const PDF_LITERAL_BLOCK_HEADER = String.raw`\usepackage{fvextra}
+\fvset{formatcom={\hyphenpenalty=50\exhyphenpenalty=50},breaklines=true,breakanywhere=true,breaknonspaceingroup=true,breaksymbolleft={},breaksymbolright={},breakanywheresymbolpre={},breakanywheresymbolpost={}}
+\DefineVerbatimEnvironment{verbatim}{Verbatim}{}`;
+
 export async function runPandocOnContent(
     content: string,
     outputAbsolutePath: string,
@@ -1209,13 +1215,14 @@ export async function runPandocOnContent(
         const preparedContent = preparePandocContent(content, options);
         await fs.promises.writeFile(tmpInput, preparedContent, 'utf8');
 
-        // Optional preamble injection (PDF only): binding gutter + Pro custom LaTeX.
+        // PDF defaults, then opt-in binding gutter and Pro custom LaTeX.
         // Written to its own temp file so `--include-in-header` can reference it, and
         // cleaned up alongside the markdown temp file in the finally block.
         let tmpHeader: string | null = null;
-        if (isPdf && options.headerIncludes && options.headerIncludes.trim()) {
+        if (isPdf) {
             tmpHeader = path.join(tmpDir, 'header.tex');
-            await fs.promises.writeFile(tmpHeader, options.headerIncludes, 'utf8');
+            const header = [PDF_LITERAL_BLOCK_HEADER, options.headerIncludes?.trim()].filter(Boolean).join('\n');
+            await fs.promises.writeFile(tmpHeader, header, 'utf8');
         }
 
         let tmpFilter: string | null = null;

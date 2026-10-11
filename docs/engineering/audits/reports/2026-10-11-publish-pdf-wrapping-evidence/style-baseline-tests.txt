@@ -1,0 +1,7 @@
+npm notice run radial-timeline@7.4.0 publish:pdf-visual
+npm notice run tsx scripts/publishing-pdf-qa.ts --visual --output /tmp/rt-full-manuscript-qa/wrapping-styles --keep-output
+✓ standard-manuscript: 2 pages
+✓ contemporary-literary: 7 pages
+✓ signature-literary: 2 pages
+✓ modern-classic: 7 pages
+Publishing PDF QA passed. Artifacts: /tmp/rt-full-manuscript-qa/wrapping-styles

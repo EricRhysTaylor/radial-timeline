@@ -1,0 +1,19 @@
+npm notice run radial-timeline@7.4.0 npx
+npm notice run 'vitest' run src/utils/pandocOutput.integration.test.ts
+
+ RUN  v4.0.16 /Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/radial-timeline
+
+ ✓ src/utils/pandocOutput.integration.test.ts (9 tests) 6643ms
+     ✓ produces a PDF whose prose can be read by Poppler  1141ms
+     ✓ keeps literal text inside the page in default  708ms
+     ✓ keeps literal text inside the page in bundled-fiction-classic-manuscript  802ms
+     ✓ keeps literal text inside the page in bundled-fiction-contemporary-literary  758ms
+     ✓ keeps literal text inside the page in bundled-fiction-signature-literary  745ms
+     ✓ keeps literal text inside the page in bundled-fiction-modern-classic  727ms
+     ✓ keeps literal text inside the page in bundled-screenplay  725ms
+     ✓ keeps literal text inside the page in bundled-podcast  791ms
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  15:21:19
+   Duration  7.04s (transform 273ms, setup 15ms, import 316ms, tests 6.64s, environment 0ms)

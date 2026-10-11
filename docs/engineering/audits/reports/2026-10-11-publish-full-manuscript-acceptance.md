@@ -1,5 +1,7 @@
 # Full-manuscript export acceptance
 
+Follow-up: the approved wrapping fix and full rerun now pass. See [PDF wrapping remediation and final acceptance](2026-10-11-publish-pdf-wrapping.md). The initial failure evidence below remains historical.
+
 Date: October 11, 2026. Product baseline: `7b4b5df3`, Obsidian 1.14.4 on macOS. **Overall result: not accepted for PDF delivery.** The full run exposes visible clipping of long literal lines. Markdown and Word preserve the complete manuscript in this bounded run; saved-source loading, proof pagination, split membership, destination handling and structural delivery checks work at novel scale.
 
 ## Source and acceptance scope

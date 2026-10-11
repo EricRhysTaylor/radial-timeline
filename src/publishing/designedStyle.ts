@@ -18,6 +18,7 @@
 import type { ManuscriptSceneHeadingMode } from '../utils/manuscript';
 import type { FictionLayoutVariant } from './layoutVisuals';
 import {
+    PANDOC_HIGHLIGHTING_TEMPLATE,
     renderBodySetup,
     renderChapterTitle,
     renderEpigraphMacros,
@@ -322,6 +323,8 @@ export function generateDesignedStyleTex(
     // template, header content (binding gutter geometry, Pro custom preamble) is
     // silently dropped by Pandoc. Emitted last so injected LaTeX can override any
     // generated preamble setting — that is the contract: user preamble wins.
+    sections.push('');
+    sections.push(PANDOC_HIGHLIGHTING_TEMPLATE);
     sections.push('');
     sections.push('$for(header-includes)$');
     sections.push('$header-includes$');

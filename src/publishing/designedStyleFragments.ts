@@ -61,6 +61,10 @@ const DOC_PREAMBLE_LINES = [
     '}',
 ];
 
+// Pandoc supplies the Highlighting/Shaded environments and token macros only
+// when the manuscript contains a fenced block with a recognized language.
+export const PANDOC_HIGHLIGHTING_TEMPLATE = '$if(highlighting-macros)$\n$highlighting-macros$\n$endif$';
+
 const PACKAGES = [
     '\\usepackage{fontspec}',
     '\\usepackage{fancyhdr}',

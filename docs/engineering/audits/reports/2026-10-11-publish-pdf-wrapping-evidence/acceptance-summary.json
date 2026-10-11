@@ -1,0 +1,88 @@
+{
+  "source": {
+    "notes": 61,
+    "words": 121754,
+    "all_hashes_unchanged": true
+  },
+  "markdown": {
+    "exact_source_body_match": true
+  },
+  "word": {
+    "normalized_body_matches": true,
+    "changed_package_parts_since_previous_visual_review": [
+      "docProps/core.xml"
+    ]
+  },
+  "pdf": {
+    "path": "QA Full Manuscript Acceptance/Wrapped Final/PDF/Pride and Prejudice QA PDF Oct 11 @ 3.27PM [BA].pdf",
+    "pages": 433,
+    "words_outside_page": 0,
+    "chapters": 61,
+    "first_chapter": "I",
+    "last_chapter": "LXI",
+    "normalized_full_source_matches": true
+  },
+  "split": {
+    "parts": [
+      {
+        "path": "QA Full Manuscript Acceptance/Wrapped Final/Split PDF/Pride and Prejudice QA - Split 2026-10-11T22-31-54-563Z/Pride and Prejudice QA - Part 1.pdf",
+        "pages": 134,
+        "words_outside_page": 0,
+        "chapters": 21,
+        "first_chapter": "I",
+        "last_chapter": "XXI"
+      },
+      {
+        "path": "QA Full Manuscript Acceptance/Wrapped Final/Split PDF/Pride and Prejudice QA - Split 2026-10-11T22-31-54-563Z/Pride and Prejudice QA - Part 2.pdf",
+        "pages": 124,
+        "words_outside_page": 0,
+        "chapters": 20,
+        "first_chapter": "XXII",
+        "last_chapter": "XLI"
+      },
+      {
+        "path": "QA Full Manuscript Acceptance/Wrapped Final/Split PDF/Pride and Prejudice QA - Split 2026-10-11T22-31-54-563Z/Pride and Prejudice QA - Part 3.pdf",
+        "pages": 176,
+        "words_outside_page": 0,
+        "chapters": 20,
+        "first_chapter": "XLII",
+        "last_chapter": "LXI"
+      }
+    ],
+    "normalized_full_source_matches": true
+  },
+  "receipts": [
+    {
+      "format": "markdown",
+      "expectedFiles": 1,
+      "expectedWorkingFiles": 0,
+      "problems": [],
+      "all_hashes_match": true,
+      "source_paths_match": true
+    },
+    {
+      "format": "docx",
+      "expectedFiles": 1,
+      "expectedWorkingFiles": 0,
+      "problems": [],
+      "all_hashes_match": true,
+      "source_paths_match": true
+    },
+    {
+      "format": "pdf",
+      "expectedFiles": 1,
+      "expectedWorkingFiles": 2,
+      "problems": [],
+      "all_hashes_match": true,
+      "source_paths_match": true
+    },
+    {
+      "format": "pdf",
+      "expectedFiles": 3,
+      "expectedWorkingFiles": 6,
+      "problems": [],
+      "all_hashes_match": true,
+      "source_paths_match": true
+    }
+  ]
+}

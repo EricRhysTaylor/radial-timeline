@@ -5,6 +5,7 @@ import type RadialTimelinePlugin from '../main';
 import type { HotfixHistoryEntry, PandocLayoutTemplate } from '../types';
 import { getPandocLayoutSortRank } from '../publishing/templateTiering';
 import { generateDesignedStyleTex, migrateDesignedStyleSpec } from '../publishing/designedStyle';
+import { PANDOC_HIGHLIGHTING_TEMPLATE } from '../publishing/designedStyleFragments';
 import { BUNDLED_FICTION_SPECS, type BundledFictionId } from '../publishing/bundledStyleSpecs';
 import { getPandocFolder } from './exportFormats';
 import { getEmbeddedAssetBytes, getEmbeddedAssetByteLength, type EmbeddedAssetKey } from './embeddedAssets';
@@ -121,6 +122,7 @@ const BUNDLED_PANDOC_LAYOUT_TEMPLATES: BundledPandocLayoutTemplate[] = [
             '\\exhyphenpenalty=10000',
             '',
             '% Pandoc --include-in-header injection point (custom preamble, gutter)',
+            PANDOC_HIGHLIGHTING_TEMPLATE,
             '$for(header-includes)$',
             '$header-includes$',
             '$endfor$',
@@ -161,6 +163,7 @@ const BUNDLED_PANDOC_LAYOUT_TEMPLATES: BundledPandocLayoutTemplate[] = [
             '\\setlength{\\parskip}{8pt}',
             '',
             '% Pandoc --include-in-header injection point (custom preamble, gutter)',
+            PANDOC_HIGHLIGHTING_TEMPLATE,
             '$for(header-includes)$',
             '$header-includes$',
             '$endfor$',

@@ -1,0 +1,20 @@
+																		436 row (selected)    <div class=​"ert-manuscript-pill-row"> ​ Expand …​ </div> ​ Enable flex mode
+																700 row CSS property name: box-sizing CSS property value: border-box
+																706 row CSS property name: caret-color CSS property value: rgb(218, 218, 218)
+																712 row CSS property name: color CSS property value: rgb(218, 218, 218)
+																718 row CSS property name: color-scheme CSS property value: dark
+																724 row CSS property name: column-gap CSS property value: 8px
+																730 row CSS property name: display CSS property value: flex
+																736 row CSS property name: flex-wrap CSS property value: wrap
+																742 row CSS property name: font-family CSS property value: "??", "??", "??", ui-sans-serif, -apple-system, "system-ui", system-ui, "Segoe UI", "Google Sans Flex", Roboto, "Inter Variable", Inter, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif
+																778 row CSS property name: font-size CSS property value: 15px
+																784 row CSS property name: height CSS property value: 30px
+																790 row CSS property name: line-height CSS property value: 19.5px
+																796 row CSS property name: row-gap CSS property value: 8px
+																802 row CSS property name: scrollbar-color CSS property value: rgb(128, 128, 128) rgba(0, 0, 0, 0)
+																809 row CSS property name: scrollbar-width CSS property value: auto
+																815 row CSS property name: text-rendering CSS property value: optimizelegibility
+																821 row CSS property name: unicode-bidi CSS property value: isolate
+																827 row CSS property name: user-select CSS property value: none
+																833 row CSS property name: width CSS property value: 610px
+																839 row CSS property name: -webkit-tap-highlight-color CSS property value: rgba(255, 255, 255, 0)

@@ -10,11 +10,8 @@ import { TFile, TFolder, type App } from 'obsidian';
 import type { ManuscriptSceneSelection } from './manuscript';
 import { isPathInFolderScope } from './pathScope';
 import { ExportFailure } from './exportErrors';
-
-/** In-session source choice. It never creates or modifies manuscript YAML. */
-export type ManuscriptSource =
-    | { kind: 'book'; bookId: string }
-    | { kind: 'folder' | 'file'; path: string; paths: string[]; title: string; author: string };
+import type { ManuscriptSource } from '../types';
+export type { ManuscriptSource } from '../types';
 
 export function getManuscriptSourceFiles(app: App, kind: 'folder' | 'file', sourcePath: string): TFile[] {
     const entry = app.vault.getAbstractFileByPath(sourcePath);

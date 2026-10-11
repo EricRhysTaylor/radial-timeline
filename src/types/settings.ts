@@ -5,6 +5,19 @@ import type { GossamerRunTiming } from '../gossamer/runTiming';
 
 export type AiContextTemplate = AIRoleTemplate;
 
+/** Export identity and author-reviewed note membership; never stored in scene YAML. */
+export type ManuscriptSource =
+    | { kind: 'book'; bookId: string }
+    | { kind: 'folder' | 'file'; path: string; paths: string[]; title: string; author: string };
+
+export interface SavedManuscriptSource {
+    schemaVersion: 1;
+    id: string;
+    name: string;
+    source: Exclude<ManuscriptSource, { kind: 'book' }>;
+    candidatePaths: string[];
+}
+
 export interface BookDesignerSceneAssignment {
     sceneNumber: number;
     act: number;
@@ -1236,6 +1249,8 @@ export interface RadialTimelineSettings {
     };
     bookDesignerTemplates?: BookDesignerTemplate[];
     exportProfiles?: ExportProfile[];
+    savedManuscriptSources?: SavedManuscriptSource[];
+    lastUsedManuscriptSourceId?: string;
     bookPublishingPreferences?: BookPublishingPreferences[];
     lastUsedExportProfileId?: string;
     /** @deprecated Use backdropYamlTemplates instead. Kept for migration. */

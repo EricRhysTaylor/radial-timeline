@@ -1,0 +1,21 @@
+																	349 row (selected)    <div class=​"ert-row ert-manuscript-source-book-row"> ​ Expand …​ </div> ​ Enable flex mode
+																614 row CSS property name: align-items CSS property value: center
+																620 row CSS property name: box-sizing CSS property value: border-box
+																626 row CSS property name: caret-color CSS property value: rgb(218, 218, 218)
+																632 row CSS property name: color CSS property value: rgb(218, 218, 218)
+																638 row CSS property name: color-scheme CSS property value: dark
+																644 row CSS property name: column-gap CSS property value: 8px
+																650 row CSS property name: display CSS property value: flex
+																656 row CSS property name: flex-wrap CSS property value: wrap
+																662 row CSS property name: font-family CSS property value: "??", "??", "??", ui-sans-serif, -apple-system, "system-ui", system-ui, "Segoe UI", "Google Sans Flex", Roboto, "Inter Variable", Inter, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif
+																698 row CSS property name: font-size CSS property value: 15px
+																704 row CSS property name: height CSS property value: 30px
+																710 row CSS property name: line-height CSS property value: 19.5px
+																716 row CSS property name: row-gap CSS property value: 8px
+																722 row CSS property name: scrollbar-color CSS property value: rgb(128, 128, 128) rgba(0, 0, 0, 0)
+																729 row CSS property name: scrollbar-width CSS property value: auto
+																735 row CSS property name: text-rendering CSS property value: optimizelegibility
+																741 row CSS property name: unicode-bidi CSS property value: isolate
+																747 row CSS property name: user-select CSS property value: none
+																753 row CSS property name: width CSS property value: 610px
+																759 row CSS property name: -webkit-tap-highlight-color CSS property value: rgba(255, 255, 255, 0)

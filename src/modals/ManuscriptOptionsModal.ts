@@ -11,6 +11,8 @@ import { getManuscriptSourceFiles, getReviewedManuscriptSelection, type Manuscri
 import { countWords } from '../utils/text';
 import { getManuscriptProofConfigurationKey, getManuscriptProofStaleReason, type ManuscriptProofReceipt } from '../publishing/manuscriptProof';
 import { ManuscriptProofPreview } from '../publishing/ManuscriptProofPreview';
+import { readSavedManuscripts, restoreSavedManuscript, saveManuscriptRecord } from '../publishing/savedManuscripts';
+import { randomUUID } from 'crypto'; // SAFE: local saved manuscript identities, never credentials.
 import { clearFontAvailabilityCache, ExportFormat, ExportType, ManuscriptPreset, OutlinePreset, getAutoPdfEngineSelection, resolveTemplatePath, validatePandocLayout, getTemplateFontDiagnostics, getStructuredFontDiagnostic } from '../utils/exportFormats';
 import { ensureBundledLayoutInstalledForExport } from '../utils/pandocBundledLayouts';
 import { getActiveBook, DEFAULT_BOOK_TITLE } from '../utils/books';
@@ -52,6 +54,7 @@ import type {
     PandocLayoutTemplate,
     PublishingValidationSnapshot,
     TemplateProfile,
+    SavedManuscriptSource,
 } from '../types';
 
 const OPEN_SCENES_FILTER = '__open_scenes__';
@@ -174,11 +177,11 @@ class SaveExportTemplateModal extends Modal {
     }
 }
 
-class DeleteExportTemplateModal extends Modal {
+class DeletePublishingItemModal extends Modal {
     private readonly templateName: string;
     private readonly onConfirm: () => void;
 
-    constructor(app: App, templateName: string, onConfirm: () => void) {
+    constructor(app: App, templateName: string, onConfirm: () => void, private readonly itemLabel: 'export preset' | 'saved manuscript' = 'export preset') {
         super(app);
         this.templateName = templateName;
         this.onConfirm = onConfirm;
@@ -195,8 +198,8 @@ class DeleteExportTemplateModal extends Modal {
         contentEl.addClass('ert-modal-container', 'ert-stack', 'ert-template-dialog');
 
         const hero = contentEl.createDiv({ cls: 'ert-modal-header' });
-        hero.createDiv({ cls: 'ert-modal-title', text: 'Delete export preset' });
-        hero.createDiv({ cls: 'ert-modal-subtitle', text: `Delete "${this.templateName}"? This cannot be undone.` });
+        hero.createDiv({ cls: 'ert-modal-title', text: `Delete ${this.itemLabel}` });
+        hero.createDiv({ cls: 'ert-modal-subtitle', text: `Delete "${this.templateName}"? This cannot be undone.${this.itemLabel === 'saved manuscript' ? ' Your manuscript notes stay unchanged.' : ''}` });
 
         const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
         new ButtonComponent(actions)
@@ -230,6 +233,16 @@ export class ManuscriptOptionsModal extends Modal {
     private readonly plugin: RadialTimelinePlugin;
     private source?: ManuscriptSource;
     private sourceCard?: HTMLElement;
+    private savedManuscripts: SavedManuscriptSource[] = [];
+    private savedSourceId?: string;
+    private savedSourceName = '';
+    private savedSourceNotice = '';
+    private savedSourceNoticeEl?: HTMLElement;
+    private savedSourceStorageError: string | null = null;
+    private sourceSaving = false;
+    private sourceReviewButton?: ButtonComponent;
+    private sourceSaveButton?: ButtonComponent;
+    private sourceSaveAsButton?: ButtonComponent;
     private controlsEl?: HTMLElement;
     private proofPane?: HTMLElement;
     private proofStatusEl?: HTMLElement;
@@ -257,6 +270,7 @@ export class ManuscriptOptionsModal extends Modal {
     private sourceLoadId = 0;
     private sourceLoading = false;
     private sourceError: string | null = null;
+    private sourceErrorEl?: HTMLElement;
     private readonly onSubmit: (result: ManuscriptModalResult) => Promise<ManuscriptExportOutcome>;
 
     private order: ManuscriptOrder = 'narrative';
@@ -482,6 +496,11 @@ export class ManuscriptOptionsModal extends Modal {
         this.onSubmit = onSubmit;
         const book = getActiveBook(plugin.settings);
         if (book) this.source = { kind: 'book', bookId: book.id };
+        try {
+            this.savedManuscripts = readSavedManuscripts(plugin.settings.savedManuscriptSources);
+        } catch (error) {
+            this.savedSourceStorageError = error instanceof Error ? error.message : 'Saved manuscripts could not be loaded.';
+        }
     }
 
     async onOpen(): Promise<void> {
@@ -491,6 +510,8 @@ export class ManuscriptOptionsModal extends Modal {
         clearFontAvailabilityCache();
         const { contentEl, modalEl } = this;
         contentEl.empty();
+        const lastSource = this.savedManuscripts.find(record => record.id === this.plugin.settings.lastUsedManuscriptSourceId);
+        if (lastSource) this.restoreSavedSourceState(lastSource);
         const sourceFolder = this.getSourceBook()?.sourceFolder || "";
         this.openScenePathsSnapshot = new Set(
             [...this.plugin.openScenePaths].filter(p =>
@@ -616,7 +637,7 @@ export class ManuscriptOptionsModal extends Modal {
             : 'No proof generated yet.');
         if (this.proofReceipt?.notices.length) this.proofStatusEl?.appendText(` ${this.proofReceipt.notices.join(' ')}`);
         this.proofButton?.setButtonText(this.proofReceipt ? 'Refresh proof' : 'Generate proof');
-        this.proofButton?.setDisabled(!enabled || this.exportBlocked || this.proofLoading || this.exportInFlight || this.sourceLoading || !!this.sourceError || !this.sourceReviewed || !this.isSplitSelectionValid() || this.totalScenes === 0);
+        this.proofButton?.setDisabled(!enabled || this.exportBlocked || this.proofLoading || this.exportInFlight || this.sourceLoading || this.sourceSaving || !!this.sourceError || !this.sourceReviewed || !this.isSplitSelectionValid() || this.totalScenes === 0);
         this.proofOpenButton?.setDisabled(!this.proofReceipt || this.proofLoading);
         this.proofFileRow?.toggleClass('ert-hidden', !this.proofReceipt || this.proofReceipt.renderedPaths.length <= 1);
         this.proofFileDropdown?.setDisabled(this.proofLoading);
@@ -637,7 +658,7 @@ export class ManuscriptOptionsModal extends Modal {
     }
 
     private async generateProof(): Promise<void> {
-        if (this.proofLoading || this.exportInFlight || this.exportBlocked || this.sourceLoading || this.sourceError || !this.sourceReviewed || !this.isSplitSelectionValid() || this.outputFormat !== 'pdf') return;
+        if (this.proofLoading || this.exportInFlight || this.exportBlocked || this.sourceLoading || this.sourceSaving || this.sourceError || !this.sourceReviewed || !this.isSplitSelectionValid() || this.outputFormat !== 'pdf') return;
         const epoch = ++this.proofEpoch;
         this.proofLoading = true;
         if (this.controlsEl) this.controlsEl.inert = true;
@@ -741,12 +762,141 @@ export class ManuscriptOptionsModal extends Modal {
             : this.getSourceBook()?.title || DEFAULT_BOOK_TITLE;
     }
 
+    private restoreSavedSourceState(record: SavedManuscriptSource): void {
+        this.savedSourceId = record.id;
+        this.savedSourceName = record.name;
+        this.source = structuredClone(record.source);
+        this.sourceCandidates = [...record.candidatePaths];
+        this.order = 'narrative';
+        this.subplot = 'All Subplots';
+        this.exportType = 'manuscript';
+        this.sourceReviewed = false;
+        try {
+            const restored = restoreSavedManuscript(this.app, record);
+            this.source = restored.source;
+            this.sourceCandidates = restored.candidatePaths;
+            this.sourceReviewed = restored.addedPaths.length === 0 && restored.missingPaths.length === 0;
+            this.savedSourceNotice = restored.addedPaths.length || restored.missingPaths.length
+                ? `${countLabel(restored.addedPaths.length, 'new note')} excluded; ${countLabel(restored.missingPaths.length, 'saved path')} missing. Review the contents before exporting.`
+                : 'Saved selection loaded. Use Update to save any changes.';
+        } catch (error) {
+            this.savedSourceNotice = error instanceof Error ? error.message : 'Saved manuscript source is unavailable.';
+        }
+    }
+
+    private async loadSavedSource(id: string): Promise<void> {
+        const record = this.savedManuscripts.find(item => item.id === id);
+        if (!record) return;
+        this.restoreSavedSourceState(record);
+        this.renderSourceCard();
+        const loadId = this.sourceLoadId + 1;
+        await this.loadScenesForOrder();
+        if (loadId !== this.sourceLoadId) return;
+        this.plugin.settings.lastUsedManuscriptSourceId = id;
+        try { await this.plugin.saveSettings(); }
+        catch (error) { new Notice(`Could not remember this manuscript: ${error instanceof Error ? error.message : String(error)}`); }
+    }
+
+    private clearSavedSourceSelection(): void {
+        this.savedSourceId = undefined;
+        this.savedSourceName = '';
+        this.savedSourceNotice = '';
+        this.plugin.settings.lastUsedManuscriptSourceId = undefined;
+        void this.plugin.saveSettings().catch(error => new Notice(`Could not remember the source choice: ${error instanceof Error ? error.message : String(error)}`));
+    }
+
+    private async saveSource(asNew: boolean): Promise<void> {
+        const source = this.source;
+        if (!source || source.kind === 'book' || this.sourceSaving || this.sourceLoading || this.sourceError || !this.sourceReviewed || this.savedSourceStorageError) return;
+        this.sourceSaving = true;
+        if (this.sourceCard) this.sourceCard.inert = true;
+        this.updateActionButtonDisabledState();
+        this.updateProofUi();
+        const previousRecords = this.plugin.settings.savedManuscriptSources;
+        const previousLast = this.plugin.settings.lastUsedManuscriptSourceId;
+        try {
+            if (this.plugin.isSettingsPersistenceBlocked()) throw new Error('Saved manuscripts cannot be written while plugin settings are unreadable. Repair settings and reload Obsidian.');
+            getReviewedManuscriptSelection(this.app, source);
+            const name = this.savedSourceName.trim();
+            if (!name) throw new Error('Enter a saved manuscript name.');
+            const id = !asNew && this.savedSourceId ? this.savedSourceId : randomUUID();
+            const record: SavedManuscriptSource = { schemaVersion: 1, id, name, source: structuredClone(source), candidatePaths: [...this.sourceCandidates] };
+            const records = saveManuscriptRecord(readSavedManuscripts(previousRecords), record, !asNew && !!this.savedSourceId);
+            this.plugin.settings.savedManuscriptSources = records;
+            this.plugin.settings.lastUsedManuscriptSourceId = id;
+            try { await this.plugin.saveSettings(); }
+            catch (error) {
+                if (this.plugin.settings.savedManuscriptSources === records) this.plugin.settings.savedManuscriptSources = previousRecords;
+                if (this.plugin.settings.lastUsedManuscriptSourceId === id) this.plugin.settings.lastUsedManuscriptSourceId = previousLast;
+                throw error;
+            }
+            this.savedManuscripts = records;
+            this.savedSourceId = id;
+            this.savedSourceName = name;
+            this.savedSourceNotice = 'Manuscript source, metadata, selection and order saved.';
+            new Notice(`Saved manuscript "${name}".`);
+        } catch (error) {
+            new Notice(error instanceof Error ? error.message : 'Could not save this manuscript.');
+        } finally {
+            this.sourceSaving = false;
+            if (this.sourceCard) this.sourceCard.inert = false;
+            if (!this.proofClosed) { this.renderSourceCard(); this.syncExportUi(); }
+        }
+    }
+
+    private async deleteSavedSource(id: string): Promise<void> {
+        if (this.sourceSaving) return;
+        this.sourceSaving = true;
+        if (this.sourceCard) this.sourceCard.inert = true;
+        this.updateActionButtonDisabledState();
+        this.updateProofUi();
+        const previousRecords = this.plugin.settings.savedManuscriptSources;
+        const previousLast = this.plugin.settings.lastUsedManuscriptSourceId;
+        try {
+            if (this.plugin.isSettingsPersistenceBlocked()) throw new Error('Saved manuscripts cannot be removed while plugin settings are unreadable.');
+            const records = readSavedManuscripts(previousRecords).filter(record => record.id !== id);
+            this.plugin.settings.savedManuscriptSources = records;
+            if (previousLast === id) this.plugin.settings.lastUsedManuscriptSourceId = undefined;
+            try { await this.plugin.saveSettings(); }
+            catch (error) {
+                if (this.plugin.settings.savedManuscriptSources === records) {
+                    this.plugin.settings.savedManuscriptSources = previousRecords;
+                    if (this.plugin.settings.lastUsedManuscriptSourceId === undefined) this.plugin.settings.lastUsedManuscriptSourceId = previousLast;
+                }
+                throw error;
+            }
+            this.savedManuscripts = records;
+            if (this.savedSourceId === id) { this.savedSourceId = undefined; this.savedSourceNotice = 'Saved manuscript removed. Your source notes are unchanged.'; }
+        } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not remove this saved manuscript.'); }
+        finally { this.sourceSaving = false; if (this.sourceCard) this.sourceCard.inert = false; if (!this.proofClosed) { this.renderSourceCard(); this.syncExportUi(); } }
+    }
+
+    private updateSourceActions(): void {
+        this.sourceErrorEl?.toggleClass('ert-hidden', !this.sourceError);
+        this.sourceErrorEl?.setText(this.sourceError || '');
+        const source = this.source;
+        const unavailable = this.sourceSaving || this.sourceLoading || !!this.sourceError;
+        this.sourceReviewButton?.setDisabled(unavailable || this.sourceReviewed || !source || source.kind === 'book' || source.paths.length === 0);
+        const saveBlocked = unavailable || !this.sourceReviewed || !!this.savedSourceStorageError || this.plugin.isSettingsPersistenceBlocked() || !this.savedSourceName.trim() || !source || source.kind === 'book' || source.paths.length === 0;
+        this.sourceSaveButton?.setDisabled(saveBlocked);
+        this.sourceSaveAsButton?.setDisabled(saveBlocked);
+    }
+
+    private markSourceChanged(): void {
+        if (!this.savedSourceId) return;
+        this.savedSourceNotice = 'Unsaved changes. Use Update to save this manuscript selection.';
+        this.savedSourceNoticeEl?.setText(this.savedSourceNotice);
+    }
+
     private async chooseSource(kind: 'folder' | 'file', sourcePath: string): Promise<void> {
         try {
             const files = getManuscriptSourceFiles(this.app, kind, sourcePath);
             const entry = this.app.vault.getAbstractFileByPath(sourcePath);
             this.source = { kind, path: sourcePath, paths: files.map(file => file.path), title: entry instanceof TFile ? entry.basename : entry?.name || '', author: '' };
             this.sourceCandidates = files.map(file => file.path);
+            if (!this.savedSourceId) this.savedSourceName = this.source.title;
+            this.savedSourceNotice = '';
+            this.markSourceChanged();
             this.sourceReviewed = kind === 'file';
             this.sourceError = null;
             this.order = 'narrative';
@@ -763,11 +913,29 @@ export class ManuscriptOptionsModal extends Modal {
         const card = this.sourceCard;
         if (!card) return;
         card.empty();
+        this.sourceReviewButton = undefined;
+        this.sourceSaveButton = undefined;
+        this.sourceSaveAsButton = undefined;
+        this.savedSourceNoticeEl = undefined;
+        this.sourceErrorEl = undefined;
         card.createEl('h4', { cls: 'ert-section-title', text: 'Manuscript' });
+        if (this.savedSourceStorageError) card.createDiv({ cls: 'ert-section-desc ert-section-desc--alert', text: this.savedSourceStorageError });
+        if (this.plugin.isSettingsPersistenceBlocked()) card.createDiv({ cls: 'ert-section-desc ert-section-desc--alert', text: 'Plugin settings are unreadable. Saved manuscript changes cannot be written until settings are repaired and Obsidian is reloaded.' });
+        if (this.savedManuscripts.length) {
+            const savedRow = card.createDiv({ cls: 'ert-row ert-manuscript-source-book-row' });
+            savedRow.createSpan({ text: 'Saved manuscript' });
+            new DropdownComponent(savedRow).addOption('', 'Unsaved manuscript')
+                .addOptions(Object.fromEntries(this.savedManuscripts.map(record => [record.id, record.name])))
+                .setValue(this.savedSourceId || '').onChange(id => {
+                    if (id) void this.loadSavedSource(id);
+                    else { this.clearSavedSourceSelection(); this.renderSourceCard(); }
+                });
+        }
         const choices = card.createDiv({ cls: 'ert-manuscript-pill-row' });
         const bookButton = new ButtonComponent(choices).setButtonText('RT book').onClick(() => {
             const book = getActiveBook(this.plugin.settings);
             if (!book) { new Notice('Add a book in Settings → Core, or choose a folder or file.'); return; }
+            this.clearSavedSourceSelection();
             this.source = { kind: 'book', bookId: book.id };
             this.captureOpenScenes(book.sourceFolder);
             this.sourceReviewed = true;
@@ -789,6 +957,7 @@ export class ManuscriptOptionsModal extends Modal {
         const source = this.source;
         if (!source) { card.createDiv({ cls: 'ert-section-desc', text: 'Choose an RT book, manuscript folder, or Markdown file.' }); return; }
         const sourceDetails = card.createDiv({ cls: 'ert-stack ert-manuscript-source-details' });
+        if (this.savedSourceId || this.savedSourceNotice) this.savedSourceNoticeEl = sourceDetails.createDiv({ cls: 'ert-section-desc', text: this.savedSourceNotice });
         if (source.kind === 'book') {
             const row = sourceDetails.createDiv({ cls: 'ert-row ert-manuscript-source-book-row' });
             row.createSpan({ text: 'Book' });
@@ -812,6 +981,7 @@ export class ManuscriptOptionsModal extends Modal {
             input.value = source[field];
             input.addEventListener('input', () => {
                 source[field] = input.value;
+                this.markSourceChanged();
                 this.syncExportUi();
                 this.updateBadgeSceneCount();
             });
@@ -826,12 +996,14 @@ export class ManuscriptOptionsModal extends Modal {
                 const label = row.createEl('label');
                 const check = label.createEl('input', { attr: { type: 'checkbox' } });
                 check.checked = source.paths.includes(sourcePath);
-                label.appendText(` ${index + 1}. ${sourcePath.slice(source.path.length + 1)}`);
+                const available = this.app.vault.getAbstractFileByPath(sourcePath) instanceof TFile;
+                label.appendText(` ${index + 1}. ${sourcePath.slice(source.path.length + 1)}${available ? '' : ' — Missing'}`);
                 check.addEventListener('change', () => {
                     const included = new Set(source.paths);
                     if (check.checked) included.add(sourcePath); else included.delete(sourcePath);
                     source.paths = this.sourceCandidates.filter(candidate => included.has(candidate));
                     this.sourceReviewed = false;
+                    this.markSourceChanged();
                     this.renderSourceCard();
                     void this.loadScenesForOrder();
                 });
@@ -846,16 +1018,42 @@ export class ManuscriptOptionsModal extends Modal {
                             [this.sourceCandidates[index], this.sourceCandidates[other]] = [this.sourceCandidates[other], this.sourceCandidates[index]];
                             source.paths = this.sourceCandidates.filter(candidate => included.has(candidate));
                             this.sourceReviewed = false;
+                            this.markSourceChanged();
                             this.renderSourceCard();
                             void this.loadScenesForOrder();
                         });
                 }
+                if (!available) new ButtonComponent(actions).setButtonText('Remove missing').onClick(() => {
+                    this.sourceCandidates = this.sourceCandidates.filter(candidate => candidate !== sourcePath);
+                    source.paths = source.paths.filter(path => path !== sourcePath);
+                    this.sourceReviewed = false;
+                    this.markSourceChanged();
+                    this.renderSourceCard();
+                    void this.loadScenesForOrder();
+                });
             });
-            new ButtonComponent(details).setButtonText(this.sourceReviewed ? 'Contents reviewed' : 'Use this order and selection')
+            this.sourceReviewButton = new ButtonComponent(details).setButtonText(this.sourceReviewed ? 'Contents reviewed' : 'Use this order and selection')
                 .setDisabled(this.sourceReviewed || source.paths.length === 0)
                 .onClick(() => { this.sourceReviewed = true; this.renderSourceCard(); this.syncExportUi(); });
         }
-        if (this.sourceError) sourceDetails.createDiv({ cls: 'ert-section-desc ert-section-desc--alert', text: this.sourceError });
+        const nameRow = sourceDetails.createEl('label', { cls: 'ert-row ert-manuscript-source-field' });
+        nameRow.createSpan({ text: 'Save as' });
+        const nameInput = nameRow.createEl('input', { cls: 'ert-input', attr: { type: 'text', 'aria-label': 'Saved manuscript name' } });
+        nameInput.value = this.savedSourceName;
+        nameInput.addEventListener('input', () => { this.savedSourceName = nameInput.value; this.markSourceChanged(); this.updateSourceActions(); });
+        const saveActions = sourceDetails.createDiv({ cls: 'ert-manuscript-pill-row' });
+        this.sourceSaveButton = new ButtonComponent(saveActions).setButtonText(this.savedSourceId ? 'Update saved manuscript' : 'Save manuscript').onClick(() => { void this.saveSource(false); });
+        if (this.savedSourceId) {
+            this.sourceSaveAsButton = new ButtonComponent(saveActions).setButtonText('Save as new').onClick(() => { void this.saveSource(true); });
+            const id = this.savedSourceId;
+            new ButtonComponent(saveActions).setButtonText('Remove saved manuscript').onClick(() => {
+                const record = this.savedManuscripts.find(item => item.id === id);
+                if (record) new DeletePublishingItemModal(this.app, record.name, () => { void this.deleteSavedSource(id); }, 'saved manuscript').open();
+            });
+        }
+        sourceDetails.createDiv({ cls: 'ert-section-desc', text: 'Saves the source, title, author, included notes and their order. Export formatting stays in your export presets.' });
+        this.sourceErrorEl = sourceDetails.createDiv({ cls: 'ert-section-desc ert-section-desc--alert', text: this.sourceError || '' });
+        this.updateSourceActions();
     }
 
     // Layout -----------------------------------------------------------------
@@ -1322,7 +1520,7 @@ export class ManuscriptOptionsModal extends Modal {
                 if (!selectedId) return;
                 const template = this.getTemplateList().find(item => item.id === selectedId);
                 if (!template) return;
-                new DeleteExportTemplateModal(this.app, template.name, () => {
+                new DeletePublishingItemModal(this.app, template.name, () => {
                     void this.deleteTemplate(selectedId);
                 }).open();
             });
@@ -1557,6 +1755,7 @@ export class ManuscriptOptionsModal extends Modal {
         }
         this.updateActionButtonDisabledState();
         this.updateProofUi();
+        this.updateSourceActions();
     }
 
     private getTemplateList(): ModalExportProfile[] {
@@ -3092,7 +3291,7 @@ export class ManuscriptOptionsModal extends Modal {
         if (!this.actionButton || this.exportCompleted) return;
         const splitInvalid = !this.isSplitSelectionValid();
         this.actionButton.setDisabled(
-            this.exportInFlight || this.proofLoading || this.sourceLoading || !!this.sourceError || !this.sourceReviewed || this.totalScenes === 0 || splitInvalid || this.exportBlocked
+            this.exportInFlight || this.proofLoading || this.sourceLoading || this.sourceSaving || !!this.sourceError || !this.sourceReviewed || this.totalScenes === 0 || splitInvalid || this.exportBlocked
         );
     }
 
@@ -3558,9 +3757,14 @@ export class ManuscriptOptionsModal extends Modal {
             if (loadId !== this.sourceLoadId) return;
             this.sourceLoading = false;
             this.sourceError = err instanceof Error ? err.message : 'Could not read the manuscript source.';
+            this.scenePaths = [];
+            this.sceneTitles = [];
+            this.sceneWordCounts = [];
+            this.totalScenes = 0;
+            this.updateBadgeSceneCount();
             this.loadingEl?.setText(this.sourceError);
             this.renderSourceCard();
-            this.updateActionButtonDisabledState();
+            this.syncExportUi();
         }
     }
 
@@ -3738,7 +3942,7 @@ export class ManuscriptOptionsModal extends Modal {
 
     // Submission -------------------------------------------------------------
     private async submit(): Promise<void> {
-        if (this.exportInFlight || this.proofLoading || this.sourceLoading || this.sourceError || !this.sourceReviewed) return;
+        if (this.exportInFlight || this.proofLoading || this.sourceLoading || this.sourceSaving || this.sourceError || !this.sourceReviewed) return;
         if (this.totalScenes === 0) {
             new Notice(t('manuscriptModal.emptyNotice'));
             return;

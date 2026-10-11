@@ -47,6 +47,7 @@ function fixture() {
         app,
         settings: { ...DEFAULT_SETTINGS, books: [{ id: 'book', title: 'Test book', sourceFolder: 'Book' }], activeBookId: 'book', pandocLayouts: [], manuscriptOutputFolder: 'Exports' },
         saveSettings: async () => {},
+        isSettingsPersistenceBlocked: () => false,
         getBookMeta: () => null,
         getSceneData: async () => files.map((file, index) => ({ path: file.path, title: file.basename, itemType: 'Scene', number: `${index + 1}`, subplot: 'Main Plot', rawFrontmatter: { Class: 'Scene' } })),
     } as unknown as RadialTimelinePlugin;
@@ -72,6 +73,78 @@ function formattedFixture() {
 }
 
 describe('manuscript export UI-to-runner contract', () => {
+    it('removes only the confirmed saved record while keeping the current source and other records', async () => {
+        const { plugin, files } = fixture();
+        const first = { schemaVersion: 1 as const, id: 'one', name: 'One', source: { kind: 'file' as const, path: files[0].path, paths: [files[0].path], title: 'One', author: 'Writer' }, candidatePaths: [files[0].path] };
+        const second = { ...first, id: 'two', name: 'Two' };
+        plugin.settings.savedManuscriptSources = [first, second];
+        plugin.settings.lastUsedManuscriptSourceId = first.id;
+        const modal = new ManuscriptOptionsModal(plugin.app, plugin, async () => ({}));
+        modal['restoreSavedSourceState'](first);
+        await modal['deleteSavedSource'](first.id);
+        expect(plugin.settings.savedManuscriptSources).toEqual([second]);
+        expect(plugin.settings.lastUsedManuscriptSourceId).toBeUndefined();
+        expect(modal['source']).toEqual(first.source);
+        expect(modal['savedSourceId']).toBeUndefined();
+    });
+
+    it('clears a recovered source error and re-enables review of a corrected selection', () => {
+        const { plugin, files } = fixture();
+        const modal = new ManuscriptOptionsModal(plugin.app, plugin, async () => ({}));
+        modal['source'] = { kind: 'folder', path: 'Book', paths: [files[0].path], title: '', author: '' };
+        modal['sourceReviewed'] = false;
+        const errorEl = { toggleClass: vi.fn(), setText: vi.fn() };
+        const setDisabled = vi.fn();
+        modal['sourceErrorEl'] = errorEl as unknown as HTMLElement;
+        modal['sourceReviewButton'] = { setDisabled } as unknown as ButtonComponent;
+        modal['sourceError'] = 'Missing note';
+        modal['updateSourceActions']();
+        expect(errorEl.setText).toHaveBeenLastCalledWith('Missing note');
+        expect(setDisabled).toHaveBeenLastCalledWith(true);
+        modal['sourceError'] = null;
+        modal['updateSourceActions']();
+        expect(errorEl.toggleClass).toHaveBeenLastCalledWith('ert-hidden', true);
+        expect(errorEl.setText).toHaveBeenLastCalledWith('');
+        expect(setDisabled).toHaveBeenLastCalledWith(false);
+    });
+
+    it('saves reusable direct-source selections and restores them in a new modal', async () => {
+        const { plugin, files } = fixture();
+        const modal = new ManuscriptOptionsModal(plugin.app, plugin, async () => ({}));
+        modal['source'] = { kind: 'folder', path: 'Book', paths: [files[1].path, files[0].path], title: 'Direct manuscript', author: 'Writer' };
+        modal['sourceCandidates'] = [files[1].path, files[0].path];
+        modal['savedSourceName'] = 'Editorial packet';
+        const save = vi.spyOn(plugin, 'saveSettings');
+        await modal['saveSource'](false);
+        expect(save).toHaveBeenCalledOnce();
+        const record = plugin.settings.savedManuscriptSources![0];
+        const reopened = new ManuscriptOptionsModal(plugin.app, plugin, async () => ({}));
+        reopened['restoreSavedSourceState'](record);
+        expect(reopened['source']).toEqual(modal['source']);
+        expect(reopened['sourceReviewed']).toBe(true);
+        expect(plugin.settings.lastUsedManuscriptSourceId).toBe(record.id);
+        expect(plugin.settings.activeBookId).toBe('book');
+        modal['source'].title = 'Unsaved edit';
+        expect(record.source.title).toBe('Direct manuscript');
+    });
+
+    it.each(['write failure', 'blocked settings'])('does not claim a saved manuscript after %s', async failure => {
+        const { plugin, files } = fixture();
+        const previous = plugin.settings.savedManuscriptSources;
+        const save = vi.spyOn(plugin, 'saveSettings').mockRejectedValue(new Error('Disk unavailable'));
+        if (failure === 'blocked settings') vi.spyOn(plugin, 'isSettingsPersistenceBlocked').mockReturnValue(true);
+        const modal = new ManuscriptOptionsModal(plugin.app, plugin, async () => ({}));
+        modal['source'] = { kind: 'file', path: files[0].path, paths: [files[0].path], title: 'One', author: 'Writer' };
+        modal['sourceCandidates'] = [files[0].path];
+        modal['savedSourceName'] = 'One';
+        await modal['saveSource'](false);
+        expect(plugin.settings.savedManuscriptSources).toBe(previous);
+        expect(plugin.settings.lastUsedManuscriptSourceId).toBeUndefined();
+        expect(modal['savedSourceId']).toBeUndefined();
+        expect(modal['sourceSaving']).toBe(false);
+        if (failure === 'blocked settings') expect(save).not.toHaveBeenCalled();
+    });
+
     it.each([1, 2])('renders a %i-file proof through the same PDF pipeline without source or preference writes', async parts => {
         const { registrar, plugin, writes, options, content } = formattedFixture();
         const temp = mkdtempSync(join(tmpdir(), 'rt-proof-contract-'));

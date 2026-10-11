@@ -1,0 +1,39 @@
+[
+  {
+    "schemaVersion": 1,
+    "id": "60ed484f-bafb-4698-9976-cc694a1ee4bc",
+    "name": "QA saved order",
+    "source": {
+      "kind": "folder",
+      "path": "QA Publish Plain",
+      "paths": [
+        "QA Publish Plain/02 Crossing.md",
+        "QA Publish Plain/01 Arrival.md"
+      ],
+      "title": "QA Saved Manuscript",
+      "author": "QA Writer Updated"
+    },
+    "candidatePaths": [
+      "QA Publish Plain/02 Crossing.md",
+      "QA Publish Plain/01 Arrival.md",
+      "QA Publish Plain/03 Research.md"
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "652bd57e-7783-4b89-8db8-37149cb2ceb9",
+    "name": "QA single file",
+    "source": {
+      "kind": "file",
+      "path": "QA Publish Plain/02 Crossing.md",
+      "paths": [
+        "QA Publish Plain/02 Crossing.md"
+      ],
+      "title": "02 Crossing",
+      "author": "QA Writer"
+    },
+    "candidatePaths": [
+      "QA Publish Plain/02 Crossing.md"
+    ]
+  }
+]

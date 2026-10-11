@@ -186,6 +186,8 @@ Chapter:`
     savedBeatSystems: [buildDefaultCustomBeatSystem()],
     bookDesignerTemplates: [],
     exportProfiles: [],
+    savedManuscriptSources: [],
+    lastUsedManuscriptSourceId: undefined,
     bookPublishingPreferences: [],
     lastUsedExportProfileId: undefined,
     backdropYamlTemplate: `Class: Backdrop                   # Backdrop events appear below the outer ring in Chronologue Mode

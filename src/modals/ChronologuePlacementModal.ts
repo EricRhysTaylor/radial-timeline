@@ -11,7 +11,7 @@
  * will be stored, still sorts strictly between its two neighbours.
  */
 
-import { App } from 'obsidian';
+import { App, ToggleComponent } from 'obsidian';
 import { ErtModal } from '../ui/ErtModal';
 import { formatElapsedTime, formatWhenForYaml, parseWhenField } from '../utils/date';
 import { validatePlacement } from '../chronologue/placement/validatePlacement';
@@ -34,12 +34,25 @@ export interface PlacementModalContext {
     sceneTitle: string;
     currentWhen: Date | null;
     draggedDurationMs: number | null;
+    /** The undated scenes that move with this one (`findUndatedFollowers`). */
+    undatedFollowers: UndatedFollowerSummary[];
     accent?: string;
 }
+
+export interface UndatedFollowerSummary {
+    title: string;
+    /** The When that keeps it where it stands, as stored; null when that cannot be stored exactly. */
+    keepWhen: string | null;
+}
+
+/** Past this many, the follower warning names the first few and counts the rest. */
+const MAX_NAMED_FOLLOWERS = 4;
 
 export interface PlacementResult {
     when: Date;
     storedWhen: string;
+    /** Date the undated followers where they stand, so only the dragged scene moves. */
+    keepFollowers: boolean;
 }
 
 const CUSTOM_ROW_ID = '__custom__';
@@ -51,6 +64,7 @@ export class ChronologuePlacementModal extends ErtModal {
     private activeOptionId: PlacementOption['id'];
     private selectedCandidateId: string | null = null;
     private customInputValue = '';
+    private keepFollowers = false;
 
     private phase: 'choose' | 'running' | 'done' = 'choose';
     private closed = false;
@@ -142,6 +156,7 @@ export class ChronologuePlacementModal extends ErtModal {
 
         this.renderSeamSection(body);
         this.renderContextStrip(body);
+        this.renderUndatedFollowers(body);
         this.renderCandidates(body);
         this.renderCustomRow(body);
         this.syncPlaceButton();
@@ -214,6 +229,50 @@ export class ChronologuePlacementModal extends ErtModal {
             cls: 'ert-place-room',
             text: `${formatElapsedTime(interval.upperMs - interval.lowerMs)} of room`
         });
+    }
+
+    /**
+     * The scenes Chronologue shows beside this one move with it, though only one
+     * When is written. Said up front, with the option to date them where they
+     * stand so this scene moves alone. That option writes a When to each of
+     * them, so the toggle names the value before anything is written.
+     */
+    private renderUndatedFollowers(container: HTMLElement): void {
+        const followers = this.context.undatedFollowers;
+        if (followers.length === 0) return;
+
+        const section = container.createDiv({ cls: 'ert-place-section' });
+        const warning = section.createDiv({
+            cls: 'ert-place-followers',
+            text: describeUndatedFollowers(followers.map(follower => follower.title), this.keepFollowers)
+        });
+        warning.toggleClass('is-resolved', this.keepFollowers);
+
+        const keepDates = followers
+            .map(follower => follower.keepWhen)
+            .filter((keepWhen): keepWhen is string => keepWhen !== null);
+        if (keepDates.length < followers.length) {
+            section.createDiv({
+                cls: 'ert-place-followers-note',
+                text: followers.length === 1
+                    ? 'Give it a When date first to leave it where it is.'
+                    : 'Give them When dates first to leave them where they are.'
+            });
+            return;
+        }
+
+        const row = section.createDiv({ cls: 'ert-place-keep' });
+        const label = followers.length === 1 ? 'Keep it where it is' : 'Keep them where they are';
+        new ToggleComponent(row)
+            .setValue(this.keepFollowers)
+            .then(toggle => toggle.toggleEl.setAttribute('aria-label', label))
+            .onChange(on => {
+                this.keepFollowers = on;
+                this.renderBody();
+            });
+        const text = row.createDiv({ cls: 'ert-place-keep-text' });
+        text.createDiv({ cls: 'ert-place-row-label', text: label });
+        text.createDiv({ cls: 'ert-place-row-elapsed', text: describeKeepWrite(keepDates) });
     }
 
     private renderCandidates(container: HTMLElement): void {
@@ -333,12 +392,12 @@ export class ChronologuePlacementModal extends ErtModal {
         if (this.selectedCandidateId === CUSTOM_ROW_ID) {
             const verdict = this.evaluateCustom();
             if (verdict?.kind !== 'ok') return null;
-            return { when: verdict.when, storedWhen: verdict.storedWhen };
+            return { when: verdict.when, storedWhen: verdict.storedWhen, keepFollowers: this.keepFollowers };
         }
 
         const candidate = this.activeOption.candidates.find(item => item.id === this.selectedCandidateId);
         if (!candidate) return null;
-        return { when: candidate.when, storedWhen: candidate.storedWhen };
+        return { when: candidate.when, storedWhen: candidate.storedWhen, keepFollowers: this.keepFollowers };
     }
 
     private syncPlaceButton(): void {
@@ -440,6 +499,27 @@ export class ChronologuePlacementModal extends ErtModal {
         this.dismissResolver = null;
         resolver?.();
     }
+}
+
+function describeUndatedFollowers(titles: string[], kept: boolean): string {
+    if (titles.length === 1) {
+        const consequence = kept ? '' : ' — it moves too';
+        return `“${titles[0]}” has no When date, so Chronologue shows it beside this scene${consequence}.`;
+    }
+    const named = titles.slice(0, MAX_NAMED_FOLLOWERS).map(title => `“${title}”`);
+    const unnamed = titles.length - named.length;
+    const list = unnamed > 0 ? `${named.join(', ')} and ${unnamed} more` : named.join(', ');
+    const consequence = kept ? '' : ' — they move too';
+    return `${titles.length} scenes have no When date, so Chronologue shows them beside this scene${consequence}: ${list}.`;
+}
+
+function describeKeepWrite(keepDates: string[]): string {
+    const distinct = new Set(keepDates);
+    if (distinct.size > 1) return 'Writes each the When it shows at now.';
+    const [storedWhen] = distinct;
+    return keepDates.length === 1
+        ? `Writes When ${storedWhen} to it — the time it shows at now.`
+        : `Writes When ${storedWhen} to each — the time they show at now.`;
 }
 
 function describeOverlap(warning: OverlapWarning): string {

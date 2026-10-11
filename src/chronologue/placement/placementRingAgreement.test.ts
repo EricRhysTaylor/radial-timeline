@@ -14,6 +14,7 @@ import { buildOuterRingSequence } from '../../renderer/utils/OuterRingSequence';
 import { parseWhenField } from '../../utils/date';
 import { generateCandidates } from './generateCandidates';
 import { resolvePlacementNeighbors, resolveSeamIntervals } from './resolveNeighbors';
+import { findUndatedFollowers, type UndatedFollower } from './undatedFollowers';
 import type { PlacementInterval } from './types';
 
 const SUBPLOTS = ['Main Plot', 'B Plot', 'C Plot'];
@@ -80,6 +81,18 @@ function ringsAfterPlacement(items: TimelineItem[], draggedPath: string, interva
     ));
 }
 
+/** As ringsAfterPlacement, with every follower first dated where it stands. */
+function ringsKeepingFollowers(
+    items: TimelineItem[],
+    draggedPath: string,
+    followers: UndatedFollower[],
+    interval: PlacementInterval
+): string[][] {
+    const keep = new Map(followers.map(follower => [follower.scene.path, follower.keepWhen?.when]));
+    const pinned = items.map(item => (keep.has(item.path) ? { ...item, when: keep.get(item.path) } : item));
+    return ringsAfterPlacement(pinned, draggedPath, interval);
+}
+
 describe('Chronologue drag agrees with the rendered ring', () => {
     it('resolves drops against the exact order the ring draws', () => {
         const random = seededRandom(20261010);
@@ -89,16 +102,30 @@ describe('Chronologue drag agrees with the rendered ring', () => {
         }
     });
 
-    it('lands every accepted drop immediately before its target', () => {
+    it('lands every accepted drop immediately before its target, moving exactly the named followers', () => {
         const random = seededRandom(7);
         let landed = 0;
+        let withFollowers = 0;
+        let keptAlone = 0;
         for (let trial = 0; trial < 120; trial += 1) {
             const items = buildManuscript(random, 3 + Math.floor(random() * 9), random() * 0.3);
-            const isUndated = (path: string) => !items.find(item => item.path === path)?.when;
             const sequence = buildChronologueSceneSequence(items);
 
             for (const dragged of sequence) {
                 const draggedPath = dragged.path ?? '';
+                // The scenes the modal warns about. They and the dragged scene
+                // must arrive as one unbroken block; anything else inside it, or
+                // a follower left behind, is a misplacement or a wrong warning.
+                const followers = findUndatedFollowers(sequence, draggedPath);
+                const moving = new Set([draggedPath, ...followers.map(follower => follower.scene.path ?? '')]);
+                /** [first, last] index of the moving block, asserting it is unbroken. */
+                const blockIn = (ring: string[]): [number, number] => {
+                    const indices = ring.flatMap((path, index) => (moving.has(path) ? [index] : []));
+                    const [first, last] = [indices[0], indices[indices.length - 1]];
+                    expect(last - first + 1, `${draggedPath} block`).toBe(moving.size);
+                    return [first, last];
+                };
+
                 for (const target of sequence) {
                     const targetPath = target.path ?? '';
                     if (draggedPath === targetPath) continue;
@@ -106,25 +133,31 @@ describe('Chronologue drag agrees with the rendered ring', () => {
 
                     if (resolution.kind === 'ok') {
                         ringsAfterPlacement(items, draggedPath, resolution.interval).forEach(ring => {
-                            // Undated scenes sit after the dated scene before them in
-                            // manuscript order, so an anchor's undated followers move
-                            // with it. Anything else between it and the target is a
-                            // misplacement.
-                            let next = ring.indexOf(draggedPath) + 1;
-                            while (ring[next] !== targetPath && isUndated(ring[next])) next += 1;
-                            expect(ring[next], `${draggedPath} → before ${targetPath}`).toBe(targetPath);
+                            const [, last] = blockIn(ring);
+                            expect(ring[last + 1], `${draggedPath} → before ${targetPath}`).toBe(targetPath);
                             landed += 1;
+                            if (moving.size > 1) withFollowers += 1;
                         });
+                        if (followers.length > 0) {
+                            ringsKeepingFollowers(items, draggedPath, followers, resolution.interval).forEach(ring => {
+                                // Kept in place: the dragged scene lands right before
+                                // the target and nothing else on the ring moves.
+                                expect(ring[ring.indexOf(draggedPath) + 1], `${draggedPath} alone → before ${targetPath}`).toBe(targetPath);
+                                expect(ring.filter(path => path !== draggedPath))
+                                    .toEqual(sequence.map(item => item.path).filter(path => path !== draggedPath));
+                                keptAlone += 1;
+                            });
+                        }
                     } else if (resolution.kind === 'seam') {
                         const seams = resolveSeamIntervals(sequence, draggedPath);
                         if (seams.beforeFirst.kind === 'ok') {
                             ringsAfterPlacement(items, draggedPath, seams.beforeFirst.interval).forEach(ring => {
-                                ring.slice(0, ring.indexOf(draggedPath)).forEach(path => expect(isUndated(path)).toBe(true));
+                                expect(blockIn(ring)[0]).toBe(0);
                             });
                         }
                         if (seams.afterLast.kind === 'ok') {
                             ringsAfterPlacement(items, draggedPath, seams.afterLast.interval).forEach(ring => {
-                                ring.slice(ring.indexOf(draggedPath) + 1).forEach(path => expect(isUndated(path)).toBe(true));
+                                expect(blockIn(ring)[1]).toBe(ring.length - 1);
                             });
                         }
                     } else if (resolution.kind === 'noop') {
@@ -134,7 +167,10 @@ describe('Chronologue drag agrees with the rendered ring', () => {
                 }
             }
         }
-        // Guard against a generator change that quietly makes every drop a no-op.
+        // Guard against a generator change that quietly makes every drop a no-op,
+        // or leaves the follower path untested.
         expect(landed).toBeGreaterThan(1000);
+        expect(withFollowers).toBeGreaterThan(100);
+        expect(keptAlone).toBeGreaterThan(100);
     });
 });

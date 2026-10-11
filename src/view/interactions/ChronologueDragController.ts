@@ -30,7 +30,10 @@ import {
     resolveSeamIntervals,
     type NeighborResolution
 } from '../../chronologue/placement/resolveNeighbors';
+import { findUndatedFollowers, type UndatedFollower } from '../../chronologue/placement/undatedFollowers';
 import type { SeamChoice } from '../../chronologue/placement/types';
+import type { FrontmatterUpdate } from '../../timelineRepair/types';
+import { fileStem } from '../../utils/paths';
 import {
     DragOverlays,
     getOuterRingIndex,
@@ -294,11 +297,17 @@ export class ChronologueDragController {
             return;
         }
 
+        const followers = findUndatedFollowers(sequence, sourcePath);
+
         this.committing = true;
         const modal = new ChronologuePlacementModal(this.view.plugin.app, placementOptions, {
             sceneTitle: draggedScene.title || file.basename, // SAFE: the filename is the author-visible identity when a note has no Title
             currentWhen,
             draggedDurationMs,
+            undatedFollowers: followers.map(follower => ({
+                title: describeScene(follower.scene),
+                keepWhen: follower.keepWhen?.storedWhen ?? null // SAFE: null tells the modal this scene cannot be kept in place
+            })),
             accent: this.modalAccent ?? this.accentColor // SAFE: publish-stage colour is the documented accent when a scene has no subplot colour
         });
 
@@ -310,6 +319,18 @@ export class ChronologueDragController {
         }
 
         try {
+            if (placement.keepFollowers) {
+                modal.updateProgress('Dating the scenes that stay...');
+                const keepError = await this.keepFollowersInPlace(followers);
+                if (keepError) {
+                    await modal.finishWithDismiss(
+                        `${keepError} ${draggedScene.title || file.basename} was not moved.`, // SAFE: filename identity, same rule as the modal title
+                        true
+                    );
+                    return;
+                }
+            }
+
             // writeFrontmatterUpdates catches per-file errors and reports them in
             // its result — it does not throw. Reporting success without reading
             // that result would tell the author the scene moved when When is
@@ -341,6 +362,33 @@ export class ChronologueDragController {
             this.committing = false;
             this.reset();
         }
+    }
+
+    /**
+     * Pin each undated follower at the time it is shown at now, so the dragged
+     * scene moves alone. Runs before the dragged scene is written: a failure
+     * here leaves it unmoved rather than half the gesture applied. A follower
+     * dated before the failure stands exactly where it already stood.
+     *
+     * @returns An author-facing error, or null when every follower was dated.
+     */
+    private async keepFollowersInPlace(followers: UndatedFollower[]): Promise<string | null> {
+        const updates: FrontmatterUpdate[] = [];
+        for (const follower of followers) {
+            const file = this.view.plugin.app.vault.getAbstractFileByPath(follower.scene.path ?? '');
+            if (!(file instanceof TFile) || !follower.keepWhen) {
+                return `Could not keep “${describeScene(follower.scene)}” in place.`;
+            }
+            updates.push({ file, when: follower.keepWhen.when, whenSource: 'manual' });
+        }
+
+        const result = await writeFrontmatterUpdates(this.view.plugin.app, updates, { logTool: 'chronologue' });
+        if (result.failed === 0) return null;
+        console.error('Chronologue placement: dating undated followers failed:', result.errors);
+        const first = result.errors[0];
+        return first
+            ? `Could not write When to “${first.file.basename}”: ${first.error}.`
+            : 'Could not write When to the scenes that stay.';
     }
 
     /**
@@ -411,4 +459,9 @@ export class ChronologueDragController {
         this.svg.classList.remove('rt-dragging-outer');
         this.overlays.clear();
     }
+}
+
+/** The author-visible name of a scene: its Title, else its filename. */
+function describeScene(scene: TimelineItem): string {
+    return scene.title || fileStem(scene.path ?? ''); // SAFE: the filename is the author-visible identity when a note has no Title
 }

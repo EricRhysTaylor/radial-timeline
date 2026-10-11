@@ -10780,3 +10780,60 @@
 .ert-ui.ert-scope--modal .ert-manuscript-source-field input {
   width: 100%;
 }
+
+/* Manuscript controls and an actual, independently scrollable PDF page. */
+.ert-ui.ert-scope--modal .ert-manuscript-workspace.is-proof-enabled {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--ert-gap-lg);
+}
+
+.ert-ui.ert-scope--modal .is-proof-enabled .ert-manuscript-controls {
+  max-height: calc(88vh - 64px);
+  overflow-y: auto;
+  padding-inline-end: var(--ert-pad-xs);
+}
+
+.ert-ui.ert-scope--modal .ert-manuscript-proof-pane {
+  min-width: 0;
+}
+
+.ert-ui.ert-scope--modal .ert-manuscript-proof-pane.is-stale {
+  border-color: var(--text-warning);
+}
+
+.ert-ui.ert-scope--modal .ert-manuscript-proof-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ert-gap-sm);
+}
+
+.ert-ui.ert-scope--modal .ert-manuscript-proof-nav input {
+  width: 5em;
+}
+
+.ert-ui.ert-scope--modal .ert-manuscript-proof-pages {
+  min-height: 240px;
+  max-height: calc(88vh - 260px);
+  overflow: auto;
+  padding: var(--ert-pad-xs);
+}
+
+.ert-ui.ert-scope--modal .ert-manuscript-proof-pages canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@media (max-width: 1000px) {
+  .ert-ui.ert-scope--modal .ert-manuscript-workspace.is-proof-enabled {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ert-ui.ert-scope--modal .is-proof-enabled .ert-manuscript-controls {
+    max-height: none;
+    overflow-y: visible;
+  }
+}

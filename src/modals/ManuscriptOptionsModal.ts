@@ -9,6 +9,8 @@ import { getSceneFilesByOrder, extractCountableBodyText, ManuscriptOrder, TocMod
 import { t } from '../i18n';
 import { getManuscriptSourceFiles, getReviewedManuscriptSelection, type ManuscriptSource } from '../utils/exportContext';
 import { countWords } from '../utils/text';
+import { getManuscriptProofConfigurationKey, getManuscriptProofStaleReason, type ManuscriptProofReceipt } from '../publishing/manuscriptProof';
+import { ManuscriptProofPreview } from '../publishing/ManuscriptProofPreview';
 import { clearFontAvailabilityCache, ExportFormat, ExportType, ManuscriptPreset, OutlinePreset, getAutoPdfEngineSelection, resolveTemplatePath, validatePandocLayout, getTemplateFontDiagnostics, getStructuredFontDiagnostic } from '../utils/exportFormats';
 import { ensureBundledLayoutInstalledForExport } from '../utils/pandocBundledLayouts';
 import { getActiveBook, DEFAULT_BOOK_TITLE } from '../utils/books';
@@ -16,7 +18,7 @@ import { chunkScenesIntoParts } from '../utils/splitOutput';
 import { cleanupFormatForOutputFormat, countManuscriptComments, getDefaultManuscriptCleanupOptions, normalizeManuscriptCleanupOptions, type ManuscriptCommentCounts } from '../utils/manuscriptSanitize';
 import { EXPORT_PURPOSES, buildPurposeProfile, builtInPresetId, getExportPurposeForPresetId, type ExportPurpose } from '../utils/exportPurposes';
 import { readSceneId } from '../utils/sceneIds';
-import { categorizeExportError } from '../utils/exportErrors';
+import { categorizeExportError, ExportFailure } from '../utils/exportErrors';
 import {
     adaptPandocLayoutsToPublishingModel,
     buildPersistedExportProfileFromModalExportProfile,
@@ -80,6 +82,7 @@ function renderModalLayoutPreview(
 }
 
 export interface ManuscriptModalResult {
+    intent?: 'proof';
     source?: ManuscriptSource;
     order: ManuscriptOrder;
     tocMode: TocMode;
@@ -107,6 +110,7 @@ export interface ManuscriptModalResult {
 }
 
 export interface ManuscriptExportOutcome {
+    proof?: ManuscriptProofReceipt;
     savedPath?: string;
     renderedPath?: string;
     savedPaths?: string[];
@@ -226,6 +230,28 @@ export class ManuscriptOptionsModal extends Modal {
     private readonly plugin: RadialTimelinePlugin;
     private source?: ManuscriptSource;
     private sourceCard?: HTMLElement;
+    private controlsEl?: HTMLElement;
+    private proofPane?: HTMLElement;
+    private proofStatusEl?: HTMLElement;
+    private proofFrame?: HTMLElement;
+    private proofButton?: ButtonComponent;
+    private proofOpenButton?: ButtonComponent;
+    private proofFileDropdown?: DropdownComponent;
+    private proofFileRow?: HTMLElement;
+    private proofPrevious?: ButtonComponent;
+    private proofNext?: ButtonComponent;
+    private proofPageInput?: HTMLInputElement;
+    private proofPageCountEl?: HTMLElement;
+    private proofReceipt?: ManuscriptProofReceipt;
+    private proofStaleReason: string | null = null;
+    private proofLoading = false;
+    private proofPage = 1;
+    private proofPages = 0;
+    private proofFileIndex = 0;
+    private proofEpoch = 0;
+    private proofClosed = false;
+    private readonly proofViewer = new ManuscriptProofPreview();
+    private detachProofEvents?: () => void;
     private sourceReviewed = true;
     private sourceCandidates: string[] = [];
     private sourceLoadId = 0;
@@ -480,7 +506,43 @@ export class ManuscriptOptionsModal extends Modal {
         }
         contentEl.classList.add('ert-modal-container', 'ert-stack', 'ert-manuscript-modal');
 
-        this.renderSkeleton(contentEl);
+        const workspace = contentEl.createDiv({ cls: 'ert-manuscript-workspace' });
+        this.controlsEl = workspace.createDiv({ cls: 'ert-stack ert-manuscript-controls' });
+        this.renderSkeleton(this.controlsEl);
+        this.renderProofPane(workspace);
+        const onSourceChange = (file: TAbstractFile) => {
+            const receipt = this.proofReceipt;
+            if (!receipt) return;
+            if (receipt.dependencies.some(dependency => dependency.kind === 'vault' && dependency.path === file.path)
+                || (receipt.bookSourceFolder && file.path.startsWith(receipt.bookSourceFolder + '/'))) {
+                this.proofStaleReason = 'Manuscript content or publishing details changed.';
+                this.updateProofUi();
+                if (file instanceof TFile && this.scenePaths.includes(file.path)) {
+                    this.sceneMarkers.delete(file.path);
+                    void this.app.vault.cachedRead(file).then(content => {
+                        const index = this.scenePaths.indexOf(file.path);
+                        if (index < 0 || this.proofClosed) return;
+                        this.sceneWordCounts[index] = countWords(extractCountableBodyText(content));
+                        this.updateBadgeSceneCount();
+                        return this.loadSceneMarkers();
+                    }).catch(error => console.error('[RT Proof] Source summary refresh failed:', error));
+                }
+            }
+        };
+        const refs = [
+            this.app.vault.on('modify', onSourceChange),
+            this.app.vault.on('create', file => { if (!this.proofReceipt?.renderedPaths.includes(file.path)) onSourceChange(file); }),
+            this.app.vault.on('delete', onSourceChange),
+            this.app.vault.on('rename', (file, oldPath) => {
+                onSourceChange(file);
+                if (this.proofReceipt?.dependencies.some(dependency => dependency.kind === 'vault' && dependency.path === oldPath)) {
+                    this.proofStaleReason = 'A manuscript note or proof input was renamed.';
+                    this.updateProofUi();
+                }
+            }),
+        ];
+        const metadataRef = this.app.metadataCache.on('changed', onSourceChange);
+        this.detachProofEvents = () => { refs.forEach(ref => this.app.vault.offref(ref)); this.app.metadataCache.offref(metadataRef); };
         await this.loadSubplots();
         await this.loadScenesForOrder();
         await this.restoreLastUsedTemplate();
@@ -488,9 +550,178 @@ export class ManuscriptOptionsModal extends Modal {
 
     onClose(): void {
         this.sourceLoadId += 1;
+        this.proofEpoch += 1;
+        this.proofClosed = true;
+        this.detachProofEvents?.();
+        void this.proofViewer.destroy().catch(error => console.error('[RT Proof] PDF cleanup failed:', error));
         void this.persistCurrentSnapshot();
         this.detachPointerEvents();
         this.contentEl.empty();
+    }
+
+    private renderProofPane(parent: HTMLElement): void {
+        const pane = parent.createDiv({ cls: 'ert-panel ert-stack ert-manuscript-proof-pane' });
+        this.proofPane = pane;
+        pane.createEl('h4', { cls: 'ert-section-title', text: 'Document proof' });
+        pane.createDiv({ cls: 'ert-section-desc', text: 'Review the actual PDF pages before export. Source notes stay unchanged.' });
+        this.proofStatusEl = pane.createDiv({ cls: 'ert-section-desc', attr: { role: 'status', 'aria-live': 'polite' } });
+        const actions = pane.createDiv({ cls: 'ert-manuscript-pill-row' });
+        this.proofButton = new ButtonComponent(actions).setButtonText('Generate proof').onClick(() => { void this.generateProof(); });
+        this.proofOpenButton = new ButtonComponent(actions).setButtonText('Open proof').onClick(() => {
+            const proofPath = this.proofReceipt?.renderedPaths[this.proofFileIndex];
+            if (!proofPath) return;
+            void this.app.workspace.openLinkText(proofPath, '', 'tab');
+            this.close();
+        });
+        this.proofFileRow = pane.createDiv({ cls: 'ert-row' });
+        this.proofFileRow.createSpan({ text: 'Proof file' });
+        this.proofFileDropdown = new DropdownComponent(this.proofFileRow).onChange(value => {
+            this.proofFileIndex = Number(value);
+            void this.loadProofFile();
+        });
+        const nav = pane.createDiv({ cls: 'ert-manuscript-proof-nav' });
+        this.proofPrevious = new ButtonComponent(nav).setButtonText('Previous').onClick(() => { void this.renderProofPage(this.proofPage - 1); });
+        const label = nav.createEl('label');
+        label.createSpan({ text: 'Page ' });
+        this.proofPageInput = label.createEl('input', { cls: 'ert-input', attr: { type: 'number', min: '1', step: '1', 'aria-label': 'PDF proof page' } });
+        this.proofPageInput.addEventListener('change', () => {
+            const number = Number(this.proofPageInput?.value);
+            if (!Number.isInteger(number) || number < 1 || number > this.proofPages) {
+                new Notice(`Choose a page between 1 and ${this.proofPages}.`);
+                this.updateProofUi();
+                return;
+            }
+            void this.renderProofPage(number);
+        });
+        this.proofPageCountEl = label.createSpan();
+        this.proofNext = new ButtonComponent(nav).setButtonText('Next').onClick(() => { void this.renderProofPage(this.proofPage + 1); });
+        this.proofFrame = pane.createDiv({ cls: 'ert-previewFrame ert-manuscript-proof-pages' });
+        pane.createDiv({ cls: 'ert-section-desc', text: 'Proofs are saved in the export folder’s Proofs subfolder. Final export renders the current manuscript again.' });
+        this.updateProofUi();
+    }
+
+    private updateProofUi(): void {
+        if (!this.proofPane) return;
+        const enabled = this.exportType === 'manuscript' && this.outputFormat === 'pdf';
+        this.proofPane.toggleClass('ert-hidden', !enabled);
+        this.controlsEl?.parentElement?.toggleClass('is-proof-enabled', enabled);
+        this.modalEl.setCssStyles({ width: enabled ? '1440px' : '800px' }); // SAFE: Obsidian modal sizing; shared ERT shell remains unchanged.
+        if (this.proofReceipt && getManuscriptProofConfigurationKey(this.plugin, this.buildSubmissionResult()) !== this.proofReceipt.configurationKey) {
+            this.proofStaleReason = 'Export settings or publishing details changed.';
+        }
+        this.proofPane.toggleClass('is-stale', !!this.proofStaleReason);
+        this.proofStatusEl?.setText(this.proofLoading ? 'Generating or loading proof…'
+            : this.proofStaleReason ? `Needs refresh · ${this.proofStaleReason}`
+            : this.proofReceipt && this.proofPages > 0 ? `Current proof · ${this.proofReceipt.styleName} · ${this.proofPages} ${this.proofPages === 1 ? 'page' : 'pages'} in this file`
+            : 'No proof generated yet.');
+        if (this.proofReceipt?.notices.length) this.proofStatusEl?.appendText(` ${this.proofReceipt.notices.join(' ')}`);
+        this.proofButton?.setButtonText(this.proofReceipt ? 'Refresh proof' : 'Generate proof');
+        this.proofButton?.setDisabled(!enabled || this.exportBlocked || this.proofLoading || this.exportInFlight || this.sourceLoading || !!this.sourceError || !this.sourceReviewed || !this.isSplitSelectionValid() || this.totalScenes === 0);
+        this.proofOpenButton?.setDisabled(!this.proofReceipt || this.proofLoading);
+        this.proofFileRow?.toggleClass('ert-hidden', !this.proofReceipt || this.proofReceipt.renderedPaths.length <= 1);
+        this.proofFileDropdown?.setDisabled(this.proofLoading);
+        this.proofPrevious?.setDisabled(this.proofLoading || this.proofPages === 0 || this.proofPage <= 1);
+        this.proofNext?.setDisabled(this.proofLoading || this.proofPages === 0 || this.proofPage >= this.proofPages);
+        if (this.proofPageInput) {
+            this.proofPageInput.disabled = this.proofLoading || this.proofPages === 0;
+            this.proofPageInput.value = String(this.proofPage);
+            this.proofPageInput.max = String(this.proofPages);
+        }
+        this.proofPageCountEl?.setText(this.proofPages > 0 ? ` of ${this.proofPages}` : '');
+    }
+
+    private async checkProofFreshness(): Promise<void> {
+        if (!this.proofReceipt) return;
+        this.proofStaleReason = await getManuscriptProofStaleReason(this.plugin, this.proofReceipt, this.buildSubmissionResult());
+        this.updateProofUi();
+    }
+
+    private async generateProof(): Promise<void> {
+        if (this.proofLoading || this.exportInFlight || this.exportBlocked || this.sourceLoading || this.sourceError || !this.sourceReviewed || !this.isSplitSelectionValid() || this.outputFormat !== 'pdf') return;
+        const epoch = ++this.proofEpoch;
+        this.proofLoading = true;
+        if (this.controlsEl) this.controlsEl.inert = true;
+        this.updateProofUi();
+        this.updateActionButtonDisabledState();
+        try {
+            const outcome = await this.onSubmit({ ...this.buildSubmissionResult(), intent: 'proof' });
+            if (this.proofClosed || epoch !== this.proofEpoch) return;
+            if (!outcome.proof) throw new Error('No PDF proof was produced.');
+            this.proofReceipt = outcome.proof;
+            this.scenePaths.forEach((sourcePath, index) => {
+                const words = outcome.proof?.sourceWordCounts[sourcePath];
+                if (typeof words === 'number') this.sceneWordCounts[index] = words;
+            });
+            this.sceneMarkers.clear();
+            await this.loadSceneMarkers();
+            this.updateBadgeSceneCount();
+            this.proofStaleReason = null;
+            this.proofFileIndex = 0;
+            if (this.proofFileDropdown) {
+                this.proofFileDropdown.selectEl.empty();
+                outcome.proof.renderedPaths.forEach((proofPath, index) => { this.proofFileDropdown?.addOption(String(index), proofPath.split('/').pop() || proofPath); });
+                this.proofFileDropdown.setValue('0');
+            }
+            await this.checkProofFreshness();
+            await this.loadProofFile();
+        } catch (error) {
+            if (!this.proofClosed) {
+                this.proofStaleReason = error instanceof Error ? error.message : 'Proof generation failed.';
+                if (error instanceof ExportFailure) this.showExportFailure(error);
+                this.updateProofUi();
+                new Notice(this.proofStaleReason);
+            }
+        } finally {
+            if (!this.proofClosed) {
+                this.proofLoading = false;
+                if (this.controlsEl) this.controlsEl.inert = false;
+                this.updateProofUi();
+                this.updateActionButtonDisabledState();
+            }
+        }
+    }
+
+    private async loadProofFile(): Promise<void> {
+        const proofPath = this.proofReceipt?.renderedPaths[this.proofFileIndex];
+        if (!proofPath || this.proofClosed) return;
+        const epoch = ++this.proofEpoch;
+        this.proofLoading = true;
+        this.proofPages = 0;
+        this.proofFrame?.empty();
+        this.updateProofUi();
+        try {
+            await this.checkProofFreshness();
+            const pages = await this.proofViewer.load(this.app, proofPath);
+            if (pages === null || this.proofClosed || epoch !== this.proofEpoch) return;
+            this.proofPages = pages;
+            await this.renderProofPage(1);
+        } catch (error) {
+            if (!this.proofClosed) this.proofStaleReason = error instanceof Error ? error.message : 'PDF proof could not be loaded.';
+        } finally {
+            if (!this.proofClosed) { this.proofLoading = false; this.updateProofUi(); }
+        }
+    }
+
+    private async renderProofPage(number: number): Promise<void> {
+        if (!this.proofFrame || number < 1 || number > this.proofPages || this.proofClosed) return;
+        const epoch = ++this.proofEpoch;
+        this.proofLoading = true;
+        this.updateProofUi();
+        const canvas = this.proofFrame.ownerDocument.win.createEl('canvas');
+        canvas.setAttribute('role', 'img');
+        canvas.setAttribute('aria-label', `PDF proof page ${number} of ${this.proofPages}`);
+        try {
+            await this.checkProofFreshness();
+            if (await this.proofViewer.renderPage(number, canvas, { width: this.proofFrame.clientWidth, pixelRatio: this.proofFrame.ownerDocument.win.devicePixelRatio }) && !this.proofClosed && epoch === this.proofEpoch) {
+                this.proofPage = number;
+                this.proofFrame.empty();
+                this.proofFrame.appendChild(canvas);
+            }
+        } catch (error) {
+            if (!this.proofClosed) this.proofStaleReason = error instanceof Error ? error.message : 'PDF page could not be rendered.';
+        } finally {
+            if (!this.proofClosed && epoch === this.proofEpoch) { this.proofLoading = false; this.updateProofUi(); }
+        }
     }
 
     private getSourceBook(): BookProfile | null {
@@ -1139,6 +1370,7 @@ export class ManuscriptOptionsModal extends Modal {
         const words = this.getSelectedWordCount();
         this.badgeEl.setText(`EXPORT — ${bookTitle} • ${countLabel(count, this.source?.kind === 'book' ? 'scene' : 'note')} selected • ${words.toLocaleString()} ${words === 1 ? 'word' : 'words'}`);
         this.updateReadback();
+        this.updateProofUi();
     }
 
     private refreshExportProfileState(): void {
@@ -1323,6 +1555,7 @@ export class ManuscriptOptionsModal extends Modal {
             }
         }
         this.updateActionButtonDisabledState();
+        this.updateProofUi();
     }
 
     private getTemplateList(): ModalExportProfile[] {
@@ -2858,7 +3091,7 @@ export class ManuscriptOptionsModal extends Modal {
         if (!this.actionButton || this.exportCompleted) return;
         const splitInvalid = !this.isSplitSelectionValid();
         this.actionButton.setDisabled(
-            this.exportInFlight || this.sourceLoading || !!this.sourceError || !this.sourceReviewed || this.totalScenes === 0 || splitInvalid || this.exportBlocked
+            this.exportInFlight || this.proofLoading || this.sourceLoading || !!this.sourceError || !this.sourceReviewed || this.totalScenes === 0 || splitInvalid || this.exportBlocked
         );
     }
 
@@ -3272,6 +3505,7 @@ export class ManuscriptOptionsModal extends Modal {
         this.sourceLoading = true;
         this.sourceError = null;
         this.updateActionButtonDisabledState();
+        this.updateProofUi();
         try {
             const isOpenScenes = this.isOpenScenesMode();
             const effectiveSubplot = this.subplot === 'All Subplots' || isOpenScenes ? undefined : this.subplot;
@@ -3451,18 +3685,7 @@ export class ManuscriptOptionsModal extends Modal {
         lastCard.createDiv({ cls: 'ert-manuscript-range-title', text: this.formatCardTitle(this.rangeEnd - 1) });
     }
 
-    // Submission -------------------------------------------------------------
-    private async submit(): Promise<void> {
-        if (this.exportInFlight || this.sourceLoading || this.sourceError || !this.sourceReviewed) return;
-        if (this.totalScenes === 0) {
-            new Notice(t('manuscriptModal.emptyNotice'));
-            return;
-        }
-        if (!this.isSplitSelectionValid()) {
-            new Notice(`Not enough scenes selected to split into ${this.splitParts} parts.`);
-            this.updateActionButtonDisabledState();
-            return;
-        }
+    private buildSubmissionResult(): ManuscriptModalResult {
         this.normalizeOutputFormatForOutline();
         const mode = this.getUiMode();
         this.sanitizeStateForMode(mode);
@@ -3473,12 +3696,58 @@ export class ManuscriptOptionsModal extends Modal {
         const submissionSubplot = isOpenScenes
             ? undefined
             : this.subplot === 'All Subplots'
-                ? undefined
-                : this.subplot;
+            ? undefined
+            : this.subplot;
         const submissionScenePathFilter = isOpenScenes
             ? this.getSelectedScenePaths()
             : undefined;
 
+        const selectedProfile = this.selectedExportProfile || this.defaultExportProfile || this.getTemplateList()[0];
+        const selectedLayoutId = this.resolveLayoutIdForProfile(selectedProfile);
+        return {
+            source: this.source ? structuredClone(this.source) : undefined,
+            order: this.order,
+            tocMode,
+            includeSceneIdInToc: tocMode !== 'none' ? this.includeSceneId : false,
+            includeSceneIdInHeading: this.includeSceneId,
+            // Open-scene paths already contain the chosen range.
+            rangeStart: isOpenScenes ? undefined : this.rangeStart,
+            rangeEnd: isOpenScenes ? undefined : this.rangeEnd,
+            subplot: submissionSubplot,
+            scenePathFilter: submissionScenePathFilter,
+            exportType: this.exportType,
+            manuscriptPreset: this.exportType === 'manuscript' ? this.manuscriptPreset : undefined,
+            outlinePreset: this.outlinePreset,
+            outputFormat: mode.isOutline ? 'markdown' : this.outputFormat,
+            updateWordCounts: mode.showWordCount ? this.updateWordCounts : false,
+            includeSynopsis,
+            includeMatter,
+            saveMarkdownArtifact: mode.showSavePrecompile ? this.saveMarkdownArtifact : false,
+            lineBreaksAsParagraphs: mode.showLineBreaksAsParagraphs ? this.lineBreaksAsParagraphs : false,
+            exportCleanup: mode.isManuscript ? this.getActiveCleanupOptions() : undefined,
+            // Only a saved preset may become "last used"; drafts and the
+            // restored ad-hoc snapshot carry ids that match no preset.
+            exportProfileId: this.getCurrentTemplateSelection() ?? undefined,
+            exportProfileTemplateId: selectedLayoutId,
+            selectedLayoutId: mode.isPdfManuscript ? selectedLayoutId : undefined,
+            splitMode: mode.showSplit ? this.splitMode : 'single',
+            splitParts: mode.showSplit && this.isSplitEnabled() ? this.splitParts : 1
+        };
+    }
+
+    // Submission -------------------------------------------------------------
+    private async submit(): Promise<void> {
+        if (this.exportInFlight || this.proofLoading || this.sourceLoading || this.sourceError || !this.sourceReviewed) return;
+        if (this.totalScenes === 0) {
+            new Notice(t('manuscriptModal.emptyNotice'));
+            return;
+        }
+        if (!this.isSplitSelectionValid()) {
+            new Notice(`Not enough scenes selected to split into ${this.splitParts} parts.`);
+            this.updateActionButtonDisabledState();
+            return;
+        }
+        const request = this.buildSubmissionResult();
         this.exportInFlight = true;
         if (this.sourceCard) this.sourceCard.inert = true;
         this.outputStatusEl?.addClass('ert-hidden');
@@ -3492,37 +3761,8 @@ export class ManuscriptOptionsModal extends Modal {
         this.refreshValidationSnapshot();
 
         try {
-            const selectedProfile = this.selectedExportProfile || this.defaultExportProfile || this.getTemplateList()[0];
-            const selectedLayoutId = this.resolveLayoutIdForProfile(selectedProfile);
-            const outcome = await this.onSubmit({
-                source: this.source ? structuredClone(this.source) : undefined,
-                order: this.order,
-                tocMode,
-                includeSceneIdInToc: tocMode !== 'none' ? this.includeSceneId : false,
-                includeSceneIdInHeading: this.includeSceneId,
-                // Open-scene paths already contain the chosen range.
-                rangeStart: isOpenScenes ? undefined : this.rangeStart,
-                rangeEnd: isOpenScenes ? undefined : this.rangeEnd,
-                subplot: submissionSubplot,
-                scenePathFilter: submissionScenePathFilter,
-                exportType: this.exportType,
-                manuscriptPreset: this.exportType === 'manuscript' ? this.manuscriptPreset : undefined,
-                outlinePreset: this.outlinePreset,
-                outputFormat: mode.isOutline ? 'markdown' : this.outputFormat,
-                updateWordCounts: mode.showWordCount ? this.updateWordCounts : false,
-                includeSynopsis,
-                includeMatter,
-                saveMarkdownArtifact: mode.showSavePrecompile ? this.saveMarkdownArtifact : false,
-                lineBreaksAsParagraphs: mode.showLineBreaksAsParagraphs ? this.lineBreaksAsParagraphs : false,
-                exportCleanup: mode.isManuscript ? this.getActiveCleanupOptions() : undefined,
-                // Only a saved preset may become "last used"; drafts and the
-                // restored ad-hoc snapshot carry ids that match no preset.
-                exportProfileId: this.getCurrentTemplateSelection() ?? undefined,
-                exportProfileTemplateId: selectedLayoutId,
-                selectedLayoutId: mode.isPdfManuscript ? selectedLayoutId : undefined,
-                splitMode: mode.showSplit ? this.splitMode : 'single',
-                splitParts: mode.showSplit && this.isSplitEnabled() ? this.splitParts : 1
-            });
+            if (this.proofReceipt) await this.checkProofFreshness();
+            const outcome = await this.onSubmit(request);
             const hasOutcome = Boolean(
                 outcome.savedPath
                 || outcome.renderedPath
@@ -3554,6 +3794,7 @@ export class ManuscriptOptionsModal extends Modal {
             this.updateActionButtonLabel();
         } finally {
             this.exportInFlight = false;
+            this.updateProofUi();
             if (this.sourceCard) this.sourceCard.inert = false;
             this.updateActionButtonDisabledState();
         }

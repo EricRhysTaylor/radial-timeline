@@ -9,7 +9,7 @@ import { PublishingValidationService } from './PublishingValidationService';
 import type { ManuscriptModalResult } from '../modals/ManuscriptOptionsModal';
 import { getVaultAbsolutePath, runPandocOnContent } from '../utils/exportFormats';
 import { ManuscriptOptionsModal } from '../modals/ManuscriptOptionsModal';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'; // SAFE: isolated local export fixtures, removed after verification.
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'; // SAFE: isolated local export fixtures, removed after verification.
 import { tmpdir } from 'node:os'; // SAFE: test-only temporary folder location.
 import { join } from 'node:path'; // SAFE: test-only export fixture paths.
 import { execFileSync } from 'node:child_process'; // SAFE: opt-in local Poppler verification of the excerpt PDF.
@@ -72,6 +72,44 @@ function formattedFixture() {
 }
 
 describe('manuscript export UI-to-runner contract', () => {
+    it.each([1, 2])('renders a %i-file proof through the same PDF pipeline without source or preference writes', async parts => {
+        const { registrar, plugin, writes, options, content } = formattedFixture();
+        const temp = mkdtempSync(join(tmpdir(), 'rt-proof-contract-'));
+        const template = join(temp, 'layout.tex');
+        writeFileSync(template, '$body$');
+        plugin.settings.pandocLayouts[0].path = template;
+        const save = vi.fn(async () => {});
+        plugin.saveSettings = save;
+        const sidecarWrite = vi.fn(async (_path: string, _text: string) => {});
+        plugin.app.vault.adapter = { write: sidecarWrite } as unknown as typeof plugin.app.vault.adapter; // SAFE: proof byte reads and sidecar writes use exact local job paths, including PDFs not yet indexed by Obsidian.
+        vi.spyOn(registrar as unknown as { ensureVaultFolderPath: (path: string) => Promise<void> }, 'ensureVaultFolderPath').mockImplementation(async path => { mkdirSync(join(temp, path), { recursive: true }); });
+        vi.mocked(getVaultAbsolutePath).mockImplementation((_plugin, path) => join(temp, path));
+        vi.mocked(runPandocOnContent).mockImplementation(async (_text, path) => {
+            if (parts === 2) content.set('Book/2 Second.md', 'Mutated during render');
+            writeFileSync(path, '%PDF-1.7\nQA'); return path;
+        });
+        try {
+            const outcome = await registrar['handleManuscriptExport']({ ...options, outputFormat: 'pdf', intent: 'proof', updateWordCounts: true, saveMarkdownArtifact: true, selectedLayoutId: 'test-layout', rangeStart: parts === 2 ? 1 : 2, rangeEnd: 2, splitMode: parts === 2 ? 'parts' : 'single', splitParts: parts });
+            expect(outcome.proof?.renderedPaths[0]).toMatch(/^Exports\/Proofs\//);
+            expect(outcome.proof?.dependencies).toEqual(expect.arrayContaining([expect.objectContaining({ path: 'Book/2 Second.md' }), expect.objectContaining({ path: template })]));
+            expect(sidecarWrite).toHaveBeenCalledWith(expect.stringMatching(/proof.json$/), expect.stringContaining('"schemaVersion": 1'));
+            expect(outcome.proof?.renderedPaths).toHaveLength(parts);
+            expect(outcome.proof?.sourceWordCounts['Book/2 Second.md']).toBe(3);
+            expect(vi.mocked(runPandocOnContent).mock.calls[parts - 1][0]).toContain('Second scene prose.');
+            expect(vi.mocked(runPandocOnContent).mock.calls[parts - 1][0]).not.toContain('First scene prose.');
+            expect(vi.mocked(runPandocOnContent).mock.calls[parts - 1][0]).not.toContain('Mutated during render');
+            expect(vi.mocked(runPandocOnContent).mock.calls[0][2]?.workingDir).toBe(join(temp, 'Exports'));
+            expect(writes).not.toHaveBeenCalled();
+            expect(save).not.toHaveBeenCalled();
+            expect(outcome.savedPaths).toBeUndefined();
+        } finally {
+            rmSync(temp, { recursive: true, force: true });
+            vi.mocked(getVaultAbsolutePath).mockReturnValue('/tmp/rt-export-contract');
+            vi.mocked(runPandocOnContent).mockImplementation(async (_text, path) => path);
+        }
+    });
+
+
     it.each(['markdown', 'pdf', 'docx'] as const)('exports plain notes in reviewed order to %s without RT structure or source writes', async outputFormat => {
         const { registrar, writer, writes, options, files, content } = formattedFixture();
         content.set(files[0].path, '---\nClass: Frontmatter\nRole: dedication\nWords: 99\n---\n# My own heading\n\nFirst prose.');

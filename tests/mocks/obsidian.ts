@@ -424,3 +424,7 @@ export class MarkdownRenderer {
     return Promise.resolve();
   }
 }
+
+export async function loadPdfJs(): Promise<unknown> {
+  throw new Error('Provide the PDF.js test implementation.');
+}

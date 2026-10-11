@@ -989,7 +989,7 @@ function generateTableOfContents(
  */
 export async function assembleManuscript(
   sceneFiles: TFile[],
-  vault: Vault,
+  vault: Pick<Vault, 'read'>,
   progressCallback?: (sceneIndex: number, sceneTitle: string, totalScenes: number) => void,
   useObsidianLinks = false,
   sortOrder?: string,

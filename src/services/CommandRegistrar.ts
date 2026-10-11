@@ -3,7 +3,10 @@
  * Encapsulates all command+ribbon registration.
  */
 
-import { App, Notice } from 'obsidian';
+import { App, Notice, type TFile } from 'obsidian';
+import { promises as fs } from 'fs'; // SAFE: local template and proof artifact fingerprints.
+import { randomUUID } from 'crypto'; // SAFE: unique local proof job folders.
+import { hashProofInput, getManuscriptProofConfigurationKey, type ManuscriptProofReceipt, type ManuscriptProofDependency } from '../publishing/manuscriptProof';
 import * as path from 'path'; // SAFE: Node path normalizes published export filenames on every desktop platform.
 import type RadialTimelinePlugin from '../main';
 import type { BookLayoutOptions, BookProfile, ManuscriptExportCleanupOptions, PublishingValidationSnapshot } from '../types';
@@ -349,6 +352,25 @@ export class CommandRegistrar {
             return {};
         }
 
+        const isProof = result.intent === 'proof';
+        if (isProof && (result.exportType !== 'manuscript' || result.outputFormat !== 'pdf')) throw new Error('Document proof requires PDF manuscript output.');
+        const dependencies = new Map<string, ManuscriptProofDependency>();
+        const proofWordCounts: Record<string, number> = {};
+        const capturedText = new Map<string, string>();
+        const manuscriptVault = isProof ? { read: async (file: TFile) => {
+            if (capturedText.has(file.path)) return capturedText.get(file.path)!;
+            const content = await this.app.vault.read(file);
+            capturedText.set(file.path, content);
+            dependencies.set(file.path, { kind: 'vault', path: file.path, sha256: hashProofInput(content) });
+            for (const embed of this.app.metadataCache.getFileCache(file)?.embeds || []) {
+                const asset = this.app.metadataCache.getFirstLinkpathDest(embed.link, file.path);
+                if (asset && !dependencies.has(asset.path)) {
+                    dependencies.set(asset.path, { kind: 'vault', path: asset.path, sha256: hashProofInput(new Uint8Array(await this.app.vault.adapter.readBinary(asset.path))) }); // SAFE: proof byte reads and sidecar writes use exact local job paths, including PDFs not yet indexed by Obsidian.
+                }
+            }
+            return content;
+        } } : this.app.vault;
+        const configurationKey = isProof ? getManuscriptProofConfigurationKey(this.plugin, result) : '';
         const savedPaths: string[] = [];
         const renderedPaths: string[] = [];
         try {
@@ -452,6 +474,12 @@ export class CommandRegistrar {
                 throw preflightFailure;
             }
 
+            if (isProof) {
+                for (const file of slicedSelection.files) {
+                    try { await manuscriptVault.read(file); }
+                    catch (error) { throw new ExportFailure({ category: 'missing_files', message: `Proof input could not be read: ${file.path}`, detail: error instanceof Error ? error.message : String(error) }); }
+                }
+            }
             const partRanges = requestedParts > 1
                 ? chunkScenesIntoParts(Array.from({ length: slicedSelection.files.length }, (_unused, idx) => idx), requestedParts).ranges.filter(r => r.size > 0)
                 : [{ part: 1, start: 1, end: slicedSelection.files.length, size: slicedSelection.files.length }];
@@ -534,9 +562,14 @@ export class CommandRegistrar {
 
             const extension = getExportFormatExtension(result.outputFormat);
             const baseOutputFolder = await ensureManuscriptOutputFolder(this.plugin);
-            const outputFolder = isSplitRun
-                ? await this.createSplitOutputFolder(baseOutputFolder, baseTitle)
-                : baseOutputFolder;
+            const outputFolder = isProof
+                ? `${baseOutputFolder}/Proofs/${randomUUID()}`
+                : isSplitRun ? await this.createSplitOutputFolder(baseOutputFolder, baseTitle) : baseOutputFolder;
+            if (isProof) await this.ensureVaultFolderPath(outputFolder);
+            if (isProof && bookMetaResolution.bookMeta?.sourcePath) {
+                const metadataPath = bookMetaResolution.bookMeta.sourcePath;
+                dependencies.set(metadataPath, { kind: 'vault', path: metadataPath, sha256: hashProofInput(new Uint8Array(await this.app.vault.adapter.readBinary(metadataPath))) }); // SAFE: proof byte reads and sidecar writes use exact local job paths, including PDFs not yet indexed by Obsidian.
+            }
             const cleanupOptions = this.resolveCleanupOptions(result);
 
             // The active book's saved Book Pages order (drag-reorder UI in
@@ -548,7 +581,7 @@ export class CommandRegistrar {
                     const partSelection = this.sliceSelection(slicedSelection, range.start, range.end);
                     const assembled = await assembleManuscript(
                         partSelection.files,
-                        this.app.vault,
+                        manuscriptVault,
                         undefined,
                         result.tocMode === 'markdown',
                         filteredSelection.sortOrder,
@@ -567,7 +600,7 @@ export class CommandRegistrar {
                     );
                     this.assertNoSceneReadFailures(assembled);
 
-                    if (result.updateWordCounts && !plainSource) {
+                    if (!isProof && result.updateWordCounts && !plainSource) {
                         await updateSceneWordCounts(this.app, partSelection.files, assembled.scenes);
                     }
 
@@ -634,7 +667,7 @@ export class CommandRegistrar {
                     const partSelection = this.sliceSelection(slicedSelection, range.start, range.end);
                     const assembled = await assembleManuscript(
                         partSelection.files,
-                        this.app.vault,
+                        manuscriptVault,
                         undefined,
                         result.tocMode === 'markdown',
                         filteredSelection.sortOrder,
@@ -653,7 +686,7 @@ export class CommandRegistrar {
                     );
                     this.assertNoSceneReadFailures(assembled);
 
-                    if (result.updateWordCounts && !plainSource) {
+                    if (!isProof && result.updateWordCounts && !plainSource) {
                         await updateSceneWordCounts(this.app, partSelection.files, assembled.scenes);
                     }
 
@@ -733,7 +766,8 @@ export class CommandRegistrar {
             }
 
             const templatePath = resolveTemplatePath(this.plugin, layout.path);
-            const shouldSaveMarkdown = result.saveMarkdownArtifact ?? true;
+            const shouldSaveMarkdown = !isProof && (result.saveMarkdownArtifact ?? true);
+            if (isProof) dependencies.set(templatePath, { kind: 'file', path: templatePath, sha256: hashProofInput(await fs.readFile(templatePath)) });
             const layoutExportBehavior = getManuscriptLayoutExportBehavior(layout);
             const useModernClassicStructure = layout.usesModernClassicStructure === true;
             const modernClassicLayoutOptions = useModernClassicStructure
@@ -811,7 +845,7 @@ export class CommandRegistrar {
                 const partSelection = this.sliceSelection(slicedSelection, range.start, range.end);
                 const assembled = await assembleManuscript(
                     partSelection.files,
-                    this.app.vault,
+                    manuscriptVault,
                     undefined,
                     result.tocMode === 'markdown',
                     filteredSelection.sortOrder,
@@ -840,8 +874,11 @@ export class CommandRegistrar {
                     }
                 );
                 this.assertNoSceneReadFailures(assembled);
+                if (isProof) {
+                    assembled.scenes.forEach(scene => { if (scene.sourcePath) proofWordCounts[scene.sourcePath] = scene.wordCount; });
+                }
 
-                if (result.updateWordCounts && !plainSource) {
+                if (!isProof && result.updateWordCounts && !plainSource) {
                     await updateSceneWordCounts(this.app, partSelection.files, assembled.scenes);
                 }
 
@@ -884,7 +921,7 @@ export class CommandRegistrar {
                     templatePath,
                     headerIncludes,
                     lineBreaksAsParagraphs: result.lineBreaksAsParagraphs === true,
-                    workingDir: absoluteOutputFolder,
+                    workingDir: isProof ? path.dirname(path.dirname(absoluteOutputFolder)) : absoluteOutputFolder,
                     pandocPath: this.plugin.settings.pandocPath,
                     metadata: pandocMetadata
                 });
@@ -892,6 +929,19 @@ export class CommandRegistrar {
                 renderedPaths.push(`${outputFolder}/${path.basename(publishedPath)}`);
             }
 
+            if (isProof) {
+                for (const proofPath of renderedPaths) {
+                    dependencies.set(proofPath, { kind: 'vault', path: proofPath, sha256: hashProofInput(await fs.readFile(`${absoluteOutputFolder}/${path.basename(proofPath)}`)) });
+                }
+                const receipt: ManuscriptProofReceipt = {
+                    schemaVersion: 1, generatedAt: new Date().toISOString(), configurationKey,
+                    styleName: layout.name, notices: usedTemplateFallback ? [TEMPLATE_ACCESS_FALLBACK_MESSAGE] : [],
+                    dependencies: [...dependencies.values()], renderedPaths, sourceWordCounts: proofWordCounts,
+                    bookSourceFolder: bookSnapshot?.sourceFolder,
+                };
+                await this.app.vault.adapter.write(`${outputFolder}/proof.json`, JSON.stringify(receipt, null, 2)); // SAFE: proof byte reads and sidecar writes use exact local job paths, including PDFs not yet indexed by Obsidian.
+                return { renderedPath: renderedPaths[0], renderedPaths, outputFolder, proof: receipt };
+            }
             const activeBook = this.plugin.settings.books.find(book => book.id === bookSnapshot?.id);
             if (activeBook) {
                 if (!activeBook.lastUsedPandocLayoutByPreset) {

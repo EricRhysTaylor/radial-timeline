@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import * as exportFormats from '../utils/exportFormats';
+import { makeFile } from '../../tests/helpers/obsidianFixtures';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -11,6 +13,16 @@ import {
     describeMatterReadiness,
     PublishingValidationService
 } from './PublishingValidationService';
+import { getExportValidationIssues } from './PublishingValidationService';
+
+beforeEach(() => {
+    vi.spyOn(exportFormats, 'isPandocAvailable').mockReturnValue(true);
+    vi.spyOn(exportFormats, 'getStructuredFontDiagnostic').mockReturnValue({ state: 'ok', primaryFontName: 'Test font', resolvedFontName: 'Test font', specDriven: true });
+    vi.spyOn(exportFormats, 'getAutoPdfEngineSelection').mockReturnValue({
+        engine: 'xelatex', path: '/testing/xelatex', available: [], templateNeedsUnicode: false,
+    });
+});
+afterEach(() => vi.restoreAllMocks());
 
 function writeTempTemplate(content: string): string {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-rtts-'));
@@ -21,6 +33,7 @@ function writeTempTemplate(content: string): string {
 
 function createValidationPlugin(layout: PandocLayoutTemplate | PandocLayoutTemplate[], options: { pro?: boolean } = { pro: true }): RadialTimelinePlugin {
     const layouts = Array.isArray(layout) ? layout : [layout];
+    const metadataFile = makeFile('Book/000 BookMeta.md');
     const settings: RadialTimelineSettings = {
         ...DEFAULT_SETTINGS,
         books: [{
@@ -37,11 +50,11 @@ function createValidationPlugin(layout: PandocLayoutTemplate | PandocLayoutTempl
         settings,
         app: {
             vault: {
-                getMarkdownFiles: () => [],
+                getMarkdownFiles: () => [metadataFile],
                 getAbstractFileByPath: () => null,
             },
             metadataCache: {
-                getFileCache: () => null,
+                getFileCache: () => ({ frontmatter: { Class: 'BookMeta', Book: { title: 'Example Book', author: 'Example Author' } } }),
             },
         },
         getBookMeta: () => ({
@@ -62,6 +75,38 @@ function makeNovelLayout(content: string, overrides: Partial<PandocLayoutTemplat
         ...overrides,
     };
 }
+
+describe('deliverable readiness', () => {
+    it('requires no metadata, layout or tools for Markdown', () => {
+        const plugin = createValidationPlugin(makeNovelLayout('Broken layout without a body'));
+        plugin.app.vault.getMarkdownFiles = () => [];
+        vi.mocked(exportFormats.isPandocAvailable).mockReturnValue(false);
+        const context = { exportType: 'manuscript', outputFormat: 'markdown' } as const;
+        const snapshot = new PublishingValidationService(plugin).collect('book-1', context);
+        expect(getExportValidationIssues(snapshot, context)).toEqual([]);
+        expect(exportFormats.isPandocAvailable).not.toHaveBeenCalled();
+    });
+
+    it.each(['pdf', 'docx'] as const)('blocks %s on missing author details before generation', outputFormat => {
+        const plugin = createValidationPlugin(makeNovelLayout('$body$'));
+        plugin.app.vault.getMarkdownFiles = () => [];
+        const context = { exportType: 'manuscript', outputFormat } as const;
+        const snapshot = new PublishingValidationService(plugin).collect('book-1', context);
+        expect(getExportValidationIssues(snapshot, context)).toEqual(expect.arrayContaining([
+            expect.objectContaining({ field: 'Book.title', level: 'error' }),
+            expect.objectContaining({ field: 'Book.author', level: 'error' }),
+        ]));
+    });
+
+    it('blocks a PDF with no rendering engine even when metadata is complete', () => {
+        const plugin = createValidationPlugin(makeNovelLayout('$body$'));
+        vi.mocked(exportFormats.getAutoPdfEngineSelection).mockReturnValue({ engine: 'xelatex', path: null, available: [], templateNeedsUnicode: false });
+        const context = { exportType: 'manuscript', outputFormat: 'pdf' } as const;
+        expect(getExportValidationIssues(new PublishingValidationService(plugin).collect('book-1', context), context)).toEqual(expect.arrayContaining([
+            expect.objectContaining({ code: 'export_latex_engine_missing', level: 'error' }),
+        ]));
+    });
+});
 
 describe('PublishingValidationService matter readiness', () => {
     it.each(['copyright', 'title-page', 'about-author'])(

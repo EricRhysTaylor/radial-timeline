@@ -14,7 +14,7 @@
 import { normalizePath, TFile, TFolder } from 'obsidian';
 import { createHash } from 'crypto'; // SAFE: exact retired starter sample fingerprinting
 import type RadialTimelinePlugin from '../main';
-import { getPandocFolder } from '../utils/exportFormats';
+import { getPandocFolder, isPandocAvailable } from '../utils/exportFormats';
 import { compactTemplatePathForStorage, isAbsolutePath } from '../utils/templateImport';
 import { getActiveBookExportContext } from '../utils/exportContext';
 import { resolveManuscriptOutputFolder } from '../utils/aiOutput';
@@ -24,7 +24,7 @@ import {
     getBundledPandocLayouts,
     installBundledPandocLayouts
 } from '../utils/pandocBundledLayouts';
-import { isPandocPathValid, scanSystemPaths } from './toolchainScan';
+import { scanSystemPaths } from './toolchainScan';
 
 // ── Vault folders ────────────────────────────────────────────────────────────
 
@@ -127,7 +127,7 @@ export async function ensurePublishingEnvironment(plugin: RadialTimelinePlugin):
     let folderReady = false;
 
     const pandocAlreadyValid = (plugin.settings.pandocPath || '').trim().length > 0
-        && isPandocPathValid(plugin.settings.pandocPath);
+        && isPandocAvailable(plugin.settings.pandocPath);
     const scan = await scanSystemPaths();
 
     if (pandocAlreadyValid) {

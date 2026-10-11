@@ -15,7 +15,8 @@ import { getActiveBook } from '../utils/books';
 import { resolveBookPages } from '../utils/bookPagesResolver';
 import { getSceneFilesByOrder } from '../utils/manuscript';
 import { getActiveBookMatterNoteSummaries, getActiveBookMetaStatus, type ActiveBookMetaStatus } from './activeBookNotes';
-import { isPandocPathValid } from './toolchainScan';
+import { isPandocAvailable } from '../utils/exportFormats';
+import { getExportValidationIssues } from '../services/PublishingValidationService';
 
 export interface PdfLayoutSummary {
     validCount: number;
@@ -34,6 +35,7 @@ export interface PublishingProgressContext {
     layoutSummary: PdfLayoutSummary;
     matterCount: number;
     pandocPathValid: boolean;
+    exportSummary: ValidationSummary;
 }
 
 export interface MatterPreviewItem {
@@ -115,7 +117,8 @@ export function getPublishingProgressContext(plugin: RadialTimelinePlugin): Publ
         matterSummary: validation.summarize(validationSnapshot.matterIssues),
         layoutSummary: getPdfLayoutSummary(plugin, validationSnapshot),
         matterCount: resolvedBookPageCount,
-        pandocPathValid: isPandocPathValid(plugin.settings.pandocPath)
+        pandocPathValid: isPandocAvailable(plugin.settings.pandocPath),
+        exportSummary: validation.summarize(getExportValidationIssues(validationSnapshot, { exportType: 'manuscript', outputFormat: 'pdf' })),
     };
 }
 

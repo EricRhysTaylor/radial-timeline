@@ -13,7 +13,7 @@ import type {
     ValidationSummary,
 } from '../types';
 import { assertNever } from '../utils/assertNever';
-import { getAutoPdfEngineSelection, isConfiguredExecutablePathMissing, readResolvedTemplateText, resolveTemplatePath, validatePandocLayout } from '../utils/exportFormats';
+import { getAutoPdfEngineSelection, getStructuredFontDiagnostic, isPandocAvailable, readResolvedTemplateText, resolveTemplatePath, validatePandocLayout } from '../utils/exportFormats';
 import { getActiveFrontmatterMappings, normalizeFrontmatterKeys } from '../utils/frontmatter';
 import { parseMatterMetaFromFrontmatter } from '../utils/matterMeta';
 import { isPathInFolderScope } from '../utils/pathScope';
@@ -25,11 +25,23 @@ import { hasProFeatureAccess } from '../settings/featureGate';
 
 type ValidationScope = ValidationIssue['scope'];
 
-interface PublishingValidationContext {
+export interface PublishingValidationContext {
     exportType?: 'manuscript' | 'outline';
     outputFormat?: 'pdf' | 'markdown' | 'docx' | 'csv' | 'json';
     manuscriptPreset?: UsageContext;
     selectedLayoutId?: string;
+    includeMatter?: boolean;
+}
+
+/** The issues that apply to this deliverable, shared by its UI and runner. */
+export function getExportValidationIssues(snapshot: PublishingValidationSnapshot, context: PublishingValidationContext): ValidationIssue[] {
+    const formatted = context.exportType === 'manuscript'
+        && (context.outputFormat === 'pdf' || context.outputFormat === 'docx');
+    return [
+        ...snapshot.preflightIssues,
+        ...(formatted ? snapshot.activeBookMetaIssues.filter(issue => issue.level === 'error') : []),
+        ...(context.includeMatter ? snapshot.matterIssues : []),
+    ];
 }
 
 export interface MatterReadinessDescriptor {
@@ -120,7 +132,9 @@ export function summarizeValidationIssues(issues: ValidationIssue[]): Validation
         state: getIssueState(issues),
         errorCount,
         warningCount,
-        topMessage: issues[0]?.message,
+        topMessage: issues.find(issue => issue.level === 'error')?.message
+            || issues.find(issue => issue.level === 'warning')?.message
+            || issues[0]?.message,
     };
 }
 
@@ -358,6 +372,8 @@ export class PublishingValidationService {
             templateAccessIssues: [],
             templateCompatibilityIssues: [],
         };
+        // Plain manuscript and outline exports do not use publishing assets or metadata.
+        if (context.exportType && context.outputFormat && context.outputFormat !== 'pdf' && context.outputFormat !== 'docx') return snapshot;
 
         const layouts = Array.isArray(this.plugin.settings.pandocLayouts) ? this.plugin.settings.pandocLayouts : [];
         const { assets, profiles } = adaptPandocLayoutsToPublishingModel(layouts);
@@ -480,19 +496,28 @@ export class PublishingValidationService {
         });
 
         if (bookMetaResolution.warning) {
-            pushIssue(snapshot.activeBookMetaIssues, 'book-meta', 'warning', 'book_meta_ambiguous', bookMetaResolution.warning);
+            pushIssue(snapshot.activeBookMetaIssues, 'book-meta', 'error', 'book_meta_ambiguous', bookMetaResolution.warning);
         }
 
-        if (selectedProfile) {
-            const missingRequired = this.collectMissingBookMetaFields(bookMetaResolution.bookMeta, selectedProfile.requiredBookMetaFields);
+        const formattedExport = context.exportType === 'manuscript'
+            && (context.outputFormat === 'pdf' || context.outputFormat === 'docx');
+        if (selectedProfile || formattedExport) {
+            const requiredFields: BookMetaFieldKey[] = formattedExport
+                ? [...new Set<BookMetaFieldKey>(['Book.title', 'Book.author', ...(context.outputFormat === 'pdf' ? selectedProfile?.requiredBookMetaFields || [] : [])])]
+                : selectedProfile?.requiredBookMetaFields || [];
+            if (context.includeMatter && bookMetaResolution.bookMeta?.rights && !bookMetaResolution.bookMeta.rights.year) {
+                requiredFields.push('Rights.year');
+            }
+            const missingRequired = this.collectMissingBookMetaFields(bookMetaResolution.bookMeta, requiredFields);
             missingRequired.forEach(field => {
-                pushIssue(snapshot.activeBookMetaIssues, 'book-meta', 'error', 'book_meta_required_missing', `Missing required publishing metadata: ${field}.`, {
+                const label = field === 'Book.title' ? 'Title' : field === 'Book.author' ? 'Author' : field === 'Rights.year' ? 'Rights year' : field;
+                pushIssue(snapshot.activeBookMetaIssues, 'book-meta', 'error', 'book_meta_required_missing', `Add ${label.toLowerCase()} in Publish → Book details before exporting.`, {
                     actionable: true,
                     field,
                 });
             });
 
-            const missingRecommended = this.collectMissingBookMetaFields(bookMetaResolution.bookMeta, selectedProfile.recommendedBookMetaFields);
+            const missingRecommended = this.collectMissingBookMetaFields(bookMetaResolution.bookMeta, selectedProfile?.recommendedBookMetaFields || []);
             missingRecommended.forEach(field => {
                 pushIssue(snapshot.activeBookMetaIssues, 'book-meta', 'warning', 'book_meta_recommended_missing', `Recommended publishing metadata is missing: ${field}.`, {
                     actionable: true,
@@ -543,6 +568,12 @@ export class PublishingValidationService {
             }
         }
 
+        if (formattedExport && !isPandocAvailable(this.plugin.settings.pandocPath)) {
+            pushIssue(snapshot.preflightIssues, 'export', 'error', 'export_pandoc_missing', 'Locate Pandoc in Publish → Export tools before exporting PDF or Word.', {
+                actionable: true,
+                field: 'pandocPath',
+            });
+        }
         if (context.exportType === 'manuscript' && context.outputFormat === 'pdf') {
             if (!selectedLayout) {
                 pushIssue(snapshot.preflightIssues, 'export', 'error', 'export_layout_missing', 'Select a PDF layout before exporting.', {
@@ -598,17 +629,14 @@ export class PublishingValidationService {
                     );
                 }
             }
-            const pandocPath = (this.plugin.settings.pandocPath || '').trim();
-            if (isConfiguredExecutablePathMissing(pandocPath)) {
-                pushIssue(snapshot.preflightIssues, 'export', 'error', 'export_pandoc_missing', 'Configured Pandoc binary could not be found.', {
-                    actionable: true,
-                    field: 'pandocPath',
-                });
-            }
             if (selectedLayout) {
+                const font = getStructuredFontDiagnostic(selectedLayout);
+                if (font.state !== 'ok') {
+                    pushIssue(snapshot.preflightIssues, 'export', 'error', 'export_font_missing', font.installHint?.message || `Install ${font.primaryFontName} before exporting this PDF style.`, { actionable: true });
+                }
                 const engineSelection = getAutoPdfEngineSelection(resolveTemplatePath(this.plugin, selectedLayout.path));
                 if (!engineSelection.path) {
-                    pushIssue(snapshot.preflightIssues, 'export', 'warning', 'export_latex_engine_missing', 'No supported LaTeX PDF engine was detected for the selected template.', {
+                    pushIssue(snapshot.preflightIssues, 'export', 'error', 'export_latex_engine_missing', 'Install a supported LaTeX PDF engine, then use Auto locate in Publish → Export tools.', {
                         actionable: true,
                     });
                 }
@@ -718,7 +746,7 @@ export class PublishingValidationService {
         });
     }
 
-    private resolveBookMetaForBook(sourceFolder: string): { bookMeta: BookMeta | null; warning?: string } {
+    resolveBookMetaForBook(sourceFolder: string): { bookMeta: BookMeta | null; warning?: string } {
         const mappings = getActiveFrontmatterMappings(this.plugin.settings);
 
         const candidates = this.plugin.app.vault.getMarkdownFiles()
@@ -737,23 +765,17 @@ export class PublishingValidationService {
             .sort((a, b) => a.path.localeCompare(b.path));
 
         if (candidates.length === 0) {
-            return { bookMeta: this.plugin.getBookMeta() };
+            return { bookMeta: null };
         }
-
-        const current = this.plugin.getBookMeta();
-        const preferred = current?.sourcePath
-            ? candidates.find(candidate => candidate.path === current.sourcePath)
-            : undefined;
-        const selected = preferred || candidates[0];
 
         if (candidates.length > 1) {
             return {
-                bookMeta: selected.meta,
-                warning: `Multiple Book Details notes found. Using: ${selected.path}`,
+                bookMeta: null,
+                warning: 'Multiple Book Details notes found. Keep exactly one in the manuscript folder before exporting PDF or Word.',
             };
         }
 
-        return { bookMeta: selected.meta };
+        return { bookMeta: candidates[0].meta };
     }
 
     private getMatterFiles(sourceFolder: string): Array<{ path: string; frontmatter: Record<string, unknown> }> {

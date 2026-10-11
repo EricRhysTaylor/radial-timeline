@@ -4,8 +4,9 @@
  */
 
 import { App, Notice } from 'obsidian';
+import * as path from 'path'; // SAFE: Node path normalizes published export filenames on every desktop platform.
 import type RadialTimelinePlugin from '../main';
-import type { BookLayoutOptions, BookMeta, ManuscriptExportCleanupOptions, PublishingValidationSnapshot } from '../types';
+import type { BookLayoutOptions, BookProfile, ManuscriptExportCleanupOptions, PublishingValidationSnapshot } from '../types';
 import { assembleManuscript, getSceneFilesByOrder, ManuscriptSceneSelection, type AssembledManuscript, type ManuscriptSceneHeadingMode, updateSceneWordCounts } from '../utils/manuscript';
 import { openGossamerScoreEntry, runGossamerAiAnalysis } from '../GossamerCommands';
 import { summarizePerfMeasurements, resetPerfMeasurements } from '../renderer/utils/Performance';
@@ -34,8 +35,6 @@ import { isProActive } from '../settings/proEntitlement';
 import { ensureManuscriptReferenceDocxInstalled } from '../utils/pandocBundledLayouts';
 import { getActiveBookExportContext } from '../utils/exportContext';
 import { getActiveBook } from '../utils/books';
-import { getActiveFrontmatterMappings, normalizeFrontmatterKeys } from '../utils/frontmatter';
-import { isPathInFolderScope } from '../utils/pathScope';
 import { ensureReferenceIdTemplateFrontmatter, ensureSceneTemplateFrontmatter } from '../utils/sceneIds';
 import { chunkScenesIntoParts } from '../utils/splitOutput';
 import { resolveBookPages, type MatterNoteSummary } from '../utils/bookPagesResolver';
@@ -49,6 +48,7 @@ import { ExportFailure, categorizeExportError } from '../utils/exportErrors';
 import { getRuntimeSettings } from '../utils/runtimeEstimator';
 import { t } from '../i18n';
 import { writeManagedOutput } from '../utils/logVaultOps';
+import { getExportValidationIssues } from './PublishingValidationService';
 
 export class CommandRegistrar {
     constructor(private plugin: RadialTimelinePlugin, private app: App) { }
@@ -325,6 +325,8 @@ export class CommandRegistrar {
 
         // ── Source-folder guardrail (applies to Markdown and PDF) ───────
         const ctx = getActiveBookExportContext(this.plugin);
+        const activeBookAtStart = getActiveBook(this.plugin.settings);
+        const bookSnapshot = activeBookAtStart ? structuredClone(activeBookAtStart) : null;
         const folder = ctx.sourceFolder.trim();
         if (!folder || !this.app.vault.getAbstractFileByPath(folder)) {
             const activeBook = getActiveBook(this.plugin.settings);
@@ -335,6 +337,8 @@ export class CommandRegistrar {
             return {};
         }
 
+        const savedPaths: string[] = [];
+        const renderedPaths: string[] = [];
         try {
             const templateAccess = result.exportType === 'manuscript' && result.outputFormat === 'pdf'
                 ? resolveTemplateAccess({
@@ -420,15 +424,17 @@ export class CommandRegistrar {
                 return {};
             }
 
-            const preflightSnapshot = this.plugin.getPublishingValidationService().collect(this.plugin.settings.activeBookId, {
+            const preflightSnapshot = this.plugin.getPublishingValidationService().collect(bookSnapshot?.id, {
                 exportType: result.exportType,
                 outputFormat: result.outputFormat,
                 manuscriptPreset: result.manuscriptPreset,
                 selectedLayoutId: result.selectedLayoutId,
+                includeMatter,
             });
             const preflightFailure = this.buildPreflightExportFailure(preflightSnapshot, {
                 exportType: result.exportType,
                 outputFormat: result.outputFormat,
+                includeMatter,
             });
             if (preflightFailure) {
                 throw preflightFailure;
@@ -440,8 +446,6 @@ export class CommandRegistrar {
 
             const isSplitRun = requestedParts > 1;
             const baseTitle = stemToReadable(ctx.fileStem);
-            const savedPaths: string[] = [];
-            const renderedPaths: string[] = [];
             const statusMessages: string[] = [];
             if (usedTemplateFallback) {
                 statusMessages.push(TEMPLATE_ACCESS_FALLBACK_MESSAGE);
@@ -493,23 +497,7 @@ export class CommandRegistrar {
                 };
             }
 
-            const bookMetaResolution = this.resolveBookMetaForExport(folder);
-            // Word and PDF both need BookMeta; name the one the author chose.
-            const bookMetaFormatLabel = result.outputFormat === 'docx' ? 'Word' : 'PDF';
-            if (bookMetaResolution.warning) {
-                throw new ExportFailure({
-                    category: 'missing_metadata',
-                    message: bookMetaResolution.warning,
-                    detail: `Keep exactly one BookMeta note per book folder before exporting ${bookMetaFormatLabel}.`
-                });
-            }
-            if (!bookMetaResolution.bookMeta) {
-                throw new ExportFailure({
-                    category: 'missing_metadata',
-                    message: `No BookMeta note found for ${bookMetaFormatLabel} export.`,
-                    detail: 'Create one BookMeta note in the active book source folder so title, author, and Book Pages resolve explicitly.'
-                });
-            }
+            const bookMetaResolution = this.plugin.getPublishingValidationService().resolveBookMetaForBook(folder);
             const selectedMatterCount = slicedSelection.files.reduce((count, file) => (
                 filteredSelection.matterMetaByPath?.has(file.path) ? count + 1 : count
             ), 0);
@@ -530,28 +518,6 @@ export class CommandRegistrar {
                 statusMessages.push('Include front & back matter is enabled, but no Book Pages were found for the active book.');
             }
 
-            if (!bookMetaResolution.bookMeta.title?.trim()) {
-                throw new ExportFailure({
-                    category: 'missing_metadata',
-                    message: 'BookMeta is missing Title.',
-                    detail: 'PDF layouts require an explicit BookMeta Title for running headers and title pages.'
-                });
-            }
-            if (!bookMetaResolution.bookMeta.author?.trim()) {
-                throw new ExportFailure({
-                    category: 'missing_metadata',
-                    message: 'BookMeta is missing Author.',
-                    detail: 'PDF layouts require an explicit BookMeta Author for template metadata and title pages.'
-                });
-            }
-            if (bookMetaResolution.bookMeta.rights && !bookMetaResolution.bookMeta.rights.year) {
-                throw new ExportFailure({
-                    category: 'missing_metadata',
-                    message: 'BookMeta is missing Rights: Year.',
-                    detail: 'Complete BookMeta Rights: Year before exporting copyright-backed Book Pages.'
-                });
-            }
-
             const extension = getExportFormatExtension(result.outputFormat);
             const baseOutputFolder = await ensureManuscriptOutputFolder(this.plugin);
             const outputFolder = isSplitRun
@@ -562,8 +528,7 @@ export class CommandRegistrar {
             // The active book's saved Book Pages order (drag-reorder UI in
             // Settings → Publish persists this) drives matter page emission
             // order. Empty/undefined → resolver canonical order.
-            const activeBookForOrder = getActiveBook(this.plugin.settings);
-            const bookPageOrder = activeBookForOrder?.bookPageOrder;
+            const bookPageOrder = bookSnapshot?.bookPageOrder;
             if (result.outputFormat === 'markdown') {
                 for (const range of partRanges) {
                     const partSelection = this.sliceSelection(slicedSelection, range.start, range.end);
@@ -692,7 +657,7 @@ export class CommandRegistrar {
                             extension,
                             fileStem: ctx.fileStem
                         });
-                    await runPandocOnContent(docxText, `${absoluteOutputFolder}/${renderedFilename}`, {
+                    const publishedPath = await runPandocOnContent(docxText, `${absoluteOutputFolder}/${renderedFilename}`, {
                         targetFormat: 'docx',
                         referenceDocPath: referenceDoc.path,
                         lineBreaksAsParagraphs: result.lineBreaksAsParagraphs === true,
@@ -700,7 +665,7 @@ export class CommandRegistrar {
                         pandocPath: this.plugin.settings.pandocPath,
                         metadata: docxMetadata
                     });
-                    renderedPaths.push(`${outputFolder}/${renderedFilename}`);
+                    renderedPaths.push(`${outputFolder}/${path.basename(publishedPath)}`);
                 }
 
                 if (isSplitRun) {
@@ -755,14 +720,14 @@ export class CommandRegistrar {
             const layoutExportBehavior = getManuscriptLayoutExportBehavior(layout);
             const useModernClassicStructure = layout.usesModernClassicStructure === true;
             const modernClassicLayoutOptions = useModernClassicStructure
-                ? this.resolveModernClassicLayoutOptions(layout.id)
+                ? this.resolveModernClassicLayoutOptions(layout.id, bookSnapshot)
                 : undefined;
             // Precedence: user UI override wins only for layouts that expose a
             // scene-opener heading control (Signature Literary). Other layouts
             // use their spec default so stale saved options cannot drift the
             // exported PDF away from the preview card.
             const layoutSceneHeadingMode = (layoutExportBehavior.allowSceneHeadingModeOverride
-                ? this.resolveLayoutSceneHeadingMode(layout.id)
+                ? this.resolveLayoutSceneHeadingMode(layout.id, bookSnapshot)
                 : undefined)
                 ?? layoutExportBehavior.defaultSceneHeadingMode;
             const sceneHeadingRenderMode = layoutExportBehavior.sceneHeadingRenderMode;
@@ -895,9 +860,8 @@ export class CommandRegistrar {
                         layoutAbbreviation: getLayoutAbbreviation(layout)
                     });
                 const renderedAbsolutePath = `${absoluteOutputFolder}/${renderedFilename}`;
-                const renderedVaultPath = `${outputFolder}/${renderedFilename}`;
 
-                await runPandocOnContent(sanitizedMarkdown, renderedAbsolutePath, {
+                const publishedPath = await runPandocOnContent(sanitizedMarkdown, renderedAbsolutePath, {
                     targetFormat: 'pdf',
                     templatePath,
                     headerIncludes,
@@ -907,10 +871,10 @@ export class CommandRegistrar {
                     metadata: pandocMetadata
                 });
 
-                renderedPaths.push(renderedVaultPath);
+                renderedPaths.push(`${outputFolder}/${path.basename(publishedPath)}`);
             }
 
-            const activeBook = getActiveBook(this.plugin.settings);
+            const activeBook = this.plugin.settings.books.find(book => book.id === bookSnapshot?.id);
             if (activeBook) {
                 if (!activeBook.lastUsedPandocLayoutByPreset) {
                     activeBook.lastUsedPandocLayoutByPreset = {};
@@ -959,6 +923,7 @@ export class CommandRegistrar {
             };
         } catch (error) {
             const failure = categorizeExportError(error);
+            failure.completedPaths = [...savedPaths, ...renderedPaths];
             new Notice(failure.message);
             console.error(error);
             throw failure;
@@ -971,25 +936,17 @@ export class CommandRegistrar {
         context: {
             exportType: 'manuscript' | 'outline';
             outputFormat: 'pdf' | 'markdown' | 'docx' | 'csv' | 'json';
+            includeMatter?: boolean;
         }
     ): ExportFailure | null {
-        const shouldBlockOnBookMeta = context.exportType === 'manuscript' && context.outputFormat === 'pdf';
-        const blocking = snapshot.preflightIssues.find(issue => issue.level === 'error')
-            || (shouldBlockOnBookMeta
-                ? snapshot.activeBookMetaIssues.find(issue => issue.level === 'error')
-                : undefined);
+        const issues = getExportValidationIssues(snapshot, context);
+        const blocking = issues.find(issue => issue.level === 'error');
         if (!blocking) return null;
 
-        const detailLines = [
-            ...snapshot.preflightIssues.map(issue => `Preflight: ${issue.message}`),
-            ...snapshot.templateCompatibilityIssues.map(issue => `Template Compatibility: ${issue.message}`),
-            ...(shouldBlockOnBookMeta
-                ? snapshot.activeBookMetaIssues.map(issue => `BookMeta: ${issue.message}`)
-                : []),
-        ];
+        const detailLines = issues.map(issue => issue.message);
 
         let category: ConstructorParameters<typeof ExportFailure>[0]['category'] = 'pandoc_compile_failure';
-        if (blocking.code.includes('pandoc') || blocking.code.includes('engine')) {
+        if (blocking.code.includes('pandoc') || blocking.code.includes('engine') || blocking.code.includes('font')) {
             category = 'missing_dependency';
         } else if (blocking.code.includes('layout') || blocking.code.includes('template') || blocking.code.includes('profile') || blocking.code.includes('compatibility')) {
             category = 'invalid_template';
@@ -1105,93 +1062,7 @@ export class CommandRegistrar {
         return splitFolder;
     }
 
-    private parseBookMetaFromFrontmatter(frontmatter: Record<string, unknown>, sourcePath: string): BookMeta {
-        const book = frontmatter.Book as Record<string, unknown> | undefined;
-        const rights = frontmatter.Rights as Record<string, unknown> | undefined;
-        const identifiers = frontmatter.Identifiers as Record<string, unknown> | undefined;
-        const publisher = frontmatter.Publisher as Record<string, unknown> | undefined;
-        const frontmatterBlocks = frontmatter.Frontmatter as Record<string, unknown> | undefined;
-        const backmatterBlocks = frontmatter.Backmatter as Record<string, unknown> | undefined;
-
-        const rawYear = rights?.year;
-        const year = typeof rawYear === 'number'
-            ? rawYear
-            : typeof rawYear === 'string'
-                ? Number(rawYear)
-                : NaN;
-
-        return {
-            title: (book?.title as string) || undefined,
-            subtitle: (book?.subtitle as string) || undefined,
-            author: (book?.author as string) || undefined,
-            rights: rights ? {
-                copyright_holder: (rights.copyright_holder as string) || undefined,
-                year: Number.isFinite(year) ? year : undefined
-            } : undefined,
-            identifiers: identifiers ? {
-                isbn_paperback: (identifiers.isbn_paperback as string) || undefined
-            } : undefined,
-            publisher: publisher ? {
-                name: (publisher.name as string) || undefined,
-                imprint: (publisher.imprint as string) || undefined,
-                edition: (publisher.edition as string) || undefined
-            } : undefined,
-            frontmatter: frontmatterBlocks ? {
-                title_page_note: (frontmatterBlocks.title_page_note as string) || undefined,
-                dedication: (frontmatterBlocks.dedication as string) || undefined,
-                epigraph_quote: (frontmatterBlocks.epigraph_quote as string) || undefined,
-                epigraph_attribution: (frontmatterBlocks.epigraph_attribution as string) || undefined
-            } : undefined,
-            backmatter: backmatterBlocks ? {
-                acknowledgments: (backmatterBlocks.acknowledgments as string) || undefined,
-                about_author: (backmatterBlocks.about_author as string) || undefined,
-                author_note: (backmatterBlocks.author_note as string) || undefined,
-                other_works: (backmatterBlocks.other_works as string) || undefined
-            } : undefined,
-            sourcePath
-        };
-    }
-
-    private resolveBookMetaForExport(sourceFolder: string): { bookMeta: BookMeta | null; warning?: string } {
-        const mappings = getActiveFrontmatterMappings(this.plugin.settings);
-
-        const candidates = this.app.vault.getMarkdownFiles()
-            .filter(file => isPathInFolderScope(file.path, sourceFolder))
-            .map(file => {
-                const cache = this.app.metadataCache.getFileCache(file);
-                if (!cache?.frontmatter) return null;
-                const normalized = normalizeFrontmatterKeys(cache.frontmatter, mappings);
-                if (normalized.Class !== 'BookMeta') return null;
-                return {
-                    path: file.path,
-                    meta: this.parseBookMetaFromFrontmatter(normalized, file.path)
-                };
-            })
-            .filter((entry): entry is { path: string; meta: BookMeta } => !!entry)
-            .sort((a, b) => a.path.localeCompare(b.path));
-
-        if (candidates.length === 0) {
-            return { bookMeta: this.plugin.getBookMeta() };
-        }
-
-        const current = this.plugin.getBookMeta();
-        const preferred = current?.sourcePath
-            ? candidates.find(candidate => candidate.path === current.sourcePath)
-            : undefined;
-        const selected = preferred || candidates[0];
-
-        if (candidates.length > 1) {
-            return {
-                bookMeta: selected.meta,
-                warning: `Multiple BookMeta notes found. Using: ${selected.path}`
-            };
-        }
-
-        return { bookMeta: selected.meta };
-    }
-
-    private resolveModernClassicLayoutOptions(layoutId: string): BookLayoutOptions | undefined {
-        const activeBook = getActiveBook(this.plugin.settings);
+    private resolveModernClassicLayoutOptions(layoutId: string, activeBook: BookProfile | null): BookLayoutOptions | undefined {
         if (!activeBook || !layoutId) return undefined;
         const scopedOptions = activeBook.layoutOptions?.[layoutId];
         if (!scopedOptions) return undefined;
@@ -1210,9 +1081,8 @@ export class CommandRegistrar {
         };
     }
 
-    private resolveLayoutSceneHeadingMode(layoutId: string): ManuscriptSceneHeadingMode | undefined {
+    private resolveLayoutSceneHeadingMode(layoutId: string, activeBook: BookProfile | null): ManuscriptSceneHeadingMode | undefined {
         if (!layoutId) return undefined;
-        const activeBook = getActiveBook(this.plugin.settings);
         const mode = activeBook?.layoutOptions?.[layoutId]?.sceneHeadingMode;
         if (mode === 'scene-number' || mode === 'scene-number-title' || mode === 'title-only') {
             return mode;

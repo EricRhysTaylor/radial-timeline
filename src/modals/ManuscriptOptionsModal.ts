@@ -39,6 +39,7 @@ import {
 } from '../publishing/layoutVisuals';
 import { buildSpreadValidationContext, collectSpreadWarningTooltips } from '../publishing/spreadValidationContext';
 import { ERT_CLASSES } from '../ui/classes';
+import { getExportValidationIssues } from '../services/PublishingValidationService';
 import type {
     BookProfile,
     BookPublishingPreferences,
@@ -298,12 +299,9 @@ export class ManuscriptOptionsModal extends Modal {
     private cleanupCalloutsToggle?: ToggleComponent;
     private cleanupBlockIdsToggle?: ToggleComponent;
     private templateWarningEl?: HTMLElement;
-    /**
-     * Strict font policy (Phase 1): true when PDF format is selected and the
-     * spec-driven font diagnostic reports the required font is missing. The
-     * Export button is disabled in this state — see updateActionButtonDisabledState.
-     */
-    private isPdfFontBlocked: boolean = false;
+    private exportReadinessEl?: HTMLElement;
+    private exportBlocked = false;
+    private exportInFlight = false;
     private layoutHeaderEl?: HTMLElement;
     private layoutContainerEl?: HTMLElement;
     private selectedLayoutId?: string;
@@ -946,6 +944,7 @@ export class ManuscriptOptionsModal extends Modal {
         this.refreshTemplateDropdown();
 
         // I) FOOTER — one-line read-back of what the file will contain
+        this.exportReadinessEl = container.createDiv({ cls: 'ert-panel ert-stack ert-hidden', attr: { role: 'status', 'aria-live': 'polite' } });
         this.readbackEl = container.createDiv({ cls: 'ert-sub-card-note ert-hidden' });
         const actions = container.createDiv({ cls: 'ert-modal-actions' });
         this.actionButton = new ButtonComponent(actions)
@@ -1138,12 +1137,34 @@ export class ManuscriptOptionsModal extends Modal {
     private refreshValidationSnapshot(): void {
         const activeBook = getActiveBook(this.plugin.settings);
         const selectedProfile = this.selectedExportProfile || this.defaultExportProfile;
-        this.validationSnapshot = this.plugin.getPublishingValidationService().collect(activeBook?.id, {
+        const context = {
             exportType: this.exportType,
             outputFormat: this.exportType === 'outline' ? 'markdown' : this.outputFormat,
             manuscriptPreset: this.manuscriptPreset,
             selectedLayoutId: this.selectedLayoutId || this.resolveLayoutIdForProfile(selectedProfile),
-        });
+            includeMatter: this.includeMatter,
+        } as const;
+        this.validationSnapshot = this.plugin.getPublishingValidationService().collect(activeBook?.id, context);
+        const issues = getExportValidationIssues(this.validationSnapshot, context);
+        this.exportBlocked = issues.some(issue => issue.level === 'error');
+        const readiness = this.exportReadinessEl;
+        if (readiness) {
+            readiness.empty();
+            readiness.toggleClass('ert-hidden', this.exportType === 'outline' || (this.outputFormat === 'markdown' && issues.length === 0));
+            readiness.createEl('h4', { cls: 'ert-section-title', text: this.exportBlocked ? 'Export checks · Needs attention' : 'Export checks · Ready' });
+            for (const issue of issues.filter(issue => issue.level !== 'info')) {
+                readiness.createDiv({ text: issue.message });
+            }
+            const blocker = issues.find(issue => issue.level === 'error');
+            if (blocker) {
+                const needsStyle = blocker.code.includes('font') || blocker.code.includes('template') || blocker.code.includes('layout') || blocker.code.includes('profile');
+                const target = blocker.scope === 'book-meta' ? 'book-details' : needsStyle ? 'pdf-style' : 'export-check';
+                new ButtonComponent(readiness)
+                    .setButtonText(blocker.scope === 'book-meta' ? 'Edit book details' : needsStyle ? 'Review PDF style' : 'Open export tools')
+                    .onClick(() => this.openPublishingSettings(target));
+            }
+        }
+        this.updateActionButtonDisabledState();
     }
 
     private getTemplateList(): ModalExportProfile[] {
@@ -1333,6 +1354,10 @@ export class ManuscriptOptionsModal extends Modal {
     }
 
     private updateTemplateActionButtonState(): void {
+        if (this.exportCompleted) this.resetPostExportState();
+        this.outputStatusEl?.empty();
+        this.outputStatusEl?.addClass('ert-hidden');
+        this.refreshValidationSnapshot();
         const { selectedTemplate, isCreateMode, isBuiltIn, hasChanges } = this.getSelectedTemplateState();
 
         if (this.saveTemplateButton) {
@@ -1394,10 +1419,12 @@ export class ManuscriptOptionsModal extends Modal {
             parts.push({ text: scenes, warn: false });
         } else if (forReaders) {
             parts.push({ text: scenes, warn: false }, { text: 'scene IDs are on', warn: true });
+        } else if (!counted) {
+            parts.push({ text: `${scenes} · checking IDs`, warn: false });
         } else {
             const missing = markers.filter(marker => !marker.hasSceneId).length;
             parts.push(missing > 0
-                ? { text: `${scenes} with IDs (${missing} without one)`, warn: true }
+                ? { text: `${scenes} · ${markers.length - missing} IDs · ${missing} missing IDs`, warn: true }
                 : { text: `${scenes} with IDs`, warn: false });
         }
 
@@ -1848,6 +1875,8 @@ export class ManuscriptOptionsModal extends Modal {
         if (this.exportCompleted) {
             this.resetPostExportState();
         }
+        this.outputStatusEl?.empty();
+        this.outputStatusEl?.addClass('ert-hidden');
         this.normalizeOutputFormatForOutline();
         const mode = this.getUiMode();
         this.sanitizeStateForMode(mode);
@@ -2227,18 +2256,11 @@ export class ManuscriptOptionsModal extends Modal {
      * Update PDF Output summary based on current preset and format
      */
     private updateTemplateWarning(): void {
-        // Reset font-block flag at the top of every render. The block is only
-        // re-asserted when the spec-driven diagnostic reports state !== 'ok'
-        // for the currently-selected PDF layout.
-        const previousBlocked = this.isPdfFontBlocked;
-        this.isPdfFontBlocked = false;
-
         if (!this.templateWarningEl || this.exportType !== 'manuscript') {
             if (this.templateWarningEl) {
                 this.templateWarningEl.empty();
                 this.templateWarningEl.addClass('ert-manuscript-preset-status--hidden');
             }
-            if (previousBlocked) this.updateActionButtonDisabledState();
             return;
         }
 
@@ -2254,7 +2276,6 @@ export class ManuscriptOptionsModal extends Modal {
         // LaTeX layout, so template/font validation must not block them.
         if (this.outputFormat !== 'pdf') {
             this.templateWarningEl.addClass('ert-manuscript-preset-status--hidden');
-            if (previousBlocked) this.updateActionButtonDisabledState();
             return;
         }
         this.templateWarningEl.removeClass('ert-manuscript-preset-status--hidden');
@@ -2304,12 +2325,6 @@ export class ManuscriptOptionsModal extends Modal {
         // Modern (lmodern) and bundled-Sorts-Mill-Goudy special cases.
         const structuredFontDiag = getStructuredFontDiagnostic(selectedLayout);
         this.ensureBundledFontsForLayout(selectedLayout, structuredFontDiag.state);
-        // STRICT FONT POLICY (Phase 1): when the spec-driven diagnostic reports
-        // a missing font for the selected PDF layout, hard-block the Export
-        // button. The action-button disabled-state code consumes this flag.
-        // (We're guaranteed to be in PDF format here — the markdown branch
-        // returned above.)
-        this.isPdfFontBlocked = structuredFontDiag.state !== 'ok';
         const primaryRequested = fontDiagnostics.optionalFonts[0] || fontDiagnostics.requiredFonts[0] || null;
         const hasPrimaryMissing = canVerifyFonts && primaryRequested
             ? fontDiagnostics.missingOptionalFonts.includes(primaryRequested) || fontDiagnostics.missingRequiredFonts.includes(primaryRequested)
@@ -2423,7 +2438,7 @@ export class ManuscriptOptionsModal extends Modal {
             const readyLine = content.createDiv({ cls: 'ert-pdf-output-ready-line' });
             const readyIcon = readyLine.createSpan({ cls: 'ert-warning-icon ert-warning-icon--inline' });
             setIcon(readyIcon, iconName);
-            readyLine.createSpan({ text: 'Export checks · Ready' });
+            readyLine.createSpan({ text: 'Style checks · Ready' });
             content.createDiv({
                 cls: 'ert-pdf-output-line is-status is-status-info',
                 text: fontSummaryLine,
@@ -2452,7 +2467,7 @@ export class ManuscriptOptionsModal extends Modal {
         const titleRow = content.createDiv({ cls: 'ert-pdf-output-title' });
         const titleIcon = titleRow.createSpan({ cls: 'ert-warning-icon ert-warning-icon--inline' });
         setIcon(titleIcon, iconName);
-        titleRow.createSpan({ text: 'Export checks' });
+        titleRow.createSpan({ text: 'Style checks' });
         content.createDiv({
             cls: 'ert-pdf-output-line is-status is-status-info',
             text: fontSummaryLine,
@@ -2692,14 +2707,8 @@ export class ManuscriptOptionsModal extends Modal {
     private updateActionButtonDisabledState(): void {
         if (!this.actionButton || this.exportCompleted) return;
         const splitInvalid = !this.isSplitSelectionValid();
-        // STRICT FONT POLICY (Phase 1): block Export when PDF format is
-        // selected and the layout's required font is not installed.
-        // The export-checks panel renders an "Install" affordance with
-        // platform-specific instructions; the user must resolve the missing
-        // font (or pick a different layout) before the button re-enables.
-        const fontBlocked = this.isPdfFontBlocked && this.outputFormat === 'pdf';
         this.actionButton.setDisabled(
-            this.totalScenes === 0 || splitInvalid || fontBlocked
+            this.exportInFlight || this.totalScenes === 0 || splitInvalid || this.exportBlocked
         );
     }
 
@@ -2799,31 +2808,17 @@ export class ManuscriptOptionsModal extends Modal {
         this.actionButton?.setButtonText(this.getPrimaryActionLabel());
     }
 
-    private renderStatusPathGroup(label: 'Saved' | 'Rendered', paths: string[]): void {
+    private renderStatusPathGroup(label: string, paths: string[]): void {
         if (!this.outputStatusEl || paths.length === 0) return;
-
-        const summary = this.outputStatusEl.createDiv();
-        summary.createSpan({ text: `${label}: ` });
-        const firstLink = summary.createEl('a', { text: paths[0], attr: { href: '#' } });
-        firstLink.addEventListener('click', (evt) => {
-            evt.preventDefault();
-            void this.openVaultPath(paths[0]);
-        });
-        if (paths.length > 1) {
-            summary.createSpan({ text: ` (${paths.length} files)` });
-        }
-
-        if (paths.length > 1) {
-            const second = this.outputStatusEl.createDiv({ cls: 'ert-sub-card-note' });
-            const secondLink = second.createEl('a', { text: paths[1], attr: { href: '#' } });
-            secondLink.addEventListener('click', (evt) => {
-                evt.preventDefault();
-                void this.openVaultPath(paths[1]);
+        const group = this.outputStatusEl.createDiv();
+        group.createDiv({ text: `${label}: ${countLabel(paths.length, 'file')}` });
+        for (const path of paths) {
+            const row = group.createDiv();
+            const link = row.createEl('a', { text: path, attr: { href: '#' } });
+            link.addEventListener('click', event => {
+                event.preventDefault();
+                void this.openVaultPath(path);
             });
-        }
-
-        if (paths.length > 2) {
-            this.outputStatusEl.createDiv({ cls: 'ert-sub-card-note', text: `+${paths.length - 2} more` });
         }
     }
 
@@ -2853,6 +2848,14 @@ export class ManuscriptOptionsModal extends Modal {
         this.outputStatusEl.empty();
         this.outputStatusEl.removeClass('ert-hidden');
         this.outputStatusEl.createDiv({ text: failure.message });
+        if (failure.completedPaths.length > 0) {
+            this.renderStatusPathGroup('Created before this failure', failure.completedPaths);
+        }
+        if (failure.category === 'missing_metadata' || failure.category === 'missing_dependency') {
+            new ButtonComponent(this.outputStatusEl)
+                .setButtonText(failure.category === 'missing_metadata' ? 'Edit book details' : 'Open export tools')
+                .onClick(() => this.openPublishingSettings(failure.category === 'missing_metadata' ? 'book-details' : 'export-check'));
+        }
         if (failure.detail) {
             const detailsEl = this.outputStatusEl.createEl('details', { cls: 'ert-sub-card-note' });
             detailsEl.createEl('summary', { text: 'Details' });
@@ -3249,6 +3252,7 @@ export class ManuscriptOptionsModal extends Modal {
 
     // Submission -------------------------------------------------------------
     private async submit(): Promise<void> {
+        if (this.exportInFlight) return;
         if (this.totalScenes === 0) {
             new Notice(t('manuscriptModal.emptyNotice'));
             return;
@@ -3278,6 +3282,7 @@ export class ManuscriptOptionsModal extends Modal {
             ? this.getSelectedScenePaths()
             : undefined;
 
+        this.exportInFlight = true;
         this.outputStatusEl?.addClass('ert-hidden');
         this.exportCompleted = false;
         this.lastOutcome = null;
@@ -3347,6 +3352,9 @@ export class ManuscriptOptionsModal extends Modal {
             this.exportCompleted = false;
             this.updateActionButtonDisabledState();
             this.updateActionButtonLabel();
+        } finally {
+            this.exportInFlight = false;
+            this.updateActionButtonDisabledState();
         }
     }
 }

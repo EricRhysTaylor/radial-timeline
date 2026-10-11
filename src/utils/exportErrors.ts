@@ -15,6 +15,7 @@ export interface ExportFailureDescriptor {
 export class ExportFailure extends Error {
     category: ExportFailureCategory;
     detail?: string;
+    completedPaths: string[] = [];
 
     constructor(descriptor: ExportFailureDescriptor) {
         super(descriptor.message);

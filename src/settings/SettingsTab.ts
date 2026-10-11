@@ -730,13 +730,13 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             badgeVariant: ERT_CLASSES.BADGE_PILL_PRO,
             wikiHref: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Publishing',
             title: 'Prepare your manuscript for export and publication.',
-            subtitle: 'Markdown export is always available with no setup — export your manuscript anytime. The steps below are only for formatted PDF export: a print-ready book built from your details, pages, and chosen style.',
-            helperLine: 'PDF export is powered by Pandoc and LaTeX — industry-standard formatting tools, handled for you behind the scenes. Book Details and Book Pages are optional; you can export a PDF from a built-in style without them.',
+            subtitle: 'Markdown export is always available with no setup — export your manuscript anytime. Prepare PDF and Word exports with book details, optional pages, and the settings below.',
+            helperLine: 'PDF export is powered by Pandoc and LaTeX — industry-standard formatting tools, handled for you behind the scenes. PDF and Word use your title and author from Book Details. Front and back matter pages are optional.',
             kicker: 'WHAT YOU CAN DO',
             features: [
                 { icon: 'layout-template', text: 'PDF Style — Start here. Two styles on the Core surface, two more with Pro, or import your own' },
-                { icon: 'file-output', text: 'Export — Markdown anytime; a print-ready PDF once a style is set' },
-                { icon: 'file-text', text: 'Book Details (optional) — Title, author, and publishing info in one place' },
+                { icon: 'file-output', text: 'Export — Markdown, Word, or PDF with clear checks for the selected format' },
+                { icon: 'file-text', text: 'Book Details — Title and author for formatted exports; optional publishing info' },
                 { icon: 'book-open-text', text: 'Book Pages (optional) — Front & back matter: title page, dedication, epigraph, and more' }
             ]
         });

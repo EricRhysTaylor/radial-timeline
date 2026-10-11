@@ -1,10 +1,6 @@
 import type { ValidationSummary } from '../types';
 
-// 'Optional' — a calm, positive "you can skip this" state (Book Details / Book
-// Pages, which export never requires). 'Setup' — a calm "a one-time setup step
-// is needed for PDF export" state (Pandoc/LaTeX tools). 'Blocked' (red) is
-// reserved for a genuine error in something the author already configured, so
-// the eye lands on green go-states, not a scary red at the end of the row.
+// Book Details are required for formatted output; Book Pages remain optional.
 export type PublishingStageStatus = 'Ready' | 'Optional' | 'Setup' | 'Needs attention' | 'Blocked';
 export type PublishingStageStatusKey = 'optional' | 'setup' | 'attention' | 'blocked' | 'ready';
 export type PublishingStageId = 'book-details' | 'book-pages' | 'pdf-style' | 'export-check';
@@ -38,6 +34,7 @@ export interface PublishingProgressInputs {
     matterCount: number;
     layoutSummary: PublishingLayoutSummary;
     pandocPathValid: boolean;
+    exportSummary: PublishingStageSummary;
 }
 
 function getStatusKey(statusLabel: PublishingStageStatus): PublishingStageStatusKey {
@@ -49,12 +46,8 @@ function getStatusKey(statusLabel: PublishingStageStatus): PublishingStageStatus
 }
 
 export function buildPublishingProgressStages(inputs: PublishingProgressInputs): PublishingStageModel[] {
-    // Book Details & Book Pages are genuinely optional — a PDF exports from the
-    // built-in styles with neither. Pre-setup they read 'Optional' (calm), not a
-    // muted-but-alarming "needs setup"; once the author adds them, real problems
-    // surface as attention/blocked.
     const bookDetailsStatus: PublishingStageStatus = !inputs.hasBookMeta
-        ? 'Optional'
+        ? 'Setup'
         : inputs.bookMetaSummary.state === 'blocked'
             ? 'Blocked'
             : inputs.bookMetaSummary.state === 'warning'
@@ -80,18 +73,12 @@ export function buildPublishingProgressStages(inputs: PublishingProgressInputs):
                 ? 'Needs attention'
                 : 'Ready';
 
-    // Export readiness depends ONLY on the tools + a working style — never on
-    // the optional Book Details / Book Pages. Missing export tools is a calm
-    // one-time 'Setup', not a red block.
-    const exportCheckReady = inputs.pandocPathValid
-        && inputs.layoutSummary.validCount > 0
-        && inputs.layoutSummary.state !== 'blocked';
-
-    const exportCheckStatus: PublishingStageStatus = exportCheckReady
-        ? 'Ready'
-        : !inputs.pandocPathValid || inputs.layoutSummary.validCount === 0
-            ? 'Setup'
-            : 'Needs attention';
+    const exportCheckReady = inputs.exportSummary.state !== 'blocked';
+    const exportCheckStatus: PublishingStageStatus = !inputs.pandocPathValid
+        ? 'Setup'
+        : inputs.exportSummary.state === 'blocked'
+            ? 'Blocked'
+            : inputs.exportSummary.state === 'warning' ? 'Needs attention' : 'Ready';
 
     return [
         {
@@ -101,7 +88,7 @@ export function buildPublishingProgressStages(inputs: PublishingProgressInputs):
             statusLabel: bookDetailsStatus,
             statusKey: getStatusKey(bookDetailsStatus),
             detail: !inputs.hasBookMeta
-                ? 'Optional — title, author, publishing info. Export works without it.'
+                ? 'Add title and author for PDF and Word. Markdown needs no Book Details.'
                 : inputs.bookMetaSummary.topMessage || 'Your details are in place.',
             actionLabel: !inputs.hasBookMeta ? 'Add details' : 'Open details',
         },
@@ -142,7 +129,7 @@ export function buildPublishingProgressStages(inputs: PublishingProgressInputs):
                     ? 'One-time setup: install export tools for PDF.'
                     : inputs.layoutSummary.validCount === 0
                         ? 'Pick a working PDF style first.'
-                        : inputs.layoutSummary.topMessage || 'Finish the remaining setup.', // SAFE: generic next-step prompt for when the layout summary has no specific message to show
+                        : inputs.exportSummary.topMessage || 'Finish the remaining setup.', // SAFE: generic next-step prompt when validation has no message.
             actionLabel: exportCheckReady ? 'Review export' : !inputs.pandocPathValid ? 'Set up tools' : 'Review export',
         },
     ];

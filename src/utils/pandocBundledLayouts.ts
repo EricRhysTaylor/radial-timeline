@@ -193,7 +193,7 @@ const BUNDLED_PANDOC_LAYOUT_TEMPLATES: BundledPandocLayoutTemplate[] = [
         bundled: true,
         tier: 'free',
         templateKind: 'book',
-        description: 'Plain and to the point. The traditional submission format every editor recognizes — no ornament, no ego, just pure readability. The format that gets your manuscript read.',
+        description: 'A plain reading draft on 6×9 pages, with sans-serif type, 1.5 line spacing, and separate scene openers. Customize its geometry and typography for your reader.',
         get content(): string { return generateBundledFictionTex(BUNDLED_FICTION_CLASSIC_ID); },
         get designedSpec() { return BUNDLED_FICTION_SPECS[BUNDLED_FICTION_CLASSIC_ID]; },
     },

@@ -38,10 +38,6 @@ function isExecutableFile(absPath: string): boolean {
     }
 }
 
-function isAbsoluteLike(candidate: string): boolean {
-    return path.isAbsolute(candidate) || /^[A-Za-z]:[\\/]/.test(candidate);
-}
-
 /**
  * macOS: Homebrew (Apple Silicon + Intel), MacTeX.
  * Windows: default installer paths, Chocolatey, Scoop, MiKTeX, TeX Live.
@@ -169,17 +165,4 @@ export function listAvailableLatexEngines(): LatexEngineCandidate[] {
         if (found) available.push({ engine, path: found });
     }
     return available;
-}
-
-/**
- * Whether a configured Pandoc path can be used: an absolute path must be an
- * executable file; a bare command name (e.g. "pandoc") relies on PATH at run
- * time and is accepted; anything with separators that is not absolute is not.
- */
-export function isPandocPathValid(configuredPath: string | undefined): boolean {
-    const candidate = (configuredPath || '').trim();
-    if (!candidate) return false;
-    if (isAbsoluteLike(candidate)) return isExecutableFile(candidate);
-    if (candidate.includes('/') || candidate.includes('\\')) return false;
-    return true;
 }

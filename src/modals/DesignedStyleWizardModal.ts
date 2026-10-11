@@ -206,7 +206,7 @@ const ARCHETYPE_TO_BUNDLED: Record<DesignArchetype, BundledFictionId> = {
 };
 
 const ARCHETYPE_INFO: Record<DesignArchetype, { name: string; tagline: string }> = {
-    'submission':    { name: 'Basic',        tagline: 'Industry-standard double-spaced manuscript for agents.' },
+    'submission':    { name: 'Basic',        tagline: 'Plain reading draft with scene opener pages.' },
     'reading-draft': { name: 'Standard',     tagline: 'Clean, modern reading draft with chapter breaks.' },
     'literary':      { name: 'Professional', tagline: 'Refined typesetting with letter-spaced running heads.' },
     'structured':    { name: 'Signature',    tagline: 'Roman parts, numbered chapters, section breaks.' },
@@ -220,7 +220,7 @@ const ARCHETYPE_INFO: Record<DesignArchetype, { name: string; tagline: string }>
  * bundled-fork flow (the bundled spec carries the archetype).
  */
 const TEMPLATE_BLURB_BY_ARCHETYPE: Record<DesignArchetype, string> = {
-    'submission':    'Plain and to the point — the traditional submission format every editor recognizes. No ornament, no ego, just pure readability. Built for drafting, workshops, early readers, and getting the manuscript itself evaluated without distraction.',
+    'submission':    'A plain reading draft on 6×9 pages, with sans-serif type, 1.5 line spacing, and separate scene openers. Customize its geometry and typography for your reader.',
     'reading-draft': 'A polished reading draft for beta readers and proofers. Clean enough to feel like a finished book without committing to a final aesthetic. Contemporary serif body type, comfortable spacing, and restrained structure that stays familiar to modern commercial fiction.',
     'literary':      'Refined and publication-minded — the feel of a professionally typeset trade novel. Running heads, structured chapter presentation, and stronger visual rhythm create a more immersive reading experience while remaining restrained and highly readable.',
     'structured':    'Architectural and literary. Built for ambitious fiction that benefits from deliberate pacing, structural breathing room, act openers, epigraphs, and distinctive scene presentation. Evokes the considered craftsmanship of boutique literary editions and mid-century print design traditions.',

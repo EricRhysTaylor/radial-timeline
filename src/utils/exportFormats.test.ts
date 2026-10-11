@@ -10,6 +10,7 @@ import {
     buildExportFilename,
     buildGoogleFontsHint,
     getFontDiagnosticForFontKey,
+    selectPdfEngine,
     getStructuredFontDiagnostic,
     getTemplateFontDiagnostics,
     renderFontDiagnosticLine,
@@ -709,5 +710,19 @@ describe('getFontDiagnosticForFontKey — vault-then-system resolver', () => {
         } finally {
             fs.rmSync(tempRoot, { recursive: true, force: true });
         }
+    });
+});
+
+
+describe('PDF engine compatibility', () => {
+    it('does not choose pdflatex for a fontspec template', () => {
+        expect(selectPdfEngine([{ engine: 'pdflatex', path: '/testing/pdflatex' }], true)).toMatchObject({
+            engine: 'xelatex', path: null, templateNeedsUnicode: true,
+        });
+    });
+    it('uses pdflatex for a template that does not require Unicode fonts', () => {
+        expect(selectPdfEngine([{ engine: 'pdflatex', path: '/testing/pdflatex' }], false)).toMatchObject({
+            engine: 'pdflatex', path: '/testing/pdflatex', templateNeedsUnicode: false,
+        });
     });
 });

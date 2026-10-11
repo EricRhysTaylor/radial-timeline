@@ -14,7 +14,7 @@ import type RadialTimelinePlugin from '../../main';
 import { ERT_CLASSES, ERT_DATA } from '../../ui/classes';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
 import { DEFAULT_SETTINGS } from '../defaults';
-import { getStructuredFontDiagnostic, parseCustomPandocMetadata, validatePandocLayout, getPandocFolder } from '../../utils/exportFormats';
+import { isPandocAvailable, getStructuredFontDiagnostic, parseCustomPandocMetadata, validatePandocLayout, getPandocFolder } from '../../utils/exportFormats';
 import type { BookLayoutOptions, BookMeta, BookProfile, ManuscriptSceneHeadingMode, PandocLayoutTemplate, TemplateProfile } from '../../types';
 import { ImportTemplateModal, type ImportedTemplateCommit } from '../../modals/ImportTemplateModal';
 import { DesignedStyleWizardModal } from '../../modals/DesignedStyleWizardModal';
@@ -62,7 +62,7 @@ import {
 import { buildSpreadValidationContext } from '../../publishing/spreadValidationContext';
 import { BUNDLED_FICTION_SPECS, isBundledFictionId } from '../../publishing/bundledStyleSpecs';
 import { replayTransientClass } from '../../utils/domClassEffects';
-import { listAvailableLatexEngines, scanSystemPaths, isPandocPathValid } from '../../publishing/toolchainScan';
+import { listAvailableLatexEngines, scanSystemPaths } from '../../publishing/toolchainScan';
 import { applyMatterRepairPlan, buildMatterRepairPlan } from '../../publishing/matterRepair';
 import { getActiveBookMatterNoteSummaries, getActiveBookMetaStatus } from '../../publishing/activeBookNotes';
 import { getMatterPreviewSummary, getPublishingProgressContext, getPublishingValidationSnapshot, type MatterPreviewItem } from '../../publishing/readinessSummary';
@@ -252,7 +252,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     pandocIntroPanel.addClass('ert-publish-order--pandoc-intro');
     const pandocHeading = addProRow(new Setting(pandocIntroPanel))
         .setName('Export & publishing')
-        .setDesc('Assemble your manuscript in Markdown or render a print-ready PDF using Pandoc and LaTeX. Configure templates, layouts, and publishing tools below. Exports run the Pandoc and LaTeX programs already installed on your computer — nothing else is downloaded or executed.')
+        .setDesc('Export your manuscript in the format you need. Word and PDF use Pandoc; PDF also needs LaTeX. Markdown needs no publishing tools. Configure Book Details, optional pages, and styles below.')
         .setHeading();
     addHeadingIcon(pandocHeading, 'book-open-text');
     addWikiLink(pandocHeading, 'Publishing');
@@ -270,15 +270,15 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         systemConfigPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
     const systemConfigHeading = addProRow(new Setting(systemConfigPanel))
-        .setName('System configuration')
-        .setDesc('Configure Pandoc for PDF export.')
+        .setName('Export tools')
+        .setDesc('Word export uses Pandoc. PDF export also needs a compatible LaTeX engine.')
         .setHeading();
     addHeadingIcon(systemConfigHeading, 'settings');
     applyErtHeaderLayout(systemConfigHeading);
 
     // Settings
     let pandocPathInputEl: HTMLInputElement | null = null;
-    const defaultDesc = 'Path to your Pandoc executable. Required for PDF rendering. Leave blank to use your system PATH, or click Auto locate.';
+    const defaultDesc = 'Path to Pandoc, used for Word and PDF. Leave blank to use your system PATH, or click Auto locate.';
     const pandocSetting = addProRow(new Setting(systemConfigPanel))
         .setName('Pandoc & LaTeX')
         .setDesc(defaultDesc)
@@ -2354,10 +2354,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         exportOptionsButtonComponent = null;
 
         const exportStage = stages.find(stage => stage.id === 'export-check');
-        // Show "Export now" once export is genuinely possible (tools + a valid
-        // style) — not while the one-time 'setup' step is still pending.
-        const showExportButton = !!exportStage
-            && (exportStage.statusKey === 'ready' || exportStage.statusKey === 'attention');
+        // Entry remains available: Markdown does not require PDF setup.
         const exportPrimary = exportStage?.statusKey === 'ready';
         // Nothing left that needs the author: every stage is either done or an
         // untaken optional. (Optional stages never block "all set".)
@@ -2373,7 +2370,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         if (allReady) {
             // Nothing left to configure — mute the button
             setupButtonComponent.buttonEl.addClass('ert-pillBtn', 'ert-pillBtn--muted');
-        } else if (!showExportButton || !exportPrimary) {
+        } else if (!exportPrimary) {
             setupButtonComponent.setCta();
             setupButtonComponent.buttonEl.addClass('ert-pillBtn');
         } else {
@@ -2384,25 +2381,23 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             setSetupButtonState(true);
         }
 
-        // Export now — rendered second (right position)
-        if (showExportButton) {
-            exportOptionsButtonComponent = new ButtonComponent(setupActionRow)
-                .setButtonText('Export now')
-                .onClick(() => {
-                    plugin.openManuscriptExportModal();
-                });
-            if (exportPrimary) {
-                exportOptionsButtonComponent.setCta();
-            }
-            exportOptionsButtonComponent.buttonEl.addClass('ert-pillBtn');
-            exportOptionsButtonComponent.buttonEl.empty();
-            exportOptionsButtonComponent.buttonEl.createSpan({
-                cls: ERT_CLASSES.PILL_BTN_LABEL,
-                text: 'Export now'
+        // Export manuscript — rendered second (right position)
+        exportOptionsButtonComponent = new ButtonComponent(setupActionRow)
+            .setButtonText('Export manuscript')
+            .onClick(() => {
+                plugin.openManuscriptExportModal();
             });
-            const exportIcon = exportOptionsButtonComponent.buttonEl.createSpan({ cls: ERT_CLASSES.PILL_BTN_ICON });
-            setIcon(exportIcon, 'arrow-right');
+        if (exportPrimary) {
+            exportOptionsButtonComponent.setCta();
         }
+        exportOptionsButtonComponent.buttonEl.addClass('ert-pillBtn');
+        exportOptionsButtonComponent.buttonEl.empty();
+        exportOptionsButtonComponent.buttonEl.createSpan({
+            cls: ERT_CLASSES.PILL_BTN_LABEL,
+            text: 'Export manuscript'
+        });
+        const exportIcon = exportOptionsButtonComponent.buttonEl.createSpan({ cls: ERT_CLASSES.PILL_BTN_ICON });
+        setIcon(exportIcon, 'arrow-right');
     };
 
     const renderPublishingStatusCard = () => {
@@ -2414,7 +2409,8 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             matterSummary: progress.matterSummary,
             matterCount: progress.matterCount,
             layoutSummary: progress.layoutSummary,
-            pandocPathValid: progress.pandocPathValid
+            pandocPathValid: progress.pandocPathValid,
+            exportSummary: progress.exportSummary,
         });
 
         const targetByStage: Record<PublishingStageId, HTMLElement | null> = {
@@ -2832,7 +2828,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     renderPublishingStatusCard();
 
     // ── System Configuration visibility: show when pandoc path is invalid ──
-    if (!isPandocPathValid(plugin.settings.pandocPath)) {
+    if (!isPandocAvailable(plugin.settings.pandocPath)) {
         systemConfigPanel.removeClass('is-hidden');
     }
 

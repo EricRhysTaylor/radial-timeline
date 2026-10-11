@@ -20,6 +20,7 @@ import type { DesignedStyleSpec } from '../publishing/designedStyle';
 import { BUNDLED_FICTION_SPECS, isBundledFictionId } from '../publishing/bundledStyleSpecs';
 import { FONT_REGISTRY, vaultDirHasFont } from '../publishing/fontResolver';
 import { assertNever } from './assertNever';
+import { ExportFailure, categorizeExportError } from './exportErrors';
 import { buildPandocLuaFilter } from './pandocLuaFilters';
 
 export type ExportType = 'manuscript' | 'outline';
@@ -61,11 +62,6 @@ export function readResolvedTemplateText(templatePath: string): { text: string; 
             error: (error as Error)?.message || `Unable to read template: ${templatePath}`,
         };
     }
-}
-
-export function isConfiguredExecutablePathMissing(configuredPath: string): boolean {
-    const trimmed = configuredPath.trim();
-    return Boolean(trimmed && (path.isAbsolute(trimmed) || trimmed.includes('/')) && !fs.existsSync(trimmed));
 }
 
 function getTemplatePathCandidates(plugin: RadialTimelinePlugin, templatePath: string): string[] {
@@ -365,6 +361,32 @@ function resolvePandocBinary(options: PandocOptions): string {
     }
 
     return configured;
+}
+
+/** Use the same executable and PATH for preflight and rendering. */
+export function isPandocAvailable(pandocPath?: string): boolean {
+    try {
+        const binary = resolvePandocBinary({ targetFormat: 'docx', pandocPath });
+        const resolved = path.isAbsolute(binary) || binary.includes('/') || binary.includes('\\')
+            ? binary
+            : execFileSync(getCurrentPlatform() === 'win' ? 'where' : 'which', [binary], {
+                env: getPandocSubprocessEnv(), encoding: 'utf8', timeout: 1000, stdio: ['ignore', 'pipe', 'ignore'],
+            }).trim().split(/\r?\n/)[0];
+        fs.accessSync(resolved, fs.constants.X_OK);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function getPandocSubprocessEnv(): NodeJS.ProcessEnv {
+    const env = buildMinimalSubprocessEnv();
+    const separator = getCurrentPlatform() === 'win' ? ';' : ':';
+    const extraPaths = getCurrentPlatform() === 'win'
+        ? ['C:\\Program Files\\MiKTeX\\miktex\\bin\\x64', 'C:\\Program Files\\texlive\\2024\\bin\\win32']
+        : ['/Library/TeX/texbin', '/opt/homebrew/bin', '/usr/local/bin', path.join(os.homedir(), '.local', 'bin'), '/usr/bin'];
+    env.PATH = [env.PATH, ...extraPaths].filter(Boolean).join(separator);
+    return env;
 }
 
 export type PdfEngine = 'pdflatex' | 'xelatex' | 'lualatex';
@@ -1152,122 +1174,139 @@ function getEngineCandidatePaths(engine: PdfEngine): string[] {
     ];
 }
 
-export function getAutoPdfEngineSelection(templatePath?: string): PdfEngineSelection {
-    const preferUnicode = templateNeedsUnicodeEngine(templatePath);
-    const order: PdfEngine[] = preferUnicode
-        ? ['xelatex', 'lualatex', 'pdflatex']
-        : ['pdflatex', 'xelatex', 'lualatex'];
+export function selectPdfEngine(available: Array<{ engine: PdfEngine; path: string }>, preferUnicode: boolean): PdfEngineSelection {
+    const order: PdfEngine[] = preferUnicode ? ['xelatex', 'lualatex'] : ['pdflatex', 'xelatex', 'lualatex'];
+    const selected = order.map(engine => available.find(candidate => candidate.engine === engine)).find(candidate => candidate !== undefined);
+    return {
+        engine: selected?.engine || order[0],
+        path: selected?.path || null,
+        available,
+        templateNeedsUnicode: preferUnicode,
+    };
+}
 
+export function getAutoPdfEngineSelection(templatePath?: string): PdfEngineSelection {
     const available: Array<{ engine: PdfEngine; path: string }> = [];
     for (const engine of ['pdflatex', 'xelatex', 'lualatex'] as const) {
         const found = getEngineCandidatePaths(engine).find(candidate => fs.existsSync(candidate));
-        if (found) {
-            available.push({ engine, path: found });
-        }
+        if (found) available.push({ engine, path: found });
     }
-
-    for (const engine of order) {
-        const found = getEngineCandidatePaths(engine).find(candidate => fs.existsSync(candidate));
-        if (found) {
-            return {
-                engine,
-                path: found,
-                available,
-                templateNeedsUnicode: preferUnicode
-            };
-        }
-    }
-
-    return {
-        engine: order[0],
-        path: null,
-        available,
-        templateNeedsUnicode: preferUnicode
-    };
+    return selectPdfEngine(available, templateNeedsUnicodeEngine(templatePath));
 }
 
 export async function runPandocOnContent(
     content: string,
     outputAbsolutePath: string,
     options: PandocOptions
-): Promise<void> {
+): Promise<string> {
     const binary = resolvePandocBinary(options);
     const isPdf = options.targetFormat === 'pdf';
-    const tmpDir = os.tmpdir();
-    const tmpInput = path.join(tmpDir, `rt-pandoc-${Date.now()}.md`);
-    const preparedContent = preparePandocContent(content, options);
-    await fs.promises.writeFile(tmpInput, preparedContent, 'utf8');
+    // Stage beside the destination so final publication is atomic on the same filesystem.
+    const tmpDir = await fs.promises.mkdtemp(path.join(path.dirname(outputAbsolutePath), '.rt-export-'));
+    const tmpOutput = path.join(tmpDir, `output.${options.targetFormat}`);
+    const tmpInput = path.join(tmpDir, 'input.md');
+    try {
+        const preparedContent = preparePandocContent(content, options);
+        await fs.promises.writeFile(tmpInput, preparedContent, 'utf8');
 
-    // Optional preamble injection (PDF only): binding gutter + Pro custom LaTeX.
-    // Written to its own temp file so `--include-in-header` can reference it, and
-    // cleaned up alongside the markdown temp file in the finally block.
-    let tmpHeader: string | null = null;
-    if (isPdf && options.headerIncludes && options.headerIncludes.trim()) {
-        tmpHeader = path.join(tmpDir, `rt-pandoc-header-${Date.now()}.tex`);
-        await fs.promises.writeFile(tmpHeader, options.headerIncludes, 'utf8');
-    }
-
-    let tmpFilter: string | null = null;
-    const luaFilter = buildPandocLuaFilter(options);
-    if (luaFilter) {
-        tmpFilter = path.join(tmpDir, `rt-pandoc-filter-${Date.now()}.lua`);
-        await fs.promises.writeFile(tmpFilter, luaFilter, 'utf8');
-    }
-
-    const args = ['-f', 'markdown', '-t', options.targetFormat, '-o', outputAbsolutePath, tmpInput];
-    if (isPdf) {
-        const pdfEngineSelection = getAutoPdfEngineSelection(options.templatePath);
-        const pdfEngine = pdfEngineSelection.path || pdfEngineSelection.engine;
-        args.push('--pdf-engine', pdfEngine);
-        if (options.templatePath && options.templatePath.trim()) {
-            args.push('--template', options.templatePath.trim());
+        // Optional preamble injection (PDF only): binding gutter + Pro custom LaTeX.
+        // Written to its own temp file so `--include-in-header` can reference it, and
+        // cleaned up alongside the markdown temp file in the finally block.
+        let tmpHeader: string | null = null;
+        if (isPdf && options.headerIncludes && options.headerIncludes.trim()) {
+            tmpHeader = path.join(tmpDir, 'header.tex');
+            await fs.promises.writeFile(tmpHeader, options.headerIncludes, 'utf8');
         }
-        if (tmpHeader) {
-            args.push('--include-in-header', tmpHeader);
-        }
-    } else {
-        // docx — reader-style Word document from a reference doc (submission format).
-        if (options.referenceDocPath && options.referenceDocPath.trim()) {
-            args.push('--reference-doc', options.referenceDocPath.trim());
-        }
-    }
-    if (tmpFilter) {
-        args.push('--lua-filter', tmpFilter);
-    }
-    if (options.metadata) {
-        for (const [key, rawValue] of Object.entries(options.metadata)) {
-            const value = typeof rawValue === 'string' ? rawValue.trim() : '';
-            if (!value) continue;
-            const normalized = value.replace(/\r?\n/g, ' ');
-            args.push('--metadata', `${key}=${normalized}`);
-        }
-    }
 
-    await new Promise<void>((resolve, reject) => {
-        const env = buildMinimalSubprocessEnv();
-        const pathSeparator = getCurrentPlatform() === 'win' ? ';' : ':';
-        const extraPaths = getCurrentPlatform() === 'win'
-            ? ['C:\\Program Files\\MiKTeX\\miktex\\bin\\x64', 'C:\\Program Files\\texlive\\2024\\bin\\win32']
-            : ['/Library/TeX/texbin', '/opt/homebrew/bin', '/usr/local/bin', path.join(os.homedir(), '.local', 'bin'), '/usr/bin'];
-        env.PATH = [env.PATH, ...extraPaths].filter(Boolean).join(pathSeparator);
+        let tmpFilter: string | null = null;
+        const luaFilter = buildPandocLuaFilter(options);
+        if (luaFilter) {
+            tmpFilter = path.join(tmpDir, 'filter.lua');
+            await fs.promises.writeFile(tmpFilter, luaFilter, 'utf8');
+        }
 
-        execFile(binary, args, { cwd: options.workingDir, env }, (error, _stdout, stderr) => {
-            if (error) {
-                reject(new Error(stderr || error.message));
-                return;
+        const args = ['-f', 'markdown', '-t', options.targetFormat, '-o', tmpOutput, tmpInput];
+        if (isPdf) {
+            const pdfEngineSelection = getAutoPdfEngineSelection(options.templatePath);
+            if (!pdfEngineSelection.path) {
+                throw new ExportFailure({ category: 'missing_dependency', message: 'No compatible LaTeX PDF engine was detected for this style. Use Auto locate in Publish.' });
             }
-            resolve();
+            args.push('--pdf-engine', pdfEngineSelection.path);
+            if (options.templatePath && options.templatePath.trim()) {
+                args.push('--template', options.templatePath.trim());
+            }
+            if (tmpHeader) {
+                args.push('--include-in-header', tmpHeader);
+            }
+        } else {
+            // docx — reader-style Word document from a reference doc (submission format).
+            if (options.referenceDocPath && options.referenceDocPath.trim()) {
+                args.push('--reference-doc', options.referenceDocPath.trim());
+            }
+        }
+        if (tmpFilter) {
+            args.push('--lua-filter', tmpFilter);
+        }
+        if (options.metadata) {
+            for (const [key, rawValue] of Object.entries(options.metadata)) {
+                const value = typeof rawValue === 'string' ? rawValue.trim() : '';
+                if (!value) continue;
+                const normalized = value.replace(/\r?\n/g, ' ');
+                args.push('--metadata', `${key}=${normalized}`);
+            }
+        }
+
+        await new Promise<void>((resolve, reject) => {
+            const env = getPandocSubprocessEnv();
+            execFile(binary, args, { cwd: options.workingDir, env }, (error, _stdout, stderr) => {
+                if (error) {
+                    const failure = categorizeExportError(new Error(stderr || error.message));
+                    if (!isPdf && failure.category === 'pandoc_compile_failure') {
+                        failure.message = 'Pandoc could not create the Word document.';
+                    }
+                    reject(failure);
+                    return;
+                }
+                resolve();
+            });
         });
-    }).finally(async () => {
-        for (const tmp of [tmpInput, tmpHeader, tmpFilter]) {
-            if (!tmp) continue;
-            try {
-                await fs.promises.unlink(tmp);
-            } catch (e) {
-                console.warn('Failed to clean tmp pandoc file', e);
+        return await publishRenderedExport(tmpOutput, outputAbsolutePath, options.targetFormat);
+    } finally {
+        try {
+            await fs.promises.rm(tmpDir, { recursive: true, force: true });
+        } catch (error) {
+            console.warn('Could not remove export staging directory', tmpDir, error);
+        }
+    }
+}
+
+/** Publish only a complete render, preserving every existing deliverable. */
+async function publishRenderedExport(stagedPath: string, requestedPath: string, format: 'pdf' | 'docx'): Promise<string> {
+    const file = await fs.promises.open(stagedPath, 'r');
+    try {
+        const header = Buffer.alloc(5);
+        await file.read(header, 0, header.length, 0);
+        const valid = format === 'pdf'
+            ? header.toString('ascii') === '%PDF-'
+            : header.subarray(0, 4).equals(Buffer.from([0x50, 0x4b, 0x03, 0x04]));
+        if (!valid) throw new ExportFailure({ category: 'write_failure', message: `The rendered ${format.toUpperCase()} is empty or invalid. No output file was saved.` });
+    } finally {
+        await file.close();
+    }
+    const extension = path.extname(requestedPath);
+    const stem = requestedPath.slice(0, -extension.length);
+    for (let copy = 1; ; copy++) {
+        const destination = copy === 1 ? requestedPath : `${stem} (${copy})${extension}`;
+        try {
+            // link is an atomic, exclusive publication of the already-verified file.
+            await fs.promises.link(stagedPath, destination);
+            return destination;
+        } catch (error) {
+            if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
+                throw new ExportFailure({ category: 'write_failure', message: 'The rendered document could not be saved to the export folder.', detail: (error as Error).message });
             }
         }
-    });
+    }
 }
 
 function preparePandocContent(content: string, options: PandocOptions): string {

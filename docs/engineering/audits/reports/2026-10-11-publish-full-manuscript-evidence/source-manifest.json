@@ -1,0 +1,368 @@
+[
+  {
+    "chapter": 1,
+    "path": "QA Full Manuscript Source/01 Chapter 1.md",
+    "sha256": "57cc3511945da9ba85996ab85def9ef8ec77629a7fd5c403eb62e1657e9594ea",
+    "words": 850
+  },
+  {
+    "chapter": 2,
+    "path": "QA Full Manuscript Source/02 Chapter 2.md",
+    "sha256": "7a9579371c927d88c9e64d71b8eaad49c42dbd9d68530bf93fb5d93ec1ac50a6",
+    "words": 800
+  },
+  {
+    "chapter": 3,
+    "path": "QA Full Manuscript Source/03 Chapter 3.md",
+    "sha256": "9fce01f94dd0a1ce9d0ef1ffa7aef8ad853b9cba2af8023e26ab4593491cd7bd",
+    "words": 1701
+  },
+  {
+    "chapter": 4,
+    "path": "QA Full Manuscript Source/04 Chapter 4.md",
+    "sha256": "3b0483c249bbff18b89c8263d73ee400fac6fee8376a49d2be638cf3ea5de33d",
+    "words": 1062
+  },
+  {
+    "chapter": 5,
+    "path": "QA Full Manuscript Source/05 Chapter 5.md",
+    "sha256": "80fa3b043e33e6428734ff751e81bf578efeef94ecce23a8a645724c4a19fafa",
+    "words": 955
+  },
+  {
+    "chapter": 6,
+    "path": "QA Full Manuscript Source/06 Chapter 6.md",
+    "sha256": "6e8ab8d64d2de8f29df02f16a5fd418637b8a68f3489a6eae3356881e72b065b",
+    "words": 2343
+  },
+  {
+    "chapter": 7,
+    "path": "QA Full Manuscript Source/07 Chapter 7.md",
+    "sha256": "647cb05697b7f6375639cc9401cfbd1f9e5e9199486bb062272b15f632359c5c",
+    "words": 1993
+  },
+  {
+    "chapter": 8,
+    "path": "QA Full Manuscript Source/08 Chapter 8.md",
+    "sha256": "6e1ea9254f6098b884b3eae815d978731230bb38e162f90c8095f1dd2b222db9",
+    "words": 1928
+  },
+  {
+    "chapter": 9,
+    "path": "QA Full Manuscript Source/09 Chapter 9.md",
+    "sha256": "d837482c9cd89f4e0e633437065da8021650ed3eb14868f84116d8ce1d7af9b8",
+    "words": 1730
+  },
+  {
+    "chapter": 10,
+    "path": "QA Full Manuscript Source/10 Chapter 10.md",
+    "sha256": "312eba9f37371a58a98501cce691ac436f0b24b95eadc193ee5bc5f9e78dd7a3",
+    "words": 2209
+  },
+  {
+    "chapter": 11,
+    "path": "QA Full Manuscript Source/11 Chapter 11.md",
+    "sha256": "32a512537e4a59e393706a5fba98105211f87d6f1c49de9c2bcc10ff5310e84d",
+    "words": 1598
+  },
+  {
+    "chapter": 12,
+    "path": "QA Full Manuscript Source/12 Chapter 12.md",
+    "sha256": "f8ce99914849e9f4e9a1ebc5b309ce9d33bec147aba0a6af4cf053e5dc33b93f",
+    "words": 676
+  },
+  {
+    "chapter": 13,
+    "path": "QA Full Manuscript Source/13 Chapter 13.md",
+    "sha256": "a74b4e58ef50d61ef42f98fe80b020a01d87d757eb58fc4797335e911fbc2eb8",
+    "words": 1693
+  },
+  {
+    "chapter": 14,
+    "path": "QA Full Manuscript Source/14 Chapter 14.md",
+    "sha256": "6652f239cfa84f08a8032fac5890d429886eb8a99d6caacc82874099ec1b681d",
+    "words": 1118
+  },
+  {
+    "chapter": 15,
+    "path": "QA Full Manuscript Source/15 Chapter 15.md",
+    "sha256": "f63af5fa4651b7bad049bff90403ea02b89173c1c120df9019533ccb0addb875",
+    "words": 1691
+  },
+  {
+    "chapter": 16,
+    "path": "QA Full Manuscript Source/16 Chapter 16.md",
+    "sha256": "787bc647c947f7e02a86eff5830616f812bc9acb131644811914c91d016d6094",
+    "words": 3363
+  },
+  {
+    "chapter": 17,
+    "path": "QA Full Manuscript Source/17 Chapter 17.md",
+    "sha256": "1884aebc84824acc6b72161cefb2c7ce167d0b329c10f2a4d91265cb834ffc3b",
+    "words": 1277
+  },
+  {
+    "chapter": 18,
+    "path": "QA Full Manuscript Source/18 Chapter 18.md",
+    "sha256": "cc506bc2c313eab3058ccd3fb5169e9fa4f206934d83b72332d271d42fd01cb5",
+    "words": 5170
+  },
+  {
+    "chapter": 19,
+    "path": "QA Full Manuscript Source/19 Chapter 19.md",
+    "sha256": "6ae23e604deb6ada57ae25dcc57bff652b117597af131154c64c5fec6555b360",
+    "words": 1912
+  },
+  {
+    "chapter": 20,
+    "path": "QA Full Manuscript Source/20 Chapter 20.md",
+    "sha256": "7e76ac896f31a0f256d0759203e6db5b7906e6c9390b4001989b79ff218cc6fe",
+    "words": 1646
+  },
+  {
+    "chapter": 21,
+    "path": "QA Full Manuscript Source/21 Chapter 21.md",
+    "sha256": "fc8efc51b452189561ff99c1a68e5b5128217889b2eb081860fcf7cd2af9435a",
+    "words": 2001
+  },
+  {
+    "chapter": 22,
+    "path": "QA Full Manuscript Source/22 Chapter 22.md",
+    "sha256": "64cea600be592d23002f62563dbef7388a620b383978ee418b70e5090d9732de",
+    "words": 1733
+  },
+  {
+    "chapter": 23,
+    "path": "QA Full Manuscript Source/23 Chapter 23.md",
+    "sha256": "a225a1040db4372b1196b9d688155c7b87c96c60f0b2f2dd96c9cbad24e1d9a0",
+    "words": 1612
+  },
+  {
+    "chapter": 24,
+    "path": "QA Full Manuscript Source/24 Chapter 24.md",
+    "sha256": "c04a4baf1cdc598fbb6b9fdc6f4ce079787a74c4386cd329ba5be69dbea4638e",
+    "words": 1929
+  },
+  {
+    "chapter": 25,
+    "path": "QA Full Manuscript Source/25 Chapter 25.md",
+    "sha256": "b63fe83ecc837c5b50d426724731428c5ef6b525115f5a27986533145632bdd5",
+    "words": 1517
+  },
+  {
+    "chapter": 26,
+    "path": "QA Full Manuscript Source/26 Chapter 26.md",
+    "sha256": "89e066413007d4cbadd4207bc49e91a1c89f8feea582770b63208dce9c34a06b",
+    "words": 2331
+  },
+  {
+    "chapter": 27,
+    "path": "QA Full Manuscript Source/27 Chapter 27.md",
+    "sha256": "893e2ebf7b2eee71bad3f204d22a6780d78888b31856abde4dce17d10e710b0e",
+    "words": 1257
+  },
+  {
+    "chapter": 28,
+    "path": "QA Full Manuscript Source/28 Chapter 28.md",
+    "sha256": "64005e50e0139373fdea1b08a7112ad0d881bb8339bcfb345fe9d0b1d560e226",
+    "words": 1451
+  },
+  {
+    "chapter": 29,
+    "path": "QA Full Manuscript Source/29 Chapter 29.md",
+    "sha256": "dedb15859bd4f8333a254c1ea23b7b29701fd5a6688bc9109cf4b13ccc728c6d",
+    "words": 2383
+  },
+  {
+    "chapter": 30,
+    "path": "QA Full Manuscript Source/30 Chapter 30.md",
+    "sha256": "8425bf3c4011c53d1da20b3ff41bab5e4291ed377f7ed204b72a3e4d0bb59ea0",
+    "words": 1232
+  },
+  {
+    "chapter": 31,
+    "path": "QA Full Manuscript Source/31 Chapter 31.md",
+    "sha256": "6e46c172733d58547b380fd7d239815123061363c08189be3488e9cd35e99efc",
+    "words": 1555
+  },
+  {
+    "chapter": 32,
+    "path": "QA Full Manuscript Source/32 Chapter 32.md",
+    "sha256": "d6642d341466bef3bf74c9774391f1a6d6b7730fa5c5ebc84dbd4ff3d87ef6d5",
+    "words": 1495
+  },
+  {
+    "chapter": 33,
+    "path": "QA Full Manuscript Source/33 Chapter 33.md",
+    "sha256": "541addfd7d5d6901f8c20fcaa1b358316d52f71f9aaf0a7b1ae494d0401b842a",
+    "words": 1857
+  },
+  {
+    "chapter": 34,
+    "path": "QA Full Manuscript Source/34 Chapter 34.md",
+    "sha256": "f3dcfd9a7eea14e8680350cecf9e32ac6758c962547c6e93e8cfc4dc34de7fb7",
+    "words": 2100
+  },
+  {
+    "chapter": 35,
+    "path": "QA Full Manuscript Source/35 Chapter 35.md",
+    "sha256": "fbb456abd6cd0ea11afa7466b66d9c84cae4e71fa1a311b3efa8ec98686f66ac",
+    "words": 2996
+  },
+  {
+    "chapter": 36,
+    "path": "QA Full Manuscript Source/36 Chapter 36.md",
+    "sha256": "a48600a10fcac61408a8df988e02ba36203c003ab09ddf05a08cc0c106e5cf8b",
+    "words": 2000
+  },
+  {
+    "chapter": 37,
+    "path": "QA Full Manuscript Source/37 Chapter 37.md",
+    "sha256": "6243ea1fb5b93c5d037f1307e9d1c40e5351a66509cded6bd097b0d2f0e53d14",
+    "words": 1371
+  },
+  {
+    "chapter": 38,
+    "path": "QA Full Manuscript Source/38 Chapter 38.md",
+    "sha256": "240ce231ddca0d9ef02f924704b8ef515d1386df06470ea81271a7fd364eb565",
+    "words": 1040
+  },
+  {
+    "chapter": 39,
+    "path": "QA Full Manuscript Source/39 Chapter 39.md",
+    "sha256": "6e2190443d388ea72da1c3014f65d85f24c30c5df24d5007d078d28815c94375",
+    "words": 1631
+  },
+  {
+    "chapter": 40,
+    "path": "QA Full Manuscript Source/40 Chapter 40.md",
+    "sha256": "53afe5b41fd67b5a41bc5936a4492a41f5357148f5c59d534d4f23fdb93d37fe",
+    "words": 1679
+  },
+  {
+    "chapter": 41,
+    "path": "QA Full Manuscript Source/41 Chapter 41.md",
+    "sha256": "9f84ede3b19165d1a9b3294337bc9db8fada82c768feb98bd58e452dd9b56a26",
+    "words": 2266
+  },
+  {
+    "chapter": 42,
+    "path": "QA Full Manuscript Source/42 Chapter 42.md",
+    "sha256": "b2b213fd40681f12e97a844c908148f302a521c3446d7778f6381378b397b70e",
+    "words": 1826
+  },
+  {
+    "chapter": 43,
+    "path": "QA Full Manuscript Source/43 Chapter 43.md",
+    "sha256": "cf06a0495e35131d827f1611a1065424d43cff05526d7b6bc7c4ed35727b4c7f",
+    "words": 4847
+  },
+  {
+    "chapter": 44,
+    "path": "QA Full Manuscript Source/44 Chapter 44.md",
+    "sha256": "2236d39cd189f6bb6e1c8694c7f3ce058a85370b241bcb8f66a9a4884265dee1",
+    "words": 2335
+  },
+  {
+    "chapter": 45,
+    "path": "QA Full Manuscript Source/45 Chapter 45.md",
+    "sha256": "8317a9cc557c5e85456533972b14f258506179a338f0ae47293f23326f49ec0f",
+    "words": 1731
+  },
+  {
+    "chapter": 46,
+    "path": "QA Full Manuscript Source/46 Chapter 46.md",
+    "sha256": "6f38e4ba69d2c10871e6f5cb27b37b8b0df681b0dc7463062eb13d61bf7e872c",
+    "words": 3012
+  },
+  {
+    "chapter": 47,
+    "path": "QA Full Manuscript Source/47 Chapter 47.md",
+    "sha256": "ac0bedf085453a26f669fe1047d390505d03c9eb98a9d758f541ee3029f8c860",
+    "words": 4080
+  },
+  {
+    "chapter": 48,
+    "path": "QA Full Manuscript Source/48 Chapter 48.md",
+    "sha256": "0aee3ad26a8b0ce037ac9422643e2335aac0b20c412e065a68f2368e6be1ca19",
+    "words": 2255
+  },
+  {
+    "chapter": 49,
+    "path": "QA Full Manuscript Source/49 Chapter 49.md",
+    "sha256": "365e010aff3b7f31a9b895e8abdf133ff9eda0629a869eaafcc9f9ab0fe74a1b",
+    "words": 2243
+  },
+  {
+    "chapter": 50,
+    "path": "QA Full Manuscript Source/50 Chapter 50.md",
+    "sha256": "8b9fe6d1836e0a4903df913885fb8d72220f65857c237605a9ce6f1d1820741f",
+    "words": 2201
+  },
+  {
+    "chapter": 51,
+    "path": "QA Full Manuscript Source/51 Chapter 51.md",
+    "sha256": "a5929f45e2ec9dbe15ec794860dd709f648135b4ffe80fdf0e04777b50ce978f",
+    "words": 2071
+  },
+  {
+    "chapter": 52,
+    "path": "QA Full Manuscript Source/52 Chapter 52.md",
+    "sha256": "2e98ddb1bb08af829f34f7f3f85072ab387e8e9f1f965cecac1677624f6bdc05",
+    "words": 3030
+  },
+  {
+    "chapter": 53,
+    "path": "QA Full Manuscript Source/53 Chapter 53.md",
+    "sha256": "fa9656768e3e870c4e4c34aab60b934d5c657ef5464047b980f19cbe33732213",
+    "words": 2936
+  },
+  {
+    "chapter": 54,
+    "path": "QA Full Manuscript Source/54 Chapter 54.md",
+    "sha256": "914cb60f3315811619762f71ea3066cf63ef641dc2ee975a480cfabe15206d09",
+    "words": 1595
+  },
+  {
+    "chapter": 55,
+    "path": "QA Full Manuscript Source/55 Chapter 55.md",
+    "sha256": "a470daedaf3e9c657161b767ba6df6b9a22fa5ecf4ec0646a6ac602c3b9c00b8",
+    "words": 2327
+  },
+  {
+    "chapter": 56,
+    "path": "QA Full Manuscript Source/56 Chapter 56.md",
+    "sha256": "603d8bac8660c0e323ee2a4256a09d7093a3637e6e4e85344431704fd779bfba",
+    "words": 2725
+  },
+  {
+    "chapter": 57,
+    "path": "QA Full Manuscript Source/57 Chapter 57.md",
+    "sha256": "d496ad24ce568a82c8098c897b42416458cb4e923da82307295b1d72f8433ba1",
+    "words": 1653
+  },
+  {
+    "chapter": 58,
+    "path": "QA Full Manuscript Source/58 Chapter 58.md",
+    "sha256": "3cb76a7c25b398f1b72aac8c08f3acce93d4d08172b0767b2d90239e24fa85d7",
+    "words": 2434
+  },
+  {
+    "chapter": 59,
+    "path": "QA Full Manuscript Source/59 Chapter 59.md",
+    "sha256": "e90fa6f6395aaf5287938bf0eab53f5a712d992b6d044426401098e432113127",
+    "words": 2471
+  },
+  {
+    "chapter": 60,
+    "path": "QA Full Manuscript Source/60 Chapter 60.md",
+    "sha256": "6745c6fa821f1444ba8ea3e2d5164d3fffa52667591c74eb28d4a702498afb40",
+    "words": 1589
+  },
+  {
+    "chapter": 61,
+    "path": "QA Full Manuscript Source/61 Chapter 61.md",
+    "sha256": "407d1729a1740f6bb66d1af19c6e9d411fada9886fc1db0a052b1271996e12ad",
+    "words": 1242
+  }
+]

@@ -1,0 +1,75 @@
+{
+  "baseline": "7b4b5df3",
+  "source": {
+    "notes": 61,
+    "words": 121754,
+    "all_hashes_unchanged": true
+  },
+  "markdown": {
+    "exact_source_body_match": true,
+    "chapter_headings": 61
+  },
+  "word": {
+    "body_full_normalized_match": true,
+    "rendered_full_normalized_match": true,
+    "pages": 402,
+    "words_outside_page": 0,
+    "affected_pages": []
+  },
+  "pdf": {
+    "full_normalized_match": false,
+    "pages": 423,
+    "words_outside_page": 366,
+    "affected_pages": [
+      30,
+      32,
+      66,
+      67,
+      161,
+      162,
+      313,
+      314,
+      319,
+      320,
+      325,
+      326,
+      347,
+      348,
+      349,
+      350,
+      351,
+      417,
+      420,
+      421
+    ]
+  },
+  "split": {
+    "files": 3,
+    "working_markdown": 6,
+    "compiled_full_normalized_match": true,
+    "parts": [
+      {
+        "file": "Pride and Prejudice QA - Part 1.pdf",
+        "pages": 133,
+        "chapters": 21,
+        "first": "Chapter I",
+        "last": "Chapter XXI"
+      },
+      {
+        "file": "Pride and Prejudice QA - Part 2.pdf",
+        "pages": 123,
+        "chapters": 20,
+        "first": "Chapter XXII",
+        "last": "Chapter XLI"
+      },
+      {
+        "file": "Pride and Prejudice QA - Part 3.pdf",
+        "pages": 168,
+        "chapters": 20,
+        "first": "Chapter XLII",
+        "last": "Chapter LXI"
+      }
+    ],
+    "source_paths_match": true
+  }
+}

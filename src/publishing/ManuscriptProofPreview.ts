@@ -10,6 +10,21 @@ interface PdfDocument { numPages: number; getPage(number: number): Promise<PdfPa
 interface PdfLoadingTask { promise: Promise<PdfDocument>; destroy(): Promise<void> }
 interface PdfJs { getDocument(options: { data: Uint8Array; isEvalSupported: boolean }): PdfLoadingTask }
 
+async function loadLocalPdf(data: Uint8Array): Promise<PdfLoadingTask> {
+    const pdfJs = await loadPdfJs() as PdfJs; // SAFE: typed public PDF.js facade; local document bytes only.
+    return pdfJs.getDocument({ data: data.slice(), isEvalSupported: false });
+}
+
+/** Parse actual PDF bytes; page count does not come from export options or metadata. */
+export async function readPdfPageCount(data: Uint8Array): Promise<number> {
+    const task = await loadLocalPdf(data);
+    try {
+        const document = await task.promise;
+        if (!Number.isInteger(document.numPages) || document.numPages < 1) throw new Error('The PDF has no readable pages.');
+        return document.numPages;
+    } finally { await task.destroy(); }
+}
+
 /** Owns one local PDF document and one page render; UI state stays in the export modal. */
 export class ManuscriptProofPreview {
     private loadingTask?: PdfLoadingTask;
@@ -22,9 +37,9 @@ export class ManuscriptProofPreview {
         await this.destroy();
         if (revision !== this.revision) return null;
         const data = new Uint8Array(await app.vault.adapter.readBinary(proofPath)); // SAFE: proof byte reads and sidecar writes use exact local job paths, including PDFs not yet indexed by Obsidian.
-        const pdfJs = await loadPdfJs() as PdfJs; // SAFE: typed facade for Obsidian's public PDF.js loader and documented rendering API.
         if (revision !== this.revision) return null;
-        const loadingTask = pdfJs.getDocument({ data, isEvalSupported: false });
+        const loadingTask = await loadLocalPdf(data);
+        if (revision !== this.revision) { await loadingTask.destroy(); return null; }
         this.loadingTask = loadingTask;
         const document = await loadingTask.promise;
         if (revision !== this.revision) return null;

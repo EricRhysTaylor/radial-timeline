@@ -1,0 +1,18 @@
+																	375 row (selected) <div class=​"ert-section-desc ert-delivery-file-path"> ​QA Publish Plain/01 Arrival.md​ </div> ​ slot
+																541 row CSS property name: box-sizing CSS property value: border-box
+																547 row CSS property name: caret-color CSS property value: rgb(218, 218, 218)
+																553 row CSS property name: color CSS property value: rgb(179, 179, 179)
+																559 row CSS property name: color-scheme CSS property value: dark
+																565 row CSS property name: display CSS property value: block
+																571 row CSS property name: font-family CSS property value: "??", "??", "??", ui-sans-serif, -apple-system, "system-ui", system-ui, "Segoe UI", "Google Sans Flex", Roboto, "Inter Variable", Inter, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif
+																607 row CSS property name: font-size CSS property value: 13px
+																613 row CSS property name: height CSS property value: 18.1953px
+																619 row CSS property name: line-height CSS property value: 18.2px
+																625 row CSS property name: overflow-wrap CSS property value: anywhere
+																631 row CSS property name: scrollbar-color CSS property value: rgb(128, 128, 128) rgba(0, 0, 0, 0)
+																638 row CSS property name: scrollbar-width CSS property value: auto
+																644 row CSS property name: text-rendering CSS property value: optimizelegibility
+																650 row CSS property name: unicode-bidi CSS property value: isolate
+																656 row CSS property name: user-select CSS property value: none
+																662 row CSS property name: width CSS property value: 646px
+																668 row CSS property name: -webkit-tap-highlight-color CSS property value: rgba(255, 255, 255, 0)

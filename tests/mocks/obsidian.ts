@@ -146,6 +146,11 @@ export const Platform = {
 };
 
 // Notice stub
+export class AbstractInputSuggest<T> {
+  constructor(_app: unknown, _input: unknown) {}
+  close(): void {}
+}
+
 export class Notice {
   constructor(_message: string, _timeout?: number) {
     // No-op in tests

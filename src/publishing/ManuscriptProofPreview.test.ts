@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as obsidian from 'obsidian';
 import type { App } from 'obsidian';
-import { ManuscriptProofPreview } from './ManuscriptProofPreview';
+import { ManuscriptProofPreview, readPdfPageCount } from './ManuscriptProofPreview';
 
 
 function fixture() {
@@ -17,6 +17,14 @@ function fixture() {
 }
 
 describe('actual PDF page preview', () => {
+    it('uses parsed document pages for delivery checks and always destroys the loading task', async () => {
+        const { destroy, document } = fixture();
+        expect(await readPdfPageCount(new Uint8Array([1, 2, 3]))).toBe(3);
+        expect(destroy).toHaveBeenCalledOnce();
+        document.numPages = 0;
+        await expect(readPdfPageCount(new Uint8Array([1]))).rejects.toThrow('no readable pages');
+        expect(destroy).toHaveBeenCalledTimes(2);
+    });
     it('uses the real document page count and renders the requested page', async () => {
         const { app, canvas, render, document, destroy } = fixture();
         const viewer = new ManuscriptProofPreview();

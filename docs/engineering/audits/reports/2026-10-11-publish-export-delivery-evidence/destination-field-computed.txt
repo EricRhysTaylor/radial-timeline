@@ -1,0 +1,21 @@
+																	437 row (selected)    <label class=​"ert-row ert-manuscript-source-field"> ​ Expand …​ </label> ​ Enable grid mode
+																613 row CSS property name: align-items CSS property value: center
+																619 row CSS property name: box-sizing CSS property value: border-box
+																625 row CSS property name: caret-color CSS property value: rgb(218, 218, 218)
+																631 row CSS property name: color CSS property value: rgb(218, 218, 218)
+																637 row CSS property name: color-scheme CSS property value: dark
+																643 row CSS property name: column-gap CSS property value: 8px
+																649 row CSS property name: cursor CSS property value: default
+																655 row CSS property name: display CSS property value: grid
+																661 row CSS property name: font-family CSS property value: "??", "??", "??", ui-sans-serif, -apple-system, "system-ui", system-ui, "Segoe UI", "Google Sans Flex", Roboto, "Inter Variable", Inter, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif
+																697 row CSS property name: font-size CSS property value: 15px
+																703 row CSS property name: grid-template-columns CSS property value: 80px 558px
+																710 row CSS property name: height CSS property value: 30px
+																716 row CSS property name: line-height CSS property value: 19.5px
+																722 row CSS property name: row-gap CSS property value: 8px
+																728 row CSS property name: scrollbar-color CSS property value: rgb(128, 128, 128) rgba(0, 0, 0, 0)
+																735 row CSS property name: scrollbar-width CSS property value: auto
+																741 row CSS property name: text-rendering CSS property value: optimizelegibility
+																747 row CSS property name: user-select CSS property value: none
+																753 row CSS property name: width CSS property value: 646px
+																759 row CSS property name: -webkit-tap-highlight-color CSS property value: rgba(255, 255, 255, 0)

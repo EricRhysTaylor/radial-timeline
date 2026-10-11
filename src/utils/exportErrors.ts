@@ -1,3 +1,5 @@
+import type { ExportDeliveryReceipt } from '../publishing/exportDelivery';
+
 export type ExportFailureCategory =
     | 'missing_dependency'
     | 'invalid_template'
@@ -16,6 +18,7 @@ export class ExportFailure extends Error {
     category: ExportFailureCategory;
     detail?: string;
     completedPaths: string[] = [];
+    delivery?: ExportDeliveryReceipt;
 
     constructor(descriptor: ExportFailureDescriptor) {
         super(descriptor.message);

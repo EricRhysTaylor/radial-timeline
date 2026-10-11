@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-10-11T20:22:36.798Z",
+  "checkedAt": "2026-10-11T20:24:36.924Z",
+  "receiptPath": "QA Delivery/Word/Receipts/5429ba15-1245-4d58-99b3-c12fd326921e.json",
+  "destination": "QA Delivery/Word",
+  "outputFolder": "QA Delivery/Word",
+  "format": "docx",
+  "expectedFiles": 1,
+  "expectedWorkingFiles": 0,
+  "sourceTitle": "QA Saved Manuscript",
+  "sourcePaths": [
+    "QA Publish Plain/02 Crossing.md",
+    "QA Publish Plain/01 Arrival.md"
+  ],
+  "reviewedSourcePaths": [
+    "QA Publish Plain/02 Crossing.md",
+    "QA Publish Plain/01 Arrival.md"
+  ],
+  "files": [
+    {
+      "path": "QA Delivery/Word/QA Saved Manuscript Word Oct 11 @ 1.22PM.docx",
+      "primary": true,
+      "available": true,
+      "bytes": 11243,
+      "sha256": "f05ad9f1d3e85e017f21177f3f1180c6f33cbee6913eae0e950d6792f7bde16f",
+      "modifiedAfterExport": false
+    }
+  ],
+  "problems": []
+}

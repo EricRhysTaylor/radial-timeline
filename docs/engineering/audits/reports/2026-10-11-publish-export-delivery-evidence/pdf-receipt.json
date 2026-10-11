@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-10-11T20:14:12.140Z",
+  "checkedAt": "2026-10-11T20:15:23.639Z",
+  "receiptPath": "QA Delivery/PDF/QA Saved Manuscript - Split 2026-10-11T20-14-09-952Z/Receipts/ac9ce2a7-13a7-45ef-a396-3ea7481d27b5.json",
+  "destination": "QA Delivery/PDF",
+  "outputFolder": "QA Delivery/PDF/QA Saved Manuscript - Split 2026-10-11T20-14-09-952Z",
+  "format": "pdf",
+  "expectedFiles": 2,
+  "expectedWorkingFiles": 4,
+  "sourceTitle": "QA Saved Manuscript",
+  "sourcePaths": [
+    "QA Publish Plain/02 Crossing.md",
+    "QA Publish Plain/01 Arrival.md"
+  ],
+  "reviewedSourcePaths": [
+    "QA Publish Plain/02 Crossing.md",
+    "QA Publish Plain/01 Arrival.md"
+  ],
+  "files": [
+    {
+      "path": "QA Delivery/PDF/QA Saved Manuscript - Split 2026-10-11T20-14-09-952Z/QA Saved Manuscript - Part 1.pdf",
+      "primary": true,
+      "available": true,
+      "bytes": 29488,
+      "sha256": "6b5413c0d4199b112a2a42548c8cc14abdf1a0f0cb95233fc1b402d6ccfba070",
+      "pages": 1,
+      "modifiedAfterExport": false
+    },
+    {
+      "path": "QA Delivery/PDF/QA Saved Manuscript - Split 2026-10-11T20-14-09-952Z/QA Saved Manuscript - Part 2.pdf",
+      "primary": true,
+      "available": true,
+      "bytes": 27129,
+      "sha256": "1a3513cb158968065f9f0260410b4ccccd29ddb9e7f73634cda8bf7719d903f7",
+      "pages": 1,
+      "modifiedAfterExport": false
+    },
+    {
+      "path": "QA Delivery/PDF/QA Saved Manuscript - Split 2026-10-11T20-14-09-952Z/QA Saved Manuscript - Part 1__compiled__.md",
+      "primary": false,
+      "available": true,
+      "bytes": 318,
+      "sha256": "e7f80d2ed32ce18a9e14bd3d24cdc3b80acd26d0a0e8394a7bf4c6af5efdaaab",
+      "modifiedAfterExport": false
+    },
+    {
+      "path": "QA Delivery/PDF/QA Saved Manuscript - Split 2026-10-11T20-14-09-952Z/QA Saved Manuscript - Part 1__sanitized__.md",
+      "primary": false,
+      "available": true,
+      "bytes": 317,
+      "sha256": "36827995031e9a8c6005097af6ab003126492f89cb23667023b856518064e258",
+      "modifiedAfterExport": false
+    },
+    {
+      "path": "QA Delivery/PDF/QA Saved Manuscript - Split 2026-10-11T20-14-09-952Z/QA Saved Manuscript - Part 2__compiled__.md",
+      "primary": false,
+      "available": true,
+      "bytes": 307,
+      "sha256": "ff9e11e95e60ef89f791277b3247ea66fffad5a98342e7a649883c452c73afd5",
+      "modifiedAfterExport": false
+    },
+    {
+      "path": "QA Delivery/PDF/QA Saved Manuscript - Split 2026-10-11T20-14-09-952Z/QA Saved Manuscript - Part 2__sanitized__.md",
+      "primary": false,
+      "available": true,
+      "bytes": 239,
+      "sha256": "f5c56f7065377c324c2a99d5b8c19ef6bb20f55d66ef2e3ac7e74ca9995bd1f2",
+      "modifiedAfterExport": false
+    }
+  ],
+  "problems": []
+}

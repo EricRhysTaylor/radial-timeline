@@ -1251,6 +1251,7 @@ export interface RadialTimelineSettings {
     exportProfiles?: ExportProfile[];
     savedManuscriptSources?: SavedManuscriptSource[];
     lastUsedManuscriptSourceId?: string;
+    lastExportDeliveryReceiptPath?: string;
     bookPublishingPreferences?: BookPublishingPreferences[];
     lastUsedExportProfileId?: string;
     /** @deprecated Use backdropYamlTemplates instead. Kept for migration. */

@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-10-11T20:06:42.263Z",
+  "checkedAt": "2026-10-11T20:07:48.004Z",
+  "receiptPath": "QA Delivery/Manuscript/QA Saved Manuscript - Split 2026-10-11T20-06-42-255Z/Receipts/40134159-8539-4dda-8cdc-e221c7a5b3d4.json",
+  "destination": "QA Delivery/Manuscript",
+  "outputFolder": "QA Delivery/Manuscript/QA Saved Manuscript - Split 2026-10-11T20-06-42-255Z",
+  "format": "markdown",
+  "expectedFiles": 2,
+  "expectedWorkingFiles": 0,
+  "sourceTitle": "QA Saved Manuscript",
+  "sourcePaths": [
+    "QA Publish Plain/02 Crossing.md",
+    "QA Publish Plain/01 Arrival.md"
+  ],
+  "reviewedSourcePaths": [
+    "QA Publish Plain/02 Crossing.md",
+    "QA Publish Plain/01 Arrival.md"
+  ],
+  "files": [
+    {
+      "path": "QA Delivery/Manuscript/QA Saved Manuscript - Split 2026-10-11T20-06-42-255Z/QA Saved Manuscript - Part 1.md",
+      "primary": true,
+      "available": true,
+      "bytes": 265,
+      "sha256": "54b7be72a3e055320a8e5256afed305b2f10c457c924dfd30aaa45236b718956",
+      "modifiedAfterExport": false,
+      "reviewedSha256": "54b7be72a3e055320a8e5256afed305b2f10c457c924dfd30aaa45236b718956"
+    },
+    {
+      "path": "QA Delivery/Manuscript/QA Saved Manuscript - Split 2026-10-11T20-06-42-255Z/QA Saved Manuscript - Part 2.md",
+      "primary": true,
+      "available": true,
+      "bytes": 254,
+      "sha256": "a7e94497dd30708bcb39034abb7847b0a3987658bafeb368c1e7a246d5f378e5",
+      "modifiedAfterExport": false,
+      "reviewedSha256": "a7e94497dd30708bcb39034abb7847b0a3987658bafeb368c1e7a246d5f378e5"
+    }
+  ],
+  "problems": [],
+  "reviewedAt": "2026-10-11T20:07:48.004Z"
+}

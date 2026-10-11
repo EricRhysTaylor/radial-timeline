@@ -13,6 +13,10 @@ import { getManuscriptProofConfigurationKey, getManuscriptProofStaleReason, type
 import { ManuscriptProofPreview } from '../publishing/ManuscriptProofPreview';
 import { readSavedManuscripts, restoreSavedManuscript, saveManuscriptRecord } from '../publishing/savedManuscripts';
 import { randomUUID } from 'crypto'; // SAFE: local saved manuscript identities, never credentials.
+import { deliveryFormat, readDeliveryReceipt, validateExportDestination, type ExportDeliveryReceipt } from '../publishing/exportDelivery';
+import { ExportDeliveryReviewModal } from './ExportDeliveryReviewModal';
+import { ModalFolderSuggest } from '../settings/FolderSuggest';
+import { resolveExportOutputFolder } from '../utils/aiOutput';
 import { clearFontAvailabilityCache, ExportFormat, ExportType, ManuscriptPreset, OutlinePreset, getAutoPdfEngineSelection, resolveTemplatePath, validatePandocLayout, getTemplateFontDiagnostics, getStructuredFontDiagnostic } from '../utils/exportFormats';
 import { ensureBundledLayoutInstalledForExport } from '../utils/pandocBundledLayouts';
 import { getActiveBook, DEFAULT_BOOK_TITLE } from '../utils/books';
@@ -85,6 +89,8 @@ function renderModalLayoutPreview(
 }
 
 export interface ManuscriptModalResult {
+    outputFolder?: string;
+    reviewedSourcePaths?: string[];
     intent?: 'proof';
     source?: ManuscriptSource;
     order: ManuscriptOrder;
@@ -113,6 +119,7 @@ export interface ManuscriptModalResult {
 }
 
 export interface ManuscriptExportOutcome {
+    delivery?: ExportDeliveryReceipt;
     proof?: ManuscriptProofReceipt;
     savedPath?: string;
     renderedPath?: string;
@@ -233,6 +240,13 @@ export class ManuscriptOptionsModal extends Modal {
     private readonly plugin: RadialTimelinePlugin;
     private source?: ManuscriptSource;
     private sourceCard?: HTMLElement;
+    private destination = '';
+    private destinationError: string | null = null;
+    private destinationInput?: HTMLInputElement;
+    private destinationSummaryEl?: HTMLElement;
+    private destinationErrorEl?: HTMLElement;
+    private reviewLastButton?: ButtonComponent;
+    private destinationSuggest?: ModalFolderSuggest;
     private savedManuscripts: SavedManuscriptSource[] = [];
     private savedSourceId?: string;
     private savedSourceName = '';
@@ -494,6 +508,7 @@ export class ManuscriptOptionsModal extends Modal {
         super(app);
         this.plugin = plugin;
         this.onSubmit = onSubmit;
+        this.destination = plugin.settings.manuscriptOutputFolder || resolveExportOutputFolder(plugin);
         const book = getActiveBook(plugin.settings);
         if (book) this.source = { kind: 'book', bookId: book.id };
         try {
@@ -570,6 +585,7 @@ export class ManuscriptOptionsModal extends Modal {
     }
 
     onClose(): void {
+        this.destinationSuggest?.close();
         this.sourceLoadId += 1;
         this.proofEpoch += 1;
         this.proofClosed = true;
@@ -627,7 +643,8 @@ export class ManuscriptOptionsModal extends Modal {
         this.proofPane.toggleClass('ert-hidden', !enabled);
         this.controlsEl?.parentElement?.toggleClass('is-proof-enabled', enabled);
         this.modalEl.setCssStyles({ width: enabled ? '1440px' : '800px' }); // SAFE: Obsidian modal sizing; shared ERT shell remains unchanged.
-        if (this.proofReceipt && getManuscriptProofConfigurationKey(this.plugin, this.buildSubmissionResult()) !== this.proofReceipt.configurationKey) {
+        if (this.proofReceipt && this.destinationError) this.proofStaleReason = 'The export destination needs attention.';
+        if (this.proofReceipt && !this.destinationError && getManuscriptProofConfigurationKey(this.plugin, this.buildSubmissionResult()) !== this.proofReceipt.configurationKey) {
             this.proofStaleReason = 'Export settings or publishing details changed.';
         }
         this.proofPane.toggleClass('is-stale', !!this.proofStaleReason);
@@ -637,7 +654,7 @@ export class ManuscriptOptionsModal extends Modal {
             : 'No proof generated yet.');
         if (this.proofReceipt?.notices.length) this.proofStatusEl?.appendText(` ${this.proofReceipt.notices.join(' ')}`);
         this.proofButton?.setButtonText(this.proofReceipt ? 'Refresh proof' : 'Generate proof');
-        this.proofButton?.setDisabled(!enabled || this.exportBlocked || this.proofLoading || this.exportInFlight || this.sourceLoading || this.sourceSaving || !!this.sourceError || !this.sourceReviewed || !this.isSplitSelectionValid() || this.totalScenes === 0);
+        this.proofButton?.setDisabled(!enabled || this.exportBlocked || !!this.destinationError || this.proofLoading || this.exportInFlight || this.sourceLoading || this.sourceSaving || !!this.sourceError || !this.sourceReviewed || !this.isSplitSelectionValid() || this.totalScenes === 0);
         this.proofOpenButton?.setDisabled(!this.proofReceipt || this.proofLoading);
         this.proofFileRow?.toggleClass('ert-hidden', !this.proofReceipt || this.proofReceipt.renderedPaths.length <= 1);
         this.proofFileDropdown?.setDisabled(this.proofLoading);
@@ -658,7 +675,7 @@ export class ManuscriptOptionsModal extends Modal {
     }
 
     private async generateProof(): Promise<void> {
-        if (this.proofLoading || this.exportInFlight || this.exportBlocked || this.sourceLoading || this.sourceSaving || this.sourceError || !this.sourceReviewed || !this.isSplitSelectionValid() || this.outputFormat !== 'pdf') return;
+        if (this.proofLoading || this.exportInFlight || this.exportBlocked || this.destinationError || this.sourceLoading || this.sourceSaving || this.sourceError || !this.sourceReviewed || !this.isSplitSelectionValid() || this.outputFormat !== 'pdf') return;
         const epoch = ++this.proofEpoch;
         this.proofLoading = true;
         if (this.controlsEl) this.controlsEl.inert = true;
@@ -1526,6 +1543,7 @@ export class ManuscriptOptionsModal extends Modal {
             });
         this.refreshTemplateDropdown();
 
+        this.renderDestination(container);
         // I) FOOTER — one-line read-back of what the file will contain
         this.exportReadinessEl = container.createDiv({ cls: 'ert-panel ert-stack ert-hidden', attr: { role: 'status', 'aria-live': 'polite' } });
         this.readbackEl = container.createDiv({ cls: 'ert-sub-card-note ert-hidden' });
@@ -1756,6 +1774,7 @@ export class ManuscriptOptionsModal extends Modal {
         this.updateActionButtonDisabledState();
         this.updateProofUi();
         this.updateSourceActions();
+        this.updateDestinationUi();
     }
 
     private getTemplateList(): ModalExportProfile[] {
@@ -3291,7 +3310,7 @@ export class ManuscriptOptionsModal extends Modal {
         if (!this.actionButton || this.exportCompleted) return;
         const splitInvalid = !this.isSplitSelectionValid();
         this.actionButton.setDisabled(
-            this.exportInFlight || this.proofLoading || this.sourceLoading || this.sourceSaving || !!this.sourceError || !this.sourceReviewed || this.totalScenes === 0 || splitInvalid || this.exportBlocked
+            this.exportInFlight || this.proofLoading || this.sourceLoading || this.sourceSaving || !!this.sourceError || !!this.destinationError || !this.sourceReviewed || this.totalScenes === 0 || splitInvalid || this.exportBlocked
         );
     }
 
@@ -3369,7 +3388,7 @@ export class ManuscriptOptionsModal extends Modal {
     }
 
     private getPrimaryActionLabel(): string {
-        if (this.exportCompleted) return 'Done';
+        if (this.exportCompleted) return 'Close';
         const mode = this.getUiMode();
         const base = mode.isOutline
             ? 'Generate Outline'
@@ -3418,12 +3437,71 @@ export class ManuscriptOptionsModal extends Modal {
 
         this.renderStatusPathGroup('Saved', savedPaths);
         this.renderStatusPathGroup('Rendered', renderedPaths);
+        if (outcome.delivery) this.renderDeliveryStatus(outcome.delivery);
         if (outcome.messages && outcome.messages.length > 0) {
             outcome.messages.forEach(message => {
                 this.outputStatusEl?.createDiv({ text: message });
             });
         }
         this.outputStatusEl.toggleClass('ert-hidden', savedPaths.length === 0 && renderedPaths.length === 0 && !(outcome.messages && outcome.messages.length > 0));
+    }
+
+    private renderDestination(parent: HTMLElement): void {
+        const card = parent.createDiv({ cls: 'ert-panel ert-stack ert-export-destination' });
+        card.createEl('h4', { cls: 'ert-section-title', text: 'Destination' });
+        const label = card.createEl('label', { cls: 'ert-row ert-manuscript-source-field' });
+        label.createSpan({ text: 'Vault folder' });
+        const input = label.createEl('input', { cls: 'ert-input', attr: { type: 'text', 'aria-label': 'Export destination' } });
+        input.value = this.destination;
+        this.destinationInput = input;
+        const choose = (value: string) => { this.destination = value; this.updateDestinationUi(); this.syncExportUi(); };
+        input.addEventListener('input', () => choose(input.value));
+        this.destinationSuggest = new ModalFolderSuggest(this.app, input, choose);
+        this.destinationSummaryEl = card.createDiv({ cls: 'ert-section-desc' });
+        this.destinationErrorEl = card.createDiv({ cls: 'ert-section-desc ert-section-desc--alert', attr: { role: 'status' } });
+        card.createDiv({ cls: 'ert-section-desc', text: 'Folder choice applies to this export. New folders are created when you generate. Split exports get their own subfolder.' });
+        const actions = card.createDiv({ cls: 'ert-manuscript-pill-row' });
+        new ButtonComponent(actions).setButtonText('Use configured default').onClick(() => {
+            this.destination = this.plugin.settings.manuscriptOutputFolder || resolveExportOutputFolder(this.plugin);
+            input.value = this.destination;
+            this.updateDestinationUi();
+            this.syncExportUi();
+        });
+        this.reviewLastButton = new ButtonComponent(actions).setButtonText('Review last export').onClick(() => {
+            const receiptPath = this.plugin.settings.lastExportDeliveryReceiptPath;
+            if (receiptPath) void this.openDeliveryReview(receiptPath);
+        });
+        this.updateDestinationUi();
+    }
+
+    private updateDestinationUi(): void {
+        try { validateExportDestination(this.destination, this.app); this.destinationError = null; }
+        catch (error) { this.destinationError = error instanceof Error ? error.message : 'Choose an export destination.'; }
+        this.destinationInput?.setAttribute('aria-invalid', String(!!this.destinationError));
+        this.destinationErrorEl?.toggleClass('ert-hidden', !this.destinationError);
+        this.destinationErrorEl?.setText(this.destinationError || '');
+        const selectedFormat = deliveryFormat({ exportType: this.exportType, outputFormat: this.outputFormat, outlinePreset: this.outlinePreset });
+        const format = selectedFormat === 'docx' ? 'Word' : selectedFormat === 'markdown' ? 'Markdown' : selectedFormat.toUpperCase();
+        this.destinationSummaryEl?.setText(`${countLabel(this.getSelectedSceneCount(), this.source?.kind === 'book' ? 'scene' : 'note')} · ${countLabel(this.getPlannedOutputCount(), `${format} file`)}${this.outputFormat === 'pdf' && this.saveMarkdownArtifact ? ' + working Markdown' : ''}`);
+        this.reviewLastButton?.buttonEl.toggleClass('ert-hidden', !this.plugin.settings.lastExportDeliveryReceiptPath);
+        this.reviewLastButton?.setDisabled(this.exportInFlight || this.proofLoading || this.sourceSaving);
+        this.updateActionButtonDisabledState();
+    }
+
+    private renderDeliveryStatus(receipt: ExportDeliveryReceipt): void {
+        if (!this.outputStatusEl) return;
+        const passed = receipt.files.filter(file => file.primary && file.available && !file.error).length;
+        this.outputStatusEl.createDiv({ text: `${receipt.problems.length ? 'Delivery checks need attention' : 'File checks passed'} · ${passed} of ${receipt.expectedFiles} final files checked.` });
+        for (const problem of receipt.problems) this.outputStatusEl.createDiv({ text: problem });
+        new ButtonComponent(this.outputStatusEl).setButtonText('Review exported files').onClick(() => { void this.openDeliveryReview(receipt.receiptPath); });
+    }
+
+    private async openDeliveryReview(receiptPath: string): Promise<void> {
+        try {
+            const receipt = await readDeliveryReceipt(this.app, receiptPath);
+            this.close();
+            new ExportDeliveryReviewModal(this.app, receipt).open();
+        } catch (error) { new Notice(error instanceof Error ? error.message : 'The export review record could not be opened.'); }
     }
 
     private showExportFailure(error: unknown): void {
@@ -3435,6 +3513,7 @@ export class ManuscriptOptionsModal extends Modal {
         if (failure.completedPaths.length > 0) {
             this.renderStatusPathGroup('Created before this failure', failure.completedPaths);
         }
+        if (failure.delivery) this.renderDeliveryStatus(failure.delivery);
         if (failure.category === 'missing_metadata' || failure.category === 'missing_dependency') {
             new ButtonComponent(this.outputStatusEl)
                 .setButtonText(failure.category === 'missing_metadata' ? 'Edit book details' : 'Open export tools')
@@ -3910,6 +3989,8 @@ export class ManuscriptOptionsModal extends Modal {
         const selectedProfile = this.selectedExportProfile || this.defaultExportProfile || this.getTemplateList()[0];
         const selectedLayoutId = this.resolveLayoutIdForProfile(selectedProfile);
         return {
+            outputFolder: validateExportDestination(this.destination),
+            reviewedSourcePaths: this.getSelectedScenePaths(),
             source: this.source ? structuredClone(this.source) : undefined,
             order: this.order,
             tocMode,
@@ -3942,7 +4023,7 @@ export class ManuscriptOptionsModal extends Modal {
 
     // Submission -------------------------------------------------------------
     private async submit(): Promise<void> {
-        if (this.exportInFlight || this.proofLoading || this.sourceLoading || this.sourceSaving || this.sourceError || !this.sourceReviewed) return;
+        if (this.exportInFlight || this.proofLoading || this.sourceLoading || this.sourceSaving || this.sourceError || this.destinationError || !this.sourceReviewed) return;
         if (this.totalScenes === 0) {
             new Notice(t('manuscriptModal.emptyNotice'));
             return;
@@ -3954,7 +4035,7 @@ export class ManuscriptOptionsModal extends Modal {
         }
         const request = this.buildSubmissionResult();
         this.exportInFlight = true;
-        if (this.sourceCard) this.sourceCard.inert = true;
+        if (this.controlsEl) this.controlsEl.inert = true;
         this.outputStatusEl?.addClass('ert-hidden');
         this.exportCompleted = false;
         this.lastOutcome = null;
@@ -3968,6 +4049,7 @@ export class ManuscriptOptionsModal extends Modal {
         try {
             if (this.proofReceipt) await this.checkProofFreshness();
             const outcome = await this.onSubmit(request);
+            if (this.proofClosed) return;
             const hasOutcome = Boolean(
                 outcome.savedPath
                 || outcome.renderedPath
@@ -3981,15 +4063,16 @@ export class ManuscriptOptionsModal extends Modal {
                 this.updateActionButtonLabel();
                 return;
             }
-            this.exportCompleted = true;
+            this.exportCompleted = !outcome.delivery?.problems.length;
             this.lastOutcome = outcome;
             this.showOutputStatus(outcome);
             this.actionButton?.setDisabled(false);
             this.openFolderButton?.buttonEl.toggleClass('ert-hidden', !this.getOutcomeFolderPath());
             this.openFileButton?.buttonEl.toggleClass('ert-hidden', !this.getOutcomeFilePath());
-            this.cancelButton?.buttonEl.addClass('ert-hidden');
+            this.cancelButton?.buttonEl.toggleClass('ert-hidden', this.exportCompleted);
             this.updateActionButtonLabel();
         } catch (err) {
+            if (this.proofClosed) return;
             console.error(err);
             const failure = categorizeExportError(err);
             new Notice(failure.message);
@@ -3999,8 +4082,9 @@ export class ManuscriptOptionsModal extends Modal {
             this.updateActionButtonLabel();
         } finally {
             this.exportInFlight = false;
+            this.updateDestinationUi();
             this.updateProofUi();
-            if (this.sourceCard) this.sourceCard.inert = false;
+            if (this.controlsEl) this.controlsEl.inert = false;
             this.updateActionButtonDisabledState();
         }
     }

@@ -319,7 +319,7 @@ export function parseCustomPandocMetadata(raw: string | undefined): Record<strin
  */
 export const BINDING_GUTTER_LATEX = '\\geometry{twoside,bindingoffset=0.25in}';
 
-function resolveVaultAbsolutePath(plugin: RadialTimelinePlugin, vaultPath: string): string | null {
+function resolveVaultAbsolutePath(plugin: Pick<RadialTimelinePlugin, 'app'>, vaultPath: string): string | null {
     const adapter = plugin.app.vault.adapter; // SAFE: adapter needed to resolve absolute path for Pandoc output
     const fileSystemAdapterCtor = FileSystemAdapter as unknown as (new (...args: unknown[]) => FileSystemAdapter) | undefined;
     if (fileSystemAdapterCtor && adapter instanceof fileSystemAdapterCtor) {
@@ -1542,7 +1542,7 @@ export function getExportFormatExtension(format: ExportFormat): string {
     }
 }
 
-export function getVaultAbsolutePath(plugin: RadialTimelinePlugin, vaultPath: string): string | null {
+export function getVaultAbsolutePath(plugin: Pick<RadialTimelinePlugin, 'app'>, vaultPath: string): string | null {
     return resolveVaultAbsolutePath(plugin, vaultPath);
 }
 

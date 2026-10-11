@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-10-11T20:36:57.506Z",
+  "checkedAt": "2026-10-11T20:36:58.489Z",
+  "receiptPath": "QA Delivery/Final/Receipts/b855fdb4-0241-4da2-aa95-47053413bb4e.json",
+  "destination": "QA Delivery/Final",
+  "outputFolder": "QA Delivery/Final",
+  "format": "markdown",
+  "expectedFiles": 1,
+  "expectedWorkingFiles": 0,
+  "sourceTitle": "QA Saved Manuscript",
+  "sourcePaths": [
+    "QA Publish Plain/02 Crossing.md",
+    "QA Publish Plain/01 Arrival.md"
+  ],
+  "options": {
+    "outputFolder": "QA Delivery/Final",
+    "reviewedSourcePaths": [
+      "QA Publish Plain/02 Crossing.md",
+      "QA Publish Plain/01 Arrival.md"
+    ],
+    "source": {
+      "kind": "folder",
+      "path": "QA Publish Plain",
+      "paths": [
+        "QA Publish Plain/02 Crossing.md",
+        "QA Publish Plain/01 Arrival.md"
+      ],
+      "title": "QA Saved Manuscript",
+      "author": "QA Writer Updated"
+    },
+    "order": "narrative",
+    "tocMode": "none",
+    "includeSceneIdInToc": false,
+    "includeSceneIdInHeading": false,
+    "rangeStart": 1,
+    "rangeEnd": 2,
+    "exportType": "manuscript",
+    "manuscriptPreset": "novel",
+    "outlinePreset": "beat-sheet",
+    "outputFormat": "markdown",
+    "updateWordCounts": false,
+    "includeSynopsis": false,
+    "includeMatter": false,
+    "saveMarkdownArtifact": false,
+    "lineBreaksAsParagraphs": false,
+    "exportCleanup": {
+      "stripComments": false,
+      "stripAiComments": false,
+      "stripLinks": false,
+      "stripCallouts": false,
+      "stripBlockIds": false
+    },
+    "exportProfileTemplateId": "bundled-fiction-classic-manuscript",
+    "splitMode": "single",
+    "splitParts": 1
+  },
+  "reviewedSourcePaths": [
+    "QA Publish Plain/02 Crossing.md",
+    "QA Publish Plain/01 Arrival.md"
+  ],
+  "files": [
+    {
+      "path": "QA Delivery/Final/Manuscript Novl Narr Oct 11 @ 1.36PM.md",
+      "primary": true,
+      "available": true,
+      "bytes": 462,
+      "sha256": "8ca5ad9f40dd9b825b8e4cd8c6d59d14953d4f1f10fd4713108a67c874d6cf33",
+      "modifiedAfterExport": false
+    }
+  ],
+  "problems": []
+}

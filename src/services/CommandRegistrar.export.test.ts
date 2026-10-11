@@ -9,6 +9,9 @@ import { PublishingValidationService } from './PublishingValidationService';
 import type { ManuscriptModalResult } from '../modals/ManuscriptOptionsModal';
 import { getVaultAbsolutePath, runPandocOnContent } from '../utils/exportFormats';
 import { ManuscriptOptionsModal } from '../modals/ManuscriptOptionsModal';
+import { checkExportDelivery } from '../publishing/exportDelivery';
+import * as exportFormats from '../utils/exportFormats';
+import { ExportFailure } from '../utils/exportErrors';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'; // SAFE: isolated local export fixtures, removed after verification.
 import { tmpdir } from 'node:os'; // SAFE: test-only temporary folder location.
 import { join } from 'node:path'; // SAFE: test-only export fixture paths.
@@ -25,6 +28,10 @@ vi.mock('../utils/exportFormats', async (importOriginal) => ({
 vi.mock('../utils/pandocBundledLayouts', async (importOriginal) => ({
     ...await importOriginal<typeof import('../utils/pandocBundledLayouts')>(),
     ensureManuscriptReferenceDocxInstalled: () => ({ path: '/tmp/reference.docx', installed: false }),
+}));
+vi.mock('../publishing/exportDelivery', async (importOriginal) => ({
+    ...await importOriginal<typeof import('../publishing/exportDelivery')>(),
+    checkExportDelivery: vi.fn(async () => ({ schemaVersion: 1, receiptPath: 'Exports/Receipts/test.json', files: [], problems: [], expectedFiles: 1 })),
 }));
 
 beforeEach(() => vi.clearAllMocks());
@@ -73,6 +80,47 @@ function formattedFixture() {
 }
 
 describe('manuscript export UI-to-runner contract', () => {
+    it('attaches checks for completed outputs when a later split render fails', async () => {
+        const { registrar, options, plugin } = formattedFixture();
+        vi.spyOn(registrar as unknown as { ensureVaultFolderPath(path: string): Promise<void> }, 'ensureVaultFolderPath').mockResolvedValue(undefined);
+        vi.mocked(runPandocOnContent).mockImplementationOnce(async (_text, path) => path).mockRejectedValueOnce(new Error('Second part failed'));
+        const failure = await registrar['handleManuscriptExport']({ ...options, outputFormat: 'docx', splitMode: 'parts', splitParts: 2 }).catch(error => error as import('../utils/exportErrors').ExportFailure);
+        if (!(failure instanceof ExportFailure)) throw new Error('Expected a split export failure.');
+        expect(failure.completedPaths).toHaveLength(1);
+        expect(failure.delivery).toBeDefined();
+        expect(checkExportDelivery).toHaveBeenCalledWith(plugin, expect.anything(), expect.objectContaining({ renderedPaths: failure.completedPaths }), 'Test book', ['Book/1 First.md', 'Book/2 Second.md'], expect.any(String));
+    });
+    it('routes an explicit destination and actual selected sources into delivery checks', async () => {
+        const { registrar, plugin, options } = fixture();
+        const outcome = await registrar['handleManuscriptExport']({ ...options, outputFolder: 'Book', reviewedSourcePaths: ['Book/2 Second.md'], rangeStart: 2, rangeEnd: 2 });
+        expect(checkExportDelivery).toHaveBeenCalledWith(plugin, expect.objectContaining({ outputFolder: 'Book' }), expect.objectContaining({ outputFolder: 'Book' }), 'Test book', ['Book/2 Second.md']);
+        expect(outcome.delivery?.receiptPath).toBe('Exports/Receipts/test.json');
+    });
+    it('blocks changed selections and destinations that would overwrite a source note', async () => {
+        const { registrar, writer, options } = fixture();
+        await expect(registrar['handleManuscriptExport']({ ...options, reviewedSourcePaths: ['Book/2 Second.md'] })).rejects.toThrow('selection changed');
+        const naming = vi.spyOn(exportFormats, 'buildExportFilename').mockReturnValue('1 First.md');
+        try {
+            await expect(registrar['handleManuscriptExport']({ ...options, outputFolder: 'Book' })).rejects.toThrow('overwrite a manuscript source');
+            expect(writer).not.toHaveBeenCalled();
+        } finally { naming.mockRestore(); }
+    });
+    it('shows an invalid destination before enabling generation', () => {
+        const { plugin } = fixture();
+        const modal = new ManuscriptOptionsModal(plugin.app, plugin, async () => ({}));
+        modal['totalScenes'] = 2;
+        modal['rangeEnd'] = 2;
+        const setDisabled = vi.fn();
+        modal['actionButton'] = { setDisabled } as unknown as ButtonComponent;
+        modal['destination'] = '../outside';
+        modal['updateDestinationUi']();
+        expect(setDisabled).toHaveBeenLastCalledWith(true);
+        modal['destination'] = 'QA Delivery';
+        modal['updateDestinationUi']();
+        expect(modal['destinationError']).toBeNull();
+        expect(setDisabled).toHaveBeenLastCalledWith(false);
+    });
+
     it('removes only the confirmed saved record while keeping the current source and other records', async () => {
         const { plugin, files } = fixture();
         const first = { schemaVersion: 1 as const, id: 'one', name: 'One', source: { kind: 'file' as const, path: files[0].path, paths: [files[0].path], title: 'One', author: 'Writer' }, candidatePaths: [files[0].path] };
@@ -236,14 +284,14 @@ describe('manuscript export UI-to-runner contract', () => {
         expect(modal['scenePaths']).toEqual(['Book/1 First.md', 'Book/2 Second.md']);
     });
 
-    it('locks source controls for the export job and restores them after completion', async () => {
+    it('locks all export controls for the job and restores them after completion', async () => {
         const { plugin } = fixture();
         let finish!: (outcome: { savedPath: string }) => void;
         const submit = vi.fn(() => new Promise<{ savedPath: string }>(resolve => { finish = resolve; }));
         const modal = new ManuscriptOptionsModal(plugin.app, plugin, submit);
         await modal['chooseSource']('file', 'Book/2 Second.md');
         const card = { inert: false };
-        modal['sourceCard'] = card as unknown as HTMLElement;
+        modal['controlsEl'] = card as unknown as HTMLElement;
         const exporting = modal['submit']();
         expect(card.inert).toBe(true);
         finish({ savedPath: 'Exports/Single.md' });

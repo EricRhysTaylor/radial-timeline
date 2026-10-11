@@ -7,6 +7,7 @@ import { App, Notice, type TFile } from 'obsidian';
 import { promises as fs } from 'fs'; // SAFE: local template and proof artifact fingerprints.
 import { randomUUID } from 'crypto'; // SAFE: unique local proof job folders.
 import { hashProofInput, getManuscriptProofConfigurationKey, type ManuscriptProofReceipt, type ManuscriptProofDependency } from '../publishing/manuscriptProof';
+import { checkExportDelivery, ensureExportDestination } from '../publishing/exportDelivery';
 import * as path from 'path'; // SAFE: Node path normalizes published export filenames on every desktop platform.
 import type RadialTimelinePlugin from '../main';
 import type { BookLayoutOptions, BookProfile, ManuscriptExportCleanupOptions, PublishingValidationSnapshot } from '../types';
@@ -373,6 +374,20 @@ export class CommandRegistrar {
         const configurationKey = isProof ? getManuscriptProofConfigurationKey(this.plugin, result) : '';
         const savedPaths: string[] = [];
         const renderedPaths: string[] = [];
+        let sourcePaths: string[] = [];
+        let actualOutputFolder: string | undefined;
+        let checkingDelivery = false;
+        let protectedSourcePaths = new Set<string>();
+        const writeOutput = async (vaultPath: string, content: string, operation: string): Promise<boolean> => {
+            if (protectedSourcePaths.has(vaultPath)) throw new ExportFailure({ category: 'write_failure', message: 'This destination would overwrite a manuscript source note. Choose another export folder.' });
+            return this.writeVaultTextFile(vaultPath, content, operation);
+        };
+        const finish = async (outcome: ManuscriptExportOutcome): Promise<ManuscriptExportOutcome> => {
+            checkingDelivery = true;
+            const delivery = await checkExportDelivery(this.plugin, result, outcome, ctx.title, sourcePaths);
+            new Notice(delivery.problems.length ? 'Export created files; delivery checks need attention.' : 'Export file checks passed. Review content and formatting before sharing.');
+            return { ...outcome, delivery };
+        };
         try {
             const templateAccess = result.exportType === 'manuscript' && result.outputFormat === 'pdf'
                 ? resolveTemplateAccess({
@@ -443,6 +458,12 @@ export class CommandRegistrar {
             }
 
             const slicedSelection = plainSource ? selection : this.sliceSelection(filteredSelection, result.rangeStart, result.rangeEnd, includeMatter);
+            protectedSourcePaths = new Set(slicedSelection.files.map(file => file.path));
+            sourcePaths = slicedSelection.files.map(file => file.path);
+            const selectedScenePaths = sourcePaths.filter(path => !slicedSelection.matterMetaByPath?.has(path));
+            if (result.reviewedSourcePaths && JSON.stringify(result.reviewedSourcePaths) !== JSON.stringify(selectedScenePaths)) {
+                throw new ExportFailure({ category: 'missing_files', message: 'The manuscript selection changed. Review the source contents and order before exporting again.' });
+            }
             if (slicedSelection.files.length === 0) {
                 new Notice('Selected range is empty.');
                 return {};
@@ -493,10 +514,11 @@ export class CommandRegistrar {
             }
             if (result.exportType === 'outline') {
                 const runtimeSettings = getRuntimeSettings(this.plugin.settings);
-                const baseOutputFolder = await ensureOutlineOutputFolder(this.plugin);
+                const baseOutputFolder = result.outputFolder ? await ensureExportDestination(this.app, result.outputFolder) : await ensureOutlineOutputFolder(this.plugin);
                 const outputFolder = isSplitRun
                     ? await this.createSplitOutputFolder(baseOutputFolder, baseTitle)
                     : baseOutputFolder;
+                actualOutputFolder = outputFolder;
 
                 for (const range of partRanges) {
                     const partSelection = this.sliceSelection(slicedSelection, range.start, range.end);
@@ -516,7 +538,7 @@ export class CommandRegistrar {
                             extension: outline.extension
                         });
                     const vaultPath = `${outputFolder}/${filename}`;
-                    const wrote = await this.writeVaultTextFile(vaultPath, outline.text, 'outline-export');
+                    const wrote = await writeOutput(vaultPath, outline.text, 'outline-export');
                     if (wrote) savedPaths.push(vaultPath);
                 }
 
@@ -524,17 +546,12 @@ export class CommandRegistrar {
                     new Notice('Outline export cancelled before any existing outputs were overwritten.');
                     return { messages: statusMessages };
                 }
-                if (isSplitRun) {
-                    new Notice(`Outline exported to ${outputFolder} (${savedPaths.length} files)`);
-                } else {
-                    new Notice(`Outline exported to ${savedPaths[0]}`);
-                }
-                return {
+                return await finish({
                     savedPath: savedPaths[0],
                     savedPaths,
                     outputFolder,
                     messages: statusMessages
-                };
+                });
             }
 
             const bookMetaResolution = plainSource
@@ -561,11 +578,12 @@ export class CommandRegistrar {
             }
 
             const extension = getExportFormatExtension(result.outputFormat);
-            const baseOutputFolder = await ensureManuscriptOutputFolder(this.plugin);
+            const baseOutputFolder = result.outputFolder ? await ensureExportDestination(this.app, result.outputFolder) : await ensureManuscriptOutputFolder(this.plugin);
             const outputFolder = isProof
                 ? `${baseOutputFolder}/Proofs/${randomUUID()}`
                 : isSplitRun ? await this.createSplitOutputFolder(baseOutputFolder, baseTitle) : baseOutputFolder;
             if (isProof) await this.ensureVaultFolderPath(outputFolder);
+            actualOutputFolder = outputFolder;
             if (isProof && bookMetaResolution.bookMeta?.sourcePath) {
                 const metadataPath = bookMetaResolution.bookMeta.sourcePath;
                 dependencies.set(metadataPath, { kind: 'vault', path: metadataPath, sha256: hashProofInput(new Uint8Array(await this.app.vault.adapter.readBinary(metadataPath))) }); // SAFE: proof byte reads and sidecar writes use exact local job paths, including PDFs not yet indexed by Obsidian.
@@ -617,7 +635,7 @@ export class CommandRegistrar {
                             fileStem: ctx.fileStem
                         });
                     const vaultPath = `${outputFolder}/${filename}`;
-                    const wrote = await this.writeVaultTextFile(vaultPath, sanitizedText, 'manuscript-export');
+                    const wrote = await writeOutput(vaultPath, sanitizedText, 'manuscript-export');
                     if (wrote) savedPaths.push(vaultPath);
                 }
 
@@ -625,17 +643,12 @@ export class CommandRegistrar {
                     new Notice('Manuscript export cancelled before any existing outputs were overwritten.');
                     return { messages: statusMessages };
                 }
-                if (isSplitRun) {
-                    new Notice(`Manuscript exported to ${outputFolder} (${savedPaths.length} files)`);
-                } else {
-                    new Notice(`Manuscript exported to ${savedPaths[0]}`);
-                }
-                return {
+                return await finish({
                     savedPath: savedPaths[0],
                     savedPaths,
                     outputFolder,
                     messages: statusMessages
-                };
+                });
             }
 
             if (result.outputFormat === 'docx') {
@@ -718,17 +731,12 @@ export class CommandRegistrar {
                     renderedPaths.push(`${outputFolder}/${path.basename(publishedPath)}`);
                 }
 
-                if (isSplitRun) {
-                    new Notice(`Export successful: ${renderedPaths.length} DOCX files`);
-                } else {
-                    new Notice(`Export successful: ${renderedPaths[0].split('/').pop()}`);
-                }
-                return {
+                return await finish({
                     renderedPath: renderedPaths[0],
                     renderedPaths,
                     outputFolder,
                     messages: statusMessages
-                };
+                });
             }
 
             if (result.outputFormat !== 'pdf') {
@@ -897,8 +905,8 @@ export class CommandRegistrar {
                     const artifactNames = this.buildSanitizedArtifactNames(basePrecursorName);
                     const compiledPath = `${outputFolder}/${artifactNames.compiledName}`;
                     const sanitizedPath = `${outputFolder}/${artifactNames.sanitizedName}`;
-                    const wroteCompiled = await this.writeVaultTextFile(compiledPath, compiledMarkdown, 'manuscript-compiled-artifact');
-                    const wroteSanitized = await this.writeVaultTextFile(sanitizedPath, sanitizedMarkdown, 'manuscript-sanitized-artifact');
+                    const wroteCompiled = await writeOutput(compiledPath, compiledMarkdown, 'manuscript-compiled-artifact');
+                    const wroteSanitized = await writeOutput(sanitizedPath, sanitizedMarkdown, 'manuscript-sanitized-artifact');
                     if (wroteCompiled) savedPaths.push(compiledPath);
                     if (wroteSanitized) savedPaths.push(sanitizedPath);
                 }
@@ -975,23 +983,24 @@ export class CommandRegistrar {
             }
             await this.plugin.saveSettings();
 
-            if (isSplitRun) {
-                new Notice(`Export successful: ${renderedPaths.length} PDFs`);
-            } else {
-                new Notice(`Export successful: ${renderedPaths[0].split('/').pop()}`);
-            }
-
-            return {
+            return await finish({
                 savedPath: savedPaths[0],
                 renderedPath: renderedPaths[0],
                 savedPaths,
                 renderedPaths,
                 outputFolder,
                 messages: statusMessages
-            };
+            });
         } catch (error) {
             const failure = categorizeExportError(error);
             failure.completedPaths = [...savedPaths, ...renderedPaths];
+            if (!isProof && !checkingDelivery && actualOutputFolder && failure.completedPaths.length) {
+                try {
+                    failure.delivery = await checkExportDelivery(this.plugin, result, { savedPaths, renderedPaths, outputFolder: actualOutputFolder }, ctx.title, sourcePaths, failure.message);
+                } catch (receiptError) {
+                    failure.detail = `${failure.detail || ''}\nDelivery record could not be saved: ${receiptError instanceof Error ? receiptError.message : String(receiptError)}`.trim();
+                }
+            }
             new Notice(failure.message);
             console.error(error);
             throw failure;

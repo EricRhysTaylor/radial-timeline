@@ -10743,6 +10743,10 @@
 }
 
 /* Reviewed manuscript contents stay bounded inside the existing export shell. */
+.ert-ui.ert-scope--modal .ert-delivery-file-path {
+  overflow-wrap: anywhere;
+}
+
 .ert-ui.ert-scope--modal .ert-manuscript-source-details {
   margin-top: var(--ert-gap-sm);
   padding-top: var(--ert-pad-md);

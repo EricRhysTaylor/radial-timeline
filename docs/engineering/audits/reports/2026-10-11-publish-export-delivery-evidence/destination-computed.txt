@@ -1,0 +1,56 @@
+																	424 row (selected)    <div class=​"ert-panel ert-stack ert-export-destination"> ​ Expand …​ </div> ​ Enable flex mode
+																564 row CSS property name: backdrop-filter CSS property value: none
+																570 row CSS property name: background-attachment CSS property value: scroll
+																576 row CSS property name: background-clip CSS property value: border-box
+																582 row CSS property name: background-color CSS property value: rgb(28, 28, 28)
+																588 row CSS property name: background-image CSS property value: none
+																594 row CSS property name: background-origin CSS property value: padding-box
+																600 row CSS property name: background-position-x CSS property value: 0%
+																606 row CSS property name: background-position-y CSS property value: 0%
+																612 row CSS property name: background-repeat CSS property value: repeat
+																618 row CSS property name: background-size CSS property value: auto
+																624 row CSS property name: border-bottom-color CSS property value: rgb(51, 51, 51)
+																630 row CSS property name: border-bottom-left-radius CSS property value: 12px
+																636 row CSS property name: border-bottom-right-radius CSS property value: 12px
+																642 row CSS property name: border-bottom-style CSS property value: solid
+																648 row CSS property name: border-bottom-width CSS property value: 1px
+																654 row CSS property name: border-image-outset CSS property value: 0
+																660 row CSS property name: border-image-repeat CSS property value: stretch
+																666 row CSS property name: border-image-slice CSS property value: 100%
+																672 row CSS property name: border-image-source CSS property value: none
+																678 row CSS property name: border-image-width CSS property value: 1
+																684 row CSS property name: border-left-color CSS property value: rgb(51, 51, 51)
+																690 row CSS property name: border-left-style CSS property value: solid
+																696 row CSS property name: border-left-width CSS property value: 1px
+																702 row CSS property name: border-right-color CSS property value: rgb(51, 51, 51)
+																708 row CSS property name: border-right-style CSS property value: solid
+																714 row CSS property name: border-right-width CSS property value: 1px
+																720 row CSS property name: border-top-color CSS property value: rgb(51, 51, 51)
+																726 row CSS property name: border-top-left-radius CSS property value: 12px
+																732 row CSS property name: border-top-right-radius CSS property value: 12px
+																738 row CSS property name: border-top-style CSS property value: solid
+																744 row CSS property name: border-top-width CSS property value: 1px
+																750 row CSS property name: box-shadow CSS property value: none
+																756 row CSS property name: box-sizing CSS property value: border-box
+																762 row CSS property name: caret-color CSS property value: rgb(218, 218, 218)
+																768 row CSS property name: color CSS property value: rgb(218, 218, 218)
+																774 row CSS property name: color-scheme CSS property value: dark
+																780 row CSS property name: column-gap CSS property value: 8px
+																786 row CSS property name: display CSS property value: flex
+																792 row CSS property name: flex-direction CSS property value: column
+																798 row CSS property name: font-family CSS property value: "??", "??", "??", ui-sans-serif, -apple-system, "system-ui", system-ui, "Segoe UI", "Google Sans Flex", Roboto, "Inter Variable", Inter, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif
+																834 row CSS property name: font-size CSS property value: 15px
+																840 row CSS property name: height CSS property value: 201.383px
+																846 row CSS property name: line-height CSS property value: 19.5px
+																852 row CSS property name: padding-bottom CSS property value: 16px
+																858 row CSS property name: padding-left CSS property value: 16px
+																864 row CSS property name: padding-right CSS property value: 16px
+																870 row CSS property name: padding-top CSS property value: 16px
+																876 row CSS property name: row-gap CSS property value: 8px
+																882 row CSS property name: scrollbar-color CSS property value: rgb(128, 128, 128) rgba(0, 0, 0, 0)
+																889 row CSS property name: scrollbar-width CSS property value: auto
+																895 row CSS property name: text-rendering CSS property value: optimizelegibility
+																901 row CSS property name: unicode-bidi CSS property value: isolate
+																907 row CSS property name: user-select CSS property value: none
+																913 row CSS property name: width CSS property value: 680px
+																919 row CSS property name: -webkit-tap-highlight-color CSS property value: rgba(255, 255, 255, 0)

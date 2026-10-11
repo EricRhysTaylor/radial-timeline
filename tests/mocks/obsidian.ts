@@ -239,6 +239,12 @@ export class Modal {
   onClose(): void {}
 }
 
+export class FuzzySuggestModal<T> extends Modal {
+  setPlaceholder(_text: string): void {}
+  getItems(): T[] { return []; }
+  getItemText(_item: T): string { return ''; }
+}
+
 export class PluginSettingTab {
   app: unknown;
   plugin: unknown;

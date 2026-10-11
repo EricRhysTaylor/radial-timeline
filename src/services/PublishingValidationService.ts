@@ -31,6 +31,8 @@ export interface PublishingValidationContext {
     manuscriptPreset?: UsageContext;
     selectedLayoutId?: string;
     includeMatter?: boolean;
+    /** Direct manuscript metadata supplied in the export dialog, independent of RT books. */
+    manuscriptMetadata?: Pick<BookMeta, 'title' | 'author'>;
 }
 
 /** The issues that apply to this deliverable, shared by its UI and runner. */
@@ -377,7 +379,7 @@ export class PublishingValidationService {
 
         const layouts = Array.isArray(this.plugin.settings.pandocLayouts) ? this.plugin.settings.pandocLayouts : [];
         const { assets, profiles } = adaptPandocLayoutsToPublishingModel(layouts);
-        const book = this.resolveBook(bookId);
+        const book = context.manuscriptMetadata ? null : this.resolveBook(bookId);
         const sourceFolder = (book?.sourceFolder || '').trim();
         let selectedProfile = this.resolveSelectedProfile(layouts, profiles, book, context);
         let selectedLayout = selectedProfile
@@ -412,7 +414,9 @@ export class PublishingValidationService {
                 selectedProfile = profiles.find(profile => profile.legacyLayoutId === selectedLayout?.id || profile.id === selectedLayout?.id);
             }
         }
-        const bookMetaResolution = sourceFolder ? this.resolveBookMetaForBook(sourceFolder) : { bookMeta: null as BookMeta | null };
+        const bookMetaResolution: { bookMeta: BookMeta | null; warning?: string } = context.manuscriptMetadata
+            ? { bookMeta: context.manuscriptMetadata }
+            : sourceFolder ? this.resolveBookMetaForBook(sourceFolder) : { bookMeta: null as BookMeta | null };
         const matterFiles = sourceFolder ? this.getMatterFiles(sourceFolder) : [];
 
         assets.forEach(asset => {
@@ -511,7 +515,8 @@ export class PublishingValidationService {
             const missingRequired = this.collectMissingBookMetaFields(bookMetaResolution.bookMeta, requiredFields);
             missingRequired.forEach(field => {
                 const label = field === 'Book.title' ? 'Title' : field === 'Book.author' ? 'Author' : field === 'Rights.year' ? 'Rights year' : field;
-                pushIssue(snapshot.activeBookMetaIssues, 'book-meta', 'error', 'book_meta_required_missing', `Add ${label.toLowerCase()} in Publish → Book details before exporting.`, {
+                const location = context.manuscriptMetadata ? 'the manuscript details above' : 'Publish → Book details';
+                pushIssue(snapshot.activeBookMetaIssues, 'book-meta', 'error', 'book_meta_required_missing', `Add ${label.toLowerCase()} in ${location} before exporting.`, {
                     actionable: true,
                     field,
                 });

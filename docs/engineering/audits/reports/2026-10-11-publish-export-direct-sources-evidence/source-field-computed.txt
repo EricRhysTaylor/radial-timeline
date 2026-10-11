@@ -1,0 +1,5 @@
+376 row (selected)    <label class=​"ert-row ert-manuscript-source-field"> ​ Expand …​ </label> ​ Enable grid mode
+669 row CSS property name: column-gap CSS property value: 8px
+681 row CSS property name: display CSS property value: grid
+729 row CSS property name: grid-template-columns CSS property value: 80px 558px
+748 row CSS property name: row-gap CSS property value: 8px

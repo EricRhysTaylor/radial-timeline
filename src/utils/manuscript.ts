@@ -79,6 +79,8 @@ export interface ModernClassicStructureOptions {
 }
 
 export interface AssembleManuscriptOptions {
+  /** Plain notes retain their own headings and reviewed order, without RT scene/matter interpretation. */
+  sourceNotes?: 'markdown' | 'pdf' | 'docx';
   sceneHeadingMode?: ManuscriptSceneHeadingMode;
   sceneHeadingRenderMode?: SceneHeadingRenderMode;
   modernClassicStructure?: ModernClassicStructureOptions;
@@ -580,10 +582,11 @@ export async function getSceneFilesByOrder(
   plugin: RadialTimelinePlugin,
   order: ManuscriptOrder,
   subplotFilter?: string,
-  includeMatter?: boolean
+  includeMatter?: boolean,
+  sourceFolder?: string
 ): Promise<ManuscriptSceneSelection> {
   const exportContext = getActiveBookExportContext(plugin);
-  const allScenes = await plugin.getSceneData({ sourcePath: exportContext.sourceFolder });
+  const allScenes = await plugin.getSceneData({ sourcePath: sourceFolder ?? exportContext.sourceFolder });
 
   const uniquePaths = new Set<string>();
   const uniqueTimelineItems = allScenes.filter((scene: TimelineItem) => {
@@ -1069,7 +1072,7 @@ export async function assembleManuscript(
     } catch (error) {
       readError = error;
     }
-    const matterMeta = (file.path && matterMetaByPath?.get(file.path))
+    const matterMeta = options?.sourceNotes ? null : (file.path && matterMetaByPath?.get(file.path))
       || (content !== null ? extractMatterMeta(content) : null)
       || null;
     classified.push({ file, content, readError, matterMeta });
@@ -1218,13 +1221,18 @@ export async function assembleManuscript(
     }
 
     const content = c.content || '';
-    const bodyText = extractBodyText(content);
+    const bodyText = options?.sourceNotes ? extractBodyTextAfterFrontmatter(content) : extractBodyText(content);
     const countableBodyText = extractCountableBodyText(content);
     const sceneFrontmatter = extractFrontmatterObject(content);
     const sceneId = readSceneId(sceneFrontmatter);
     const wordCount = countWords(countableBodyText);
 
-    if (modernClassicState.enabled) {
+    if (options?.sourceNotes) {
+      if (i === 0 && options.sourceNotes === 'pdf') textParts.push(buildRawLatexBlock('\\pagenumbering{arabic}'));
+      scenes.push({ title, bodyText, wordCount, sourcePath: file.path });
+      totalWords += wordCount;
+      textParts.push(`${bodyText}\n\n`);
+    } else if (modernClassicState.enabled) {
       // RT terminology → structure mapping:
       //   Acts (from each scene's `Act:` frontmatter field, the canonical
       //         source that also drives the timeline ring partitions)

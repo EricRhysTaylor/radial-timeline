@@ -2,14 +2,16 @@
  * Manuscript Options Modal
  */
 import { openSettingsTab } from '../utils/obsidianInternals';
-import { App, ButtonComponent, DropdownComponent, FileSystemAdapter, Modal, Notice, Platform, setIcon, TAbstractFile, TFile, ToggleComponent, getFrontMatterInfo, normalizePath } from 'obsidian';
+import { App, ButtonComponent, DropdownComponent, FileSystemAdapter, FuzzySuggestModal, Modal, Notice, Platform, setIcon, TAbstractFile, TFile, TFolder, ToggleComponent, getFrontMatterInfo, normalizePath } from 'obsidian';
 import * as path from 'path'; // SAFE: Node path needed to build absolute paths for native Finder reveal
 import type RadialTimelinePlugin from '../main';
-import { getSceneFilesByOrder, ManuscriptOrder, TocMode, type ManuscriptSceneHeadingMode } from '../utils/manuscript';
+import { getSceneFilesByOrder, extractCountableBodyText, ManuscriptOrder, TocMode, type ManuscriptSceneHeadingMode } from '../utils/manuscript';
 import { t } from '../i18n';
+import { getManuscriptSourceFiles, getReviewedManuscriptSelection, type ManuscriptSource } from '../utils/exportContext';
+import { countWords } from '../utils/text';
 import { clearFontAvailabilityCache, ExportFormat, ExportType, ManuscriptPreset, OutlinePreset, getAutoPdfEngineSelection, resolveTemplatePath, validatePandocLayout, getTemplateFontDiagnostics, getStructuredFontDiagnostic } from '../utils/exportFormats';
 import { ensureBundledLayoutInstalledForExport } from '../utils/pandocBundledLayouts';
-import { getActiveBook, getActiveBookTitle, getActiveBookSourceFolder, DEFAULT_BOOK_TITLE } from '../utils/books';
+import { getActiveBook, DEFAULT_BOOK_TITLE } from '../utils/books';
 import { chunkScenesIntoParts } from '../utils/splitOutput';
 import { cleanupFormatForOutputFormat, countManuscriptComments, getDefaultManuscriptCleanupOptions, normalizeManuscriptCleanupOptions, type ManuscriptCommentCounts } from '../utils/manuscriptSanitize';
 import { EXPORT_PURPOSES, buildPurposeProfile, builtInPresetId, getExportPurposeForPresetId, type ExportPurpose } from '../utils/exportPurposes';
@@ -78,6 +80,7 @@ function renderModalLayoutPreview(
 }
 
 export interface ManuscriptModalResult {
+    source?: ManuscriptSource;
     order: ManuscriptOrder;
     tocMode: TocMode;
     includeSceneIdInToc?: boolean;
@@ -205,8 +208,29 @@ class DeleteExportTemplateModal extends Modal {
     }
 }
 
+class ManuscriptSourcePicker extends FuzzySuggestModal<TAbstractFile> {
+    constructor(app: App, private readonly kind: 'folder' | 'file', private readonly onChoose: (path: string) => void) {
+        super(app);
+        this.setPlaceholder(kind === 'folder' ? 'Choose manuscript folder…' : 'Choose Markdown manuscript…');
+    }
+    getItems(): TAbstractFile[] {
+        return this.app.vault.getAllLoadedFiles().filter(entry => this.kind === 'folder'
+            ? entry instanceof TFolder && entry.path.length > 0
+            : entry instanceof TFile && entry.extension === 'md');
+    }
+    getItemText(entry: TAbstractFile): string { return entry.path; }
+    onChooseItem(entry: TAbstractFile): void { this.onChoose(entry.path); }
+}
+
 export class ManuscriptOptionsModal extends Modal {
     private readonly plugin: RadialTimelinePlugin;
+    private source?: ManuscriptSource;
+    private sourceCard?: HTMLElement;
+    private sourceReviewed = true;
+    private sourceCandidates: string[] = [];
+    private sourceLoadId = 0;
+    private sourceLoading = false;
+    private sourceError: string | null = null;
     private readonly onSubmit: (result: ManuscriptModalResult) => Promise<ManuscriptExportOutcome>;
 
     private order: ManuscriptOrder = 'narrative';
@@ -271,6 +295,7 @@ export class ManuscriptOptionsModal extends Modal {
     private outlinePresetDropdown?: DropdownComponent;
     private tocCard?: HTMLElement;
     private sceneIdToggle?: ToggleComponent;
+    private sceneIdCard?: HTMLElement;
     private manuscriptOptionsCard?: HTMLElement;
     private outlineOptionsCard?: HTMLElement;
     private wordCountCard?: HTMLElement;
@@ -429,6 +454,8 @@ export class ManuscriptOptionsModal extends Modal {
         super(app);
         this.plugin = plugin;
         this.onSubmit = onSubmit;
+        const book = getActiveBook(plugin.settings);
+        if (book) this.source = { kind: 'book', bookId: book.id };
     }
 
     async onOpen(): Promise<void> {
@@ -438,7 +465,7 @@ export class ManuscriptOptionsModal extends Modal {
         clearFontAvailabilityCache();
         const { contentEl, modalEl } = this;
         contentEl.empty();
-        const sourceFolder = getActiveBookSourceFolder(this.plugin.settings);
+        const sourceFolder = this.getSourceBook()?.sourceFolder || "";
         this.openScenePathsSnapshot = new Set(
             [...this.plugin.openScenePaths].filter(p =>
                 p.endsWith('.md') && sourceFolder.length > 0 && p.startsWith(sourceFolder + '/')
@@ -460,9 +487,143 @@ export class ManuscriptOptionsModal extends Modal {
     }
 
     onClose(): void {
+        this.sourceLoadId += 1;
         void this.persistCurrentSnapshot();
         this.detachPointerEvents();
         this.contentEl.empty();
+    }
+
+    private getSourceBook(): BookProfile | null {
+        const source = this.source;
+        return source?.kind === 'book'
+            ? this.plugin.settings.books.find(book => book.id === source.bookId) || null
+            : null;
+    }
+
+    private captureOpenScenes(folder: string): void {
+        this.openScenePathsSnapshot = new Set([...this.plugin.openScenePaths].filter(sourcePath => folder.length > 0 && sourcePath.startsWith(folder + '/')));
+    }
+
+    private getSourceTitle(): string {
+        return this.source && this.source.kind !== 'book'
+            ? this.source.title || this.source.path
+            : this.getSourceBook()?.title || DEFAULT_BOOK_TITLE;
+    }
+
+    private async chooseSource(kind: 'folder' | 'file', sourcePath: string): Promise<void> {
+        try {
+            const files = getManuscriptSourceFiles(this.app, kind, sourcePath);
+            const entry = this.app.vault.getAbstractFileByPath(sourcePath);
+            this.source = { kind, path: sourcePath, paths: files.map(file => file.path), title: entry instanceof TFile ? entry.basename : entry?.name || '', author: '' };
+            this.sourceCandidates = files.map(file => file.path);
+            this.sourceReviewed = kind === 'file';
+            this.sourceError = null;
+            this.order = 'narrative';
+            this.subplot = 'All Subplots';
+            this.exportType = 'manuscript';
+            this.renderSourceCard();
+            await this.loadScenesForOrder();
+        } catch (error) {
+            new Notice(error instanceof Error ? error.message : 'Could not select manuscript.');
+        }
+    }
+
+    private renderSourceCard(): void {
+        const card = this.sourceCard;
+        if (!card) return;
+        card.empty();
+        card.createEl('h4', { cls: 'ert-section-title', text: 'Manuscript' });
+        const choices = card.createDiv({ cls: 'ert-manuscript-pill-row' });
+        const bookButton = new ButtonComponent(choices).setButtonText('RT book').onClick(() => {
+            const book = getActiveBook(this.plugin.settings);
+            if (!book) { new Notice('Add a book in Settings → Core, or choose a folder or file.'); return; }
+            this.source = { kind: 'book', bookId: book.id };
+            this.captureOpenScenes(book.sourceFolder);
+            this.sourceReviewed = true;
+            this.subplot = 'All Subplots';
+            this.renderSourceCard();
+            void this.loadSubplots().then(() => this.loadScenesForOrder());
+        });
+        bookButton.buttonEl.setAttribute('data-ert-toggle', '');
+        bookButton.buttonEl.setAttribute('aria-pressed', String(this.source?.kind === 'book'));
+        bookButton.buttonEl.toggleClass('is-active', this.source?.kind === 'book');
+        for (const kind of ['folder', 'file'] as const) {
+            const button = new ButtonComponent(choices).setButtonText(kind === 'folder' ? 'Folder' : 'Single file').onClick(() => {
+                new ManuscriptSourcePicker(this.app, kind, selectedPath => { void this.chooseSource(kind, selectedPath); }).open();
+            });
+            button.buttonEl.setAttribute('data-ert-toggle', '');
+            button.buttonEl.setAttribute('aria-pressed', String(this.source?.kind === kind));
+            button.buttonEl.toggleClass('is-active', this.source?.kind === kind);
+        }
+        const source = this.source;
+        if (!source) { card.createDiv({ cls: 'ert-section-desc', text: 'Choose an RT book, manuscript folder, or Markdown file.' }); return; }
+        if (source.kind === 'book') {
+            const row = card.createDiv({ cls: 'ert-row' });
+            row.createSpan({ text: 'Book' });
+            new DropdownComponent(row).addOptions(Object.fromEntries(this.plugin.settings.books.map(book => [book.id, book.title])))
+                .setValue(source.bookId).onChange(id => {
+                    this.source = { kind: 'book', bookId: id };
+                    this.captureOpenScenes(this.getSourceBook()?.sourceFolder || '');
+                    this.subplot = 'All Subplots';
+                    this.renderSourceCard();
+                    void this.loadSubplots().then(() => this.loadScenesForOrder());
+                });
+            card.createDiv({ cls: 'ert-section-desc', text: this.getSourceBook()?.sourceFolder || 'This book has no source folder.' });
+            return;
+        }
+        card.createDiv({ cls: 'ert-section-desc', text: source.path });
+        card.createDiv({ cls: 'ert-section-desc', text: 'Existing Markdown headings are retained. Notes join with blank lines. Source files remain unchanged.' });
+        for (const field of ['title', 'author'] as const) {
+            const label = card.createEl('label', { cls: 'ert-row ert-manuscript-source-field' });
+            label.createSpan({ text: field === 'title' ? 'Title' : 'Author' });
+            const input = label.createEl('input', { cls: 'ert-input', attr: { type: 'text' } });
+            input.value = source[field];
+            input.addEventListener('input', () => {
+                source[field] = input.value;
+                this.syncExportUi();
+                this.updateBadgeSceneCount();
+            });
+        }
+        if (source.kind === 'folder') {
+            const details = card.createEl('details');
+            details.open = !this.sourceReviewed;
+            details.createEl('summary', { text: `Review contents · ${source.paths.length} included of ${this.sourceCandidates.length} notes` });
+            const list = details.createDiv({ cls: 'ert-stack ert-manuscript-source-list' });
+            this.sourceCandidates.forEach((sourcePath, index) => {
+                const row = list.createDiv({ cls: 'ert-row' });
+                const label = row.createEl('label');
+                const check = label.createEl('input', { attr: { type: 'checkbox' } });
+                check.checked = source.paths.includes(sourcePath);
+                label.appendText(` ${index + 1}. ${sourcePath.slice(source.path.length + 1)}`);
+                check.addEventListener('change', () => {
+                    const included = new Set(source.paths);
+                    if (check.checked) included.add(sourcePath); else included.delete(sourcePath);
+                    source.paths = this.sourceCandidates.filter(candidate => included.has(candidate));
+                    this.sourceReviewed = false;
+                    this.renderSourceCard();
+                    void this.loadScenesForOrder();
+                });
+                const actions = row.createDiv({ cls: 'ert-control' });
+                for (const direction of [-1, 1]) {
+                    new ButtonComponent(actions).setIcon(direction < 0 ? 'arrow-up' : 'arrow-down')
+                        .setTooltip(direction < 0 ? 'Move note earlier' : 'Move note later')
+                        .setDisabled(index + direction < 0 || index + direction >= this.sourceCandidates.length)
+                        .onClick(() => {
+                            const included = new Set(source.paths);
+                            const other = index + direction;
+                            [this.sourceCandidates[index], this.sourceCandidates[other]] = [this.sourceCandidates[other], this.sourceCandidates[index]];
+                            source.paths = this.sourceCandidates.filter(candidate => included.has(candidate));
+                            this.sourceReviewed = false;
+                            this.renderSourceCard();
+                            void this.loadScenesForOrder();
+                        });
+                }
+            });
+            new ButtonComponent(details).setButtonText(this.sourceReviewed ? 'Contents reviewed' : 'Use this order and selection')
+                .setDisabled(this.sourceReviewed || source.paths.length === 0)
+                .onClick(() => { this.sourceReviewed = true; this.renderSourceCard(); this.syncExportUi(); });
+        }
+        if (this.sourceError) card.createDiv({ cls: 'ert-section-desc ert-section-desc--alert', text: this.sourceError });
     }
 
     // Layout -----------------------------------------------------------------
@@ -481,7 +642,7 @@ export class ManuscriptOptionsModal extends Modal {
 
     private renderSkeleton(container: HTMLElement): void {
         const hero = container.createDiv({ cls: 'ert-modal-header' });
-        const bookTitle = getActiveBookTitle(this.plugin.settings, DEFAULT_BOOK_TITLE);
+        const bookTitle = this.getSourceTitle();
         this.badgeEl = hero.createSpan({ cls: 'ert-modal-badge', text: `EXPORT — ${bookTitle}` });
 
         hero.createDiv({
@@ -489,9 +650,7 @@ export class ManuscriptOptionsModal extends Modal {
             text: 'Export manuscript'
         });
         const description = hero.createDiv({ cls: 'ert-modal-subtitle ert-manuscript-modal-description' });
-        t('manuscriptModal.description').split('\n\n').forEach((paragraph) => {
-            description.createEl('p', { text: paragraph });
-        });
+        description.createEl('p', { text: 'Choose an RT book, folder, or Markdown file. Review the contents and choose an export format.' });
         const bookContextRow = hero.createDiv({ cls: 'ert-modal-meta' });
         const manageBooksLink = bookContextRow.createEl('a', {
             cls: 'ert-modal-meta-item',
@@ -513,6 +672,9 @@ export class ManuscriptOptionsModal extends Modal {
             e.preventDefault();
             this.openPublishingSettings();
         });
+
+        this.sourceCard = container.createDiv({ cls: 'ert-panel ert-stack' });
+        this.renderSourceCard();
 
         // WHO IS IT FOR — built-in presets, one per purpose
         this.purposeCard = container.createDiv({ cls: 'ert-glass-card ert-sub-card' });
@@ -807,6 +969,7 @@ export class ManuscriptOptionsModal extends Modal {
             });
 
         const sceneIdCard = publishingBody.createDiv({ cls: 'ert-manuscript-rule-block ert-manuscript-rule-block--separated' });
+        this.sceneIdCard = sceneIdCard;
         this.createSectionHeading(sceneIdCard, 'Scene ID');
         sceneIdCard.createDiv({
             cls: 'ert-sub-card-note',
@@ -971,10 +1134,10 @@ export class ManuscriptOptionsModal extends Modal {
 
     private updateBadgeSceneCount(): void {
         if (!this.badgeEl) return;
-        const bookTitle = getActiveBookTitle(this.plugin.settings, DEFAULT_BOOK_TITLE);
+        const bookTitle = this.getSourceTitle();
         const count = this.getSelectedSceneCount();
         const words = this.getSelectedWordCount();
-        this.badgeEl.setText(`EXPORT — ${bookTitle} • ${count} ${count === 1 ? 'scene' : 'scenes'} selected • ${words.toLocaleString()} ${words === 1 ? 'word' : 'words'}`);
+        this.badgeEl.setText(`EXPORT — ${bookTitle} • ${countLabel(count, this.source?.kind === 'book' ? 'scene' : 'note')} selected • ${words.toLocaleString()} ${words === 1 ? 'word' : 'words'}`);
         this.updateReadback();
     }
 
@@ -1125,7 +1288,7 @@ export class ManuscriptOptionsModal extends Modal {
     }
 
     private refreshValidationSnapshot(): void {
-        const activeBook = getActiveBook(this.plugin.settings);
+        const activeBook = this.getSourceBook();
         const selectedProfile = this.selectedExportProfile || this.defaultExportProfile;
         const context = {
             exportType: this.exportType,
@@ -1133,20 +1296,25 @@ export class ManuscriptOptionsModal extends Modal {
             manuscriptPreset: this.manuscriptPreset,
             selectedLayoutId: this.selectedLayoutId || this.resolveLayoutIdForProfile(selectedProfile),
             includeMatter: this.includeMatter,
+            manuscriptMetadata: this.source && this.source.kind !== 'book' ? { title: this.source.title, author: this.source.author } : undefined,
         } as const;
         this.validationSnapshot = this.plugin.getPublishingValidationService().collect(activeBook?.id, context);
         const issues = getExportValidationIssues(this.validationSnapshot, context);
-        this.exportBlocked = issues.some(issue => issue.level === 'error');
+        const sourceIssue = this.sourceError || (this.sourceLoading ? 'Loading manuscript contents…'
+            : !this.sourceReviewed ? 'Review the folder contents, then choose Use this order and selection.'
+            : this.totalScenes === 0 ? 'Choose a manuscript source with at least one included note.' : null);
+        this.exportBlocked = !!sourceIssue || issues.some(issue => issue.level === 'error');
         const readiness = this.exportReadinessEl;
         if (readiness) {
             readiness.empty();
-            readiness.toggleClass('ert-hidden', this.exportType === 'outline' || (this.outputFormat === 'markdown' && issues.length === 0));
+            readiness.toggleClass('ert-hidden', this.exportType === 'outline' || (this.outputFormat === 'markdown' && issues.length === 0 && !sourceIssue));
             readiness.createEl('h4', { cls: 'ert-section-title', text: this.exportBlocked ? 'Export checks · Needs attention' : 'Export checks · Ready' });
+            if (sourceIssue) readiness.createDiv({ text: sourceIssue });
             for (const issue of issues.filter(issue => issue.level !== 'info')) {
                 readiness.createDiv({ text: issue.message });
             }
             const blocker = issues.find(issue => issue.level === 'error');
-            if (blocker) {
+            if (blocker && !(blocker.scope === 'book-meta' && this.source?.kind !== 'book')) {
                 const needsStyle = blocker.code.includes('font') || blocker.code.includes('template') || blocker.code.includes('layout') || blocker.code.includes('profile');
                 const target = blocker.scope === 'book-meta' ? 'book-details' : needsStyle ? 'pdf-style' : 'export-check';
                 new ButtonComponent(readiness)
@@ -1167,7 +1335,7 @@ export class ManuscriptOptionsModal extends Modal {
     }
 
     private getActiveBookPublishingPreferences(): BookPublishingPreferences | null {
-        const activeBook = getActiveBook(this.plugin.settings);
+        const activeBook = this.getSourceBook();
         if (!activeBook) return null;
         const preferences = this.plugin.settings.bookPublishingPreferences;
         if (!Array.isArray(preferences)) return null;
@@ -1192,7 +1360,7 @@ export class ManuscriptOptionsModal extends Modal {
 
     private async rememberLastUsedTemplate(templateId: string | null): Promise<void> {
         this.plugin.settings.lastUsedExportProfileId = templateId || undefined;
-        const activeBook = getActiveBook(this.plugin.settings);
+        const activeBook = this.getSourceBook();
         if (activeBook) {
             const preferences = Array.isArray(this.plugin.settings.bookPublishingPreferences)
                 ? [...this.plugin.settings.bookPublishingPreferences]
@@ -1404,7 +1572,7 @@ export class ManuscriptOptionsModal extends Modal {
         const counted = markers.length === paths.length;
         const parts: ReadbackPart[] = [];
 
-        const scenes = countLabel(paths.length, 'scene');
+        const scenes = countLabel(paths.length, this.source?.kind === 'book' ? 'scene' : 'note');
         if (!this.includeSceneId) {
             parts.push({ text: scenes, warn: false });
         } else if (forReaders) {
@@ -1572,7 +1740,7 @@ export class ManuscriptOptionsModal extends Modal {
         await this.loadScenesForOrder();
         // loadScenesForOrder resets range to the full book; restore the
         // template's saved range (if any), clamped to the current scene count.
-        const restoreSavedRange = !requestedOpenScenes;
+        const restoreSavedRange = this.source?.kind === 'book' && !requestedOpenScenes;
         if (restoreSavedRange && typeof template.rangeStart === 'number' && typeof template.rangeEnd === 'number' && this.totalScenes > 0) {
             const total = Math.max(1, this.totalScenes);
             const savedStart = Math.max(1, Math.min(Math.floor(template.rangeStart), total));
@@ -1641,7 +1809,7 @@ export class ManuscriptOptionsModal extends Modal {
     }
 
     private async persistCurrentSnapshot(): Promise<void> {
-        const activeBook = getActiveBook(this.plugin.settings);
+        const activeBook = this.getSourceBook();
         if (!activeBook) return;
         const snapshot = this.buildCurrentSnapshot();
         const preferences = Array.isArray(this.plugin.settings.bookPublishingPreferences)
@@ -1868,19 +2036,36 @@ export class ManuscriptOptionsModal extends Modal {
         this.outputStatusEl?.empty();
         this.outputStatusEl?.addClass('ert-hidden');
         this.normalizeOutputFormatForOutline();
+        const plainSource = this.source?.kind !== 'book';
+        if (plainSource) {
+            this.exportType = 'manuscript';
+            this.includeMatter = false;
+            this.includeMatterUserChoice = false;
+            this.updateWordCounts = false;
+            this.includeSceneId = false;
+            this.tocMode = 'none';
+            this.order = 'narrative';
+            this.subplot = 'All Subplots';
+            this.rangeStart = 1;
+            this.rangeEnd = Math.max(1, this.totalScenes);
+        }
         const mode = this.getUiMode();
         this.sanitizeStateForMode(mode);
+        this.scopeCard?.toggleClass('ert-hidden', plainSource);
+        this.orderingCard?.toggleClass('ert-hidden', plainSource);
+        this.exportTypePills.forEach(({ el, type }) => el.toggleClass('ert-hidden', plainSource && type === 'outline'));
 
         this.purposeCard?.toggleClass('ert-hidden', !mode.isManuscript);
         this.manuscriptOptionsCard?.toggleClass('ert-hidden', !mode.showManuscriptPreset);
         this.outlineOptionsCard?.toggleClass('ert-hidden', !mode.showOutlinePreset);
-        this.manuscriptRulesCard?.toggleClass('ert-hidden', !mode.showToc);
-        this.tocCard?.toggleClass('ert-hidden', !mode.showToc);
+        this.manuscriptRulesCard?.toggleClass('ert-hidden', !mode.showToc || plainSource);
+        this.tocCard?.toggleClass('ert-hidden', !mode.showToc || plainSource);
         this.publishingCard?.toggleClass('ert-hidden', !mode.showPublishing);
         this.pdfSettingsCard?.toggleClass('ert-hidden', !mode.showIncludeMatter && !mode.showLineBreaksAsParagraphs && !mode.showSavePrecompile);
-        this.wordCountCard?.toggleClass('ert-hidden', !mode.showWordCount);
+        this.wordCountCard?.toggleClass('ert-hidden', !mode.showWordCount || plainSource);
+        this.sceneIdCard?.toggleClass('ert-hidden', plainSource);
         this.wordCountCard?.toggleClass('ert-manuscript-rule-block--separated', mode.showIncludeMatter || mode.showSavePrecompile);
-        this.includeMatterCard?.toggleClass('ert-hidden', !mode.showIncludeMatter);
+        this.includeMatterCard?.toggleClass('ert-hidden', !mode.showIncludeMatter || plainSource);
         this.includeMatterToggle?.setValue(this.includeMatterUserChoice);
         this.exportCleanupCard?.toggleClass('ert-hidden', !mode.showExportCleanup);
         this.synopsisRow?.toggleClass('ert-hidden', !mode.showOutlinePreset);
@@ -1892,7 +2077,7 @@ export class ManuscriptOptionsModal extends Modal {
 
         if (this.documentTypeDescEl) {
             this.documentTypeDescEl.setText(mode.isManuscript
-                ? 'A formatted document of your scenes in reading order.'
+                ? plainSource ? 'A document of your selected notes in the reviewed order.' : 'A formatted document of your scenes in reading order.'
                 : 'A structural summary based on scene metadata and beats.');
         }
 
@@ -2064,7 +2249,7 @@ export class ManuscriptOptionsModal extends Modal {
 
     private resolveActiveSceneHeadingMode(layout?: PandocLayoutTemplate): ManuscriptSceneHeadingMode | undefined {
         if (!layout) return undefined;
-        const activeBook = getActiveBook(this.plugin.settings);
+        const activeBook = this.getSourceBook();
         const mode = activeBook?.layoutOptions?.[layout.id]?.sceneHeadingMode;
         return mode === 'scene-number' || mode === 'scene-number-title' || mode === 'title-only'
             ? mode
@@ -2072,7 +2257,7 @@ export class ManuscriptOptionsModal extends Modal {
     }
 
     private getActiveBookReference(): BookProfile | null {
-        const active = getActiveBook(this.plugin.settings);
+        const active = this.getSourceBook();
         if (!active) return null;
         const index = (this.plugin.settings.books || []).findIndex(book => book.id === active.id);
         return index >= 0 ? this.plugin.settings.books[index] : null;
@@ -2673,7 +2858,7 @@ export class ManuscriptOptionsModal extends Modal {
         if (!this.actionButton || this.exportCompleted) return;
         const splitInvalid = !this.isSplitSelectionValid();
         this.actionButton.setDisabled(
-            this.exportInFlight || this.totalScenes === 0 || splitInvalid || this.exportBlocked
+            this.exportInFlight || this.sourceLoading || !!this.sourceError || !this.sourceReviewed || this.totalScenes === 0 || splitInvalid || this.exportBlocked
         );
     }
 
@@ -3037,10 +3222,15 @@ export class ManuscriptOptionsModal extends Modal {
 
     // Data loading -----------------------------------------------------------
     private async loadSubplots(): Promise<void> {
+        if (this.source?.kind !== 'book') return;
         if (!this.subplotDropdown) return;
         
         try {
-            const scenes = await this.plugin.getSceneData();
+            const sourceBook = this.getSourceBook();
+            if (!sourceBook) return;
+            const scenes = await this.plugin.getSceneData({ sourcePath: sourceBook.sourceFolder });
+            if (this.getSourceBook()?.id !== sourceBook.id) return;
+
             const subplotCounts = new Map<string, number>();
             
             scenes.forEach(scene => {
@@ -3078,10 +3268,22 @@ export class ManuscriptOptionsModal extends Modal {
     }
 
     private async loadScenesForOrder(): Promise<void> {
+        const loadId = ++this.sourceLoadId;
+        this.sourceLoading = true;
+        this.sourceError = null;
+        this.updateActionButtonDisabledState();
         try {
             const isOpenScenes = this.isOpenScenesMode();
             const effectiveSubplot = this.subplot === 'All Subplots' || isOpenScenes ? undefined : this.subplot;
-            const result = await getSceneFilesByOrder(this.app, this.plugin, this.order, effectiveSubplot);
+            const source = this.source;
+            const result = source && source.kind !== 'book'
+                ? source.paths.length ? getReviewedManuscriptSelection(this.app, source) : { files: [], titles: [], whenDates: [], sceneNumbers: [], wordCounts: [], acts: [], chapterMarkersByScenePath: {} }
+                : await getSceneFilesByOrder(this.app, this.plugin, this.order, effectiveSubplot, false, this.getSourceBook()?.sourceFolder);
+            if (source && source.kind !== 'book') {
+                result.wordCounts = await Promise.all(result.files.map(async file => countWords(extractCountableBodyText(await this.app.vault.cachedRead(file)))));
+            }
+            if (loadId !== this.sourceLoadId) return;
+            this.sourceLoading = false;
             let { titles, whenDates, sceneNumbers, wordCounts } = result;
             let acts = result.acts;
             const paths = result.files.map(f => f.path);
@@ -3118,8 +3320,12 @@ export class ManuscriptOptionsModal extends Modal {
             this.updateOrderPillsState();
             this.syncExportUi();
         } catch (err) {
-            console.error(err);
-            this.loadingEl?.setText(t('manuscriptModal.loadError'));
+            if (loadId !== this.sourceLoadId) return;
+            this.sourceLoading = false;
+            this.sourceError = err instanceof Error ? err.message : 'Could not read the manuscript source.';
+            this.loadingEl?.setText(this.sourceError);
+            this.renderSourceCard();
+            this.updateActionButtonDisabledState();
         }
     }
 
@@ -3151,7 +3357,7 @@ export class ManuscriptOptionsModal extends Modal {
 
     private syncRangeAvailability(): void {
         const count = this.getSelectedSceneCount();
-        this.rangeStatusEl?.setText(`${count} ${count === 1 ? 'scene' : 'scenes'} selected`);
+        this.rangeStatusEl?.setText(`${countLabel(count, this.source?.kind === 'book' ? 'scene' : 'note')} selected`);
         this.updateBadgeSceneCount();
         const hasDecimalScenes = this.getSelectedSceneTitles().some((title) => /^\d+\.\d+\s+/.test((title || '').trim()));
         if (this.rangeDecimalWarningEl) {
@@ -3247,7 +3453,7 @@ export class ManuscriptOptionsModal extends Modal {
 
     // Submission -------------------------------------------------------------
     private async submit(): Promise<void> {
-        if (this.exportInFlight) return;
+        if (this.exportInFlight || this.sourceLoading || this.sourceError || !this.sourceReviewed) return;
         if (this.totalScenes === 0) {
             new Notice(t('manuscriptModal.emptyNotice'));
             return;
@@ -3274,6 +3480,7 @@ export class ManuscriptOptionsModal extends Modal {
             : undefined;
 
         this.exportInFlight = true;
+        if (this.sourceCard) this.sourceCard.inert = true;
         this.outputStatusEl?.addClass('ert-hidden');
         this.exportCompleted = false;
         this.lastOutcome = null;
@@ -3288,6 +3495,7 @@ export class ManuscriptOptionsModal extends Modal {
             const selectedProfile = this.selectedExportProfile || this.defaultExportProfile || this.getTemplateList()[0];
             const selectedLayoutId = this.resolveLayoutIdForProfile(selectedProfile);
             const outcome = await this.onSubmit({
+                source: this.source ? structuredClone(this.source) : undefined,
                 order: this.order,
                 tocMode,
                 includeSceneIdInToc: tocMode !== 'none' ? this.includeSceneId : false,
@@ -3346,6 +3554,7 @@ export class ManuscriptOptionsModal extends Modal {
             this.updateActionButtonLabel();
         } finally {
             this.exportInFlight = false;
+            if (this.sourceCard) this.sourceCard.inert = false;
             this.updateActionButtonDisabledState();
         }
     }

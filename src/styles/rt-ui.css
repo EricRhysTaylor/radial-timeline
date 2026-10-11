@@ -10741,3 +10741,42 @@
     opacity: 0.75;
   }
 }
+
+/* Reviewed manuscript contents stay bounded inside the existing export shell. */
+.ert-ui.ert-scope--modal .ert-manuscript-source-list {
+  max-height: 320px;
+  overflow-y: auto;
+  padding: var(--ert-pad-sm);
+}
+
+.ert-ui.ert-scope--modal .ert-manuscript-source-list label {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ert-ui.ert-scope--modal .ert-manuscript-source-list > .ert-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+}
+
+.ert-ui.ert-scope--modal .ert-manuscript-source-list .ert-control {
+  flex-direction: row;
+}
+
+.ert-ui.ert-scope--modal .ert-manuscript-source-list button {
+  width: auto;
+}
+
+.ert-ui.ert-scope--modal .ert-manuscript-source-field {
+  display: grid;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+  grid-template-columns: 80px minmax(0, 1fr);
+}
+
+.ert-ui.ert-scope--modal .ert-manuscript-source-field input {
+  width: 100%;
+}

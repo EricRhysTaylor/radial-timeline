@@ -57,7 +57,7 @@ function fixture() {
         order: 'narrative', tocMode: 'none', exportType: 'manuscript', outputFormat: 'markdown', manuscriptPreset: 'novel', updateWordCounts: false,
         exportCleanup: { stripComments: true, stripAiComments: true, stripLinks: true, stripCallouts: true, stripBlockIds: true },
     };
-    return { registrar, writer, writes, options, plugin };
+    return { registrar, writer, writes, options, plugin, files, content };
 }
 
 function formattedFixture() {
@@ -72,6 +72,98 @@ function formattedFixture() {
 }
 
 describe('manuscript export UI-to-runner contract', () => {
+    it.each(['markdown', 'pdf', 'docx'] as const)('exports plain notes in reviewed order to %s without RT structure or source writes', async outputFormat => {
+        const { registrar, writer, writes, options, files, content } = formattedFixture();
+        content.set(files[0].path, '---\nClass: Frontmatter\nRole: dedication\nWords: 99\n---\n# My own heading\n\nFirst prose.');
+        content.set(files[1].path, '# Final chapter\n\nSecond prose.');
+        const outcome = await registrar['handleManuscriptExport']({
+            ...options, outputFormat, selectedLayoutId: 'test-layout', saveMarkdownArtifact: false, updateWordCounts: true,
+            source: { kind: 'folder', path: 'Book', paths: [files[1].path, files[0].path], title: 'Plain manuscript', author: 'Writer' },
+        });
+        expect(outcome.savedPath || outcome.renderedPath).toBeTruthy();
+        const text = outputFormat === 'markdown' ? writer.mock.calls[0][1] : vi.mocked(runPandocOnContent).mock.calls[0][0];
+        expect(text.indexOf('Second prose.')).toBeLessThan(text.indexOf('First prose.'));
+        expect(text).toContain('# My own heading');
+        expect(text).not.toContain('## 1 First');
+        expect(text).not.toContain('Words:');
+        expect(writes).not.toHaveBeenCalled();
+        if (outputFormat !== 'markdown') expect(vi.mocked(runPandocOnContent).mock.calls[0][2]?.metadata).toMatchObject({ title: 'Plain manuscript', author: 'Writer' });
+    });
+
+    it('does not let a saved RT range or subplot narrow an explicit reviewed manuscript', async () => {
+        const { registrar, writer, options, plugin, files } = fixture();
+        const modal = new ManuscriptOptionsModal(plugin.app, plugin, async () => ({}));
+        await modal['chooseSource']('folder', 'Book');
+        const profile = { ...modal['buildLiveProfile']('test', 'Test', true), rangeStart: 2, rangeEnd: 2, order: 'reverse-narrative' as const, subplot: 'Other' };
+        await modal['applyTemplate'](profile, { showNotice: false });
+        expect(modal['getSelectedScenePaths']()).toEqual(files.map(file => file.path));
+        await registrar['handleManuscriptExport']({ ...options, rangeStart: 2, rangeEnd: 2, subplot: 'Other', source: { kind: 'folder', path: 'Book', paths: files.map(file => file.path), title: 'Plain', author: '' } });
+        expect(writer.mock.calls[0][1]).toContain('First scene prose.');
+        expect(writer.mock.calls[0][1]).toContain('Second scene prose.');
+    });
+
+    it('exports a single file exactly once and leaves its own chapter headings intact', async () => {
+        const { registrar, writer, options, files, content } = fixture();
+        content.set(files[1].path, '# Chapter one\n\nOne.\n\n# Chapter two\n\nTwo.');
+        await registrar['handleManuscriptExport']({ ...options, source: { kind: 'file', path: files[1].path, paths: [files[1].path], title: 'Single', author: '' } });
+        expect(writer.mock.calls[0][1]).toBe('# Chapter one\n\nOne.\n\n# Chapter two\n\nTwo.');
+    });
+
+    it('does not let a deleted reviewed note silently disappear', async () => {
+        const { registrar, writer, options } = fixture();
+        await expect(registrar['handleManuscriptExport']({ ...options, source: { kind: 'folder', path: 'Book', paths: ['Book/missing.md'], title: 'Plain', author: '' } })).rejects.toThrow('missing');
+        expect(writer).not.toHaveBeenCalled();
+    });
+
+    it('pins the modal book identity when the active timeline book changes', async () => {
+        const { plugin } = fixture();
+        const modal = new ManuscriptOptionsModal(plugin.app, plugin, async () => ({}));
+        plugin.settings.books.push({ id: 'other', title: 'Other book', sourceFolder: 'Other' });
+        plugin.settings.activeBookId = 'other';
+        expect(modal['getSourceBook']()?.id).toBe('book');
+        await modal['loadScenesForOrder']();
+        expect(modal['scenePaths']).toEqual(['Book/1 First.md', 'Book/2 Second.md']);
+    });
+
+    it('locks source controls for the export job and restores them after completion', async () => {
+        const { plugin } = fixture();
+        let finish!: (outcome: { savedPath: string }) => void;
+        const submit = vi.fn(() => new Promise<{ savedPath: string }>(resolve => { finish = resolve; }));
+        const modal = new ManuscriptOptionsModal(plugin.app, plugin, submit);
+        await modal['chooseSource']('file', 'Book/2 Second.md');
+        const card = { inert: false };
+        modal['sourceCard'] = card as unknown as HTMLElement;
+        const exporting = modal['submit']();
+        expect(card.inert).toBe(true);
+        finish({ savedPath: 'Exports/Single.md' });
+        await exporting;
+        expect(card.inert).toBe(false);
+    });
+
+    it('ignores an older scene-load response after switching to a plain file', async () => {
+        const { plugin } = fixture();
+        let resolveScenes!: (items: Awaited<ReturnType<RadialTimelinePlugin['getSceneData']>>) => void;
+        plugin.getSceneData = vi.fn(() => new Promise(resolve => { resolveScenes = resolve; }));
+        const modal = new ManuscriptOptionsModal(plugin.app, plugin, async () => ({}));
+        const earlier = modal['loadScenesForOrder']();
+        await modal['chooseSource']('file', 'Book/2 Second.md');
+        resolveScenes([{ path: 'Book/1 First.md', title: 'First', itemType: 'Scene' }]);
+        await earlier;
+        expect(modal['scenePaths']).toEqual(['Book/2 Second.md']);
+    });
+
+    it('does not submit a folder before its contents have been reviewed', async () => {
+        const { plugin } = fixture();
+        const submit = vi.fn(async () => ({}));
+        const modal = new ManuscriptOptionsModal(plugin.app, plugin, submit);
+        await modal['chooseSource']('folder', 'Book');
+        await modal['submit']();
+        expect(submit).not.toHaveBeenCalled();
+        modal['sourceReviewed'] = true;
+        await modal['submit']();
+        expect(submit).toHaveBeenCalledWith(expect.objectContaining({ source: expect.objectContaining({ kind: 'folder' }), updateWordCounts: false }));
+    });
+
     it('exports the selected prose without BookMeta and removes private notes', async () => {
         const { registrar, writer, writes, options } = fixture();
         const outcome = await registrar['handleManuscriptExport']({ ...options, rangeStart: 2, rangeEnd: 2 });

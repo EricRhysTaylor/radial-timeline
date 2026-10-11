@@ -33,7 +33,8 @@ import { ensureManuscriptOutputFolder, ensureOutlineOutputFolder } from '../util
 import { BINDING_GUTTER_LATEX, buildExportFilename, buildPrecursorFilename, buildOutlineExport, getExportFormatExtension, getLayoutById, getStructuredFontDiagnostic, getTemplateFontDiagnostics, getVaultAbsolutePath, parseCustomPandocMetadata, resolveTemplatePath, runPandocOnContent, stemToReadable, validatePandocLayout } from '../utils/exportFormats';
 import { isProActive } from '../settings/proEntitlement';
 import { ensureManuscriptReferenceDocxInstalled } from '../utils/pandocBundledLayouts';
-import { getActiveBookExportContext } from '../utils/exportContext';
+import { getActiveBookExportContext, getReviewedManuscriptSelection } from '../utils/exportContext';
+import { slugifyToFileStem } from '../utils/slug';
 import { getActiveBook } from '../utils/books';
 import { ensureReferenceIdTemplateFrontmatter, ensureSceneTemplateFrontmatter } from '../utils/sceneIds';
 import { chunkScenesIntoParts } from '../utils/splitOutput';
@@ -324,11 +325,22 @@ export class CommandRegistrar {
         }
 
         // ── Source-folder guardrail (applies to Markdown and PDF) ───────
-        const ctx = getActiveBookExportContext(this.plugin);
-        const activeBookAtStart = getActiveBook(this.plugin.settings);
+        const source = result.source ? structuredClone(result.source) : undefined;
+        const plainSource = source && source.kind !== 'book' ? source : undefined;
+        const activeBookAtStart = source
+            ? source.kind === 'book' ? this.plugin.settings.books.find(book => book.id === source.bookId) || null : null
+            : getActiveBook(this.plugin.settings);
+        if (source?.kind === 'book' && !activeBookAtStart) throw new Error('The selected RT book is no longer available.');
+        if (plainSource && result.exportType !== 'manuscript') throw new Error('Choose manuscript export for a folder or file.');
+        const ctx = plainSource
+            ? { sourceFolder: plainSource.path, title: plainSource.title, fileStem: slugifyToFileStem(plainSource.title || plainSource.path.split('/').pop() || 'Manuscript') }
+            : activeBookAtStart
+                ? { sourceFolder: activeBookAtStart.sourceFolder, title: activeBookAtStart.title, fileStem: activeBookAtStart.fileStem || slugifyToFileStem(activeBookAtStart.title) }
+                : getActiveBookExportContext(this.plugin);
         const bookSnapshot = activeBookAtStart ? structuredClone(activeBookAtStart) : null;
         const folder = ctx.sourceFolder.trim();
         if (!folder || !this.app.vault.getAbstractFileByPath(folder)) {
+            if (plainSource) throw new ExportFailure({ category: 'missing_files', message: `Manuscript source is missing: ${folder}` });
             const activeBook = getActiveBook(this.plugin.settings);
             if (activeBook) {
                 console.warn(`[RT Export] Source folder missing or invalid for book "${activeBook.title}" (id=${activeBook.id}), folder="${folder}"`);
@@ -353,8 +365,10 @@ export class CommandRegistrar {
 
             const effectiveOrder = result.order;
             const effectiveSubplot = result.subplot;
-            const includeMatter = result.exportType === 'manuscript' && (result.includeMatter ?? false);
-            const scenes = await getSceneFilesByOrder(this.app, this.plugin, effectiveOrder, undefined, includeMatter);
+            const includeMatter = !plainSource && result.exportType === 'manuscript' && (result.includeMatter ?? false);
+            const scenes = plainSource
+                ? getReviewedManuscriptSelection(this.app, plainSource)
+                : await getSceneFilesByOrder(this.app, this.plugin, effectiveOrder, undefined, includeMatter, folder);
             const selection: ManuscriptSceneSelection = {
                 files: scenes.files,
                 titles: scenes.titles,
@@ -371,7 +385,7 @@ export class CommandRegistrar {
             };
 
             let filteredSelection = selection;
-            if (result.scenePathFilter && result.scenePathFilter.length > 0) {
+            if (!plainSource && result.scenePathFilter && result.scenePathFilter.length > 0) {
                 const pathSet = new Set(result.scenePathFilter);
                 const indices = selection.files.map((f, i) => pathSet.has(f.path) ? i : -1).filter(i => i !== -1);
                 filteredSelection = {
@@ -388,7 +402,7 @@ export class CommandRegistrar {
                     chapterMarkersByScenePath: selection.chapterMarkersByScenePath,
                     sortOrder: selection.sortOrder
                 };
-            } else if (effectiveSubplot && effectiveSubplot !== 'All Subplots') {
+            } else if (!plainSource && effectiveSubplot && effectiveSubplot !== 'All Subplots') {
                 const indices = selection.subplots.map((s, i) => s === effectiveSubplot ? i : -1).filter(i => i !== -1);
                 filteredSelection = {
                     files: indices.map(i => selection.files[i]),
@@ -406,7 +420,7 @@ export class CommandRegistrar {
                 };
             }
 
-            const slicedSelection = this.sliceSelection(filteredSelection, result.rangeStart, result.rangeEnd, includeMatter);
+            const slicedSelection = plainSource ? selection : this.sliceSelection(filteredSelection, result.rangeStart, result.rangeEnd, includeMatter);
             if (slicedSelection.files.length === 0) {
                 new Notice('Selected range is empty.');
                 return {};
@@ -427,6 +441,7 @@ export class CommandRegistrar {
                 manuscriptPreset: result.manuscriptPreset,
                 selectedLayoutId: result.selectedLayoutId,
                 includeMatter,
+                manuscriptMetadata: plainSource ? { title: plainSource.title, author: plainSource.author } : undefined,
             });
             const preflightFailure = this.buildPreflightExportFailure(preflightSnapshot, {
                 exportType: result.exportType,
@@ -494,7 +509,9 @@ export class CommandRegistrar {
                 };
             }
 
-            const bookMetaResolution = this.plugin.getPublishingValidationService().resolveBookMetaForBook(folder);
+            const bookMetaResolution = plainSource
+                ? { bookMeta: { title: plainSource.title, author: plainSource.author } }
+                : this.plugin.getPublishingValidationService().resolveBookMetaForBook(folder);
             const selectedMatterCount = slicedSelection.files.reduce((count, file) => (
                 filteredSelection.matterMetaByPath?.has(file.path) ? count + 1 : count
             ), 0);
@@ -539,6 +556,7 @@ export class CommandRegistrar {
                         bookMetaResolution.bookMeta,
                         filteredSelection.matterMetaByPath,
                         {
+                            sourceNotes: plainSource ? 'markdown' : undefined,
                             chapterMarkersByScenePath: filteredSelection.chapterMarkersByScenePath,
                             sceneHeadingRenderMode: 'markdown-h2',
                             includeSceneIdInToc: result.includeSceneIdInToc === true,
@@ -549,7 +567,7 @@ export class CommandRegistrar {
                     );
                     this.assertNoSceneReadFailures(assembled);
 
-                    if (result.updateWordCounts) {
+                    if (result.updateWordCounts && !plainSource) {
                         await updateSceneWordCounts(this.app, partSelection.files, assembled.scenes);
                     }
 
@@ -562,7 +580,8 @@ export class CommandRegistrar {
                             order: effectiveOrder,
                             subplotFilter: effectiveSubplot,
                             manuscriptPreset: result.manuscriptPreset,
-                            extension
+                            extension,
+                            fileStem: ctx.fileStem
                         });
                     const vaultPath = `${outputFolder}/${filename}`;
                     const wrote = await this.writeVaultTextFile(vaultPath, sanitizedText, 'manuscript-export');
@@ -623,6 +642,7 @@ export class CommandRegistrar {
                         bookMetaResolution.bookMeta,
                         filteredSelection.matterMetaByPath,
                         {
+                            sourceNotes: plainSource ? 'docx' : undefined,
                             chapterMarkersByScenePath: filteredSelection.chapterMarkersByScenePath,
                             sceneHeadingRenderMode: 'markdown-h2',
                             includeSceneIdInToc: result.includeSceneIdInToc === true,
@@ -633,7 +653,7 @@ export class CommandRegistrar {
                     );
                     this.assertNoSceneReadFailures(assembled);
 
-                    if (result.updateWordCounts) {
+                    if (result.updateWordCounts && !plainSource) {
                         await updateSceneWordCounts(this.app, partSelection.files, assembled.scenes);
                     }
 
@@ -799,6 +819,7 @@ export class CommandRegistrar {
                     bookMetaResolution.bookMeta,
                     filteredSelection.matterMetaByPath,
                     {
+                        sourceNotes: plainSource ? 'pdf' : undefined,
                         chapterMarkersByScenePath,
                         sceneHeadingMode: layoutSceneHeadingMode,
                         sceneHeadingRenderMode,
@@ -820,7 +841,7 @@ export class CommandRegistrar {
                 );
                 this.assertNoSceneReadFailures(assembled);
 
-                if (result.updateWordCounts) {
+                if (result.updateWordCounts && !plainSource) {
                     await updateSceneWordCounts(this.app, partSelection.files, assembled.scenes);
                 }
 

@@ -1,0 +1,10 @@
+401 row (selected)    <div class=​"ert-stack ert-manuscript-source-list"> ​ Expand …​ </div> ​ Enable flex mode slot
+664 row CSS property name: column-gap CSS property value: 8px
+670 row CSS property name: display CSS property value: flex
+736 row CSS property name: max-height CSS property value: 320px
+742 row CSS property name: overflow-y CSS property value: auto
+748 row CSS property name: padding-bottom CSS property value: 12px
+754 row CSS property name: padding-left CSS property value: 12px
+760 row CSS property name: padding-right CSS property value: 12px
+766 row CSS property name: padding-top CSS property value: 12px
+772 row CSS property name: row-gap CSS property value: 8px

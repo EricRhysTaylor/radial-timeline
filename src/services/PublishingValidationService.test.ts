@@ -98,6 +98,17 @@ describe('deliverable readiness', () => {
         ]));
     });
 
+    it.each(['pdf', 'docx'] as const)('validates direct %s metadata without inheriting the active book', outputFormat => {
+        const plugin = createValidationPlugin(makeNovelLayout('$body$'));
+        const service = new PublishingValidationService(plugin);
+        const resolve = vi.spyOn(service, 'resolveBookMetaForBook');
+        const context = { exportType: 'manuscript', outputFormat, manuscriptMetadata: { title: 'Direct', author: '' } } as const;
+        const issues = getExportValidationIssues(service.collect(undefined, context), context);
+        expect(issues).toContainEqual(expect.objectContaining({ field: 'Book.author', message: 'Add author in the manuscript details above before exporting.' }));
+        expect(issues).not.toContainEqual(expect.objectContaining({ field: 'Book.title' }));
+        expect(resolve).not.toHaveBeenCalled();
+    });
+
     it('blocks a PDF with no rendering engine even when metadata is complete', () => {
         const plugin = createValidationPlugin(makeNovelLayout('$body$'));
         vi.mocked(exportFormats.getAutoPdfEngineSelection).mockReturnValue({ engine: 'xelatex', path: null, available: [], templateNeedsUnicode: false });

@@ -1,0 +1,23 @@
+																321 row (selected)    <div class=​"ert-stack ert-manuscript-controls"> ​ Enable flex mode This element has a scrollable overflow
+																624 row CSS property name: box-sizing CSS property value: border-box
+																630 row CSS property name: caret-color CSS property value: rgb(218, 218, 218)
+																636 row CSS property name: color CSS property value: rgb(218, 218, 218)
+																642 row CSS property name: color-scheme CSS property value: dark
+																648 row CSS property name: column-gap CSS property value: 8px
+																654 row CSS property name: display CSS property value: flex
+																660 row CSS property name: flex-direction CSS property value: column
+																666 row CSS property name: font-family CSS property value: "??", "??", "??", ui-sans-serif, -apple-system, "system-ui", system-ui, "Segoe UI", "Google Sans Flex", Roboto, "Inter Variable", Inter, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif
+																702 row CSS property name: font-size CSS property value: 15px
+																708 row CSS property name: height CSS property value: 1493.59px
+																714 row CSS property name: line-height CSS property value: 19.5px
+																720 row CSS property name: max-height CSS property value: 1493.6px
+																726 row CSS property name: overflow-y CSS property value: auto
+																732 row CSS property name: padding-inline-end CSS property value: 8px
+																738 row CSS property name: row-gap CSS property value: 8px
+																744 row CSS property name: scrollbar-color CSS property value: rgb(128, 128, 128) rgba(0, 0, 0, 0)
+																751 row CSS property name: scrollbar-width CSS property value: auto
+																757 row CSS property name: text-rendering CSS property value: optimizelegibility
+																763 row CSS property name: unicode-bidi CSS property value: isolate
+																769 row CSS property name: user-select CSS property value: none
+																775 row CSS property name: width CSS property value: 652px
+																781 row CSS property name: -webkit-tap-highlight-color CSS property value: rgba(255, 255, 255, 0)

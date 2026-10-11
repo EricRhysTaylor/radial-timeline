@@ -1,0 +1,23 @@
+																315 row (selected)    <div class=​"ert-manuscript-workspace is-proof-enabled"> ​ Enable grid mode
+																627 row CSS property name: align-items CSS property value: start
+																633 row CSS property name: box-sizing CSS property value: border-box
+																639 row CSS property name: caret-color CSS property value: rgb(218, 218, 218)
+																645 row CSS property name: color CSS property value: rgb(218, 218, 218)
+																651 row CSS property name: color-scheme CSS property value: dark
+																657 row CSS property name: column-gap CSS property value: 16px
+																663 row CSS property name: display CSS property value: grid
+																669 row CSS property name: font-family CSS property value: "??", "??", "??", ui-sans-serif, -apple-system, "system-ui", system-ui, "Segoe UI", "Google Sans Flex", Roboto, "Inter Variable", Inter, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif
+																705 row CSS property name: font-size CSS property value: 15px
+																711 row CSS property name: grid-template-columns CSS property value: 652px 652px
+																718 row CSS property name: height CSS property value: 1493.59px
+																724 row CSS property name: line-height CSS property value: 19.5px
+																730 row CSS property name: position CSS property value: relative
+																736 row CSS property name: row-gap CSS property value: 16px
+																742 row CSS property name: scrollbar-color CSS property value: rgb(128, 128, 128) rgba(0, 0, 0, 0)
+																749 row CSS property name: scrollbar-width CSS property value: auto
+																755 row CSS property name: text-rendering CSS property value: optimizelegibility
+																761 row CSS property name: unicode-bidi CSS property value: isolate
+																767 row CSS property name: user-select CSS property value: none
+																773 row CSS property name: width CSS property value: 1320px
+																779 row CSS property name: z-index CSS property value: 1
+																785 row CSS property name: -webkit-tap-highlight-color CSS property value: rgba(255, 255, 255, 0)

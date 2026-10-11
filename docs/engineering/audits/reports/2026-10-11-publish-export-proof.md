@@ -44,7 +44,7 @@ The preview uses Obsidian's public `loadPdfJs()` and the documented [PDF.js docu
 
 The split native run includes the final style-name, count and display-density changes. The later source-error button guard passed the final build/tests but did not need a changed visual layout. Source-choice, ordinary-folder/file exports, PDF/Word/Markdown artifacts and range selection have prior acceptance in the direct-source and visual-QA reports; they were not all rerun as new proof cases in this pass.
 
-Native computed-style inspection is pending the user's short Obsidian access window. The new controls, pane, file row, navigation and page frame all descend from the existing `.ert-ui` modal shell; source inspection confirms token scope, but it does not replace the playbook's inspector check.
+Native computed-style inspection was completed through the DevTools GUI during the authorized QA window, without console evaluation. Workspace columns resolve to equal widths with 16px gaps; controls have 8px gaps and end padding with bounded vertical scrolling; the proof panel has 16px padding, 8px gaps, a 1px theme border and 12px radius; navigation gaps and page-frame padding resolve to 8px. All new chrome descends from the `.ert-ui` modal shell.
 
 ## Post-feature audit
 
@@ -55,7 +55,7 @@ Report-first audit of the touched modal lifecycle, proof controls and asynchrono
 - **Dead code removed:** removed the duplicate inline submission object. No unrelated code cleanup.
 - **Naming:** Document proof, Current proof, Needs refresh, Proof file and Open proof describe actual artifacts and state. Existing style diagrams remain separate.
 - **State/safety:** unique proof directories, source capture across split parts, ignored late page work, worker cleanup, explicit stale failures, disabled generation during invalid/loading source state and skipped export side effects are implemented. Regression tests cover these contracts.
-- **Prioritized findings:** required native token inspection remains an acceptance item. No additional release-blocking code defect identified in the bounded paths reviewed. Some persisted settings controls may only expose stale state on the next common UI refresh/navigation; final export still checks current inputs and recompiles them. Broader continuous settings/template/font invalidation is follow-up work.
+- **Prioritized findings:** native token inspection passed. No additional release-blocking code defect identified in the bounded paths reviewed. Some persisted settings controls may only expose stale state on the next common UI refresh/navigation; final export still checks current inputs and recompiles them. Broader continuous settings/template/font invalidation is follow-up work.
 - **Verification:** all 15 final gates passed. Production build-only and TypeScript checks passed; 4,221 tests passed, 10 skipped. New coverage includes source/configuration staleness, direct-source independence from active book, one/two-part proof side effects, captured split source text, actual page count/navigation contract, display-density cap, and late page resolution after close. Final receipt: `/tmp/rt-publish-proof-release-gates.json`.
 - **Existing debt:** report-only lint and unused-CSS warnings remain within the repository ratchets; no baseline increase was introduced.
 
@@ -76,3 +76,20 @@ Acceptance limits: no new full-length novel stress test, narrow-window/light-the
 - [Split part 2](2026-10-11-publish-export-proof-evidence/split-part2.png)
 - [Saved PDF part 1](2026-10-11-publish-export-proof-evidence/artifact-part1.png)
 - [Saved PDF part 2](2026-10-11-publish-export-proof-evidence/artifact-part2.png)
+
+## Source-card spacing follow-through
+
+Eric identified that the book dropdown crowded the source-type buttons. The revealed source details now share a bordered section with 8px top margin, 16px top padding and the existing 8px stack gap. The Book label/dropdown row uses an 8px gap and wraps when needed. This same section contains ordinary-folder and single-file metadata/review controls. It changes grouping and spacing only; selection, order and export behavior remain intact. The reference lock is the supplied screenshot plus RT's existing ERT shell; the skill's typography guidance supports strengthening spacing before changing type or control styling.
+
+RT book, folder and single-file states were captured and opened for visual inspection. DevTools confirmed the source section's 8px margin, 16px padding, 1px theme divider and the book row's 8px gaps. All 15 gates passed again, including production build/TypeScript and 4,221 tests (10 skipped); receipt: `/tmp/rt-source-card-spacing-gates.json`. No new behavioral tests were added for this presentation-only change. Obsidian was returned to the Author Vault after QA.
+
+- [Revised book source card](2026-10-11-publish-export-proof-evidence/source-card-book-detail.png)
+- [Folder source details](2026-10-11-publish-export-proof-evidence/source-card-folder.png)
+- [Single-file source details](2026-10-11-publish-export-proof-evidence/source-card-file.png)
+- [Source detail computed styles](2026-10-11-publish-export-proof-evidence/source-details-computed.txt)
+- [Book row computed styles](2026-10-11-publish-export-proof-evidence/ert-manuscript-source-book-row-computed.txt)
+- [Proof workspace computed styles](2026-10-11-publish-export-proof-evidence/ert-manuscript-workspace-computed.txt)
+- [Proof panel computed styles](2026-10-11-publish-export-proof-evidence/ert-manuscript-proof-pane-computed.txt)
+- [Proof controls computed styles](2026-10-11-publish-export-proof-evidence/ert-manuscript-controls-computed.txt)
+- [Proof navigation computed styles](2026-10-11-publish-export-proof-evidence/ert-manuscript-proof-nav-computed.txt)
+- [Proof page frame computed styles](2026-10-11-publish-export-proof-evidence/ert-manuscript-proof-pages-computed.txt)

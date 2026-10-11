@@ -788,8 +788,9 @@ export class ManuscriptOptionsModal extends Modal {
         }
         const source = this.source;
         if (!source) { card.createDiv({ cls: 'ert-section-desc', text: 'Choose an RT book, manuscript folder, or Markdown file.' }); return; }
+        const sourceDetails = card.createDiv({ cls: 'ert-stack ert-manuscript-source-details' });
         if (source.kind === 'book') {
-            const row = card.createDiv({ cls: 'ert-row' });
+            const row = sourceDetails.createDiv({ cls: 'ert-row ert-manuscript-source-book-row' });
             row.createSpan({ text: 'Book' });
             new DropdownComponent(row).addOptions(Object.fromEntries(this.plugin.settings.books.map(book => [book.id, book.title])))
                 .setValue(source.bookId).onChange(id => {
@@ -799,13 +800,13 @@ export class ManuscriptOptionsModal extends Modal {
                     this.renderSourceCard();
                     void this.loadSubplots().then(() => this.loadScenesForOrder());
                 });
-            card.createDiv({ cls: 'ert-section-desc', text: this.getSourceBook()?.sourceFolder || 'This book has no source folder.' });
+            sourceDetails.createDiv({ cls: 'ert-section-desc', text: this.getSourceBook()?.sourceFolder || 'This book has no source folder.' });
             return;
         }
-        card.createDiv({ cls: 'ert-section-desc', text: source.path });
-        card.createDiv({ cls: 'ert-section-desc', text: 'Existing Markdown headings are retained. Notes join with blank lines. Source files remain unchanged.' });
+        sourceDetails.createDiv({ cls: 'ert-section-desc', text: source.path });
+        sourceDetails.createDiv({ cls: 'ert-section-desc', text: 'Existing Markdown headings are retained. Notes join with blank lines. Source files remain unchanged.' });
         for (const field of ['title', 'author'] as const) {
-            const label = card.createEl('label', { cls: 'ert-row ert-manuscript-source-field' });
+            const label = sourceDetails.createEl('label', { cls: 'ert-row ert-manuscript-source-field' });
             label.createSpan({ text: field === 'title' ? 'Title' : 'Author' });
             const input = label.createEl('input', { cls: 'ert-input', attr: { type: 'text' } });
             input.value = source[field];
@@ -816,7 +817,7 @@ export class ManuscriptOptionsModal extends Modal {
             });
         }
         if (source.kind === 'folder') {
-            const details = card.createEl('details');
+            const details = sourceDetails.createEl('details');
             details.open = !this.sourceReviewed;
             details.createEl('summary', { text: `Review contents · ${source.paths.length} included of ${this.sourceCandidates.length} notes` });
             const list = details.createDiv({ cls: 'ert-stack ert-manuscript-source-list' });
@@ -854,7 +855,7 @@ export class ManuscriptOptionsModal extends Modal {
                 .setDisabled(this.sourceReviewed || source.paths.length === 0)
                 .onClick(() => { this.sourceReviewed = true; this.renderSourceCard(); this.syncExportUi(); });
         }
-        if (this.sourceError) card.createDiv({ cls: 'ert-section-desc ert-section-desc--alert', text: this.sourceError });
+        if (this.sourceError) sourceDetails.createDiv({ cls: 'ert-section-desc ert-section-desc--alert', text: this.sourceError });
     }
 
     // Layout -----------------------------------------------------------------

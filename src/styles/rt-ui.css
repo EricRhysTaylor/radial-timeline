@@ -10743,6 +10743,19 @@
 }
 
 /* Reviewed manuscript contents stay bounded inside the existing export shell. */
+.ert-ui.ert-scope--modal .ert-manuscript-source-details {
+  margin-top: var(--ert-gap-sm);
+  padding-top: var(--ert-pad-md);
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.ert-ui.ert-scope--modal .ert-manuscript-source-book-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ert-gap-sm);
+}
+
 .ert-ui.ert-scope--modal .ert-manuscript-source-list {
   max-height: 320px;
   overflow-y: auto;

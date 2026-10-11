@@ -71,6 +71,7 @@ interface DropTarget {
 
 export class ChronologueDragController {
     private readonly overlays: DragOverlays;
+    private outerRing = 0;
 
     private dragging = false;
     private sourceGroup: SVGGElement | null = null;
@@ -93,10 +94,10 @@ export class ChronologueDragController {
     }
 
     attach(): void {
-        const outerRing = getOuterRingIndex(this.svg);
+        this.outerRing = getOuterRingIndex(this.svg);
         const sources = Array.from(
             this.svg.querySelectorAll<SVGGElement>('.rt-scene-group[data-item-type="Scene"]')
-        ).filter(group => Number(group.getAttribute('data-ring') ?? -1) === outerRing); // SAFE: -1 never equals a real ring index, so ringless groups are skipped
+        ).filter(group => this.isOnOuterRing(group));
         if (sources.length < 2) return;
 
         sources.forEach(group => group.setAttribute('data-draggable', 'true'));
@@ -216,10 +217,19 @@ export class ChronologueDragController {
         await this.commitDrop(sourcePath, target.path);
     }
 
+    /**
+     * Only the outer ring places. A subplot ring lays its scenes out on its own
+     * angles, so a tick and arc drawn from an inner cell would point at a spot
+     * the scene does not land on — and subplot rings carry their own drag.
+     */
+    private isOnOuterRing(group: SVGGElement): boolean {
+        return Number(group.getAttribute('data-ring') ?? -1) === this.outerRing; // SAFE: -1 never equals a real ring index, so ringless groups are skipped
+    }
+
     private findDropTarget(evt: PointerEvent): DropTarget | null {
         const fromPoint = this.svg.ownerDocument.elementFromPoint(evt.clientX, evt.clientY);
         const group = fromPoint?.closest<SVGGElement>('.rt-scene-group[data-item-type="Scene"]');
-        if (!group) return null;
+        if (!group || !this.isOnOuterRing(group)) return null;
 
         const encodedPath = group.getAttribute('data-path');
         const path = encodedPath ? decodeURIComponent(encodedPath) : null;

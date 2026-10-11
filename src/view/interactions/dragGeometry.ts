@@ -13,7 +13,7 @@
 
 import { readSubplotColor } from '../../renderer/utils/subplotColors';
 import { TFile, type App } from 'obsidian';
-import { normalizeAngleSigned } from '../../renderer/utils/angles';
+import { arcPath } from '../../renderer/layout/Paths';
 import {
     DRAG_DROP_ARC_RADIUS,
     DRAG_DROP_TICK_OUTER_RADIUS,
@@ -179,21 +179,17 @@ export class DragOverlays {
         applyStroke(tick, color);
     }
 
+    /**
+     * Arc from the dragged scene to the drop point, always clockwise. The ring
+     * reads clockwise in both narrative and Chronologue order, so a drop behind
+     * the source wraps the long way round: sweeping backwards would picture the
+     * scene travelling back through the story.
+     */
     showArc(startAngle: number, endAngle: number, color: string | undefined): void {
         const arc = this.ensureArc();
         arc.classList.remove('ert-hidden');
-        const r = DRAG_DROP_ARC_RADIUS;
         const offset = getRotationOffsetRad(this.svg);
-        const a0 = startAngle + offset;
-        const a1 = endAngle + offset;
-        const delta = normalizeAngleSigned(a1 - a0);
-        const largeArc = Math.abs(delta) > Math.PI ? 1 : 0;
-        const sweep = delta >= 0 ? 1 : 0;
-        arc.setAttribute(
-            'd',
-            `M ${r * Math.cos(a0)} ${r * Math.sin(a0)} `
-            + `A ${r} ${r} 0 ${largeArc} ${sweep} ${r * Math.cos(a1)} ${r * Math.sin(a1)}`
-        );
+        arc.setAttribute('d', arcPath(DRAG_DROP_ARC_RADIUS, startAngle + offset, endAngle + offset));
         applyStroke(arc, color);
     }
 

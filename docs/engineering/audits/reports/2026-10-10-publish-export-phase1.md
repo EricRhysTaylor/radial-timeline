@@ -35,7 +35,7 @@ Regression coverage exercises the actual command runner through selection and as
 
 The full unit suite and typecheck passed before the final gate pass. Real installed-tool tests (`RT_PUBLISH_LIVE_OUTPUT=1`) produced a Word archive whose document XML contained the expected revised prose while preserving the earlier file, and a PDF whose prose was read back by Poppler. All four existing bundled PDF smoke fixtures passed without changing their page counts: 2, 7, 2 and 7.
 
-The final repo gates provide the authoritative final build/test result. Native acceptance is pending: the UI tool reported that the Mac was locked, and the user was asked to unlock it. No new native screenshot or visual acceptance is claimed.
+All 15 final repo gates passed, including the production build, typechecks, lint/compliance ratchets and unit suite. Native acceptance is pending: the UI tool reported that the Mac was locked, and the user was asked to unlock it. No new native screenshot or visual acceptance is claimed.
 
 ## Remaining limits
 

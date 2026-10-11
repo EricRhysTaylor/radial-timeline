@@ -1,0 +1,14 @@
+																	5627 row CSS property name: background-color CSS property value: rgb(28, 28, 28)
+																	5789 row CSS property name: border-top-width CSS property value: 1px
+																	5825 row CSS property name: column-gap CSS property value: 8px
+																	5897 row CSS property name: padding-bottom CSS property value: 16px
+																	5903 row CSS property name: padding-left CSS property value: 16px
+																	5909 row CSS property name: padding-right CSS property value: 16px
+																	5915 row CSS property name: padding-top CSS property value: 16px
+																	5927 row CSS property name: row-gap CSS property value: 8px
+																	5609 row CSS property name: backdrop-filter CSS property value: none
+																	5675 row CSS property name: border-bottom-left-radius CSS property value: 12px
+																	5681 row CSS property name: border-bottom-right-radius CSS property value: 12px
+																	5771 row CSS property name: border-top-left-radius CSS property value: 12px
+																	5777 row CSS property name: border-top-right-radius CSS property value: 12px
+																	5795 row CSS property name: box-shadow CSS property value: none

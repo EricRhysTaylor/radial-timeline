@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { App } from 'obsidian';
+import type { App, ButtonComponent, DropdownComponent } from 'obsidian';
 import { TFile, TFolder } from '../../tests/mocks/obsidian';
 import { makeFile } from '../../tests/helpers/obsidianFixtures';
 import type RadialTimelinePlugin from '../main';
@@ -139,6 +139,33 @@ describe('manuscript export UI-to-runner contract', () => {
             expect([modal['rangeStart'], modal['rangeEnd'], modal['order'], modal['subplot']]).toEqual([2, 2, 'chronological', 'Main Plot']);
         }
         expect(reload).not.toHaveBeenCalled();
+    });
+
+    it('counts only scene notes in the open-scenes scope label', async () => {
+        const { plugin } = fixture();
+        const modal = new ManuscriptOptionsModal(plugin.app, plugin, async () => ({}));
+        modal['openScenePathsSnapshot'] = new Set(['Book/1 First.md', 'Book/2 Second.md', 'Book/000 BookMeta.md']);
+        const addOption = vi.fn();
+        modal['subplotDropdown'] = { selectEl: { textContent: '' }, addOption, setValue: vi.fn() } as unknown as DropdownComponent;
+        await modal['loadSubplots']();
+        expect(addOption).toHaveBeenCalledWith('__open_scenes__', 'Open Scenes (2)');
+        expect(addOption).not.toHaveBeenCalledWith('__open_scenes__', 'Open Scenes (3)');
+    });
+
+    it('refreshes the output count when a narrowed range returns to single-file export', () => {
+        const { plugin } = fixture();
+        const modal = new ManuscriptOptionsModal(plugin.app, plugin, async () => ({}));
+        modal['totalScenes'] = 3;
+        modal['rangeStart'] = 2;
+        modal['rangeEnd'] = 2;
+        modal['splitMode'] = 'parts';
+        modal['splitParts'] = 3;
+        modal['outputFormat'] = 'pdf';
+        const setButtonText = vi.fn();
+        modal['actionButton'] = { setButtonText, setDisabled: vi.fn() } as unknown as ButtonComponent;
+        modal['updateSplitUi']();
+        expect(modal['splitMode']).toBe('single');
+        expect(setButtonText).toHaveBeenCalledWith('Generate PDF');
     });
 
     it('moves range endpoints with the keyboard without crossing or exceeding the manuscript', () => {

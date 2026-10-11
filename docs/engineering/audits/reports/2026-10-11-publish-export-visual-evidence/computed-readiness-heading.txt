@@ -1,0 +1,11 @@
+																	5847 row CSS property name: font-size CSS property value: 16px
+																	5901 row CSS property name: font-weight CSS property value: 700
+																	5919 row CSS property name: line-height CSS property value: 20.8px
+																	5925 row CSS property name: margin-block-end CSS property value: 0px
+																	5931 row CSS property name: margin-block-start CSS property value: 0px
+																	5937 row CSS property name: margin-bottom CSS property value: 0px
+																	5943 row CSS property name: margin-inline-end CSS property value: 0px
+																	5949 row CSS property name: margin-inline-start CSS property value: 0px
+																	5955 row CSS property name: margin-left CSS property value: 0px
+																	5961 row CSS property name: margin-right CSS property value: 0px
+																	5967 row CSS property name: margin-top CSS property value: 0px

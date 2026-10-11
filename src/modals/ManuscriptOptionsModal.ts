@@ -974,7 +974,7 @@ export class ManuscriptOptionsModal extends Modal {
         const bookTitle = getActiveBookTitle(this.plugin.settings, DEFAULT_BOOK_TITLE);
         const count = this.getSelectedSceneCount();
         const words = this.getSelectedWordCount();
-        this.badgeEl.setText(`EXPORT — ${bookTitle} • ${count} scenes selected • ${words.toLocaleString()} words`);
+        this.badgeEl.setText(`EXPORT — ${bookTitle} • ${count} ${count === 1 ? 'scene' : 'scenes'} selected • ${words.toLocaleString()} ${words === 1 ? 'word' : 'words'}`);
         this.updateReadback();
     }
 
@@ -1917,7 +1917,6 @@ export class ManuscriptOptionsModal extends Modal {
         this.updateCleanupToggleState();
         this.updateOrderPillsState();
         this.updateSplitUi();
-        this.updateActionButtonLabel();
         this.updateTemplateActionButtonState();
         this.updateExportProfileSummary();
     }
@@ -2746,6 +2745,7 @@ export class ManuscriptOptionsModal extends Modal {
             }
         }
 
+        this.updateActionButtonLabel();
         this.updateActionButtonDisabledState();
         this.updateTemplateActionButtonState();
     }
@@ -3060,7 +3060,7 @@ export class ManuscriptOptionsModal extends Modal {
 
             this.subplotDropdown.selectEl.textContent = '';
             this.subplotDropdown.addOption('All Subplots', 'All subplots');
-            const openCount = this.openScenePathsSnapshot.size;
+            const openCount = scenes.filter(scene => scene.itemType === 'Scene' && typeof scene.path === 'string' && this.openScenePathsSnapshot.has(scene.path)).length;
             if (openCount > 0) {
                 this.subplotDropdown.addOption(OPEN_SCENES_FILTER, `Open Scenes (${openCount})`);
             }
@@ -3151,7 +3151,7 @@ export class ManuscriptOptionsModal extends Modal {
 
     private syncRangeAvailability(): void {
         const count = this.getSelectedSceneCount();
-        this.rangeStatusEl?.setText(`${count} scenes selected`);
+        this.rangeStatusEl?.setText(`${count} ${count === 1 ? 'scene' : 'scenes'} selected`);
         this.updateBadgeSceneCount();
         const hasDecimalScenes = this.getSelectedSceneTitles().some((title) => /^\d+\.\d+\s+/.test((title || '').trim()));
         if (this.rangeDecimalWarningEl) {

@@ -2,6 +2,8 @@
 
 This implements the contents/format and keyboard-range portions of Phase 2 in the [Publish audit](2026-10-10-publish-export-professionalization.md). It builds on the [Phase 1 reliability changes](2026-10-10-publish-export-phase1.md). Ordinary-folder/single-file selection and the document proof workspace remain subsequent work.
 
+Follow-up: [native and visual QA](2026-10-11-publish-export-visual-qa.md) now records the tested UI/output flows and the three additional UI corrections. The pending-native statements below describe the initial implementation checkpoint.
+
 ## Result
 
 Choosing PDF now preserves the manuscript's scene range, order and subplot/open-scene selection. The existing scope and ordering controls remain visible in all manuscript formats. PDF submission and the command runner respect those choices instead of substituting the whole book in narrative order. The default full-book narrative export still works through the same pipeline.

@@ -1065,6 +1065,11 @@
   opacity: 0.6;
 }
 
+.ert-ui.ert-scope--modal .ert-manuscript-range-handle:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 3px;
+}
+
 .ert-manuscript-range-status {
   font-size: 0.95rem;
   color: var(--text-muted);

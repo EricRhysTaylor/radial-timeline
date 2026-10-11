@@ -31,12 +31,6 @@ function resolveTemplateProfileId(
     return templateProfiles[0]?.id || direct || '';
 }
 
-function getSelectionPolicy(outputFormat: ExportProfile['outputFormat'], exportType: ExportProfile['exportType']): ExportProfile['selectionPolicy'] {
-    return exportType === 'manuscript' && outputFormat === 'pdf'
-        ? 'full-book'
-        : 'manual-range';
-}
-
 export function buildModalExportProfile(
     profile: ExportProfile,
     templateProfiles: TemplateProfile[]
@@ -110,7 +104,7 @@ export function buildTransientModalExportProfile(params: {
         cleanup: params.cleanup,
         splitMode: params.splitMode,
         splitParts: params.splitParts,
-        selectionPolicy: getSelectionPolicy(params.outputFormat, params.exportType),
+        selectionPolicy: 'manual-range',
         rangeStart: params.rangeStart,
         rangeEnd: params.rangeEnd,
     }, params.templateProfiles);
@@ -135,7 +129,7 @@ export function resolveIncludeSceneId(profile: Pick<ExportProfile, 'includeScene
  * Project a profile onto the fields its export mode actually uses. The
  * export modal decides "matches preset" by running both the saved preset and
  * its own live state through this one projection, so a field the mode hides
- * (TOC on Word, matter on Markdown, order on PDF) can never read as a change.
+ * (TOC on Word, matter on Markdown) can never read as a change.
  */
 export function buildComparableExportProfile(profile: ModalExportProfile) {
     const isOutline = profile.exportType === 'outline';
@@ -154,8 +148,8 @@ export function buildComparableExportProfile(profile: ModalExportProfile) {
         tocMode: isMarkdownManuscript ? (profile.tocMode || 'none') : 'none',
         includeSceneIdInToc: isMarkdownManuscript && includeSceneId,
         includeSceneIdInHeading: includeSceneId,
-        order: isPdfManuscript ? 'narrative' : profile.order,
-        subplot: isPdfManuscript ? 'All Subplots' : (profile.subplot || 'All Subplots'),
+        order: profile.order,
+        subplot: profile.subplot || 'All Subplots',
         includeMatter: isPandocManuscript && !!profile.includeMatter,
         includeSynopsis: isOutline && !!profile.includeSynopsis,
         updateWordCounts: !isOutline && !!profile.updateWordCounts,
@@ -166,7 +160,7 @@ export function buildComparableExportProfile(profile: ModalExportProfile) {
             : normalizeManuscriptCleanupOptions(profile.cleanup, cleanupFormatForOutputFormat(outputFormat)),
         splitMode: isSplit ? 'parts' : 'single',
         splitParts: isSplit ? clampSplitParts(profile.splitParts ?? 1) : 1,
-        selectionPolicy: isPdfManuscript ? 'full-book' : 'manual-range',
+        selectionPolicy: 'manual-range',
     };
 }
 

@@ -46,7 +46,7 @@ describe('exportProfileModel', () => {
         });
 
         expect(profile.templateProfileId).toBe('bundled-fiction-signature-literary');
-        expect(profile.selectionPolicy).toBe('full-book');
+        expect(profile.selectionPolicy).toBe('manual-range');
         expect(getModalExportProfileSummary(profile, templateProfiles as any)).toContain('Current settings');
         expect(getModalExportProfileSummary(profile, templateProfiles as any)).toContain('novel');
     });
@@ -108,6 +108,13 @@ describe('exportProfileModel', () => {
         it('ignores line-per-paragraph on Markdown, which Pandoc never sees', () => {
             const markdown: ModalExportProfile = { ...wordPreset, outputFormat: 'markdown', lineBreaksAsParagraphs: true };
             expect(exportProfilesMatch({ ...markdown, lineBreaksAsParagraphs: false }, markdown)).toBe(true);
+        });
+
+        it('tracks PDF order and subplot changes while accepting the legacy full-book policy', () => {
+            const pdf: ModalExportProfile = { ...wordPreset, outputFormat: 'pdf', selectionPolicy: 'full-book' };
+            expect(exportProfilesMatch({ ...pdf, selectionPolicy: 'manual-range' }, pdf)).toBe(true);
+            expect(exportProfilesMatch({ ...pdf, order: 'chronological' }, pdf)).toBe(false);
+            expect(exportProfilesMatch({ ...pdf, subplot: 'Main Plot' }, pdf)).toBe(false);
         });
 
         it('round-trips a preset through its persisted shape unchanged', () => {

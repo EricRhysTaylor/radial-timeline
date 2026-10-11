@@ -2,6 +2,8 @@
 
 Phase 1 implements the reliability and truth corrections approved after the [Publish audit](2026-10-10-publish-export-professionalization.md). It preserves existing PDF geometry, style IDs, export presets, cleanup options and manuscript selection policies. PDF ranges, ordinary-folder selection and the proof workspace remain the subsequent phase.
 
+Follow-up on October 11: [consistent scene selection and keyboard ranges](2026-10-11-publish-export-selection.md) implement the PDF range portion of Phase 2. The scope and remaining limits below describe the Phase 1 baseline.
+
 ## Changes
 
 - Markdown and outline readiness bypass publishing metadata and toolchain checks. The real manuscript runner now exports a selected Markdown excerpt without BookMeta, rather than reaching the PDF-named metadata error.

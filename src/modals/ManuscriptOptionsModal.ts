@@ -369,20 +369,14 @@ export class ManuscriptOptionsModal extends Modal {
         showExportCleanup: boolean;
         showSavePrecompile: boolean;
         showSplit: boolean;
-        showScope: boolean;
-        showOrdering: boolean;
-        showSubplotFilter: boolean;
         showManagePdfLayouts: boolean;
         chronoMessage: string | null;
-        lockSceneSelectionToFullBook: boolean;
     } {
         const isOutline = this.exportType === 'outline';
         const isManuscript = !isOutline;
         const isPdfManuscript = isManuscript && this.outputFormat === 'pdf';
         const isDocxManuscript = isManuscript && this.outputFormat === 'docx';
         const isMarkdownManuscript = isManuscript && this.outputFormat === 'markdown';
-        const lockSceneSelectionToFullBook = isPdfManuscript;
-        const showScope = !lockSceneSelectionToFullBook;
 
         return {
             isManuscript,
@@ -402,12 +396,8 @@ export class ManuscriptOptionsModal extends Modal {
             showExportCleanup: isManuscript,
             showSavePrecompile: isPdfManuscript,
             showSplit: isManuscript,
-            showScope,
-            showOrdering: showScope,
-            showSubplotFilter: showScope,
             showManagePdfLayouts: isPdfManuscript,
-            chronoMessage: showScope && !this.hasWhenDates ? 'No When dates found.' : null,
-            lockSceneSelectionToFullBook
+            chronoMessage: !this.hasWhenDates ? 'No When dates found.' : null,
         };
     }
 
@@ -1342,7 +1332,7 @@ export class ManuscriptOptionsModal extends Modal {
                 : getDefaultManuscriptCleanupOptions('markdown'),
             splitMode: mode.showSplit ? this.splitMode : 'single',
             splitParts: mode.showSplit && this.splitMode === 'parts' ? this.splitParts : 1,
-            selectionPolicy: mode.isPdfManuscript ? 'full-book' : 'manual-range',
+            selectionPolicy: 'manual-range',
             order: this.order,
             subplot: this.subplot,
             selectedLayoutId: mode.isPdfManuscript ? selectedLayoutId : undefined,
@@ -1880,8 +1870,6 @@ export class ManuscriptOptionsModal extends Modal {
         this.normalizeOutputFormatForOutline();
         const mode = this.getUiMode();
         this.sanitizeStateForMode(mode);
-        const shouldLockSelection = mode.lockSceneSelectionToFullBook;
-        const showSceneSelectionCards = !shouldLockSelection;
 
         this.purposeCard?.toggleClass('ert-hidden', !mode.isManuscript);
         this.manuscriptOptionsCard?.toggleClass('ert-hidden', !mode.showManuscriptPreset);
@@ -1896,9 +1884,6 @@ export class ManuscriptOptionsModal extends Modal {
         this.includeMatterToggle?.setValue(this.includeMatterUserChoice);
         this.exportCleanupCard?.toggleClass('ert-hidden', !mode.showExportCleanup);
         this.synopsisRow?.toggleClass('ert-hidden', !mode.showOutlinePreset);
-        this.scopeCard?.toggleClass('ert-hidden', !showSceneSelectionCards || !mode.showScope);
-        this.orderingCard?.toggleClass('ert-hidden', !showSceneSelectionCards || !mode.showOrdering);
-        this.filterCard?.toggleClass('ert-hidden', !mode.showSubplotFilter);
         this.splitCard?.toggleClass('ert-hidden', !mode.showSplit);
         this.formatPillRowEl?.toggleClass('ert-hidden', !mode.showFormatPills);
         this.formatStaticEl?.toggleClass('ert-hidden', !mode.showFormatStatic);
@@ -1913,25 +1898,6 @@ export class ManuscriptOptionsModal extends Modal {
 
         if (this.publishingHeadingTextEl) {
             this.publishingHeadingTextEl.setText(mode.isPdfManuscript ? 'PDF options' : 'Manuscript options');
-        }
-
-        let shouldReloadScenes = false;
-        if (!mode.showSubplotFilter && this.subplot !== 'All Subplots') {
-            this.subplot = 'All Subplots';
-            this.subplotDropdown?.setValue('All Subplots');
-            shouldReloadScenes = true;
-        }
-        if (shouldLockSelection && this.order !== 'narrative') {
-            this.order = 'narrative';
-            shouldReloadScenes = true;
-        }
-        if (shouldLockSelection) {
-            this.rangeStart = 1;
-            this.rangeEnd = Math.max(1, this.totalScenes);
-            this.updateRangeUI();
-        }
-        if (shouldReloadScenes) {
-            void this.loadScenesForOrder();
         }
 
         if (!mode.showSavePrecompile) this.saveMarkdownArtifact = false;
@@ -3009,7 +2975,11 @@ export class ManuscriptOptionsModal extends Modal {
             window.removeEventListener('pointerup', onPointerUp);
         };
 
-        const attach = (handle: HTMLElement, handleType: DragHandle) => {
+        const attach = (handle: HTMLElement, handleType: 'start' | 'end') => {
+            handle.tabIndex = 0;
+            handle.setAttribute('role', 'slider');
+            handle.setAttribute('aria-orientation', 'horizontal');
+            handle.addEventListener('keydown', evt => this.handleRangeKeyDown(handleType, evt));
             handle.onpointerdown = (evt: PointerEvent) => {
                 const effectiveHandle = handleType;
                 this.activeHandle = effectiveHandle;
@@ -3045,6 +3015,24 @@ export class ManuscriptOptionsModal extends Modal {
             this.detachEvents();
             this.detachEvents = undefined;
         }
+    }
+
+    private handleRangeKeyDown(handle: 'start' | 'end', evt: KeyboardEvent): void {
+        if (this.totalScenes === 0) return;
+        const current = handle === 'start' ? this.rangeStart : this.rangeEnd;
+        let position: number;
+        switch (evt.key) {
+            case 'ArrowLeft':
+            case 'ArrowDown': position = current - 1; break;
+            case 'ArrowRight':
+            case 'ArrowUp': position = current + 1; break;
+            case 'Home': position = 1; break;
+            case 'End': position = this.totalScenes; break;
+            default: return;
+        }
+        evt.preventDefault();
+        evt.stopPropagation();
+        this.updateRangeFromDrag(handle, Math.max(1, Math.min(position, this.totalScenes)));
     }
 
     // Data loading -----------------------------------------------------------
@@ -3091,11 +3079,9 @@ export class ManuscriptOptionsModal extends Modal {
 
     private async loadScenesForOrder(): Promise<void> {
         try {
-            const isPdfManuscript = this.isPdfManuscriptExport();
-            const effectiveOrder: ManuscriptOrder = isPdfManuscript ? 'narrative' : this.order;
             const isOpenScenes = this.isOpenScenesMode();
-            const effectiveSubplot = isPdfManuscript || this.subplot === 'All Subplots' || isOpenScenes ? undefined : this.subplot;
-            const result = await getSceneFilesByOrder(this.app, this.plugin, effectiveOrder, effectiveSubplot);
+            const effectiveSubplot = this.subplot === 'All Subplots' || isOpenScenes ? undefined : this.subplot;
+            const result = await getSceneFilesByOrder(this.app, this.plugin, this.order, effectiveSubplot);
             let { titles, whenDates, sceneNumbers, wordCounts } = result;
             let acts = result.acts;
             const paths = result.files.map(f => f.path);
@@ -3185,6 +3171,15 @@ export class ManuscriptOptionsModal extends Modal {
         this.rangeFillEl.style.left = `${startPercent}%`; // SAFE: inline style used for live drag track sizing
         this.rangeFillEl.style.width = `${Math.max(endPercent - startPercent, 1)}%`; // SAFE: inline style used for live drag track sizing
 
+        this.startHandleEl.setAttribute('aria-valuemin', '1');
+        this.startHandleEl.setAttribute('aria-valuemax', String(this.rangeEnd));
+        this.startHandleEl.setAttribute('aria-valuenow', String(this.rangeStart));
+        this.startHandleEl.setAttribute('aria-valuetext', this.formatCardTitle(this.rangeStart - 1));
+        this.endHandleEl.setAttribute('aria-valuemin', String(this.rangeStart));
+        this.endHandleEl.setAttribute('aria-valuemax', String(this.totalScenes));
+        this.endHandleEl.setAttribute('aria-valuenow', String(this.rangeEnd));
+        this.endHandleEl.setAttribute('aria-valuetext', this.formatCardTitle(this.rangeEnd - 1));
+
         this.renderRangeCards();
         this.syncRangeAvailability();
         this.updateSplitUi();
@@ -3268,17 +3263,13 @@ export class ManuscriptOptionsModal extends Modal {
         const tocMode: TocMode = mode.showToc ? this.tocMode : 'none';
         const includeMatter = mode.showIncludeMatter ? this.includeMatterUserChoice : false;
         const includeSynopsis = mode.isOutline ? this.includeSynopsisUserChoice : false;
-        const lockSceneSelection = mode.lockSceneSelectionToFullBook;
-        const submissionOrder: ManuscriptOrder = lockSceneSelection ? 'narrative' : this.order;
-        const submissionRangeStart = lockSceneSelection ? undefined : this.rangeStart;
-        const submissionRangeEnd = lockSceneSelection ? undefined : this.rangeEnd;
         const isOpenScenes = this.isOpenScenesMode();
-        const submissionSubplot = lockSceneSelection || isOpenScenes
+        const submissionSubplot = isOpenScenes
             ? undefined
             : this.subplot === 'All Subplots'
                 ? undefined
                 : this.subplot;
-        const submissionScenePathFilter = !lockSceneSelection && isOpenScenes
+        const submissionScenePathFilter = isOpenScenes
             ? this.getSelectedScenePaths()
             : undefined;
 
@@ -3297,12 +3288,13 @@ export class ManuscriptOptionsModal extends Modal {
             const selectedProfile = this.selectedExportProfile || this.defaultExportProfile || this.getTemplateList()[0];
             const selectedLayoutId = this.resolveLayoutIdForProfile(selectedProfile);
             const outcome = await this.onSubmit({
-                order: submissionOrder,
+                order: this.order,
                 tocMode,
                 includeSceneIdInToc: tocMode !== 'none' ? this.includeSceneId : false,
                 includeSceneIdInHeading: this.includeSceneId,
-                rangeStart: submissionRangeStart,
-                rangeEnd: submissionRangeEnd,
+                // Open-scene paths already contain the chosen range.
+                rangeStart: isOpenScenes ? undefined : this.rangeStart,
+                rangeEnd: isOpenScenes ? undefined : this.rangeEnd,
                 subplot: submissionSubplot,
                 scenePathFilter: submissionScenePathFilter,
                 exportType: this.exportType,

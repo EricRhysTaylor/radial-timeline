@@ -351,11 +351,8 @@ export class CommandRegistrar {
             const selectedLayoutIdForExport = templateAccess?.effectiveLayout?.id || result.selectedLayoutId;
             const usedTemplateFallback = templateAccess?.usedFallback === true;
 
-            const lockSceneSelectionToFullBook = result.exportType === 'manuscript' && result.outputFormat === 'pdf';
-            const effectiveOrder = lockSceneSelectionToFullBook ? 'narrative' : result.order;
-            const effectiveSubplot = lockSceneSelectionToFullBook ? undefined : result.subplot;
-            const effectiveRangeStart = lockSceneSelectionToFullBook ? undefined : result.rangeStart;
-            const effectiveRangeEnd = lockSceneSelectionToFullBook ? undefined : result.rangeEnd;
+            const effectiveOrder = result.order;
+            const effectiveSubplot = result.subplot;
             const includeMatter = result.exportType === 'manuscript' && (result.includeMatter ?? false);
             const scenes = await getSceneFilesByOrder(this.app, this.plugin, effectiveOrder, undefined, includeMatter);
             const selection: ManuscriptSceneSelection = {
@@ -409,7 +406,7 @@ export class CommandRegistrar {
                 };
             }
 
-            const slicedSelection = this.sliceSelection(filteredSelection, effectiveRangeStart, effectiveRangeEnd, includeMatter);
+            const slicedSelection = this.sliceSelection(filteredSelection, result.rangeStart, result.rangeEnd, includeMatter);
             if (slicedSelection.files.length === 0) {
                 new Notice('Selected range is empty.');
                 return {};

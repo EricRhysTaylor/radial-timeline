@@ -215,7 +215,8 @@ export class OnboardingModal extends Modal {
   private extractModel: ManuscriptModel | null = null;
   private abortController: AbortController | null = null;
 
-  constructor(app: App, plugin: RadialTimelinePlugin) {
+  /** `onClosed` lets the opener refresh after an import (Book Manager redraws its list). */
+  constructor(app: App, plugin: RadialTimelinePlugin, private readonly onClosed?: () => void) {
     super(app);
     this.plugin = plugin;
     this.service = new OnboardingService(plugin);
@@ -300,6 +301,7 @@ export class OnboardingModal extends Modal {
   onClose(): void {
     this.abortController?.abort();
     this.contentEl.empty();
+    this.onClosed?.();
   }
 
   // ---- Views -------------------------------------------------------------

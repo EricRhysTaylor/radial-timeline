@@ -579,7 +579,7 @@ export function inspectScrivenerExport(files: ScrivenerFile[], outline: OutlineS
   const unmatched = files.filter((_, index) => !rowTitles.includes(fileTitles[index])).map(file => titleFromExportFileName(file.fileName));
   if (unmatched.length) {
     problems.push({
-      problem: `${unmatched.length} scene file${unmatched.length === 1 ? ' is' : 's are'} not in the outline: ${listNames(unmatched)}.`,
+      problem: unmatched.length === 1 ? `${listNames(unmatched)} is not in the outline.` : `${unmatched.length} scene files are not in the outline: ${listNames(unmatched)}.`,
       ifImported: `${listNames(unmatched)} ${unmatched.length === 1 ? 'imports' : 'import'} without outline properties, after the scenes the outline lists.`,
     });
   }
@@ -591,7 +591,7 @@ export function inspectScrivenerExport(files: ScrivenerFile[], outline: OutlineS
     .map(row => readColumn(row, 'Title') ?? ''); // SAFE: a row reaches here only through its title, which can be blank
   if (missing.length) {
     problems.push({
-      problem: `${missing.length} outline document${missing.length === 1 ? ' has' : 's have'} text but no exported file: ${listNames(missing)}.`,
+      problem: missing.length === 1 ? `${listNames(missing)} has text in the outline but no exported file.` : `${missing.length} outline documents have text but no exported file: ${listNames(missing)}.`,
       ifImported: `${listNames(missing)} ${missing.length === 1 ? 'is' : 'are'} not imported.`,
     });
   }

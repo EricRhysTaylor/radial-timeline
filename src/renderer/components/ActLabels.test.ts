@@ -31,9 +31,7 @@ function labelArcs(numActs: number): Array<{ start: number; end: number }> {
 }
 
 describe('renderActLabels', () => {
-    // GitHub #31: labels used to end just before their spoke, which put each
-    // one over the previous act's last scenes. A four-act book read as if its
-    // scenes were in the wrong quadrant.
+    // Design choice: each label starts at its spoke and reads into its own act.
     it.each([3, 4, 5, 7, 12])('keeps every label inside its own act segment (%i acts)', numActs => {
         const arcs = labelArcs(numActs);
         expect(arcs).toHaveLength(numActs);

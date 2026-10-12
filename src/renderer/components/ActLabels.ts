@@ -13,9 +13,8 @@ export function renderActLabels(params: {
   const actLabelRadius = outerMostOuterRadius + actLabelOffset;
   for (let act = 0; act < numActs; act++) {
     const angle = (act * 2 * Math.PI) / numActs - Math.PI / 2;
-    // Left-justify each act label just clockwise of its spoke, so the label
-    // sits over the act it names. Ending it before the spoke put every label
-    // over the previous act's last scenes (GitHub #31).
+    // Left-justify each act label just clockwise of its spoke, reading into
+    // the act it names.
     const anchorOffset = 0.02;
     const startAngleAct = angle + anchorOffset;
     // Long enough for long titles, but never past the next act's spoke.

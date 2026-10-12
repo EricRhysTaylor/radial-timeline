@@ -1,9 +1,5 @@
 import type { NoteType } from './yamlTemplateNormalize';
-import {
-    SHARED_PART_EPIGRAPH_BY_FIELD_KEY,
-    SHARED_PART_EPIGRAPH_FIELD_KEY,
-    SHARED_PART_FIELD_KEY,
-} from './timelineParts';
+import { SHARED_PART_FIELD_KEY } from './timelineParts';
 
 /**
  * Optional-managed note properties.
@@ -57,24 +53,15 @@ export interface OptionalManagedKeyDefinition {
 
 /**
  * Part markers are author-facing publishing structure: a boundary that owns a
- * range of scenes, plus the epigraph printed on its opener. They sit immediately
- * before `Chapter` because the structural nesting is Part → Chapter → Scene.
+ * range of scenes. They sit immediately before `Chapter` because the structural
+ * nesting is Part → Chapter → Scene. Part epigraphs are not scene fields; they
+ * live in the book's layout options and pair with markers by position.
  */
 const SCENE_OPTIONAL_MANAGED_KEYS: readonly OptionalManagedKeyDefinition[] = [
     {
         key: SHARED_PART_FIELD_KEY,
         anchorBefore: 'Chapter',
         anchorAfter: ['Duration', 'When', 'Act', 'Class'],
-    },
-    {
-        key: SHARED_PART_EPIGRAPH_FIELD_KEY,
-        anchorBefore: 'Chapter',
-        anchorAfter: [SHARED_PART_FIELD_KEY, 'Duration', 'When', 'Act', 'Class'],
-    },
-    {
-        key: SHARED_PART_EPIGRAPH_BY_FIELD_KEY,
-        anchorBefore: 'Chapter',
-        anchorAfter: [SHARED_PART_EPIGRAPH_FIELD_KEY, 'Duration', 'When', 'Act', 'Class'],
     },
 ];
 

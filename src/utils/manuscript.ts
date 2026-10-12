@@ -1234,9 +1234,7 @@ export async function assembleManuscript(
       textParts.push(`${bodyText}\n\n`);
     } else if (modernClassicState.enabled) {
       // RT terminology → structure mapping:
-      //   Acts (from each scene's `Act:` frontmatter field, the canonical
-      //         source that also drives the timeline ring partitions)
-      //                                    → \rtPart{Roman}{quote}{attr} — Part page
+      //   Parts (from Part markers)        → \rtPart{Roman}{title}{quote}{attr} — Part page
       //   Chapters (from Chapter fields)   → \rtChapter{n}{Title} — chapter opener
       //   Scenes (scene notes)             → \rtSceneSep{roman} — scene opener
       // A Part opens where the author put a `Part:` marker — the same way a

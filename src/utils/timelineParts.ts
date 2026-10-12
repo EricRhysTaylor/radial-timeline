@@ -14,8 +14,6 @@ import { isSceneItem } from './sceneHelpers';
  */
 
 export const SHARED_PART_FIELD_KEY = 'Part';
-export const SHARED_PART_EPIGRAPH_FIELD_KEY = 'Part Epigraph';
-export const SHARED_PART_EPIGRAPH_BY_FIELD_KEY = 'Part Epigraph By';
 
 /**
  * A resolved marker. `titled` is carried explicitly rather than inferred from
@@ -82,8 +80,8 @@ export function readPartMarker(frontmatter?: Record<string, unknown>): PartMarke
     if (!frontmatter) return null;
 
     for (const [key, value] of Object.entries(frontmatter)) {
-        // 'Part Epigraph' normalizes to 'partepigraph', so sibling fields cannot
-        // be mistaken for the marker itself.
+        // A sibling such as an author's own 'Part Epigraph' normalizes to
+        // 'partepigraph', so it cannot be mistaken for the marker itself.
         if (normalizeKey(key) !== 'part') continue;
         return resolvePartMarkerValue(value);
     }

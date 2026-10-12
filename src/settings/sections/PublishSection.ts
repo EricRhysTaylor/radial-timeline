@@ -32,6 +32,7 @@ import {
     collapseTimelineChapterMarkersByResolvedBoundary,
     resolveTimelineChapterMarkers
 } from '../../utils/timelineChapters';
+import { resolveTimelinePartMarkers, type TimelinePartMarker } from '../../utils/timelineParts';
 import {
     describeMatterReadiness
 } from '../../services/PublishingValidationService';
@@ -801,10 +802,6 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         }
         return output;
     };
-    const getActCount = (): number => {
-        const parsed = Math.floor(Number(plugin.settings.actCount ?? 3));
-        return Number.isFinite(parsed) && parsed > 0 ? parsed : 3;
-    };
     const getActiveBookReference = (): BookProfile | null => {
         const active = getActiveBook(plugin.settings);
         if (!active) return null;
@@ -825,6 +822,76 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             if (!Object.keys(activeBook.layoutOptions).length) delete activeBook.layoutOptions;
         }
         await plugin.saveSettings();
+    };
+
+    // Rows follow the book's Part markers, not its act count. Saved entries past
+    // the last marker stay listed so they can be cleared.
+    const renderPartEpigraphRows = async (rows: HTMLElement, layoutId: string, book: BookProfile): Promise<void> => {
+        let markers: TimelinePartMarker[];
+        try {
+            const scenes = await plugin.getSceneData({ sourcePath: book.sourceFolder });
+            markers = resolveTimelinePartMarkers(buildTimelineChapterResolverItems(scenes));
+        } catch (error) {
+            console.error('[Publish] Failed to load Part markers for epigraphs:', error);
+            rows.createDiv({ cls: 'ert-layout-special-empty', text: 'Could not read this book’s Part markers.' });
+            return;
+        }
+
+        const scopedOptions = getLayoutOptionsForActiveBook(layoutId);
+        const partEpigraphs = scopedOptions.partEpigraphs || [];
+        const partEpigraphAttributions = scopedOptions.partEpigraphAttributions || [];
+        const rowCount = Math.max(markers.length, partEpigraphs.length, partEpigraphAttributions.length);
+        if (rowCount === 0) {
+            rows.createDiv({ cls: 'ert-layout-special-empty', text: 'No Part markers yet. Right-click a scene and choose Set part… to add one.' });
+            return;
+        }
+
+        for (let partIndex = 0; partIndex < rowCount; partIndex++) {
+            const marker = markers[partIndex];
+            const numeral = toRomanNumeral(partIndex + 1) || String(partIndex + 1);
+            const partLabel = !marker
+                ? `Part ${numeral} (no marker)`
+                : marker.titled && marker.title ? `Part ${numeral} · ${marker.title}` : `Part ${numeral}`;
+
+            const epigraphRow = rows.createDiv({ cls: 'ert-layout-epigraph-row' });
+            epigraphRow.createDiv({ cls: 'ert-layout-epigraph-act', text: partLabel });
+
+            const fields = epigraphRow.createDiv({ cls: 'ert-layout-epigraph-fields' });
+
+            const quoteLabel = fields.createDiv({ cls: 'ert-layout-epigraph-label', text: 'Quote' });
+            quoteLabel.setAttr('role', 'note');
+            const quoteInput = fields.createEl('textarea', {
+                cls: 'ert-input ert-layout-epigraph-quote',
+                attr: { rows: '2' }
+            });
+            quoteInput.value = partEpigraphs[partIndex] || '';
+            plugin.registerDomEvent(quoteInput, 'change', () => {
+                const nextQuotes = [...(getLayoutOptionsForActiveBook(layoutId).partEpigraphs || [])];
+                const nextAttributions = [...(getLayoutOptionsForActiveBook(layoutId).partEpigraphAttributions || [])];
+                nextQuotes[partIndex] = quoteInput.value;
+                void saveLayoutOptionsForActiveBook(layoutId, {
+                    partEpigraphs: nextQuotes,
+                    partEpigraphAttributions: nextAttributions
+                });
+            });
+
+            const attributionLabel = fields.createDiv({ cls: 'ert-layout-epigraph-label', text: 'Attribution' });
+            attributionLabel.setAttr('role', 'note');
+            const attributionInput = fields.createEl('input', {
+                type: 'text',
+                cls: 'ert-input ert-layout-epigraph-attribution'
+            });
+            attributionInput.value = partEpigraphAttributions[partIndex] || '';
+            plugin.registerDomEvent(attributionInput, 'change', () => {
+                const nextQuotes = [...(getLayoutOptionsForActiveBook(layoutId).partEpigraphs || [])];
+                const nextAttributions = [...(getLayoutOptionsForActiveBook(layoutId).partEpigraphAttributions || [])];
+                nextAttributions[partIndex] = attributionInput.value;
+                void saveLayoutOptionsForActiveBook(layoutId, {
+                    partEpigraphs: nextQuotes,
+                    partEpigraphAttributions: nextAttributions
+                });
+            });
+        }
     };
 
     const layoutRowsContainer = layoutPanel.createDiv({ cls: 'ert-layout-rows' });
@@ -1201,8 +1268,9 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             if (showsSpecialOptions && expanded) {
                 const panel = row.createDiv({ cls: 'ert-layout-special-panel' });
 
-                // Parts = Acts: determined by Act count in settings.
                 // Epigraphs are optional quotes printed after each PART page.
+                // One row per Part marker in the active book, paired by position
+                // exactly as export prints them.
                 if (specialCapabilities.hasEpigraphs) {
                     const epigraphTitle = panel.createDiv({ cls: 'ert-layout-special-title', text: 'Part epigraphs (optional)' });
                     epigraphTitle.setAttr('role', 'heading');
@@ -1212,55 +1280,8 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     if (!activeBook) {
                         panel.createDiv({ cls: 'ert-layout-special-empty', text: 'Select an active book to edit layout-specific options.' });
                     } else {
-                        const actCount = getActCount();
-                        const scopedOptions = getLayoutOptionsForActiveBook(layout.id);
-                        const partEpigraphs = scopedOptions.partEpigraphs || [];
-                        const partEpigraphAttributions = scopedOptions.partEpigraphAttributions || [];
                         const rows = panel.createDiv({ cls: 'ert-layout-epigraph-rows' });
-
-                        for (let actIndex = 0; actIndex < actCount; actIndex++) {
-                            const epigraphRow = rows.createDiv({ cls: 'ert-layout-epigraph-row' });
-                            epigraphRow.createDiv({
-                                cls: 'ert-layout-epigraph-act',
-                                text: `Act ${toRomanNumeral(actIndex + 1) || String(actIndex + 1)}`
-                            });
-
-                            const fields = epigraphRow.createDiv({ cls: 'ert-layout-epigraph-fields' });
-
-                            const quoteLabel = fields.createDiv({ cls: 'ert-layout-epigraph-label', text: 'Quote' });
-                            quoteLabel.setAttr('role', 'note');
-                            const quoteInput = fields.createEl('textarea', {
-                                cls: 'ert-input ert-layout-epigraph-quote',
-                                attr: { rows: '2' }
-                            });
-                            quoteInput.value = partEpigraphs[actIndex] || '';
-                            plugin.registerDomEvent(quoteInput, 'change', () => {
-                                const nextQuotes = [...(getLayoutOptionsForActiveBook(layout.id).partEpigraphs || [])];
-                                const nextAttributions = [...(getLayoutOptionsForActiveBook(layout.id).partEpigraphAttributions || [])];
-                                nextQuotes[actIndex] = quoteInput.value;
-                                void saveLayoutOptionsForActiveBook(layout.id, {
-                                    partEpigraphs: nextQuotes,
-                                    partEpigraphAttributions: nextAttributions
-                                });
-                            });
-
-                            const attributionLabel = fields.createDiv({ cls: 'ert-layout-epigraph-label', text: 'Attribution' });
-                            attributionLabel.setAttr('role', 'note');
-                            const attributionInput = fields.createEl('input', {
-                                type: 'text',
-                                cls: 'ert-input ert-layout-epigraph-attribution'
-                            });
-                            attributionInput.value = partEpigraphAttributions[actIndex] || '';
-                            plugin.registerDomEvent(attributionInput, 'change', () => {
-                                const nextQuotes = [...(getLayoutOptionsForActiveBook(layout.id).partEpigraphs || [])];
-                                const nextAttributions = [...(getLayoutOptionsForActiveBook(layout.id).partEpigraphAttributions || [])];
-                                nextAttributions[actIndex] = attributionInput.value;
-                                void saveLayoutOptionsForActiveBook(layout.id, {
-                                    partEpigraphs: nextQuotes,
-                                    partEpigraphAttributions: nextAttributions
-                                });
-                            });
-                        }
+                        void renderPartEpigraphRows(rows, layout.id, activeBook);
                     }
                 }
 

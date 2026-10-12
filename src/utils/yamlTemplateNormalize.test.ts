@@ -40,7 +40,7 @@ describe('yamlTemplateNormalize', () => {
         const baseKeys = getBaseKeys('Scene', DEFAULT_SETTINGS);
 
         // Ordered — so a scene that carries them keeps them in a stable place.
-        for (const key of ['Part', 'Part Epigraph', 'Part Epigraph By']) {
+        for (const key of ['Part']) {
             expect(order).toContain(key);
             // ...but absent from the template, so the audit never demands them and
             // note creation never seeds them. This pairing is the whole point of

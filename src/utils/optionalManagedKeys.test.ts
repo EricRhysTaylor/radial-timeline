@@ -5,7 +5,7 @@ import {
     withOptionalManagedKeys,
 } from './optionalManagedKeys';
 
-const PART_KEYS = ['Part', 'Part Epigraph', 'Part Epigraph By'];
+const PART_KEYS = ['Part'];
 
 /** The Scene base template's key order, trimmed to the region that matters here. */
 const SCENE_ORDER = ['ID', 'Class', 'Act', 'When', 'Duration', 'Chapter', 'Synopsis'];
@@ -34,7 +34,7 @@ describe('optionalManagedKeys', () => {
     });
 
     describe('withOptionalManagedKeys', () => {
-        it('places Part fields immediately before Chapter, in declaration order', () => {
+        it('places Part immediately before Chapter', () => {
             expect(withOptionalManagedKeys('Scene', SCENE_ORDER)).toEqual([
                 'ID',
                 'Class',
@@ -42,8 +42,6 @@ describe('optionalManagedKeys', () => {
                 'When',
                 'Duration',
                 'Part',
-                'Part Epigraph',
-                'Part Epigraph By',
                 'Chapter',
                 'Synopsis',
             ]);
@@ -60,8 +58,6 @@ describe('optionalManagedKeys', () => {
                 'When',
                 'Duration',
                 'Part',
-                'Part Epigraph',
-                'Part Epigraph By',
                 'Synopsis',
             ]);
         });
@@ -71,8 +67,6 @@ describe('optionalManagedKeys', () => {
                 'ID',
                 'Synopsis',
                 'Part',
-                'Part Epigraph',
-                'Part Epigraph By',
             ]);
         });
 
@@ -80,13 +74,11 @@ describe('optionalManagedKeys', () => {
             const withPart = ['ID', 'Class', 'Part', 'Chapter'];
             const result = withOptionalManagedKeys('Scene', withPart);
             expect(result.filter((key) => key === 'Part')).toHaveLength(1);
-            // The template's own placement wins; only the missing siblings are added.
+            // The template's own placement wins.
             expect(result).toEqual([
                 'ID',
                 'Class',
                 'Part',
-                'Part Epigraph',
-                'Part Epigraph By',
                 'Chapter',
             ]);
         });

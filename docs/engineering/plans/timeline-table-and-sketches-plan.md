@@ -73,7 +73,7 @@ One row per scene, a page you scroll down, and columns you can rearrange. That's
 
 **Data.** The Base's own filters choose the rows; `BasesQueryResult.data` gives the entries. RT adds what Bases can't know:
 - **Order.** Default to manuscript order, the same as the wheel, with beat notes interleaved where they sit. A sort the author sets in the Base toolbar (`config.getSort()`) overrides it.
-- **Groups.** Group by Act, using the timeline's act labels (`actLabelsRaw`). An author-chosen `groupBy` wins.
+- **Groups.** Use Obsidian's own grouping (`groupBy`, read through `BasesQueryResult.groupedData`) rather than grouping inside the view. Default to grouping by Act, with group headers labelled from the timeline's act labels (`actLabelsRaw`). Then the Group menu added in 1.14.3 (reorder, hide, add groups) works in the Timeline table unchanged; see §6.
 - **Columns.** By default, the managed keys of the scene template, core plus advanced when enabled, taken from `buildScenePropertyDefinitions`, so the table mirrors the YAML exactly. The author can add, hide or reorder columns through the normal Bases properties menu (`config.getOrder()`).
 
 **Rings column: the vertical linear view.** One narrow column (about 80px for five rings) that holds a tiny square for every subplot ring, in the wheel's ring order (`masterSubplotOrder`).
@@ -114,7 +114,7 @@ An author-facing note type, `Class: Sketch`, for story material that has a place
 - **Lives in the book folder** beside the scenes, so the book's table finds it, and Promote converts it in place without moving it (Eric, 2026-10-12).
 - **Shown only in the Timeline table** (decided 2026-10-11). The wheel needs no change: it renders `class === 'scene'` only, so sketches already stay off it. They are also excluded from exports, numbering, word counts and targets, Pulse, Summary and Gossamer.
 - **Feeds Inquiry** as outline context (decided 2026-10-11), and no other AI pass.
-- **Creating a sketch.** A **+ New sketch** button in the Timeline table calls `createFileForView(baseFileName, frontmatterProcessor)`; the API has had it since 1.10.2. The processor sets `Class: Sketch` and prefills Act and Subplot from the group or the selected row. This is the "add a row and get a timeline entry" flow. The sketch stays in the table until it is promoted.
+- **Creating a sketch.** A **+ New sketch** button in the Timeline table creates the note **in the book's `sourceFolder`**, with `Class: Sketch` and Act and Subplot prefilled from the group or the selected row, then opens its drawer. This is the "add a row and get a timeline entry" flow. The sketch stays in the table until it is promoted. Don't use `createFileForView` here: it follows Obsidian's new-note location, and with the tables in `Radial Timeline/Tables/`, that could drop a sketch outside the book folder. Create the file with the vault API at the book path instead.
 - **The sketch drawer** (Eric, 2026-10-12) is how a sketch gets room to be written:
   - **Collapsed,** a sketch row is one line, and its Synopsis cell shows the Synopsis property, or the first line of the note's text when that's empty.
   - **Open,** by clicking the row or its chevron (or Enter), a full-width drawer opens beneath the row, spanning every column. The scene rows around it stay compact. Esc or the chevron closes it. Several drawers can be open at once, and a view option opens all sketches.
@@ -163,6 +163,20 @@ This change is independent of the table and can ship first.
 - **Saga scope** (`timelineScope === 'saga'`) opens a saga table covering every book with `includeInSaga`, grouped by book and then by act. It lives with the book tables as `Radial Timeline/Tables/Saga.base`.
 - **No fallbacks.** If the active book has no `sourceFolder`, the button explains why and opens Book Manager. It never shows a vault-wide table instead.
 
+## 6. Using Obsidian 1.14 Bases features (proposed 2026-10-12)
+
+Reviewed against Obsidian 1.14.4 (Eric's install) and the `obsidian@1.14.4` API typings. The only Bases API change since 1.13.0 is `BasesConfigFileView.groupOrder` (1.14.3). The rest of 1.14's Bases work is in the app: the kanban layout, collapsible groups, the Group menu, better date rendering in group headers, and right-to-left tables. RT's `minAppVersion` can stay 1.13.0; on older versions these extras are simply absent.
+
+- **Group menu and `groupOrder` (1.14.3).** Because the Timeline table reads `groupedData` (§2), authors get Obsidian's Group menu for free: reorder acts, hide one, or **add an empty group**. Create book base writes `groupOrder` with every act from the book's act count (for example `[1, 2, 3]`) plus `null`. So an act with nothing in it yet still shows as a header to plan into, and notes without an Act gather in a "No act" group, where unplaced sketches and not-yet-promoted notes sit. To verify: that `groupedData` honors `groupOrder` for custom views as it does for the built-in ones.
+- **Collapsible groups (1.14.0).** The built-in Table, Cards and List layouts can now collapse groups, so the Timeline table should too: collapse Act 1 while working in Act 2. Collapsed state is view state (`config.set` or in memory), never YAML.
+- **A Board view at no cost (kanban, 1.14.0–1.14.4).** Create book base can add a built-in Kanban view to each book's table file, grouped by Act. That gives a Save-the-Cat-style board of scene and sketch cards. Dragging a card to another column writes its Act (Obsidian does this), and the "+" in a column creates a note with that Act. A second board grouped by Status (Todo, Working, Complete) is equally free.
+  - **Don't group a board by Subplot.** It's a list, and a column drag would replace memberships rather than follow the move-or-add contract of ring drags.
+  - **New notes from a board's "+"** follow Obsidian's new-note location, not the book folder (see *Creating a sketch* above). Either point authors at **+ New sketch** in the Timeline table, or verify whether a board can be scoped to create in the book folder.
+- **Date rendering in group headers (1.14.3).** Nothing to do. The Timeline table's own cells use RT's When formatter (§4).
+- **Right-to-left tables (1.14.1).** None of RT's languages are right-to-left today. If one is added, the Timeline table should mirror the built-in table's RTL behavior.
+- **Base font size per device (1.14.2).** The Timeline table should size its text from the same Bases font-size setting, so the author's per-device choice applies to it too.
+- **Embedding (not new, but worth using).** A view of a `.base` file can be embedded in any note, so an author can put the live Timeline table inside a book's outline note, under the spine. The view must size itself to its content when embedded.
+
 ## Considered and set aside: a lanes layout ("Unwrapped")
 
 We considered a linear layout of the timeline view itself, with each ring pulled into a horizontal lane and a sideways scroll in manuscript order. It answers the same requests and has two real benefits: every scene gets the same size, and gaps in a plotline stand out. It is also the familiar "plot grid" of other writing tools.
@@ -180,7 +194,8 @@ The Rings column in the Timeline table delivers the rhythm benefit and the reque
 3. **Spikes, only if wanted:**
    - **Promote in Obsidian's built-in Table view** (wanted, Eric 2026-10-12): a formula column such as `link("obsidian://radial-timeline-…")` handled by an RT protocol handler (precedent: `AI_JOBS_PROTOCOL_ACTION`), shown as the `file-up` icon if Bases allows an icon as link text. It's unverified that Bases renders these as clickable;
    - "Follow timeline filters," so the table mirrors the search panel's filter;
-   - sketches on the wheel.
+   - sketches on the wheel;
+   - whether `groupedData` honors `groupOrder` for custom views, and whether a Kanban view's "+" can create notes in the book folder.
 
 ## Acceptance (live vault)
 
@@ -207,4 +222,6 @@ The title bar keeps its own format (decided 2026-10-12).
 
 Also settled on 2026-10-12: the icons (`file-up` for Promote, `table-2` for the Timeline table button), and one table per book, following the timeline. All tables, saga included, live together in `Radial Timeline/Tables/`, with no new settings.
 
-Nothing else is open. The remaining unknowns are implementation spikes (phase 3).
+Proposed 2026-10-12, waiting for Eric: the 1.14 additions in §6 (native grouping with `groupOrder`, collapsible act groups, and built-in Act and Status boards in each book's table file).
+
+The remaining unknowns are implementation spikes (phase 3).

@@ -13,12 +13,15 @@ export function renderActLabels(params: {
   const actLabelRadius = outerMostOuterRadius + actLabelOffset;
   for (let act = 0; act < numActs; act++) {
     const angle = (act * 2 * Math.PI) / numActs - Math.PI / 2;
-    // Right-justify act labels just to the LEFT of the Act axis spoke
-    // Text reads left-to-right and ends just before the tick
+    // Left-justify each act label just clockwise of its spoke, so the label
+    // sits over the act it names. Ending it before the spoke put every label
+    // over the previous act's last scenes (GitHub #31).
     const anchorOffset = 0.02;
-    const endAngleAct = angle - anchorOffset;
-    const startAngleAct = endAngleAct - (Math.PI / 3); // Long enough arc for long titles
-    
+    const startAngleAct = angle + anchorOffset;
+    // Long enough for long titles, but never past the next act's spoke.
+    const arcLength = Math.min(Math.PI / 3, (2 * Math.PI) / numActs - 2 * anchorOffset);
+    const endAngleAct = startAngleAct + arcLength;
+
     const actPathId = `actPath-${act}`;
     const labelText = resolveActLabel(act, actLabels);
     svg += `
@@ -27,7 +30,7 @@ export function renderActLabels(params: {
         A ${formatNumber(actLabelRadius)} ${formatNumber(actLabelRadius)} 0 0 1 ${formatNumber(actLabelRadius * Math.cos(endAngleAct))} ${formatNumber(actLabelRadius * Math.sin(endAngleAct))}
       " fill="none" />
       <text class="rt-act-label" fill="${maxStageColor}">
-        <textPath href="#${actPathId}" startOffset="100%" text-anchor="end">${labelText}</textPath>
+        <textPath href="#${actPathId}" startOffset="0" text-anchor="start">${labelText}</textPath>
       </text>
     `;
   }

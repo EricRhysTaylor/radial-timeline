@@ -11,7 +11,7 @@ Status: proposed (Eric, 2026-10-11). Design only; nothing here is built.
 - **No gating.** Pro is free for everyone; the Timeline table and sketches are listed on the website's Pro page as Pro features for fun.
 - **Promote's template** follows the Core/Advanced setting by default and shows it as a preselected toggle in the dialog. This was Claude's recommendation, since Eric was unsure; it's easy to revisit.
 **Decided 2026-10-12 (Eric):**
-- **One When formatter** for the hover, the Timeline table and (proposed) the title bar. It keeps the current hover format with the weekday added and the `@` kept: `Wed Jan 3, 2085 @ 2:20PM`. A date-only When shows no time; it no longer reads "@ Noon". See §4.
+- **One When formatter** for the scene hover and the Timeline table. The title bar keeps its own format. It keeps the current hover format with the weekday added and the `@` kept: `Wed Jan 3, 2085 @ 2:20PM`. A date-only When shows no time; it no longer reads "@ Noon". See §4.
 - **A sketch's text stays in the note body**, never in YAML.
 - **Promote is a Lucide icon button**, and Promote in Obsidian's built-in Table view is wanted (still a spike, phase 3).
 
@@ -132,7 +132,7 @@ Today RT formats a scene's When in two different ways:
 - **Hover synopsis:** `formatDateForDisplay` (`src/utils/hoverMetadata.ts`) gives "May 10, 2085 @ 2:20PM", with Duration on its own line.
 - **Title bar** (the scene-time badge in a markdown view header): `sceneTimeLabel` (`src/utils/sceneTimeLabel.ts`) gives "☀ 2:20 PM Wed · 2 hours → 4:20 PM", and repeats the raw YAML (`2085-05-10`) for a date-only When.
 
-**Decided 2026-10-12: one formatter.**
+**Decided 2026-10-12: one formatter for the scene hover and the Timeline table.**
 - **Format.** The current hover format with the weekday added and the `@` kept: `Wed Jan 3, 2085 @ 2:20PM`.
 - **The year always shows**, as it does in the hover today.
 - **A date-only When shows no time:** `Thu May 10, 2085`. `parseWhenField` reads date-only values as local noon, so `formatDateForDisplay` currently prints "@ Noon" for a time the author never set. The formatter needs the has-clock signal that `sceneTimeLabel` already computes from the raw string (or an equivalent flag carried on the item). "@ Noon" and "@ Midnight" appear only when the YAML actually says 12:00 or 00:00.
@@ -141,7 +141,7 @@ Today RT formats a scene's When in two different ways:
 - **Search** keeps matching the displayed string. `formatHoverMetadataValue` routes Dates through the same formatter.
 - **Sorting** in the table uses the real date, never the text.
 
-**Title bar (proposed; Eric to confirm).** The badge keeps its extras (sun or moon, end time, elapsed, cues), but its date and clock come from the same formatter. For example `☀ Wed Jan 3, 2085 @ 2:20PM · 2 hours → 4:20PM`, and `Thu May 10, 2085 · 2 hours` instead of the raw `2085-05-10`.
+**The title bar stays separate** (decided 2026-10-12). The scene-time badge (`sceneTimeLabel`) keeps its own compact clock format, with its sun or moon, end time, elapsed time and cues. The shared formatter covers only the scene hover and the Timeline table.
 
 This change is independent of the table and can ship first.
 
@@ -184,6 +184,7 @@ Settled on 2026-10-11 (see the top of this doc): the Sketch name, table-only ske
 
 Settled on 2026-10-12: one When formatter, no "@ Noon" for date-only values, sketch text in the note body, and Lucide icon Promote buttons, with built-in Table support wanted.
 
+The title bar keeps its own format (decided 2026-10-12).
+
 Still open:
-1. **Title bar format.** Should the scene-time badge's date and clock also come from the shared formatter (§4)?
-2. **Icon choice:** `file-up` for Promote, or another Lucide icon?
+1. **Icon choice:** `file-up` for Promote, or another Lucide icon?

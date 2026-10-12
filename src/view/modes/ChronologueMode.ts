@@ -15,6 +15,7 @@ import { SceneInteractionManager } from '../interactions/SceneInteractionManager
 import { updateSynopsisTitleColor } from '../interactions/SynopsisTitleColorManager';
 import { maybeHandleZeroDraftClick } from '../interactions/ZeroDraftHandler';
 import { setupSceneContextMenu } from '../interactions/SceneContextMenu';
+import { linkSceneHoverToTimetable } from '../interactions/TimetableLink';
 import type { RadialTimelineView } from '../TimeLineView';
 import { t } from '../../i18n';
 
@@ -41,6 +42,7 @@ export function setupChronologueMode(view: RadialTimelineView, svg: SVGSVGElemen
     setupSceneClickInteractions(view, svg);
 
     setupSceneContextMenu(view, svg);
+    linkSceneHoverToTimetable(view, svg);
 }
 
 /**

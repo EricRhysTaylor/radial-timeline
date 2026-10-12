@@ -71,8 +71,15 @@
   background: var(--bases-table-row-background-hover, var(--background-modifier-hover));
 }
 
-.ert-timetable__row td {
+/*
+ * One line per cell, as in Obsidian's own table; the note holds the full text.
+ * Specific enough to win over Obsidian's `.markdown-rendered tbody > tr > td`.
+ */
+.ert-timetable .ert-timetable__table tbody > tr.ert-timetable__row > td {
   max-width: 28em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ert-timetable__name {
@@ -91,7 +98,7 @@
   white-space: nowrap;
 }
 
-.ert-timetable__num {
+.ert-timetable__num-inner {
   display: flex;
   align-items: center;
   gap: var(--size-2-2);
@@ -102,14 +109,20 @@
   line-height: 0;
 }
 
+/* A scene's cell is painted by its fill attribute (the wheel's status fill); CSS must not set fill for it. */
 .ert-timetable__chip-cell {
-  fill: none;
   stroke: var(--background-modifier-border-hover);
   stroke-width: 1;
 }
 
 .ert-timetable__row.is-scene .ert-timetable__chip-cell {
   stroke: none;
+}
+
+.ert-timetable__row.is-sketch .ert-timetable__chip-cell,
+.ert-timetable__row.is-unclassed .ert-timetable__chip-cell,
+.ert-timetable__row.is-other-class .ert-timetable__chip-cell {
+  fill: none;
 }
 
 .ert-timetable__row.is-beat .ert-timetable__chip-cell {
@@ -126,15 +139,12 @@
   fill: var(--text-normal);
   font-size: 11px;
   font-weight: var(--font-semibold);
-  paint-order: stroke;
-  stroke: var(--background-primary);
-  stroke-width: 3px;
-  stroke-linejoin: round;
 }
 
+/* On a status fill or a white beat cell, the number is black, as on the wheel. */
+.ert-timetable__row.is-scene .ert-timetable__chip-text,
 .ert-timetable__row.is-beat .ert-timetable__chip-text {
-  fill: black;
-  stroke: none;
+  fill: var(--rt-legacy-black);
 }
 
 .ert-timetable__promote {
@@ -411,4 +421,9 @@
 
 .ert-timetable__drawer-preview:hover {
   background: var(--background-modifier-hover);
+}
+
+/* The row of the scene hovered on the wheel. */
+.ert-timetable .ert-timetable__table tbody > tr.ert-timetable__row.is-linked > td {
+  background: var(--background-modifier-active-hover);
 }

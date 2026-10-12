@@ -24,19 +24,40 @@ import { SubplotPickerModal } from '../../modals/SubplotPickerModal';
 import { formatLocalDateKey } from '../../utils/date';
 import { t } from '../../i18n';
 
-type SceneContextMenuView = {
+/** What the menu needs from whoever opens it: the wheel's view, or the Timetable. */
+export type SceneMenuHost = {
     plugin: {
         app: App;
         settings: RadialTimelineSettings;
         getSceneData?: () => Promise<TimelineItem[]>;
         refreshTimelineIfNeeded?: (file: TFile | null, delayMs?: number) => void;
     };
+    refreshTimeline?: () => void;
+};
+
+type SceneContextMenuView = SceneMenuHost & {
     renderScope: {
         register: (cb: () => void) => void;
         registerDomEvent: (el: HTMLElement, event: string, handler: (ev: Event) => void) => void;
     };
-    refreshTimeline?: () => void;
 };
+
+/**
+ * The scene the menu acts on, wherever it was clicked. On the wheel it comes
+ * from the clicked SVG group; in the Timetable, from the row.
+ */
+export interface SceneMenuTarget {
+    file: TFile;
+    itemType: 'Scene' | 'Backdrop';
+    /** The ring the click landed on, when that ring stands for one subplot; null on a ring of every scene (or a table row). */
+    ringSubplot: string | null;
+    /** Subplots the author can move or add the scene to. */
+    knownSubplots: string[];
+    /** The subplot a new scene added after this one should take. */
+    primarySubplot?: string;
+    /** That subplot's color, for the Add scene dialog. */
+    subplotColor?: string;
+}
 
 type TimelineStatusOption = {
     label: string;
@@ -93,7 +114,7 @@ function getEncodedScenePath(group: Element): string | null {
     }
 }
 
-function getSceneFile(view: SceneContextMenuView, group: Element): TFile | null {
+function getSceneFile(view: SceneMenuHost, group: Element): TFile | null {
     const filePath = getEncodedScenePath(group);
     if (!filePath) return null;
 
@@ -101,7 +122,7 @@ function getSceneFile(view: SceneContextMenuView, group: Element): TFile | null 
     return file instanceof TFile ? file : null;
 }
 
-function refreshTimelineView(view: SceneContextMenuView, file: TFile): void {
+function refreshTimelineView(view: SceneMenuHost, file: TFile): void {
     if (typeof view.plugin.refreshTimelineIfNeeded === 'function') {
         view.plugin.refreshTimelineIfNeeded(file, 100);
         return;
@@ -112,7 +133,7 @@ function refreshTimelineView(view: SceneContextMenuView, file: TFile): void {
 }
 
 async function updateSceneFrontmatter(
-    view: SceneContextMenuView,
+    view: SceneMenuHost,
     file: TFile,
     update: (frontmatter: Record<string, unknown>) => void,
     successMessage: string
@@ -166,7 +187,7 @@ function insertChapterFieldInYaml(yaml: string, title: string): string {
 }
 
 async function insertMissingChapterFrontmatter(
-    view: SceneContextMenuView,
+    view: SceneMenuHost,
     file: TFile,
     title: string
 ): Promise<boolean> {
@@ -210,7 +231,7 @@ async function insertMissingChapterFrontmatter(
 }
 
 async function writeChapterMarker(
-    view: SceneContextMenuView,
+    view: SceneMenuHost,
     file: TFile,
     title: string,
     successMessage: string
@@ -239,7 +260,7 @@ async function writeChapterMarker(
 }
 
 async function clearChapterMarker(
-    view: SceneContextMenuView,
+    view: SceneMenuHost,
     file: TFile,
     successMessage: string
 ): Promise<void> {
@@ -265,7 +286,7 @@ function findPartFrontmatterKey(frontmatter: Record<string, unknown> | undefined
 }
 
 async function writePartMarker(
-    view: SceneContextMenuView,
+    view: SceneMenuHost,
     file: TFile,
     value: string | true,
     successMessage: string
@@ -282,7 +303,7 @@ async function writePartMarker(
 }
 
 async function clearPartMarker(
-    view: SceneContextMenuView,
+    view: SceneMenuHost,
     file: TFile,
     successMessage: string
 ): Promise<void> {
@@ -300,7 +321,7 @@ async function clearPartMarker(
 }
 
 async function setPartAtScene(
-    view: SceneContextMenuView,
+    view: SceneMenuHost,
     file: TFile,
     currentValue: string | true | undefined
 ): Promise<void> {
@@ -350,7 +371,7 @@ function resolvePrimarySubplotFromGroup(group: Element): string | undefined {
 // ── Subplot membership (same mutation path as dragging between rings) ──
 
 /** The subplot the clicked ring stands for; null on a ring that lists every scene. */
-function ringSubplotForGroup(view: SceneContextMenuView, group: Element): string | null {
+function ringSubplotForGroup(view: SceneMenuHost, group: Element): string | null {
     const svg = group.instanceOf(SVGElement) ? group.ownerSVGElement : null;
     const ring = group.getAttribute('data-ring');
     if (!svg || ring === null) return null;
@@ -366,7 +387,7 @@ function knownSubplots(group: Element): string[] {
     return [...new Set(names)];
 }
 
-async function changeSubplotMembership(view: SceneContextMenuView, file: TFile, change: SubplotMembershipChange): Promise<void> {
+async function changeSubplotMembership(view: SceneMenuHost, file: TFile, change: SubplotMembershipChange): Promise<void> {
     try {
         const after = await applySubplotMembershipChange(view.plugin.app, file, change, {
             mappings: getActiveFrontmatterMappings(view.plugin.settings),
@@ -380,7 +401,7 @@ async function changeSubplotMembership(view: SceneContextMenuView, file: TFile, 
     }
 }
 
-function pickSubplot(view: SceneContextMenuView, names: string[], placeholder: string, onChoose: (name: string) => void): void {
+function pickSubplot(view: SceneMenuHost, names: string[], placeholder: string, onChoose: (name: string) => void): void {
     if (names.length === 0) {
         new Notice(t('ui.sceneContextMenu.noOtherSubplot'));
         return;
@@ -388,12 +409,12 @@ function pickSubplot(view: SceneContextMenuView, names: string[], placeholder: s
     new SubplotPickerModal(view.plugin.app, names, placeholder, onChoose).open();
 }
 
-function addSubplotMenuItems(menu: Menu, view: SceneContextMenuView, group: Element, file: TFile): void {
+function addSubplotMenuItems(menu: Menu, view: SceneMenuHost, target: SceneMenuTarget): void {
+    const { file, ringSubplot } = target;
     const mappings = getActiveFrontmatterMappings(view.plugin.settings);
     const current = readSubplotMemberships(view.plugin.app, file, mappings);
     const effective = current.length > 0 ? current : ['Main Plot'];
-    const known = knownSubplots(group);
-    const ringSubplot = ringSubplotForGroup(view, group);
+    const known = target.knownSubplots;
     const moveFrom = (from: string): void => pickSubplot(view, known.filter(name => name !== from), t('ui.sceneContextMenu.moveSceneFromToPlaceholder', { name: file.basename, from }),
         to => { void changeSubplotMembership(view, file, { kind: 'move', from, to }); });
 
@@ -439,7 +460,8 @@ function addSubplotMenuItems(menu: Menu, view: SceneContextMenuView, group: Elem
     }
 }
 
-async function addSceneAfterAnchor(view: SceneContextMenuView, group: Element, file: TFile): Promise<void> {
+async function addSceneAfterAnchor(view: SceneMenuHost, target: SceneMenuTarget): Promise<void> {
+    const { file } = target;
     if (typeof view.plugin.getSceneData !== 'function') {
         new Notice(t('ui.sceneContextMenu.addDataUnavailable'), 5000);
         return;
@@ -449,7 +471,7 @@ async function addSceneAfterAnchor(view: SceneContextMenuView, group: Element, f
         app: view.plugin.app,
         settings: view.plugin.settings,
         anchorFile: file,
-        primarySubplot: resolvePrimarySubplotFromGroup(group),
+        primarySubplot: target.primarySubplot,
         getSceneData: view.plugin.getSceneData.bind(view.plugin),
         beatModel: resolveSelectedBeatModelFromSettings(view.plugin.settings)
     }).catch((error) => {
@@ -462,7 +484,7 @@ async function addSceneAfterAnchor(view: SceneContextMenuView, group: Element, f
     const modal = new AddSceneConfirmModal(
         view.plugin.app,
         plan,
-        resolveSubplotColorFromGroup(group)
+        target.subplotColor
     );
     const started = await modal.waitForBegin();
     if (!started) return;
@@ -489,7 +511,7 @@ async function addSceneAfterAnchor(view: SceneContextMenuView, group: Element, f
     }
 }
 
-async function setChapterAtScene(view: SceneContextMenuView, file: TFile, currentChapterTitle: string | undefined): Promise<void> {
+async function setChapterAtScene(view: SceneMenuHost, file: TFile, currentChapterTitle: string | undefined): Promise<void> {
     if (typeof view.plugin.getSceneData !== 'function') {
         new Notice(t('ui.sceneContextMenu.chapterDataUnavailable'), 5000);
         return;
@@ -520,13 +542,23 @@ async function setChapterAtScene(view: SceneContextMenuView, file: TFile, curren
     }
 }
 
-function showSceneContextMenu(view: SceneContextMenuView, group: Element, event: MouseEvent): void {
+/** Read the menu target from a clicked scene group on the wheel. */
+function targetFromGroup(view: SceneMenuHost, group: Element): SceneMenuTarget | null {
     const file = getSceneFile(view, group);
-    if (!file) {
-        new Notice(t('ui.sceneContextMenu.sceneNoteNotFound'), 5000);
-        return;
-    }
+    if (!file) return null;
+    return {
+        file,
+        itemType: group.getAttribute('data-item-type') === 'Backdrop' ? 'Backdrop' : 'Scene',
+        ringSubplot: ringSubplotForGroup(view, group),
+        knownSubplots: knownSubplots(group),
+        primarySubplot: resolvePrimarySubplotFromGroup(group),
+        subplotColor: resolveSubplotColorFromGroup(group),
+    };
+}
 
+/** The scene menu: Add scene, chapter and part, subplot moves, Status, Publish Stage, Pulse. */
+export function showSceneContextMenu(view: SceneMenuHost, target: SceneMenuTarget, event: MouseEvent): void {
+    const { file } = target;
     const cache = view.plugin.app.metadataCache.getFileCache(file);
     const frontmatter = (cache?.frontmatter ?? {}) as Record<string, unknown>;
     const currentStatus = normalizeStatus(frontmatter.Status);
@@ -543,14 +575,13 @@ function showSceneContextMenu(view: SceneContextMenuView, group: Element, event:
     const pulseAlreadyFlagged = /^(yes|true|1)$/i.test(pulseFlag);
 
     const menu = new Menu();
-    const itemType = group.getAttribute('data-item-type');
 
-    if (itemType === 'Scene') {
+    if (target.itemType === 'Scene') {
         menu.addItem(item => {
             item.setIcon('file-plus-2');
             item.setTitle(t('ui.sceneContextMenu.addScene'));
             item.onClick(() => {
-                void addSceneAfterAnchor(view, group, file);
+                void addSceneAfterAnchor(view, target);
             });
         });
         menu.addItem(item => {
@@ -572,7 +603,7 @@ function showSceneContextMenu(view: SceneContextMenuView, group: Element, event:
             });
         });
         menu.addSeparator();
-        addSubplotMenuItems(menu, view, group, file);
+        addSubplotMenuItems(menu, view, target);
         menu.addSeparator();
     }
 
@@ -645,6 +676,11 @@ export function setupSceneContextMenu(view: SceneContextMenuView, svg: SVGSVGEle
 
         mouseEvent.preventDefault();
         mouseEvent.stopPropagation();
-        showSceneContextMenu(view, group, mouseEvent);
+        const target = targetFromGroup(view, group);
+        if (!target) {
+            new Notice(t('ui.sceneContextMenu.sceneNoteNotFound'), 5000);
+            return;
+        }
+        showSceneContextMenu(view, target, mouseEvent);
     });
 }

@@ -8,6 +8,7 @@ import { OuterRingDragController, isDragInProgress, isDragInteractionActive, was
 import { maybeHandleZeroDraftClick } from '../interactions/ZeroDraftHandler';
 import { isSubplotDragActive, wasRecentlyHandledBySubplotDrag } from '../interactions/SubplotRingDragController';
 import { setupSceneContextMenu } from '../interactions/SceneContextMenu';
+import { linkSceneHoverToTimetable } from '../interactions/TimetableLink';
 import type { RadialTimelineView } from '../TimeLineView';
 
 export function setupSceneInteractions(view: RadialTimelineView, group: Element, svgElement: SVGSVGElement, scenes: TimelineItem[]): void {
@@ -81,6 +82,7 @@ export function setupAllScenesDelegatedHover(view: RadialTimelineView, container
     // This allows toggling auto-expand without reopening the timeline view.
     manager.setTitleExpansionEnabled(true);
     setupSceneContextMenu(view, svg);
+    linkSceneHoverToTimetable(view, svg);
 
     let currentGroup: Element | null = null;
     let rafId: number | null = null;

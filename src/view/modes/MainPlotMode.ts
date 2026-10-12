@@ -4,6 +4,7 @@ import { buildSearchHighlight } from '../../services/searchHighlight';
 import { SceneInteractionManager } from '../interactions/SceneInteractionManager';
 import { maybeHandleZeroDraftClick } from '../interactions/ZeroDraftHandler';
 import { setupSceneContextMenu } from '../interactions/SceneContextMenu';
+import { linkSceneHoverToTimetable } from '../interactions/TimetableLink';
 import { isSubplotDragActive, wasRecentlyHandledBySubplotDrag } from '../interactions/SubplotRingDragController';
 import type { RadialTimelineView } from '../TimeLineView';
 
@@ -22,6 +23,7 @@ export function setupMainPlotMode(view: RadialTimelineView, svg: SVGSVGElement):
     // This allows toggling auto-expand without reopening the timeline view.
     manager.setTitleExpansionEnabled(true);
     setupSceneContextMenu(view, svg);
+    linkSceneHoverToTimetable(view, svg);
 
     let currentGroup: Element | null = null;
     let rafId: number | null = null;

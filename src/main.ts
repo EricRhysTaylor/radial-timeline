@@ -64,7 +64,7 @@ import { scheduleCommunityProjectSync, cancelPendingCommunityProjectSync } from 
 import { CommunityMailbox } from './communityShare/communityMailbox';
 import { DeskLamps } from './communityShare/deskLamps';
 import { TimetableService } from './timetable/TimetableService';
-import { refreshTimetableViews } from './timetable/TimetableView';
+import { refreshTimetableViews } from './timetable/timetableRegistry';
 import { DEFAULT_BOOK_TITLE, createBookId, deriveBookTitleFromSourcePath, getActiveBook, getSagaBooks, getTimelineScope, isSagaScopeAvailable, normalizeBookProfile, shouldSeedBookProfileFromLegacySettings } from './utils/books';
 import { adaptPandocLayoutsToPublishingModel } from './utils/publishingModel';
 import { migratePublishingModelState, RENAMED_PANDOC_LAYOUT_IDS } from './utils/publishingMigration';
@@ -467,6 +467,22 @@ export default class RadialTimelinePlugin extends Plugin {
     /** Open (or focus) the Timetable for the timeline's current book or saga. */
     public openTimetable(): Promise<void> {
         return this.timetableService.open();
+    }
+
+    /** Light up a scene on every open timeline (a Timetable row is hovered); null clears it. */
+    public highlightSceneOnTimeline(path: string | null): void {
+        this.sceneHighlighter.spotlight(path);
+    }
+
+    /** Bring the timeline forward and light up a scene on it (Shift-click in the Timetable). */
+    public async revealSceneOnTimeline(path: string): Promise<void> {
+        const view = this.getTimelineViews()[0];
+        if (!view) {
+            await this.timelineService.activateView();
+        } else {
+            await this.app.workspace.revealLeaf(view.leaf);
+        }
+        this.sceneHighlighter.spotlight(path);
     }
 
     /**

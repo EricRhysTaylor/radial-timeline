@@ -17,6 +17,7 @@ import {
     BasesView,
     Keymap,
     MarkdownView,
+    Menu,
     Notice,
     TFile,
     getFrontMatterInfo,
@@ -59,6 +60,9 @@ import {
 } from './timetableModel';
 import { authorKeyFor, TIMETABLE_VIEW_TYPE } from './timetableFiles';
 import { SketchDrawer, type SketchDrawerHost } from './SketchDrawer';
+import { trackTimetable } from './timetableRegistry';
+import { showSceneContextMenu } from '../view/interactions/SceneContextMenu';
+import { readSubplotColor } from '../renderer/utils/subplotColors';
 import type { BookProfile } from '../types/settings';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -87,14 +91,6 @@ interface WheelRings {
     colorIndex: Map<string, number>;
 }
 
-/** Every open Timetable, so book switches and settings changes can redraw them. */
-const liveViews = new Set<TimetableView>();
-
-/** Redraw every open Timetable (after a book switch or a color change). */
-export function refreshTimetableViews(): void {
-    liveViews.forEach(view => view.refresh());
-}
-
 /** View options shown in the Bases toolbar's view menu. */
 export function timetableViewOptions(): BasesAllOptions[] {
     return [
@@ -105,11 +101,12 @@ export function timetableViewOptions(): BasesAllOptions[] {
 }
 
 /**
- * Open a note from the table without replacing the table: reveal it where it
- * is already open, otherwise use an editor tab in the main area, otherwise a
- * new tab. Cmd/Ctrl-click always opens a new tab.
+ * Open a note from the table without covering the table: reveal it where it
+ * is already open, otherwise use an editor tab or an empty tab in the main
+ * area, otherwise split a pane beside the Timetable. Cmd/Ctrl-click always
+ * opens a new tab.
  */
-async function openFromTimetable(app: App, file: TFile, evt: MouseEvent): Promise<void> {
+async function openFromTimetable(app: App, file: TFile, evt: MouseEvent, fromEl: HTMLElement): Promise<void> {
     if (Keymap.isModEvent(evt)) {
         await app.workspace.openLinkText(file.path, '', 'tab');
         return;
@@ -122,12 +119,18 @@ async function openFromTimetable(app: App, file: TFile, evt: MouseEvent): Promis
         app.workspace.setActiveLeaf(showing, { focus: true });
         return;
     }
-    const editor = markdownLeaves.find(leaf => !leaf.getViewState().pinned);
-    if (editor) {
-        await editor.openFile(file, { active: true }); // SAFE: openFile used for opening in an existing editor tab, so the Timetable tab itself is never replaced
+    const emptyLeaves = app.workspace.getLeavesOfType('empty').filter(leaf => leaf.getRoot() === app.workspace.rootSplit);
+    const target = markdownLeaves.find(leaf => !leaf.getViewState().pinned) ?? emptyLeaves[0];
+    if (target) {
+        await target.openFile(file, { active: true }); // SAFE: openFile used for opening in an existing editor or empty tab, so the Timetable tab itself is never replaced
         return;
     }
-    await app.workspace.openLinkText(file.path, '', 'tab');
+    const tableLeaf = app.workspace.getLeavesOfType('bases').find(leaf => leaf.view.containerEl.contains(fromEl));
+    if (!tableLeaf) {
+        await app.workspace.openLinkText(file.path, '', 'tab');
+        return;
+    }
+    await app.workspace.createLeafBySplit(tableLeaf, 'vertical').openFile(file, { active: true }); // SAFE: openFile used for opening beside the Timetable rather than over it
 }
 
 function frontmatterKey(frontmatter: Record<string, unknown> | undefined, name: string): unknown {
@@ -163,9 +166,11 @@ export class TimetableView extends BasesView {
     private decorateGeneration = 0;
     private readonly rowEls = new Map<string, HTMLElement>();
     private readonly synopsisFromBody = new Map<string, HTMLElement>();
+    private hoveredPath: string | null = null;
+    private linkedRow: HTMLElement | null = null;
     private readonly drawerHost: SketchDrawerHost = {
         promote: file => { void runPromotion(this.plugin, [file]); },
-        openNote: (file, evt) => { void openFromTimetable(this.plugin.app, file, evt); },
+        openNote: (file, evt) => { void openFromTimetable(this.plugin.app, file, evt, this.rootEl); },
         close: path => this.closeDrawer(path),
         editingEnded: () => {
             if (this.renderDeferred) this.render();
@@ -178,7 +183,7 @@ export class TimetableView extends BasesView {
     }
 
     onload(): void {
-        liveViews.add(this);
+        this.register(trackTimetable(this));
         // One set of delegated handlers: rows are redrawn on every data update.
         this.registerDomEvent(this.rootEl, 'click', (evt: MouseEvent) => this.handleClick(evt));
         this.registerDomEvent(this.rootEl, 'keydown', (evt: KeyboardEvent) => {
@@ -188,6 +193,60 @@ export class TimetableView extends BasesView {
             evt.preventDefault();
             this.toggleGroup(toggle.dataset.groupId ?? '');
         });
+        this.registerDomEvent(this.rootEl, 'contextmenu', (evt: MouseEvent) => this.handleContextMenu(evt));
+        // Hovering a scene's row lights it up on the wheel.
+        this.registerDomEvent(this.rootEl, 'mouseover', (evt: MouseEvent) => {
+            const row = evt.target instanceof Element ? evt.target.closest<HTMLElement>('.ert-timetable__row.is-scene') : null;
+            const path = row?.dataset.path ?? null;
+            if (path === this.hoveredPath) return;
+            this.hoveredPath = path;
+            this.plugin.highlightSceneOnTimeline(path);
+        });
+        this.registerDomEvent(this.rootEl, 'mouseleave', () => {
+            if (this.hoveredPath === null) return;
+            this.hoveredPath = null;
+            this.plugin.highlightSceneOnTimeline(null);
+        });
+    }
+
+    /** The wheel is hovering this scene: light up its row and bring it into view. */
+    markLinkedRow(path: string | null): void {
+        this.linkedRow?.removeClass('is-linked');
+        this.linkedRow = path ? this.rowEls.get(path) ?? null : null;
+        if (!this.linkedRow) return;
+        this.linkedRow.addClass('is-linked');
+        this.linkedRow.scrollIntoView({ block: 'nearest' });
+    }
+
+    /**
+     * Right-click a scene's row for the same menu as right-clicking it on the
+     * wheel. Other rows get Obsidian's own file menu, which includes Promote
+     * for notes that can become scenes.
+     */
+    private handleContextMenu(evt: MouseEvent): void {
+        const row = evt.target instanceof Element ? evt.target.closest<HTMLElement>('.ert-timetable__row') : null;
+        const file = row?.dataset.path ? this.plugin.app.vault.getFileByPath(row.dataset.path) : null;
+        if (!row || !file) return;
+        evt.preventDefault();
+        if (!row.hasClass('is-scene')) {
+            const menu = new Menu();
+            this.plugin.app.workspace.trigger('file-menu', menu, file, TIMETABLE_VIEW_TYPE);
+            menu.showAtMouseEvent(evt);
+            return;
+        }
+        const rings = (this.rings?.order ?? []).filter(name => name !== 'Backdrop' && name !== 'MicroBackdrop');
+        const frontmatter: Record<string, unknown> | undefined = this.plugin.app.metadataCache.getFileCache(file)?.frontmatter;
+        const subplots = buildTableRow(file.path, file.basename, frontmatter, this.plugin.settings).subplots;
+        const primary = subplots[0];
+        const colorIndex = primary !== undefined ? this.rings?.colorIndex.get(primary) : undefined;
+        showSceneContextMenu({ plugin: this.plugin }, {
+            file,
+            itemType: 'Scene',
+            ringSubplot: null,
+            knownSubplots: rings,
+            primarySubplot: primary,
+            subplotColor: colorIndex !== undefined ? readSubplotColor(this.rootEl.ownerDocument, colorIndex) : undefined,
+        }, evt);
     }
 
     private handleClick(evt: MouseEvent): void {
@@ -225,12 +284,17 @@ export class TimetableView extends BasesView {
         }
         // Links, buttons and inputs inside a cell keep their own behavior.
         if (target.closest('a, button, input, textarea, select')) return;
+        // Shift-click shows the scene on the timeline.
+        if (evt.shiftKey && row.hasClass('is-scene')) {
+            void this.plugin.revealSceneOnTimeline(path);
+            return;
+        }
         // A sketch's row opens its drawer; every other row opens the note.
         if (row.hasClass('is-sketch') && !Keymap.isModEvent(evt)) {
             this.toggleDrawer(path);
             return;
         }
-        void openFromTimetable(this.plugin.app, file, evt);
+        void openFromTimetable(this.plugin.app, file, evt, this.rootEl);
     }
 
     // ── Sketches ────────────────────────────────────────────────────────
@@ -317,7 +381,7 @@ export class TimetableView extends BasesView {
     }
 
     onunload(): void {
-        liveViews.delete(this);
+        if (this.hoveredPath !== null) this.plugin.highlightSceneOnTimeline(null);
         if (this.ringsTimer !== null) window.clearTimeout(this.ringsTimer);
         this.ringsGeneration += 1;
         this.rootEl.remove();
@@ -450,6 +514,7 @@ export class TimetableView extends BasesView {
         }
         this.renderDeferred = false;
         this.rowEls.clear();
+        this.linkedRow = null;
         this.synopsisFromBody.clear();
         const groups = this.buildGroups();
         const scrollParent = this.rootEl.parentElement;
@@ -573,7 +638,7 @@ export class TimetableView extends BasesView {
             const info = getFrontMatterInfo(content);
             const body = content.slice(info.exists ? info.contentStart : 0);
             const queries = listAuthorQueries(body);
-            const numberCell = this.rowEls.get(item.row.path)?.querySelector<HTMLElement>('.ert-timetable__num');
+            const numberCell = this.rowEls.get(item.row.path)?.querySelector<HTMLElement>('.ert-timetable__num-inner');
             if (queries.length > 0 && numberCell) {
                 const badge = numberCell.createSpan({ cls: 'ert-timetable__queries' });
                 setIcon(badge.createSpan({ cls: 'ert-timetable__queries-icon' }), 'message-circle-question');
@@ -603,7 +668,8 @@ export class TimetableView extends BasesView {
         if (getTimelineScope(settings) !== 'book') return;
         const active = getActiveBook(settings);
         const ids = this.bookIdsInView();
-        if (!active || ids.length !== 1 || ids[0] === active.id || groups.length === 0) return;
+        const showsOtherBook = active !== null && groups.length > 0 && ids.length === 1 && ids[0] !== active.id;
+        if (!showsOtherBook) return;
         const shown = (settings.books ?? []).find(book => book.id === ids[0]);
         if (!shown) return;
         const notice = this.rootEl.createDiv({ cls: 'ert-timetable__notice' });
@@ -633,7 +699,7 @@ export class TimetableView extends BasesView {
         const tr = body.createEl('tr', { cls: ['ert-timetable__row', `is-${row.kind === 'otherClass' ? 'other-class' : row.kind}`] });
         tr.setAttr('data-path', row.path);
         this.rowEls.set(row.path, tr);
-        this.renderNumberCell(tr.createEl('td', { cls: 'ert-timetable__num' }), item);
+        this.renderNumberCell(tr.createEl('td', { cls: 'ert-timetable__num' }).createDiv({ cls: 'ert-timetable__num-inner' }), item);
 
         if (row.kind === 'beat') {
             // Beats run across the table as quiet dividers, as on the wheel.

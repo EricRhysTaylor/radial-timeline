@@ -83,14 +83,19 @@ export function authorKeyFor(canonical: string, settings: RadialTimelineSettings
     return mapped ? mapped[0] : canonical;
 }
 
-/** Template keys the number cell and the Rings column already show. */
-const SHOWN_BY_TIMELINE_CELLS = new Set(['Class', 'Subplot', 'Status', 'Publish Stage', 'Pulse Update', 'Summary Update']);
+/**
+ * Template keys the Timetable leaves out by default: what its number cell and
+ * Rings column already show, the AI update flags, and the long-form fields
+ * (Summary, Pending Edits) that don't fit a one-line row. The author can add
+ * any of them back from the Properties menu.
+ */
+const LEFT_OUT_OF_TIMETABLE = new Set(['Class', 'Subplot', 'Status', 'Publish Stage', 'Pulse Update', 'Summary Update', 'Summary', 'Pending Edits']);
 
 /**
  * Columns for the views, from the scene template (core, plus advanced when
  * enabled), so the table mirrors the YAML. The Timetable leaves out what
- * its number cell and Rings column already show; the built-in Table keeps
- * every key for spreadsheet editing.
+ * its number cell and Rings column already show and the long-form fields;
+ * the built-in Table keeps every key for spreadsheet editing.
  */
 export function tableColumns(settings: RadialTimelineSettings): { timetable: string[]; table: string[] } {
     const { core, advanced } = buildScenePropertyDefinitions(settings);
@@ -98,7 +103,7 @@ export function tableColumns(settings: RadialTimelineSettings): { timetable: str
     const keys = [...core, ...(includeAdvanced ? advanced : [])].map(definition => definition.key);
     const unique = [...new Set(keys)];
     return {
-        timetable: ['file.name', ...unique.filter(key => !SHOWN_BY_TIMELINE_CELLS.has(key)).map(key => authorKeyFor(key, settings))],
+        timetable: ['file.name', ...unique.filter(key => !LEFT_OUT_OF_TIMETABLE.has(key)).map(key => authorKeyFor(key, settings))],
         table: ['file.name', ...unique.filter(key => key !== 'Pulse Update' && key !== 'Summary Update').map(key => authorKeyFor(key, settings))],
     };
 }

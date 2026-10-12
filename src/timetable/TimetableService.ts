@@ -19,7 +19,8 @@ import { getActiveBook, getSagaBooks, getTimelineScope } from '../utils/books';
 import { openSettingsTab } from '../utils/obsidianInternals';
 import { confirmWithErtModal } from '../modals/ErtConfirmModal';
 import { TIMELINE_VIEW_TYPE } from '../view/TimeLineView';
-import { refreshTimetableViews, TimetableView, timetableViewOptions } from './TimetableView';
+import { TimetableView, timetableViewOptions } from './TimetableView';
+import { refreshTimetableViews } from './timetableRegistry';
 import {
     buildBookTimetableContent,
     buildSagaTimetableContent,

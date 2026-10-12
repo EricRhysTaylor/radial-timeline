@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-07T18:53:03.761Z",
+  "generatedAt": "2026-10-11T17:10:32.055Z",
   "providerFetchedAt": {
-    "openai": "2026-10-07T18:53:03.761Z",
-    "anthropic": "2026-10-07T18:53:03.761Z",
-    "google": "2026-10-07T18:53:03.761Z"
+    "openai": "2026-10-11T17:10:32.055Z",
+    "anthropic": "2026-10-11T17:10:32.055Z",
+    "google": "2026-10-11T17:10:32.055Z"
   },
   "summary": {
     "openai": 135,
@@ -1714,7 +1714,10 @@
               }
             }
           }
-        }
+        },
+        "lifecycle": "active",
+        "deprecated_at": null,
+        "retires_at": null
       },
       "label": "Claude Fable 5",
       "createdAt": "2026-06-07T00:00:00Z"
@@ -1802,7 +1805,10 @@
               }
             }
           }
-        }
+        },
+        "lifecycle": "active",
+        "deprecated_at": null,
+        "retires_at": null
       },
       "label": "Claude Fable 5.1",
       "createdAt": "2026-08-28T00:00:00Z"
@@ -1890,7 +1896,10 @@
               }
             }
           }
-        }
+        },
+        "lifecycle": "active",
+        "deprecated_at": null,
+        "retires_at": null
       },
       "label": "Claude Haiku 4.5",
       "createdAt": "2025-10-15T00:00:00Z"
@@ -1978,7 +1987,10 @@
               }
             }
           }
-        }
+        },
+        "lifecycle": "active",
+        "deprecated_at": null,
+        "retires_at": null
       },
       "label": "Claude Haiku 5.5",
       "createdAt": "2026-10-07T18:00:00Z"
@@ -2066,7 +2078,10 @@
               }
             }
           }
-        }
+        },
+        "lifecycle": "active",
+        "deprecated_at": null,
+        "retires_at": null
       },
       "label": "Claude Opus 4.5",
       "createdAt": "2025-11-24T00:00:00Z"
@@ -2154,7 +2169,10 @@
               }
             }
           }
-        }
+        },
+        "lifecycle": "active",
+        "deprecated_at": null,
+        "retires_at": null
       },
       "label": "Claude Opus 4.6",
       "createdAt": "2026-02-04T00:00:00Z"
@@ -2242,7 +2260,10 @@
               }
             }
           }
-        }
+        },
+        "lifecycle": "active",
+        "deprecated_at": null,
+        "retires_at": null
       },
       "label": "Claude Opus 4.7",
       "createdAt": "2026-04-14T00:00:00Z"
@@ -2330,7 +2351,10 @@
               }
             }
           }
-        }
+        },
+        "lifecycle": "active",
+        "deprecated_at": null,
+        "retires_at": null
       },
       "label": "Claude Opus 4.8",
       "createdAt": "2026-05-28T00:00:00Z"
@@ -2418,7 +2442,10 @@
               }
             }
           }
-        }
+        },
+        "lifecycle": "active",
+        "deprecated_at": null,
+        "retires_at": null
       },
       "label": "Claude Opus 5",
       "createdAt": "2026-07-24T00:00:00Z"
@@ -2506,7 +2533,10 @@
               }
             }
           }
-        }
+        },
+        "lifecycle": "active",
+        "deprecated_at": null,
+        "retires_at": null
       },
       "label": "Claude Opus 5.5",
       "createdAt": "2026-09-21T16:24:00Z"
@@ -2520,7 +2550,7 @@
         "display_name": "Claude Sonnet 4.5",
         "created_at": "2025-09-29T00:00:00Z",
         "line": "sonnet",
-        "max_input_tokens": 1000000,
+        "max_input_tokens": 200000,
         "max_tokens": 64000,
         "capabilities": {
           "batch": {
@@ -2594,7 +2624,10 @@
               }
             }
           }
-        }
+        },
+        "lifecycle": "active",
+        "deprecated_at": null,
+        "retires_at": null
       },
       "label": "Claude Sonnet 4.5",
       "createdAt": "2025-09-29T00:00:00Z"
@@ -2682,7 +2715,10 @@
               }
             }
           }
-        }
+        },
+        "lifecycle": "active",
+        "deprecated_at": null,
+        "retires_at": null
       },
       "label": "Claude Sonnet 4.6",
       "createdAt": "2026-02-17T00:00:00Z"
@@ -2770,7 +2806,10 @@
               }
             }
           }
-        }
+        },
+        "lifecycle": "active",
+        "deprecated_at": null,
+        "retires_at": null
       },
       "label": "Claude Sonnet 5",
       "createdAt": "2026-06-29T00:00:00Z"
@@ -2858,7 +2897,10 @@
               }
             }
           }
-        }
+        },
+        "lifecycle": "active",
+        "deprecated_at": null,
+        "retires_at": null
       },
       "label": "Claude Sonnet 5.5",
       "createdAt": "2026-09-28T00:00:00Z"

@@ -107,13 +107,15 @@ export const SUBPLOT_OUTER_RADIUS_STANDARD = {
 
 
 // DRAG SCENE FEATURE //
-// Positioned just inside the Act labels (ACT_LABEL_RADIUS = 790) to avoid overlap
+// Narrative runs the drag arc just inside the Act labels (ACT_LABEL_RADIUS = 790).
+// Chronologue's month and date labels sit at 790+, so its drag arc takes the
+// Shift elapsed-time lane instead (ELAPSED_ARC_RADIUS).
 
-/** Absolute radius for the outer tip of the drag tick (px) */
-export const DRAG_DROP_TICK_OUTER_RADIUS = 785;
-
-/** Absolute radius for the drag arc line (px) */
+/** Absolute radius for the drag arc line in Narrative mode (px) */
 export const DRAG_DROP_ARC_RADIUS = 786;
+
+/** The drop tick hangs inward from the drag arc; its outer tip sits this far inside it (px) */
+export const DRAG_DROP_TICK_INSET = 1;
 
 /** Length of the drag drop tick marker (px) */
 export const DRAG_DROP_TICK_LENGTH = 10;

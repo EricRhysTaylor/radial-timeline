@@ -190,9 +190,13 @@
   fill: none;
 }
 
-/* Hide indicator during drag — higher specificity overrides .rt-visible */
+/* Hide indicator during drag, and while a Chronologue sub-mode (Shift, Alien,
+   Runtime) owns the pointer — there is no drag then. Higher specificity
+   overrides .rt-visible. */
 .radial-timeline-svg.rt-dragging-outer .rt-drag-reorder-indicator,
-.radial-timeline-svg.rt-dragging-outer .rt-drag-reorder-indicator.rt-visible {
+.radial-timeline-svg.rt-dragging-outer .rt-drag-reorder-indicator.rt-visible,
+.radial-timeline-svg[data-shift-mode] .rt-drag-reorder-indicator,
+.radial-timeline-svg[data-shift-mode] .rt-drag-reorder-indicator.rt-visible {
   opacity: 0;
   visibility: hidden;
 }

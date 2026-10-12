@@ -34,6 +34,7 @@ import { findUndatedFollowers, type UndatedFollower } from '../../chronologue/pl
 import type { SeamChoice } from '../../chronologue/placement/types';
 import type { FrontmatterUpdate } from '../../timelineRepair/types';
 import { fileStem } from '../../utils/paths';
+import { ELAPSED_ARC_RADIUS } from '../../renderer/layout/LayoutConstants';
 import {
     DragOverlays,
     getOuterRingIndex,
@@ -93,7 +94,8 @@ export class ChronologueDragController {
         private readonly svg: SVGSVGElement,
         private readonly options: ChronologueDragOptions
     ) {
-        this.overlays = new DragOverlays(svg);
+        // The Shift elapsed-time lane: clear of the month and date labels.
+        this.overlays = new DragOverlays(svg, ELAPSED_ARC_RADIUS);
     }
 
     attach(): void {
@@ -115,8 +117,10 @@ export class ChronologueDragController {
             this.view.renderScope.registerDomEvent(scenePath as unknown as HTMLElement, 'pointerdown', (evt: PointerEvent) => this.startDrag(evt, group));
         });
 
+        // Shift / Alien / Runtime hide the indicator in CSS (svg[data-shift-mode]),
+        // so it vanishes the moment a sub-mode starts and returns when it ends.
         this.view.renderScope.registerDomEvent(this.svg as unknown as HTMLElement, 'pointerover', (evt: PointerEvent) => {
-            if (this.dragging || this.subModeActive()) return;
+            if (this.dragging) return;
             const group = (evt.target as Element).closest<SVGGElement>('.rt-scene-group[data-draggable="true"]');
             if (group) {
                 this.overlays.showIndicator(group, resolveSubplotColorFromGroup(group));

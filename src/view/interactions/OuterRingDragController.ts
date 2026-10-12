@@ -22,6 +22,7 @@ import { appendRecentStructuralMove, getActiveRecentStructuralMoves } from '../.
 import { openStructuralMoveHistoryLog } from '../../utils/recentStructuralMoveLog';
 import type { RadialTimelineSettings } from '../../types/settings';
 import { fileStem } from '../../utils/paths';
+import { DRAG_DROP_ARC_RADIUS } from '../../renderer/layout/LayoutConstants';
 
 export interface OuterRingViewAdapter {
     plugin: RadialTimelinePlugin;
@@ -207,7 +208,7 @@ export class OuterRingDragController {
         this.view = view;
         this.svg = svg;
         this.options = options;
-        this.overlays = new DragOverlays(svg);
+        this.overlays = new DragOverlays(svg, DRAG_DROP_ARC_RADIUS);
     }
 
     attach(): void {

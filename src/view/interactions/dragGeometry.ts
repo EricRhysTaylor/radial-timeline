@@ -14,11 +14,7 @@
 import { readSubplotColor } from '../../renderer/utils/subplotColors';
 import { TFile, type App } from 'obsidian';
 import { arcPath } from '../../renderer/layout/Paths';
-import {
-    DRAG_DROP_ARC_RADIUS,
-    DRAG_DROP_TICK_OUTER_RADIUS,
-    DRAG_DROP_TICK_LENGTH
-} from '../../renderer/layout/LayoutConstants';
+import { DRAG_DROP_TICK_INSET, DRAG_DROP_TICK_LENGTH } from '../../renderer/layout/LayoutConstants';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -123,7 +119,14 @@ export class DragOverlays {
     private arc: SVGPathElement | null = null;
     private indicator: SVGGElement | null = null;
 
-    constructor(private readonly svg: SVGSVGElement) {}
+    /**
+     * @param arcRadius - Where the drag arc runs. Each mode keeps it clear of its
+     *   own perimeter labels; the drop tick hangs inward from it.
+     */
+    constructor(
+        private readonly svg: SVGSVGElement,
+        private readonly arcRadius: number
+    ) {}
 
     createIndicator(): void {
         if (this.indicator?.isConnected) return;
@@ -167,7 +170,7 @@ export class DragOverlays {
 
     showTick(startAngle: number, color: string | undefined): void {
         const angle = startAngle + getRotationOffsetRad(this.svg);
-        const rOuter = DRAG_DROP_TICK_OUTER_RADIUS;
+        const rOuter = this.arcRadius - DRAG_DROP_TICK_INSET;
         const rInner = rOuter - DRAG_DROP_TICK_LENGTH;
         const tick = this.ensureTick();
         tick.classList.remove('ert-hidden');
@@ -189,7 +192,7 @@ export class DragOverlays {
         const arc = this.ensureArc();
         arc.classList.remove('ert-hidden');
         const offset = getRotationOffsetRad(this.svg);
-        arc.setAttribute('d', arcPath(DRAG_DROP_ARC_RADIUS, startAngle + offset, endAngle + offset));
+        arc.setAttribute('d', arcPath(this.arcRadius, startAngle + offset, endAngle + offset));
         applyStroke(arc, color);
     }
 

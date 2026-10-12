@@ -47,13 +47,8 @@ const steps = [
         args: ["check-css-duplicates.mjs"],
         display: "node check-css-duplicates.mjs",
       },
-      {
-        cmd: "node",
-        args: ["scripts/check-model-updates.mjs"],
-        display: "node scripts/check-model-updates.mjs",
-      },
     ],
-    summary: "standards (5 checks)",
+    summary: "standards (4 checks)",
   },
   {
     name: "Tests",

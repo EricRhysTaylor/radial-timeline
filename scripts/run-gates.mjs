@@ -48,12 +48,8 @@ const colors = {
 };
 
 const steps = [
-    {
-        id: 'model-drift',
-        label: 'AI model drift',
-        command: 'node scripts/check-model-updates.mjs --quiet',
-        report: summarizeModelDrift,
-    },
+    // Provider model and price watching is the daily Cloud AI Model Onboarding
+    // routine's job, not a per-push gate: gates check only files in the repo.
     {
         id: 'api-features',
         label: 'API feature audit',
@@ -168,7 +164,7 @@ const steps = [
 // `all` (the default for `npm run gates` / `npm run backup`) is the core set;
 // release adds bundle-readiness checks; deep adds debt/drift/watch checks.
 const CORE = [
-    'model-drift', 'api-features', 'model-coverage', 'css-duplicates-pre',
+    'api-features', 'model-coverage', 'css-duplicates-pre',
     'shipped-assets', 'build', 'quality', 'obsidian-review',
     'lint-obsidian-enforced', 'lint-obsidian', 'css-drift', 'unused-css', 'compliance',
     'spec-coverage', 'tests',
@@ -257,30 +253,6 @@ async function summarizeObsidianLint() {
         .map(([rule, count]) => `${rule.replace('obsidianmd/', '')}(${count})`)
         .join(', ');
     return [`Obsidian lint (report-only): ${report.total} problems total, ${obsTotal} from obsidianmd rules — top: ${top || 'none'}. See .gate-logs/eslint-obsidian.json.`];
-}
-
-async function summarizeModelDrift() {
-    const report = await readJson('scripts/models/model-drift-report.json');
-    if (!report) return [];
-    const items = [];
-    const staleProviders = Array.isArray(report.staleProviders) ? report.staleProviders : [];
-    staleProviders.forEach(entry => {
-        const age = entry?.fetchedAt ? `last fetched live ${String(entry.fetchedAt).slice(0, 10)}` : 'never fetched live here';
-        items.push(`AI model drift: ${entry?.provider} model list is stale (${age}); set its API key and run npm run update-models.`);
-    });
-    const alerts = Array.isArray(report.releaseAlerts) ? report.releaseAlerts : [];
-    alerts.slice(0, 4).forEach(alert => {
-        if (alert?.message) items.push(`AI model drift: ${alert.message}`);
-    });
-    const followUps = Array.isArray(report.recommendedFollowUps) ? report.recommendedFollowUps : [];
-    followUps.slice(0, 3).forEach(item => {
-        if (typeof item === 'string') items.push(`AI model follow-up: ${item}`);
-        else if (item?.message) items.push(`AI model follow-up: ${item.message}`);
-    });
-    if (report.hasActionableChanges && items.length === 0) {
-        items.push('AI model drift: actionable provider changes detected. See scripts/models/model-drift-report.json.');
-    }
-    return unique(items);
 }
 
 async function summarizeApiFeatures() {

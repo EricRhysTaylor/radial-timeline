@@ -12,7 +12,6 @@
  *
  * Usage:
  *   node scripts/check-api-features.mjs              (standard audit)
- *   node scripts/check-api-features.mjs --issues      (also generate GitHub issue stubs)
  *   node scripts/check-api-features.mjs --strict      (fail on violations — use in CI)
  *   node scripts/check-api-features.mjs --summary     (compact output for backup pipeline)
  *   node scripts/check-api-features.mjs --quiet       (suppress console, write report only)
@@ -28,7 +27,6 @@ import { snapshotContentChanged } from './modelSnapshotUtils.mjs';
 const CAPABILITIES_FILE = path.resolve('scripts/models/provider-capabilities.json');
 const INTEGRATIONS_FILE = path.resolve('scripts/models/plugin-feature-integration.json');
 const AUDIT_REPORT_FILE = path.resolve('scripts/models/feature-audit.json');
-const ISSUES_DIR = path.resolve('.github/issues');
 
 // ── ANSI colors ────────────────────────────────────────────────────────────────
 
@@ -55,7 +53,6 @@ const ALLOWED_RT_RECOMMENDATION = new Set(['implement now', 'next', 'defer', 'ig
 
 // ── CLI flags ──────────────────────────────────────────────────────────────────
 
-const doGenerateIssues = process.argv.includes('--issues');
 const strictMode = process.argv.includes('--strict');
 const summaryMode = process.argv.includes('--summary');
 const quietMode = process.argv.includes('--quiet');
@@ -717,126 +714,6 @@ function printReport(analytics, sourceFindings, validationErrors, validationWarn
     }
 }
 
-// ── Issue generation ───────────────────────────────────────────────────────────
-
-function generateIssueStubs(highImpactGaps, capMap, intMap) {
-    if (!fs.existsSync(ISSUES_DIR)) {
-        fs.mkdirSync(ISSUES_DIR, { recursive: true });
-    }
-
-    let generated = 0;
-    for (const gap of highImpactGaps) {
-        const cap = capMap.get(gap.id);
-        const int = intMap.get(gap.id);
-        if (!cap || !int) continue;
-        if (int.implementationStatus !== 'not_implemented') continue;
-
-        const filename = `feature-${gap.id}.md`;
-        const filePath = path.join(ISSUES_DIR, filename);
-
-        // Skip if already exists
-        if (fs.existsSync(filePath)) continue;
-
-        const features = (int.relevantPluginFeatures || []).map(f => `- ${f}`).join('\n');
-        const sources = (int.sourceFiles || []).map(f => `- \`${f}\``).join('\n');
-        const blockers = (int.blockers || []).length > 0
-            ? int.blockers.map(b => `- ${b}`).join('\n')
-            : 'None';
-
-        // Build evidence patterns for DoD
-        const evidencePatterns = (int.implementationEvidence || []).length > 0
-            ? int.implementationEvidence.map(rule => {
-                if (typeof rule === 'string') {
-                    return `- [ ] Evidence pattern matches: \`/${rule}/\``;
-                }
-                if (!rule || typeof rule !== 'object') {
-                    return `- [ ] Evidence rule updated: \`${JSON.stringify(rule)}\``;
-                }
-                const label = typeof rule.label === 'string' && rule.label.trim()
-                    ? rule.label.trim()
-                    : 'Custom evidence rule';
-                const allOf = Array.isArray(rule.allOf) ? rule.allOf.map(pattern => `\`/${pattern}/\``) : [];
-                const anyOf = Array.isArray(rule.anyOf) ? rule.anyOf.map(pattern => `\`/${pattern}/\``) : [];
-                const joined = [
-                    allOf.length ? `all of ${allOf.join(', ')}` : null,
-                    anyOf.length ? `any of ${anyOf.join(', ')}` : null
-                ].filter(Boolean).join(' + ');
-                return `- [ ] ${label}${joined ? `: ${joined}` : ''}`;
-            }).join('\n')
-            : '- [ ] Add implementationEvidence patterns to registry';
-
-        // Build required headers DoD items
-        const headerItems = Object.entries(cap.requiredHeaders || {})
-            .map(([k, v]) => `- [ ] Header \`${k}: ${v}\` sent in requests`)
-            .join('\n');
-
-        const content = `---
-title: "Implement ${cap.name} (${cap.provider})"
-labels: ai-feature, ${cap.provider}, ${int.priority || 'p2'}
----
-
-## Feature: ${cap.name}
-
-**Provider:** ${cap.provider}
-**Category:** ${cap.category}
-**Maturity:** ${cap.maturity}
-**ROI Category:** ${cap.roiCategory}
-**Implementation Complexity:** ${cap.implementationComplexity}
-**Priority Score:** ${gap.score}
-
-## Description
-
-${cap.description}
-
-## Documentation
-
-${cap.documentationUrl}
-
-## Relevant Plugin Features
-
-${features || 'None specified'}
-
-## Implementation Notes
-
-${int.implementationNotes || 'No notes yet.'}
-
-## Source Files
-
-${sources || 'None identified'}
-
-## Blockers
-
-${blockers}
-
-## Definition of Done
-
-### Request Shape
-- [ ] API request body matches provider documentation
-${headerItems ? `\n### Headers\n${headerItems}` : ''}
-
-### Tests
-- [ ] Unit test covering request construction
-- [ ] Integration test verifying response parsing
-
-### Audit Evidence
-${evidencePatterns}
-- [ ] \`implementationStatus\` set to \`"complete"\` in plugin-feature-integration.json
-- [ ] \`node scripts/check-api-features.mjs --strict\` passes
-
-### Obsidian Compatibility
-- [ ] Works with \`requestUrl()\` (no browser-only APIs)
-- [ ] Fallback behavior if feature unavailable (older API version, rate limit, mobile)
-`;
-        fs.writeFileSync(filePath, content, 'utf8');
-        generated += 1;
-        log(`  ${GREEN}+${RESET} Generated issue stub: ${filename}`);
-    }
-
-    if (generated > 0) {
-        log(`\n  ${GREEN}Generated ${generated} issue stub(s) in .github/issues/${RESET}\n`);
-    }
-}
-
 // ── Report file ────────────────────────────────────────────────────────────────
 
 function writeAuditReport(analytics, sourceFindings, validationErrors, validationWarnings, evidenceFailures) {
@@ -902,13 +779,6 @@ export function main() {
 
     // Write report
     writeAuditReport(analytics, sourceFindings, validationErrors, validationWarnings, evidenceFailures);
-
-    // Issue generation
-    if (doGenerateIssues) {
-        const capMap = new Map((capData.capabilities || []).map(c => [c.id, c]));
-        const intMap = new Map((intData.integrations || []).map(i => [i.id, i]));
-        generateIssueStubs(analytics.topPriorities, capMap, intMap);
-    }
 
     // Strict mode: exit with error if violations found
     if (strictMode) {

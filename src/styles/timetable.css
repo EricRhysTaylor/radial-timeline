@@ -38,10 +38,15 @@
   margin-inline-start: auto;
 }
 
+/* Fixed column widths, like Obsidian's own table: the author's saved sizes or the defaults. */
 .ert-timetable__table {
   border-collapse: collapse;
-  width: max-content;
-  min-width: 100%;
+  table-layout: fixed;
+  width: var(--ert-timetable-width, 100%);
+}
+
+.ert-timetable__table col {
+  width: var(--ert-timetable-col-width, auto);
 }
 
 .ert-timetable__table th,
@@ -60,6 +65,31 @@
   color: var(--bases-table-header-color, var(--text-muted));
   font-weight: var(--bases-table-header-weight, var(--font-medium));
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Drag the right edge of a column header to resize it. */
+.ert-timetable__resize {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.ert-timetable__resize:hover,
+.ert-timetable__resize:active {
+  background: var(--interactive-accent);
+}
+
+/* + New sketch, in the number column's header. */
+.ert-timetable__new-sketch--header {
+  font-size: var(--font-smallest);
+  height: auto;
+  padding: var(--size-2-1) var(--size-2-3);
 }
 
 .ert-timetable__row {
@@ -76,7 +106,6 @@
  * Specific enough to win over Obsidian's `.markdown-rendered tbody > tr > td`.
  */
 .ert-timetable .ert-timetable__table tbody > tr.ert-timetable__row > td {
-  max-width: 28em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -92,11 +121,6 @@
 }
 
 /* Number cell: the scene number on the wheel's status fill. */
-.ert-timetable__num,
-.ert-timetable__num-head {
-  width: 1%;
-  white-space: nowrap;
-}
 
 .ert-timetable__num-inner {
   display: flex;
@@ -152,11 +176,6 @@
 }
 
 /* Rings column: one square per subplot ring, in the wheel's ring order. */
-.ert-timetable__rings,
-.ert-timetable__rings-head {
-  width: 1%;
-}
-
 .ert-timetable__ring-grid {
   display: grid;
   grid-template-columns: repeat(var(--ert-timetable-rings-per-line, 5), 10px);

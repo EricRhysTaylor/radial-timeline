@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { RadialTimelineSettings } from '../types';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
-import { buildRingLayout, buildTableRow, compareManuscriptRows, sceneNumberFill, withActDividers } from './timetableModel';
+import { buildRingLayout, buildTableRow, compareManuscriptRows, displayName, sceneNumberFill, withActDividers } from './timetableModel';
 
 const settings = { ...DEFAULT_SETTINGS, enableCustomMetadataMapping: false } as RadialTimelineSettings;
 const row = (basename: string, fm?: Record<string, unknown>) => buildTableRow(`Book 2/${basename}.md`, basename, fm, settings);
@@ -82,5 +82,14 @@ describe('sceneNumberFill', () => {
         expect(sceneNumberFill({ Class: 'Scene', Status: 'Working', 'Publish Stage': 'Zero' }, settings, 'tt-')).toBe('url(#tt-plaidWorkingZero)');
         expect(sceneNumberFill({ Class: 'Scene', Status: ['Todo'] }, settings, 'tt-')).toBe('url(#tt-plaidTodoZero)');
         expect(sceneNumberFill({ Class: 'Scene', Status: 'Complete', 'Publish Stage': 'Press' }, settings, 'tt-')).toBe(settings.publishStageColors.Press);
+    });
+});
+
+describe('displayName', () => {
+    it('drops the number prefix the number cell already shows', () => {
+        expect(displayName('1 Training at Academy Field')).toBe('Training at Academy Field');
+        expect(displayName('5.01 DEBATE')).toBe('DEBATE');
+        expect(displayName('Untitled sketch')).toBe('Untitled sketch');
+        expect(displayName('2085 Notes')).toBe('Notes');
     });
 });

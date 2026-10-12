@@ -84,12 +84,12 @@ export function authorKeyFor(canonical: string, settings: RadialTimelineSettings
 }
 
 /**
- * Template keys the Timetable leaves out by default: what its number cell and
- * Rings column already show, the AI update flags, and the long-form fields
+ * Template keys the Timetable leaves out by default: what its number cell,
+ * Rings column and act headings already show, the AI update flags, and the long-form fields
  * (Summary, Pending Edits) that don't fit a one-line row. The author can add
  * any of them back from the Properties menu.
  */
-const LEFT_OUT_OF_TIMETABLE = new Set(['Class', 'Subplot', 'Status', 'Publish Stage', 'Pulse Update', 'Summary Update', 'Summary', 'Pending Edits']);
+const LEFT_OUT_OF_TIMETABLE = new Set(['Class', 'Act', 'Subplot', 'Status', 'Publish Stage', 'Pulse Update', 'Summary Update', 'Summary', 'Pending Edits']);
 
 /**
  * Columns for the views, from the scene template (core, plus advanced when

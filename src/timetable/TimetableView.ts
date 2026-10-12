@@ -53,6 +53,7 @@ import {
     buildRingLayout,
     buildTableRow,
     compareManuscriptRows,
+    displayName,
     sceneNumberFill,
     withActDividers,
     type RingLayout,
@@ -68,6 +69,24 @@ import type { BookProfile } from '../types/settings';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const RINGS_PER_LINE_DEFAULT = 5;
 const RINGS_REFRESH_DELAY_MS = 300;
+
+/** Column widths (px). The number column holds the chevron, number cell, Promote and query count. */
+const NUMBER_COLUMN_WIDTH = 132;
+const OTHER_COLUMN_WIDTH = 140;
+const MIN_COLUMN_WIDTH = 48;
+const DEFAULT_COLUMN_WIDTHS: Record<string, number> = { When: 170, Duration: 100, Chapter: 150, Synopsis: 360, Act: 56 };
+const NAME_COLUMN_WIDTH = 220;
+
+/** A column resize in progress. */
+interface ColumnResize {
+    property: BasesPropertyId;
+    startX: number;
+    startWidth: number;
+    width: number;
+    tableWidth: number;
+    col: HTMLElement;
+    table: HTMLElement;
+}
 
 interface TableItem {
     entry: BasesEntry;
@@ -167,6 +186,7 @@ export class TimetableView extends BasesView {
     private readonly rowEls = new Map<string, HTMLElement>();
     private readonly synopsisFromBody = new Map<string, HTMLElement>();
     private hoveredPath: string | null = null;
+    private resizing: ColumnResize | null = null;
     private linkedRow: HTMLElement | null = null;
     private readonly drawerHost: SketchDrawerHost = {
         promote: file => { void runPromotion(this.plugin, [file]); },
@@ -194,6 +214,11 @@ export class TimetableView extends BasesView {
             this.toggleGroup(toggle.dataset.groupId ?? '');
         });
         this.registerDomEvent(this.rootEl, 'contextmenu', (evt: MouseEvent) => this.handleContextMenu(evt));
+        // Column resizing: the handle captures the pointer, so its moves bubble here.
+        this.registerDomEvent(this.rootEl, 'pointerdown', (evt: PointerEvent) => this.startResize(evt));
+        this.registerDomEvent(this.rootEl, 'pointermove', (evt: PointerEvent) => this.moveResize(evt));
+        this.registerDomEvent(this.rootEl, 'pointerup', () => this.endResize());
+        this.registerDomEvent(this.rootEl, 'pointercancel', () => this.endResize());
         // Hovering a scene's row lights it up on the wheel.
         this.registerDomEvent(this.rootEl, 'mouseover', (evt: MouseEvent) => {
             const row = evt.target instanceof Element ? evt.target.closest<HTMLElement>('.ert-timetable__row.is-scene') : null;
@@ -207,6 +232,57 @@ export class TimetableView extends BasesView {
             this.hoveredPath = null;
             this.plugin.highlightSceneOnTimeline(null);
         });
+    }
+
+    // ── Column widths ───────────────────────────────────────────────────
+
+    /** Saved widths, under the same `columnSize` key Obsidian's own table uses. */
+    private columnSizes(): Record<string, number> {
+        const raw = this.config.get('columnSize');
+        const sizes: Record<string, number> = {};
+        if (!raw || typeof raw !== 'object') return sizes;
+        for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+            if (typeof value === 'number' && Number.isFinite(value)) sizes[key] = value;
+        }
+        return sizes;
+    }
+
+    private defaultColumnWidth(property: BasesPropertyId): number {
+        const { type, name } = parsePropertyId(property);
+        if (type === 'file' && name === 'name') return NAME_COLUMN_WIDTH;
+        if (type !== 'note') return OTHER_COLUMN_WIDTH;
+        const width = DEFAULT_COLUMN_WIDTHS[canonicalizeFrontmatterKey(name, getActiveFrontmatterMappings(this.plugin.settings))];
+        return typeof width === 'number' ? width : OTHER_COLUMN_WIDTH;
+    }
+
+    private startResize(evt: PointerEvent): void {
+        const handle = evt.target instanceof Element ? evt.target.closest<HTMLElement>('.ert-timetable__resize') : null;
+        const property = handle?.dataset.property as BasesPropertyId | undefined;
+        const table = handle?.closest<HTMLElement>('.ert-timetable__table');
+        const col = property ? table?.querySelector<HTMLElement>(`col[data-property="${CSS.escape(property)}"]`) : null;
+        const header = handle?.parentElement;
+        if (!handle || !property || !table || !col || !header) return;
+        evt.preventDefault();
+        handle.setPointerCapture(evt.pointerId);
+        const startWidth = header.getBoundingClientRect().width;
+        this.resizing = { property, startX: evt.clientX, startWidth, width: startWidth, tableWidth: table.getBoundingClientRect().width, col, table };
+    }
+
+    private moveResize(evt: PointerEvent): void {
+        const resize = this.resizing;
+        if (!resize) return;
+        resize.width = Math.max(MIN_COLUMN_WIDTH, Math.round(resize.startWidth + evt.clientX - resize.startX));
+        resize.col.setCssProps({ '--ert-timetable-col-width': `${resize.width}px` });
+        resize.table.setCssProps({ '--ert-timetable-width': `${Math.round(resize.tableWidth + resize.width - resize.startWidth)}px` });
+    }
+
+    /** Save the new width in the .base file, as Obsidian's table does. */
+    private endResize(): void {
+        const resize = this.resizing;
+        if (!resize) return;
+        this.resizing = null;
+        if (resize.width === Math.round(resize.startWidth)) return;
+        this.config.set('columnSize', { ...this.columnSizes(), [resize.property]: resize.width });
     }
 
     /** The wheel is hovering this scene: light up its row and bring it into view. */
@@ -523,9 +599,9 @@ export class TimetableView extends BasesView {
         this.mountPatternDefs();
         this.renderBookNotice(groups);
 
-        this.renderToolbar();
         const allItems = groups.flatMap(group => group.items);
         if (allItems.length === 0) {
+            this.renderNewSketchToolbar();
             this.rootEl.createDiv({ cls: 'ert-timetable__empty', text: t('ui.timetable.empty') });
             this.pruneDrawers(new Set());
             return;
@@ -538,12 +614,30 @@ export class TimetableView extends BasesView {
         const columnCount = 1 + (showRings ? 1 : 0) + properties.length;
 
         const table = this.rootEl.createEl('table', { cls: 'ert-timetable__table' });
-        table.setCssProps({ '--ert-timetable-rings-per-line': String(perLine) });
+        // Fixed widths, like Obsidian's own table: the author's saved sizes, or defaults.
+        const sizes = this.columnSizes();
+        const colgroup = table.createEl('colgroup');
+        let tableWidth = 0;
+        const addColumn = (width: number, property?: BasesPropertyId): void => {
+            const col = colgroup.createEl('col');
+            col.setCssProps({ '--ert-timetable-col-width': `${width}px` });
+            if (property) col.dataset.property = property;
+            tableWidth += width;
+        };
+        addColumn(NUMBER_COLUMN_WIDTH);
+        if (showRings) addColumn(perLine * 12 + 18);
+        for (const property of properties) addColumn(sizes[property] ?? this.defaultColumnWidth(property), property);
+        table.setCssProps({ '--ert-timetable-rings-per-line': String(perLine), '--ert-timetable-width': `${tableWidth}px` });
+
         const headRow = table.createEl('thead').createEl('tr');
-        headRow.createEl('th', { cls: 'ert-timetable__num-head', text: '#' });
+        // + New sketch lives in the number column's header, so it stays in reach while scrolling.
+        this.renderHeaderNewSketch(headRow.createEl('th', { cls: 'ert-timetable__num-head' }));
         if (showRings && layout) this.renderRingsHeader(headRow.createEl('th', { cls: 'ert-timetable__rings-head' }), layout);
         for (const property of properties) {
-            headRow.createEl('th', { text: this.config.getDisplayName(property) });
+            const header = headRow.createEl('th', { cls: 'ert-timetable__prop-head' });
+            header.createSpan({ cls: 'ert-timetable__prop-label', text: this.config.getDisplayName(property) });
+            const handle = header.createDiv({ cls: 'ert-timetable__resize' });
+            handle.dataset.property = property;
         }
 
         const showGroupHeaders = groups.length > 1 || groups[0].label !== null;
@@ -586,7 +680,14 @@ export class TimetableView extends BasesView {
         return id;
     }
 
-    private renderToolbar(): void {
+    private renderHeaderNewSketch(cell: HTMLElement): void {
+        const button = cell.createEl('button', { cls: 'ert-timetable__new-sketch ert-timetable__new-sketch--header' });
+        setIcon(button.createSpan({ cls: 'ert-timetable__new-sketch-icon' }), 'plus');
+        button.createSpan({ text: t('ui.timetable.newSketch') });
+    }
+
+    /** An empty table has no header row, so + New sketch sits above the message. */
+    private renderNewSketchToolbar(): void {
         const toolbar = this.rootEl.createDiv({ cls: 'ert-timetable__toolbar' });
         const button = toolbar.createEl('button', { cls: 'ert-timetable__new-sketch' });
         setIcon(button.createSpan({ cls: 'ert-timetable__new-sketch-icon' }), 'plus');
@@ -705,7 +806,7 @@ export class TimetableView extends BasesView {
             // Beats run across the table as quiet dividers, as on the wheel.
             const cell = tr.createEl('td', { cls: 'ert-timetable__beat' });
             cell.colSpan = columnCount - 1;
-            cell.createSpan({ cls: 'ert-timetable__beat-title', text: row.basename });
+            cell.createSpan({ cls: 'ert-timetable__beat-title', text: displayName(row.basename) });
             const model = firstText(frontmatterKey(frontmatter, 'Beat Model'));
             if (model) cell.createSpan({ cls: 'ert-timetable__beat-model', text: model });
             const purpose = readBeatPurpose(frontmatter ?? null);
@@ -798,7 +899,7 @@ export class TimetableView extends BasesView {
         const { type, name } = parsePropertyId(property);
         if (type === 'file' && name === 'name') {
             cell.addClass('ert-timetable__name');
-            cell.setText(entry.file.basename);
+            cell.setText(displayName(entry.file.basename));
             return;
         }
         if (type === 'note' && this.isWhenProperty(name)) {

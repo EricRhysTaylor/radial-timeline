@@ -89,6 +89,11 @@ export function buildTableRow(
     };
 }
 
+/** A note's name as the table shows it: the number prefix lives in the number cell, so it isn't repeated. */
+export function displayName(basename: string): string {
+    return basename.replace(/^\s*\d+(?:\.\d+)?\s+/, '');
+}
+
 /**
  * Manuscript order, as on the wheel: act first, then the filename's number
  * prefix, then the name. Rows without an act come last.

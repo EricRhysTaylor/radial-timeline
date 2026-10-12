@@ -30,6 +30,8 @@ describe('tableColumns', () => {
         expect(columns.timetable).toContain('Synopsis');
         expect(columns.timetable).not.toContain('Status');
         expect(columns.timetable).not.toContain('Subplot');
+        expect(columns.timetable).not.toContain('Act');
+        expect(columns.table).toContain('Act');
         expect(columns.table).toContain('Status');
         expect(columns.table).toContain('Subplot');
     });

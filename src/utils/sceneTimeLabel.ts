@@ -1,5 +1,6 @@
 import { formatLocalDateKey, parseDuration, parseWhenField } from './date';
 import { t } from '../i18n';
+import { whenTextHasClock } from './whenFormat';
 
 /** Display author timing without inventing a clock time for partial dates. */
 export function sceneTimeLabel(when: unknown, duration: unknown): { text: string; description: string } {
@@ -7,7 +8,7 @@ export function sceneTimeLabel(when: unknown, duration: unknown): { text: string
     const rawDuration = typeof duration === 'string' || typeof duration === 'number'
         ? String(duration).trim() : '';
     const start = parseWhenField(rawWhen);
-    const hasClock = /\d{1,2}:\d{2}|\d\s*(?:am|pm)\b/i.test(rawWhen);
+    const hasClock = whenTextHasClock(rawWhen);
     const clock = (date: Date): string => date.toLocaleTimeString([], {
         hour: 'numeric', minute: '2-digit',
         ...(date.getSeconds() ? { second: '2-digit' as const } : {})

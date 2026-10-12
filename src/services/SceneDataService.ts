@@ -15,6 +15,7 @@ import { App, TFile } from 'obsidian';
 import type { TimelineItem, RadialTimelineSettings, BookMeta, MatterMeta } from '../types';
 import { frontmatterValueToText, getActiveFrontmatterMappings, normalizeBeatFrontmatterKeys, normalizeFrontmatterKeys, readBeatInThisBook } from '../utils/frontmatter';
 import { parseWhenField } from '../utils/date';
+import { whenTextHasClock } from '../utils/whenFormat';
 import { normalizeBooleanValue, isStoryBeat } from '../utils/sceneHelpers';
 import { stripWikiLinks } from '../utils/text';
 import { filterBeatsBySystem } from '../utils/gossamer';
@@ -114,6 +115,7 @@ export class SceneDataService {
 
                     const hasValidWhen = when instanceof Date && !isNaN(when.getTime());
                     const normalizedWhen = hasValidWhen ? when : undefined;
+                    const whenHasClock = typeof whenStr === 'string' ? whenTextHasClock(whenStr) : hasValidWhen;
                     const missingWhen = !hasValidWhen;
                     const isoDate = hasValidWhen && normalizedWhen
                         ? normalizedWhen.toISOString().split('T')[0]
@@ -207,6 +209,7 @@ export class SceneDataService {
                         scenes.push({
                             date: isoDate,
                             when: normalizedWhen,
+                            whenHasClock,
                             missingWhen,
                             path: file.path,
                             sceneId,
@@ -290,6 +293,7 @@ export class SceneDataService {
                     scenes.push({
                         date: isoDate,
                         when: when,
+                        whenHasClock: typeof whenStr === 'string' ? whenTextHasClock(whenStr) : when !== undefined,
                         path: file.path,
                         title: file.basename, // Use filename as title, as requested
                         synopsis: backdropContext, // Backdrop hover context

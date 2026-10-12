@@ -107,6 +107,8 @@ export interface TimelineItem {
     synopsis?: string;
     Summary?: string;
     when?: Date;
+    /** Whether the When YAML names a clock time. A date-only When parses as noon but shows no time. */
+    whenHasClock?: boolean;
     actNumber?: number;
     Character?: string[];
     status?: string | string[];

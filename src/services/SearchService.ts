@@ -50,9 +50,9 @@ const containsWholePhrase = (haystack: string | undefined, phrase: string, isDat
  * wants to know); search sees whatever the vault holds, so it checks first
  * rather than letting a malformed `When:` abort the whole run.
  */
-function displayDateOrEmpty(when: Date | undefined): string {
+function displayDateOrEmpty(when: Date | undefined, hasClock: boolean): string {
     if (!(when instanceof Date) || Number.isNaN(when.getTime())) return '';
-    return formatDateForDisplay(when);
+    return formatDateForDisplay(when, hasClock);
 }
 
 function appendSearchValue(fields: string[], value: unknown): void {
@@ -107,7 +107,7 @@ export function timelineSceneMatchesSearch(scene: TimelineItem, phrase: string, 
     if (textMatched) return true;
 
     const dateFieldNumeric = scene.when?.toLocaleDateString();
-    const dateFieldDisplay = displayDateOrEmpty(scene.when);
+    const dateFieldDisplay = displayDateOrEmpty(scene.when, scene.whenHasClock ?? true);
     return containsWholePhrase(dateFieldNumeric, phrase, true) ||
         containsWholePhrase(dateFieldDisplay, phrase, false);
 }

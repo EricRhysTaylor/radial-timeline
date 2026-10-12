@@ -45,7 +45,7 @@ describe('formatHoverMetadataValue', () => {
     });
 
     it('renders a valid Date in the timeline date format', () => {
-        expect(formatHoverMetadataValue(new Date(1812, 7, 1, 8, 0))).toBe('Aug 1, 1812 @ 8AM');
+        expect(formatHoverMetadataValue(new Date(1812, 7, 1, 8, 0))).toBe('Sat Aug 1, 1812 @ 8AM');
     });
 
     it('coerces scalars and empties', () => {
@@ -58,13 +58,17 @@ describe('formatHoverMetadataValue', () => {
 
 describe('formatDateForDisplay', () => {
     it('names midnight and noon rather than printing 12', () => {
-        expect(formatDateForDisplay(new Date(1812, 3, 6, 0, 0))).toBe('Apr 6, 1812 @ Midnight');
-        expect(formatDateForDisplay(new Date(1812, 3, 6, 12, 0))).toBe('Apr 6, 1812 @ Noon');
+        expect(formatDateForDisplay(new Date(1812, 3, 6, 0, 0))).toBe('Mon Apr 6, 1812 @ Midnight');
+        expect(formatDateForDisplay(new Date(1812, 3, 6, 12, 0))).toBe('Mon Apr 6, 1812 @ Noon');
     });
 
     it('includes minutes only when they are non-zero', () => {
-        expect(formatDateForDisplay(new Date(1812, 3, 6, 14, 0))).toBe('Apr 6, 1812 @ 2PM');
-        expect(formatDateForDisplay(new Date(1812, 3, 6, 14, 5))).toBe('Apr 6, 1812 @ 2:05PM');
+        expect(formatDateForDisplay(new Date(1812, 3, 6, 14, 0))).toBe('Mon Apr 6, 1812 @ 2PM');
+        expect(formatDateForDisplay(new Date(1812, 3, 6, 14, 5))).toBe('Mon Apr 6, 1812 @ 2:05PM');
+    });
+
+    it('shows no time for a date-only When, which parses as noon', () => {
+        expect(formatDateForDisplay(new Date(2085, 4, 10, 12, 0), false)).toBe('Thu May 10, 2085');
     });
 
     it('is strict about invalid dates instead of rendering an empty line', () => {

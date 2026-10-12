@@ -23,6 +23,7 @@
 import type { RadialTimelineSettings, HoverMetadataField } from '../types/settings';
 import type { TimelineItem } from '../types';
 import { getBeatConfigForItem } from './beatsTemplates';
+import { formatSceneWhen } from './whenFormat';
 
 /**
  * Resolve the enabled hover-metadata fields for an item.
@@ -74,44 +75,19 @@ export function readFrontmatterFieldValue(
 }
 
 /**
- * Format a `When` date the way the timeline displays it.
+ * Format a `When` date the way the timeline displays it (the shared When
+ * formatter, `formatSceneWhen`). `hasClock` says whether the author's YAML names
+ * a time; a date-only When shows no time rather than an invented "@ Noon".
  *
  * Strict by design: an invalid Date is a data problem the caller must not paper
  * over, so it throws rather than silently rendering an empty line. Callers that
  * cannot vouch for the value should check `instanceof Date` first.
  *
- * @returns e.g. "Aug 1, 1812 @ 8AM", "Apr 6, 1812 @ Noon", "Apr 6, 1812 @ Midnight"
+ * @returns e.g. "Sat Aug 1, 1812 @ 8AM", "Mon Apr 6, 1812 @ Noon", "Thu May 10, 2085"
  */
-export function formatDateForDisplay(when: Date | undefined): string {
+export function formatDateForDisplay(when: Date | undefined, hasClock = true): string {
     if (!when) return '';
-    if (!(when instanceof Date) || Number.isNaN(when.getTime())) {
-        throw new Error('formatDateForDisplay requires a valid Date object');
-    }
-
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const month = months[when.getMonth()];
-    const day = when.getDate();
-    const year = when.getFullYear();
-    const hours = when.getHours();
-    const minutes = when.getMinutes();
-
-    let dateStr = `${month} ${day}, ${year}`;
-
-    if (hours === 0 && minutes === 0) {
-        dateStr += ' @ Midnight';
-    } else if (hours === 12 && minutes === 0) {
-        dateStr += ' @ Noon';
-    } else {
-        const period = hours >= 12 ? 'PM' : 'AM';
-        const displayHours = hours % 12 === 0 ? 12 : hours % 12;
-        if (minutes === 0) {
-            dateStr += ` @ ${displayHours}${period}`;
-        } else {
-            dateStr += ` @ ${displayHours}:${String(minutes).padStart(2, '0')}${period}`;
-        }
-    }
-
-    return dateStr;
+    return formatSceneWhen(when, hasClock);
 }
 
 /**

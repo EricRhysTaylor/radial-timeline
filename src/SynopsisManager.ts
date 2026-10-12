@@ -29,6 +29,7 @@ import {
 } from './renderer/layout/LayoutConstants';
 import { isBeatNote, shouldDisplayMissingWhenWarning, buildChronologicalPlacements, sceneKey } from './utils/sceneHelpers';
 import { parseWhenField } from './utils/date';
+import { whenTextHasClock } from './utils/whenFormat';
 import { getReadabilityMultiplier, getReadabilityScale } from './utils/readability';
 import { applySearchTermHighlightsInRoot, clearSearchHighlightsInRoot } from './view/interactions/SearchInteractions';
 import { shouldHighlightMetadataTerm } from './services/searchState';
@@ -1001,10 +1002,10 @@ export default class SynopsisManager {
           // Use Alien Date Format
           formattedDate = conversion.formatted;
         } else {
-          formattedDate = formatDateForDisplay(scene.when);
+          formattedDate = formatDateForDisplay(scene.when, scene.whenHasClock ?? true);
         }
       } else {
-        formattedDate = formatDateForDisplay(scene.when);
+        formattedDate = formatDateForDisplay(scene.when, scene.whenHasClock ?? true);
       }
     }
 
@@ -1012,7 +1013,7 @@ export default class SynopsisManager {
     if (isBackdrop && scene.End) {
       const endDate = parseWhenField(scene.End);
       if (endDate) {
-        duration = t('ui.synopsisManager.backdropEnd', { end: formatDateForDisplay(endDate) });
+        duration = t('ui.synopsisManager.backdropEnd', { end: formatDateForDisplay(endDate, whenTextHasClock(scene.End)) });
       } else {
         duration = t('ui.synopsisManager.backdropEnd', { end: scene.End });
       }

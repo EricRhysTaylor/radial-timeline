@@ -111,7 +111,7 @@ The YAML audit panel can flag a Base whose columns have drifted from the templat
 An author-facing note type, `Class: Sketch`, for story material that has a place but isn't manuscript yet.
 
 - **Fields.** A subset of the scene base template: Act, When, Subplot, Synopsis, Character, Place. There's nothing new to learn, and every field is one the author reads, so it passes the doctrine litmus test.
-- **Lives in the book folder** beside the scenes, so the book's Base finds it, and Promote converts it in place without moving it (Eric, 2026-10-12).
+- **Lives in the book folder** beside the scenes, so the book's table finds it, and Promote converts it in place without moving it (Eric, 2026-10-12).
 - **Shown only in the Timeline table** (decided 2026-10-11). The wheel needs no change: it renders `class === 'scene'` only, so sketches already stay off it. They are also excluded from exports, numbering, word counts and targets, Pulse, Summary and Gossamer.
 - **Feeds Inquiry** as outline context (decided 2026-10-11), and no other AI pass.
 - **Creating a sketch.** A **+ New sketch** button in the Timeline table calls `createFileForView(baseFileName, frontmatterProcessor)`; the API has had it since 1.10.2. The processor sets `Class: Sketch` and prefills Act and Subplot from the group or the selected row. This is the "add a row and get a timeline entry" flow. The sketch stays in the table until it is promoted.
@@ -155,11 +155,12 @@ This change is independent of the table and can ship first.
 
 **Following the book** (decided 2026-10-12)
 - **The timeline is the master view.** The table follows it, and the table never changes which book the timeline shows.
-- **One `.base` file per book, kept in the book folder** as `Timeline table.base`, beside the scenes and sketches (Eric). A single shared Base can't follow the book: the built-in Table view inside it has no idea which book is selected, and the Timeline table can only narrow the rows a Base's query returns, never add rows.
-- **Self-locating filter.** The Base filters on its own folder (`file.inFolder(this.file.folder)`) rather than a hard-coded path. The same file then keeps working when a book is renamed or copied (submission snapshots, working drafts), and RT finds a book's table by convention (`<sourceFolder>/Timeline table.base`) with no path map in plugin data. To verify in implementation: that `this` resolves to the `.base` file when it's opened directly. If it doesn't, write the book's `sourceFolder` into the filter, and have Book Manager's rename and copy flows update it.
-- **Creating it.** The first time the button or command runs for a book without a table, RT shows a one-line confirm and writes the file. It's an author file, written on request. The confirm can adopt an existing Base for the book instead (for example Eric's `Outline/Book 2 Scenes.base`).
+- **One `.base` file per book, all kept together in `Radial Timeline/Tables/`** (Eric, 2026-10-12: keep the tables together, saga included, with no new settings). It sits under the plugin's single system folder (`RT_SYSTEM_FOLDER` and `systemFolderPath('Tables')` in `src/utils/systemFolder.ts`), whose doctrine is one top-level folder and no siblings. So no new setting is needed, and authors who don't keep an Outline folder aren't left out. Files are named by book title, for example `Radial Timeline/Tables/Book 2 Saturn & Jupiter.base`. A map from book ID to file lives in plugin data, so renaming a book never orphans its table.
+- **Why one file per book.** A single shared Base can't follow the book: the built-in Table view inside it has no idea which book is selected, and the Timeline table can only narrow the rows a Base's query returns, never add rows.
+- **The filter names the book's `sourceFolder`.** Book Manager's rename and copy flows update that one line, and they leave the author's columns, sorts and views alone. A copied book (a submission snapshot or working draft) gets its own table the first time it's opened.
+- **Creating it.** The first time the button or command runs for a book without a table, RT shows a one-line confirm and writes the file.
 - **Book switching.** A table tab opened by the button or command follows `setActiveBookId`. It is notified the same way Inquiry is (`notifyBookSettingsChanged`) and re-targets the leaf to the new book's Base. A Base the author opened directly from the file explorer does not follow. If its book differs from the timeline's, the view shows a one-line notice ("This table shows Book 3; the timeline shows Book 2") with a **Switch timeline** action, because cross-highlighting needs both views on the same book.
-- **Saga scope** (`timelineScope === 'saga'`) opens a saga table covering every book with `includeInSaga`, grouped by book and then by act. It spans several books, so it can't live in one book folder. It's created at the vault root as `Saga timeline table.base`, and if the author moves it, RT keeps the moved path in plugin data.
+- **Saga scope** (`timelineScope === 'saga'`) opens a saga table covering every book with `includeInSaga`, grouped by book and then by act. It lives with the book tables as `Radial Timeline/Tables/Saga.base`.
 - **No fallbacks.** If the active book has no `sourceFolder`, the button explains why and opens Book Manager. It never shows a vault-wide table instead.
 
 ## Considered and set aside: a lanes layout ("Unwrapped")
@@ -204,7 +205,6 @@ Settled on 2026-10-12: one When formatter, no "@ Noon" for date-only values, ske
 
 The title bar keeps its own format (decided 2026-10-12).
 
-Also settled on 2026-10-12: the icons (`file-up` for Promote, `table-2` for the Timeline table button), and one table per book, kept in the book folder and following the timeline.
+Also settled on 2026-10-12: the icons (`file-up` for Promote, `table-2` for the Timeline table button), and one table per book, following the timeline. All tables, saga included, live together in `Radial Timeline/Tables/`, with no new settings.
 
-Still open:
-1. **The saga table's home:** the vault root by default, or somewhere else?
+Nothing else is open. The remaining unknowns are implementation spikes (phase 3).

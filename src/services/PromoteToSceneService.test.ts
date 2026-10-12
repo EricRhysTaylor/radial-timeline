@@ -175,6 +175,7 @@ describe('applyPromotion', () => {
         expect(fm.Subplot).toEqual(['Entiat Chelan Arc']);
         expect(fm.Status).toBe('Complete');
         expect(fm['Publish Stage']).toBe('Zero');
+        expect(fm.Chapter).toBeNull();
         expect(fm).not.toHaveProperty('Place');
         expect(ensureSceneIds).toHaveBeenCalledWith(expect.objectContaining({ files: [note] }));
         expect(reorderSceneFields).toHaveBeenCalledWith(expect.objectContaining({ files: [note] }));

@@ -288,8 +288,10 @@ export async function applyPromotion(
                 fm[classKey] = 'Scene';
                 // Recompute against the live frontmatter, not the cached plan.
                 for (const key of findMissingTemplateKeys(templateKeys, fm, mappings)) {
+                    // A blank template value stays blank (`When:`), as in a new
+                    // scene; an empty string would be written as `When: ""`.
                     const value = values[key];
-                    fm[key] = value === null || value === undefined ? '' : value;
+                    fm[key] = value === undefined || value === '' ? null : value;
                 }
             });
             result.promoted.push(entry.file);

@@ -107,6 +107,10 @@ export class SketchDrawer extends Component {
         if (!target) return;
         const ring = target.closest<HTMLElement>('.ert-timetable__drawer-ring');
         if (ring?.dataset.ring) {
+            // Show the new state at once; the table redraws the bar from the note afterwards.
+            const on = !ring.hasClass('is-on');
+            ring.toggleClass('is-on', on);
+            ring.setAttr('aria-pressed', String(on));
             void this.toggleRing(ring.dataset.ring);
             return;
         }
@@ -242,7 +246,11 @@ export class SketchDrawer extends Component {
 
     // ── Body ────────────────────────────────────────────────────────────
 
-    /** Read the body from disk: refresh an unedited drawer, or flag a conflict with unsaved text. */
+    /**
+     * Read the body from disk. A drawer with no unsaved text takes the new
+     * text, even while its editor has focus, so later typing never builds on a
+     * stale copy. A drawer with unsaved text flags the conflict instead.
+     */
     private async syncFromDisk(): Promise<void> {
         const { body } = splitBody(await this.plugin.app.vault.read(this.file));
         if (body === this.savedBody) return;
@@ -251,7 +259,13 @@ export class SketchDrawer extends Component {
             return;
         }
         this.savedBody = body;
-        if (this.isEditing()) return;
+        if (this.textarea && this.isEditing()) {
+            const caret = this.textarea.selectionStart;
+            this.textarea.value = this.visibleText();
+            this.textarea.setSelectionRange(caret, caret);
+            this.growEditor();
+            return;
+        }
         if (this.wantsFocus) this.showEditor();
         else this.showPreview();
     }

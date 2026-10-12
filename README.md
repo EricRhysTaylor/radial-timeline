@@ -79,6 +79,7 @@ Ongoing series on the [Radial Timeline YouTube channel](https://www.youtube.com/
 - **Volume 5 — Author Progress Report (APR)**: [Author Progress Report (APR) Volume 5](https://youtu.be/euJ2qOUZgco?si=hjx3aegx7bka7Z61)
 - **Volume 6 — Gossamer Mode**: [Gossamer Mode Volume 6](https://youtu.be/DOUVYXFwigM?si=vBuzvxPteXVjVFmM)
 - **Volume 8 — Community**: [Radial Timeline Community Volume 8](https://youtu.be/2srEjNRs6X4)
+- **Volume 10 — Quick Start**: [Quick Start Volume 10](https://youtu.be/n53fYUejH44)
 
 Shorts:
 

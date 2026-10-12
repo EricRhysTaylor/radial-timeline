@@ -3,12 +3,13 @@
  * Copyright (c) 2025 Eric Rhys Taylor
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  *
- * The two undocumented Obsidian surfaces the plugin reaches for: the
- * settings pane and the command manager. Every call site goes through here
- * so the cast lives in one place and a future API change is one edit.
+ * The undocumented Obsidian surfaces the plugin reaches for: the settings
+ * pane, the command manager and a leaf's tab header. Every call site goes
+ * through here so the cast lives in one place and a future API change is one
+ * edit.
  */
 
-import type { App } from 'obsidian';
+import type { App, WorkspaceLeaf } from 'obsidian';
 
 export const PLUGIN_SETTINGS_TAB_ID = 'radial-timeline';
 
@@ -30,4 +31,13 @@ export function executeCommandById(app: App, commandId: string): boolean {
     if (!commands?.executeCommandById) return false;
     commands.executeCommandById(commandId);
     return true;
+}
+
+/** The leaf whose tab header is `header`, or null. Tab headers carry no leaf id in the DOM. */
+export function leafForTabHeader(app: App, header: Element): WorkspaceLeaf | null {
+    let found: WorkspaceLeaf | null = null;
+    app.workspace.iterateAllLeaves(leaf => {
+        if ((leaf as unknown as { tabHeaderEl?: Element }).tabHeaderEl === header) found = leaf; // SAFE: a leaf's tab header is not in Obsidian's public typings; this is the one cast for it
+    });
+    return found;
 }

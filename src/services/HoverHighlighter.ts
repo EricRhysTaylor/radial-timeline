@@ -2,14 +2,18 @@ import type { App } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { SceneHighlighter } from './SceneHighlighter';
 import { bindToAllDocuments } from '../utils/documents';
+import { leafForTabHeader } from '../utils/obsidianInternals';
 
 /**
- * Handles hover interactions between Obsidian file explorer/tab hover and the timeline.
+ * Hovering a scene note in the file explorer, or its tab header, lights that
+ * scene up on every open timeline, the same spotlight the wheel's own hover
+ * and the Timetable use. Leaving clears it. Opening a scene note marks it as
+ * open on the timeline (`openScenePaths`); it doesn't dim the rest of the
+ * wheel while the author writes.
  */
 export class HoverHighlighter {
-    private currentHoverPath: string | null = null;
-    private currentTabHoverPath: string | null = null;
-    private lastHighlightedFile: string | null = null;
+    /** The scene note under the pointer in the explorer or a tab header, if any. */
+    private hoveredPath: string | null = null;
 
     constructor(
         private app: App,
@@ -22,90 +26,42 @@ export class HoverHighlighter {
         // listen on every open document, including popouts opened later.
         bindToAllDocuments(this.plugin, (doc) => this.registerHoverListeners(doc));
 
-        // File open highlighting
         this.plugin.registerEvent(this.app.workspace.on('file-open', (file) => {
-            if (file) {
-                if (this.lastHighlightedFile && this.lastHighlightedFile !== file.path) {
-                    this.highlighter.highlight(this.lastHighlightedFile, false);
-                }
-                this.highlighter.highlight(file.path, true);
-                this.lastHighlightedFile = file.path;
-                if (this.plugin.isSceneFile(file.path)) {
-                    this.plugin.openScenePaths.add(file.path);
-                    this.plugin.refreshTimelineIfNeeded(null);
-                }
-            } else {
-                if (this.lastHighlightedFile) {
-                    this.highlighter.highlight(this.lastHighlightedFile, false);
-                    this.lastHighlightedFile = null;
-                }
-            }
+            if (!file || !this.plugin.isSceneFile(file.path)) return;
+            this.plugin.openScenePaths.add(file.path);
+            this.plugin.refreshTimelineIfNeeded(null);
         }));
     }
 
     private registerHoverListeners(doc: Document): void {
-        // File explorer hover
         this.plugin.registerDomEvent(doc, 'mouseover', (evt: MouseEvent) => {
-            const target = evt.target as HTMLElement;
-            const fileItem = target.closest('.nav-file-title');
-            if (!fileItem) return;
-            const navFile = fileItem.closest('.nav-file');
-            if (!navFile) return;
-            const filePath = navFile.getAttribute('data-path');
-            if (!filePath) return;
-            if (this.currentHoverPath === filePath) return;
-            this.currentHoverPath = filePath;
-            if (this.plugin.isSceneFile(filePath)) {
-                this.highlighter.highlight(filePath, true);
-            }
+            const path = this.scenePathUnder(evt.target);
+            if (!path || path === this.hoveredPath) return;
+            this.hoveredPath = path;
+            this.highlighter.spotlight(path);
         });
-
         this.plugin.registerDomEvent(doc, 'mouseout', (evt: MouseEvent) => {
-            const target = evt.target as HTMLElement;
-            const fileItem = target.closest('.nav-file-title');
-            if (!fileItem) return;
-            const navFile = fileItem.closest('.nav-file');
-            if (!navFile) return;
-            const filePath = navFile.getAttribute('data-path');
-            if (!filePath || this.currentHoverPath !== filePath) return;
-            this.currentHoverPath = null;
-            if (this.plugin.isSceneFile(filePath)) {
-                this.highlighter.highlight(filePath, false);
-            }
+            if (this.hoveredPath === null) return;
+            if (this.scenePathUnder(evt.relatedTarget) === this.hoveredPath) return;
+            this.hoveredPath = null;
+            this.highlighter.spotlight(null);
         });
+    }
 
-        // Tab hover
-        this.plugin.registerDomEvent(doc, 'mouseover', (evt: MouseEvent) => {
-            const tabHeader = (evt.target as HTMLElement).closest('.workspace-tab-header');
-            if (!tabHeader) return;
-            const tabId = tabHeader.getAttribute('data-tab-id');
-            if (!tabId) return;
-            const leaf = this.app.workspace.getLeafById(tabId);
-            if (!leaf) return;
-            const state = leaf.getViewState();
-            const filePath = state?.state?.file as string | undefined;
-            if (!filePath || state?.type !== 'markdown') return;
-            if (this.currentTabHoverPath === filePath) return;
-            this.currentTabHoverPath = filePath;
-            if (this.plugin.isSceneFile(filePath)) {
-                this.highlighter.highlight(filePath, true);
-            }
-        });
-
-        this.plugin.registerDomEvent(doc, 'mouseout', (evt: MouseEvent) => {
-            const tabHeader = (evt.target as HTMLElement).closest('.workspace-tab-header');
-            if (!tabHeader) return;
-            const tabId = tabHeader.getAttribute('data-tab-id');
-            if (!tabId) return;
-            const leaf = this.app.workspace.getLeafById(tabId);
-            if (!leaf) return;
-            const state = leaf.getViewState();
-            const filePath = state?.state?.file as string | undefined;
-            if (!filePath || state?.type !== 'markdown' || this.currentTabHoverPath !== filePath) return;
-            this.currentTabHoverPath = null;
-            if (this.plugin.isSceneFile(filePath)) {
-                this.highlighter.highlight(filePath, false);
-            }
-        });
+    /** The scene note an explorer row or tab header stands for. */
+    private scenePathUnder(target: EventTarget | null): string | null {
+        const element = target instanceof Element ? target : null;
+        if (!element) return null;
+        let path: string | null = null;
+        const explorerRow = element.closest('.nav-file-title');
+        if (explorerRow) {
+            path = explorerRow.getAttribute('data-path');
+        } else {
+            const tabHeader = element.closest('.workspace-tab-header');
+            const state = tabHeader ? leafForTabHeader(this.app, tabHeader)?.getViewState() : undefined;
+            const file = (state?.state as { file?: unknown } | undefined)?.file;
+            if (state?.type === 'markdown' && typeof file === 'string') path = file;
+        }
+        return path && this.plugin.isSceneFile(path) ? path : null;
     }
 }

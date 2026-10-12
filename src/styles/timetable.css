@@ -97,7 +97,8 @@
   cursor: var(--cursor-link);
 }
 
-.ert-timetable__row:hover {
+/* Hover paints the cells: Obsidian's table styles would cover a row background. */
+.ert-timetable .ert-timetable__table tbody > tr.ert-timetable__row:hover > td {
   background: var(--bases-table-row-background-hover, var(--background-modifier-hover));
 }
 

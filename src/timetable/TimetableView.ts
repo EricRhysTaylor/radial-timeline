@@ -74,7 +74,7 @@ const RINGS_REFRESH_DELAY_MS = 300;
 const NUMBER_COLUMN_WIDTH = 132;
 const OTHER_COLUMN_WIDTH = 140;
 const MIN_COLUMN_WIDTH = 48;
-const DEFAULT_COLUMN_WIDTHS: Record<string, number> = { When: 170, Duration: 100, Chapter: 150, Synopsis: 360, Act: 56 };
+const DEFAULT_COLUMN_WIDTHS: Record<string, number> = { When: 220, Duration: 100, Chapter: 150, Synopsis: 360, Act: 56 };
 const NAME_COLUMN_WIDTH = 220;
 
 /** A column resize in progress. */

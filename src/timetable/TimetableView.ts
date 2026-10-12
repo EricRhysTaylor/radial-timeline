@@ -17,9 +17,13 @@ import {
     BasesView,
     Keymap,
     MarkdownView,
+    Notice,
     TFile,
+    getFrontMatterInfo,
+    normalizePath,
     parsePropertyId,
     setIcon,
+    stringifyYaml,
     type App,
     type BasesAllOptions,
     type BasesEntry,
@@ -32,7 +36,8 @@ import type { TimelineItem } from '../types';
 import { t } from '../i18n';
 import { getActiveBook, getBookIdForPath, getSagaBooks, getTimelineScope } from '../utils/books';
 import { getConfiguredActCount, parseActLabels, resolveActLabel } from '../utils/acts';
-import { getActiveFrontmatterMappings, readBeatPurpose } from '../utils/frontmatter';
+import { canonicalizeFrontmatterKey, getActiveFrontmatterMappings, readBeatPurpose } from '../utils/frontmatter';
+import { listAuthorQueries } from '../utils/authorQueryComments';
 import { parseWhenField } from '../utils/date';
 import { formatSceneWhen, whenTextHasClock } from '../utils/whenFormat';
 import { normalizeStatus } from '../utils/text';
@@ -52,7 +57,9 @@ import {
     type RingLayout,
     type TimetableRow,
 } from './timetableModel';
-import { TIMETABLE_VIEW_TYPE } from './timetableFiles';
+import { authorKeyFor, TIMETABLE_VIEW_TYPE } from './timetableFiles';
+import { SketchDrawer, type SketchDrawerHost } from './SketchDrawer';
+import type { BookProfile } from '../types/settings';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const RINGS_PER_LINE_DEFAULT = 5;
@@ -69,6 +76,8 @@ interface TableGroup {
     id: string;
     /** Header text, or null when the table isn't grouped. */
     label: string | null;
+    /** The act every row shares, when the group is an act (so + New sketch can prefill it). */
+    act?: number | null;
     items: TableItem[];
 }
 
@@ -91,6 +100,7 @@ export function timetableViewOptions(): BasesAllOptions[] {
     return [
         { type: 'toggle', key: 'ringsColumn', displayName: t('ui.timetable.optionRings'), default: true },
         { type: 'slider', key: 'ringsPerLine', displayName: t('ui.timetable.optionRingsPerLine'), default: RINGS_PER_LINE_DEFAULT, min: 3, max: 8, step: 1 },
+        { type: 'toggle', key: 'openAllSketches', displayName: t('ui.timetable.optionOpenSketches'), default: false },
     ];
 }
 
@@ -141,6 +151,26 @@ export class TimetableView extends BasesView {
     private rings: WheelRings | null = null;
     private ringsTimer: number | null = null;
     private ringsGeneration = 0;
+    /** Sketch drawers, kept across redraws so an open editor keeps its text. */
+    private readonly drawers = new Map<string, SketchDrawer>();
+    private readonly openDrawers = new Set<string>();
+    /** Drawers the author closed while "Open every sketch" is on. */
+    private readonly closedDrawers = new Set<string>();
+    /** A sketch just created here: open its drawer and put the cursor in it. */
+    private focusPath: string | null = null;
+    /** A redraw that waited for the author to stop typing in a drawer. */
+    private renderDeferred = false;
+    private decorateGeneration = 0;
+    private readonly rowEls = new Map<string, HTMLElement>();
+    private readonly synopsisFromBody = new Map<string, HTMLElement>();
+    private readonly drawerHost: SketchDrawerHost = {
+        promote: file => { void runPromotion(this.plugin, [file]); },
+        openNote: (file, evt) => { void openFromTimetable(this.plugin.app, file, evt); },
+        close: path => this.closeDrawer(path),
+        editingEnded: () => {
+            if (this.renderDeferred) this.render();
+        },
+    };
 
     constructor(controller: QueryController, containerEl: HTMLElement, private readonly plugin: RadialTimelinePlugin) {
         super(controller);
@@ -173,16 +203,111 @@ export class TimetableView extends BasesView {
             void this.plugin.setActiveBookId(switchBook.dataset.bookId);
             return;
         }
+        const newSketch = target.closest<HTMLElement>('.ert-timetable__new-sketch');
+        if (newSketch) {
+            const act = newSketch.dataset.act ? Number(newSketch.dataset.act) : null;
+            void this.createSketch(act, newSketch.dataset.bookId);
+            return;
+        }
+        // The drawer handles its own clicks.
+        if (target.closest('.ert-timetable__drawer-row')) return;
         const row = target.closest<HTMLElement>('.ert-timetable__row');
-        const file = row?.dataset.path ? this.plugin.app.vault.getFileByPath(row.dataset.path) : null;
-        if (!file) return;
+        const path = row?.dataset.path;
+        const file = path ? this.plugin.app.vault.getFileByPath(path) : null;
+        if (!row || !path || !file) return;
         if (target.closest('.ert-timetable__promote')) {
             void runPromotion(this.plugin, [file]);
             return;
         }
+        if (target.closest('.ert-timetable__drawer-toggle')) {
+            this.toggleDrawer(path);
+            return;
+        }
         // Links, buttons and inputs inside a cell keep their own behavior.
         if (target.closest('a, button, input, textarea, select')) return;
+        // A sketch's row opens its drawer; every other row opens the note.
+        if (row.hasClass('is-sketch') && !Keymap.isModEvent(evt)) {
+            this.toggleDrawer(path);
+            return;
+        }
         void openFromTimetable(this.plugin.app, file, evt);
+    }
+
+    // ── Sketches ────────────────────────────────────────────────────────
+
+    private drawerIsOpen(path: string): boolean {
+        return this.config.get('openAllSketches') === true ? !this.closedDrawers.has(path) : this.openDrawers.has(path);
+    }
+
+    private toggleDrawer(path: string): void {
+        if (this.drawerIsOpen(path)) {
+            this.closeDrawer(path);
+            return;
+        }
+        this.openDrawers.add(path);
+        this.closedDrawers.delete(path);
+        this.render();
+    }
+
+    private closeDrawer(path: string): void {
+        this.openDrawers.delete(path);
+        if (this.config.get('openAllSketches') === true) this.closedDrawers.add(path);
+        const drawer = this.drawers.get(path);
+        if (drawer) {
+            this.drawers.delete(path);
+            this.removeChild(drawer);
+        }
+        this.render();
+    }
+
+    private drawerFor(file: TFile): SketchDrawer {
+        const existing = this.drawers.get(file.path);
+        if (existing) return existing;
+        const drawer = new SketchDrawer(this.plugin, file, this.drawerHost);
+        this.drawers.set(file.path, drawer);
+        this.addChild(drawer);
+        return drawer;
+    }
+
+    /** The book a new sketch goes into: the given one, or the one book this table shows. */
+    private sketchBook(bookId: string | undefined): BookProfile | null {
+        const books = this.plugin.settings.books ?? [];
+        if (bookId) return books.find(book => book.id === bookId) ?? null;
+        const ids = this.bookIdsInView();
+        if (ids.length === 1) return books.find(book => book.id === ids[0]) ?? null;
+        // A table with no notes yet is the timeline's book's table, opened from the timeline.
+        if (ids.length === 0 && getTimelineScope(this.plugin.settings) === 'book') return getActiveBook(this.plugin.settings);
+        return null;
+    }
+
+    /**
+     * + New sketch: a `Class: Sketch` note in the book's folder (never in
+     * Obsidian's new-note location), with the act prefilled from where it was
+     * asked for. Its drawer opens with the cursor in it.
+     */
+    private async createSketch(act: number | null, bookId: string | undefined): Promise<void> {
+        const { app, settings } = this.plugin;
+        const book = this.sketchBook(bookId);
+        if (!book || !book.sourceFolder.trim()) {
+            new Notice(t('ui.timetable.newSketchWhichBook'), 6000);
+            return;
+        }
+        const folder = normalizePath(book.sourceFolder);
+        const name = t('ui.timetable.newSketchName');
+        let path = `${folder}/${name}.md`;
+        for (let counter = 2; app.vault.getAbstractFileByPath(path); counter++) path = `${folder}/${name} ${counter}.md`;
+        const frontmatter: Record<string, unknown> = { [authorKeyFor('Class', settings)]: 'Sketch' };
+        if (act !== null) frontmatter[authorKeyFor('Act', settings)] = act;
+        this.openDrawers.add(path);
+        this.focusPath = path;
+        try {
+            await app.vault.create(path, `---\n${stringifyYaml(frontmatter)}---\n\n`);
+        } catch (error) {
+            this.openDrawers.delete(path);
+            this.focusPath = null;
+            console.error('[Timetable] Could not create the sketch:', error);
+            new Notice(t('ui.timetable.writeFailed', { message: error instanceof Error ? error.message : String(error) }), 8000);
+        }
     }
 
     private toggleGroup(id: string): void {
@@ -231,7 +356,9 @@ export class TimetableView extends BasesView {
         }
         return grouped.map((group, index) => {
             const items = toItems(group.entries);
-            return { id: `group:${index}:${group.key?.toString() ?? ''}`, label: this.groupLabel(group, items), items };
+            const act = this.groupAct(group, items);
+            const label = act !== undefined ? this.actLabel(act) : (group.hasKey() && group.key ? group.key.toString() : t('ui.timetable.noValue'));
+            return { id: `group:${index}:${group.key?.toString() ?? ''}`, label, act, items };
         });
     }
 
@@ -252,15 +379,16 @@ export class TimetableView extends BasesView {
         return groups;
     }
 
-    private groupLabel(group: BasesEntryGroup, items: TableItem[]): string {
-        if (!group.hasKey() || !group.key) return t('ui.timetable.noValue');
-        const text = group.key.toString();
-        const act = Number(text);
-        // Grouped by Act: name the act the way the timeline does.
-        if (Number.isInteger(act) && items.length > 0 && items.every(item => item.row.act === act)) {
-            return this.actLabel(act);
-        }
-        return text;
+    /**
+     * The act a group stands for, when it is grouped by Act: every row shares
+     * the group's key as its act. Such a group is named the way the timeline
+     * names the act. Undefined for any other grouping.
+     */
+    private groupAct(group: BasesEntryGroup, items: TableItem[]): number | null | undefined {
+        if (items.length === 0) return undefined;
+        if (!group.hasKey() || !group.key) return items.every(item => item.row.act === null) ? null : undefined;
+        const act = Number(group.key.toString());
+        return Number.isInteger(act) && items.every(item => item.row.act === act) ? act : undefined;
     }
 
     private actLabel(act: number | null): string {
@@ -315,6 +443,14 @@ export class TimetableView extends BasesView {
 
     private render(): void {
         if (!this.data) return;
+        // Never pull the editor out from under the author mid-sentence.
+        if ([...this.drawers.values()].some(drawer => drawer.isEditing())) {
+            this.renderDeferred = true;
+            return;
+        }
+        this.renderDeferred = false;
+        this.rowEls.clear();
+        this.synopsisFromBody.clear();
         const groups = this.buildGroups();
         const scrollParent = this.rootEl.parentElement;
         const scrollTop = scrollParent?.scrollTop ?? 0;
@@ -322,9 +458,11 @@ export class TimetableView extends BasesView {
         this.mountPatternDefs();
         this.renderBookNotice(groups);
 
+        this.renderToolbar();
         const allItems = groups.flatMap(group => group.items);
         if (allItems.length === 0) {
             this.rootEl.createDiv({ cls: 'ert-timetable__empty', text: t('ui.timetable.empty') });
+            this.pruneDrawers(new Set());
             return;
         }
 
@@ -344,23 +482,111 @@ export class TimetableView extends BasesView {
         }
 
         const showGroupHeaders = groups.length > 1 || groups[0].label !== null;
+        const openDrawers = new Set<string>();
         for (const group of groups) {
             const body = table.createEl('tbody', { cls: 'ert-timetable__group' });
             const collapsed = this.collapsed.has(group.id);
-            if (showGroupHeaders) this.renderGroupHeader(body, group, collapsed, columnCount);
+            const groupBook = this.singleBook(group.items);
+            if (showGroupHeaders) this.renderGroupHeader(body, group, collapsed, columnCount, groupBook);
             if (collapsed) continue;
             const byPath = new Map(group.items.map(item => [item.row.path, item]));
             for (const line of withActDividers(group.items.map(item => item.row))) {
                 if (line.type === 'act') {
-                    const cell = body.createEl('tr', { cls: 'ert-timetable__act' }).createEl('td', { text: this.actLabel(line.act) });
+                    const cell = body.createEl('tr', { cls: 'ert-timetable__act' }).createEl('td');
                     cell.colSpan = columnCount;
+                    cell.createSpan({ text: this.actLabel(line.act) });
+                    this.renderNewSketchButton(cell, line.act, groupBook, this.actLabel(line.act));
                     continue;
                 }
                 const item = byPath.get(line.row.path);
-                if (item) this.renderRow(body, item, properties, showRings ? layout : null, columnCount);
+                if (!item) continue;
+                this.renderRow(body, item, properties, showRings ? layout : null, columnCount);
+                if (item.row.kind === 'sketch' && this.drawerIsOpen(item.row.path)) {
+                    this.renderDrawer(body, item, layout, columnCount);
+                    openDrawers.add(item.row.path);
+                }
             }
         }
+        this.pruneDrawers(openDrawers);
         if (scrollParent) scrollParent.scrollTop = scrollTop;
+        void this.decorateFromBodies(allItems);
+    }
+
+    /** The one book a set of rows belongs to, if there is exactly one. */
+    private singleBook(items: TableItem[]): string | undefined {
+        const books = this.plugin.settings.books ?? [];
+        const ids = new Set(items.map(item => getBookIdForPath(books, item.row.path)));
+        if (ids.size !== 1) return undefined;
+        const [id] = [...ids];
+        return id;
+    }
+
+    private renderToolbar(): void {
+        const toolbar = this.rootEl.createDiv({ cls: 'ert-timetable__toolbar' });
+        const button = toolbar.createEl('button', { cls: 'ert-timetable__new-sketch' });
+        setIcon(button.createSpan({ cls: 'ert-timetable__new-sketch-icon' }), 'plus');
+        button.createSpan({ text: t('ui.timetable.newSketch') });
+    }
+
+    /** A small + that creates a sketch in this act (and this book). */
+    private renderNewSketchButton(container: HTMLElement, act: number | null | undefined, bookId: string | undefined, label: string): void {
+        if (!bookId) return;
+        const button = container.createEl('button', { cls: 'ert-timetable__new-sketch ert-timetable__new-sketch--inline clickable-icon' });
+        if (act !== undefined && act !== null) button.dataset.act = String(act);
+        button.dataset.bookId = bookId;
+        button.setAttr('aria-label', t('ui.timetable.newSketchIn', { group: label }));
+        setIcon(button, 'plus');
+        tooltip(button, t('ui.timetable.newSketchIn', { group: label }), 'right');
+    }
+
+    private renderDrawer(body: HTMLElement, item: TableItem, layout: RingLayout | null, columnCount: number): void {
+        const drawer = this.drawerFor(item.entry.file);
+        const cell = body.createEl('tr', { cls: 'ert-timetable__drawer-row' }).createEl('td');
+        cell.colSpan = columnCount;
+        cell.appendChild(drawer.el);
+        drawer.renderBar(item.row, item.frontmatter, layout);
+        if (this.focusPath === item.row.path) {
+            this.focusPath = null;
+            drawer.focusEditor();
+        }
+    }
+
+    /** Close drawers whose sketch has gone (promoted, deleted, filtered out) or been closed. */
+    private pruneDrawers(keep: Set<string>): void {
+        for (const [path, drawer] of [...this.drawers]) {
+            if (keep.has(path)) continue;
+            this.drawers.delete(path);
+            this.removeChild(drawer);
+        }
+    }
+
+    /**
+     * Fill in what only the note text knows: each row's open author queries
+     * (`%%query: …%%`), and a sketch's first line when its Synopsis is empty.
+     */
+    private async decorateFromBodies(items: TableItem[]): Promise<void> {
+        const generation = ++this.decorateGeneration;
+        for (const item of items) {
+            if (item.row.kind === 'beat' || item.row.kind === 'otherClass') continue;
+            const content = await this.plugin.app.vault.cachedRead(item.entry.file);
+            if (generation !== this.decorateGeneration) return;
+            const info = getFrontMatterInfo(content);
+            const body = content.slice(info.exists ? info.contentStart : 0);
+            const queries = listAuthorQueries(body);
+            const numberCell = this.rowEls.get(item.row.path)?.querySelector<HTMLElement>('.ert-timetable__num');
+            if (queries.length > 0 && numberCell) {
+                const badge = numberCell.createSpan({ cls: 'ert-timetable__queries' });
+                setIcon(badge.createSpan({ cls: 'ert-timetable__queries-icon' }), 'message-circle-question');
+                badge.createSpan({ text: String(queries.length) });
+                tooltip(badge, t('ui.timetable.queries', { count: queries.length, list: queries.slice(0, 3).join(' · ') }), 'right');
+            }
+            const synopsisCell = this.synopsisFromBody.get(item.row.path);
+            const firstLine = body.split(/\r?\n/).map(line => line.trim()).find(line => line.length > 0);
+            if (synopsisCell && firstLine) {
+                synopsisCell.addClass('is-from-body');
+                synopsisCell.setText(firstLine.replace(/^#+\s*/, ''));
+            }
+        }
     }
 
     /** The wheel's Working and Todo patterns, under this table's own ID prefix. */
@@ -386,7 +612,7 @@ export class TimetableView extends BasesView {
         button.dataset.bookId = shown.id;
     }
 
-    private renderGroupHeader(body: HTMLElement, group: TableGroup, collapsed: boolean, columnCount: number): void {
+    private renderGroupHeader(body: HTMLElement, group: TableGroup, collapsed: boolean, columnCount: number, bookId: string | undefined): void {
         const row = body.createEl('tr', { cls: 'ert-timetable__group-head' });
         const cell = row.createEl('td');
         cell.colSpan = columnCount;
@@ -398,12 +624,15 @@ export class TimetableView extends BasesView {
         toggle.createSpan({ cls: 'ert-timetable__group-label', text: group.label ?? '' });
         toggle.createSpan({ cls: 'ert-timetable__group-count', text: String(group.items.length) });
         toggle.dataset.groupId = group.id;
+        // An act group, or a book group in the saga table, can take a new sketch.
+        if (group.act !== undefined || group.id.startsWith('book:')) this.renderNewSketchButton(cell, group.act, bookId, group.label ?? '');
     }
 
     private renderRow(body: HTMLElement, item: TableItem, properties: BasesPropertyId[], layout: RingLayout | null, columnCount: number): void {
-        const { row, entry, frontmatter } = item;
+        const { row, frontmatter } = item;
         const tr = body.createEl('tr', { cls: ['ert-timetable__row', `is-${row.kind === 'otherClass' ? 'other-class' : row.kind}`] });
         tr.setAttr('data-path', row.path);
+        this.rowEls.set(row.path, tr);
         this.renderNumberCell(tr.createEl('td', { cls: 'ert-timetable__num' }), item);
 
         if (row.kind === 'beat') {
@@ -418,13 +647,20 @@ export class TimetableView extends BasesView {
         } else {
             if (layout) this.renderRingsCell(tr.createEl('td', { cls: 'ert-timetable__rings' }), row, layout);
             for (const property of properties) {
-                this.renderValueCell(tr.createEl('td'), entry, frontmatter, property);
+                this.renderValueCell(tr.createEl('td'), item, property);
             }
         }
     }
 
     private renderNumberCell(cell: HTMLElement, item: TableItem): void {
         const { row, frontmatter } = item;
+        if (row.kind === 'sketch') {
+            const open = this.drawerIsOpen(row.path);
+            const toggle = cell.createEl('button', { cls: 'ert-timetable__drawer-toggle clickable-icon' });
+            toggle.setAttr('aria-expanded', String(open));
+            toggle.setAttr('aria-label', t('ui.timetable.toggleSketch'));
+            setIcon(toggle, open ? 'chevron-down' : 'chevron-right');
+        }
         const chip = cell.createDiv({ cls: 'ert-timetable__chip' });
         const svg = chip.createSvg('svg', { attr: { viewBox: '0 0 40 22', width: '40', height: '22', 'aria-hidden': 'true' } });
         const rect = svg.createSvg('rect', { cls: 'ert-timetable__chip-cell', attr: { x: '1', y: '1', width: '38', height: '20', rx: '3' } });
@@ -491,7 +727,8 @@ export class TimetableView extends BasesView {
         tooltip(grid, text, 'right');
     }
 
-    private renderValueCell(cell: HTMLElement, entry: BasesEntry, frontmatter: Record<string, unknown> | undefined, property: BasesPropertyId): void {
+    private renderValueCell(cell: HTMLElement, item: TableItem, property: BasesPropertyId): void {
+        const { entry, frontmatter, row } = item;
         const { type, name } = parsePropertyId(property);
         if (type === 'file' && name === 'name') {
             cell.addClass('ert-timetable__name');
@@ -507,7 +744,13 @@ export class TimetableView extends BasesView {
             return;
         }
         const value = entry.getValue(property);
-        if (value) value.renderTo(cell, this.plugin.app.renderContext);
+        const empty = !value || !value.isTruthy();
+        if (!empty) value.renderTo(cell, this.plugin.app.renderContext);
+        // A sketch without a Synopsis shows its first line of text instead.
+        const mappings = getActiveFrontmatterMappings(this.plugin.settings);
+        if (empty && row.kind === 'sketch' && type === 'note' && canonicalizeFrontmatterKey(name, mappings) === 'Synopsis') {
+            this.synopsisFromBody.set(row.path, cell);
+        }
     }
 
     /** The When column, under the author's own key name when they mapped one. */

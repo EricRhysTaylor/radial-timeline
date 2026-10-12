@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { convertAuthorQueriesToWordComments } from './authorQueryComments';
+import { convertAuthorQueriesToWordComments, listAuthorQueries } from './authorQueryComments';
 
 const opts = { author: 'Eric Rhys Taylor', date: '2026-10-07T12:00:00Z' };
 const span = (id: number, text: string, author = 'Eric Rhys Taylor') =>
@@ -81,4 +81,11 @@ describe('convertAuthorQueriesToWordComments', () => {
         expect(convertAuthorQueriesToWordComments(example + '\n\nProse %%query: Real question?%%', opts)).toBe(example + '\n\nProse ' + span(1, 'Real question?'));
     });
 
+});
+
+describe('listAuthorQueries', () => {
+    it('lists open queries outside fenced code', () => {
+        const markdown = 'Text %%query: Who drives?%% more.\n```\n%%query: not this%%\n```\n%%ai: Check   the date%%';
+        expect(listAuthorQueries(markdown)).toEqual(['Who drives?', 'Check the date']);
+    });
 });

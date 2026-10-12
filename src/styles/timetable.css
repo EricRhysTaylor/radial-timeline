@@ -235,3 +235,180 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
+
+/* Toolbar: + New sketch. */
+.ert-timetable__toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--size-4-2) var(--size-4-3) var(--size-4-1);
+}
+
+.ert-timetable__new-sketch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-4-1);
+}
+
+.ert-timetable__new-sketch-icon {
+  display: inline-flex;
+}
+
+.ert-timetable__new-sketch--inline {
+  margin-inline-start: var(--size-4-2);
+  padding: var(--size-2-1);
+  opacity: 0;
+}
+
+.ert-timetable__group-head:hover .ert-timetable__new-sketch--inline,
+.ert-timetable__act:hover .ert-timetable__new-sketch--inline,
+.ert-timetable__new-sketch--inline:focus-visible {
+  opacity: 1;
+}
+
+.ert-timetable__drawer-toggle {
+  padding: var(--size-2-1);
+}
+
+/* Open author queries (%%query: …%%) on a row. */
+.ert-timetable__queries {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-1);
+  color: var(--text-accent);
+  font-size: var(--font-smallest);
+}
+
+.ert-timetable__queries-icon {
+  display: inline-flex;
+}
+
+.ert-timetable__queries-icon svg {
+  width: var(--icon-xs);
+  height: var(--icon-xs);
+}
+
+.ert-timetable__table td.is-from-body {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* The sketch drawer: the note's own text, full width under its row. */
+.ert-timetable__drawer-row > td {
+  padding: 0 var(--size-4-3) var(--size-4-3);
+  background: var(--background-modifier-hover);
+  border-bottom-style: dashed;
+}
+
+.ert-timetable__drawer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+  padding: var(--size-4-3);
+  border: var(--border-width) dashed var(--background-modifier-border-hover);
+  border-radius: var(--radius-m);
+  background: var(--background-primary);
+  cursor: auto;
+}
+
+.ert-timetable__drawer-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--size-4-2) var(--size-4-3);
+}
+
+.ert-timetable__drawer-field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-4-1);
+  color: var(--text-muted);
+  font-size: var(--font-smaller);
+}
+
+.ert-timetable__drawer-when {
+  width: 13em;
+}
+
+.ert-timetable__drawer-rings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-2-2);
+}
+
+.ert-timetable__drawer-ring {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-2);
+  font-size: var(--font-smaller);
+  color: var(--text-muted);
+}
+
+.ert-timetable__drawer-ring.is-on {
+  color: var(--text-normal);
+}
+
+.ert-timetable__drawer-ring-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1.5px var(--ert-timetable-ring);
+}
+
+.ert-timetable__drawer-ring.is-on .ert-timetable__drawer-ring-swatch {
+  background: var(--ert-timetable-ring);
+}
+
+.ert-timetable__drawer-actions {
+  display: flex;
+  gap: var(--size-4-2);
+  margin-inline-start: auto;
+}
+
+.ert-timetable__drawer-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-4-1);
+}
+
+.ert-timetable__drawer-icon {
+  display: inline-flex;
+}
+
+.ert-timetable__drawer-conflict {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--size-4-2);
+  padding: var(--size-4-2) var(--size-4-3);
+  border-radius: var(--radius-s);
+  background: rgba(var(--color-orange-rgb), 0.12);
+  color: var(--text-normal);
+}
+
+.ert-timetable__drawer-conflict.is-hidden {
+  display: none;
+}
+
+.ert-timetable__drawer-editor {
+  width: 100%;
+  min-height: 6em;
+  height: var(--ert-timetable-editor-height, auto);
+  max-height: 60vh;
+  resize: vertical;
+  font-family: var(--font-text);
+  font-size: var(--font-text-size);
+  line-height: var(--line-height-normal);
+}
+
+.ert-timetable__drawer-preview {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: var(--size-2-2) var(--size-4-1);
+  border-radius: var(--radius-s);
+  cursor: text;
+  font-size: var(--font-text-size);
+}
+
+.ert-timetable__drawer-preview:hover {
+  background: var(--background-modifier-hover);
+}

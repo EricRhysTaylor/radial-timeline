@@ -48,14 +48,8 @@ function isoNow(): string {
     return new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
 }
 
-export function convertAuthorQueriesToWordComments(
-    markdown: string,
-    options: AuthorQueryCommentOptions = {}
-): string {
-    const questions: string[] = [];
-
-    // 1. Outside fenced code, swap each marker for a token and keep its question.
-    const lines = markdown.split('\n');
+/** Split Markdown into runs of fenced code and everything else; queries never count inside a fence. */
+function splitFencedSegments(markdown: string): { text: string; fenced: boolean }[] {
     const segments: { text: string; fenced: boolean }[] = [];
     let buffer: string[] = [];
     let fence: string | null = null;
@@ -63,7 +57,7 @@ export function convertAuthorQueriesToWordComments(
         if (buffer.length) segments.push({ text: buffer.join('\n'), fenced });
         buffer = [];
     };
-    for (const line of lines) {
+    for (const line of markdown.split('\n')) {
         const match = line.match(FENCE_PATTERN);
         if (fence === null && match) {
             flush(false);
@@ -80,6 +74,30 @@ export function convertAuthorQueriesToWordComments(
         buffer.push(line);
     }
     flush(fence !== null);
+    return segments;
+}
+
+/** The open author queries in a note's Markdown, outside fenced code, in order. */
+export function listAuthorQueries(markdown: string): string[] {
+    const questions: string[] = [];
+    for (const { text, fenced } of splitFencedSegments(markdown)) {
+        if (fenced) continue;
+        for (const match of text.matchAll(AUTHOR_QUERY_PATTERN)) {
+            const question = match[1].replace(/\s+/g, ' ').trim();
+            if (question) questions.push(question);
+        }
+    }
+    return questions;
+}
+
+export function convertAuthorQueriesToWordComments(
+    markdown: string,
+    options: AuthorQueryCommentOptions = {}
+): string {
+    const questions: string[] = [];
+
+    // 1. Outside fenced code, swap each marker for a token and keep its question.
+    const segments = splitFencedSegments(markdown);
 
     const tokenized = segments
         .map(({ text, fenced }) => fenced

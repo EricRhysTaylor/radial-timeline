@@ -76,7 +76,7 @@ export function folderFilter(folder: string): string {
  * The author's own name for a template key. A key mapping (Settings → Core)
  * maps the author's key to RT's, so a table column must use the author's.
  */
-function authorKeyFor(canonical: string, settings: RadialTimelineSettings): string {
+export function authorKeyFor(canonical: string, settings: RadialTimelineSettings): string {
     const mappings = getActiveFrontmatterMappings(settings);
     if (!mappings) return canonical;
     const mapped = Object.entries(mappings).find(([, target]) => target === canonical);

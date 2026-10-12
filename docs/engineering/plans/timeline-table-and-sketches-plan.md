@@ -28,7 +28,7 @@ Status: Phases 1 and 2 built 2026-10-12. Phase 3 spikes remain. The feature was 
 - **Default columns** leave out what the number cell and Rings column show and the long-form Summary and Pending Edits. Cells stay on one line, as in Obsidian's table.
 - **Text size** follows Obsidian's Bases table variables, so the per-device Bases font size applies.
 - **Blank properties from Promote** are written blank (`When:`), not as an empty string.
-- **Existing bug, not changed:** `SceneHighlighter.highlight()` looks for `.scene-group`, which the renderer no longer emits (it emits `.rt-scene-group`), so file-explorer hover and file-open highlighting on the wheel do nothing. Its un-highlight path also removes old class names. The Timetable uses a new `spotlight()` instead.
+- **Existing bug, fixed 2026-10-12 (`3a2fcb01`):** hovering a scene note in the file explorer or a tab header hadn't lit the scene on the wheel for about a year. `SceneHighlighter` looked for `.scene-group` (the renderer emits `.rt-scene-group`), the explorer handler read `data-path` from the wrong element, and the tab handler read an attribute Obsidian no longer sets. Both now use the same `spotlight()` as the wheel's hover and Timetable rows. Opening a scene note marks it open on the timeline but no longer dims the rest of the wheel.
 
 **Not built yet**
 - **Create book base** as a Book Manager button. The table file is created from the title-bar button or the command, after a confirm.
